@@ -4,7 +4,7 @@ import React from "react"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, ChevronRight, RotateCcw, Award, Download, Check, AlertCircle } from "lucide-react"
+import { CheckCircle, ChevronRight, RotateCcw, Award, Download, Check, AlertCircle, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type CertificateState = "idle" | "downloading" | "success" | "error"
@@ -80,6 +80,19 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
     onClose?.()
   }
 
+  // ESC to close for better UX
+  useEffect(() => {
+    if (!showOverlay) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault()
+        handleClose()
+      }
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [showOverlay])
+
   // Certificate button content based on state
   const getCertificateButtonContent = () => {
     switch (certificateState) {
@@ -123,7 +136,7 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
     <AnimatePresence>
       {showOverlay && (
         <motion.div
-          className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          className="absolute inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -131,14 +144,27 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
           role="dialog"
           aria-label="Chapter completion"
           aria-live="polite"
+          aria-modal="true"
         >
           <motion.div
-            className="max-w-xs sm:max-w-sm md:max-w-md w-full mx-auto p-4 sm:p-6 bg-card rounded-lg shadow-2xl"
+            className="relative max-w-xs sm:max-w-sm md:max-w-md w-full mx-auto p-4 sm:p-6 bg-card border border-border/50 rounded-xl shadow-2xl"
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
+            onClick={(e) => e.stopPropagation()}
           >
+            {/* Close icon (always visible) */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 h-8 w-8"
+              aria-label="Close overlay"
+              onClick={handleClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+
             <div className="mb-4 sm:mb-6 text-center">
               <motion.div
                 className={cn(
@@ -270,15 +296,14 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
                   <span>Replay Chapter</span>
                 </Button>
 
-                {!hasNextChapter && (
-                  <Button
-                    onClick={handleClose}
-                    className="flex-1 text-xs sm:text-sm touch-manipulation hover:scale-[1.02] transition-transform"
-                    aria-label="Close overlay"
-                  >
-                    Close
-                  </Button>
-                )}
+                {/* Bottom close kept for convenience */}
+                <Button
+                  onClick={handleClose}
+                  className="flex-1 text-xs sm:text-sm touch-manipulation hover:scale-[1.02] transition-transform"
+                  aria-label="Close overlay"
+                >
+                  Close
+                </Button>
               </div>
             </motion.div>
           </motion.div>
