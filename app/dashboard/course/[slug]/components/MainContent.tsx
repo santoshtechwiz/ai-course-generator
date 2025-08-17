@@ -30,6 +30,7 @@ import { PageLoading } from '@/components/ui/loading'
 import { Skeleton } from '@/components/ui/skeleton'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 
 // Types
 import type { FullCourseType, FullChapterType } from '@/app/types/types'
@@ -366,6 +367,27 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         isFullscreenActive={isFullscreenFromLayout}
       />
 
+      {/* Sticky mobile progress bar */}
+      {videoPlaylist.length > 0 && (
+        <div className="md:hidden sticky top-14 z-30 bg-background/95 backdrop-blur border-b">
+          <div className="px-4 py-2">
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span className="font-medium">Progress</span>
+              <span className="text-muted-foreground">
+                {progress?.progressPercentage || Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100)}%
+              </span>
+            </div>
+            <Progress
+              value={progress?.progressPercentage || Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100)}
+              className="h-1.5"
+            />
+            <div className="mt-1 text-[11px] text-muted-foreground">
+              Chapter {currentIndex + 1} of {videoPlaylist.length}
+            </div>
+          </div>
+        </div>
+      )}
+ 
       {/* Main Content Grid */}
       <div className={cn("grid gap-8 p-6", gridLayoutClasses)}>
         {/* Video and Tabs Column */}
@@ -511,13 +533,14 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       {videoPlaylist.length > 0 && (
         <AnimatePresence>
           {showChapterTransition && nextChapterInfo && (
-            <AutoplayOverlay
-              visible={showAutoplayOverlay}
-              countdown={autoplayCountdown}
-              nextChapterTitle={nextChapterInfo.chapter.title}
-              onCancel={handleCancelAutoplay}
-              onContinue={handleNextVideo}
-            />
+            showAutoplayOverlay && (
+              <AutoplayOverlay
+                countdown={autoplayCountdown}
+                nextVideoTitle={nextChapterInfo.chapter.title}
+                onCancel={handleCancelAutoplay}
+                onNextVideo={handleNextVideo}
+              />
+            )
           )}
         </AnimatePresence>
       )}
