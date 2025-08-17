@@ -70,6 +70,7 @@ export interface CourseCardProps {
   isTrending?: boolean
   completionRate?: number
   enrolledCount?: number
+  ratingLoading?: boolean
 }
 
 const LEVEL_CONFIG = {
@@ -130,6 +131,7 @@ export const CourseCard = React.memo(
     isTrending = false,
     completionRate = 85,
     enrolledCount = 1234,
+    ratingLoading = false,
   }: CourseCardProps) => {
     const [isNavigating, setIsNavigating] = useState(false)
     const [imageError, setImageError] = useState(false)
@@ -159,6 +161,16 @@ export const CourseCard = React.memo(
 
     const courseLevel = difficulty || determineCourseLevel(unitCount, lessonCount, quizCount)
     const levelConfig = LEVEL_CONFIG[courseLevel] || LEVEL_CONFIG.Intermediate
+    
+    // Compute duration from number of lessons if explicit duration is not provided
+    const computedDuration = useMemo(() => {
+      if (duration) return duration
+      const minutesPerLesson = 6 // heuristic average per lesson
+      const totalMinutes = Math.max(lessonCount * minutesPerLesson, 10)
+      const hours = Math.floor(totalMinutes / 60)
+      const minutes = totalMinutes % 60
+      return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
+    }, [duration, lessonCount])
 
     const handleCardClick = (e: React.MouseEvent) => {
       e.preventDefault();
@@ -505,12 +517,18 @@ export const CourseCard = React.memo(
                   {/* Description */}
                     <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">{description}</p>
                     {/* Ratings Row */}
-                    <div className="mt-2 flex items-center gap-1">
-                      {[1,2,3,4,5].map((i) => (
-                        <Star key={i} className={`h-3.5 w-3.5 ${rating >= i ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
-                      ))}
-                      <span className="ml-2 text-xs text-muted-foreground">{rating.toFixed ? rating.toFixed(1) : rating}/5</span>
-                    </div>
+                    {ratingLoading ? (
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="h-4 w-24 bg-muted/60 rounded animate-pulse" />
+                      </div>
+                    ) : (
+                      <div className="mt-2 flex items-center gap-1" aria-label={`Course rating ${typeof rating === 'number' ? rating.toFixed(1) : rating} out of 5`}>
+                        {[1,2,3,4,5].map((i) => (
+                          <Star key={i} className={cn("h-4 w-4", rating >= i ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground")}/>
+                        ))}
+                        <span className="ml-2 text-xs text-muted-foreground">{rating.toFixed ? rating.toFixed(1) : rating}/5</span>
+                      </div>
+                    )}
                 </motion.div>
               </CardHeader>
 
@@ -564,29 +582,16 @@ export const CourseCard = React.memo(
               <CardFooter className="pt-4 pb-4 sm:pb-6 px-4 sm:px-6">
                 <motion.div variants={contentVariants} className="w-full space-y-4">
                   {/* Duration and Enrolled Count */}
-                  <div className="flex justify-between items-center text-sm">
+                  <div className="flex justify-start items-center text-sm">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div className="flex items-center gap-2 text-muted-foreground cursor-help">
                           <Clock className="h-4 w-4" />
-                          <span className="font-medium">{duration}</span>
+                          <span className="font-medium">{computedDuration}</span>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        Estimated completion time: {duration}
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-2 text-muted-foreground cursor-help">
-                          <Users className="h-4 w-4" />
-                          <span className="font-medium">
-                            {enrolledCount > 999 ? `${(enrolledCount / 1000).toFixed(1)}k` : enrolledCount} enrolled
-                          </span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {enrolledCount} students enrolled
+                        Estimated completion time: {computedDuration}
                       </TooltipContent>
                     </Tooltip>
                   </div>
