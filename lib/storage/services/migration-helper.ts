@@ -1,47 +1,61 @@
 /**
  * Migration Helper for Storage Services
- * 
+ *
  * Helps migrate from old storage patterns to the unified storage service
  */
-
 import { storage } from '../unified-storage'
+
+/**
+ * Safe JSON parse utility
+ */
+function tryParseJSON<T = any>(value: string | null, fallback: any = null): T | null {
+  if (value === null) return fallback
+  try {
+    return JSON.parse(value) as T
+  } catch {
+    return value as unknown as T // fallback to string if not JSON
+  }
+}
 
 /**
  * Migration mapping for common localStorage keys
  */
-const STORAGE_KEY_MIGRATIONS: Record<string, {
-  newKey?: string
-  isSecure?: boolean
-  isTemporary?: boolean
-  transform?: (value: any) => any
-}> = {
+const STORAGE_KEY_MIGRATIONS: Record<
+  string,
+  {
+    newKey?: string
+    isSecure?: boolean
+    isTemporary?: boolean
+    transform?: (value: any) => any
+  }
+> = {
   // Auth related
-  'authToken': { newKey: 'auth_token', isSecure: true },
-  'token': { newKey: 'auth_token', isSecure: true },
-  'guestId': { newKey: 'guest_id', isTemporary: true },
+  authToken: { newKey: 'auth_token', isSecure: true },
+  token: { newKey: 'auth_token', isSecure: true },
+  guestId: { newKey: 'guest_id', isTemporary: true },
   'video-guest-id': { newKey: 'video_guest_id', isTemporary: true },
   'guest-id': { newKey: 'guest_id', isTemporary: true },
-  
+
   // User preferences
-  'animationsEnabled': { newKey: 'pref_animations_enabled' },
-  'theme': { newKey: 'pref_theme' },
-  'language': { newKey: 'pref_language' },
-  'hasSeenChatTooltip': { newKey: 'pref_seen_chat_tooltip' },
-  'hasSeenTrialModal': { newKey: 'pref_seen_trial_modal' },
-  'hasPlayedFreeVideo': { newKey: 'pref_played_free_video' },
-  
+  animationsEnabled: { newKey: 'pref_animations_enabled' },
+  theme: { newKey: 'pref_theme' },
+  language: { newKey: 'pref_language' },
+  hasSeenChatTooltip: { newKey: 'pref_seen_chat_tooltip' },
+  hasSeenTrialModal: { newKey: 'pref_seen_trial_modal' },
+  hasPlayedFreeVideo: { newKey: 'pref_played_free_video' },
+
   // Quiz related
-  'pendingQuizResults': { newKey: 'quiz_pending_results', isSecure: true },
-  'quiz_error_logs': { newKey: 'debug_quiz_errors', isTemporary: true },
-  'flashcard_best_streak': { newKey: 'stats_best_streak' },
-  
+  pendingQuizResults: { newKey: 'quiz_pending_results', isSecure: true },
+  quiz_error_logs: { newKey: 'debug_quiz_errors', isTemporary: true },
+  flashcard_best_streak: { newKey: 'stats_best_streak' },
+
   // Subscription related
-  'pendingSubscription': { newKey: 'subscription_pending', isSecure: true },
-  'referralCode': { newKey: 'referral_code' },
-  
+  pendingSubscription: { newKey: 'subscription_pending', isSecure: true },
+  referralCode: { newKey: 'referral_code' },
+
   // Course related
-  'OFFLINE_FLAG': { newKey: 'course_offline_mode', isTemporary: true },
-  'QUEUE_KEY': { newKey: 'course_sync_queue', isTemporary: true },
+  OFFLINE_FLAG: { newKey: 'course_offline_mode', isTemporary: true },
+  QUEUE_KEY: { newKey: 'course_sync_queue', isTemporary: true },
 }
 
 /**
@@ -55,32 +69,30 @@ export function migrateStorageData(): {
   const results = {
     migrated: 0,
     errors: [] as string[],
-    skipped: [] as string[]
+    skipped: [] as string[],
   }
 
   if (typeof window === 'undefined') {
     return results
   }
 
-  // Get all localStorage keys
   const allKeys: string[] = []
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i)
     if (key) allKeys.push(key)
   }
 
-  // Process each key
-  allKeys.forEach(oldKey => {
+  allKeys.forEach((oldKey) => {
     try {
       const migration = STORAGE_KEY_MIGRATIONS[oldKey]
-      
+
       if (!migration) {
-        // Check for pattern matches
+        // Handle patterns
         if (oldKey.startsWith('quiz_')) {
-          // Quiz data - secure storage
           const rawValue = localStorage.getItem(oldKey)
-          if (rawValue) {
-            const success = storage.setSecureItem(oldKey, JSON.parse(rawValue))
+          const parsed = tryParseJSON(rawValue)
+          if (parsed !== null) {
+            const success = storage.setSecureItem(oldKey, parsed)
             if (success) {
               localStorage.removeItem(oldKey)
               results.migrated++
@@ -90,41 +102,31 @@ export function migrateStorageData(): {
           }
           return
         }
-        
+
         if (oldKey.startsWith('pref_') || oldKey.startsWith('user_')) {
-          // Already in preferred format
           results.skipped.push(oldKey)
           return
         }
-        
+
         results.skipped.push(oldKey)
         return
       }
 
-      // Get old value
       const rawValue = localStorage.getItem(oldKey)
       if (!rawValue) {
         results.skipped.push(oldKey)
         return
       }
 
-      let value: any
-      try {
-        value = JSON.parse(rawValue)
-      } catch {
-        value = rawValue // Keep as string if not JSON
-      }
+      let value: any = tryParseJSON(rawValue, rawValue)
 
-      // Transform if needed
       if (migration.transform) {
         value = migration.transform(value)
       }
 
-      // Determine new key
       const newKey = migration.newKey || oldKey
-
-      // Store with appropriate method
       let success = false
+
       if (migration.isTemporary) {
         success = storage.setTemporary(newKey, value)
       } else if (migration.isSecure) {
@@ -139,9 +141,8 @@ export function migrateStorageData(): {
       } else {
         results.errors.push(`Failed to migrate: ${oldKey}`)
       }
-
-    } catch (error) {
-      results.errors.push(`Error migrating ${oldKey}: ${error}`)
+    } catch (error: any) {
+      results.errors.push(`Error migrating ${oldKey}: ${error?.message || error}`)
     }
   })
 
@@ -149,35 +150,26 @@ export function migrateStorageData(): {
 }
 
 /**
- * Create a legacy storage adapter for gradual migration
+ * Legacy adapter to bridge unified storage with localStorage API
  */
 export function createLegacyStorageAdapter() {
   return {
     getItem: (key: string): string | null => {
-      // First try the unified storage
       const unifiedValue = storage.getItem(key)
       if (unifiedValue !== null) {
-        return typeof unifiedValue === 'string' ? unifiedValue : JSON.stringify(unifiedValue)
+        return typeof unifiedValue === 'string'
+          ? unifiedValue
+          : JSON.stringify(unifiedValue)
       }
-
-      // Fallback to raw localStorage
       return localStorage.getItem(key)
     },
 
     setItem: (key: string, value: string): void => {
-      // Check if this key should be migrated
       const migration = STORAGE_KEY_MIGRATIONS[key]
-      
-      if (migration) {
-        let parsedValue: any
-        try {
-          parsedValue = JSON.parse(value)
-        } catch {
-          parsedValue = value
-        }
+      let parsedValue: any = tryParseJSON(value, value)
+      const newKey = migration?.newKey || key
 
-        const newKey = migration.newKey || key
-        
+      if (migration) {
         if (migration.isTemporary) {
           storage.setTemporary(newKey, parsedValue)
         } else if (migration.isSecure) {
@@ -186,22 +178,15 @@ export function createLegacyStorageAdapter() {
           storage.setItem(newKey, parsedValue)
         }
       } else {
-        // Use unified storage for new keys
-        try {
-          const parsedValue = JSON.parse(value)
-          storage.setItem(key, parsedValue)
-        } catch {
-          storage.setItem(key, value)
-        }
+        storage.setItem(newKey, parsedValue)
       }
     },
 
     removeItem: (key: string): void => {
       const migration = STORAGE_KEY_MIGRATIONS[key]
       const newKey = migration?.newKey || key
-      
       storage.removeItem(newKey, {
-        storage: migration?.isTemporary ? 'sessionStorage' : 'localStorage'
+        storage: migration?.isTemporary ? 'sessionStorage' : 'localStorage',
       })
     },
 
@@ -213,10 +198,9 @@ export function createLegacyStorageAdapter() {
       return storage.getStats().total
     },
 
-    key: (index: number): string | null => {
-      // This is harder to implement efficiently, but rarely used
-      return null
-    }
+    key: (_index: number): string | null => {
+      return null // rarely used, keeping simple
+    },
   }
 }
 
@@ -224,11 +208,13 @@ export function createLegacyStorageAdapter() {
  * Enhanced storage utilities with auto-migration
  */
 export const migratedStorage = {
-  getItem: <T>(key: string, options?: { defaultValue?: T; secure?: boolean; temporary?: boolean }): T | null => {
+  getItem: <T>(
+    key: string,
+    options?: { defaultValue?: T; secure?: boolean; temporary?: boolean }
+  ): T | null => {
     const { defaultValue = null, secure = false, temporary = false } = options || {}
-    
+
     let value: T | null = null
-    
     if (temporary) {
       value = storage.getTemporary<T>(key)
     } else if (secure) {
@@ -236,63 +222,52 @@ export const migratedStorage = {
     } else {
       value = storage.getItem<T>(key)
     }
-    
-    // If not found, check for legacy key
+
     if (value === null) {
       const migration = STORAGE_KEY_MIGRATIONS[key]
       if (migration?.newKey && migration.newKey !== key) {
         value = storage.getItem<T>(migration.newKey)
       }
     }
-    
+
     return value ?? defaultValue
   },
 
-  setItem: <T>(key: string, value: T, options?: { secure?: boolean; temporary?: boolean }): boolean => {
+  setItem: <T>(
+    key: string,
+    value: T,
+    options?: { secure?: boolean; temporary?: boolean }
+  ): boolean => {
     const { secure = false, temporary = false } = options || {}
-    
-    if (temporary) {
-      return storage.setTemporary(key, value)
-    } else if (secure) {
-      return storage.setSecureItem(key, value)
-    } else {
-      return storage.setItem(key, value)
-    }
+    if (temporary) return storage.setTemporary(key, value)
+    if (secure) return storage.setSecureItem(key, value)
+    return storage.setItem(key, value)
   },
 
   removeItem: (key: string, options?: { temporary?: boolean }): boolean => {
     const { temporary = false } = options || {}
-    
     return storage.removeItem(key, {
-      storage: temporary ? 'sessionStorage' : 'localStorage'
+      storage: temporary ? 'sessionStorage' : 'localStorage',
     })
   },
 
-  // Specific helpers for common patterns
-  setPreference: <T>(key: string, value: T): boolean => {
-    return storage.setPreference(key, value)
-  },
+  setPreference: <T>(key: string, value: T): boolean =>
+    storage.setPreference(key, value),
 
-  getPreference: <T>(key: string, defaultValue?: T): T | null => {
-    return storage.getPreference(key, defaultValue)
-  },
+  getPreference: <T>(key: string, defaultValue?: T): T | null =>
+    storage.getPreference(key, defaultValue),
 
-  setQuizData: <T>(slug: string, value: T, temporary = false): boolean => {
-    if (temporary) {
-      return storage.setTemporary(`quiz_${slug}`, value)
-    } else {
-      return storage.setSecureItem(`quiz_${slug}`, value)
-    }
-  },
+  setQuizData: <T>(slug: string, value: T, temporary = false): boolean =>
+    temporary
+      ? storage.setTemporary(`quiz_${slug}`, value)
+      : storage.setSecureItem(`quiz_${slug}`, value),
 
-  getQuizData: <T>(slug: string): T | null => {
-    return storage.getQuizResults<T>(slug)
-  }
+  getQuizData: <T>(slug: string): T | null =>
+    storage.getQuizResults<T>(slug),
 }
 
-// Auto-run migration on import (in browser)
+// Auto-run migration
 if (typeof window !== 'undefined') {
-  // Run migration after a short delay to avoid blocking
   setTimeout(() => {
     const results = migrateStorageData()
     if (results.migrated > 0) {
