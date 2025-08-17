@@ -901,15 +901,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
              {/* Top toolbar: width toggle and keys hint */}
              <div className="mx-auto py-3 px-4 sm:px-6 lg:px-8 max-w-7xl flex items-center justify-between">
                <div className="flex items-center gap-3">
-                 <Button
-                   variant="outline"
-                   size="sm"
-                   onClick={handleWideModeToggle}
-                   className="gap-2"
-                 >
-                   {wideMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                   {wideMode ? "Normal width" : "Wider video"}
-                 </Button>
+                 
                  
                  {/* Auto-play Mode Toggle */}
                  <Button
@@ -963,31 +955,53 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
               />
             )}
 
-            {/* Mobile playlist toggle button - positioned above video for better UX */}
-            <div className="md:hidden mb-4">
-              <Button
-                variant="outline"
-                onClick={handleMobilePlaylistToggle}
-                className="w-full bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-background/90 relative overflow-hidden"
-              >
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center">
-                    <ChevronLeft className="h-4 w-4 mr-2" />
-                    <span>Course Content</span>
+            {/* Above playlist: Auto-play toggle (desktop), plus mobile playlist toggle */}
+            <div className="mb-4 flex items-center justify-between">
+              {/* Left: Auto-play toggle always visible */}
+              <div className="hidden md:flex">
+                <Button
+                  variant={autoplayMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={handleAutoplayToggle}
+                  className={cn(
+                    "gap-2 transition-all duration-300",
+                    autoplayMode && "bg-green-600 hover:bg-green-700 text-white"
+                  )}
+                >
+                  <div className={cn(
+                    "w-2 h-2 rounded-full transition-all duration-300",
+                    autoplayMode ? "bg-white" : "bg-green-500"
+                  )} />
+                  {autoplayMode ? "Auto-play ON" : "Auto-play OFF"}
+                </Button>
+              </div>
+
+              {/* Right: Mobile playlist toggle */}
+              <div className="md:hidden w-full">
+                <Button
+                  variant="outline"
+                  onClick={handleMobilePlaylistToggle}
+                  className="w-full bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-background/90 relative overflow-hidden"
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center">
+                      <ChevronLeft className="h-4 w-4 mr-2" />
+                      <span>Course Content</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{currentChapter ? `${currentIndex + 1}/${videoPlaylist.length}` : `0/${videoPlaylist.length}`}</span>
+                      {currentChapter && (
+                        <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary transition-all duration-300"
+                            style={{ width: `${((currentIndex + 1) / videoPlaylist.length) * 100}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{currentChapter ? `${currentIndex + 1}/${videoPlaylist.length}` : `0/${videoPlaylist.length}`}</span>
-                    {currentChapter && (
-                      <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-primary transition-all duration-300"
-                          style={{ width: `${((currentIndex + 1) / videoPlaylist.length) * 100}%` }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Button>
+                </Button>
+              </div>
             </div>
 
             {/* Video player section */}
