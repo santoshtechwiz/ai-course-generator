@@ -171,15 +171,16 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
     <AnimatePresence>
       {showOverlay && (
         <>
-          {/* Slide-up panel at bottom ~20% height (YouTube style Up Next) */}
-          <motion.div
-            className="absolute left-0 right-0 bottom-0 z-[65]"
-            initial={{ y: '100%', opacity: 0 }}
-            animate={{ y: '0%', opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-            style={{ height: '20%' }}
-          >
+          {/* Slide-up panel at bottom ~20% height (YouTube style Up Next) - Only for non-final chapters */}
+          {!isFinalChapter && (
+            <motion.div
+              className="absolute left-0 right-0 bottom-0 z-[65]"
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: '0%', opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+              style={{ height: '20%' }}
+            >
             <div className="h-full bg-black/80 backdrop-blur-md text-white p-3 sm:p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-sm sm:text-base font-medium">
@@ -234,9 +235,10 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
               )}
             </div>
           </motion.div>
+          )}
 
           {/* Full overlay for modal (only for final course completion) */}
-          {!hasNextChapter && isFinalChapter && (
+          {isFinalChapter && (
             <motion.div
               className="absolute inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
               initial={{ opacity: 0 }}

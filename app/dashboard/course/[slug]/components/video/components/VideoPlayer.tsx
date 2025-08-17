@@ -20,6 +20,7 @@ import type { VideoPlayerProps } from "../types"
 import ChapterStartOverlay from "./ChapterStartOverlay"
 import ChapterEndOverlay from "./ChapterEndOverlay"
 import AutoPlayNotification from "./AutoPlayNotification"
+import NextChapterNotification from "./NextChapterNotification"
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
 // Removed in-player growth promo; we will show CTAs outside the player
 
@@ -132,6 +133,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showBookmarkPanel, setShowBookmarkPanel] = useState(false)
   const [showChapterStart, setShowChapterStart] = useState(false)
   const [showChapterEnd, setShowChapterEnd] = useState(false)
+  const [showNextChapterNotification, setShowNextChapterNotification] = useState(false)
+  const [nextChapterCountdown, setNextChapterCountdown] = useState(5)
   const [showAutoPlayNotification, setShowAutoPlayNotification] = useState(false)
   const [autoPlayCountdown, setAutoPlayCountdown] = useState(5)
   const [chapterStartShown, setChapterStartShown] = useState(false)
@@ -659,6 +662,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setChapterStartShown(false)
     setShowChapterStart(false)
     setShowChapterEnd(false)
+    setShowNextChapterNotification(false)
+    setNextChapterCountdown(5)
     setPlayerReady(false)
     setVideoDuration(0)
     setIsLoadingDuration(true)
@@ -682,32 +687,45 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleVideoEnd = useCallback(() => {
     onEnded?.()
     
-    // For regular chapters with next video and auto-play enabled, show corner notification
-    if (onNextVideo && state.autoPlayNext) {
-      setShowAutoPlayNotification(true)
-      setAutoPlayCountdown(5)
+    // Check if this is the final chapter (course 100% completed)
+    const isCourseCompleted = progressStats?.progressPercentage === 100
+    
+    if (isCourseCompleted) {
+      // Show course completion overlay for final chapter
+      const animationFrame = requestAnimationFrame(() => {
+        setShowChapterEnd(true)
+      })
+      return () => cancelAnimationFrame(animationFrame)
+    } else if (onNextVideo && state.autoPlayNext) {
+      // For regular chapters with next video and auto-play enabled, show corner notification
+      setShowNextChapterNotification(true)
+      setNextChapterCountdown(5)
       
       // Start countdown timer
       const countdownInterval = setInterval(() => {
-        setAutoPlayCountdown((prev) => {
+        setNextChapterCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(countdownInterval)
             // Auto-advance to next video
             onNextVideo()
-            setShowAutoPlayNotification(false)
+            setShowNextChapterNotification(false)
             return 5
           }
           return prev - 1
         })
       }, 1000)
+    } else if (onNextVideo) {
+      // For regular chapters with next video but auto-play disabled, show corner notification without auto-advance
+      setShowNextChapterNotification(true)
+      setNextChapterCountdown(5)
     } else {
-      // For final chapters or when auto-play is disabled, show the overlay
+      // For chapters without next video but not course completion, show simple completion message
       const animationFrame = requestAnimationFrame(() => {
         setShowChapterEnd(true)
       })
       return () => cancelAnimationFrame(animationFrame)
     }
-  }, [onEnded, onNextVideo, state.autoPlayNext])
+  }, [onEnded, onNextVideo, state.autoPlayNext, progressStats?.progressPercentage])
 
   const handleNextChapter = useCallback(() => {
     setShowChapterEnd(false)
@@ -722,6 +740,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleAutoPlayCancel = useCallback(() => {
     setShowAutoPlayNotification(false)
     setAutoPlayCountdown(5)
+  }, [])
+
+  const handleNextChapterNotificationContinue = useCallback(() => {
+    setShowNextChapterNotification(false)
+    onNextVideo?.()
+  }, [onNextVideo])
+
+  const handleNextChapterNotificationCancel = useCallback(() => {
+    setShowNextChapterNotification(false)
+    setNextChapterCountdown(5)
   }, [])
 
   const handleToggleAutoPlayVideo = useCallback(() => {
@@ -1029,7 +1057,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         autoAdvance={state.autoPlayNext}
         onCertificateDownload={handleCertificateDownload}
         certificateState={certificateState}
-        isFinalChapter={!onNextVideo}
+        isFinalChapter={progressStats?.progressPercentage === 100}
         courseTitle={courseName}
         relatedCourses={relatedCourses}
         progressStats={progressStats}
@@ -1045,6 +1073,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         countdown={autoPlayCountdown}
         onContinue={handleAutoPlayContinue}
         onCancel={handleAutoPlayCancel}
+      />
+
+      {/* Next Chapter Notification - Small modal in bottom right for auto-play */}
+      <NextChapterNotification
+        visible={showNextChapterNotification && !state.isMiniPlayer}
+        nextChapterTitle={nextVideoTitle || "Next Chapter"}
+        countdown={nextChapterCountdown}
+        onContinue={handleNextChapterNotificationContinue}
+        onCancel={handleNextChapterNotificationCancel}
+        autoAdvance={state.autoPlayNext}
       />
 
       {/* Enhanced Custom controls */}
