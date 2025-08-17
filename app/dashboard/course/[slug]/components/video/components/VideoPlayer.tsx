@@ -1143,36 +1143,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         videoId={videoId}
       />
 
-      {/* Chapter End Overlay - Only for final course completion */}
-      <ChapterEndOverlay
-        visible={showChapterEnd && !state.isMiniPlayer}
-        chapterTitle={chapterTitleRef.current}
-        nextChapterTitle={nextVideoTitle}
-        hasNextChapter={!!onNextVideo}
-        onNextChapter={handleNextChapter}
-        onReplay={handleReplay}
-        onClose={() => setShowChapterEnd(false)}
-        autoAdvanceDelay={5}
-        autoAdvance={state.autoPlayNext}
-        onCertificateDownload={handleCertificateDownload}
-        certificateState={certificateState}
-        isFinalChapter={progressStats?.progressPercentage === 100}
-        courseTitle={courseName}
-        relatedCourses={relatedCourses}
-        progressStats={progressStats}
-        quizSuggestions={quizSuggestions}
-        personalizedRecommendations={personalizedRecommendations}
-        isKeyChapter={isKeyChapter}
-        onToggleAutoAdvance={() => {
-          setState(prev => ({ ...prev, autoPlayNext: !prev.autoPlayNext }))
-          // Save preference
-          try {
-            localStorage.setItem('video-player-autoplay-next', (!state.autoPlayNext).toString())
-          } catch (error) {
-            console.warn('Could not save auto-play preference:', error)
-          }
-        }}
-      />
+      {/* Chapter End Overlay - Only for final course completion; non-final overlays removed per request */}
+      {progressStats?.progressPercentage === 100 && (
+        <ChapterEndOverlay
+          visible={showChapterEnd && !state.isMiniPlayer}
+          chapterTitle={chapterTitleRef.current}
+          nextChapterTitle={nextVideoTitle}
+          hasNextChapter={false}
+          onNextChapter={handleNextChapter}
+          onReplay={handleReplay}
+          onClose={() => setShowChapterEnd(false)}
+          autoAdvanceDelay={5}
+          autoAdvance={false}
+          onCertificateDownload={handleCertificateDownload}
+          certificateState={certificateState}
+          isFinalChapter
+          courseTitle={courseName}
+          relatedCourses={relatedCourses}
+          progressStats={progressStats}
+          quizSuggestions={quizSuggestions}
+          personalizedRecommendations={personalizedRecommendations}
+          isKeyChapter={isKeyChapter}
+        />
+      )}
 
       {/* Auto-play notification for regular chapters */}
       <AutoPlayNotification
