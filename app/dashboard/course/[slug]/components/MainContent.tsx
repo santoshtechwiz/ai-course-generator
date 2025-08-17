@@ -502,7 +502,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     autoplayMode,
     videoPlaylist.length,
     completedChapters?.length,
-    handleChapterSelect,
   ])
 
   // Add handleChapterComplete function
@@ -753,7 +752,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   }), [
     course,
     currentChapter,
-    handleChapterSelect,
     progress,
     user,
     userSubscription,
