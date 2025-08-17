@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { useProgress } from "@/hooks"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
-import { Play, Lock, User as UserIcon, Award, Badge, ChevronLeft, ChevronRight, Clock, Maximize2, Minimize2, Download, Share2 } from "lucide-react"
+import { Play, Lock, User as UserIcon, Award, Badge, ChevronLeft, ChevronRight, Clock, Maximize2, Minimize2, Download, Share2, AlertTriangle } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { store } from "@/store"
 import { setCurrentVideoApi, markChapterAsCompleted } from "@/store/slices/course-slice"
@@ -33,7 +33,7 @@ import CourseActions from "./CourseActions"
 import ActionButtons from "./ActionButtons"
 import CourseInfo from "./CourseInfo"
 import ReviewsSection from "./ReviewsSection"
-import { setLastPosition, markLectureCompleted as markLectureCompletedProgress, setIsCourseCompleted, setCertificateDownloaded, makeSelectCourseProgressById } from "@/store/slices/courseProgress-slice"
+import { setLastPosition, markLectureCompleted as markLectureCompletedProgress, setIsCourseCompleted, setCertificateDownloaded } from "@/store/slices/courseProgress-slice"
 import { cn } from "@/lib/utils"
 import { PDFDownloadLink } from "@react-pdf/renderer"
 import CertificateGenerator from "./CertificateGenerator"
@@ -41,6 +41,8 @@ import RecommendedSection from "@/components/shared/RecommendedSection"
 import type { BookmarkData } from "./video/types"
 import { fetchRelatedCourses, fetchPersonalizedRecommendations, fetchQuizSuggestions } from "@/services/recommendationsService"
 import type { RelatedCourse, PersonalizedRecommendation, QuizSuggestion } from "@/services/recommendationsService"
+import ProgressTracker from "./ProgressTracker"
+import EngagementPrompts from "./EngagementPrompts"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -70,8 +72,22 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
     isFullscreen = false,
     onFullscreenToggle
   }) => {
+    // Early validation of course data
+    if (!course || !course.id) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <AlertTriangle className="h-8 w-8 text-red-600" />
+            </div>
+            <h2 className="text-xl font-semibold">Course Not Found</h2>
+            <p className="text-muted-foreground">The requested course could not be loaded.</p>
+            <Button onClick={() => window.history.back()}>Go Back</Button>
+          </div>
+        </div>
+      )
+    }
   // Always define all hooks at the top level - no early returns or conditions before hooks
-  console.log(course);
   const router = useRouter()
   // Remove useSession  // const { data: session } = useSession()
   const { toast } = useToast() // Fix: Properly destructure toast from useToast hook
@@ -107,13 +123,13 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
   
   // Auto-play mode state
   const [autoplayMode, setAutoplayMode] = useState(false)
+  const [showAutoplayOverlay, setShowAutoplayOverlay] = useState(false)
+  const [autoplayCountdown, setAutoplayCountdown] = useState(0)
 
   
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
-  const legacyCourseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
-  const selectCourseProgress = useMemo(() => makeSelectCourseProgressById(), [])
-  const courseProgress = useAppSelector((state) => selectCourseProgress(state as any, course.id))
+  const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
   const twoCol = useMemo(() => !isFullscreen, [isFullscreen])
 
   // Get bookmarks for the current video - this is more reliable than trying to get them from Redux
@@ -135,11 +151,9 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
   }, [bookmarks, currentVideoId])
 
   // Fix: Initialize completedChapters safely so it's always defined
-  // Use courseProgress.completedChapters if available, otherwise empty array
   const completedChapters = useMemo(() => {
-    if (courseProgress?.completedLectures) return courseProgress.completedLectures.map((id: string) => Number(id)).filter((n: number) => !isNaN(n))
-    return (legacyCourseProgress?.completedChapters || []).map((id: number) => Number(id)).filter((n: number) => !isNaN(n))
-  }, [courseProgress, legacyCourseProgress])
+    return (courseProgress?.completedChapters || []).map((id: number) => Number(id)).filter((n: number) => !isNaN(n))
+  }, [courseProgress])
 
   // Check free video status on mount
   useEffect(() => {
@@ -171,7 +185,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
   const videoPlaylist = useMemo(() => {
     const playlist: { videoId: string; chapter: FullChapterType }[] = []
     
-    if (!course?.courseUnits) {
+    if (!course?.courseUnits || course.courseUnits.length === 0) {
       return playlist
     }
 
@@ -280,6 +294,8 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
       return
     }
 
+
+
     // First try to get the video from URL param (initialChapterId)
     let targetVideo = initialChapterId
       ? videoPlaylist.find((entry) => String(entry.chapter.id) === initialChapterId)
@@ -297,11 +313,11 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
       )
     }
 
-    // If still not found, try to use the last watched lecture from Redux progress slice
+    // If still not found, try to use the current chapter from Redux progress slice
     try {
-      if (!targetVideo && courseProgress?.lastLectureId) {
+      if (!targetVideo && courseProgress?.currentChapterId) {
         targetVideo = videoPlaylist.find(
-          (entry) => String(entry.chapter.id) === String(courseProgress.lastLectureId)
+          (entry) => String(entry.chapter.id) === String(courseProgress.currentChapterId)
         ) || null
       }
     } catch {}
@@ -322,7 +338,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
     } else {
       console.error("Failed to select a video")
     }
-  }, [course.id, initialChapterId, videoPlaylist, dispatch, videoStateStore, currentVideoId, progress, courseProgress?.lastLectureId])
+  }, [course.id, initialChapterId, videoPlaylist, dispatch, videoStateStore, currentVideoId, progress, courseProgress?.currentChapterId])
 
   // Resume prompt
   useEffect(() => {
@@ -457,8 +473,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
 
       if (isLastVideo) {
         // Only show certificate if not already downloaded for this completion
-        const selectCourseProgressById = makeSelectCourseProgressById()
-        const courseProgress = selectCourseProgressById(store.getState(), String(course.id))
+        const courseProgress = store.getState().courseProgress.byCourseId[String(course.id)]
         if (!courseProgress?.certificateDownloaded) {
           setShowCertificate(true)
         }
@@ -657,13 +672,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
     [dispatch, canPlayVideo, course.id, videoStateStore, toast]
   )
 
-  const handleNextVideo = useCallback(() => {
-    /* Next navigation removed per request */
-  }, [])
 
-  const handlePrevVideo = useCallback(() => {
-    /* Prev navigation removed per request */
-  }, [])
 
   // Cancel autoplay
   const handleCancelAutoplay = useCallback(() => {
@@ -673,8 +682,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
 
   // Certificate handler - only show if not already downloaded for this completion
   const handleCertificateClick = useCallback(() => {
-    const selectCourseProgressById = makeSelectCourseProgressById()
-    const courseProgress = selectCourseProgressById(store.getState(), String(course.id))
+    const courseProgress = store.getState().courseProgress.byCourseId[String(course.id)]
     if (courseProgress?.isCourseCompleted && !courseProgress?.certificateDownloaded) {
       setShowCertificate(true)
     } else if (!courseProgress?.isCourseCompleted) {
@@ -683,11 +691,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
     }
   }, [course.id])
 
-  // Autoplay logic removed per request
-  useEffect(() => {
-    setShowAutoplayOverlay(false)
-    setAutoplayCountdown(0)
-  }, [])
+
 
   // Fetch related courses
   useEffect(() => {
@@ -735,6 +739,61 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
     [videoPlaylist.length, progress?.completedChapters],
   )
 
+  // Enhanced next video navigation handler
+  const handleNextVideo = useCallback(() => {
+    if (!currentChapter || !videoPlaylist.length) return
+    
+    const currentIndex = videoPlaylist.findIndex(item => item.videoId === currentVideoId)
+    if (currentIndex === -1 || currentIndex >= videoPlaylist.length - 1) return
+    
+    const nextVideo = videoPlaylist[currentIndex + 1]
+    if (nextVideo && nextVideo.chapter) {
+      console.log('Navigating to next video:', nextVideo.chapter.title)
+      handleChapterSelect(nextVideo.chapter)
+    }
+  }, [currentChapter, videoPlaylist, currentVideoId, handleChapterSelect])
+
+  // Enhanced previous video navigation handler
+  const handlePrevVideo = useCallback(() => {
+    if (!currentChapter || !videoPlaylist.length) return
+    
+    const currentIndex = videoPlaylist.findIndex(item => item.videoId === currentVideoId)
+    if (currentIndex <= 0) return
+    
+    const prevVideo = videoPlaylist[currentIndex - 1]
+    if (prevVideo && prevVideo.chapter) {
+      console.log('Navigating to previous video:', prevVideo.chapter.title)
+      handleChapterSelect(prevVideo.chapter)
+    }
+  }, [currentChapter, videoPlaylist, currentVideoId, handleChapterSelect])
+
+  // Get next and previous video info
+  const nextVideoInfo = useMemo(() => {
+    if (!currentVideoId || !videoPlaylist.length) return null
+    
+    const currentIndex = videoPlaylist.findIndex(item => item.videoId === currentVideoId)
+    if (currentIndex === -1 || currentIndex >= videoPlaylist.length - 1) return null
+    
+    const nextVideo = videoPlaylist[currentIndex + 1]
+    return nextVideo ? {
+      id: nextVideo.videoId,
+      title: nextVideo.chapter?.title || 'Next Chapter'
+    } : null
+  }, [currentVideoId, videoPlaylist])
+
+  const prevVideoInfo = useMemo(() => {
+    if (!currentVideoId || !videoPlaylist.length) return null
+    
+    const currentIndex = videoPlaylist.findIndex(item => item.videoId === currentVideoId)
+    if (currentIndex <= 0) return null
+    
+    const prevVideo = videoPlaylist[currentIndex - 1]
+    return prevVideo ? {
+      id: prevVideo.videoId,
+      title: prevVideo.chapter?.title || 'Previous Chapter'
+    } : null
+  }, [currentVideoId, videoPlaylist])
+
   // Memoized sidebar props to prevent unnecessary re-renders
   const sidebarProps = useMemo(() => ({
     course,
@@ -768,10 +827,11 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
 
   // Memoized video player props
   const videoPlayerProps = useMemo(() => ({
-    videoId: currentVideoId,
+    videoId: currentVideoId || '',
     courseId: course.id,
     chapterId: currentChapter?.id ? String(currentChapter.id) : undefined,
     courseName: course.title,
+    chapterTitle: currentChapter?.title,
     onEnded: handleVideoEnd,
     onProgress: handleVideoProgress,
     onVideoLoad: handleVideoLoad,
@@ -783,20 +843,21 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
     showControls: true,
     onCertificateClick: handleCertificateClick,
     onChapterComplete: handleChapterComplete,
-    onNextVideo: undefined,
-    nextVideoId: undefined,
-    nextVideoTitle: '',
-    onPrevVideo: undefined,
-    prevVideoTitle: '',
-    hasNextVideo: false,
+    onNextVideo: handleNextVideo,
+    nextVideoId: nextVideoInfo?.id || undefined,
+    nextVideoTitle: nextVideoInfo?.title || '',
+    onPrevVideo: handlePrevVideo,
+    prevVideoTitle: prevVideoInfo?.title || '',
+    hasNextVideo: !!nextVideoInfo,
+    hasPrevVideo: !!prevVideoInfo,
     isFullscreen,
     onFullscreenToggle,
     onPictureInPictureToggle: handlePIPToggle,
-         className: "h-full w-full",
+    className: "h-full w-full",
      initialSeekSeconds: (function(){
        try {
-         if (courseProgress?.lastLectureId && String(courseProgress.lastLectureId) === String(currentChapter?.id)) {
-           const ts = Number(courseProgress.lastTimestamp)
+         if (courseProgress?.currentChapterId && String(courseProgress.currentChapterId) === String(currentChapter?.id)) {
+           const ts = Number(courseProgress.resumePoint || 0)
            if (!isNaN(ts) && ts > 0) return ts
          }
        } catch {}
@@ -826,11 +887,15 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
      user,
      handleCertificateClick,
      handleChapterComplete,
+     handleNextVideo,
+     handlePrevVideo,
+     nextVideoInfo,
+     prevVideoInfo,
      isFullscreen,
      onFullscreenToggle,
      handlePIPToggle,
-     courseProgress?.lastLectureId,
-     courseProgress?.lastTimestamp,
+     courseProgress?.currentChapterId,
+     courseProgress?.resumePoint,
      completedChapters,
      videoPlaylist.length,
      isKeyChapter,
@@ -963,23 +1028,28 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
                 <Button
                   variant="outline"
                   onClick={handleMobilePlaylistToggle}
-                  className="w-full bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-background/90 relative overflow-hidden"
+                  className="w-full bg-gradient-to-r from-background/90 to-background/80 backdrop-blur-sm border-primary/30 hover:border-primary/50 hover:bg-background/95 relative overflow-hidden shadow-sm transition-all duration-300"
                 >
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center">
-                      <ChevronLeft className="h-4 w-4 mr-2" />
-                      <span>Course Content</span>
+                      <ChevronLeft className="h-4 w-4 mr-2 text-primary" />
+                      <span className="font-medium">Course Content</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{currentChapter ? `${currentIndex + 1}/${videoPlaylist.length}` : `0/${videoPlaylist.length}`}</span>
-                      {currentChapter && (
-                        <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary transition-all duration-300"
-                            style={{ width: `${((currentIndex + 1) / videoPlaylist.length) * 100}%` }}
-                          />
-                        </div>
-                      )}
+                    <div className="flex items-center gap-3 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">
+                          {currentChapter ? `${currentIndex + 1}/${videoPlaylist.length}` : `0/${videoPlaylist.length}`}
+                        </span>
+                        {currentChapter && (
+                          <div className="w-20 h-2 bg-muted/50 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500"
+                              style={{ width: `${((currentIndex + 1) / videoPlaylist.length) * 100}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
                 </Button>
@@ -1000,11 +1070,20 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
                  <div className="w-full">
                    {/* Autoplay banner removed in favor of compact toggle inside player controls */}
                     
-                    <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden ring-1 ring-primary/20 shadow-sm ai-glass dark:ai-glass-dark">
+                    <div 
+                      className="relative w-full aspect-video bg-black rounded-xl overflow-hidden ring-1 ring-primary/20 shadow-sm ai-glass dark:ai-glass-dark focus-within:ring-2 focus-within:ring-primary/50 transition-all duration-300"
+                      tabIndex={-1}
+                      role="region"
+                      aria-label="Video player"
+                    >
                       {(!currentVideoId || isVideoLoading || progressLoading) ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6">
-                          <div className="h-4 w-32 bg-white/10 rounded animate-pulse" />
-                          <div className="h-3 w-24 bg-white/10 rounded animate-pulse" />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 bg-gradient-to-br from-black/80 to-black/60">
+                          <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                          <div className="text-center space-y-2">
+                            <div className="h-4 w-32 bg-white/20 rounded animate-pulse mx-auto" />
+                            <div className="h-3 w-24 bg-white/15 rounded animate-pulse mx-auto" />
+                            <p className="text-white/70 text-sm">Loading video content...</p>
+                          </div>
                         </div>
                       ) : null}
                       {currentVideoId ? (
@@ -1017,12 +1096,37 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
                             onAnimationComplete={() => setShowLogoOverlay(false)}
                           />
                         </>
+                      ) : videoPlaylist.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-gray-900 to-black">
+                          <div className="text-center text-white p-6 max-w-md">
+                            <div className="w-20 h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                              <AlertTriangle className="h-10 w-10 text-yellow-500" />
+                            </div>
+                            <h3 className="text-2xl font-semibold mb-3">No Content Available</h3>
+                            <p className="text-white/70 mb-6 leading-relaxed">
+                              This course doesn't have any video content yet. Please check back later or contact the instructor.
+                            </p>
+                            <div className="flex items-center justify-center gap-2 text-sm text-white/50">
+                              <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+                              <span>Content coming soon</span>
+                            </div>
+                          </div>
+                        </div>
                       ) : (
-                        <div className="flex flex-col items-center justify-center h-full">
-                          <div className="text-center text-white p-4">
-                            <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                            <h3 className="text-xl font-medium mb-2">Select a Chapter</h3>
-                            <p className="text-white/70 mb-4">Choose a chapter from the playlist to start learning</p>
+                        <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-gray-900 to-black">
+                          <div className="text-center text-white p-6 max-w-md">
+                            <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                              <Play className="h-10 w-10 text-primary" />
+                            </div>
+                            <h3 className="text-2xl font-semibold mb-3">Ready to Learn?</h3>
+                            <p className="text-white/70 mb-6 leading-relaxed">
+                              Choose a chapter from the course content to begin your learning journey. 
+                              The first two chapters are free to preview!
+                            </p>
+                            <div className="flex items-center justify-center gap-2 text-sm text-white/50">
+                              <div className="w-2 h-2 bg-primary rounded-full" />
+                              <span>Select any chapter to start</span>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1034,28 +1138,47 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="mt-4 p-4 bg-muted/30 rounded-xl border border-border/50"
+                      className="mt-4 p-5 bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl border border-primary/20 shadow-sm"
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-primary rounded-full" />
-                          <span className="text-sm font-medium text-foreground">
-                            Chapter {currentIndex + 1} of {videoPlaylist.length}
-                          </span>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 bg-primary rounded-full animate-pulse" />
+                          <div>
+                            <span className="text-sm font-semibold text-foreground">
+                              Chapter {currentIndex + 1} of {videoPlaylist.length}
+                            </span>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {currentChapter.title}
+                            </div>
+                          </div>
                         </div>
                         {nextChapter && (
-                          <div className="text-xs text-muted-foreground">
-                            Next: {nextChapter.chapter.title}
+                          <div className="text-right">
+                            <div className="text-xs text-muted-foreground mb-1">Next up:</div>
+                            <div className="text-sm font-medium text-foreground line-clamp-1 max-w-48">
+                              {nextChapter.chapter.title}
+                            </div>
                           </div>
                         )}
                       </div>
                       
+                      {/* Progress bar */}
+                      <div className="w-full bg-muted/30 rounded-full h-2 mb-3">
+                        <div 
+                          className="bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${((currentIndex + 1) / videoPlaylist.length) * 100}%` }}
+                        />
+                      </div>
+                      
                       {/* Chapter info */}
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{currentChapter.title}</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {currentChapter.duration ? formatDuration(currentChapter.duration) : '~5 min'}
+                        </span>
                         {nextChapter && (
                           <div className="flex items-center gap-2">
-                            <span>Next chapter in:</span>
+                            <span>Next chapter:</span>
                             <span className="font-medium text-primary">
                               {nextChapter.chapter.duration ? formatDuration(nextChapter.chapter.duration) : '~5 min'}
                             </span>
@@ -1066,12 +1189,23 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
                   )}
   
                   {/* Tabs below video: Summary, Quiz, Bookmarks, etc */}
-                  <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark mt-4">
+                  <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark mt-4 overflow-hidden">
                     {progressLoading ? (
-                      <div className="p-4 animate-pulse space-y-3">
-                        <div className="h-8 bg-muted/50 rounded" />
-                        <div className="h-5 bg-muted/40 rounded w-1/2" />
-                        <div className="h-5 bg-muted/40 rounded w-2/3" />
+                      <div className="p-6 animate-pulse space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-4 h-4 bg-primary/20 rounded-full" />
+                          <div className="h-6 bg-muted/50 rounded w-1/3" />
+                        </div>
+                        <div className="space-y-3">
+                          <div className="h-4 bg-muted/40 rounded w-full" />
+                          <div className="h-4 bg-muted/40 rounded w-2/3" />
+                          <div className="h-4 bg-muted/40 rounded w-4/5" />
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                          <div className="h-8 bg-muted/30 rounded w-16" />
+                          <div className="h-8 bg-muted/30 rounded w-20" />
+                          <div className="h-8 bg-muted/30 rounded w-24" />
+                        </div>
                       </div>
                     ) : (
                       <MemoizedCourseDetailsTabs
@@ -1102,13 +1236,57 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
                      <div className="sticky top-4">
                        <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
                          {progressLoading ? (
-                           <div className="p-4 animate-pulse space-y-3">
-                             <div className="h-4 bg-muted/50 rounded w-3/5" />
-                             <div className="h-4 bg-muted/40 rounded w-2/5" />
-                             <div className="h-4 bg-muted/40 rounded w-4/5" />
+                           <div className="p-4 animate-pulse space-y-4">
+                             <div className="flex items-center gap-2 mb-3">
+                               <div className="w-3 h-3 bg-primary/20 rounded-full" />
+                               <div className="h-4 bg-muted/50 rounded w-1/2" />
+                             </div>
+                             <div className="space-y-2">
+                               <div className="h-3 bg-muted/40 rounded w-full" />
+                               <div className="h-3 bg-muted/40 rounded w-3/4" />
+                               <div className="h-3 bg-muted/40 rounded w-2/3" />
+                               <div className="h-3 bg-muted/40 rounded w-4/5" />
+                               <div className="h-3 bg-muted/40 rounded w-1/2" />
+                             </div>
                            </div>
                          ) : (
-                           <MemoizedVideoNavigationSidebar {...sidebarProps} />
+                           <div className="space-y-4">
+                             <MemoizedVideoNavigationSidebar {...sidebarProps} />
+                             
+                             {/* Progress Tracker */}
+                             <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark p-4">
+                               <ProgressTracker
+                                 courseId={course.id}
+                                 currentChapterId={currentChapter?.id ? String(currentChapter.id) : undefined}
+                                 totalChapters={videoPlaylist.length}
+                                 completedChapters={completedChapters.map(id => String(id))}
+                                 onProgressUpdate={(progress) => {
+                                   // Update any global progress state if needed
+                                   console.log('Progress updated:', progress)
+                                 }}
+                                 onChapterComplete={(chapterId) => {
+                                   // Handle chapter completion
+                                   console.log('Chapter completed:', chapterId)
+                                 }}
+                                 onCourseComplete={() => {
+                                   // Handle course completion
+                                   console.log('Course completed!')
+                                 }}
+                               />
+                             </div>
+                             
+                             {/* Engagement Prompts */}
+                             <EngagementPrompts
+                               courseId={String(course.id)}
+                               currentChapterId={currentChapter?.id ? String(currentChapter.id) : undefined}
+                               completedChapters={completedChapters.map(id => String(id))}
+                               totalChapters={videoPlaylist.length}
+                               onDismiss={(promptId) => {
+                                 // Handle prompt dismissal
+                                 console.log('Prompt dismissed:', promptId)
+                               }}
+                             />
+                           </div>
                          )}
                        </div>
                      </div>
@@ -1148,8 +1326,38 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
                         </Button>
                       </div>
                     </div>
-                    <div className="p-4">
+                    <div className="p-4 space-y-4">
                       <MemoizedVideoNavigationSidebar {...sidebarProps} />
+                      
+                      {/* Progress Tracker for Mobile */}
+                      <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark p-4">
+                        <ProgressTracker
+                          courseId={course.id}
+                          currentChapterId={currentChapter?.id ? String(currentChapter.id) : undefined}
+                          totalChapters={videoPlaylist.length}
+                          completedChapters={completedChapters.map(id => String(id))}
+                          onProgressUpdate={(progress) => {
+                            console.log('Progress updated:', progress)
+                          }}
+                          onChapterComplete={(chapterId) => {
+                            console.log('Chapter completed:', chapterId)
+                          }}
+                          onCourseComplete={() => {
+                            console.log('Course completed!')
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Engagement Prompts for Mobile */}
+                      <EngagementPrompts
+                        courseId={String(course.id)}
+                        currentChapterId={currentChapter?.id ? String(currentChapter.id) : undefined}
+                        completedChapters={completedChapters.map(id => String(id))}
+                        totalChapters={videoPlaylist.length}
+                        onDismiss={(promptId) => {
+                          console.log('Prompt dismissed:', promptId)
+                        }}
+                      />
                     </div>
                   </motion.div>
                 </motion.div>
@@ -1197,15 +1405,23 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
 
       {/* Floating subscribe CTA for guests/free users */}
       {!userSubscription && (
-        <div className="fixed bottom-6 right-6 z-40">
+        <motion.div 
+          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ delay: 1, duration: 0.5 }}
+          className="fixed bottom-6 right-6 z-40"
+        >
           <Button
             size="lg"
             onClick={() => (window.location.href = "/dashboard/subscription")}
-            className="shadow-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:opacity-90 transition-transform hover:scale-[1.02] rounded-full"
+            className="shadow-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary/70 transition-all duration-300 hover:scale-[1.05] rounded-full px-6 py-3 font-semibold text-base"
           >
-            Subscribe to Unlock
+            <div className="flex items-center gap-2">
+              <Award className="h-5 w-5" />
+              <span>Unlock All Content</span>
+            </div>
           </Button>
-        </div>
+        </motion.div>
       )}
 
       {/* Enhanced Certificate modal */}
@@ -1472,37 +1688,6 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
         </>
       )}
     </div>
-  )
-
-  // Define resetPlayerState function to fix the DialogTrigger error
-  const resetPlayerState = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      // Clear local storage
-      localStorage.removeItem('video-progress-state')
-      
-      // Reset Zustand state
-      const videoStore = useVideoState.getState()
-      if (videoStore && videoStore.resetState) {
-        videoStore.resetState()
-      }
-      
-      toast({
-        title: "Player State Reset",
-        description: "Video player state has been reset. The page will reload.",
-      })
-      
-      // Reload the page after a short delay
-      setTimeout(() => {
-        window.location.reload()
-      }, 1000)
-    }
-  }, [toast]) // Add toast to the dependency array
-
-  // Return the correct content based on auth state but without early return
-  return (
-    <>
-      {showAuthPrompt ? authPromptContent : regularContent}
-    </>
   )
 }
 

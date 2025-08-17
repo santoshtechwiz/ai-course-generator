@@ -348,4 +348,39 @@
       font-size: 0.8rem;
     }
   }
+
+  /* Theater Mode Styles */
+  .theater-mode-active {
+    @apply bg-black;
+  }
+
+  .theater-mode-active .video-player-container {
+    @apply max-w-4xl mx-auto;
+  }
+
+  .theater-mode-active .video-player-container .video-player {
+    @apply rounded-none;
+  }
+
+  .theater-mode-active .sidebar,
+  .theater-mode-active .course-navigation {
+    @apply hidden;
+  }
+
+  .theater-mode-active .main-content {
+    @apply max-w-none px-0;
+  }
+
+  /* Picture-in-Picture Styles */
+  .pip-active {
+    @apply fixed bottom-4 right-4 z-50;
+  }
+
+  .pip-active .video-player {
+    @apply w-80 h-45 rounded-lg shadow-2xl border-2 border-white/20;
+  }
+
+  .pip-active .video-controls {
+    @apply opacity-0 hover:opacity-100 transition-opacity duration-300;
+  }
 }

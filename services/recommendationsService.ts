@@ -23,6 +23,8 @@ export interface QuizSuggestion {
   description: string
   estimatedTime: number
   difficulty: "easy" | "medium" | "hard"
+  type?: "chapter-quiz" | "user-quiz" | "generic"
+  attemptCount?: number
 }
 
 /**
@@ -99,7 +101,9 @@ export async function fetchQuizSuggestions(
     const response = await fetch(`/api/recommendations/quiz-suggestions?courseId=${courseId}&chapterId=${chapterId}`)
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      console.warn('Failed to fetch quiz suggestions:', response.statusText)
+      // Return generic suggestions as fallback
+      return generateGenericSuggestions(chapterTitle)
     }
     
     const result = await response.json()
@@ -108,11 +112,41 @@ export async function fetchQuizSuggestions(
       return result.data
     }
     
-    throw new Error("Invalid response format")
+    console.warn('Invalid quiz suggestions response:', result)
+    return generateGenericSuggestions(chapterTitle)
   } catch (error) {
     console.error("Error fetching quiz suggestions:", error)
-    return []
+    return generateGenericSuggestions(chapterTitle)
   }
+}
+
+function generateGenericSuggestions(chapterTitle: string): QuizSuggestion[] {
+  return [
+    {
+      id: `generic-${Date.now()}-1`,
+      title: `${chapterTitle} - Quick Review`,
+      description: "Test your understanding of the key concepts",
+      estimatedTime: 5,
+      difficulty: "easy",
+      type: "generic",
+    },
+    {
+      id: `generic-${Date.now()}-2`,
+      title: `${chapterTitle} - Deep Dive`,
+      description: "Challenge yourself with advanced questions",
+      estimatedTime: 10,
+      difficulty: "medium",
+      type: "generic",
+    },
+    {
+      id: `generic-${Date.now()}-3`,
+      title: `${chapterTitle} - Practice Test`,
+      description: "Comprehensive assessment of your knowledge",
+      estimatedTime: 15,
+      difficulty: "hard",
+      type: "generic",
+    },
+  ]
 }
 
 /**

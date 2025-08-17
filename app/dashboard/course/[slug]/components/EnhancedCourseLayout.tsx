@@ -28,8 +28,6 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
 
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-
-
   // Handle fullscreen changes
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -114,7 +112,6 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
       {/* Main Content Area */}
       <div className={cn(
         "flex-1 transition-all duration-300",
-        theatreMode && "bg-black",
         isFullscreen && "bg-black"
       )}>
         <div className={cn(

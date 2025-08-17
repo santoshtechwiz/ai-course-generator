@@ -60,6 +60,8 @@ interface PlayerControlsProps {
   onPictureInPicture?: () => void
   isPiPSupported?: boolean
   isPiPActive?: boolean
+  onToggleTheaterMode?: () => void
+  isTheaterMode?: boolean
 
 }
 
@@ -107,6 +109,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [hoveredTime, setHoveredTime] = useState<number | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+  const [useFallbackSlider, setUseFallbackSlider] = useState(false)
   const progressBarRef = useRef<HTMLDivElement>(null)
   const volumeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -175,13 +179,34 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
     if (volumeTimeoutRef.current) {
       clearTimeout(volumeTimeoutRef.current)
     }
-    setShowVolumeSlider(true)
+    // Add a small delay to ensure DOM is ready
+    setTimeout(() => {
+      setShowVolumeSlider(true)
+    }, 50)
   }, [])
 
   const handleVolumeMouseLeave = useCallback(() => {
     volumeTimeoutRef.current = setTimeout(() => {
       setShowVolumeSlider(false)
     }, 1000)
+  }, [])
+
+  // Set mounted state
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Handle slider errors globally
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      if (event.error && event.error.message && event.error.message.includes('getBoundingClientRect')) {
+        console.warn('Slider error detected, switching to fallback')
+        setUseFallbackSlider(true)
+      }
+    }
+
+    window.addEventListener('error', handleError)
+    return () => window.removeEventListener('error', handleError)
   }, [])
 
   // Cleanup volume timeout
@@ -363,16 +388,51 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               <VolumeIcon className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
 
-            {showVolumeSlider && (
+            {showVolumeSlider && isMounted && typeof window !== 'undefined' && (
               <div className="absolute left-full ml-2 bg-black/90 p-2 rounded-lg z-10 w-20 sm:w-24">
-                <Slider
-                  value={[muted ? 0 : volume * 100]}
-                  max={100}
-                  step={1}
-                  onValueChange={([value]) => onVolumeChange(value / 100)}
-                  className="touch-manipulation"
-                  aria-label="Volume control"
-                />
+                <div 
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                >
+                  {useFallbackSlider ? (
+                    <div 
+                      className="w-full h-2 bg-white/20 rounded-full cursor-pointer relative"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        const rect = e.currentTarget.getBoundingClientRect()
+                        const x = e.clientX - rect.left
+                        const width = rect.width
+                        const newVolume = Math.max(0, Math.min(1, x / width))
+                        onVolumeChange(newVolume)
+                      }}
+                    >
+                      <div 
+                        className="h-full bg-white rounded-full transition-all duration-150"
+                        style={{ width: `${muted ? 0 : volume * 100}%` }}
+                      />
+                    </div>
+                  ) : (
+                                         <Slider
+                       value={[muted ? 0 : volume * 100]}
+                       max={100}
+                       step={1}
+                       onValueChange={([value]) => {
+                         try {
+                           onVolumeChange(value / 100)
+                         } catch (error) {
+                           console.warn('Volume change error:', error)
+                           setUseFallbackSlider(true)
+                         }
+                       }}
+                       className="touch-manipulation"
+                       aria-label="Volume control"
+                       onPointerDown={(e) => {
+                         e.stopPropagation()
+                       }}
+                     />
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -441,6 +501,33 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               aria-label={isPiPSupported ? (isPiPActive ? "Exit Picture-in-Picture mode" : "Enter Picture-in-Picture mode") : (isPiPActive ? "Close Mini Player" : "Open Mini Player")}
             >
               <PictureInPicture2 className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
+          )}
+
+          {/* Theater Mode Toggle */}
+          {onToggleTheaterMode && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-colors", isTheaterMode && "bg-white/20 text-blue-400")}
+              onClick={onToggleTheaterMode}
+              title={isTheaterMode ? "Exit Theater Mode (T)" : "Enter Theater Mode (T)"}
+              aria-label={isTheaterMode ? "Exit Theater Mode" : "Enter Theater Mode"}
+            >
+              <svg
+                className="h-4 w-4 sm:h-5 sm:w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                />
+              </svg>
             </Button>
           )}
 

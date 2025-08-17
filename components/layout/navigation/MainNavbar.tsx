@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 import { useAuth, useSubscription } from "@/modules/auth"
 import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
+import CourseNotificationsMenu from "@/components/Navbar/CourseNotificationsMenu"
 import { cn } from "@/lib/utils"
 import { AsyncNavLink } from "@/components/loaders/AsyncNavLink"
 import { useGlobalLoader } from '@/store/loaders/global-loader'
@@ -388,6 +389,7 @@ export default function MainNavbar() {
             <ThemeToggle />
             {isAuthenticated ? (
               <>
+                <CourseNotificationsMenu />
                 <NotificationsMenu />
                 <UserMenu>{UserAvatar}</UserMenu>
               </>
