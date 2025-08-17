@@ -675,13 +675,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
     [dispatch, canPlayVideo, course.id, videoStateStore, toast]
   )
 
-  const handleNextVideo = useCallback(() => {
-    /* Next navigation removed per request */
-  }, [])
 
-  const handlePrevVideo = useCallback(() => {
-    /* Prev navigation removed per request */
-  }, [])
 
   // Cancel autoplay
   const handleCancelAutoplay = useCallback(() => {
@@ -1697,37 +1691,6 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
          
         </>
       )}
-    </div>
-  )
-
-  // Define resetPlayerState function to fix the DialogTrigger error
-  const resetPlayerState = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      // Clear local storage
-      localStorage.removeItem('video-progress-state')
-      
-      // Reset Zustand state
-      const videoStore = useVideoState.getState()
-      if (videoStore && videoStore.resetState) {
-        videoStore.resetState()
-      }
-      
-      toast({
-        title: "Player State Reset",
-        description: "Video player state has been reset. The page will reload.",
-      })
-      
-      // Reload the page after a short delay
-      setTimeout(() => {
-        window.location.reload()
-      }, 1000)
-    }
-  }, [toast])
-
-  // Return the correct content based on auth state but without early return
-  return (
-    <div className="min-h-screen bg-background" role="main" aria-label={`Course: ${course.title}`}>
-      {showAuthPrompt ? authPromptContent : regularContent}
     </div>
   )
 }

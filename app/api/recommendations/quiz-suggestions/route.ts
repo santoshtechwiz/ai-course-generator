@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { QuizSuggestion, QuizSuggestionsResponse } from "@/types/quiz-suggestions"
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,17 +12,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Course ID and Chapter ID are required" }, { status: 400 })
     }
 
-    // Get the current chapter
+    // Get the current chapter with its unit and course information
     const currentChapter = await prisma.chapter.findUnique({
       where: { id: parseInt(chapterId) },
       select: {
         id: true,
         title: true,
-        course: {
+        unit: {
           select: {
             id: true,
-            title: true,
-            category: true,
+            name: true,
+            course: {
+              select: {
+                id: true,
+                title: true,
+                category: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        courseQuizzes: {
+          select: {
+            id: true,
+            question: true,
+            answer: true,
+            options: true,
           },
         },
       },
@@ -31,58 +51,97 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Chapter not found" }, { status: 404 })
     }
 
-    // Find quizzes related to this course or chapter
-    const quizzes = await prisma.quiz.findMany({
+    // Find course quizzes for this chapter
+    const chapterQuizzes = currentChapter.courseQuizzes
+
+    // Find related user quizzes in the same category
+    const relatedUserQuizzes = await prisma.userQuiz.findMany({
       where: {
-        OR: [
-          // Quizzes specifically for this course
-          { courseId: parseInt(courseId) },
-          // Quizzes for this specific chapter
-          { chapterId: parseInt(chapterId) },
-          // General quizzes in the same category
+        AND: [
+          { isPublic: true },
           {
-            course: {
-              category: currentChapter.course.category,
-            },
+            OR: [
+              // Quizzes with similar titles
+              {
+                title: {
+                  contains: currentChapter.title.split(' ')[0], // Use first word of chapter title
+                  mode: 'insensitive',
+                },
+              },
+              // Quizzes in the same category (if course has a category)
+              ...(currentChapter.unit.course.category ? [{
+                quizType: currentChapter.unit.course.category.name,
+              }] : []),
+            ],
           },
         ],
       },
       select: {
         id: true,
         title: true,
-        description: true,
+        quizType: true,
+        difficulty: true,
         questions: {
           select: {
             id: true,
           },
         },
+        _count: {
+          select: {
+            attempts: true,
+          },
+        },
       },
-      take: 5,
+      take: 3,
       orderBy: [
-        { createdAt: "desc" },
+        { _count: { attempts: 'desc' } },
+        { createdAt: 'desc' },
       ],
     })
 
-    // Transform to match the expected interface
-    const transformedQuizzes = quizzes.map((quiz) => {
+    // Transform chapter quizzes
+    const transformedChapterQuizzes = chapterQuizzes.map((quiz, index) => ({
+      id: `chapter-${quiz.id}`,
+      title: `${currentChapter.title} - Question ${index + 1}`,
+      description: quiz.question,
+      estimatedTime: 1, // 1 minute per question
+      difficulty: "medium" as const,
+      type: "chapter-quiz" as const,
+    }))
+
+    // Transform user quizzes
+    const transformedUserQuizzes = relatedUserQuizzes.map((quiz) => {
       const questionCount = quiz.questions.length
       const estimatedTime = Math.max(2, Math.ceil(questionCount * 0.5)) // Estimate 30 seconds per question, minimum 2 minutes
       
       let difficulty: "easy" | "medium" | "hard" = "medium"
-      if (questionCount <= 5) difficulty = "easy"
-      else if (questionCount >= 15) difficulty = "hard"
+      if (quiz.difficulty) {
+        difficulty = quiz.difficulty.toLowerCase() as "easy" | "medium" | "hard"
+      } else if (questionCount <= 5) {
+        difficulty = "easy"
+      } else if (questionCount >= 15) {
+        difficulty = "hard"
+      }
 
       return {
-        id: quiz.id.toString(),
-        title: quiz.title || `${currentChapter.title} - Quiz`,
-        description: quiz.description || "Test your understanding of this chapter",
+        id: `user-${quiz.id}`,
+        title: quiz.title,
+        description: `Practice quiz with ${questionCount} questions`,
         estimatedTime,
         difficulty,
+        type: "user-quiz" as const,
+        attemptCount: quiz._count.attempts,
       }
     })
 
+    // Combine and sort suggestions
+    const allSuggestions = [
+      ...transformedChapterQuizzes,
+      ...transformedUserQuizzes,
+    ]
+
     // If no specific quizzes found, create generic suggestions
-    if (transformedQuizzes.length === 0) {
+    if (allSuggestions.length === 0) {
       const genericQuizzes = [
         {
           id: `generic-${chapterId}-1`,
@@ -90,6 +149,7 @@ export async function GET(request: NextRequest) {
           description: "Test your understanding of the key concepts",
           estimatedTime: 5,
           difficulty: "easy" as const,
+          type: "generic" as const,
         },
         {
           id: `generic-${chapterId}-2`,
@@ -97,6 +157,15 @@ export async function GET(request: NextRequest) {
           description: "Challenge yourself with advanced questions",
           estimatedTime: 10,
           difficulty: "medium" as const,
+          type: "generic" as const,
+        },
+        {
+          id: `generic-${chapterId}-3`,
+          title: `${currentChapter.title} - Practice Test`,
+          description: "Comprehensive assessment of your knowledge",
+          estimatedTime: 15,
+          difficulty: "hard" as const,
+          type: "generic" as const,
         },
       ]
       
@@ -108,7 +177,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: transformedQuizzes,
+      data: allSuggestions,
     })
   } catch (error) {
     console.error("Error fetching quiz suggestions:", error)
