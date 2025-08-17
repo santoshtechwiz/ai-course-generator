@@ -279,41 +279,41 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     } catch (error) {
       console.warn('Could not load auto-play preference:', error)
     }
-    // Sync with prop when provided (Redux-driven)
-    try {
-      if (typeof autoPlay === 'boolean') {
-        setAutoPlayVideo(Boolean(autoPlay))
-      }
-    } catch {}
-    
+ 
     return () => setIsMounted(false)
   }, [autoPlay])
-
+ 
   // First-time volume init at 50% if no saved preference
+  const volumeInitRef = useRef(false)
   useEffect(() => {
+    if (volumeInitRef.current) return
     try {
-      const hasSavedVolume = localStorage.getItem('VIDEO_PLAYER_VOLUME')
-      if (!hasSavedVolume) {
+      const savedA = localStorage.getItem('VIDEO_PLAYER_VOLUME')
+      const savedB = localStorage.getItem('video-player-volume')
+      if (!savedA && !savedB) {
         handlers.onVolumeChange(0.5)
       }
     } catch {}
-  }, [handlers])
-
+    volumeInitRef.current = true
+  }, [])
+ 
   // Update refs when props change to ensure latest values
   useEffect(() => {
     chapterTitleRef.current = chapterTitle
     videoIdRef.current = videoId
   }, [chapterTitle, videoId])
-
+ 
   // Play immediately when instructed and allowed, on video change
+  const lastForcedVideoRef = useRef<string | null>(null)
   useEffect(() => {
     if (!videoId || !canPlayVideo) return
-    if (forcePlay) {
+    if (forcePlay && lastForcedVideoRef.current !== videoId) {
       try {
         handlers.onPlay()
       } catch {}
+      lastForcedVideoRef.current = videoId
     }
-  }, [videoId, forcePlay, canPlayVideo, handlers])
+  }, [videoId, forcePlay, canPlayVideo])
 
   // Check PiP support on mount with proper error handling
   useEffect(() => {
