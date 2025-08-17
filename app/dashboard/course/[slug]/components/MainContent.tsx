@@ -132,16 +132,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
   const legacyCourseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
   const courseProgress = useAppSelector((state) => state.courseProgress.byCourseId[String(course.id)] || null)
   
-  // Debug logging
-  useEffect(() => {
-    console.log('[MainContent] State debug:', {
-      currentVideoId,
-      videoPlaylistLength: videoPlaylist.length,
-      courseId: course.id,
-      courseProgress: courseProgress ? 'exists' : 'null',
-      legacyCourseProgress: legacyCourseProgress ? 'exists' : 'null'
-    })
-  }, [currentVideoId, videoPlaylist.length, course.id, courseProgress, legacyCourseProgress])
+
   const twoCol = useMemo(() => !isFullscreen, [isFullscreen])
 
   // Get bookmarks for the current video - this is more reliable than trying to get them from Redux
@@ -308,14 +299,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
       return
     }
 
-    console.log('[MainContent] Video initialization debug:', {
-      videoPlaylistLength: videoPlaylist.length,
-      initialChapterId,
-      currentVideoId,
-      progressCurrentChapterId: progress?.currentChapterId,
-      courseProgressLastLectureId: courseProgress?.lastLectureId,
-      firstVideoId: videoPlaylist[0]?.videoId
-    })
+
 
     // First try to get the video from URL param (initialChapterId)
     let targetVideo = initialChapterId
