@@ -877,8 +877,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     }
     
     if (twoCol) {
-      // Udemy-style layout: sidebar left, video/content right
-      return "md:grid-cols-[320px_1fr] xl:grid-cols-[360px_1fr]"
+      // Udemy-style layout: video/content left, playlist right
+      return "md:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px]"
     }
     
     return "grid-cols-1"
@@ -1006,34 +1006,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
             {/* Video player section */}
             <div className={gridContainerClasses}> 
-              {/* Left column: Sidebar (desktop) */}
-              <AnimatePresence mode="wait">
-                {!isPiPActive && (
-                  <motion.div 
-                    key="sidebar-left"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="hidden md:block"
-                  >
-                    <div className="sticky top-4">
-                      <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
-                        {progressLoading ? (
-                          <div className="p-4 animate-pulse space-y-3">
-                            <div className="h-4 bg-muted/50 rounded w-3/5" />
-                            <div className="h-4 bg-muted/40 rounded w-2/5" />
-                            <div className="h-4 bg-muted/40 rounded w-4/5" />
-                          </div>
-                        ) : (
-                          <MemoizedVideoNavigationSidebar {...sidebarProps} />
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
               {/* Right column: Video and tabs (main content) */}
               <motion.div 
                 key="video-content"
@@ -1044,132 +1016,133 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                  
                  {/* Video player */}
                  <div className="w-full">
-                   {/* Auto-play mode indicator */}
-                   {autoplayMode && (
-                     <motion.div
-                       initial={{ opacity: 0, y: -10 }}
-                       animate={{ opacity: 1, y: 0 }}
-                       className="mb-3 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg flex items-center justify-between"
-                     >
-                       <div className="flex items-center gap-2">
-                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                         <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                           Auto-play Mode Active
-                         </span>
-                         <span className="text-xs text-green-600 dark:text-green-400">
-                           Chapters will automatically advance
-                         </span>
-                       </div>
-                       <Button
-                         variant="ghost"
-                         size="sm"
-                         onClick={handleAutoplayToggle}
-                         className="text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/50"
-                       >
-                         Disable
-                       </Button>
-                     </motion.div>
-                   )}
-                  
-                   <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden ring-1 ring-primary/20 shadow-sm ai-glass dark:ai-glass-dark">
-                     {(!currentVideoId || isVideoLoading || progressLoading) ? (
-                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6">
-                         <div className="h-4 w-32 bg-white/10 rounded animate-pulse" />
-                         <div className="h-3 w-24 bg-white/10 rounded animate-pulse" />
-                       </div>
-                     ) : null}
-                     {currentVideoId ? (
-                       <>
-                         <MemoizedVideoPlayer {...videoPlayerProps} />
-                         {/* CourseAI Logo Overlay */}
-                         <MemoizedAnimatedCourseAILogo
-                           show={showLogoOverlay}
-                           videoEnding={videoEnding}
-                           onAnimationComplete={() => setShowLogoOverlay(false)}
-                         />
-                       </>
-                     ) : (
-                       <div className="flex flex-col items-center justify-center h-full">
-                         <div className="text-center text-white p-4">
-                           <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                           <h3 className="text-xl font-medium mb-2">Select a Chapter</h3>
-                           <p className="text-white/70 mb-4">Choose a chapter from the playlist to start learning</p>
-                         </div>
-                       </div>
-                     )}
-                   </div>
-                 </div>
+                   {/* Autoplay banner removed in favor of compact toggle inside player controls */}
+                    
+                    <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden ring-1 ring-primary/20 shadow-sm ai-glass dark:ai-glass-dark">
+                      {(!currentVideoId || isVideoLoading || progressLoading) ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6">
+                          <div className="h-4 w-32 bg-white/10 rounded animate-pulse" />
+                          <div className="h-3 w-24 bg-white/10 rounded animate-pulse" />
+                        </div>
+                      ) : null}
+                      {currentVideoId ? (
+                        <>
+                          <MemoizedVideoPlayer {...videoPlayerProps} />
+                          {/* CourseAI Logo Overlay */}
+                          <MemoizedAnimatedCourseAILogo
+                            show={showLogoOverlay}
+                            videoEnding={videoEnding}
+                            onAnimationComplete={() => setShowLogoOverlay(false)}
+                          />
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full">
+                          <div className="text-center text-white p-4">
+                            <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                            <h3 className="text-xl font-medium mb-2">Select a Chapter</h3>
+                            <p className="text-white/70 mb-4">Choose a chapter from the playlist to start learning</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+  
+                  {/* Chapter Progress Indicator */}
+                  {currentChapter && !isLastVideo && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-4 p-4 bg-muted/30 rounded-xl border border-border/50"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-primary rounded-full" />
+                          <span className="text-sm font-medium text-foreground">
+                            Chapter {currentIndex + 1} of {videoPlaylist.length}
+                          </span>
+                        </div>
+                        {nextChapter && (
+                          <div className="text-xs text-muted-foreground">
+                            Next: {nextChapter.chapter.title}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Progress bar */}
+                      <div className="w-full bg-muted rounded-full h-2 mb-3">
+                        <motion.div
+                          initial={{ width: "0%" }}
+                          animate={{ width: "100%" }}
+                          transition={{ duration: 1, ease: "easeInOut" }}
+                          className="bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full"
+                        />
+                      </div>
+                      
+                      {/* Chapter info */}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{currentChapter.title}</span>
+                        {nextChapter && (
+                          <div className="flex items-center gap-2">
+                            <span>Next chapter in:</span>
+                            <span className="font-medium text-primary">
+                              {nextChapter.chapter.duration ? formatDuration(nextChapter.chapter.duration) : '~5 min'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+  
+                  {/* Tabs below video: Summary, Quiz, Bookmarks, etc */}
+                  <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark mt-4">
+                    {progressLoading ? (
+                      <div className="p-4 animate-pulse space-y-3">
+                        <div className="h-8 bg-muted/50 rounded" />
+                        <div className="h-5 bg-muted/40 rounded w-1/2" />
+                        <div className="h-5 bg-muted/40 rounded w-2/3" />
+                      </div>
+                    ) : (
+                      <MemoizedCourseDetailsTabs
+                        course={course}
+                        currentChapter={currentChapter}
+                        accessLevels={accessLevels}
+                        onSeekToBookmark={handleSeekToBookmark}
+                      />
+                    )}
+                  </div>
  
-                 {/* Chapter Progress Indicator */}
-                 {currentChapter && !isLastVideo && (
-                   <motion.div
-                     initial={{ opacity: 0, y: 10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     className="mt-4 p-4 bg-muted/30 rounded-xl border border-border/50"
+                  {/* Reviews Section */}
+                  <ReviewsSection slug={course.slug} />
+  
+                </motion.div>
+ 
+               {/* Right column: Playlist (desktop) */}
+               <AnimatePresence mode="wait">
+                 {!isPiPActive && (
+                   <motion.div 
+                     key="sidebar-right"
+                     initial={{ opacity: 0, x: 20 }}
+                     animate={{ opacity: 1, x: 0 }}
+                     exit={{ opacity: 0, x: 20 }}
+                     transition={{ duration: 0.3, ease: "easeInOut" }}
+                     className="hidden md:block"
                    >
-                     <div className="flex items-center justify-between mb-3">
-                       <div className="flex items-center gap-2">
-                         <div className="w-2 h-2 bg-primary rounded-full" />
-                         <span className="text-sm font-medium text-foreground">
-                           Chapter {currentIndex + 1} of {videoPlaylist.length}
-                         </span>
+                     <div className="sticky top-4">
+                       <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
+                         {progressLoading ? (
+                           <div className="p-4 animate-pulse space-y-3">
+                             <div className="h-4 bg-muted/50 rounded w-3/5" />
+                             <div className="h-4 bg-muted/40 rounded w-2/5" />
+                             <div className="h-4 bg-muted/40 rounded w-4/5" />
+                           </div>
+                         ) : (
+                           <MemoizedVideoNavigationSidebar {...sidebarProps} />
+                         )}
                        </div>
-                       {nextChapter && (
-                         <div className="text-xs text-muted-foreground">
-                           Next: {nextChapter.chapter.title}
-                         </div>
-                       )}
-                     </div>
-                     
-                     {/* Progress bar */}
-                     <div className="w-full bg-muted rounded-full h-2 mb-3">
-                       <motion.div
-                         initial={{ width: "0%" }}
-                         animate={{ width: "100%" }}
-                         transition={{ duration: 1, ease: "easeInOut" }}
-                         className="bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full"
-                       />
-                     </div>
-                     
-                     {/* Chapter info */}
-                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                       <span>{currentChapter.title}</span>
-                       {nextChapter && (
-                         <div className="flex items-center gap-2">
-                           <span>Next chapter in:</span>
-                           <span className="font-medium text-primary">
-                             {nextChapter.chapter.duration ? formatDuration(nextChapter.chapter.duration) : '~5 min'}
-                           </span>
-                         </div>
-                       )}
                      </div>
                    </motion.div>
                  )}
- 
-                 {/* Tabs below video: Summary, Quiz, Bookmarks, etc */}
-                 <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark mt-4">
-                   {progressLoading ? (
-                     <div className="p-4 animate-pulse space-y-3">
-                       <div className="h-8 bg-muted/50 rounded" />
-                       <div className="h-5 bg-muted/40 rounded w-1/2" />
-                       <div className="h-5 bg-muted/40 rounded w-2/3" />
-                     </div>
-                   ) : (
-                     <MemoizedCourseDetailsTabs
-                       course={course}
-                       currentChapter={currentChapter}
-                       accessLevels={accessLevels}
-                       onSeekToBookmark={handleSeekToBookmark}
-                     />
-                   )}
-                 </div>
-
-                 {/* Reviews Section */}
-                 <ReviewsSection slug={course.slug} />
- 
-               </motion.div>
- 
-               {/* (Removed right sidebar; now mounted on left) */}
+               </AnimatePresence>
              </div>
 
             {/* Mobile playlist overlay */}

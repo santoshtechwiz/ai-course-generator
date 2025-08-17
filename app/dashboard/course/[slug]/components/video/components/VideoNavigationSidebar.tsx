@@ -113,7 +113,7 @@ const ChapterItem = React.memo(
         return <Equalizer />
       }
       if (isActive && !isPlaying) {
-        return <Pause className="h-4 w-4 text-primary" fill="currentColor" />
+        return <Play className="h-4 w-4 text-primary" />
       }
       if (isCompleted) {
         return <CheckCircle className="h-4 w-4 text-green-500" fill="currentColor" />
@@ -182,8 +182,8 @@ const ChapterItem = React.memo(
           <button
             className={cn(
               "flex items-start w-full px-4 py-3 text-sm transition-all duration-200 text-left group",
-              "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-              isActive && "bg-accent font-medium",
+              "hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+              isActive && "bg-muted/80 font-medium",
               isLocked && "opacity-60 cursor-not-allowed",
               "relative overflow-hidden",
             )}
@@ -211,10 +211,10 @@ const ChapterItem = React.memo(
                   isActive
                     ? "bg-primary text-primary-foreground"
                     : isCompleted
-                      ? "bg-green-500 text-white"
+                      ? "bg-emerald-600 text-white"
                       : isNextVideo
                         ? "bg-primary/10 text-primary"
-                        : "bg-muted text-muted-foreground",
+                        : "bg-muted text-foreground/80",
                 )}
               >
                 {isActive || isCompleted ? getStatusIcon() : chapterIndex + 1}
