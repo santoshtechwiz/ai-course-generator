@@ -1076,8 +1076,8 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
                       role="region"
                       aria-label="Video player"
                     >
-                      {(!currentVideoId || isVideoLoading || progressLoading) ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 bg-gradient-to-br from-black/80 to-black/60">
+                       {(!currentVideoId || isVideoLoading) ? (
+                        <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center gap-4 p-6 bg-gradient-to-br from-black/80 to-black/60">
                           <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
                           <div className="text-center space-y-2">
                             <div className="h-4 w-32 bg-white/20 rounded animate-pulse mx-auto" />

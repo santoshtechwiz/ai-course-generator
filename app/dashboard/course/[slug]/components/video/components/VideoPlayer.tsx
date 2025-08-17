@@ -317,6 +317,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowAuthPrompt(authenticationState.showAuthPrompt)
   }, [authenticationState])
 
+  // Attempt muted autoplay when ready or when the video changes (if preference is enabled)
+  useEffect(() => {
+    const shouldAuto = (autoPlay || autoPlayVideo) && canPlayVideo
+    if (!playerReady || !shouldAuto) return
+
+    // Only attempt if user hasn't interacted yet
+    if (!state.userInteracted) {
+      try {
+        handlers.onPlay()
+      } catch {}
+    }
+  }, [videoId, playerReady, autoPlay, autoPlayVideo, canPlayVideo, handlers, state.userInteracted, state.muted])
+
   // Safe video element getter with proper error handling (defined early for use in handlers and JSX)
   const getVideoElement = useCallback((): HTMLVideoElement | null => {
     if (!isMounted || !containerRef.current) return null
@@ -482,7 +495,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }
     }
     handlers.onReady()
-  }, [handlers, onVideoLoad, courseName, videoId, onPlayerReady, stopLoading, videoDuration, state.duration, initialSeekSeconds])
+
+    // Attempt muted autoplay if the user preference is enabled
+    try {
+      const shouldAuto = (autoPlay || autoPlayVideo) && canPlayVideo
+      if (shouldAuto && !state.userInteracted) {
+        handlers.onPlay()
+      }
+    } catch {}
+  }, [handlers, onVideoLoad, courseName, videoId, onPlayerReady, stopLoading, videoDuration, state.duration, initialSeekSeconds, autoPlay, autoPlayVideo, canPlayVideo, state.userInteracted, state.muted])
 
   // Enhanced play handler with better UX
   const handlePlayClick = useCallback(() => {
@@ -935,7 +956,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           height="100%"
           playing={state.playing && canPlayVideo && !state.isMiniPlayer}
           volume={state.volume}
-          muted={state.muted}
+          muted={state.muted || ((autoPlay || autoPlayVideo) && canPlayVideo && !state.userInteracted)}
           playbackRate={state.playbackRate}
           onProgress={handleProgress}
           onPlay={handlers.onPlay}
@@ -952,7 +973,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                      config={{
              youtube: {
                playerVars: {
-                 autoplay: 0,
+                 autoplay: ((autoPlay || autoPlayVideo) && canPlayVideo) ? 1 : 0,
                  modestbranding: 1,
                  rel: 0,
                  showinfo: 0,
