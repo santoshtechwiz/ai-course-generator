@@ -99,6 +99,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   rememberPlaybackSettings = true,
   onBookmark,
   autoPlay = false,
+  onToggleAutoPlay,
   onVideoLoad,
   onCertificateClick,
   onPlayerReady,
@@ -278,9 +279,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     } catch (error) {
       console.warn('Could not load auto-play preference:', error)
     }
+    // Sync with prop when provided (Redux-driven)
+    try {
+      if (typeof autoPlay === 'boolean') {
+        setAutoPlayVideo(Boolean(autoPlay))
+      }
+    } catch {}
     
     return () => setIsMounted(false)
-  }, [])
+  }, [autoPlay])
 
   // Update refs when props change to ensure latest values
   useEffect(() => {
@@ -832,6 +839,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     } catch (error) {
       console.warn('Could not save auto-play preference:', error)
     }
+    // Notify parent (Redux) if provided
+    try {
+      onToggleAutoPlay?.()
+    } catch {}
   }, [autoPlayVideo])
 
   const handleReplay = useCallback(() => {
