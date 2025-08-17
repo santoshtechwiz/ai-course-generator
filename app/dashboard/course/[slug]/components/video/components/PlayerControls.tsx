@@ -504,32 +504,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             </Button>
           )}
 
-          {/* Theater Mode Toggle */}
-          {onToggleTheaterMode && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-colors", isTheaterMode && "bg-white/20 text-blue-400")}
-              onClick={onToggleTheaterMode}
-              title={isTheaterMode ? "Exit Theater Mode (T)" : "Enter Theater Mode (T)"}
-              aria-label={isTheaterMode ? "Exit Theater Mode" : "Enter Theater Mode"}
-            >
-              <svg
-                className="h-4 w-4 sm:h-5 sm:w-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                />
-              </svg>
-            </Button>
-          )}
+         
 
           {/* Enhanced Fullscreen */}
           <Button
