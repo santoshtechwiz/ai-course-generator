@@ -41,6 +41,8 @@ import RecommendedSection from "@/components/shared/RecommendedSection"
 import type { BookmarkData } from "./video/types"
 import { fetchRelatedCourses, fetchPersonalizedRecommendations, fetchQuizSuggestions } from "@/services/recommendationsService"
 import type { RelatedCourse, PersonalizedRecommendation, QuizSuggestion } from "@/services/recommendationsService"
+import ProgressTracker from "./ProgressTracker"
+import EngagementPrompts from "./EngagementPrompts"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -1203,7 +1205,43 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
                              </div>
                            </div>
                          ) : (
-                           <MemoizedVideoNavigationSidebar {...sidebarProps} />
+                           <div className="space-y-4">
+                             <MemoizedVideoNavigationSidebar {...sidebarProps} />
+                             
+                             {/* Progress Tracker */}
+                             <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark p-4">
+                               <ProgressTracker
+                                 courseId={course.id}
+                                 currentChapterId={currentChapter?.id ? String(currentChapter.id) : undefined}
+                                 totalChapters={videoPlaylist.length}
+                                 completedChapters={completedChapters.map(id => String(id))}
+                                 onProgressUpdate={(progress) => {
+                                   // Update any global progress state if needed
+                                   console.log('Progress updated:', progress)
+                                 }}
+                                 onChapterComplete={(chapterId) => {
+                                   // Handle chapter completion
+                                   console.log('Chapter completed:', chapterId)
+                                 }}
+                                 onCourseComplete={() => {
+                                   // Handle course completion
+                                   console.log('Course completed!')
+                                 }}
+                               />
+                             </div>
+                             
+                             {/* Engagement Prompts */}
+                             <EngagementPrompts
+                               courseId={String(course.id)}
+                               currentChapterId={currentChapter?.id ? String(currentChapter.id) : undefined}
+                               completedChapters={completedChapters.map(id => String(id))}
+                               totalChapters={videoPlaylist.length}
+                               onDismiss={(promptId) => {
+                                 // Handle prompt dismissal
+                                 console.log('Prompt dismissed:', promptId)
+                               }}
+                             />
+                           </div>
                          )}
                        </div>
                      </div>
@@ -1243,8 +1281,38 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
                         </Button>
                       </div>
                     </div>
-                    <div className="p-4">
+                    <div className="p-4 space-y-4">
                       <MemoizedVideoNavigationSidebar {...sidebarProps} />
+                      
+                      {/* Progress Tracker for Mobile */}
+                      <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark p-4">
+                        <ProgressTracker
+                          courseId={course.id}
+                          currentChapterId={currentChapter?.id ? String(currentChapter.id) : undefined}
+                          totalChapters={videoPlaylist.length}
+                          completedChapters={completedChapters.map(id => String(id))}
+                          onProgressUpdate={(progress) => {
+                            console.log('Progress updated:', progress)
+                          }}
+                          onChapterComplete={(chapterId) => {
+                            console.log('Chapter completed:', chapterId)
+                          }}
+                          onCourseComplete={() => {
+                            console.log('Course completed!')
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Engagement Prompts for Mobile */}
+                      <EngagementPrompts
+                        courseId={String(course.id)}
+                        currentChapterId={currentChapter?.id ? String(currentChapter.id) : undefined}
+                        completedChapters={completedChapters.map(id => String(id))}
+                        totalChapters={videoPlaylist.length}
+                        onDismiss={(promptId) => {
+                          console.log('Prompt dismissed:', promptId)
+                        }}
+                      />
                     </div>
                   </motion.div>
                 </motion.div>
