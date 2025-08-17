@@ -278,105 +278,11 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     console.error("Video player error:", error)
   }, [])
 
-  // Theater mode handlers
-  const handleTheaterModeToggle = useCallback(() => {
-    setState((prev) => ({ ...prev, theaterMode: !prev.theaterMode }))
 
-    if (typeof document !== "undefined") {
-      if (!state.theaterMode) {
-        document.body.classList.add("theater-mode-active")
-      } else {
-        document.body.classList.remove("theater-mode-active")
-      }
-    }
-  }, [state.theaterMode])
 
-  // Picture-in-Picture handlers
-  const handlePictureInPictureToggle = useCallback(async () => {
-    if (!playerRef.current) return
 
-    try {
-      // Try to reach the actual HTMLVideoElement from the ReactPlayer iframe
-      const container = containerRef.current
-      const videoEl = container?.querySelector('iframe')?.contentDocument?.querySelector('video') as any
 
-      if (videoEl && document && (document as any).pictureInPictureEnabled && typeof videoEl.requestPictureInPicture === 'function') {
-        if ((document as any).pictureInPictureElement) {
-          await (document as any).exitPictureInPicture()
-          setState(prev => ({ ...prev, isPictureInPicture: false }))
-        } else {
-          await videoEl.requestPictureInPicture()
-          setState(prev => ({ ...prev, isPictureInPicture: true }))
-        }
-        return
-      }
 
-      // Fallback to internal player if it supports PiP
-      const player = playerRef.current.getInternalPlayer() as any
-      if (player && typeof player.requestPictureInPicture === 'function') {
-        if ((document as any).pictureInPictureElement) {
-          await (document as any).exitPictureInPicture()
-          setState(prev => ({ ...prev, isPictureInPicture: false }))
-        } else {
-          await player.requestPictureInPicture()
-          setState(prev => ({ ...prev, isPictureInPicture: true }))
-        }
-        return
-      }
-
-      // Fallback mini player if PiP not available
-      setState(prev => ({ ...prev, isMiniPlayer: !prev.isMiniPlayer }))
-    } catch (error) {
-      console.warn('Picture-in-Picture not supported or failed:', error)
-      toast({
-        title: "Picture-in-Picture not available",
-        description: "Your browser doesn't support Picture-in-Picture mode.",
-        variant: "destructive",
-      })
-      // Fallback mini player toggle on error
-      setState(prev => ({ ...prev, isMiniPlayer: !prev.isMiniPlayer }))
-    }
-  }, [toast])
-
-  // Check PIP support with better error handling
-  useEffect(() => {
-    if (typeof document !== "undefined") {
-      try {
-        const isSupported = 'pictureInPictureEnabled' in document && (document as any).pictureInPictureEnabled
-        setState(prev => ({
-          ...prev,
-          isPiPSupported: isSupported
-        }))
-      } catch (error) {
-        console.warn('Failed to check PIP support:', error)
-        setState(prev => ({
-          ...prev,
-          isPiPSupported: false
-        }))
-      }
-    }
-  }, [])
-
-  // Handle PIP events with better performance
-  useEffect(() => {
-    const handleEnterPiP = () => {
-      setState(prev => ({ ...prev, isPictureInPicture: true }))
-    }
-
-    const handleLeavePiP = () => {
-      setState(prev => ({ ...prev, isPictureInPicture: false }))
-    }
-
-    if (typeof document !== "undefined") {
-      document.addEventListener('enterpictureinpicture', handleEnterPiP)
-      document.addEventListener('leavepictureinpicture', handleLeavePiP)
-
-      return () => {
-        document.removeEventListener('enterpictureinpicture', handleEnterPiP)
-        document.removeEventListener('leavepictureinpicture', handleLeavePiP)
-      }
-    }
-  }, [])
 
   // Enhanced PIP state management with debouncing
   const [pipState, setPipState] = useState({
