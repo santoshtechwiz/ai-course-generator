@@ -317,25 +317,24 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Enhanced PIP handling with callback to parent
   const handlePictureInPicture = useCallback(async () => {
     try {
+      const videoEl = getVideoElement()
       // Prefer native PiP on the actual video element when available
       if (videoEl && (videoEl as any).requestPictureInPicture && (document as any).pictureInPictureEnabled) {
         if ((document as any).pictureInPictureElement) {
           await (document as any).exitPictureInPicture()
-          // Notify parent component about PIP state change
           onPictureInPictureToggle?.(false)
         } else {
           await (videoEl as any).requestPictureInPicture()
-          // Notify parent component about PIP state change
           onPictureInPictureToggle?.(true)
         }
         return
       }
 
-      // Fallback to custom handlers
+      // Fallback to custom mini player when native PiP is not available
       if (handlers.handlePictureInPictureToggle) {
+        const next = !state.isMiniPlayer
         handlers.handlePictureInPictureToggle()
-        // Notify parent component about PIP state change
-        onPictureInPictureToggle?.(true)
+        onPictureInPictureToggle?.(next)
       } else if (onPictureInPictureToggle) {
         onPictureInPictureToggle(true)
       } else {
@@ -352,10 +351,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         description: "Could not toggle Picture‑in‑Picture.",
         variant: "destructive",
       })
-      // Notify parent component about PIP state change on error
       onPictureInPictureToggle?.(false)
     }
-  }, [getVideoElement, handlers.handlePictureInPictureToggle, onPictureInPictureToggle, toast])
+  }, [getVideoElement, handlers.handlePictureInPictureToggle, onPictureInPictureToggle, toast, state.isMiniPlayer])
 
 
 
@@ -751,28 +749,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             setVideoDuration(duration)
             setIsLoadingDuration(false)
           }}
-          config={{
-            youtube: {
-              playerVars: {
-                autoplay: 0,
-                modestbranding: 1,
-                rel: 0,
-                showinfo: 0,
-                iv_load_policy: 3,
-                fs: 1,
-                controls: 0,
-                disablekb: 0,
-                playsinline: 1,
-                enablejsapi: 1,
-                origin: typeof window !== "undefined" ? window.location.origin : "",
-                widget_referrer: typeof window !== "undefined" ? window.location.origin : "",
-              },
-            },
-            attributes: {
-              allow:
-                "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
-            },
-          } as any}
+                     config={{
+             youtube: {
+               playerVars: {
+                 autoplay: 0,
+                 modestbranding: 1,
+                 rel: 0,
+                 showinfo: 0,
+                 iv_load_policy: 3,
+                 fs: 1,
+                 controls: 0,
+                 disablekb: 0,
+                 playsinline: 1,
+                 enablejsapi: 1,
+                 origin: typeof window !== "undefined" ? window.location.origin : "",
+                 widget_referrer: typeof window !== "undefined" ? window.location.origin : "",
+               },
+             },
+             attributes: {
+               allow:
+                 "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
+               allowFullScreen: true,
+               // Hint browsers that we intend to use PiP where supported
+               // Some browsers require explicit attribute on iframe
+               // ReactPlayer forwards these attributes to the iframe
+             },
+           } as any}
         />
       </div>
 
@@ -953,10 +955,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             onToggleBookmarkPanel={handleToggleBookmarkPanel}
             autoPlayNext={state.autoPlayNext}
             onToggleAutoPlayNext={handlers.toggleAutoPlayNext}
-            onPictureInPicture={handlePictureInPicture}
-            isPiPSupported={state.isPiPSupported || true}
-            isPiPActive={state.isPictureInPicture}
-          />
+                         onPictureInPicture={handlePictureInPicture}
+             isPiPSupported={state.isPiPSupported}
+             isPiPActive={state.isPictureInPicture}
+           />
         </div>
       )}
 

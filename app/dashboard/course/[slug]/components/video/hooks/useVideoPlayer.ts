@@ -284,11 +284,26 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     if (!playerRef.current) return
 
     try {
-      const player = playerRef.current.getInternalPlayer()
-      
-      if (player && player.requestPictureInPicture) {
-        if (document.pictureInPictureElement) {
-          await document.exitPictureInPicture()
+      // Try to reach the actual HTMLVideoElement from the ReactPlayer iframe
+      const container = containerRef.current
+      const videoEl = container?.querySelector('iframe')?.contentDocument?.querySelector('video') as any
+
+      if (videoEl && document && (document as any).pictureInPictureEnabled && typeof videoEl.requestPictureInPicture === 'function') {
+        if ((document as any).pictureInPictureElement) {
+          await (document as any).exitPictureInPicture()
+          setState(prev => ({ ...prev, isPictureInPicture: false }))
+        } else {
+          await videoEl.requestPictureInPicture()
+          setState(prev => ({ ...prev, isPictureInPicture: true }))
+        }
+        return
+      }
+
+      // Fallback to internal player if it supports PiP
+      const player = playerRef.current.getInternalPlayer() as any
+      if (player && typeof player.requestPictureInPicture === 'function') {
+        if ((document as any).pictureInPictureElement) {
+          await (document as any).exitPictureInPicture()
           setState(prev => ({ ...prev, isPictureInPicture: false }))
         } else {
           await player.requestPictureInPicture()
@@ -315,7 +330,7 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   useEffect(() => {
     if (typeof document !== "undefined") {
       try {
-        const isSupported = 'pictureInPictureEnabled' in document && document.pictureInPictureEnabled
+        const isSupported = 'pictureInPictureEnabled' in document && (document as any).pictureInPictureEnabled
         setState(prev => ({
           ...prev,
           isPiPSupported: isSupported

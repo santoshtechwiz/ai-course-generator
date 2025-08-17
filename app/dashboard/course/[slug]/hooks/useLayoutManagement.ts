@@ -76,11 +76,11 @@ export function useLayoutManagement(courseId: string) {
   // Grid layout classes based on PIP state
   const gridLayoutClasses = useMemo(() => {
     if (isPiPActive) {
-      return "grid-cols-1" // Single column when PIP is active
+      return "grid-cols-1"
     }
     return wideMode 
-      ? "md:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px]" // Wide mode with sidebar
-      : "md:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px]" // Standard layout
+      ? "md:grid-cols-[1.2fr_360px] xl:grid-cols-[1.5fr_420px]"
+      : "md:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px]"
   }, [isPiPActive, wideMode])
 
   return {

@@ -35,6 +35,10 @@ import type { BookmarkData } from './video/types'
 interface ModernCoursePageProps {
   course: FullCourseType
   initialChapterId?: string
+  // Accept layout state from parent to simplify internal layout management
+  theatreMode?: boolean
+  isFullscreen?: boolean
+  onTheaterModeToggle?: () => void
 }
 
 // Memoized components for better performance
@@ -44,7 +48,10 @@ const MemoizedCourseDetailsTabs = React.memo(CourseDetailsTabs)
 
 const MainContent: React.FC<ModernCoursePageProps> = ({ 
   course, 
-  initialChapterId
+  initialChapterId,
+  theatreMode,
+  isFullscreen,
+  onTheaterModeToggle
 }) => {
   // ============================================================================
   // ALL HOOKS MUST BE AT THE TOP LEVEL - NO EARLY RETURNS OR CONDITIONS
@@ -100,7 +107,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const {
     wideMode,
     isPiPActive,
-    isFullscreen,
+    isFullscreen: isFullscreenFromLayout,
     isTheaterMode,
     handlePIPToggle,
     handleWideModeToggle,
@@ -236,6 +243,13 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     }
   }, [course.id, initialChapterId, videoPlaylist, dispatch, currentVideoId, progress])
 
+  // Reset video loading state whenever current video changes
+  useEffect(() => {
+    if (currentVideoId) {
+      setIsVideoLoading(true)
+    }
+  }, [currentVideoId])
+
   // ============================================================================
   // KEYBOARD SHORTCUTS
   // ============================================================================
@@ -297,7 +311,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const videoPlayerProps = useMemo(() => ({
     videoId: currentVideoId || '',
     courseId: course.id,
-    onVideoLoad: handleVideoLoad,
+    onVideoLoad: (meta?: { duration?: number }) => {
+      handleVideoLoad()
+      if (meta && typeof meta.duration === 'number' && currentVideoId) {
+        setVideoDurations(prev => ({ ...prev, [currentVideoId]: meta.duration }))
+      }
+    },
     onPlayerReady: handlePlayerReady,
     onSeekToBookmark: handleSeekToBookmark,
     onVideoProgress: handleVideoProgress,
@@ -407,7 +426,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="space-y-6"
+            className="space-y-6 md:sticky md:top-20 self-start"
           >
             {isPiPActive ? (
               <div className="text-center p-8 text-muted-foreground">

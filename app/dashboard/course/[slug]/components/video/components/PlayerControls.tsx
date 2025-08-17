@@ -406,15 +406,15 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             </Button>
           )}
 
-          {/* Enhanced Picture-in-Picture */}
-          {isPiPSupported && onPictureInPicture && (
+          {/* Picture-in-Picture or Mini Player (fallback) */}
+          {onPictureInPicture && (
             <Button
               variant="ghost"
               size="icon"
               className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20", isPiPActive && "bg-white/20")}
               onClick={onPictureInPicture}
-              title={isPiPActive ? "Exit Picture-in-Picture" : "Enter Picture-in-Picture"}
-              aria-label={isPiPActive ? "Exit Picture-in-Picture mode" : "Enter Picture-in-Picture mode"}
+              title={isPiPSupported ? (isPiPActive ? "Exit Picture-in-Picture" : "Enter Picture-in-Picture") : (isPiPActive ? "Close Mini Player" : "Open Mini Player")}
+              aria-label={isPiPSupported ? (isPiPActive ? "Exit Picture-in-Picture mode" : "Enter Picture-in-Picture mode") : (isPiPActive ? "Close Mini Player" : "Open Mini Player")}
             >
               <PictureInPicture2 className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
