@@ -10,11 +10,19 @@ export interface PerCourseProgress {
   lastUpdatedAt?: number
 }
 
+// Type for course progress state
+export type CourseProgressState = Record<string, PerCourseProgress>
+
+// Type for the entire course progress slice
+export interface CourseProgressSliceState {
+  byCourseId: CourseProgressState
+}
+
 export interface CourseProgressRootState {
   byCourseId: Record<string, PerCourseProgress>
 }
 
-const initialState: CourseProgressRootState = {
+const initialState: CourseProgressSliceState = {
   byCourseId: {},
 }
 
@@ -127,3 +135,45 @@ export const makeSelectCourseProgressById = () =>
 
 export const selectCourseProgressById = (state: RootState, courseId: string | number) =>
   selectCourseProgressState(state).byCourseId[String(courseId)] || null
+
+// Additional selectors for better type safety
+export const selectAllCourseProgress = (state: RootState) => state.courseProgress.byCourseId
+
+export const selectIncompleteCourses = createSelector(
+  [selectAllCourseProgress],
+  (courseProgress) => {
+    return Object.entries(courseProgress).filter(([_, progress]) => !progress.isCourseCompleted)
+  }
+)
+
+export const selectCompletedCourses = createSelector(
+  [selectAllCourseProgress],
+  (courseProgress) => {
+    return Object.entries(courseProgress).filter(([_, progress]) => progress.isCourseCompleted)
+  }
+)
+
+export const selectCourseProgressByCourseId = (courseId: string | number) =>
+  createSelector(
+    [selectCourseProgressState],
+    (slice) => slice.byCourseId[String(courseId)] || null
+  )
+
+// Utility functions for type-safe course progress operations
+export const getCourseProgress = (state: RootState, courseId: string | number): PerCourseProgress | null => {
+  return state.courseProgress.byCourseId[String(courseId)] || null
+}
+
+export const hasCourseProgress = (state: RootState, courseId: string | number): boolean => {
+  return !!state.courseProgress.byCourseId[String(courseId)]
+}
+
+export const isCourseCompleted = (state: RootState, courseId: string | number): boolean => {
+  const progress = state.courseProgress.byCourseId[String(courseId)]
+  return progress?.isCourseCompleted || false
+}
+
+export const getCompletedLectures = (state: RootState, courseId: string | number): string[] => {
+  const progress = state.courseProgress.byCourseId[String(courseId)]
+  return progress?.completedLectures || []
+}

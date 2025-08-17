@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/modules/auth"
 import { useAppSelector } from "@/store/hooks"
-import { makeSelectCourseProgressById } from "@/store/slices/courseProgress-slice"
+import { selectAllCourseProgress, selectIncompleteCourses } from "@/store/slices/courseProgress-slice"
 import { cn } from "@/lib/utils"
 
 interface CourseNotification {
@@ -98,7 +98,7 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
   const { user } = useAuth()
 
   // Get all course progress from Redux
-  const courseProgress = useAppSelector((state) => state.courseProgress.byCourseId)
+  const courseProgress = useAppSelector(selectAllCourseProgress)
 
   // Get course IDs for fetching course data
   const courseIds = useMemo(() => {

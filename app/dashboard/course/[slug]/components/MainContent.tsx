@@ -130,8 +130,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const legacyCourseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
-  const selectCourseProgress = useMemo(() => makeSelectCourseProgressById(), [])
-  const courseProgress = useAppSelector((state) => selectCourseProgress(state as any, course.id))
+  const courseProgress = useAppSelector((state) => state.courseProgress.byCourseId[String(course.id)] || null)
   const twoCol = useMemo(() => !isFullscreen, [isFullscreen])
 
   // Get bookmarks for the current video - this is more reliable than trying to get them from Redux
@@ -475,8 +474,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
 
       if (isLastVideo) {
         // Only show certificate if not already downloaded for this completion
-        const selectCourseProgressById = makeSelectCourseProgressById()
-        const courseProgress = selectCourseProgressById(store.getState(), String(course.id))
+        const courseProgress = store.getState().courseProgress.byCourseId[String(course.id)]
         if (!courseProgress?.certificateDownloaded) {
           setShowCertificate(true)
         }
@@ -685,8 +683,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
 
   // Certificate handler - only show if not already downloaded for this completion
   const handleCertificateClick = useCallback(() => {
-    const selectCourseProgressById = makeSelectCourseProgressById()
-    const courseProgress = selectCourseProgressById(store.getState(), String(course.id))
+    const courseProgress = store.getState().courseProgress.byCourseId[String(course.id)]
     if (courseProgress?.isCourseCompleted && !courseProgress?.certificateDownloaded) {
       setShowCertificate(true)
     } else if (!courseProgress?.isCourseCompleted) {

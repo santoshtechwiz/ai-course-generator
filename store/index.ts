@@ -120,7 +120,7 @@ export const store = configureStore({
 export const persistor = persistStore(store)
 
 // ✅ Typed hooks
-export type RootState = typeof store.getState
+export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
 export const useAppDispatch: () => AppDispatch = useDispatch
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
