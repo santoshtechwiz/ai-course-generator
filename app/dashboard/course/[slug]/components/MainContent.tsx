@@ -802,13 +802,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     nextVideoTitle: nextChapter?.chapter.title || '',
     onPrevVideo: handlePrevVideo,
     prevVideoTitle: prevChapter?.chapter.title || '',
-        hasNextVideo: !!nextChapter,
+    hasNextVideo: !!nextChapter,
     hasPrevVideo: !!prevChapter,
-    isFullscreen,
-    onFullscreenToggle,
     onPictureInPictureToggle: handlePIPToggle,
-         className: "h-full w-full",
-      initialSeekSeconds: (function(){
+    className: "h-full w-full",
+     initialSeekSeconds: (function(){
        try {
          if (courseProgress?.lastLectureId && String(courseProgress.lastLectureId) === String(currentChapter?.id)) {
            const ts = Number(courseProgress.lastTimestamp)
@@ -844,8 +842,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
      handlePrevVideo,
      nextChapter,
      prevChapter,
-     isFullscreen,
-     onFullscreenToggle,
      handlePIPToggle,
      autoplayMode,
      courseProgress?.lastLectureId,
