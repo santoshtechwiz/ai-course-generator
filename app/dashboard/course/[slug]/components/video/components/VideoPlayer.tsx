@@ -100,6 +100,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onBookmark,
   autoPlay = false,
   onToggleAutoPlay,
+  forcePlay,
   onVideoLoad,
   onCertificateClick,
   onPlayerReady,
@@ -293,6 +294,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     chapterTitleRef.current = chapterTitle
     videoIdRef.current = videoId
   }, [chapterTitle, videoId])
+
+  // Play immediately when instructed and allowed, on video change
+  useEffect(() => {
+    if (!videoId || !canPlayVideo) return
+    if (forcePlay) {
+      try {
+        handlers.onPlay()
+      } catch {}
+    }
+  }, [videoId, forcePlay, canPlayVideo, handlers])
 
   // Check PiP support on mount with proper error handling
   useEffect(() => {

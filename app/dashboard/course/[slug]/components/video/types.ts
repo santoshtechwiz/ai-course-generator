@@ -67,6 +67,7 @@ export interface VideoPlayerProps {
   onBookmark?: (time: number, title?: string) => void
   autoPlay?: boolean
   onToggleAutoPlay?: () => void
+  forcePlay?: boolean
   onVideoLoad?: (metadata: any) => void
   onCertificateClick?: () => void
   onPlayerReady?: (ref: React.RefObject<any>) => void

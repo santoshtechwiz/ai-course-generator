@@ -794,6 +794,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     bookmarks: bookmarkItems,
     isAuthenticated: !!user,
     autoPlay: autoplayMode,
+    forcePlay: Boolean(currentVideoId && autoplayMode),
     showControls: true,
     onCertificateClick: handleCertificateClick,
     onChapterComplete: handleChapterComplete,
