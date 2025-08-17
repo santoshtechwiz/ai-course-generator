@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Bell, BookOpen, Play, Clock, CheckCircle, AlertCircle, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -55,18 +55,29 @@ const useCourseData = (courseIds: string[]) => {
     const fetchCourseData = async () => {
       setLoading(true)
       try {
-        // In a real implementation, you would fetch course data from your API
-        // For now, we'll simulate this with a mock data structure
-        const mockCourseData: Record<string, CourseData> = {
-          // Add your actual course mappings here
-          // Example:
-          // '123': { id: '123', slug: 'shell-scripting-basics', title: 'Shell Scripting Basics' },
-          // '456': { id: '456', slug: 'azure-blob-storage', title: 'Azure Blob Storage' },
+        const response = await fetch('/api/courses/data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ courseIds }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        setCourseData(mockCourseData)
+        const result = await response.json()
+        
+        if (result.success && result.data) {
+          setCourseData(result.data)
+        } else {
+          console.warn('Invalid course data response:', result)
+        }
       } catch (error) {
         console.error('Failed to fetch course data:', error)
+        // Fallback to empty data instead of crashing
+        setCourseData({})
       } finally {
         setLoading(false)
       }
@@ -92,7 +103,10 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
   // Get course IDs for fetching course data
   const courseIds = useMemo(() => {
     if (!courseProgress) return []
-    return Object.keys(courseProgress).filter(courseId => !courseProgress[courseId].isCourseCompleted)
+    return Object.keys(courseProgress).filter(courseId => {
+      const progress = courseProgress[courseId]
+      return progress && !progress.isCourseCompleted
+    })
   }, [courseProgress])
 
   // Fetch course data
@@ -121,42 +135,50 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
       if (progressPercentage < 100) {
         // Get course data from the fetched course data
         const courseInfo = courseData[courseId]
-        const courseSlug = courseInfo?.slug || `course-${courseId}`
-        const courseTitle = courseInfo?.title || `Course ${courseId}`
         
-        notifications.push({
-          id: `course-${courseId}`,
-          type: 'incomplete_course',
-          title: `Continue Learning: ${courseTitle}`,
-          description: `You're ${Math.round(progressPercentage)}% through this course`,
-          courseId,
-          courseSlug: courseSlug,
-          chapterId: progress.lastLectureId || undefined,
-          progress: progressPercentage,
-          lastAccessed,
-          priority: isRecentlyAccessed ? 'high' : 'medium'
-        })
+        // Only create notification if we have course data or if it's still loading
+        if (courseInfo || courseDataLoading) {
+          const courseSlug = courseInfo?.slug || `course-${courseId}`
+          const courseTitle = courseInfo?.title || `Course ${courseId}`
+          
+          notifications.push({
+            id: `course-${courseId}`,
+            type: 'incomplete_course',
+            title: `Continue Learning: ${courseTitle}`,
+            description: `You're ${Math.round(progressPercentage)}% through this course`,
+            courseId,
+            courseSlug: courseSlug,
+            chapterId: progress.lastLectureId || undefined,
+            progress: progressPercentage,
+            lastAccessed,
+            priority: isRecentlyAccessed ? 'high' : 'medium'
+          })
+        }
       }
 
       // Add quiz notifications (this would come from quiz progress data)
       // For now, we'll add a placeholder
       if (progressPercentage > 50 && progressPercentage < 100) {
         const courseInfo = courseData[courseId]
-        const courseSlug = courseInfo?.slug || `course-${courseId}`
-        const courseTitle = courseInfo?.title || `Course ${courseId}`
         
-        notifications.push({
-          id: `quiz-${courseId}`,
-          type: 'pending_quiz',
-          title: `Take Quiz: ${courseTitle}`,
-          description: `Test your knowledge with the course quiz`,
-          courseId,
-          courseSlug: courseSlug,
-          quizId: `quiz-${courseId}`,
-          progress: progressPercentage,
-          lastAccessed,
-          priority: 'high'
-        })
+        // Only create quiz notification if we have course data
+        if (courseInfo) {
+          const courseSlug = courseInfo.slug
+          const courseTitle = courseInfo.title
+          
+          notifications.push({
+            id: `quiz-${courseId}`,
+            type: 'pending_quiz',
+            title: `Take Quiz: ${courseTitle}`,
+            description: `Test your knowledge with the course quiz`,
+            courseId,
+            courseSlug: courseSlug,
+            quizId: `quiz-${courseId}`,
+            progress: progressPercentage,
+            lastAccessed,
+            priority: 'high'
+          })
+        }
       }
     })
 
@@ -167,7 +189,7 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
       if (priorityDiff !== 0) return priorityDiff
       return b.lastAccessed.getTime() - a.lastAccessed.getTime()
     })
-  }, [user, courseProgress, courseData])
+  }, [user, courseProgress, courseData, courseDataLoading])
 
   // Update notifications when course progress changes
   useEffect(() => {
@@ -180,26 +202,46 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
   const handleNotificationClick = useCallback((notification: CourseNotification) => {
     setIsOpen(false)
     
-    switch (notification.type) {
-      case 'incomplete_course':
-        // Navigate to course with specific chapter if available
-        if (notification.chapterId) {
-          router.push(`/dashboard/course/${notification.courseSlug}?chapter=${notification.chapterId}`)
-        } else {
-          router.push(`/dashboard/course/${notification.courseSlug}`)
-        }
-        break
-      case 'pending_quiz':
-        router.push(`/dashboard/quiz/${notification.quizId}`)
-        break
-      case 'course_reminder':
-        // Navigate to course with specific chapter if available
-        if (notification.chapterId) {
-          router.push(`/dashboard/course/${notification.courseSlug}?chapter=${notification.chapterId}`)
-        } else {
-          router.push(`/dashboard/course/${notification.courseSlug}`)
-        }
-        break
+    try {
+      switch (notification.type) {
+        case 'incomplete_course':
+          // Navigate to course with specific chapter if available
+          if (notification.chapterId && notification.courseSlug) {
+            router.push(`/dashboard/course/${notification.courseSlug}?chapter=${notification.chapterId}`)
+          } else if (notification.courseSlug) {
+            router.push(`/dashboard/course/${notification.courseSlug}`)
+          } else {
+            console.warn('Missing course slug for notification:', notification)
+            router.push('/dashboard/courses')
+          }
+          break
+        case 'pending_quiz':
+          if (notification.quizId) {
+            router.push(`/dashboard/quiz/${notification.quizId}`)
+          } else {
+            console.warn('Missing quiz ID for notification:', notification)
+            router.push('/dashboard/quizzes')
+          }
+          break
+        case 'course_reminder':
+          // Navigate to course with specific chapter if available
+          if (notification.chapterId && notification.courseSlug) {
+            router.push(`/dashboard/course/${notification.courseSlug}?chapter=${notification.chapterId}`)
+          } else if (notification.courseSlug) {
+            router.push(`/dashboard/course/${notification.courseSlug}`)
+          } else {
+            console.warn('Missing course slug for notification:', notification)
+            router.push('/dashboard/courses')
+          }
+          break
+        default:
+          console.warn('Unknown notification type:', notification.type)
+          router.push('/dashboard/courses')
+      }
+    } catch (error) {
+      console.error('Error navigating to notification:', error)
+      // Fallback to courses page
+      router.push('/dashboard/courses')
     }
   }, [router])
 
@@ -290,7 +332,21 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
         <DropdownMenuSeparator />
         
         <AnimatePresence>
-          {notifications.length === 0 ? (
+          {courseDataLoading ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 text-center"
+            >
+              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3 animate-pulse">
+                <Bell className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-foreground">Loading...</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Fetching your course progress
+              </p>
+            </motion.div>
+          ) : notifications.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
