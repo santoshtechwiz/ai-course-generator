@@ -901,9 +901,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
              {/* Top toolbar: width toggle and keys hint */}
              <div className="mx-auto py-3 px-4 sm:px-6 lg:px-8 max-w-7xl flex items-center justify-between">
                <div className="flex items-center gap-3">
-                 
-                 
-                 {/* Auto-play Mode Toggle */}
+                 {/* Auto-play Mode Toggle (single, top of playlist) */}
                  <Button
                    variant={autoplayMode ? "default" : "outline"}
                    size="sm"
@@ -939,7 +937,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
              </div>
              <ActionButtons slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
 
-              {/* Removed CourseInfo to avoid title duplication; header H1 remains the single source. */}
+            {/* Removed CourseInfo to avoid title duplication; header H1 remains the single source. */}
 
             {/* Video Generation Section */}
             {(isOwner || user?.isAdmin) && (
@@ -955,27 +953,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
               />
             )}
 
-            {/* Above playlist: Auto-play toggle (desktop), plus mobile playlist toggle */}
-            <div className="mb-4 flex items-center justify-between">
-              {/* Left: Auto-play toggle always visible */}
-              <div className="hidden md:flex">
-                <Button
-                  variant={autoplayMode ? "default" : "outline"}
-                  size="sm"
-                  onClick={handleAutoplayToggle}
-                  className={cn(
-                    "gap-2 transition-all duration-300",
-                    autoplayMode && "bg-green-600 hover:bg-green-700 text-white"
-                  )}
-                >
-                  <div className={cn(
-                    "w-2 h-2 rounded-full transition-all duration-300",
-                    autoplayMode ? "bg-white" : "bg-green-500"
-                  )} />
-                  {autoplayMode ? "Auto-play ON" : "Auto-play OFF"}
-                </Button>
-              </div>
-
+            {/* Above playlist: Remove duplicate autoplay toggle and keep only mobile playlist toggle */}
+            <div className="mb-4 flex items-center justify-end">
               {/* Right: Mobile playlist toggle */}
               <div className="md:hidden w-full">
                 <Button

@@ -206,11 +206,10 @@ class YoutubeService {
   private static async getYouTubeiTranscript(videoId: string): Promise<string | null> {
     try {
       const yt = await Innertube.create({
-        gl: "US",
         cookie: this.youtubeCookie,
       })
       const info = await yt.getInfo(videoId)
-      const tracks = info?.captions?.tracks || []
+      const tracks = info?.captions?.captionTracks || []
       const enTrack = tracks.find((t: any) => (t.language_code || t.languageCode || "").startsWith("en")) || tracks[0]
       if (!enTrack) return null
       const transcript = await enTrack.fetch()
