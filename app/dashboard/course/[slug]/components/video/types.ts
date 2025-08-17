@@ -92,6 +92,8 @@ export interface VideoPlayerProps {
   onFullscreenToggle?: () => void
   onPictureInPictureToggle?: (isPiPActive: boolean) => void
   initialSeekSeconds?: number
+  relatedCourses?: Array<{ id?: string | number; slug?: string; title?: string; description?: string; image?: string }>
+  progressStats?: { completedCount: number; totalChapters: number; progressPercentage: number }
 }
 
 export interface PlayerControlsProps {
@@ -308,4 +310,6 @@ export interface ChapterEndOverlayProps {
   certificateState?: CertificateState
   isFinalChapter?: boolean
   courseTitle?: string
+  relatedCourses?: Array<{ id?: string | number; slug?: string; title?: string; description?: string; image?: string }>
+  progressStats?: { completedCount: number; totalChapters: number; progressPercentage: number }
 }
