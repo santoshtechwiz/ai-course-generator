@@ -103,15 +103,17 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       const newBufferHealth = calculateBufferHealth(progressState.loaded, progressState.played);
       setBufferHealth((prev) => (Math.abs(prev - newBufferHealth) > 5 ? newBufferHealth : prev));
 
-      // Track progress for course completion if enabled
-      if (progressTracking?.trackProgress) {
+      // Avoid duplicate/noisy tracking while in mini-player if desired
+      const shouldTrack = !state.isMiniPlayer || state.played < 0.98
+
+      if (shouldTrack && progressTracking?.trackProgress) {
         progressTracking.trackProgress(progressState);
       }
 
-      // Pass to parent if provided
+      // Pass to parent callback (single call per tick)
       options.onProgress?.(progressState);
     },
-    [options.onProgress, progressTracking]
+    [options.onProgress, progressTracking, state.isMiniPlayer, state.played]
   );
 
   // Memoized YouTube URL

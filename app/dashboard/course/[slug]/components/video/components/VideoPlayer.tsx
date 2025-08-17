@@ -325,6 +325,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           await (document as any).exitPictureInPicture()
           onPictureInPictureToggle?.(false)
         } else {
+          // Ensure mini-player is off when entering native PiP
+          if (state.isMiniPlayer && handlers.handlePictureInPictureToggle) {
+            // Force off mini-player state if any custom toggles are used internally
+            handlers.handlePictureInPictureToggle()
+          }
           await (videoEl as any).requestPictureInPicture()
           onPictureInPictureToggle?.(true)
         }
@@ -334,6 +339,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       // Fallback to custom mini player when native PiP is not available
       if (handlers.handlePictureInPictureToggle) {
         const next = !state.isMiniPlayer
+        // If turning on mini-player, and native PiP is active, exit PiP first
+        if (next && (document as any).pictureInPictureElement && (document as any).exitPictureInPicture) {
+          try { await (document as any).exitPictureInPicture() } catch {}
+          onPictureInPictureToggle?.(false)
+        }
         handlers.handlePictureInPictureToggle()
         onPictureInPictureToggle?.(next)
       } else if (onPictureInPictureToggle) {
@@ -356,6 +366,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [getVideoElement, handlers.handlePictureInPictureToggle, onPictureInPictureToggle, toast, state.isMiniPlayer])
 
+  // Handle PIP events with better performance
+  useEffect(() => {
+    const handleEnterPiP = () => {
+      setState(prev => ({ ...prev, isPictureInPicture: true, isMiniPlayer: false }))
+    }
+
+    const handleLeavePiP = () => {
+      setState(prev => ({ ...prev, isPictureInPicture: false }))
+    }
+
+    if (typeof document !== "undefined") {
+      document.addEventListener('enterpictureinpicture', handleEnterPiP)
+      document.addEventListener('leavepictureinpicture', handleLeavePiP)
+
+      return () => {
+        document.removeEventListener('enterpictureinpicture', handleEnterPiP)
+        document.removeEventListener('leavepictureinpicture', handleLeavePiP)
+      }
+    }
+  }, [])
 
 
   // Memoized format time helper

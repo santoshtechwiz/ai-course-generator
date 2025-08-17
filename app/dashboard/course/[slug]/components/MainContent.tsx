@@ -947,15 +947,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
              </div>
              <ActionButtons slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
 
-              {/* Course info header */}
-              <CourseInfo
-                course={course}
-                progressPercentage={(() => {
-                  const total = videoPlaylist.length
-                  const done = (completedChapters?.length || 0)
-                  return total > 0 ? Math.round((done / total) * 100) : 0
-                })()}
-              />
+              {/* Removed CourseInfo to avoid title duplication; header H1 remains the single source. */}
 
             {/* Video Generation Section */}
             {(isOwner || user?.isAdmin) && (
