@@ -58,7 +58,8 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   const [isSaving, setIsSaving] = useState(false)
 
   // Get course progress from Redux
-  const courseProgress = useAppSelector((state) => state.courseProgress.byCourseId[String(courseId)] || null)
+  const selectCourseProgress = useCallback(() => makeSelectCourseProgressById(), [])
+  const courseProgress = useAppSelector((state) => selectCourseProgress()(state as any, courseId))
 
   // Calculate progress percentage
   const progressPercentage = totalChapters > 0 ? (completedChapters.length / totalChapters) * 100 : 0

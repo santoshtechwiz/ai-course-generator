@@ -130,7 +130,8 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
     // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const legacyCourseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
-  const courseProgress = useAppSelector((state) => state.courseProgress.byCourseId[String(course.id)] || null)
+  const selectCourseProgress = useMemo(() => makeSelectCourseProgressById(), [])
+  const courseProgress = useAppSelector((state) => selectCourseProgress(state as any, course.id))
   const twoCol = useMemo(() => !isFullscreen, [isFullscreen])
 
   // Get bookmarks for the current video - this is more reliable than trying to get them from Redux
@@ -152,7 +153,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
   }, [bookmarks, currentVideoId])
 
   // Fix: Initialize completedChapters safely so it's always defined
-  // Use courseProgress.completedChapters if available, otherwise empty array
+  // Use courseProgress.completedLectures if available, otherwise empty array
   const completedChapters = useMemo(() => {
     if (courseProgress?.completedLectures) return courseProgress.completedLectures.map((id: string) => Number(id)).filter((n: number) => !isNaN(n))
     return (legacyCourseProgress?.completedChapters || []).map((id: number) => Number(id)).filter((n: number) => !isNaN(n))
