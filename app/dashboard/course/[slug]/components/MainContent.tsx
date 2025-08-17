@@ -7,7 +7,8 @@ import { useProgress } from "@/hooks"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Play, Lock, User as UserIcon, Award, Badge, ChevronLeft, ChevronRight, Clock, Maximize2, Minimize2, Download, Share2 } from "lucide-react"
-import { useAppDispatch, useAppSelector, store } from "@/store/hooks"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { store } from "@/store"
 import { setCurrentVideoApi, markChapterAsCompleted } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import CourseDetailsTabs, { AccessLevels } from "./CourseDetailsTabs"
@@ -44,9 +45,7 @@ import type { RelatedCourse, PersonalizedRecommendation, QuizSuggestion } from "
 interface ModernCoursePageProps {
   course: FullCourseType
   initialChapterId?: string
-  theatreMode?: boolean
   isFullscreen?: boolean
-  onTheaterModeToggle?: () => void
 }
 
 function validateChapter(chapter: any): boolean {
@@ -67,9 +66,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
 const MainContent: React.FC<ModernCoursePageProps> = ({ 
   course, 
   initialChapterId,
-  theatreMode = false,
-  isFullscreen = false,
-  onTheaterModeToggle
+  isFullscreen = false
 }) => {
   // Always define all hooks at the top level - no early returns or conditions before hooks
   console.log(course);
@@ -122,7 +119,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const legacyCourseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
   const selectCourseProgress = useMemo(() => makeSelectCourseProgressById(), [])
   const courseProgress = useAppSelector((state) => selectCourseProgress(state as any, course.id))
-  const twoCol = useMemo(() => !theatreMode && !isFullscreen, [theatreMode, isFullscreen])
+  const twoCol = useMemo(() => !isFullscreen, [isFullscreen])
 
   // Get bookmarks for the current video - this is more reliable than trying to get them from Redux
   const bookmarks = useMemo(() => {
@@ -806,9 +803,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     onPrevVideo: undefined,
     prevVideoTitle: '',
     hasNextVideo: false,
-    theatreMode,
     isFullscreen,
-    onTheaterModeToggle,
     onPictureInPictureToggle: handlePIPToggle,
          className: "h-full w-full",
      initialSeekSeconds: (function(){
@@ -844,9 +839,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
      user,
      handleCertificateClick,
      handleChapterComplete,
-     theatreMode,
      isFullscreen,
-     onTheaterModeToggle,
      handlePIPToggle,
      courseProgress?.lastLectureId,
      courseProgress?.lastTimestamp,
@@ -954,7 +947,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                </div>
                
                <span className="ml-2 hidden md:inline text-xs text-muted-foreground">
-                 Video controls: T Theater • F Fullscreen • B Bookmark • P PiP • Space Play/Pause • Esc Close
+                 Video controls: F Fullscreen • B Bookmark • P PiP • Space Play/Pause • Esc Close
                </span>
              </div>
              <ActionButtons slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />

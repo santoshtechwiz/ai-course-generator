@@ -17,7 +17,7 @@ import {
   RewindIcon,
   FastForwardIcon,
   PictureInPicture2,
-  RectangleHorizontal,
+
 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 
@@ -58,8 +58,7 @@ interface PlayerControlsProps {
   onPictureInPicture?: () => void
   isPiPSupported?: boolean
   isPiPActive?: boolean
-  theaterMode?: boolean
-  onToggleTheaterMode?: () => void
+
 }
 
 const PlayerControls: React.FC<PlayerControlsProps> = ({
@@ -99,8 +98,6 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   onPictureInPicture,
   isPiPSupported = false,
   isPiPActive = false,
-  theaterMode = false,
-  onToggleTheaterMode,
 }) => {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -427,20 +424,6 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               aria-label={isPiPSupported ? (isPiPActive ? "Exit Picture-in-Picture mode" : "Enter Picture-in-Picture mode") : (isPiPActive ? "Close Mini Player" : "Open Mini Player")}
             >
               <PictureInPicture2 className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Button>
-          )}
-
-          {/* Theater Mode */}
-          {onToggleTheaterMode && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-colors", theaterMode && "bg-white/20 text-blue-400")}
-              onClick={onToggleTheaterMode}
-              title={theaterMode ? "Exit theater mode (T)" : "Enter theater mode (T)"}
-              aria-label={theaterMode ? "Exit theater mode" : "Enter theater mode"}
-            >
-              <RectangleHorizontal className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           )}
 
