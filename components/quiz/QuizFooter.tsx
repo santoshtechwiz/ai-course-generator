@@ -30,6 +30,15 @@ const buttonVariants = {
   tap: { scale: 0.98 },
 }
 
+/**
+ * Unified Quiz Footer Component
+ * 
+ * Provides consistent navigation controls across all quiz types with:
+ * - Full-width responsive layout
+ * - Consistent button sizing and spacing
+ * - Loading and success states
+ * - Proper accessibility
+ */
 export function QuizFooter({
   onNext,
   onPrevious,
@@ -49,191 +58,122 @@ export function QuizFooter({
   const isLoading = isSubmitting || submitState === "loading" || nextState === "loading"
   const isSuccess = submitState === "success" || nextState === "success"
 
-  const getButtonContent = (type: "next" | "submit") => {
-    const state = type === "next" ? nextState : submitState
-    const defaultLabel = type === "next" ? nextLabel : submitLabel
-
-    switch (state) {
-      case "loading":
-        return {
-          icon: <Loader2 className="h-4 w-4 animate-spin" />,
-          text: type === "next" ? "Loading..." : "Submitting...",
-        }
-      case "success":
-        return {
-          icon: <CheckCircle2 className="h-4 w-4" />,
-          text: type === "next" ? "Success!" : "Submitted!",
-        }
-      case "error":
-        return {
-          icon: <RotateCcw className="h-4 w-4" />,
-          text: "Try Again",
-        }
-      default:
-        return {
-          icon: type === "next" ? <ArrowRight className="h-4 w-4" /> : <Flag className="h-4 w-4" />,
-          text: defaultLabel,
-        }
-    }
-  }
-
-  const nextContent = getButtonContent("next")
-  const submitContent = getButtonContent("submit")
-
   return (
     <motion.div
-      className="sticky bottom-0 bg-background/95 backdrop-blur-md border-t border-border/50 p-4 sm:p-6"
+      className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 mt-8 border-t border-border/50"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3, duration: 0.5 }}
+      transition={{ duration: 0.5, delay: 0.3 }}
     >
-      <div className="max-w-4xl mx-auto">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* Previous Button */}
-          <motion.div
-            variants={buttonVariants}
-            initial="hidden"
-            animate="visible"
-            whileHover="hover"
-            whileTap="tap"
-            transition={{ delay: 0.1 }}
+      {/* Previous Button */}
+      <motion.div
+        variants={buttonVariants}
+        initial="hidden"
+        animate="visible"
+        transition={{ delay: 0.4 }}
+        className="order-1 sm:order-1"
+      >
+        {canGoPrevious && onPrevious ? (
+          <Button
+            onClick={onPrevious}
+            variant="outline"
+            size="lg"
+            className="min-w-[140px] h-12 transition-all duration-200"
+            disabled={isLoading}
           >
-            <Button
-              variant="outline"
-              onClick={onPrevious}
-              disabled={!canGoPrevious || isLoading}
-              className={cn(
-                "gap-2 min-w-[120px] bg-background/80 backdrop-blur-sm border-border/50 hover:border-primary/50",
-                !canGoPrevious && "opacity-0 pointer-events-none"
-              )}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Previous
-            </Button>
-          </motion.div>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Previous
+          </Button>
+        ) : (
+          <div className="w-[140px]" /> // Placeholder for consistent spacing
+        )}
+      </motion.div>
 
-          {/* Center Status */}
+      {/* Center Status/Info */}
+      <div className="order-3 sm:order-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        {hasAnswer && !isLoading && (
           <motion.div
-            className="flex items-center gap-3 text-sm text-muted-foreground"
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
+            className="flex items-center gap-2"
           >
-            {!hasAnswer && !isLastQuestion && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 rounded-full border border-amber-200 dark:border-amber-800">
-                <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-                <span className="text-xs font-medium">Please select an answer</span>
-              </div>
-            )}
-            
-            {hasAnswer && !isLastQuestion && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-950/20 text-green-700 dark:text-green-300 rounded-full border border-green-200 dark:border-green-800">
-                <CheckCircle2 className="w-3 h-3" />
-                <span className="text-xs font-medium">Ready to continue</span>
-              </div>
-            )}
-
-            {isLastQuestion && hasAnswer && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-100 dark:bg-blue-950/20 text-blue-700 dark:text-blue-300 rounded-full border border-blue-200 dark:border-blue-800">
-                <Flag className="w-3 h-3" />
-                <span className="text-xs font-medium">Ready to finish</span>
-              </div>
-            )}
-
-          
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>Answer recorded</span>
           </motion.div>
-
-          {/* Next/Submit Button */}
-          <div className="flex items-center gap-3">
-            {showRetake && onRetake && (
-              <motion.div
-                variants={buttonVariants}
-                initial="hidden"
-                animate="visible"
-                whileHover="hover"
-                whileTap="tap"
-                transition={{ delay: 0.2 }}
-              >
-                <Button variant="outline" onClick={onRetake} className="gap-2">
-                  <RotateCcw className="h-4 w-4" />
-                  Retake
-                </Button>
-              </motion.div>
-            )}
-
-            <motion.div
-              variants={buttonVariants}
-              initial="hidden"
-              animate="visible"
-              whileHover="hover"
-              whileTap="tap"
-              transition={{ delay: 0.3 }}
-            >
-              {isLastQuestion ? (
-                <Button
-                  onClick={onSubmit}
-                  disabled={!hasAnswer || isLoading}
-                  className={cn(
-                    "gap-2 min-w-[140px] relative overflow-hidden",
-                    "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700",
-                    "shadow-lg hover:shadow-xl transition-all duration-200",
-                    isSuccess && "from-emerald-500 to-green-500",
-                    !hasAnswer && "opacity-50 cursor-not-allowed"
-                  )}
-                >
-                  {submitContent.icon}
-                  {submitContent.text}
-                  
-                  {/* Success shimmer effect */}
-                  {isSuccess && (
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                      animate={{
-                        x: ["-100%", "100%"],
-                      }}
-                      transition={{
-                        duration: 1,
-                        ease: "linear",
-                      }}
-                    />
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  onClick={onNext}
-                  disabled={!canGoNext || isLoading}
-                  className={cn(
-                    "gap-2 min-w-[140px] relative overflow-hidden",
-                    "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary",
-                    "shadow-lg hover:shadow-xl transition-all duration-200",
-                    isSuccess && "from-blue-500 to-primary",
-                    !canGoNext && "opacity-50 cursor-not-allowed"
-                  )}
-                >
-                  {nextContent.icon}
-                  {nextContent.text}
-                  
-                  {/* Success shimmer effect */}
-                  {isSuccess && (
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                      animate={{
-                        x: ["-100%", "100%"],
-                      }}
-                      transition={{
-                        duration: 1,
-                        ease: "linear",
-                      }}
-                    />
-                  )}
-                </Button>
-              )}
-            </motion.div>
-          </div>
-        </div>
-
-      
+        )}
       </div>
+
+      {/* Main Action Button */}
+      <motion.div
+        variants={buttonVariants}
+        initial="hidden"
+        animate="visible"
+        transition={{ delay: 0.5 }}
+        className="order-2 sm:order-3"
+      >
+        {showRetake && onRetake ? (
+          <Button
+            onClick={onRetake}
+            variant="outline"
+            size="lg"
+            className="min-w-[140px] h-12 transition-all duration-200"
+            disabled={isLoading}
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Retake
+          </Button>
+        ) : isLastQuestion ? (
+          <Button
+            onClick={onSubmit}
+            size="lg"
+            className={cn("min-w-[140px] h-12 transition-all duration-200")}
+            disabled={!hasAnswer || isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Submitting...
+              </>
+            ) : isSuccess ? (
+              <>
+                <Check className="w-4 h-4 mr-2" />
+                Submitted!
+              </>
+            ) : (
+              <>
+                <Flag className="w-4 h-4 mr-2" />
+                {submitLabel}
+              </>
+            )}
+          </Button>
+        ) : (
+          <Button
+            onClick={onNext}
+            size="lg"
+            className={cn("min-w-[140px] h-12 transition-all duration-200")}
+            disabled={!canGoNext || isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Loading...
+              </>
+            ) : isSuccess ? (
+              <>
+                <Check className="w-4 h-4 mr-2" />
+                Success!
+              </>
+            ) : (
+              <>
+                {nextLabel}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </>
+            )}
+          </Button>
+        )}
+      </motion.div>
     </motion.div>
   )
 }
+
+export default QuizFooter

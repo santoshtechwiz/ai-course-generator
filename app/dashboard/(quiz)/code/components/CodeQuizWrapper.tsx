@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useCallback, useRef, useState, memo } from "react"
+import { useEffect, useMemo, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { useAuth } from "@/modules/auth"
@@ -25,8 +25,7 @@ import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
-import { GlobalLoader, LoadingSpinner } from "@/components/loaders/GlobalLoader"
-
+import { Skeleton } from "@/components/ui/skeleton"
 
 
 interface CodeQuizWrapperProps {
@@ -56,7 +55,8 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     title: quizTitle || title,
     description: "This is a code quiz. Solve the coding problems to complete the quiz.",
     questions: questions
-  }  // Track initialization to prevent duplicate loads
+  }
+  // Track initialization to prevent duplicate loads
   const isInitializedRef = useRef(false);
 
   // Load the quiz
@@ -90,7 +90,8 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       isComponentMounted = false;
       if (submissionTimeoutRef.current) clearTimeout(submissionTimeoutRef.current);
     }
-  }, [slug, dispatch])// Navigate to result
+  }, [slug, dispatch])
+  // Navigate to result
   useEffect(() => {
     let isMounted = true;
 
@@ -121,7 +122,7 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
 
     dispatch(saveAnswer({
       questionId: String(currentQuestion.id),
-      userAnswer: selectedOptionId,
+      answer: selectedOptionId,
       selectedOptionId
     }))
 
@@ -164,15 +165,35 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       )
       : []
 
+    // Determine language with better fallback logic
+    let detectedLanguage = currentQuestionAny.language?.trim() || ''
+    
+    // If no language is provided, try to detect from code snippet or use neutral fallback
+    if (!detectedLanguage && currentQuestionAny.codeSnippet) {
+      // Simple language detection based on common patterns
+      const codeSnippet = currentQuestionAny.codeSnippet.toLowerCase()
+      if (codeSnippet.includes('function') || codeSnippet.includes('const') || codeSnippet.includes('let')) {
+        detectedLanguage = 'JavaScript'
+      } else if (codeSnippet.includes('def ') || codeSnippet.includes('import ')) {
+        detectedLanguage = 'Python'
+      } else if (codeSnippet.includes('public class') || codeSnippet.includes('System.out')) {
+        detectedLanguage = 'Java'
+      } else if (codeSnippet.includes('#include') || codeSnippet.includes('cout <<')) {
+        detectedLanguage = 'C++'
+      } else {
+        detectedLanguage = 'Code' // Neutral fallback
+      }
+    } else if (!detectedLanguage) {
+      detectedLanguage = 'Code' // Neutral fallback when no code snippet
+    }
+
     return {
       id: String(currentQuestion.id),
       text: questionText,
       question: questionText,
       options,
       codeSnippet: currentQuestionAny.codeSnippet || '',
-      language: currentQuestionAny.language && currentQuestionAny.language.trim() !== ""
-        ? currentQuestionAny.language
-        : "JavaScript", // <-- Default to "JavaScript" only if not present
+      language: detectedLanguage,
       correctAnswer: currentQuestionAny.answer || '',
     }
   }, [currentQuestion])
@@ -188,7 +209,12 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const isLastQuestion = currentQuestionIndex === questions.length - 1
   if (isLoading) {
     return (
-      <LoadingSpinner />
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
     )
   }
   if (hasError) {
@@ -206,29 +232,35 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   }
   if (!formattedQuestion) {
     return (
-      <GlobalLoader
-
-      />
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
     )
-  } return (
-    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      
-   
-      <CodeQuiz
-        question={formattedQuestion}
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-        existingAnswer={existingAnswer}
-        onAnswer={handleAnswer}
-        onNext={handleNextQuestion}
-        onSubmit={handleSubmitQuiz}
-        isSubmitting={isSubmitting}
-        canGoNext={canGoNext}
-        isLastQuestion={isLastQuestion}
-        quizTitle={quizTitle || title || "Code Quiz"}
-      />
+  } 
+  
+  return (
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="space-y-6">
+        <CodeQuiz
+          question={formattedQuestion}
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
+          existingAnswer={existingAnswer}
+          onAnswer={handleAnswer}
+          onNext={handleNextQuestion}
+          onSubmit={handleSubmitQuiz}
+          isSubmitting={isSubmitting}
+          canGoNext={canGoNext}
+          isLastQuestion={isLastQuestion}
+          quizTitle={quizTitle || title || "Code Quiz"}
+        />
+      </div>
     </div>
   )
 }
 
 // Export memoized version to prevent unnecessary re-renders
-export default memo(CodeQuizWrapper);
+export default CodeQuizWrapper;

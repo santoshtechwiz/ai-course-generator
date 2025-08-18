@@ -3,12 +3,14 @@ import type { Metadata } from "next"
 import { getAuthSession } from "@/lib/auth"
 import { getQuizzes, type QuizListItem } from "@/app/actions/getQuizes"
 
-import { QuizzesClient } from "./components/QuizzesClient"
+
 import ClientOnly from "@/components/ClientOnly"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper"
 import { BookOpen, Sparkles, Zap, Target } from "lucide-react"
-import { generateMetadata, JsonLD } from "@/lib/seo";
+import { JsonLD } from "@/lib/seo"
+import { generateMetadata } from "@/lib/seo"
+import QuizzesClientClient from "./components/QuizzesClientClient"
 
 export const metadata: Metadata = generateMetadata({
   title: "Interactive Quizzes – Master Your Knowledge | CourseAI",
@@ -32,12 +34,11 @@ export const metadata: Metadata = generateMetadata({
     "quiz app",
     "online quiz platform",
     "quiz builder",
-    "CourseAI quizzes"
+    "CourseAI quizzes",
   ],
-
 })
 
-export const dynamic = "force-dynamic"
+// ...existing code...
 
 const Page = async () => {
   const session = await getAuthSession()
@@ -75,31 +76,31 @@ const Page = async () => {
           title={
             <div className="flex items-center gap-4">
               <div className="relative">
-                <div className="p-4 bg-gradient-to-br from-primary via-primary/90 to-primary/80 rounded-2xl text-primary-foreground shadow-lg">
+                <div className="p-4 bg-gradient-to-br from-primary to-primary/80 rounded-2xl text-primary-foreground shadow-lg">
                   <BookOpen className="h-8 w-8" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce">
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-amber-400 to-amber-500 rounded-full animate-bounce">
                   <Sparkles className="h-3 w-3 text-white m-0.5" />
                 </div>
               </div>
               <div>
-                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-foreground/70 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                   Explore Quizzes
                 </h1>
                 <div className="flex items-center gap-3 mt-2">
                   <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
                     <Zap className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium text-primary">Interactive Learning</span>
+                    <span className="text-sm font-medium text-primary">Interactive</span>
                   </div>
-                  <div className="flex items-center gap-2 px-3 py-1 bg-secondary/10 rounded-full border border-secondary/20">
-                    <Target className="h-4 w-4 text-secondary-foreground" />
-                    <span className="text-sm font-medium text-secondary-foreground">Skill Assessment</span>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-accent/10 rounded-full border border-accent/20">
+                    <Target className="h-4 w-4 text-accent-foreground" />
+                    <span className="text-sm font-medium text-accent-foreground">Skill Building</span>
                   </div>
                 </div>
               </div>
             </div>
           }
-          description="Discover a diverse collection of interactive quizzes designed to test your knowledge, enhance your skills, and accelerate your learning journey. From multiple choice questions to coding challenges, we've got something for every learner."
+          description="Test your knowledge with interactive quizzes designed to boost your learning"
         />
 
         <JsonLD
@@ -143,9 +144,7 @@ const Page = async () => {
         />
 
         <Suspense fallback={<SuspenseGlobalFallback message="Loading your amazing quizzes..." />}>
-          <ClientOnly>
-            <QuizzesClient initialQuizzesData={initialQuizzesData} userId={userId} />
-          </ClientOnly>
+          <QuizzesClientClient initialQuizzesData={initialQuizzesData} userId={userId} />
         </Suspense>
       </div>
     </PageWrapper>

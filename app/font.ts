@@ -1,4 +1,4 @@
-import { Roboto, Poppins, Open_Sans, Inter } from 'next/font/google'
+import { Roboto, Poppins, Open_Sans, Inter, Plus_Jakarta_Sans } from 'next/font/google'
 
 // Main fonts with improved configuration
 const roboto = Roboto({
@@ -29,9 +29,17 @@ const inter = Inter({
   variable: '--font-inter',
 })
 
+const jakarta = Plus_Jakarta_Sans({
+  weight: ['400', '500', '600', '700', '800'],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-jakarta',
+})
+
 export const font = {
   roboto,
   poppins,
   openSans,
   inter,
+  jakarta,
 }

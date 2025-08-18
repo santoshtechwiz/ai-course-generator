@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 import { X, Paperclip, File, FileText, ImageIcon, FileArchive } from "lucide-react"
 import Image from "next/image"
 import { HashLoader } from "react-spinners"

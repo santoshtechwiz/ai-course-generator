@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction, createAsyncThunk } from "@reduxjs/toolkit"
 import { courseApiClient } from '@/app/dashboard/course/services/course-api-client';
+import { migratedStorage } from '@/lib/storage';
 
 // --- Improved TypeScript interfaces ---
 export interface VideoProgress {
@@ -50,7 +51,7 @@ export interface CourseState {
   videoProgress: Record<string, VideoProgress>
   autoplayEnabled: boolean
   bookmarks: Record<string, BookmarkItem[]>
-  courseProgress: Record<number, CourseProgress> // Legacy - keep for backward compatibility
+  courseProgress: Record<number | string, CourseProgress> // Legacy - keep for backward compatibility
   userProgress: Record<string, Record<number | string, CourseProgress>> // Per-user progress
   guestProgress: Record<number | string, CourseProgress> // Guest-only progress
   currentCourseId: number | null
@@ -429,10 +430,10 @@ export const setCurrentVideoApi = (videoId: string, userId?: string) => (dispatc
     // Dispatch the action to update current video
     dispatch(courseSlice.actions.setCurrentVideo(videoId));
 
-    // Persist to local storage for recovery
+    // Persist to storage for recovery
     try {
       const storageKey = userId ? `currentVideoId_${userId}` : "currentVideoId_guest";
-      localStorage.setItem(storageKey, videoId);
+      migratedStorage.setItem(storageKey, videoId, { temporary: true });
     } catch (storageError) {
       // Silent fail for storage errors
     }

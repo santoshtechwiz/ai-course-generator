@@ -19,10 +19,10 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 
-import { usePersistentState } from "@/hooks/usePersistentState"
-import { cn } from "@/lib/tailwindUtils"
+import { usePersistentState } from "@/lib/storage"
+import { cn } from "@/lib/utils"
 import { blanksQuizSchema } from "@/schema/schema"
-import { GlobalLoader } from "@/components/ui/loader"
+import { Skeleton } from "@/components/ui/skeleton"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
@@ -30,6 +30,8 @@ import { SubscriptionSlider } from "@/app/dashboard/subscription/components/Subs
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import PlanAwareButton from "../../components/PlanAwareButton"
 import FormContainer from "@/app/dashboard/FormContainer"
+import { useToast } from "@/components/ui/use-toast"
+import { useGlobalLoader } from "@/store/loaders/global-loader"
 
 
 type BlankQuizFormData = z.infer<typeof blanksQuizSchema> & {}
@@ -46,6 +48,8 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
+  const { toast } = useToast()
+  const { withLoading } = useGlobalLoader()
 
   const [formData, setFormData] = usePersistentState<BlankQuizFormData>("blankQuizFormData", {
     title: params?.title || "",
@@ -95,12 +99,13 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
 
   const { mutateAsync: createBlankQuizMutation } = useMutation({
     mutationFn: async (data: BlankQuizFormData) => {
-      const response = await axios.post("/api/blanks", data)
+      const response = await axios.post("/api/quizzes", { ...data, type: "blanks" })
       return response.data
     },
     onError: (error: any) => {
       console.error("Error creating blanks quiz:", error)
       setSubmitError(error?.response?.data?.message || "Failed to create fill-in-the-blanks quiz. Please try again.")
+      toast({ title: "Error", description: error?.response?.data?.message || "Failed to create blanks quiz.", variant: "destructive" })
     },
   })
   const onSubmit = React.useCallback(
@@ -123,24 +128,33 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
 
     try {
       const formValues = watch()
-      const response = await createBlankQuizMutation({
+      const response = await withLoading(createBlankQuizMutation({
         title: formValues.title,
         amount: formValues.amount,
         difficulty: formValues.difficulty,
         topic: formValues.topic,
         type: "blanks",
+      }), {
+        message: "Generating your blanks quiz...",
+        isBlocking: true,
+        minVisibleMs: 400,
+        autoProgress: true,
       })
-      const userQuizId = response?.quizId
+      const userQuizId = response?.quizId || response?.userQuizId
 
       if (!userQuizId) throw new Error("Blanks Quiz ID not found")
 
+      toast({ title: "Success!", description: "Your blanks quiz has been created." })
+
       router.push(`/dashboard/blanks/${response?.slug}`)
-    } catch (error) {
-      // Error is handled in the mutation's onError callback
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || "Failed to create blanks quiz. Please try again."
+      setSubmitError(message)
+      toast({ title: "Error", description: message, variant: "destructive" })
     } finally {
       setIsLoading(false)
     }
-  }, [createBlankQuizMutation, watch, router])
+  }, [createBlankQuizMutation, watch, router, withLoading, toast])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")
@@ -185,9 +199,10 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
 
   if (isLoading) {
     return (
-      <FormContainer>
-        <GlobalLoader />
-      </FormContainer>
+      <div className="space-y-3">
+        <Skeleton className="h-6 w-36" />
+        <Skeleton className="h-48 w-full" />
+      </div>
     )
   }
 
@@ -490,8 +505,8 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
               transition={{ delay: 0.7 }}
             >
               <PlanAwareButton
-                type="submit"
-                label="Generate Fill-in-the-Blanks Quiz"
+                label="Generate Quiz"
+                onClick={handleSubmit(onSubmit)}
                 isLoggedIn={isLoggedIn}
                 isEnabled={!isDisabled}
                 isLoading={isLoading}

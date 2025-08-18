@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { Share2, Copy, Twitter, Facebook, Linkedin, Loader2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 
 interface ShareOptionsProps {
   slug: string

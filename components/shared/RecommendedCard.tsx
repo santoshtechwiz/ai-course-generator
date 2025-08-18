@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { type RecommendedItem } from "@/app/utils/get-recommended-items"
-import { useGlobalLoader } from '@/store/global-loader'
+import { useGlobalLoader } from '@/store/loaders/global-loader'
 
 interface RecommendedCardProps {
   item: RecommendedItem
@@ -47,7 +47,8 @@ export function RecommendedCard({ item, index }: RecommendedCardProps) {
       whileHover={{ y: -5, transition: { duration: 0.2 } }}
       className="h-full"
     >
-      <Card className="overflow-hidden h-full flex flex-col hover:shadow-lg transition-shadow duration-300">
+      <Card className="relative overflow-hidden h-full flex flex-col hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-primary/5 via-card to-accent/5 border-primary/10">
+        <div className="pointer-events-none absolute inset-0 opacity-60 mix-blend-multiply" aria-hidden="true" />
         <div className="relative h-40 w-full">
           <Image
             src={item.image}
@@ -59,7 +60,7 @@ export function RecommendedCard({ item, index }: RecommendedCardProps) {
           />
           <Badge 
             variant={item.type === "course" ? "default" : "secondary"}
-            className="absolute top-2 right-2 z-10"
+            className="absolute top-2 right-2 z-10 shadow-sm bg-primary/90 text-primary-foreground hover:bg-primary"
           >
             {item.type === "course" ? "Course" : "Quiz"}
           </Badge>
@@ -82,13 +83,11 @@ export function RecommendedCard({ item, index }: RecommendedCardProps) {
         <CardFooter className="pb-4 pt-0">
           <Button 
             onClick={() => {
-              startLoading({ message: item.type === "course" ? "Loading course..." : "Loading quiz...", isBlocking: true });
-              setTimeout(() => {
-                router.push(getUrl())
-              }, 100);
+              startLoading({ message: "Loading...", isBlocking: true, minVisibleMs: 200, autoProgress: true });
+              router.push(getUrl());
             }} 
             variant="outline" 
-            className="w-full"
+            className="w-full hover:border-primary/40 hover:bg-primary/5"
           >
             {item.type === "course" ? "View Course" : "Take Quiz"}
           </Button>

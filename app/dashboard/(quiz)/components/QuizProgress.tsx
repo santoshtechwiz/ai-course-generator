@@ -3,7 +3,7 @@
 import type React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { CheckCircle2, Clock, Target, TrendingUp, Zap, Award, Flame } from "lucide-react"
-import { GlobalLoader } from "@/components/ui/loader"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface QuizProgressProps {
   currentQuestionIndex: number
@@ -83,9 +83,9 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
   // Show loader if loading
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto flex flex-col items-center justify-center py-12">
-        <GlobalLoader />
-        <p className="mt-4 text-sm text-muted-foreground">Loading quiz progress...</p>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-2 w-full" />
       </div>
     )
   }
@@ -102,11 +102,11 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
 
   // Format time display with better handling
   const formatTime = (seconds: number) => {
-    if (!seconds || typeof seconds !== "number" || seconds < 0) return "0s"
-    if (seconds < 60) return `${Math.floor(seconds)}s`
+    if (!seconds || typeof seconds !== "number" || seconds < 0) return "0.00s"
+    if (seconds < 60) return `${Number(seconds).toFixed(2)}s`
     const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = Math.floor(seconds % 60)
-    return `${minutes}m ${remainingSeconds}s`
+    const remainingSeconds = seconds % 60
+    return `${minutes}:${remainingSeconds.toFixed(2).padStart(5, '0')}`
   }
 
   // Calculate average time per question with validation

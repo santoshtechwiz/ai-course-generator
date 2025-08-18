@@ -1,2 +1,1 @@
-export { GlobalLoader } from "./GlobalLoader"
-export * from "./types"
+export { GlobalLoader, LoadingSpinner, InlineSpinner } from "./GlobalLoader";

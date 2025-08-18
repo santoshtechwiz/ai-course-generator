@@ -191,7 +191,7 @@ export function CourseSidebar({
           variants={contentVariants}
           className="mb-6 w-full"
         >
-          <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+          <Card className="bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border-primary/20">
             <CardContent className="p-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm font-medium">

@@ -1,21 +1,19 @@
 "use client"
 import type React from "react"
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { CheckCircle, AlertCircle, Target, BookOpen, Clock, Brain, Lightbulb, Eye, Zap, Info } from "lucide-react" // Added Info icon
+import { CheckCircle, AlertCircle, BookOpen, Lightbulb, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
 import { HintSystem } from "@/components/quiz/HintSystem"
-import { TagsDisplay } from "@/components/quiz/TagsDisplay"
-import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
-import { calculateAnswerSimilarity, getSimilarityLabel, getSimilarityFeedback } from "@/lib/utils/text-similarity"
-import { generateOpenEndedHints, calculateHintPenalty } from "@/lib/utils/hint-system"
+import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
+import { generateOpenEndedHints } from "@/lib/utils/hint-system"
 import type { OpenEndedQuestion } from "@/app/types/quiz-types"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip" // Assuming Tooltip components are available
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface OpenEndedQuizProps {
   question: OpenEndedQuestion
@@ -32,7 +30,7 @@ interface OpenEndedQuizProps {
   timeSpent?: number
 }
 
-// Animation variants (kept consistent for smooth transitions)
+// Standardized animation variants
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -59,44 +57,23 @@ const containerVariants = {
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.98 },
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
     transition: {
       type: "spring",
-      stiffness: 250,
-      damping: 25,
+      stiffness: 200,
+      damping: 20,
       mass: 0.8,
     },
   },
   exit: {
     opacity: 0,
     y: -20,
-    scale: 0.98,
-    transition: { duration: 0.2 },
-  },
-}
-
-const feedbackVariants = {
-  hidden: { opacity: 0, scale: 0.8, y: 10 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    y: 0,
-    transition: {
-      type: "spring",
-      stiffness: 350,
-      damping: 28,
-      delay: 0.1,
-    },
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.8,
-    y: -10,
-    transition: { duration: 0.2 },
+    scale: 0.95,
+    transition: { duration: 0.3 },
   },
 }
 
@@ -175,7 +152,7 @@ export default function OpenEndedQuiz({
   }, [])
 
   const handleAnswerSubmit = useCallback(() => {
-    const minLength = 10
+    const minLength = 5
     if (!answer.trim() || answer.trim().length < minLength) {
       setShowValidation(true)
       return false
@@ -215,52 +192,8 @@ export default function OpenEndedQuiz({
     [isLastQuestion, handleSubmit, handleNext],
   )
 
-  // Get feedback based on similarity
-  const feedback = useMemo(() => {
-    if (!answer.trim()) return null
-    const label = getSimilarityLabel(similarity)
-    const message = getSimilarityFeedback(similarity)
-    let color = "text-gray-600"
-    let bgColor = "bg-gray-50 dark:bg-gray-950/20"
-    let borderColor = "border-gray-200 dark:border-gray-800"
-    let icon = Target
-    let level = "Getting Started"
-    let emoji = "🎯"
-
-    if (similarity >= 0.8) {
-      color = "text-emerald-600"
-      bgColor = "bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20"
-      borderColor = "border-emerald-200 dark:border-emerald-800"
-      icon = CheckCircle
-      level = "Excellent Response"
-      emoji = "🏆"
-    } else if (similarity >= 0.6) {
-      color = "text-blue-600"
-      bgColor = "bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20"
-      borderColor = "border-blue-200 dark:border-blue-800"
-      icon = Target
-      level = "Good Progress"
-      emoji = "👍"
-    } else if (similarity >= 0.4) {
-      color = "text-yellow-600"
-      bgColor = "bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20"
-      borderColor = "border-yellow-200 dark:border-yellow-800"
-      icon = AlertCircle
-      level = "Needs Improvement"
-      emoji = "⚡"
-    } else {
-      color = "text-red-600"
-      bgColor = "bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/20 dark:to-rose-950/20"
-      borderColor = "border-red-200 dark:border-red-800"
-      icon = AlertCircle
-      level = "Keep Trying"
-      emoji = "🎯"
-    }
-    return { label, message, color, bgColor, borderColor, icon, level, emoji }
-  }, [answer, similarity])
-
-  const minLength = 10
-  const canProceed = answer.trim().length >= minLength
+  const minLength = 5
+  const canProceed = answer.trim().length >= minLength && similarity >= 0.3
   const wordCount = answer
     .trim()
     .split(/\s+/)
@@ -271,227 +204,139 @@ export default function OpenEndedQuiz({
       questionNumber={questionNumber}
       totalQuestions={totalQuestions}
       quizType="openended"
-      animationKey={question.id}
-      quizTitle="Open-Ended Question"
-      quizSubtitle="Provide a detailed answer explaining your understanding"
-      timeSpent={timeSpent}
+      animationKey={String(question.id)}
       difficulty={questionData.difficulty.toLowerCase() as "easy" | "medium" | "hard"}
+      fullWidth={true}
     >
-      <div className="space-y-4 sm:space-y-6">
-        {/* Info Card (Difficulty & Tips) */}
-        <motion.div
-          variants={itemVariants}
-          className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-200 dark:bg-gray-900 dark:border-gray-800 shadow-sm"
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-violet-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Brain className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-               
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  {hintsUsed > 0 && (
-                    <Badge
-                      variant="outline"
-                      className="text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 text-xs sm:text-sm whitespace-nowrap shadow-sm"
-                    >
-                      <Lightbulb className="w-3 h-3 mr-1 flex-shrink-0" />
-                      <span className="hidden xs:inline">
-                        {hintsUsed} hint{hintsUsed > 1 ? "s" : ""} used (-{hintsUsed * 5}%)
-                      </span>
-                      <span className="xs:hidden">
-                        {hintsUsed} hint{hintsUsed > 1 ? "s" : ""}
-                      </span>
-                    </Badge>
-                  )}
-                </div>
-                <div className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  <span className="hidden sm:inline">Think critically • Explain thoroughly • Address key concepts</span>
-                  <span className="sm:hidden">Think critically and explain thoroughly</span>
-                </div>
-              </div>
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        className="w-full space-y-6"
+      >
+        {/* Header */}
+        <motion.div className="text-center space-y-4">
+          {/* Quiz Type Badge */}
+          <div className="flex justify-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg">
+              <BookOpen className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Open-Ended Question</span>
             </div>
           </div>
+
+          {/* Question Text */}
+          <h2 className="text-xl sm:text-2xl font-semibold text-foreground leading-relaxed max-w-3xl mx-auto">
+            {questionData.text}
+          </h2>
         </motion.div>
 
-        {/* Enhanced Question Display */}
+        {/* Answer Input - Simplified */}
         <motion.div
           variants={itemVariants}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          className="w-full max-w-3xl mx-auto p-6 bg-card rounded-lg border border-border shadow-sm space-y-4"
         >
-          <Card className="border-l-4 border-l-violet-500 bg-gradient-to-r from-background to-violet-50/30 shadow-lg dark:to-violet-950/20">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-violet-500 to-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
-                    <h3 className="font-semibold text-base sm:text-lg text-foreground">Question</h3>
-                    {/* Removed "Critical Thinking" badge */}
-                  </div>
-                  <p className="text-base sm:text-lg leading-relaxed text-foreground break-words">
-                    {questionData.text}
-                  </p>
-                  {/* Removed "Writing Tip" section */}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Answer Input */}
-        <motion.div
-          variants={itemVariants}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-3"
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <label htmlFor="answer" className="text-sm font-medium text-foreground flex items-center gap-1">
-              Your Detailed Answer
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs text-sm p-2">
-                    For a strong answer: structure clearly, define terms, use examples, and explain thoroughly.
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          <div className="flex items-center gap-2">
+            <label htmlFor="answer" className="text-sm font-medium text-foreground">
+              Your Answer
             </label>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-              <div className="flex items-center gap-1">
-                <Eye className="w-3 h-3 flex-shrink-0" />
-                <span className="whitespace-nowrap">{wordCount} words</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock className="w-3 h-3 flex-shrink-0" />
-                <span className="whitespace-nowrap">{answer.length} chars</span>
-              </div>
-            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-sm">
+                  Provide a comprehensive answer with clear explanations
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
+
           <Textarea
             id="answer"
             value={answer}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder="Provide a detailed explanation... (Ctrl+Enter to submit)"
+            placeholder="Share your understanding and reasoning..."
             className={cn(
-              "min-h-[140px] resize-y transition-all w-full",
+              "w-full min-h-[140px] resize-y transition-all duration-300 text-base p-4 rounded-xl",
+              "border-2 focus:ring-0 focus:ring-offset-0 shadow-sm hover:shadow-md",
+              "bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50",
               isAnswered
-                ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300"
+                ? "border-emerald-400 bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-950/30 dark:to-green-900/30 text-emerald-800 dark:text-emerald-200 shadow-emerald-200/50"
                 : showValidation
-                  ? "border-red-500 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300"
-                  : "hover:border-violet-500 focus:border-violet-500 focus:shadow-violet-200/50 focus:shadow-lg",
+                  ? "border-rose-400 bg-gradient-to-br from-rose-50 to-red-100/50 dark:from-rose-950/30 dark:to-red-900/20 shadow-rose-200/50"
+                  : "border-violet-200 dark:border-violet-700 hover:border-violet-400 dark:hover:border-violet-500 focus:border-violet-500 dark:focus:border-violet-400 focus:shadow-violet-200/50 dark:focus:shadow-violet-800/30",
             )}
             autoFocus
-            aria-label="Enter your detailed answer"
           />
+
+          {/* Character count and validation */}
+          <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mt-2">
+            <span className="font-medium">{wordCount} words</span>
+            <span className="font-medium">{answer.length} characters</span>
+          </div>
+
+          {/* Success indicator */}
+          {answer.trim() && similarity >= 0.3 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="flex items-center gap-3 text-emerald-700 dark:text-emerald-300 bg-gradient-to-r from-emerald-50 to-green-100 dark:from-emerald-950/40 dark:to-green-900/30 p-4 rounded-xl border-2 border-emerald-200 dark:border-emerald-800 shadow-lg shadow-emerald-100/50 dark:shadow-emerald-900/20"
+            >
+              <div className="p-1 bg-emerald-500 rounded-full">
+                <CheckCircle className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm font-semibold">Excellent response! Your answer demonstrates good understanding.</span>
+            </motion.div>
+          )}
+
+          {/* Validation Error */}
           {showValidation && answer.trim().length < minLength && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-center gap-2 text-sm text-red-600 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800"
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="flex items-center gap-3 text-rose-700 dark:text-rose-300 bg-gradient-to-r from-rose-50 to-red-100 dark:from-rose-950/40 dark:to-red-900/30 p-4 rounded-xl border-2 border-rose-200 dark:border-rose-800 shadow-lg shadow-rose-100/50 dark:shadow-rose-900/20"
               role="alert"
-              aria-live="polite"
             >
-              <AlertCircle className="w-4 h-4 animate-bounce flex-shrink-0" />
-              <span className="font-medium text-center">
-                Please provide at least {minLength} characters for a meaningful answer
-              </span>
+              <div className="p-1 bg-rose-500 rounded-full">
+                <AlertCircle className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm font-semibold">Please provide at least {minLength} characters for a meaningful answer</span>
             </motion.div>
+          )}
+
+          {/* Keywords covered */}
+          {keywordsCovered.length > 0 && (
+            <div className="flex flex-wrap gap-2 p-4 bg-gradient-to-r from-indigo-50 to-purple-100 dark:from-indigo-950/30 dark:to-purple-900/20 rounded-xl border-2 border-indigo-200 dark:border-indigo-800 shadow-sm">
+              <span className="text-sm text-indigo-700 dark:text-indigo-300 font-semibold">Keywords covered:</span>
+              {keywordsCovered.map((keyword, index) => (
+                <Badge key={index} className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md hover:shadow-lg transition-shadow">
+                  {keyword}
+                </Badge>
+              ))}
+            </div>
           )}
         </motion.div>
 
-        {/* Answer Feedback */}
-        <AnimatePresence>
-          {feedback && answer.trim() && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Card className={cn("border-2 shadow-lg", feedback.borderColor, feedback.bgColor)}>
-                <CardContent className="p-3 sm:p-4 md:p-6">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-                    <motion.div
-                      initial={{ scale: 0, rotate: -180 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      transition={{ type: "spring", stiffness: 300, delay: 0.1 }}
-                      className={cn(
-                        "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0",
-                        feedback.color.replace("text-", "bg-").replace("-600", "-500"),
-                        "text-white",
-                      )}
-                    >
-                      <feedback.icon className="w-5 h-5 sm:w-6 sm:h-6" />
-                    </motion.div>
-                    <div className="flex-1 space-y-3 min-w-0">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-wrap">
-                        <h4 className={cn("text-base sm:text-lg font-bold", feedback.color)}>
-                          {feedback.emoji} {feedback.level}
-                        </h4>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {questionData.answer && (
-                            <Badge variant="secondary" className="text-xs whitespace-nowrap">
-                              <Zap className="w-3 h-3 mr-1 flex-shrink-0" />
-                              {Math.round(similarity * 100)}% match
-                            </Badge>
-                          )}
-                          {hintsUsed > 0 && (
-                            <Badge
-                              variant="outline"
-                              className="text-xs text-amber-600 border-amber-300 whitespace-nowrap"
-                            >
-                              Score: {calculateHintPenalty(hintsUsed)}%
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      <motion.p
-                        className={cn("text-xs sm:text-sm leading-relaxed break-words", feedback.color)}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                      >
-                        {feedback.message}
-                      </motion.p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Hint System */}
-        <motion.div
+        {/* Hint System - Enhanced with vibrant colors */}
+        <motion.div 
           variants={itemVariants}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          className="space-y-4"
         >
           <HintSystem
             hints={hints || []}
             onHintUsed={(hintIndex) => handleHintUsed(hintIndex + 1)}
             questionText={questionData.text}
+            maxHints={3}
+            className="border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-950/30 dark:to-yellow-900/20 rounded-xl shadow-lg shadow-amber-100/50 dark:shadow-amber-900/20"
           />
         </motion.div>
 
         {/* Footer */}
-        <motion.div
-          variants={itemVariants}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
+        <motion.div variants={itemVariants}>
           <QuizFooter
             onNext={handleNext}
             onPrevious={onPrevious}
@@ -503,7 +348,7 @@ export default function OpenEndedQuiz({
             submitLabel="Finish Quiz"
           />
         </motion.div>
-      </div>
+      </motion.div>
     </QuizContainer>
   )
 }

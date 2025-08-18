@@ -35,6 +35,11 @@ const nextConfig = {
         hostname: "images.unsplash.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "img.youtube.com",
+        pathname: "/**",
+      },
     ],
     minimumCacheTTL: 600, // Cache images for at least 10 minutes
     dangerouslyAllowSVG: false,
@@ -71,11 +76,47 @@ const nextConfig = {
   // Performance optimizations
   compress: true,
 
+  // Webpack optimizations for faster builds
+  webpack: (config, { dev, isServer }) => {
+    // Optimize build performance
+    if (dev) {
+      config.optimization = {
+        ...config.optimization,
+        removeAvailableModules: false,
+        removeEmptyChunks: false,
+        splitChunks: false,
+      }
+    }
+
+    // Reduce bundle size in production
+    if (!dev && !isServer) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+          },
+          common: {
+            name: 'common',
+            minChunks: 2,
+            chunks: 'all',
+            enforce: true,
+          },
+        },
+      }
+    }
+
+    return config
+  },
+
 
   // Experimental features
   experimental: {
     optimizeCss: true, // Optimize CSS
-    // Add more experimental flags as needed, see Next.js docs for valid options
+    // Faster development builds
+    optimizePackageImports: ['lucide-react', 'recharts', '@radix-ui/react-icons'],
   },
 }
 

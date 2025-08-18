@@ -7,6 +7,7 @@ import { Loader2, AlertTriangle, Info, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ReferralBanner } from "@/components/ReferralBanner"
 import { useSubscription } from "@/modules/auth"
+import { migratedStorage } from "@/lib/storage"
 
 
 import { LoginModal } from "@/app/auth/signin/components/LoginModal"
@@ -62,28 +63,24 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     const refCode = searchParams?.get("ref")
     if (refCode) {
       setReferralCode(refCode)
-      if (typeof window !== "undefined") {
-        localStorage.setItem("referralCode", refCode)
-      }
-    } else if (typeof window !== "undefined") {
-      const storedRefCode = localStorage.getItem("referralCode")
-      if (storedRefCode) {
+      migratedStorage.setItem("referralCode", refCode)
+    } else {
+      const storedRefCode = migratedStorage.getItem<string>("referralCode")
+      if (storedRefCode && typeof storedRefCode === "string") {
         setReferralCode(storedRefCode)
       }
     }
   }, [searchParams])
-  // Check for pending subscription data in localStorage
+  
+  // Check for pending subscription data in storage
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const pendingData = localStorage.getItem("pendingSubscription")
-        if (pendingData) {
-          const parsedData = JSON.parse(pendingData)
-          setPendingSubscriptionData(parsedData)
-        }
-      } catch (error) {
-        console.error("Error parsing pending subscription data:", error)
+    try {
+      const pendingData = migratedStorage.getItem("pendingSubscription", { secure: true })
+      if (pendingData && typeof pendingData === "object") {
+        setPendingSubscriptionData(pendingData)
       }
+    } catch (error) {
+      console.error("Error parsing pending subscription data:", error)
     }
   }, [])
 

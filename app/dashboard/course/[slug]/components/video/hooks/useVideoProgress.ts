@@ -37,7 +37,7 @@ export function useVideoProgress({
   const [error, setError] = useState<Error | null>(null)
   
   // Use the more specific chapter ID available
-  const effectiveChapterId = chapterId || currentChapterId
+  const effectiveChapterId = chapterId || currentChapterId || videoId
   
   // Convert courseId to string for consistent lookup
   const courseIdStr = String(courseId)
@@ -214,7 +214,7 @@ export function useVideoProgress({
           shouldSendUpdate = true;
           
           // Mark chapter as completed if we've reached threshold
-          if (milestone >= playedThreshold && effectiveChapterId && !isSyncingToAPIRef.current) {
+          if (milestone >= playedThreshold && (effectiveChapterId || videoId) && !isSyncingToAPIRef.current) {
             isSyncingToAPIRef.current = true;
             
             // Mark locally completed
@@ -232,8 +232,8 @@ export function useVideoProgress({
             // Call API to update progress - this will be rate limited by progressApi
             progressApi.queueUpdate({
               courseId,
-              chapterId: String(effectiveChapterId),
-              videoId: videoId || "",
+              chapterId: String(effectiveChapterId || videoId || ""),
+              videoId: String(videoId || effectiveChapterId || ""),
               progress: progressState.played,
               playedSeconds: progressState.playedSeconds,
               duration: duration,
@@ -259,11 +259,11 @@ export function useVideoProgress({
       }
       
       // Only send non-milestone updates if significant progress has been made
-      if (shouldSendUpdate && effectiveChapterId && videoId) {
+      if (shouldSendUpdate && (effectiveChapterId || videoId)) {
         progressApi.queueUpdate({
           courseId,
-          chapterId: String(effectiveChapterId),
-          videoId: videoId,
+          chapterId: String(effectiveChapterId || videoId || ""),
+          videoId: String(videoId || effectiveChapterId || ""),
           progress: progressState.played,
           playedSeconds: progressState.playedSeconds,
           duration: duration,
@@ -301,8 +301,8 @@ export function useVideoProgress({
         if (typeof data.progress === "number") {
           progressApi.queueUpdate({
             courseId,
-            chapterId: String(data.currentChapterId || effectiveChapterId || ""),
-            videoId: String(data.currentChapterId || effectiveChapterId || videoId || ""),
+            chapterId: String(data.currentChapterId || effectiveChapterId || videoId || ""),
+            videoId: String(videoId || data.currentChapterId || effectiveChapterId || ""),
             progress: data.progress,
             playedSeconds: progressState.playedSeconds || 0,
             duration: progressState.duration || 0,

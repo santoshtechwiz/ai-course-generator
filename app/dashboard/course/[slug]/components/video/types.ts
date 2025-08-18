@@ -43,6 +43,10 @@ export interface VideoPlayerState {
   theaterMode: boolean
   userInteracted: boolean
   autoPlayNext: boolean
+  isPictureInPicture: boolean
+  isPiPSupported: boolean
+  isNearingCompletion: boolean
+  isMiniPlayer: boolean
 }
 
 export interface ProgressState {
@@ -62,6 +66,8 @@ export interface VideoPlayerProps {
   rememberPlaybackSettings?: boolean
   onBookmark?: (time: number, title?: string) => void
   autoPlay?: boolean
+  onToggleAutoPlay?: () => void
+  forcePlay?: boolean
   onVideoLoad?: (metadata: any) => void
   onCertificateClick?: () => void
   onPlayerReady?: (ref: React.RefObject<any>) => void
@@ -79,11 +85,20 @@ export interface VideoPlayerProps {
   chapterTitle?: string
   courseName?: string
   courseId?: string | number
-  chapterId?: string
   onPrevVideo?: () => void
   prevVideoTitle?: string
   hasNextVideo?: boolean
   hasPrevVideo?: boolean
+  isFullscreen?: boolean
+  onFullscreenToggle?: () => void
+  onPictureInPictureToggle?: (iPiPActive: boolean) => void
+
+  initialSeekSeconds?: number
+  relatedCourses?: Array<{ id?: string | number; slug?: string; title?: string; description?: string; image?: string }>
+  progressStats?: { completedCount: number; totalChapters: number; progressPercentage: number }
+  quizSuggestions?: Array<{ id: string; title: string; description: string; estimatedTime: number; difficulty: "easy" | "medium" | "hard" }>
+  personalizedRecommendations?: Array<{ id: string; title: string; description: string; image?: string; slug: string; matchReason: string }>
+  isKeyChapter?: boolean
 }
 
 export interface PlayerControlsProps {
@@ -109,7 +124,7 @@ export interface PlayerControlsProps {
   onSeekToBookmark?: (time: number) => void
   isAuthenticated?: boolean
   onCertificateClick?: () => void
-  playerConfig?: PlayerConfig
+
   show?: boolean
   onShowKeyboardShortcuts?: () => void
   onTheaterMode?: () => void
@@ -124,8 +139,10 @@ export interface PlayerControlsProps {
   prevVideoTitle?: string
   onIsDragging?: (isDragging: boolean) => void
   onPictureInPicture?: () => void
+  onPictureInPictureToggle?: (isPiPActive: boolean) => void
   isPiPSupported?: boolean
   isPiPActive?: boolean
+
 }
 
 export interface ProgressBarProps {
@@ -269,6 +286,7 @@ export interface UseVideoPlayerReturn {
     handleShowKeyboardShortcuts: VideoEventHandler
     handleHideKeyboardShortcuts: VideoEventHandler
     handleTheaterModeToggle: VideoEventHandler
+    handlePictureInPictureToggle: VideoEventHandler
     handleShowControls: VideoEventHandler
     toggleAutoPlayNext: VideoEventHandler
   }
@@ -298,4 +316,6 @@ export interface ChapterEndOverlayProps {
   certificateState?: CertificateState
   isFinalChapter?: boolean
   courseTitle?: string
+  relatedCourses?: Array<{ id?: string | number; slug?: string; title?: string; description?: string; image?: string }>
+  progressStats?: { completedCount: number; totalChapters: number; progressPercentage: number }
 }

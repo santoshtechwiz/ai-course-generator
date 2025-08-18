@@ -1,6 +1,6 @@
 import { Badge, type BadgeProps } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { getSimilarityLevel } from "@/lib/utils/text-similarity"
+import { getSimilarityLabel } from "@/lib/utils/text-similarity"
 
 interface SimilarityBadgeProps extends Omit<BadgeProps, "variant"> {
   similarity: number
@@ -15,20 +15,27 @@ export function SimilarityBadge({
   className,
   ...props
 }: SimilarityBadgeProps) {
-  const { category, color } = getSimilarityLevel(similarity)
+  const label = getSimilarityLabel(similarity / 100)
+  const category = label.toLowerCase()
+  const color =
+    category === "excellent" ? "text-green-600" :
+    category === "very good" ? "text-emerald-600" :
+    category === "good" ? "text-yellow-600" :
+    category === "fair" ? "text-orange-600" :
+    category === "needs improvement" ? "text-red-600" : "text-gray-600"
 
   // Determine variant based on similarity category
   const getVariant = (): BadgeProps["variant"] => {
     switch (category) {
-      case "exact":
+      case "excellent":
         return "default"
-      case "high":
+      case "very good":
         return "secondary"
-      case "moderate":
+      case "good":
         return "outline"
-      case "low":
+      case "fair":
         return "destructive"
-      case "different":
+      case "needs improvement":
         return "destructive"
       default:
         return "outline"
@@ -51,16 +58,16 @@ export function SimilarityBadge({
   // Get tooltip text based on similarity category
   const getTooltipText = () => {
     switch (category) {
-      case "exact":
-        return "Perfect match! Your answer is exactly correct."
-      case "high":
-        return "Very close! Your answer is almost identical to the correct one."
-      case "moderate":
-        return "Somewhat similar to the correct answer."
-      case "low":
-        return "Your answer has some similarities but differs significantly."
-      case "different":
-        return "Your answer is quite different from the correct one."
+      case "excellent":
+        return "Perfect! Your answer matches the expected response very closely."
+      case "very good":
+        return "Great job! Your answer is very close to the expected response."
+      case "good":
+        return "Good work! Your answer captures the main concepts correctly."
+      case "fair":
+        return "You're on the right track, but try to be more specific or complete."
+      case "needs improvement":
+        return "Your answer has some relevant elements, but needs more accuracy."
       default:
         return "Similarity score"
     }
@@ -69,7 +76,7 @@ export function SimilarityBadge({
   const badge = (
     <Badge variant={getVariant()} className={`${getSizeClasses()} ${className}`} {...props}>
       <span className={color}>{similarity}%</span>
-      {size !== "sm" && <span className="ml-1 opacity-80">{category === "exact" ? "match" : "similarity"}</span>}
+      {size !== "sm" && <span className="ml-1 opacity-80">{label}</span>}
     </Badge>
   )
 

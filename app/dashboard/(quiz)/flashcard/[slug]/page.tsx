@@ -1,70 +1,63 @@
-"use client"
+import type { Metadata } from "next"
+import { generateQuizPageMetadata } from "@/components/seo/QuizPageWrapper"
+import FlashcardQuizClient from "./FlashcardQuizClient"
+import prisma from "@/lib/db"
+import { QuizSchema } from "@/lib/seo"
+import React from "react"
+import QuizSEOClient from "../../components/QuizSEOClient"
 
-import { useRouter } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+interface FlashcardQuizPageProps {
+  params: Promise<{ slug: string }>
+}
 
-import { getQuizSlug } from "../../components/utils"
-import FlashcardQuizWrapper from "../components/FlashcardQuizWrapper"
-import { GlobalLoader } from "@/components/loaders"
-import { useAuth } from "@/hooks"
+// Server component that generates proper SEO metadata
+export async function generateMetadata({ params }: FlashcardQuizPageProps): Promise<Metadata> {
+  const { slug } = await params
+  
+  let dbTitle: string | null = null
+  let isPublic = false
+  try {
+    const quiz = await prisma.userQuiz.findUnique({ where: { slug }, select: { title: true, isPublic: true } })
+    if (quiz) { dbTitle = quiz.title; isPublic = Boolean(quiz.isPublic) }
+  } catch {}
+ 
+  const cleanTopic = (dbTitle || slug).replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  const noIndex = !dbTitle || !isPublic
+  
+  return generateQuizPageMetadata({
+    quizType: "flashcard",
+    slug,
+    title: `${cleanTopic} - Study Flashcards`,
+    description: `Master ${cleanTopic} concepts with interactive flashcards. Study key terms, definitions, and important facts with spaced repetition learning.`,
+    topic: cleanTopic,
+    noIndex,
+  })
+}
 
+function QuizJsonLd({ slug, title }: { slug: string; title: string }) {
+  const url = `${process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"}/dashboard/flashcard/${slug}`
+  return (
+    <QuizSchema
+      name={title}
+      url={url}
+      description={`Study flashcards on ${title}`}
+      questions={[]}
+    />
+  )
+}
 
-export default function FlashCardPage({
-  params,
-}: {
-  params: Promise<{ slug: string }> 
-}) {
-  const slug = getQuizSlug(params);
-  const router = useRouter()
-  const {user}=useAuth();
-  // Get quiz state from Redux
-  const quizState = typeof window !== "undefined" ? require("react-redux").useSelector((state: any) => state.quiz) : null;
-  const quizData = quizState;
-  const status = quizState?.status;
-  const dispatch = (typeof window !== "undefined" ? require("react-redux").useDispatch() : () => { });
-  // Fetch quiz data if not already available
-  if (slug && (!quizState || !quizState.questions || quizState.questions.length === 0) && status !== "loading") {
-    // Dynamically import fetchQuiz thunk and dispatch it
-    console.log("Fetching quiz data for slug:", slug);
-    import("@/store/slices/flashcard-slice").then(({ fetchFlashCardQuiz }) => {
-      dispatch(fetchFlashCardQuiz(slug));
-    });
-  }
-
-  if (status === "loading" || !quizState || !quizState.questions || quizState.questions.length === 0) {
-    
-      <GlobalLoader  />
-
-  }
-
-
-  if (!slug) {
+export default function FlashcardQuizPage({ params }: FlashcardQuizPageProps) {
+  const ClientWithJsonLd = async () => {
+    const { slug } = await params
+    const title = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
     return (
-      <div className="container max-w-4xl py-6">
-        <Card>
-          <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-bold mb-4">Error</h2>
-            <p className="text-muted-foreground mb-6">Quiz slug is missing. Please check the URL.</p>
-            <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
-          </CardContent>
-        </Card>
-      </div>
+      <>
+        <QuizSEOClient />
+        <QuizJsonLd slug={slug} title={title} />
+        <FlashcardQuizClient params={params} />
+      </>
     )
   }
-
-  return (
-    <QuizPlayLayout
-      quizSlug={slug}
-      quizType="flashcard"
-      quizId={slug}
-      isPublic={true}
-      userId={user?.id || ""}
-      isFavorite={false}
-      quizData={quizData || null}
-    >
-      <FlashcardQuizWrapper slug={slug} />
-    </QuizPlayLayout>
-  )
+  // @ts-expect-error Async Server Component
+  return <ClientWithJsonLd />
 }

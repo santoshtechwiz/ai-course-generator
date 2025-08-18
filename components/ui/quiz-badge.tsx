@@ -46,13 +46,6 @@ const quizTypeColors = {
     gradient: "from-amber-400 to-yellow-500",
     fullGradient: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 shadow-md shadow-blue-500/25"
   },
-  "blanks": {
-    bg: "bg-amber-50 dark:bg-amber-900/30",
-    text: "text-amber-700 dark:text-amber-400",
-    border: "border-amber-200 dark:border-amber-800",
-    gradient: "from-amber-400 to-yellow-500",
-    fullGradient: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 shadow-md shadow-blue-500/25"
-  },
   flashcard: {
     bg: "bg-orange-50 dark:bg-orange-900/30",
     text: "text-orange-700 dark:text-orange-400",
@@ -74,7 +67,6 @@ const quizTypeLabels = {
   openended: "Open Ended",
   code: "Code",
   blanks: "Fill in Blanks",
-  "blanks": "Fill in Blanks",
   flashcard: "Flashcard",
   quiz: "Quiz"
 }
@@ -84,7 +76,6 @@ const quizTypeIcons = {
   openended: BookOpen,
   code: Code2,
   blanks: PenTool,
-  "blanks": PenTool,
   flashcard: StickyNote,
   quiz: FileQuestion
 }

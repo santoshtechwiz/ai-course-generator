@@ -4,74 +4,70 @@ import { getCourseData } from "@/app/actions/getCourseData"
 import { notFound } from "next/navigation"
 import type { FullCourseType } from "@/app/types/types"
 import EnhancedCourseLayout from "./components/EnhancedCourseLayout"
-
-import { CourseSchema } from "@/lib/seo"
+import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
 
 type CoursePageParams = {
   params: Promise<{ slug: string }>
 }
 
-// Generate metadata for the course page with improved typing
+// Generate enhanced metadata for the course page with better SEO
 export async function generateMetadata({ params }: CoursePageParams): Promise<Metadata> {
   const { slug } = await params
   const course = (await getCourseData(slug)) as FullCourseType | null
-  return {
-    title: course?.title || 'Course Not Found',
-    description: course?.description || 'No description available.',
-    openGraph: {
-      images: course?.image ? [course.image] : [],
-      type: 'website',
-      title: course?.title || 'Course Not Found',
-      description: course?.description || 'No description available.',
-    },
-    robots: !course ? { index: false, follow: false } : undefined,
-  };
+  
+  if (!course) {
+    return generateSEOMetadata({
+      title: 'Course Not Found | AI Learning Platform',
+      description: 'The requested course could not be found. Explore our other AI-powered educational content and interactive learning experiences.',
+    });
+  }
+
+  // Extract keywords from course content
+  const categoryName = course.category && typeof course.category === 'object' && 'name' in course.category 
+    ? course.category.name 
+    : (typeof course.category === 'string' ? course.category : 'programming');
+    
+  // Enhanced keywords with more relevant terms
+  const keywords = [
+    'ai course',
+    'online learning',
+    'interactive education',
+    'video tutorials',
+    'educational technology',
+    course.title.toLowerCase(),
+    ...(course.description ? course.description.split(' ').slice(0, 5).map(word => word.toLowerCase()) : []),
+    categoryName.toLowerCase(),
+    'interactive quiz',
+    'courseai',
+    'learning platform',
+    'skill development',
+    'professional training',
+    'e-learning',
+    'digital education'
+  ].filter(Boolean);
+
+  // Enhanced description with more appeal
+  const enhancedDescription = course.description 
+    ? `${course.description} | Interactive AI-powered learning with video tutorials, quizzes, and hands-on exercises. Join thousands of learners advancing their skills in ${categoryName}.`
+    : `Master ${course.title} with our comprehensive AI-powered course featuring interactive content, video tutorials, and practical exercises. Perfect for ${categoryName} enthusiasts and professionals.`;
+
+  return generateSEOMetadata({
+    title: `${course.title} | AI Learning Platform - Interactive Course`,
+    description: enhancedDescription,
+    keywords,
+    canonical: `/dashboard/course/${course.slug}`,
+    type: 'article',
+    image: course.image || `/api/og?title=${encodeURIComponent(course.title)}&category=${encodeURIComponent(categoryName)}`,
+  });
 }
 
 export default async function Page({ params }: CoursePageParams) {
   const { slug } = await params
   const course = await getCourseData(slug)
-
+  
   if (!course) {
     notFound()
   }
 
-  // Prepare offers and hasCourseInstance for schema.org
-  const offers = {
-    price: "0",
-    priceCurrency: "USD",
-    url: `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/course/${course.slug}`,
-    availability: "https://schema.org/InStock"
-  };
-  const hasCourseInstance = {
-    name: course.title,
-    description: course.description,
-    courseMode: "online",
-    startDate: course.createdAt,
-    endDate: course.updatedAt,
-    location: {
-      url: `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/course/${course.slug}`
-    }
-  };
-
-  return (
-    <>
-  
-      <CourseSchema
-        courseName={course.title}
-        description={course.description || ""}
-        courseUrl={`${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/course/${course.slug}`}
-        provider="AI Learning Platform"
-        imageUrl={course.image || `/api/og?title=${encodeURIComponent(course.title)}`}
-        dateCreated={course.createdAt}
-        dateModified={course.updatedAt}
-      />
-      <EnhancedCourseLayout 
-        course={course} 
-        breadcrumbs={[
-          { label: course.category?.name || "Category", href: `/dashboard/category/${course.category || ""}` }
-        ]}
-      />
-    </>
-  )
+  return <EnhancedCourseLayout course={course as FullCourseType} />
 }

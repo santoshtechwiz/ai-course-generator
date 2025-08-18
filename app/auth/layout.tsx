@@ -3,6 +3,15 @@
 import React, { Suspense } from "react"
 import { Loader2 } from "lucide-react"
 
+/**
+ * Auth Layout
+ * 
+ * Simple layout for authentication pages with:
+ * - Clean background gradient
+ * - Centered loading state
+ * - Minimal distractions
+ */
+
 export default function AuthLayout({
   children,
 }: {
@@ -14,11 +23,14 @@ export default function AuthLayout({
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
           <div className="flex justify-center items-center">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <span className="ml-3 text-muted-foreground">Loading...</span>
           </div>
         </div>
       }
     >
-      {children}
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+        {children}
+      </div>
     </Suspense>
   )
 }

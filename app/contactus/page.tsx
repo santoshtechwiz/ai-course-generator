@@ -1,28 +1,31 @@
 import type { Metadata } from "next"
 
 import ImprovedContactForm from "./ContactForm"
-import { generateMetadata, JsonLD } from "@/lib/seo"
+import { generateMetadata } from "@/lib/seo"
+import { JsonLD } from "@/lib/seo"
+
 
 export const metadata: Metadata = generateMetadata({
-  title: "Contact CourseAI | Get Support for AI Coding Education Platform",
+  title: "Contact CourseAI - Get Support & Partnership Inquiries",
   description:
-    "Have questions about CourseAI's AI-powered coding education platform? Contact our team for support, partnership inquiries, or feedback on our programming learning tools.",
-  path: "/contactus",
+    "Get support for CourseAI's AI-powered educational content creation platform. Contact us for technical help, partnerships, enterprise solutions, or general inquiries about our course and quiz generation tools.",
   keywords: [
     "contact courseai",
-    "coding education support",
-    "ai learning platform help",
-    "programming education contact",
-    "courseai support",
-    "coding question generator help",
-    "programming learning assistance",
-    "ai education platform contact",
-    "developer education help",
-    "tech learning support",
-    "programming course assistance",
-    "coding quiz help",
+    "educational technology support",
+    "AI content creation help",
+    "course generator support",
+    "quiz maker assistance",
+    "educational platform contact",
+    "AI education tools help",
+    "enterprise education solutions",
+    "partnership inquiries",
+    "technical support",
+    "customer service",
+    "educational software help",
+    "courseai"
   ],
-  ogImage: "/api/og?title=Contact+CourseAI&description=Get+Support+for+AI+Coding+Education",
+  canonical: "/contactus",
+  type: "website",
 })
 
 const ContactUsPage = () => {

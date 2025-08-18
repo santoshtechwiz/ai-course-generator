@@ -1,3 +1,5 @@
+import { motion } from "framer-motion"
+
 interface AppleStyleParticlesProps {
   isHydrated?: boolean;
 }
@@ -12,6 +14,9 @@ const AppleStyleParticles = ({ isHydrated = false }: AppleStyleParticlesProps) =
     // ...add more as needed
   ];
   
+  // Safe fallback for random particles generation
+  const generateRandomParticles = () => initialParticles
+   
   // Only run animations when hydrated
   const particles = isHydrated 
     ? generateRandomParticles() // Your existing function to generate random particles

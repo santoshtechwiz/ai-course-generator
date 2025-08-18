@@ -20,8 +20,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 
-import { usePersistentState } from "@/hooks/usePersistentState"
-import { cn } from "@/lib/tailwindUtils"
+import { usePersistentState } from "@/lib/storage"
+import { cn } from "@/lib/utils"
 import { useSubscription } from "@/modules/auth"
 
 import { z } from "zod"
@@ -125,7 +125,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
   const { mutateAsync: createFlashCardsMutation } = useMutation({
     mutationFn: async (data: FlashCardFormData) => {
       data.userType = subscriptionData?.plan || "FREE"
-      const response = await axios.post("/api/quizzes/flashcard", data)
+      const response = await axios.post("/api/quizzes/flashcard/create", data)
       return response.data
     },
     onError: (error) => {

@@ -3,10 +3,7 @@
 import BlankQuizForm from "./components/BlankQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
 import { useQuizPlan } from "../../../../hooks/useQuizPlan"
-import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
-
-
-
+import { GlobalLoader } from "@/components/loaders"
 
 const BlankPage = () => {
   // Use our standardized hook for all quiz pages
@@ -21,7 +18,7 @@ const BlankPage = () => {
       isLoggedIn={quizPlan.isLoggedIn}
     >
       {quizPlan.isLoading ? (
-        <LoadingSpinner />
+        <GlobalLoader />
       ) : (
         <BlankQuizForm 
           credits={quizPlan.credits} 

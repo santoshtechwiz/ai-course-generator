@@ -13,7 +13,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { MessageSquare, X, Send, Loader2, BrainCircuit, Crown, AlertCircle, HelpCircle } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { motion, AnimatePresence } from "framer-motion"
-import { cn } from "@/lib/tailwindUtils"
+import { migratedStorage } from "@/lib/storage"
+import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import useSubscription from "@/hooks/use-subscription"
@@ -155,12 +156,12 @@ export default function Chatbot({ userId }: ChatbotProps) {
 
   // Show tooltip for new users
   useEffect(() => {
-    const hasSeenTooltip = localStorage.getItem("hasSeenChatTooltip")
+    const hasSeenTooltip = migratedStorage.getPreference("seen_chat_tooltip", false)
     if (!hasSeenTooltip) {
       setShowTooltip(true)
       setTimeout(() => {
         setShowTooltip(false)
-        localStorage.setItem("hasSeenChatTooltip", "true")
+        migratedStorage.setPreference("seen_chat_tooltip", true)
       }, 5000)
     }
   }, [])

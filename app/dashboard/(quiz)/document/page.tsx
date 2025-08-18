@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Save, FileText, Sparkles, Download, Share2, Play } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -14,10 +14,12 @@ import { Quiz, quizStore } from "@/lib/quiz-store"
 import { useQuizPlan } from "@/modules/auth"
 import { ConfirmDialog } from "../components/ConfirmDialog"
 import PlanAwareButton from "../components/PlanAwareButton"
-import DocumentQuizDisplay, { EnhancedPDFDownloadButton } from "./components/DocumentQuizDisplay"
+
 import { DocumentQuizOptions } from "./components/DocumentQuizOptions"
 import { FileUpload } from "./components/FileUpload"
 import { SavedQuizList } from "./components/SavedQuizList"
+import DocumentQuizDisplay from "./components/DocumentQuizDisplay"
+import { PDFDownloadButton } from "./components/DocumentQuizPdf"
 
 interface QuizOptionsType {
   numberOfQuestions: number
@@ -448,7 +450,7 @@ export default function DocumentQuizPage() {
                     <div className="flex gap-2">
                       {canSave && (
                         <>
-                          <EnhancedPDFDownloadButton questions={quiz} title={quizTitle} variant="ghost" size="sm" />
+                          <PDFDownloadButton questions={quiz} title={quizTitle} variant="ghost" size="sm" />
                           <Button onClick={() => handleSaveQuiz()} disabled={isSaving} size="sm" className="gap-2">
                             <Save className="h-4 w-4" />
                             {isSaving ? "Saving..." : "Save Quiz"}
@@ -718,7 +720,7 @@ export default function DocumentQuizPage() {
                 <Button onClick={() => setShowShareDialog(false)} variant="outline" className="flex-1">
                   Close
                 </Button>
-                <EnhancedPDFDownloadButton
+                <PDFDownloadButton
                   questions={quiz}
                   title={quizTitle}
                   variant="outline"

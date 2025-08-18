@@ -47,9 +47,11 @@ export function PerformanceSummary({
   onShare,
 }: PerformanceSummaryProps) {
   const formatTime = (seconds: number) => {
+    if (!seconds || seconds < 0) return "0.00s"
+    if (seconds < 60) return `${seconds.toFixed(2)}s`
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, "0")}`
+    return `${mins}:${secs.toFixed(2).padStart(5, "0")}`
   }
 
   const getMotivationalMessage = () => {

@@ -9,6 +9,7 @@ import {
   clearQuizState,
   completeFlashCardQuiz,
   saveFlashCardResults,
+  saveFlashCard,
   selectQuizQuestions,
   selectQuizAnswers,
   selectCurrentQuestionIndex,
@@ -29,14 +30,11 @@ import {
 
 import FlashcardQuiz from "./FlashcardQuiz";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
 import { NoResults } from "@/components/ui/no-results";
 import { useAuth } from "@/modules/auth";
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
 
-import { QuizActions } from "../../components/QuizActions";
-import { LoadingSpinner } from "@/components/loaders/GlobalLoader";
-import { QuizSchema } from "@/lib/seo";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface FlashcardQuizWrapperProps {
   slug: string;
@@ -47,7 +45,8 @@ export default function FlashcardQuizWrapper({
   slug,
   title,
 }: FlashcardQuizWrapperProps) {
-  const initRef = useRef(false);
+  const hasInitialized = useRef(false);
+  const lastSlug = useRef<string>("");
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -67,47 +66,55 @@ export default function FlashcardQuizWrapper({
   const requiresAuth = useSelector(selectRequiresAuth);
   const userId = user?.id;
   const quizId = useSelector((state: RootState) => state.flashcard.quizId);
-  const quizData = useSelector((state: RootState) => state.flashcard.results);
-  const quizOwnerId = useSelector((state: RootState) => state.flashcard.userId);
+
   // Initial load: clear state if needed and fetch quiz
   useEffect(() => {
     if (!slug || isLoading) return;
 
-    // In review mode, only clear state if we don't have questions yet
-    if (isResetMode || (isReviewMode && questions.length === 0)) {
-      dispatch(clearQuizState());
+    // Reset initialization when slug changes
+    if (lastSlug.current !== slug) {
+      hasInitialized.current = false;
+      lastSlug.current = slug;
     }
 
-    if (!questions.length) {
+    // Prevent multiple initializations
+    if (hasInitialized.current) return;
+
+    // Handle reset mode - clear state and mark as initialized
+    if (isResetMode) {
+      dispatch(clearQuizState());
+      hasInitialized.current = true;
+      return;
+    }
+
+    // Handle review mode - clear only if needed
+    if (isReviewMode && questions.length === 0 && quizStatus !== "idle" && quizStatus !== "loading") {
+      dispatch(clearQuizState());
+      hasInitialized.current = true;
+      return;
+    }
+
+    // Only fetch if we're in idle state, have no questions, and haven't initialized yet
+    if (quizStatus === "idle" && questions.length === 0) {
+      hasInitialized.current = true;
       dispatch(fetchFlashCardQuiz(slug))
         .unwrap()
-        .then(() => {
-          // After successfully loading questions, log for debugging
-          console.log(
-            `Loaded ${questions.length} questions for ${slug}, review mode: ${isReviewMode}`
-          );
-
-          // If in review mode with cards parameter, log the filtered questions
-          if (isReviewMode && searchParams?.get("cards")) {
-            const cardsParam = searchParams.get("cards");
-            console.log(`Review mode with cards: ${cardsParam}`);
-          }
-        })
         .catch((err) => {
+          console.error(`Error loading flashcards for ${slug}:`, err);
           const message =
             err instanceof Error ? err.message : "Failed to load flashcards";
           toast.error(message);
+          hasInitialized.current = false; // Allow retry on error
         });
     }
-  }, [
-    dispatch,
-    isResetMode,
-    isReviewMode,
-    questions.length,
-    slug,
-    !isLoading,
-    searchParams,
-  ]);
+  }, [dispatch, slug, isResetMode, isReviewMode, isLoading, quizStatus, questions.length]);
+
+  // Reset initialization flag when component unmounts or slug changes
+  useEffect(() => {
+    return () => {
+      hasInitialized.current = false;
+    };
+  }, [slug]);
 
   // Redirect if auth required
   useEffect(() => {
@@ -115,13 +122,11 @@ export default function FlashcardQuizWrapper({
       dispatch(setPendingFlashCardAuth(true));
       router.push(`/auth/signin?callbackUrl=/dashboard/flashcard/${slug}`);
     }
-  }, [requiresAuth, isAuthenticated, isLoading, dispatch, router, slug]); // Redirect to results
+  }, [requiresAuth, isAuthenticated, isLoading, dispatch, router, slug]);
+
+  // Redirect to results when completed and not in review mode
   useEffect(() => {
-    // Only redirect to results if we're not in review mode
-    if (
-      !isReviewMode &&
-      (shouldRedirectToResults || (isCompleted && !shouldRedirectToResults))
-    ) {
+    if (!isReviewMode && (shouldRedirectToResults || (isCompleted && !shouldRedirectToResults))) {
       router.replace(`/dashboard/flashcard/${slug}/results`);
     }
   }, [shouldRedirectToResults, isCompleted, router, slug, isReviewMode]);
@@ -129,161 +134,59 @@ export default function FlashcardQuizWrapper({
   const reviewQuestions = useMemo(() => {
     if (!isReviewMode || !questions.length) return questions;
 
-    // Check if specific card IDs are provided in the URL
     const specificCardsParam = searchParams?.get("cards");
-
     if (specificCardsParam) {
-      // Use specific card IDs from the URL
       const specificCardIds = specificCardsParam
         .split(",")
         .map((id) => id.trim());
 
-      // Log for debugging
-      console.log(`Filtering for cards: ${specificCardIds.join(", ")}`);
-      console.log(
-        `Available question IDs: ${questions.map((q) => q.id).join(", ")}`
-      );
-
       const filteredQuestions = questions.filter((q) => {
         if (!q.id) return false;
-
-        // Try matching by both string and number
         const questionIdStr = q.id.toString();
         const questionIdNum = parseInt(questionIdStr);
-
-        // Check if either the string ID or numeric ID is in the specific card IDs
         const isIncludedStr = specificCardIds.includes(questionIdStr);
-        const isIncludedNum =
-          !isNaN(questionIdNum) &&
-          specificCardIds.includes(questionIdNum.toString());
-
-        console.log(
-          `Question ${questionIdStr}: ${isIncludedStr || isIncludedNum ? "included" : "excluded"}`
-        );
+        const isIncludedNum = !isNaN(questionIdNum) && specificCardIds.includes(questionIdNum.toString());
         return isIncludedStr || isIncludedNum;
       });
 
-      console.log(`Found ${filteredQuestions.length} matching questions`);
       return filteredQuestions;
-    } else if (answers.length) {
-      // Fall back to filtering by answer status
+    }
+
+    if (answers.length) {
       const reviewType = searchParams?.get("type");
       const reviewIds = answers
         .filter((a): a is RatingAnswer => {
           if (!("answer" in a)) return false;
-
-          if (reviewType === "stillLearning") {
-            return a.answer === ANSWER_TYPES.STILL_LEARNING;
-          } else {
-            return (
-              a.answer === ANSWER_TYPES.INCORRECT ||
-              a.answer === ANSWER_TYPES.STILL_LEARNING ||
-              a.isCorrect === false
-            );
-          }
+          if (reviewType === "stillLearning") return a.answer === ANSWER_TYPES.STILL_LEARNING;
+          return (
+            a.answer === ANSWER_TYPES.INCORRECT ||
+            a.answer === ANSWER_TYPES.STILL_LEARNING ||
+            a.isCorrect === false
+          );
         })
         .map((a) => a.questionId);
 
-      return questions.filter((q) =>
-        reviewIds.includes(q.id?.toString() || "")
-      );
+      return questions.filter((q) => reviewIds.includes(q.id?.toString() || ""));
     }
 
     return questions;
   }, [answers, questions, isReviewMode, searchParams]);
 
-  const currentQuestions = isReviewMode ? reviewQuestions : questions;
-  const onComplete = () => {
-    const ratingAnswers = answers.filter(
-      (a): a is RatingAnswer => "answer" in a
-    );
+  const currentCards = isReviewMode ? reviewQuestions : questions;
 
-    const correctCount = ratingAnswers.filter(
-      (a) => a.answer === ANSWER_TYPES.CORRECT
-    ).length;
-    const stillLearningCount = ratingAnswers.filter(
-      (a) => a.answer === ANSWER_TYPES.STILL_LEARNING
-    ).length;
-    const incorrectCount = ratingAnswers.filter(
-      (a) => a.answer === ANSWER_TYPES.INCORRECT
-    ).length;
-    const totalTime = ratingAnswers.reduce(
-      (acc, a) => acc + (a.timeSpent || 0),
-      0
-    ); // If we're in review mode, just navigate to results instead of completing quiz
-    if (isReviewMode) {
-      // Save the review results to state for better UX
-      const timestamp = new Date().toISOString();
-      const reviewResults = {
-        correctCount,
-        incorrectCount,
-        stillLearningCount,
-        totalTime,
-        reviewCompleted: true,
-        timestamp,
-      };
-
-      // Store review session analytics in localStorage for persistence
-      try {
-        const reviewKey = `flashcard_review_${slug}_${timestamp}`;
-        localStorage.setItem(reviewKey, JSON.stringify(reviewResults));
-      } catch (e) {
-        console.error("Failed to save review analytics:", e);
-      }
-
-      // Navigate back to results
-      router.push(`/dashboard/flashcard/${slug}/results`);
-      return;
-    }
-
-    const totalQuestions = questions.length;
-    const percentage = totalQuestions
-      ? (correctCount / totalQuestions) * 100
-      : 0;
-    const timestamp = new Date().toISOString();
-
-    const results: QuizResultsState = {
-      score: correctCount,
-      percentage,
-      correctCount,
-      incorrectCount,
-      stillLearningCount,
-      correctAnswers: correctCount,
-      stillLearningAnswers: stillLearningCount,
-      incorrectAnswers: incorrectCount,
-      totalQuestions,
-      totalTime,
-      completedAt: timestamp,
-      submittedAt: timestamp,
-      reviewCards: ratingAnswers
-        .filter((a) => a.answer === ANSWER_TYPES.INCORRECT)
-        .map((a) => {
-          const id = parseInt(a.questionId);
-          return isNaN(id) ? 0 : id; // Ensure we always return a number
-        }),
-      stillLearningCards: ratingAnswers
-        .filter((a) => a.answer === ANSWER_TYPES.STILL_LEARNING)
-        .map((a) => {
-          const id = parseInt(a.questionId);
-          return isNaN(id) ? 0 : id; // Ensure we always return a number
-        }),
-      questions,
-      answers,
-      slug,
-      title: quizTitle || title || "Flashcard Quiz",
-      quizId: slug,
-      maxScore: totalQuestions,
-    };
-
-    dispatch(completeFlashCardQuiz(results));
-  };
-
-  // Loading Skeletons
-  if (quizStatus === "loading" || isLoading) {
-    return <LoadingSpinner size={48} />;
+  // Loading skeleton
+  if (quizStatus === "loading" || quizStatus === "idle") {
+    return (
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
+    )
   }
 
-  // Error State with Retry
+  // Error state with retry
   if (quizStatus === "failed" || error) {
     return (
       <NoResults
@@ -322,9 +225,9 @@ export default function FlashcardQuizWrapper({
       />
     );
   }
+
   // Empty Review State
-  if (isReviewMode && questions.length > 0 && reviewQuestions.length === 0) {
-    // Get cards parameter for debugging
+  if (isReviewMode && questions.length > 0 && (reviewQuestions?.length || 0) === 0) {
     const cardsParam = searchParams?.get("cards");
     return (
       <NoResults
@@ -351,7 +254,7 @@ export default function FlashcardQuizWrapper({
   }
 
   // No questions found
-  if (!currentQuestions || currentQuestions.length === 0) {
+  if (!currentCards || currentCards.length === 0) {
     return (
       <NoResults
         variant="error"
@@ -371,40 +274,69 @@ export default function FlashcardQuizWrapper({
       />
     );
   }
-  // Main Quiz Component
-  // Only render one progress bar and one main action button (handled inside FlashcardQuiz)
+
+  const onComplete = () => {
+    const ratingAnswers = answers.filter(
+      (a): a is RatingAnswer => "answer" in a
+    );
+
+    const correctCount = ratingAnswers.filter(
+      (a) => a.answer === ANSWER_TYPES.CORRECT
+    ).length;
+    const stillLearningCount = ratingAnswers.filter(
+      (a) => a.answer === ANSWER_TYPES.STILL_LEARNING
+    ).length;
+    const incorrectCount = ratingAnswers.filter(
+      (a) => a.answer === ANSWER_TYPES.INCORRECT
+    ).length;
+    const totalTime = ratingAnswers.reduce(
+      (acc, a) => acc + (a.timeSpent || 0),
+      0
+    );
+
+    const totalQuestions = currentCards.length;
+    const percentage = totalQuestions ? (correctCount / totalQuestions) * 100 : 0;
+    const timestamp = new Date().toISOString();
+
+    const results: QuizResultsState = {
+      score: correctCount,
+      percentage,
+      correctCount,
+      incorrectCount,
+      stillLearningCount,
+      correctAnswers: correctCount,
+      stillLearningAnswers: stillLearningCount,
+      incorrectAnswers: incorrectCount,
+      totalQuestions,
+      totalTime,
+      completedAt: timestamp,
+      submittedAt: timestamp,
+      reviewCards: ratingAnswers,
+    };
+
+    dispatch(completeFlashCardQuiz());
+    dispatch(saveFlashCardResults(results));
+    router.push(`/dashboard/flashcard/${slug}/results`);
+  };
+
   return (
-    <motion.div
-      className="space-y-6 px-4"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <QuizSchema
-        name={quizTitle || title || "Flashcard Quiz"}
-        url={`https://courseai.io/dashboard/flashcard/${slug}`}
-        questions={currentQuestions}
-        description={`Interactive flashcards for ${quizTitle || title || "learning"} on CourseAI.`}
-        numberOfQuestions={currentQuestions?.length}
-      />
-      <div className="flex flex-col gap-8 w-full max-w-3xl mx-auto px-2 sm:px-4">
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="space-y-6">
         <FlashcardQuiz
-          key={`${slug}-${isReviewMode ? "review" : "full"}`}
-          cards={currentQuestions}
+          cards={currentCards as any}
           quizId={slug}
           slug={slug}
-          onComplete={onComplete}
-          onSaveCard={(saveData) => {
-            dispatch(saveFlashCardResults({ slug, data: [saveData] }));
+          title={quizTitle || title || "Flashcard Quiz"}
+          onSaveCard={(card) => {
+            const idNum = parseInt(String(card.id));
+            if (!isNaN(idNum)) {
+              dispatch(saveFlashCard({ cardId: idNum, saved: !card.saved }));
+            }
           }}
-          title={
-            isReviewMode
-              ? `Review: ${quizTitle || title || "Flashcard Quiz"}`
-              : quizTitle || title || "Flashcard Quiz"
-          }
           isReviewMode={isReviewMode}
+          onComplete={onComplete}
         />
       </div>
-    </motion.div>
-  );
+    </div>
+  )
 }

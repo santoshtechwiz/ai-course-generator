@@ -1,19 +1,33 @@
 "use client";
+import { useGlobalLoader } from "@/store/loaders/global-loader";
 import { useEffect } from "react";
-import { useGlobalLoader } from "@/store/global-loader";
+
 
 /**
  * Suspense fallback that triggers the global loader (blocking) and returns null.
- * Ensures only one loader is shown globally.
+ * Ensures only one loader is shown globally with proper accessibility support.
  */
-export default function SuspenseGlobalFallback({ message = "" }: { message?: string }) {
+export default function SuspenseGlobalFallback({ message = "Loading content..." }: { message?: string }) {
   const { startLoading, stopLoading } = useGlobalLoader();
 
   useEffect(() => {
-    startLoading({ message, isBlocking: true });
+    startLoading({ 
+      message, 
+      isBlocking: true
+    });
     return () => stopLoading();
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return null;
+  // Return a proper loading indicator for screen readers while the global loader handles visuals
+  return (
+    <div 
+      role="status" 
+      aria-live="polite" 
+      aria-label={message || "Loading content, please wait"}
+      className="sr-only"
+    >
+      {message || "Loading..."}
+    </div>
+  );
 }

@@ -197,6 +197,56 @@ export default function CourseList({ url, userId }: CourseListProps) {
         </div>
       </div>
 
+      {/* Desktop Active Filters chips */}
+      <div className="hidden lg:block fixed top-[64px] left-0 right-0 z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border-b">
+        {activeFiltersCount > 0 && (
+          <div className="max-w-[1600px] mx-auto px-6 py-2 flex items-center gap-2">
+            {searchQuery && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                Search: "{searchQuery.slice(0, 20)}{searchQuery.length > 20 ? '...' : ''}"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            )}
+            {selectedCategoryName && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                {selectedCategoryName}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={() => setSelectedCategory(null)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            )}
+            {ratingFilter > 0 && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                {ratingFilter}+ ⭐
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={() => setRatingFilter(0)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            )}
+            <Button variant="ghost" size="sm" className="ml-2" onClick={resetFilters}>
+              Clear all
+            </Button>
+          </div>
+        )}
+      </div>
+
       {/* Desktop sidebar with enhanced toggle */}
       <div
         className={`hidden lg:block relative transition-all duration-300 ease-in-out ${

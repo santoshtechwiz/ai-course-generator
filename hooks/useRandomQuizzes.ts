@@ -1,117 +1,301 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { apiClient } from "@/lib/api-client"
+import { useState, useEffect, useCallback, useRef } from "react"
 
 export interface RandomQuiz {
-  id: string;
-  slug: string;
-  title: string;
-  quizType: string;
-  difficulty: string;
-  duration?: number;
-  bestScore?: number;
-  completionRate?: number;
-  description?: string;
-  popularity?: string;
-  createdAt?: string;
+  id: string
+  title: string
+  quizType: string
+  difficulty: string
+  questionCount: number
+  description?: string
+  tags?: string[]
+  rating?: number
+  attempts?: number
+  createdAt?: string
+  slug?: string
+  isPublic?: boolean
+  isFavorite?: boolean
+  estimatedTime?: number
+  timeStarted?: Date
 }
 
-export function useRandomQuizzes(count: number = 5) {
+interface UseRandomQuizzesReturn {
+  quizzes: RandomQuiz[]
+  isLoading: boolean
+  error: string | null
+  refreshQuizzes: () => Promise<void>
+  shuffleQuizzes: () => void
+  currentIndex: number
+  setCurrentIndex: (index: number) => void
+  nextQuiz: () => void
+  prevQuiz: () => void
+  hasNext: boolean
+  hasPrev: boolean
+  totalQuizzes: number
+  retryCount: number
+  lastFetchTime: Date | null
+}
+
+export const useRandomQuizzes = (maxQuizzes = 6): UseRandomQuizzesReturn => {
   const [quizzes, setQuizzes] = useState<RandomQuiz[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [retryCount, setRetryCount] = useState(0)
+  const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null)
+  
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const maxRetries = 3
+  const retryDelay = 1000
 
-  // Fetch quizzes function
-  const fetchQuizzes = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
+  const shuffleArray = useCallback((array: RandomQuiz[]) => {
+    const shuffled = [...array]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    return shuffled
+  }, [])
+
+  const generateFallbackQuizzes = useCallback((): RandomQuiz[] => {
+    const fallbackQuizzes: RandomQuiz[] = [
+      {
+        id: "fallback-1",
+        title: "JavaScript Fundamentals",
+        quizType: "mcq",
+        difficulty: "easy",
+        questionCount: 10,
+        description: "Test your knowledge of JavaScript basics",
+        tags: ["javascript", "programming", "web"],
+        rating: 4.2,
+        slug: "javascript-fundamentals",
+        isPublic: true,
+        estimatedTime: 15,
+      },
+      {
+        id: "fallback-2",
+        title: "React Components",
+        quizType: "code",
+        difficulty: "medium",
+        questionCount: 8,
+        description: "Practice React component development",
+        tags: ["react", "components", "frontend"],
+        rating: 4.5,
+        slug: "react-components",
+        isPublic: true,
+        estimatedTime: 20,
+      },
+      {
+        id: "fallback-3",
+        title: "CSS Flexbox",
+        quizType: "blanks",
+        difficulty: "easy",
+        questionCount: 12,
+        description: "Master CSS Flexbox layout",
+        tags: ["css", "layout", "flexbox"],
+        rating: 4.0,
+        slug: "css-flexbox",
+        isPublic: true,
+        estimatedTime: 18,
+      },
+      {
+        id: "fallback-4",
+        title: "Algorithm Thinking",
+        quizType: "openended",
+        difficulty: "hard",
+        questionCount: 5,
+        description: "Explore algorithmic problem solving",
+        tags: ["algorithms", "problem-solving", "computer-science"],
+        rating: 4.7,
+        slug: "algorithm-thinking",
+        isPublic: true,
+        estimatedTime: 30,
+      },
+      {
+        id: "fallback-5",
+        title: "Web Security Basics",
+        quizType: "flashcard",
+        difficulty: "medium",
+        questionCount: 15,
+        description: "Learn essential web security concepts",
+        tags: ["security", "web", "cybersecurity"],
+        rating: 4.3,
+        slug: "web-security-basics",
+        isPublic: true,
+        estimatedTime: 25,
+      },
+    ]
+    
+    return shuffleArray(fallbackQuizzes).slice(0, maxQuizzes)
+  }, [maxQuizzes, shuffleArray])
+
+  const fetchRandomQuizzes = useCallback(async (isRetry = false) => {
+    // Cancel previous request if it exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    // Create new abort controller
+    abortControllerRef.current = new AbortController()
+
+    if (!isRetry) {
+      setIsLoading(true)
+      setError(null)
+      setRetryCount(0)
+    }
 
     try {
-      // Use the API client to fetch quizzes
-      const response = await apiClient.get("/api/quizzes/common/random", {
-        params: { count }
+      // Primary endpoint for random quizzes
+      let response = await fetch("/api/quizzes/common/random", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        signal: abortControllerRef.current.signal,
       })
-      
- 
-      // Properly handle the response data - check if it's an array or nested in a property
-      let quizzesData = Array.isArray(response) ? response : 
-                       Array.isArray(response.quizzes) ? response.quizzes : 
-                       response.data?.quizzes || response.data || [];
-      
-      // Process the quizzes with default values if needed
-      const processedQuizzes = quizzesData.map((quiz: any) => ({
-        id: quiz.id || `quiz-${Math.random().toString(36).substring(2, 9)}`,
-        slug: quiz.slug || quiz.id || `quiz-${Math.random().toString(36).substring(2, 9)}`,
+
+      // Fallback to general quizzes endpoint if primary fails
+      if (!response.ok) {
+        response = await fetch(`/api/quizzes?limit=${maxQuizzes}&random=true`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          signal: abortControllerRef.current.signal,
+        })
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch quizzes: ${response.status} ${response.statusText}`)
+      }
+
+      const data = await response.json()
+
+      // Transform API data to match component interface
+      const transformedQuizzes: RandomQuiz[] = (data.quizzes || data || []).slice(0, maxQuizzes).map((quiz: any) => ({
+        id: quiz.id,
         title: quiz.title || "Untitled Quiz",
-        quizType: quiz.quizType || "mcq",
-        difficulty: quiz.difficulty || "Medium",
-        duration: quiz.duration || 5,
-        completionRate: quiz.completionRate ?? 70,
-        description: quiz.description || "Practice your skills with this interactive quiz.",
-        popularity: quiz.popularity || "Medium",
-      }));
+        quizType: quiz.quizType || quiz.type || "mcq",
+        difficulty: quiz.difficulty || "medium",
+        questionCount: quiz.questionCount || quiz._count?.questions || quiz.questions?.length || 0,
+        description: quiz.description || "",
+        tags: Array.isArray(quiz.tags) ? quiz.tags : [],
+        rating: typeof quiz.rating === "number" ? quiz.rating : Math.random() * 2 + 3,
+        attempts: typeof quiz.attempts === "number" ? quiz.attempts : undefined,
+        createdAt: quiz.createdAt || new Date().toISOString(),
+        slug: quiz.slug || quiz.id,
+        isPublic: quiz.isPublic ?? true,
+        isFavorite: quiz.isFavorite || false,
+        estimatedTime: quiz.estimatedTime || Math.ceil((quiz.questionCount || 10) * 1.5),
+        timeStarted: quiz.timeStarted ? new Date(quiz.timeStarted) : undefined,
+      }))
 
-
-      if (processedQuizzes.length === 0) {
-        console.log("No quizzes returned from API, using fallbacks");
-        setQuizzes(generateFallbackQuizzes(count));
+      if (transformedQuizzes.length === 0) {
+        // Use fallback quizzes if no data received
+        const fallbackQuizzes = generateFallbackQuizzes()
+        setQuizzes(fallbackQuizzes)
       } else {
-        setQuizzes(processedQuizzes);
+        // Shuffle the quizzes for variety
+        const shuffledQuizzes = shuffleArray(transformedQuizzes)
+        setQuizzes(shuffledQuizzes)
       }
+
+      setError(null)
+      setRetryCount(0)
+      setLastFetchTime(new Date())
+      setCurrentIndex(0) // Reset to first quiz on successful fetch
     } catch (err) {
-      console.error("Failed to fetch random quizzes", err)
-      setError(err instanceof Error ? err : new Error("Failed to fetch quizzes"))
-      
-      // Use fallback data in case of error
-      const fallbackQuizzes = generateFallbackQuizzes(count)
-      setQuizzes(fallbackQuizzes)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [count])
-
-  // Fetch quizzes on mount
-  useEffect(() => {
-    fetchQuizzes()
-  }, [fetchQuizzes])
-
-  // Generate fallback quizzes for testing or when API fails
-  const generateFallbackQuizzes = (count: number): RandomQuiz[] => {
-    const types = ["mcq", "blanks", "code", "flashcard", "openended"]
-    const difficulties = ["Easy", "Medium", "Hard"]
-    const topics = ["JavaScript Basics", "React Hooks", "CSS Grid Layout", "Python Functions", "TypeScript Interfaces"]
-    
-    // Use deterministic values instead of random for hydration safety
-    return Array.from({ length: count }).map((_, index) => {
-      const typeIndex = index % types.length;
-      const difficultyIndex = Math.floor(index / 2) % difficulties.length;
-      const topicIndex = index % topics.length;
-      
-      const type = types[typeIndex];
-      const difficulty = difficulties[difficultyIndex];
-      const topic = topics[topicIndex];
-      const id = `fallback-${type}-${index}`;
-      
-      return {
-        id,
-        slug: id,
-        title: `${topic} Quiz`,
-        quizType: type,
-        difficulty,
-        duration: 5 + (index % 5), // Deterministic duration
-        bestScore: 60 + (index * 3) % 40, // Deterministic score
-        completionRate: 50 + (index * 5) % 50, // Deterministic completion rate
-        description: `Test your knowledge on ${topic} with this interactive ${type} quiz.`,
-        popularity: index % 2 === 0 ? "High" : "Medium", // Deterministic popularity
+      if (err instanceof Error && err.name === 'AbortError') {
+        // Request was aborted, don't update state
+        return
       }
+
+      console.error("Error fetching random quizzes:", err)
+      const errorMessage = err instanceof Error ? err.message : "Failed to load quizzes"
+      
+      if (retryCount < maxRetries) {
+        // Retry with exponential backoff
+        const delay = retryDelay * Math.pow(2, retryCount)
+        setRetryCount(prev => prev + 1)
+        
+        setTimeout(() => {
+          fetchRandomQuizzes(true)
+        }, delay)
+        
+        setError(`Retrying... (${retryCount + 1}/${maxRetries})`)
+      } else {
+        // Max retries reached, use fallback quizzes
+        setError(errorMessage)
+        const fallbackQuizzes = generateFallbackQuizzes()
+        setQuizzes(fallbackQuizzes)
+        setCurrentIndex(0)
+      }
+    } finally {
+      if (!isRetry) {
+        setIsLoading(false)
+      }
+    }
+  }, [maxQuizzes, shuffleArray, retryCount, generateFallbackQuizzes])
+
+  const refreshQuizzes = useCallback(async () => {
+    setRetryCount(0)
+    await fetchRandomQuizzes()
+  }, [fetchRandomQuizzes])
+
+  const shuffleQuizzes = useCallback(() => {
+    setQuizzes((prev) => {
+      const shuffled = shuffleArray(prev)
+      setCurrentIndex(0) // Reset to first after shuffle
+      return shuffled
     })
-  }
+  }, [shuffleArray])
+
+  const nextQuiz = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % quizzes.length)
+  }, [quizzes.length])
+
+  const prevQuiz = useCallback(() => {
+    setCurrentIndex((prev) => (prev - 1 + quizzes.length) % quizzes.length)
+  }, [quizzes.length])
+
+  const hasNext = quizzes.length > 1 && currentIndex < quizzes.length - 1
+  const hasPrev = quizzes.length > 1 && currentIndex > 0
+
+  // Initial fetch
+  useEffect(() => {
+    fetchRandomQuizzes()
+    
+    // Cleanup function to abort any pending requests
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [fetchRandomQuizzes])
+
+  // Reset current index when quizzes change
+  useEffect(() => {
+    if (quizzes.length > 0 && currentIndex >= quizzes.length) {
+      setCurrentIndex(0)
+    }
+  }, [quizzes.length, currentIndex])
 
   return {
     quizzes,
     isLoading,
     error,
-    refresh: fetchQuizzes
+    refreshQuizzes,
+    shuffleQuizzes,
+    currentIndex,
+    setCurrentIndex,
+    nextQuiz,
+    prevQuiz,
+    hasNext,
+    hasPrev,
+    totalQuizzes: quizzes.length,
+    retryCount,
+    lastFetchTime,
   }
 }
+

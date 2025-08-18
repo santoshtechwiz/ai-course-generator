@@ -2,6 +2,8 @@ import { nanoid } from "nanoid"
 import slugify from "slugify"
 import clsx, { ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { migratedStorage } from "@/lib/storage"
+import { fetchWithTimeout } from "@/lib/http"
 
 // Define a local QuizType for this file
 type QuizType = 'blanks' | 'openended' | 'mcq' | 'code' | 'flashcard';
@@ -41,33 +43,25 @@ export function formatDuration(seconds: number): string {
 }
 
 export function saveToken(token: string) {
-  localStorage.setItem("authToken", token)
+  migratedStorage.setItem("authToken", token, { secure: true })
 }
 
 export function getToken() {
-  return localStorage.getItem("authToken")
+  return migratedStorage.getItem<string>("authToken", { secure: true })
 }
 
 export const fetchSubscriptionStatus = async (timeout = 15000) => {
-  const controller = new AbortController()
-  const id = setTimeout(() => controller.abort(), timeout)
-
-  try {
-    const res = await fetch("/api/subscriptions/status", {
-      method: "GET",
-      headers: {
-        "Cache-Control": "no-cache",
-        Pragma: "no-cache",
-        Expires: "0",
-      },
-      signal: controller.signal,
-    })
-    if (res.status === 401) return { isFree: true }
-    if (!res.ok) throw new Error(await res.text())
-    return await res.json()
-  } finally {
-    clearTimeout(id)
-  }
+  const res = await fetchWithTimeout("/api/subscriptions/status", {
+    method: "GET",
+    headers: {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  }, timeout)
+  if (res.status === 401) return { isFree: true }
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
 }
 
 export const getAIModel = (userType: string): string => {

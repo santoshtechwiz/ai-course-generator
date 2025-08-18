@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Brain, ArrowRight, Target, RotateCcw, BookOpen, RefreshCw, Sparkles, BookMarked } from "lucide-react"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 import type { CourseUnit, Chapter, CourseProgress as AppCourseProgress } from "@/app/types/course-types"
 import type { UserQuizAttempt as AppUserQuizAttempt } from "@/app/types/quiz-types"
-import { useLocalStorage } from "@/lib/useLocalStorage"
-import { useGlobalLoader } from '@/store/global-loader'
+import { useLocalStorage } from "@/lib/storage"
+import { useGlobalLoader } from '@/store/loaders/global-loader'
 
 interface AIRecommendationsProps {
   courses: any[] // fallback to any for now due to type mismatch

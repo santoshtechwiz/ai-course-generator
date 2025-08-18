@@ -3,6 +3,10 @@
 import { AnimatePresence, motion } from "framer-motion"
 import type { ReactNode } from "react"
 import * as PRESETS from "./animation-presets"
+type PresetMap = typeof PRESETS
+function getPreset<K extends keyof PresetMap>(key: K): PresetMap[K] {
+  return PRESETS[key]
+}
 
 type PresetType = keyof typeof PRESETS
 type MotionPresetProps = {
@@ -17,7 +21,7 @@ type MotionPresetProps = {
 
 export function MotionPreset({ children, preset, className, duration, delay, ease, itemKey }: MotionPresetProps) {
   // Get the preset animation
-  let animation = typeof preset === "string" ? PRESETS[preset] : preset
+  let animation: any = typeof preset === "string" ? (getPreset(preset as keyof PresetMap) as any) : preset
 
   // Apply custom duration, delay, or ease if provided
   if (duration !== undefined) {

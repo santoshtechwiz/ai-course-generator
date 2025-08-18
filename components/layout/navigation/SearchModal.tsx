@@ -38,7 +38,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
   const [showLoader, setShowLoader] = useState<boolean>(false)
   const [selectedIndex, setSelectedIndex] = useState<number>(-1)
   const searchInputRef = useRef<HTMLInputElement>(null)
-  const loaderTimeoutRef = useRef<NodeJS.Timeout>()
+  const loaderTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchSearchResults = useCallback(
     debounce(async (query: string) => {

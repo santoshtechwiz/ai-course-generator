@@ -9,11 +9,34 @@ import flashcardReducer from "./slices/flashcard-slice"
 import courseReducer from "./slices/course-slice"
 import certificateReducer from "./slices/certificate-slice"
 import { subscriptionSlice } from "./slices/subscription-slice"
+import courseProgressReducer from "./slices/courseProgress-slice"
+
+// Enhanced storage with fallback
+const createStorage = () => {
+  try {
+    // Test if localStorage is available
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const testKey = '__redux_persist_test__'
+      localStorage.setItem(testKey, 'test')
+      localStorage.removeItem(testKey)
+      return storage
+    }
+  } catch (error) {
+    console.warn('localStorage not available, using memory storage fallback')
+  }
+  
+  // Fallback to memory storage
+  return {
+    getItem: (key: string) => Promise.resolve(null),
+    setItem: (key: string, value: string) => Promise.resolve(),
+    removeItem: (key: string) => Promise.resolve(),
+  }
+}
 
 // Persist configs for non-auth slices
 const coursePersistConfig = {
   key: "course",
-  storage,
+  storage: createStorage(),
   whitelist: [
     "autoplayEnabled",
     "bookmarks",
@@ -29,7 +52,7 @@ const coursePersistConfig = {
 
 const flashcardPersistConfig = {
   key: "flashcard",
-  storage,
+  storage: createStorage(),
   whitelist: [
     "quizId",
     "slug",
@@ -48,7 +71,7 @@ const flashcardPersistConfig = {
 
 const quizPersistConfig = {
   key: "quiz",
-  storage,
+  storage: createStorage(),
   whitelist: [
     "quizId",
     "slug",
@@ -64,12 +87,19 @@ const quizPersistConfig = {
 }
 
 // Root reducer with session-based auth only
+const courseProgressPersistConfig = {
+  key: "courseProgress",
+  storage: createStorage(),
+  whitelist: ["byCourseId"],
+}
+
 const rootReducer = combineReducers({
   quiz: persistReducer(quizPersistConfig, quizReducer),
   flashcard: persistReducer(flashcardPersistConfig, flashcardReducer),
   course: persistReducer(coursePersistConfig, courseReducer),
   certificate: certificateReducer,
   subscription: subscriptionSlice.reducer,
+  courseProgress: persistReducer(courseProgressPersistConfig, courseProgressReducer),
 })
 
 // ✅ Clean store setup without auth middleware (session-based auth)

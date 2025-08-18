@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform, AnimatePresence, useSpring } from "fra
 import { ChevronDown, ArrowRight, Play } from "lucide-react"
 
 import { FeedbackButton } from "@/components/ui/feedback-button"
-import { useMobile } from "@/hooks/use-mobile"
+import { useMobile } from "@/hooks"
 
 // Add the isHydrated prop to your component props
 interface HeroSectionProps {
@@ -300,6 +300,8 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
             className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 max-w-4xl mx-auto"
             style={{ y: titleY }}
             suppressHydrationWarning
+            role="banner"
+            aria-describedby="hero-description"
           >
             <motion.span
               className="inline-block"
@@ -354,6 +356,8 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-10"
           style={{ y: subtitleY }}
           suppressHydrationWarning
+          id="hero-description"
+          role="doc-subtitle"
         >
           Turn text, ideas, or content into interactive, high-quality courses—no videos required. We will build courses
           from YouTube.

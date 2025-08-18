@@ -22,15 +22,26 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   error: 3,
 };
 
+// Determine env-driven defaults
+function resolveEnvOptions(): Required<LoggerOptions> {
+  // Prefer client-exposed env in browser
+  const isProd = process.env.NODE_ENV === 'production'
+  const enabledEnv = (typeof process !== 'undefined' && (process as any)?.env?.NEXT_PUBLIC_ENABLE_LOGS) || (process as any)?.env?.ENABLE_LOGS
+  const levelEnv = ((process as any)?.env?.NEXT_PUBLIC_LOG_LEVEL || (process as any)?.env?.LOG_LEVEL || '').toLowerCase()
+
+  const enabled = enabledEnv !== 'false' && !isProd ? true : enabledEnv === 'true'
+  const minLevel: LogLevel = (['debug','info','warn','error'].includes(levelEnv) ? levelEnv : (isProd ? 'warn' : 'info')) as LogLevel
+
+  return { enabled, minLevel }
+}
+
 // Default options
-const defaultOptions: LoggerOptions = {
-  enabled: process.env.NODE_ENV !== 'production',
-  minLevel: 'info',
-};
+const defaultOptions: LoggerOptions = resolveEnvOptions()
 
 // Create a logger that works in both browser and Node.js environments
 const createClientSafeLogger = (options: LoggerOptions = {}) => {
-  const mergedOptions = { ...defaultOptions, ...options };
+  const envOptions = resolveEnvOptions()
+  const mergedOptions = { ...envOptions, ...options };
   const { enabled, minLevel } = mergedOptions;
 
   return {
@@ -50,7 +61,7 @@ const createClientSafeLogger = (options: LoggerOptions = {}) => {
       }
     },
     error: (message: string, ...args: any[]) => {
-      if (enabled && LOG_LEVELS[minLevel as LogLevel] <= LOG_LEVELS.error) {
+      if (LOG_LEVELS[minLevel as LogLevel] <= LOG_LEVELS.error) {
         console.error(`[ERROR] ${message}`, ...args);
       }
     }

@@ -4,7 +4,14 @@ import { Progress } from "@/components/ui/progress"
 import { Award, CheckCircle, XCircle, Clock, HelpCircle, Brain, Target } from "lucide-react"
 
 import { QuizConfetti } from "@/components/ui/quiz-confetti"
-import { calculatePerformanceLevel } from "@/lib/utils/quiz-utils"
+const calculatePerformanceLevel = (score: number) => {
+  if (score >= 90) return "Excellent"
+  if (score >= 80) return "Very Good"
+  if (score >= 70) return "Good"
+  if (score >= 60) return "Satisfactory"
+  if (score >= 50) return "Needs Improvement"
+  return "Study Required"
+}
 
 interface QuizResultsSummaryProps {
   score: number

@@ -10,7 +10,7 @@ export class McqQuizService extends BaseQuizService {
     /**
      * Generate MCQ quiz using the existing generation logic
      */
-    async generateQuiz(params: { amount: number; title: string; type?: string; difficulty?: string }) {
+    public async generateQuiz(params: { amount: number; title: string; type?: string; difficulty?: string }) {
         const { amount, title, difficulty = "medium" } = params;
         
         try {
@@ -40,25 +40,8 @@ export class McqQuizService extends BaseQuizService {
      * Get an MCQ quiz by its slug
      */
     async getQuizBySlug(slug: string, userId: string) {
-        const quiz = await this.quizRepository.findBySlug(slug);
-
-        if (!quiz) {
-            throw new Error("Quiz not found");
-        }
-
-        // Check if quiz is accessible (public or owned by user)
-        if (!quiz.isPublic && quiz.userId !== userId) {
-            throw new Error("Unauthorized");
-        }
-
-        return {
-            isPublic: quiz.isPublic,
-            isFavorite: quiz.isFavorite,
-            id: quiz.id,
-            title: quiz.title,
-            questions: this.formatQuestions(quiz.questions),
-            userId: quiz.userId,
-        };
+        const result = await super.getQuizBySlug(slug, userId);
+        return result;
     }
 
     protected formatQuestions(questions: any[]): any[] {

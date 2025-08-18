@@ -6,7 +6,7 @@ import QuizResultHandler from "../../../components/QuizResultHandler"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import QuizResult from "../../../components/QuizResult"
-import { getQuizSlug } from "../../../components/utils"
+import QuizResultLayout from "../../../components/layouts/QuizResultLayout"
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }> 
@@ -14,7 +14,8 @@ interface ResultsPageProps {
 
 export default function OpenEndedResultsPage({ params }: ResultsPageProps) {
   const router = useRouter()
-  const slug = getQuizSlug(params)
+  // Properly unwrap the params Promise once at the top level
+  const { slug } = use(params);
 
   const handleRetakeQuiz = () => {
     // Use replace instead of push to avoid navigation loops
@@ -24,7 +25,7 @@ export default function OpenEndedResultsPage({ params }: ResultsPageProps) {
   // If slug is missing, show error
   if (!slug) {
     return (
-      <div className="container max-w-4xl py-6">
+      <QuizResultLayout title="Results" quizType="openended">
         <Card>
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-bold mb-4">Error</h2>
@@ -32,15 +33,15 @@ export default function OpenEndedResultsPage({ params }: ResultsPageProps) {
             <Button onClick={() => router.replace("/dashboard/quizzes")}>Back to Quizzes</Button>
           </CardContent>
         </Card>
-      </div>
+      </QuizResultLayout>
     )
   }
 
   return (
-    <div className="container max-w-4xl py-10">
+    <QuizResultLayout title="Results" quizType="openended" slug={slug}>
       <QuizResultHandler slug={slug} quizType="openended">
         {({ result }) => <QuizResult result={result} slug={slug} quizType="openended" onRetake={handleRetakeQuiz} />}
       </QuizResultHandler>
-    </div>
+    </QuizResultLayout>
   )
 }

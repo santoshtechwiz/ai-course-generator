@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 
 interface AddChapterFormProps {
   youtubeId: string

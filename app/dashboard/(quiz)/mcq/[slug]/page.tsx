@@ -1,79 +1,73 @@
-"use client"
+import type { Metadata } from "next"
+import { generateQuizPageMetadata } from "@/components/seo/QuizPageWrapper"
+import McqQuizClient from "./McqQuizClient"
+import prisma from "@/lib/db"
+import { QuizSchema } from "@/lib/seo"
+import React from "react"
+import QuizSEOClient from "../../components/QuizSEOClient"
 
-import { use, useEffect } from "react"
-import { useRouter } from "next/navigation"
-
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import McqQuizWrapper from "../components/McqQuizWrapper"
-
-import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
-import QuizSEO from "../../components/QuizSEO"
-import { getQuizSlug } from "../../components/utils"
-import { useSelector } from "react-redux"
-import { GlobalLoader } from "@/components/loaders"
-
-
-export default function McqQuizPage({
-  params,
-}: {
+interface McqQuizPageProps {
   params: Promise<{ slug: string }>
-}) {
-  const slug = getQuizSlug(params);
-  const router = useRouter();
+}
 
-  // Get quiz state from Redux
-  const quizState = useSelector((state: any) => state.quiz);
-  const quizData = quizState;
-  const status = quizState?.status;
-  const dispatch = (typeof window !== "undefined" ? require("react-redux").useDispatch() : () => { });
+// Server component that generates proper SEO metadata
+export async function generateMetadata({ params }: McqQuizPageProps): Promise<Metadata> {
+  const { slug } = await params
 
-  useEffect(() => {
-    if (slug && (!quizState || !quizState.questions || quizState.questions.length === 0) && status !== "loading") {
-      // Dynamically import fetchQuiz thunk and dispatch it
-      console.log("Fetching quiz data for slug:", slug);
-      import("@/store/slices/quiz/quiz-slice").then(({ fetchQuiz }) => {
-        dispatch(fetchQuiz({ slug, quizType: "mcq" }));
-      });
+  // Look up quiz to improve title/description and SEO flags
+  let dbTitle: string | null = null
+  let isPublic = false
+  let questionsCount: number | undefined = undefined
+  try {
+    const quiz = await prisma.userQuiz.findUnique({
+      where: { slug },
+      select: { title: true, isPublic: true, _count: { select: { questions: true } } },
+    })
+    if (quiz) {
+      dbTitle = quiz.title
+      isPublic = Boolean(quiz.isPublic)
+      questionsCount = quiz._count?.questions
     }
-  }, [slug, quizState, status, dispatch]);
+  } catch {}
 
-  if (status === "loading" || !quizState || !quizState.questions || quizState.questions.length === 0) {
-    
-      <GlobalLoader  />
+  const cleanTopic = (dbTitle || slug).replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  const noIndex = !dbTitle || !isPublic
 
-  }
-  if (!slug) {
+  return generateQuizPageMetadata({
+    quizType: "mcq",
+    slug,
+    title: `${cleanTopic} - Multiple Choice Quiz`,
+    description: `Test your knowledge of ${cleanTopic} with interactive multiple choice questions. Get instant feedback and detailed explanations for each answer.`,
+    topic: cleanTopic,
+    noIndex,
+  })
+}
+
+function QuizJsonLd({ slug, title }: { slug: string; title: string }) {
+  const url = `${process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"}/dashboard/mcq/${slug}`
+  return (
+    <QuizSchema
+      name={title}
+      url={url}
+      description={`Interactive multiple-choice assessment on ${title}`}
+      questions={[]}
+    />
+  )
+}
+
+export default function McqQuizPage({ params }: McqQuizPageProps) {
+  // Render client with JSON-LD helper
+  const ClientWithJsonLd = async () => {
+    const { slug } = await params
+    const title = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
     return (
-      <div className="container max-w-4xl py-6">
-        <Card>
-          <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-bold mb-4">Error</h2>
-            <p className="text-muted-foreground mb-6">Quiz slug is missing. Please check the URL.</p>
-            <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
-          </CardContent>
-        </Card>
-      </div>
+      <>
+        <QuizSEOClient />
+        <QuizJsonLd slug={slug} title={title} />
+        <McqQuizClient params={params} />
+      </>
     )
   }
-  return (
-    <QuizPlayLayout
-      quizSlug={slug}
-      quizType="mcq"
-      quizId={slug}
-
-      isPublic={true}
-
-      isFavorite={false}
-      quizData={quizData || null}
-      animationKey={slug}
-    >
-      <QuizSEO
-        slug={slug}
-        quizType="mcq"
-        description={`Test your knowledge with this ${slug.replace(/-/g, ' ')} multiple choice quiz. Challenge yourself and learn something new!`}
-      />
-      <McqQuizWrapper slug={slug} />
-    </QuizPlayLayout>
-  )
+  // @ts-expect-error Async Server Component
+  return <ClientWithJsonLd />
 }

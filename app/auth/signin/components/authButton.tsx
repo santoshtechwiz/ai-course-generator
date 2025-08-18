@@ -90,7 +90,7 @@ export function AuthButton({
           width={24}
           height={24}
           className="size-6 object-contain"
-          unoptimized={typeof logo === "string" && logo.startsWith("/")}
+          unoptimized 
         />
       )}
       <span className="truncate">{isButtonLoading ? "Signing in..." : text}</span>

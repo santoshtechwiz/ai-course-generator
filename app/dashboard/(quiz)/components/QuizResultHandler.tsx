@@ -24,7 +24,7 @@ import {
 
 import type { AppDispatch } from '@/store'
 import { QuizType } from '@/app/types/quiz-types'
-import { LoadingSpinner } from '@/components/loaders/GlobalLoader'
+import { InlineSpinner as LoadingSpinner } from '@/components/loaders/GlobalLoader'
 
 interface Props {
   slug: string
@@ -163,11 +163,19 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         !document.referrer.includes(window.location.hostname);
         
       if (isDirect || isFromExternalDomain) {
-        // For direct access with no results, redirect immediately
-        if (!hasResults) {
-          handleRetake();
-          return;
-        }
+        // For direct access, try to load results from API
+        console.log('Direct URL access detected, checking for saved results...')
+        dispatch(checkAuthAndLoadResults())
+          .unwrap()
+          .then(() => {
+            console.log('Successfully loaded saved results from API')
+            send({ type: 'RESULTS_LOADED_WITH_AUTH' });
+          })
+          .catch((err: any) => {
+            console.log('No saved results found, redirecting to quiz:', err.error)
+            handleRetake();
+          });
+        return;
       }
     } catch (e) {
       // Continue with normal flow if detection fails
@@ -180,43 +188,37 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
     // If we already have matching results and user is authenticated, immediately show results
     if (hasResults && isAuthenticated) {
+      console.log('Found existing results in state, showing immediately')
       send({ type: 'RESULTS_LOADED_WITH_AUTH' });
       return;
     }
 
-    // Attempt to load results directly
-    dispatch(checkAuthAndLoadResults())
-      .unwrap()
-      .then(() => {
-        // Get fresh results after loading
-        const freshQuizResults = selectQuizResults({ quiz: { results: quizResults } } as any);
-        
-        // Strict validation for results
-        const validResults = Boolean(
-          freshQuizResults &&
-          freshQuizResults.slug === slug && 
-          (typeof freshQuizResults.percentage === 'number' || 
-           typeof freshQuizResults.score === 'number' ||
-           Array.isArray(freshQuizResults.results) && freshQuizResults.results.length > 0)
-        );
-        
-        // Show results or redirect based on what we found
-        if (validResults) {
+    // If user is not authenticated but we have results, show sign-in prompt
+    if (hasResults && !isAuthenticated) {
+      console.log('Have results but user not authenticated, showing sign-in prompt')
+      send({ type: 'RESULTS_LOADED_NO_AUTH' });
+      return;
+    }
+
+    // If no results in state, try to fetch from API
+    if (!hasResults) {
+      console.log('No results in state, attempting to load from API...')
+      dispatch(checkAuthAndLoadResults())
+        .unwrap()
+        .then(() => {
+          console.log('Successfully loaded results from API')
           if (isAuthenticated) {
             send({ type: 'RESULTS_LOADED_WITH_AUTH' });
           } else {
             send({ type: 'RESULTS_LOADED_NO_AUTH' });
           }
-        } else {
-          // Immediately redirect to quiz page if no results
+        })
+        .catch((err: any) => {
+          console.log('Failed to load results from API, redirecting to quiz:', err.error)
+          // No results found, redirect to quiz
           handleRetake();
-        }
-      })
-      .catch((err: any) => {
-        const message = err instanceof Error ? err.message : 'Failed to load results';
-        setErrorMessage(message);
-        send({ type: 'ERROR' });
-      });
+        });
+    }
       
   }, [slug, isAuthLoading, dispatch, send, hasResults, isAuthenticated, quizResults]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -248,11 +250,14 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
             result.userAnswer === null || result.userAnswer === undefined
               ? '(No answer selected)'
               : result.userAnswer || '',
-          correctAnswer: result.correctAnswer || '',
+          correctAnswer: result.correctAnswer || questionData?.answer || '',
           isCorrect: result.isCorrect,
           type: answerDetail?.type || 'mcq',
           selectedOptionId: answerDetail?.selectedOptionId || '',
           options: questionData?.options || [],
+          explanation: (questionData as any)?.explanation || (result as any)?.explanation || '',
+          difficulty: (result as any)?.difficulty || '',
+          category: (questionData as any)?.category || (result as any)?.category || '',
         }
       }) || [],
     }
@@ -305,9 +310,24 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     // When authentication state changes to authenticated and we have results,
     // transition to results state regardless of current state
     if (isAuthenticated && hasResults && !isAuthLoading) {
+      console.log('User authenticated with existing results, showing results')
       send({ type: 'RESULTS_LOADED_WITH_AUTH' });
     }
-  }, [isAuthenticated, hasResults, isAuthLoading, send]);
+    // If user becomes authenticated but no results, try to load them
+    else if (isAuthenticated && !hasResults && !isAuthLoading && slug) {
+      console.log('User authenticated but no results, attempting to load...')
+      dispatch(checkAuthAndLoadResults())
+        .unwrap()
+        .then(() => {
+          send({ type: 'RESULTS_LOADED_WITH_AUTH' });
+        })
+        .catch(() => {
+          // If still no results after authentication, redirect to quiz
+          console.log('No results found after authentication, redirecting to quiz')
+          handleRetake();
+        });
+    }
+  }, [isAuthenticated, hasResults, isAuthLoading, send, slug, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
     // Simplified loading timeout effect that redirects if results can't be loaded
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | null = null;

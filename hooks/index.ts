@@ -1,29 +1,55 @@
-// Main hooks export file - organized by functionality
+/**
+ * Hooks Index - Re-export consolidated utilities and domain-specific hooks
+ * 
+ * This file maintains backward compatibility while redirecting to the new consolidated structure.
+ */
 
-// UI/UX Hooks
-export * from "./use-media-query"
-export * from "./use-responsive"
-export * from "./use-debounce"
-export * from "./use-interval"
+// ============================================================================
+// CORE UTILITIES (Re-exported from consolidated lib)
+// ============================================================================
 
+export {
+  // Core utility hooks
+  useDebounce,
+  useDebouncedCallback,
+  useInterval,
+  useMediaQuery,
+  useResponsive,
+  useMobile,
+  usePersistentState,
+} from "@/lib/utils/hooks"
 
-export * from "./use-toast"
+// Quiz-specific hooks
+export { useQuizAttempts } from "./useQuizAttempts"
+
+// ============================================================================
+// TOAST UTILITIES
+// ============================================================================
+
+// Re-export unified toast to keep imports stable
+export { useToast, toast } from "@/components/ui/use-toast"
+
+// ============================================================================
+// TEXT UTILITIES
+// ============================================================================
+
 export * from "./use-similarity"
 
-// Data Persistence Hooks
-export * from "./use-persistent-state"
+// ============================================================================
+// AUTH & USER HOOKS
+// ============================================================================
 
-// Auth & User Hooks
 // Import useAuth directly from auth-context
 export { useAuth } from "@/modules/auth"
 export * from "./use-subscription"
-// export * from "./use-session-service"; // File not found, commented out to avoid errors
 export * from "./use-notifications"
 export * from "./use-user-dashboard"
 
-// Course & Quiz Hooks
+// ============================================================================
+// COURSE & QUIZ HOOKS
+// ============================================================================
+
 export * from "./use-chapter-summary" 
 export * from "./useCourseActions"
-
 export * from "../app/dashboard/course/[slug]/components/video/hooks/useVideoProgress"
 export * from "./useRandomQuizzes"

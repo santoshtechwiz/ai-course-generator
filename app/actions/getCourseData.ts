@@ -48,6 +48,18 @@ export async function getCourseData(slug: string): Promise<FullCourseType | null
 
   if (!course) return null
 
+  // Determine the first two chapters across the entire course to be free
+  const freeChapterIds = new Set<number>()
+  let globalChapterIndex = 0
+  for (const unit of course.courseUnits) {
+    for (const chapter of unit.chapters) {
+      if (globalChapterIndex < 2) {
+        freeChapterIds.add(chapter.id)
+      }
+      globalChapterIndex++
+    }
+  }
+
   // Transform the data to match the FullCourseType interface
   const fullCourse: FullCourseType = {
     id: course.id,
@@ -83,8 +95,8 @@ export async function getCourseData(slug: string): Promise<FullCourseType | null
             // Calculate a reasonable duration - approx 5 minutes per chapter
             const estimatedDuration = 5 * 60; // 5 minutes in seconds
             
-            // Determine if chapter is free (typically the first chapter in each unit)
-            const isFree = chapterIndex === 0;
+            // Determine if chapter is free: first two chapters overall
+            const isFree = freeChapterIds.has(chapter.id);
             
             return {
               id: chapter.id,

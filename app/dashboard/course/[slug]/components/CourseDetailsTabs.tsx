@@ -1,16 +1,20 @@
 "use client"
 
 import { useState, useCallback, useMemo } from "react"
+import { createSelector } from "@reduxjs/toolkit"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FileText, MessageSquare, BarChart3, Award, TrendingUp, BookmarkIcon, File } from "lucide-react"
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
-import { addBookmark, removeBookmark } from "@/store/slices/course-slice"
+import { type RootState } from "@/store"
+import { addBookmark, removeBookmark, type BookmarkItem, type CourseProgress } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import CourseDetailsQuiz from "./CourseQuiz"
 import CourseAISummary from "./CourseSummary"
+import CertificateGenerator from "./CertificateGenerator"
+import { PDFDownloadLink } from "@react-pdf/renderer"
 
 export interface AccessLevels {
   isSubscribed: boolean
@@ -35,8 +39,36 @@ export default function CourseDetailsTabs({
   const [activeTab, setActiveTab] = useState("summary")
 
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
-  const bookmarks = useAppSelector((state) => state.course.bookmarks[currentVideoId || ""] || [])
-  const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
+  
+  // Memoized selectors to prevent unnecessary re-renders caused by new object references
+  // Previously: state.course.bookmarks[currentVideoId || ""] || [] would create a new array on each render
+  const selectBookmarks = useMemo(
+    () => createSelector(
+      [(state: RootState) => state.course.bookmarks, (state: RootState) => currentVideoId],
+      (bookmarks: Record<string, BookmarkItem[]>, videoId: string | null): BookmarkItem[] => {
+        if (!videoId || !bookmarks[videoId]) {
+          return []
+        }
+        return bookmarks[videoId]
+      }
+    ),
+    [currentVideoId]
+  )
+  
+  const bookmarks = useAppSelector(selectBookmarks)
+  
+  // Create memoized selector for course progress to prevent unnecessary re-renders
+  const selectCourseProgress = useMemo(
+    () => createSelector(
+      [(state: RootState) => state.course.courseProgress, () => course.id],
+      (courseProgressMap: Record<string | number, CourseProgress>, courseId: string | number): CourseProgress | undefined => {
+        return courseProgressMap[courseId]
+      }
+    ),
+    [course.id]
+  )
+  
+  const courseProgress = useAppSelector(selectCourseProgress)
 
   const courseStats = useMemo(() => {
     const totalChapters = course.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0) || 0
@@ -48,7 +80,7 @@ export default function CourseDetailsTabs({
       completedChapters,
       progressPercentage,
     }
-  }, [course.courseUnits, courseProgress?.completedChapters?.length])
+  }, [course.courseUnits, courseProgress?.completedChapters])
 
   const formatTime = useCallback((seconds: number): string => {
     if (isNaN(seconds)) return "0:00"
@@ -88,25 +120,48 @@ export default function CourseDetailsTabs({
     { id: "resources", label: "Resources", icon: <File className="h-4 w-4 mr-2" /> },
   ]
 
+  function CertificateButton({ courseTitle }: { courseTitle: string }) {
+    const safeCourse = courseTitle?.trim() || "Course"
+    const fileName = `${safeCourse.replace(/\s+/g, "_")}_Certificate.pdf`
+    return (
+      <PDFDownloadLink
+        document={<CertificateGenerator courseName={safeCourse} userName={undefined} />}
+        fileName={fileName}
+        className="w-full"
+      >
+        {({ loading }) => (
+          <Button disabled={loading} className="w-full">
+            {loading ? "Preparing..." : (
+              <>
+                <Award className="h-4 w-4 mr-2" />
+                Download Certificate
+              </>
+            )}
+          </Button>
+        )}
+      </PDFDownloadLink>
+    )
+  }
+
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full flex flex-col overflow-hidden">
         {/* Tab Navigation */}
         <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/20 rounded-none flex-shrink-0">
           <TabsTrigger value="summary" className="flex items-center gap-2 text-sm">
-            <FileText className="h-4 w-4" />
+            <FileText className="h-4 w-4 text-primary" />
             Summary
           </TabsTrigger>
           <TabsTrigger value="quiz" className="flex items-center gap-2 text-sm">
-            <MessageSquare className="h-4 w-4" />
+            <MessageSquare className="h-4 w-4 text-purple-500" />
             Quiz
           </TabsTrigger>
           <TabsTrigger value="progress" className="flex items-center gap-2 text-sm">
-            <BarChart3 className="h-4 w-4" />
+            <BarChart3 className="h-4 w-4 text-emerald-600" />
             Progress
           </TabsTrigger>
           <TabsTrigger value="bookmarks" className="flex items-center gap-2 text-sm">
-            <BookmarkIcon className="h-4 w-4" />
+            <BookmarkIcon className="h-4 w-4 text-amber-600" />
             Bookmarks
           </TabsTrigger>
         </TabsList>
@@ -118,7 +173,7 @@ export default function CourseDetailsTabs({
               chapterId={currentChapter.id}
               name={currentChapter.title || currentChapter.name || "Chapter Summary"}
               existingSummary={currentChapter.summary || null}
-              hasAccess={accessLevels?.isSubscribed}
+              hasAccess={Boolean(accessLevels?.isSubscribed || currentChapter?.isFree)}
               isAdmin={accessLevels?.isAdmin}
             />
           ) : (
@@ -138,7 +193,11 @@ export default function CourseDetailsTabs({
               key={currentChapter.id}
               course={course}
               chapter={currentChapter}
-              accessLevels={accessLevels!}
+              accessLevels={{
+                ...accessLevels!,
+                // Gate quiz: allow if subscribed or this chapter flagged as free quiz
+                isSubscribed: Boolean(accessLevels?.isSubscribed || (currentChapter as any)?.isFreeQuiz === true),
+              }}
               isPublicCourse={course.isPublic || false}
               chapterId={currentChapter.id.toString()}
             />
@@ -195,23 +254,22 @@ export default function CourseDetailsTabs({
                   <div className="text-xs text-muted-foreground">Certificates</div>
                 </div>
               </div>
-              {courseStats.progressPercentage === 100 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 dark:bg-yellow-900/20 dark:border-yellow-800">
-                  <div className="flex items-center gap-3">
-                    <Award className="h-8 w-8 text-yellow-600" />
-                    <div>
-                      <h3 className="font-semibold text-yellow-800 dark:text-yellow-200">Course Completed!</h3>
-                      <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                        Congratulations! You've completed all chapters.
-                      </p>
+                              {courseStats.progressPercentage === 100 && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 dark:bg-yellow-900/20 dark:border-yellow-800">
+                    <div className="flex items-center gap-3">
+                      <Award className="h-8 w-8 text-yellow-600" />
+                      <div>
+                        <h3 className="font-semibold text-yellow-800 dark:text-yellow-200">Course Completed!</h3>
+                        <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                          Congratulations! You've completed all chapters.
+                        </p>
+                      </div>
+                      <div className="ml-auto min-w-[220px]">
+                        <CertificateButton courseTitle={course.title} />
+                      </div>
                     </div>
-                    <Button variant="outline" size="sm" className="ml-auto bg-transparent">
-                      <Award className="h-4 w-4 mr-2" />
-                      Certificate
-                    </Button>
                   </div>
-                </div>
-              )}
+                )}
             </CardContent>
           </Card>
         </TabsContent>

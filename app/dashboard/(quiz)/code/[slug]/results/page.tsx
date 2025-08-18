@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import QuizResult from "../../../components/QuizResult"
 import GenericQuizResultHandler from "../../../components/QuizResultHandler"
-import { getQuizSlug } from "../../../components/utils"
+import QuizResultLayout from "../../../components/layouts/QuizResultLayout"
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }>
@@ -14,30 +14,19 @@ interface ResultsPageProps {
 
 export default function CodeResultsPage({ params }: ResultsPageProps) {
   const router = useRouter()
-
-  const slugString = getQuizSlug(params);
+  
+  // Properly unwrap the params Promise once at the top level
+  const { slug: slugString } = use(params);
 
   // Handle retake quiz
   const handleRetakeQuiz = () => {
     router.replace(`/dashboard/code/${slugString}`)
   }
 
-  // Handle errors from the generic handler
-  const handleError = (error: string) => {
-    console.error('Quiz result error:', error);
-    // You can add additional error handling here if needed
-  }
-
-  // Handle redirects from the generic handler
-  const handleRedirect = (path: string) => {
-    console.log('Redirecting to:', path);
-    // You can add additional redirect handling here if needed
-  }
-
   // If slug is missing, show error
   if (!slugString) {
     return (
-      <div className="container max-w-4xl py-6">
+      <QuizResultLayout title="Results" quizType="code">
         <Card>
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-bold mb-4">Error</h2>
@@ -45,13 +34,12 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
             <Button onClick={() => router.replace("/dashboard/quizzes")}>Back to Quizzes</Button>
           </CardContent>
         </Card>
-      </div>
+      </QuizResultLayout>
     )
   }
 
   return (
-    <div className="container max-w-4xl py-10">
-
+    <QuizResultLayout title="Results" quizType="code" slug={slugString}>
       <GenericQuizResultHandler
         slug={slugString}
         quizType="code"
@@ -65,7 +53,7 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
           />
         )}
       </GenericQuizResultHandler>
-    </div>
+    </QuizResultLayout>
   )
 }
 

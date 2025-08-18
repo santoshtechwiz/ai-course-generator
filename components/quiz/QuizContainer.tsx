@@ -21,41 +21,46 @@ interface QuizContainerProps {
   difficulty?: "easy" | "medium" | "hard"
   showProgress?: boolean
   fullWidth?: boolean
+  variant?: "default" | "compact" | "expanded"
 }
 
 const quizTypeConfig = {
   mcq: {
     icon: Target,
     label: "Multiple Choice",
-    bgColor: "bg-blue-50 dark:bg-blue-950/20",
-    borderColor: "border-blue-200 dark:border-blue-800",
+    bgColor: "",
+    borderColor: "",
+    accentColor: "",
   },
   code: {
     icon: Code2,
     label: "Code Challenge",
-    bgColor: "bg-green-50 dark:bg-green-950/20",
-    borderColor: "border-green-200 dark:border-green-800",
+    bgColor: "",
+    borderColor: "",
+    accentColor: "",
   },
   blanks: {
     icon: PenTool,
     label: "Fill Blanks",
-    bgColor: "bg-cyan-50 dark:bg-cyan-950/20",
-    borderColor: "border-cyan-200 dark:border-cyan-800",
+    bgColor: "",
+    borderColor: "",
+    accentColor: "",
   },
   openended: {
     icon: Brain,
     label: "Open Ended",
-    bgColor: "bg-violet-50 dark:bg-violet-950/20",
-    borderColor: "border-violet-200 dark:border-violet-800",
+    bgColor: "",
+    borderColor: "",
+    accentColor: "",
   },
   flashcard: {
     icon: BookOpen,
     label: "Flashcards",
-    bgColor: "bg-orange-50 dark:bg-orange-950/20",
-    borderColor: "border-orange-200 dark:border-orange-800",
+    bgColor: "",
+    borderColor: "",
+    accentColor: "",
   },
 }
-
 
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -71,6 +76,15 @@ const containerVariants = {
   },
 }
 
+/**
+ * Unified Quiz Container Component
+ * 
+ * Provides consistent UX patterns across all quiz types:
+ * - Clean, professional layout
+ * - Consistent spacing and responsive design
+ * - Minimal nesting for better performance
+ * - Focus mode friendly
+ */
 export function QuizContainer({
   children,
   questionNumber = 1,
@@ -78,12 +92,21 @@ export function QuizContainer({
   quizType = "mcq",
   animationKey,
   className,
-  fullWidth = false,
+  fullWidth = true,
+  variant = "default",
 }: QuizContainerProps) {
   const config = quizTypeConfig[quizType] || quizTypeConfig.mcq
 
+  const containerClasses = cn(
+    "w-full flex flex-col",
+    variant === "compact" && "max-w-3xl mx-auto",
+    variant === "expanded" && "min-h-[calc(100vh-2rem)]",
+    variant === "default" && "max-w-4xl mx-auto",
+    className
+  )
+
   return (
-    <div className="w-full flex flex-col">
+    <div className={containerClasses}>
       <AnimatePresence mode="wait">
         <motion.div
           key={animationKey}
@@ -91,25 +114,12 @@ export function QuizContainer({
           initial="hidden"
           animate="visible"
           exit="exit"
-          className={cn(
-            "w-full flex flex-col",
-            fullWidth ? "" : "max-w-4xl mx-auto",
-            className
-          )}
+          className="w-full flex-1 flex flex-col"
         >
-          <Card
-            className={cn(
-              "border-l-4 shadow-md w-full transition-all",
-              config.borderColor,
-              config.bgColor
-            )}
-          >
-            <CardContent className="w-full p-4 sm:p-6">
-              <div className="w-full flex flex-col space-y-4">
-                {children}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Simplified container - no unnecessary nesting */}
+          <div className="w-full space-y-6">
+            {children}
+          </div>
         </motion.div>
       </AnimatePresence>
     </div>

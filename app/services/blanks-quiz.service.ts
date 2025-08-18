@@ -9,7 +9,7 @@ export class BlanksQuizService extends BaseQuizService {
   /**
    * Generate Blanks quiz using the existing generation logic
    */
-  async generateQuiz(params: {
+  public async generateQuiz(params: {
     title: string;
     amount: number;
     userType?: string;
@@ -64,11 +64,11 @@ export class BlanksQuizService extends BaseQuizService {
     const result = {
       isPublic: quiz.isPublic,
       isFavorite: quiz.isFavorite,
-      slug: quiz.slug,
       id: quiz.id,
       title: quiz.title,
       questions: this.formatQuestions(quiz.questions),
       userId: quiz.userId,
+      language: quiz.language ?? null,
     };
 
     console.log("Blanks Quiz found:", result);

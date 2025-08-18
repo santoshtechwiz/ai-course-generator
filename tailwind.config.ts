@@ -11,10 +11,26 @@ module.exports = {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: {
+        DEFAULT: "1rem",
+        xs: "1.25rem",
+        sm: "1.5rem",
+        md: "1.75rem",
+        lg: "2rem",
+        xl: "2rem",
+        "2xl": "2rem",
+      },
       screens: {
         "2xl": "1400px",
       },
+    },
+    screens: {
+      'xs': '480px',
+      'sm': '640px',
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+      '2xl': '1536px',
     },
     extend: {
       // Enhanced Color System
@@ -146,13 +162,17 @@ module.exports = {
         '88': '22rem',
         '128': '32rem',
         '144': '36rem',
-        // Component-specific spacing
-        'section': '6rem',
-        'section-sm': '4rem',
-        'section-lg': '8rem',
-        'component': '3rem',
-        'component-sm': '2rem',
-        'component-lg': '4rem',
+        // Responsive spacing utilities
+        'section': 'clamp(2rem, 5vw, 6rem)',
+        'section-sm': 'clamp(1.5rem, 4vw, 4rem)',
+        'section-lg': 'clamp(4rem, 8vw, 8rem)',
+        'component': 'clamp(1rem, 3vw, 3rem)',
+        'component-sm': 'clamp(0.75rem, 2vw, 2rem)',
+        'component-lg': 'clamp(2rem, 4vw, 4rem)',
+        // Grid spacing
+        'grid-gap': 'clamp(1rem, 2.5vw, 2rem)',
+        'grid-gap-sm': 'clamp(0.5rem, 1.5vw, 1rem)',
+        'grid-gap-lg': 'clamp(1.5rem, 3vw, 3rem)',
       },
       // Enhanced Border Radius
       borderRadius: {

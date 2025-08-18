@@ -5,9 +5,45 @@ import { motion, AnimatePresence } from "framer-motion"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
 import { cn } from "@/lib/utils"
-import { CheckCircle2 } from "lucide-react"
+import { CheckCircle2, Target } from "lucide-react"
 import { toast } from "sonner"
 import { QuizStateProvider } from "@/components/quiz/QuizStateProvider"
+
+// Standardized animation variants
+const containerVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" },
+  },
+  exit: {
+    opacity: 0,
+    y: -20,
+    transition: { duration: 0.3, ease: "easeIn" },
+  },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 200,
+      damping: 20,
+      mass: 0.8,
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -20,
+    scale: 0.95,
+    transition: { duration: 0.3 },
+  },
+}
 
 interface McqQuizProps {
   question: {
@@ -55,6 +91,7 @@ const McqQuiz = ({
 }: McqQuizProps) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(existingAnswer || null)
   const [isAnswering, setIsAnswering] = useState(false)
+  const [hoveredOption, setHoveredOption] = useState<string | null>(null)
 
   const options = useMemo(() => {
     return (question?.options || []).map((option, index) => ({
@@ -71,15 +108,25 @@ const McqQuiz = ({
       setIsAnswering(true)
 
       try {
+        // Add haptic feedback for mobile devices
+        if (navigator.vibrate) {
+          navigator.vibrate(50)
+        }
+
         await new Promise((resolve) => setTimeout(resolve, 150))
         setSelectedOption(optionId)
 
         const selected = options.find((o) => o.id === optionId)
         if (selected) {
           onAnswer(selected.text)
+          // Show success feedback
+          toast.success("Answer selected!", {
+            duration: 1000,
+            position: "top-center",
+          })
         }
       } catch (error) {
-        console.log("Failed to select answer")
+        toast.error("Failed to select answer")
       } finally {
         setIsAnswering(false)
       }
@@ -94,7 +141,6 @@ const McqQuiz = ({
       onError={(error) => toast.error(error)}
       onSuccess={(message) => toast.success(message || "Great job!")}
       globalLoading={isLastQuestion}
-      
     >
       {(stateManager) => (
         <QuizContainer
@@ -105,34 +151,34 @@ const McqQuiz = ({
           difficulty={difficulty?.toLowerCase() as "easy" | "medium" | "hard"}
           fullWidth={true}
         >
-          <div className="space-y-6">
-            {/* Question Text */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="w-full space-y-6"
+          >
+            {/* Question Header - Simplified */}
             <motion.div
-              className="text-center space-y-4 mb-8"
+              className="text-center space-y-4"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.5 }}
             >
-              <motion.h2
-                className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground leading-relaxed max-w-4xl mx-auto px-4 break-words"
-                transition={{ delay: 0.1, duration: 0.5 }}
-              >
-                {questionText}
-              </motion.h2>
+            
 
-              <motion.div
-                className="h-1 bg-gradient-to-r from-transparent via-primary/60 to-transparent rounded-full mx-auto max-w-32"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ delay: 0.3, duration: 0.6 }}
-              />
+              {/* Question Text */}
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground leading-relaxed max-w-3xl mx-auto">
+                {questionText}
+              </h2>
             </motion.div>
 
-            {/* Options */}
-            <div className="max-w-3xl mx-auto space-y-3">
+            {/* Options - Simplified Layout */}
+            <div className="w-full space-y-3 max-w-2xl mx-auto">
               <AnimatePresence>
                 {options.map((option, index) => {
                   const isSelected = selectedOption === option.id
+                  const isHovered = hoveredOption === option.id
                   const isDisabled = isAnswering || isSubmitting || stateManager.isSubmitting
 
                   return (
@@ -140,34 +186,27 @@ const McqQuiz = ({
                       key={option.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1, duration: 0.5 }}
-                      whileHover={!isDisabled ? { scale: 1.01, x: 2 } : {}}
+                      transition={{ delay: index * 0.1, duration: 0.3 }}
+                      whileHover={!isDisabled ? { scale: 1.01 } : {}}
                       whileTap={!isDisabled ? { scale: 0.99 } : {}}
+                      onHoverStart={() => !isDisabled && setHoveredOption(option.id)}
+                      onHoverEnd={() => setHoveredOption(null)}
                     >
-                      <motion.label
+                      <label
                         htmlFor={`option-${option.id}`}
                         className={cn(
-                          "group relative flex items-start space-x-4 p-4 sm:p-5 overflow-hidden rounded-xl border-2 cursor-pointer transition-all duration-300",
-                          "hover:shadow-lg hover:shadow-primary/10",
+                          "flex items-center gap-3 p-3 sm:p-4 w-full rounded-xl border cursor-pointer transition-colors duration-200 shadow-sm",
+                          "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background",
+                          "bg-card hover:bg-muted",
                           isSelected
-                            ? "border-primary bg-gradient-to-r from-primary/15 via-primary/8 to-primary/5 shadow-lg shadow-primary/20"
-                            : "border-border/60 bg-gradient-to-r from-card/90 to-card/70 hover:border-primary/40 hover:bg-gradient-to-r hover:from-primary/8 hover:to-primary/4",
+                            ? "border-primary/50"
+                            : isHovered
+                              ? "border-primary/30"
+                              : "border-border",
                           isDisabled && "opacity-60 cursor-not-allowed",
                         )}
                         onClick={() => !isDisabled && handleOptionSelect(option.id)}
                       >
-                        <AnimatePresence>
-                          {isSelected && (
-                            <motion.div
-                              className="absolute inset-0 bg-gradient-to-r from-primary/12 to-primary/6"
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.8 }}
-                              transition={{ duration: 0.3 }}
-                            />
-                          )}
-                        </AnimatePresence>
-
                         {/* Radio Input */}
                         <input
                           type="radio"
@@ -179,76 +218,61 @@ const McqQuiz = ({
                           onChange={() => !isDisabled && handleOptionSelect(option.id)}
                           className="sr-only"
                         />
-
-                        {/* Letter */}
-                        <div
-                          className={cn(
-                            "flex items-center justify-center w-10 h-10 rounded-lg font-bold text-sm flex-shrink-0 transition-all duration-300",
-                            isSelected
-                              ? "bg-primary text-primary-foreground shadow-md"
-                              : "bg-muted/60 text-muted-foreground group-hover:bg-primary/15 group-hover:text-primary",
-                          )}
-                        >
-                          {option.letter}
-                        </div>
-
-                        {/* Option Text */}
-                        <div
-                          className={cn(
-                            "flex-1 text-base sm:text-lg font-medium leading-relaxed min-w-0",
-                            "break-words whitespace-normal",
-                            isSelected
-                              ? "text-foreground font-semibold"
-                              : "text-muted-foreground group-hover:text-foreground",
-                          )}
-                        >
-                          <motion.span
-                            initial={false}
-                            animate={isSelected ? { x: 4 } : { x: 0 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                            className="block"
-                          >
-                            {option.text}
-                          </motion.span>
-                        </div>
-
-                        {/* Check Icon */}
-                        <AnimatePresence>
-                          {isSelected && (
-                            <motion.div
-                              className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground flex-shrink-0"
-                              initial={{ scale: 0, opacity: 0, rotate: -180 }}
-                              animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                              exit={{ scale: 0, opacity: 0, rotate: 180 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                            >
-                              <CheckCircle2 className="w-4 h-4" />
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.label>
-                    </motion.div>
+ 
+                         {/* Letter Badge */}
+                         <div
+                           className={cn(
+                             "flex items-center justify-center w-9 h-9 rounded-lg font-bold text-sm flex-shrink-0",
+                             isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+                           )}
+                         >
+                           {option.letter}
+                         </div>
+ 
+                         {/* Option Text */}
+                         <div className="flex-1 text-sm sm:text-base font-medium leading-relaxed min-w-0 text-foreground">
+                           {option.text}
+                         </div>
+ 
+                         {/* Selection indicator */}
+                         {isSelected && (
+                           <motion.div
+                             initial={{ scale: 0 }}
+                             animate={{ scale: 1 }}
+                             className="flex-shrink-0"
+                           >
+                             <CheckCircle2 className="w-5 h-5 text-primary" />
+                           </motion.div>
+                         )}
+                       </label>
+                     </motion.div>
                   )
                 })}
               </AnimatePresence>
             </div>
 
             {/* Footer */}
-            <QuizFooter
-              onNext={onNext ? () => stateManager.handleNext(onNext) : undefined}
-              onPrevious={undefined}
-              onSubmit={isLastQuestion && onSubmit ? () => stateManager.handleSubmit(onSubmit) : undefined}
-              onRetake={onRetake}
-              canGoNext={!!selectedOption && !isAnswering}
-              canGoPrevious={false}
-              isLastQuestion={isLastQuestion}
-              isSubmitting={isSubmitting || stateManager.isSubmitting}
-              showRetake={showRetake}
-              hasAnswer={!!selectedOption}
-              submitState={stateManager.submitState}
-              nextState={stateManager.nextState}
-            />
-          </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <QuizFooter
+                onNext={onNext ? () => stateManager.handleNext(onNext) : undefined}
+                onPrevious={undefined}
+                onSubmit={isLastQuestion && onSubmit ? () => stateManager.handleSubmit(onSubmit) : undefined}
+                onRetake={onRetake}
+                canGoNext={!!selectedOption && !isAnswering}
+                canGoPrevious={false}
+                isLastQuestion={isLastQuestion}
+                isSubmitting={isSubmitting || stateManager.isSubmitting}
+                showRetake={showRetake}
+                hasAnswer={!!selectedOption}
+                submitState={stateManager.submitState}
+                nextState={stateManager.nextState}
+              />
+            </motion.div>
+          </motion.div>
         </QuizContainer>
       )}
     </QuizStateProvider>

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { motion, useScroll, useTransform, AnimatePresence, useSpring } from "framer-motion"
 import { useTheme } from "next-themes"
 import Link from "next/link"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 import { ArrowRight, Menu, X, ArrowUp } from "lucide-react"
 import { FeedbackButton } from "@/components/ui/feedback-button"
 import AboutSection from "./sections/AboutSection"
@@ -15,7 +15,8 @@ import TestimonialsSlider from "./sections/TestimonialsSlider"
 import HeroSection from "./sections/HeroSection"
 
 import { useRouter } from "next/navigation"
-import { useMobile } from "@/hooks/use-mobile"
+import { useMobile } from "@/hooks"
+
 
 // Apple-inspired easing function for smoother animations
 const APPLE_EASING = [0.25, 0.1, 0.25, 1]

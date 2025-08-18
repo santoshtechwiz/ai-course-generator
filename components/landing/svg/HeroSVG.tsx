@@ -1,7 +1,17 @@
 "use client"
 
-import AnimatedSVGPath from "@/components/animations/AnimatedSVGPath"
 import { motion } from "framer-motion"
+const AnimatedSVGPath = ({ d, stroke, strokeWidth = 2, delay = 0, duration = 1.5 }: { d: string; stroke: string; strokeWidth?: number; delay?: number; duration?: number }) => (
+  <motion.path
+    d={d}
+    stroke={stroke}
+    strokeWidth={strokeWidth}
+    fill="none"
+    initial={{ pathLength: 0 }}
+    animate={{ pathLength: 1 }}
+    transition={{ duration, delay, ease: [0.25, 0.1, 0.25, 1] }}
+  />
+)
 
 const HeroSVG = () => {
   return (

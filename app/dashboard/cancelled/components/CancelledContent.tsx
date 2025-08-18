@@ -2,7 +2,7 @@
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 import { motion } from "framer-motion"
 import { XCircle, RefreshCw, Home } from "lucide-react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"

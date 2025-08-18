@@ -15,7 +15,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import FlashCardResults from "./FlashCardQuizResults"
 import { Button } from "@/components/ui/button"
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
-import { GlobalLoader } from "@/components/loaders"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface FlashcardResultHandlerProps {
   slug: string
@@ -94,7 +94,7 @@ export default function FlashcardResultHandler({
   }
   if (isAuthLoading) {
     return (
-      <GlobalLoader />
+      <Skeleton className="h-6 w-36" />
     )
   }
 
@@ -159,7 +159,7 @@ export default function FlashcardResultHandler({
             }}
           />
         ) : (          <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-            <GlobalLoader />
+            <Skeleton className="h-6 w-36" />
           </div>
         )}
       </motion.div>

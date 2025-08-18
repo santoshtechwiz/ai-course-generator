@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Clock, ExternalLink, XCircle } from "lucide-react"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 import type { QuizType } from "@/app/types/quiz-types"
 
 interface Quiz {

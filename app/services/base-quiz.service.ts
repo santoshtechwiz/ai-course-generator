@@ -26,7 +26,7 @@ export abstract class BaseQuizService {
     const quiz = await this.quizRepository.findBySlug(slug);
 
     if (!quiz) {
-      throw new Error("Quiz not found");
+      return null;
     }
     console.log("Quiz found:", quiz);
     return {
@@ -68,6 +68,40 @@ export abstract class BaseQuizService {
     return this.quizRepository.markQuizComplete(slug, userId, score);
   }
 
+  /**
+   * Add quiz to favorites
+   */
+  async addToFavorite(slug: string, userId: string) {
+    return this.quizRepository.addToFavorite(slug, userId);
+  }
+
+  /**
+   * Remove quiz from favorites
+   */
+  async removeFromFavorite(slug: string, userId: string) {
+    return this.quizRepository.removeFromFavorite(slug, userId);
+  }
+
+  /**
+   * Toggle quiz visibility
+   */
+  async toggleVisibility(slug: string, userId: string) {
+    return this.quizRepository.toggleVisibility(slug, userId);
+  }
+
+  async delete(slug: string, userId: string) {
+    const quiz = await this.quizRepository.findBySlug(slug);
+    
+    if (!quiz) {
+      throw new Error("Quiz not found");
+    }
+    
+    if (quiz.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+    
+    return this.quizRepository.delete(quiz.id);
+  }
   /**
    * Format questions based on quiz type (implemented by child classes)
    */

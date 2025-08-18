@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
-import { useGlobalLoader } from '@/store/global-loader'
+import { useGlobalLoader } from '@/store/loaders/global-loader'
 
 export type QuizState = 'idle' | 'submitting' | 'navigating' | 'success' | 'error'
 
@@ -39,8 +39,8 @@ export function QuizStateProvider({
   const [nextState, setNextState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const { startLoading, stopLoading, setError: setGlobalError, setSuccess: setGlobalSuccess } = useGlobalLoader()
   
-  const submitTimeoutRef = useRef<NodeJS.Timeout>()
-  const nextTimeoutRef = useRef<NodeJS.Timeout>()
+  const submitTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const nextTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const resetState = useCallback(() => {
     setState('idle')

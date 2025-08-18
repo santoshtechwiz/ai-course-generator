@@ -12,13 +12,10 @@ import {
   selectQuizStatus,
   selectQuizTitle,
   selectIsQuizComplete,
-  selectQuizUserId,
   setCurrentQuestionIndex,
   saveAnswer,
   resetQuiz,
   submitQuiz,
-  selectQuizId,
-  selectQuizType,
   fetchQuiz,
 } from "@/store/slices/quiz/quiz-slice"
 
@@ -26,10 +23,9 @@ import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import BlanksQuiz from "./BlanksQuiz"
 
-import { QuizActions } from "../../components/QuizActions"
-import { useGlobalLoading } from "@/store/slices/global-loading-slice"
+import { useGlobalLoader } from "@/store/loaders/global-loader"
 import { BlankQuizQuestion } from "@/app/types/quiz-types"
-import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
+import { Skeleton } from "@/components/ui/skeleton"
 
 
 interface BlanksQuizWrapperProps {
@@ -41,7 +37,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   const { user } = useAuth()
-  const { showLoading, hideLoading } = useGlobalLoading()
+  const { startLoading, stopLoading } = useGlobalLoader()
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [error, setError] = useState<string | null>(null)
   // Redux selectors
@@ -50,17 +46,8 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
   const quizStatus = useSelector(selectQuizStatus)
   const isCompleted = useSelector(selectIsQuizComplete)
-  const quizType = useSelector(selectQuizType)
-  const quizId = useSelector(selectQuizId)
-  const quizOwnerId = useSelector(selectQuizUserId) // Get the actual quiz owner ID
-  const userId = user?.id // Get user ID from session-based auth
   const quizTitle = useSelector(selectQuizTitle)
-  const pdfData={
-    title: quizTitle || title,
-    description: "This is a blanks quiz. Fill in the missing words to complete the sentences.",
-    questions: questions
-
-  }
+  
   // Load quiz on mount
   useEffect(() => {
     const loadQuiz = async () => {
@@ -128,12 +115,9 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   }, [currentQuestionIndex, dispatch])
   // Submit quiz and navigate to results
   const handleSubmitQuiz = useCallback(async () => {
-    const loaderId = showLoading({
+    startLoading({
       message: "🎉 Quiz completed! Calculating your results...",
-      variant: 'default',
-      theme: 'primary',
-      isBlocking: true,
-      priority: 8
+      isBlocking: true
     })
     
     try {
@@ -144,9 +128,9 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
     } finally {
-      hideLoading(loaderId)
+      stopLoading()
     }
-  }, [dispatch, showLoading, hideLoading, slug, router])
+  }, [dispatch, startLoading, stopLoading, slug, router])
 
   // Loading & error states
   const isLoading = quizStatus === "loading" || quizStatus === "idle"
@@ -167,18 +151,23 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
     if (!currentQuestion) return null
     const cq = currentQuestion as BlankQuizQuestion
     return {
-      id: String(cq.id),
+      id: cq.id, // Keep as number to match BlankQuizQuestion type
       text: cq.text || cq.question || "",
       question: cq.question || cq.text || "",
       answer: cq.answer || "",
       hints: cq.hints || [],
       tags: cq.tags || [],
-      type: cq.type, // Ensure 'type' is included
+      type: cq.type as "blanks", // Explicit type assertion
     }  }, [currentQuestion])
   
   if (isLoading) {
     return (
-      <LoadingSpinner></LoadingSpinner>
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
     )
   }
 
@@ -210,22 +199,23 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      
-      <BlanksQuiz
-        key={formattedQuestion.id} // ✅ forces component reset per question
-        question={formattedQuestion}
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-        existingAnswer={existingAnswer}
-        onAnswer={handleAnswer}
-        onNext={handleNextQuestion}
-        onPrevious={handlePrevQuestion}
-        onSubmit={handleSubmitQuiz}
-        canGoNext={canGoNext}
-        canGoPrevious={canGoPrevious}
-        isLastQuestion={isLastQuestion}
-      />
-
+    <div className="w-full ">
+      <div className="space-y-6">
+        <BlanksQuiz
+          key={formattedQuestion.id} // ✅ forces component reset per question
+          question={formattedQuestion}
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
+          existingAnswer={existingAnswer}
+          onAnswer={handleAnswer}
+          onNext={handleNextQuestion}
+          onPrevious={handlePrevQuestion}
+          onSubmit={handleSubmitQuiz}
+          canGoNext={canGoNext}
+          canGoPrevious={canGoPrevious}
+          isLastQuestion={isLastQuestion}
+        />
+      </div>
     </div>
   )
 }

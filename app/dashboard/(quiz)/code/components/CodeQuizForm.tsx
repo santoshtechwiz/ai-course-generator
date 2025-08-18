@@ -33,10 +33,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-import { usePersistentState } from "@/hooks/usePersistentState"
-import { cn } from "@/lib/tailwindUtils"
+import { usePersistentState } from "@/lib/storage"
+import { cn } from "@/lib/utils"
 import { codeQuizSchema } from "@/schema/schema"
-import { GlobalLoader } from "@/components/ui/loader"
+import { Skeleton } from "@/components/ui/skeleton"
 
 import type { z } from "zod"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
@@ -45,6 +45,8 @@ import { useSubscription } from "@/modules/auth"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import PlanAwareButton from "../../components/PlanAwareButton"
 import FormContainer from "@/app/dashboard/FormContainer"
+import { useToast } from "@/components/ui/use-toast"
+import { useGlobalLoader } from "@/store/loaders/global-loader"
 
 type CodeQuizFormData = z.infer<typeof codeQuizSchema> & {
   userType?: string
@@ -173,6 +175,9 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
     status?: string
   }
 
+  const { toast } = useToast()
+  const { withLoading } = useGlobalLoader()
+
   const [selectedLanguageGroup, setSelectedLanguageGroup] = React.useState<string>("Popular")
   const [showCustomLanguage, setShowCustomLanguage] = React.useState(false)
   const [customLanguage, setCustomLanguage] = React.useState("")
@@ -224,12 +229,13 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
   const { mutateAsync: createCodeQuizMutation } = useMutation({
     mutationFn: async (data: CodeQuizFormData) => {
       data.userType = subscriptionData?.subscriptionPlan
-      const response = await axios.post("/api/quizzes/code", data)
+      const response = await axios.post("/api/quizzes", { ...data, type: "code" })
       return response.data
     },
     onError: (error: any) => {
       console.error("Error creating code quiz:", error)
       setSubmitError(error?.response?.data?.message || "Failed to create code quiz. Please try again.")
+      toast({ title: "Error", description: error?.response?.data?.message || "Failed to create code quiz.", variant: "destructive" })
     },
   })
 
@@ -296,12 +302,17 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
         throw new Error("Please complete all required fields")
       }
 
-      const response = await createCodeQuizMutation({
+      const response = await withLoading(createCodeQuizMutation({
         title: formValues.title.trim(),
         amount: formValues.amount,
         difficulty: formValues.difficulty,
         language: formValues.language.trim(),
         userType: subscriptionData?.subscriptionPlan,
+      }), {
+        message: "Generating your code quiz...",
+        isBlocking: true,
+        minVisibleMs: 400,
+        autoProgress: true,
       })
 
       if (!response?.userQuizId || !response?.slug) {
@@ -311,17 +322,20 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
       // Close dialog before navigation
       setIsConfirmDialogOpen(false)
 
+      toast({ title: "Success!", description: "Your code quiz has been created." })
+
       // Navigate to the quiz
       router.push(`/dashboard/code/${response.slug}`)
     } catch (error) {
       console.error("Code quiz creation error:", error)
       const errorMessage = error instanceof Error ? error.message : "Failed to create quiz"
       setSubmitError(errorMessage)
+      toast({ title: "Error", description: errorMessage, variant: "destructive" })
       // Keep dialog open to show error
     } finally {
       setIsLoading(false)
     }
-  }, [createCodeQuizMutation, formData, router, subscriptionData?.subscriptionPlan])
+  }, [createCodeQuizMutation, formData, router, subscriptionData?.subscriptionPlan, withLoading, toast])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")
@@ -372,7 +386,10 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
   if (isLoading && !isConfirmDialogOpen) {
     return (
       <FormContainer>
-        <GlobalLoader />
+        <Skeleton className="space-y-3">
+          <Skeleton className="h-6 w-36" />
+          <Skeleton className="h-48 w-full" />
+        </Skeleton>
       </FormContainer>
     )
   }

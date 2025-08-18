@@ -1,79 +1,63 @@
-"use client"
+import type { Metadata } from "next"
+import { generateQuizPageMetadata } from "@/components/seo/QuizPageWrapper"
+import BlanksQuizClient from "./BlanksQuizClient"
+import prisma from "@/lib/db"
+import { QuizSchema } from "@/lib/seo"
+import React from "react"
+import QuizSEOClient from "../../components/QuizSEOClient"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import BlanksQuizWrapper from "../components/BlanksQuizWrapper"
-import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
-import QuizSEO from "../../components/QuizSEO"
-import { getQuizSlug } from "../../components/utils"
-import { useSelector } from "react-redux"
-import { GlobalLoader } from "@/components/loaders"
-
-export default function BlanksQuizPage({
-  params,
-}: {
+interface BlanksQuizPageProps {
   params: Promise<{ slug: string }>
-}) {
-  const slug = getQuizSlug(params);
-  const router = useRouter();
+}
 
-  // Get quiz state from Redux
-  const quizState = useSelector((state: any) => state.quiz);
-  const quizData = quizState;
-  const status = quizState?.status;
-  const dispatch = (typeof window !== "undefined" ? require("react-redux").useDispatch() : () => { });
+// Server component that generates proper SEO metadata
+export async function generateMetadata({ params }: BlanksQuizPageProps): Promise<Metadata> {
+  const { slug } = await params
+  
+  let dbTitle: string | null = null
+  let isPublic = false
+  try {
+    const quiz = await prisma.userQuiz.findUnique({ where: { slug }, select: { title: true, isPublic: true } })
+    if (quiz) { dbTitle = quiz.title; isPublic = Boolean(quiz.isPublic) }
+  } catch {}
 
-  useEffect(() => {
-    if (slug && (!quizState || !quizState.questions || quizState.questions.length === 0) && status !== "loading") {
-      // Dynamically import fetchQuiz thunk and dispatch it
-      console.log("Fetching quiz data for slug:", slug);
-      import("@/store/slices/quiz/quiz-slice").then(({ fetchQuiz }) => {
-        dispatch(fetchQuiz({ slug, quizType: "blanks" }));
-      });
-    }
-  }, [slug, quizState, status, dispatch]);
+  const clean = (dbTitle || slug).replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  const noIndex = !dbTitle || !isPublic
 
-  if (status === "loading" || !quizState || !quizState.questions || quizState.questions.length === 0) {
-    
-      <GlobalLoader  />
+  return generateQuizPageMetadata({
+    quizType: "blanks",
+    slug,
+    title: `Fill in the Blanks Quiz: ${clean}`,
+    description: "Test your knowledge with fill-in-the-blank questions. Complete sentences and statements to demonstrate your understanding.",
+    topic: clean,
+    noIndex,
+  })
+}
 
-  }
+function QuizJsonLd({ slug, title }: { slug: string; title: string }) {
+  const url = `${process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"}/dashboard/blanks/${slug}`
+  return (
+    <QuizSchema
+      name={title}
+      url={url}
+      description={`Fill in the blanks quiz on ${title}`}
+      questions={[]}
+    />
+  )
+}
 
-
-
-  if (!slug) {
+export default function BlanksQuizPage({ params }: BlanksQuizPageProps) {
+  const ClientWithJsonLd = async () => {
+    const { slug } = await params
+    const title = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
     return (
-      <div className="container max-w-4xl py-6">
-        <Card>
-          <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-bold mb-4">Error</h2>
-            <p className="text-muted-foreground mb-6">Quiz slug is missing. Please check the URL.</p>
-            <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
-          </CardContent>
-        </Card>
-      </div>
+      <>
+        <QuizSEOClient />
+        <QuizJsonLd slug={slug} title={title} />
+        <BlanksQuizClient params={params} />
+      </>
     )
   }
-  return (
-    <QuizPlayLayout 
-      quizSlug={slug} 
-      quizType="blanks"
-      quizId={slug}
-      isPublic={true} 
-      isFavorite={false}
-      quizData={quizData || null}
-    >
-      <QuizSEO 
-        slug={slug}
-        quizType="blanks"
-        description={`Improve your knowledge with this ${slug.replace(/-/g, ' ')} fill-in-the-blanks exercise. Complete the missing words and enhance your understanding!`}
-      />
-      <BlanksQuizWrapper
-      slug={slug}
-      title="Fill in the Blanks Quiz"
-      />
-    </QuizPlayLayout>
-  )
+  // @ts-expect-error Async Server Component
+  return <ClientWithJsonLd />
 }

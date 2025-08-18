@@ -13,13 +13,13 @@ export function DifficultyBadge({ difficulty, className }: DifficultyBadgeProps)
   const getDifficultyColor = (diff: string) => {
     switch (diff.toLowerCase()) {
       case "easy":
-        return "bg-green-500 text-white border-green-500"
+        return "bg-emerald-500 text-white border-emerald-500"
       case "medium":
-        return "bg-yellow-500 text-white border-yellow-500"
+        return "bg-amber-500 text-white border-amber-500"
       case "hard":
-        return "bg-red-500 text-white border-red-500"
+        return "bg-accent text-accent-foreground border-accent"
       default:
-        return "bg-gray-500 text-white border-gray-500"
+        return "bg-muted text-muted-foreground border-muted"
     }
   }
 

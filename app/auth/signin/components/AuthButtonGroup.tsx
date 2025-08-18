@@ -36,6 +36,9 @@ export function AuthButtonGroup({ providers, callbackUrl }: AuthButtonGroupProps
           case "facebook":
             logo = FacebookLogo
             break
+          case "linkedin":
+            logo = "/linkedin.png"
+            break
           default:
             logo = "/placeholder.svg"
         }

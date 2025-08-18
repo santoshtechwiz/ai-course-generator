@@ -1,74 +1,63 @@
-"use client"
+import type { Metadata } from "next"
+import { generateQuizPageMetadata } from "@/components/seo/QuizPageWrapper"
+import CodeQuizClient from "./CodeQuizClient"
+import prisma from "@/lib/db"
+import { QuizSchema } from "@/lib/seo"
+import React from "react"
+import QuizSEOClient from "../../components/QuizSEOClient"
 
-import { useRouter } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import CodeQuizWrapper from "../components/CodeQuizWrapper"
-
-import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
-import QuizSEO from "../../components/QuizSEO"
-import { getQuizSlug } from "../../components/utils"
-import { useSelector } from "react-redux"
-import { useEffect } from "react"
-import { GlobalLoader } from "@/components/loaders"
-export default function CodeQuizPage({
-  params,
-}: {
+interface CodeQuizPageProps {
   params: Promise<{ slug: string }>
-}) {
-  const slug = getQuizSlug(params);
-  const router = useRouter();
-  // Get quiz state from Redux
-  const quizState = useSelector((state: any) => state.quiz);
-  const quizData = quizState;
-  const status = quizState?.status;
-  const dispatch = (typeof window !== "undefined" ? require("react-redux").useDispatch() : () => {});
+}
 
-  useEffect(() => {
-    if (slug && (!quizState || !quizState.questions || quizState.questions.length === 0) && status !== "loading") {
-      // Dynamically import fetchQuiz thunk and dispatch it
-      console.log("Fetching quiz data for slug:", slug);
-      import("@/store/slices/quiz/quiz-slice").then(({ fetchQuiz }) => {
-        dispatch(fetchQuiz({ slug, quizType: "code" }));
-      });
-    }
-  }, [slug, quizState, status, dispatch]);
+// Server component that generates proper SEO metadata
+export async function generateMetadata({ params }: CodeQuizPageProps): Promise<Metadata> {
+  const { slug } = await params
+  
+  // Create better SEO title using DB title if available
+  let dbTitle: string | null = null
+  let isPublic = false
+  try {
+    const quiz = await prisma.userQuiz.findUnique({ where: { slug }, select: { title: true, isPublic: true } })
+    if (quiz) { dbTitle = quiz.title; isPublic = Boolean(quiz.isPublic) }
+  } catch {}
+  const cleanTopic = (dbTitle || slug).replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  const noIndex = !dbTitle || !isPublic
+  
+  return generateQuizPageMetadata({
+    quizType: "code",
+    slug,
+    title: `${cleanTopic} - Programming Challenge`,
+    description: `Master ${cleanTopic} programming concepts with hands-on coding challenges. Write, debug, and optimize code with real-time feedback and explanations.`,
+    topic: cleanTopic,
+    noIndex,
+  })
+}
 
-  if (!slug) {
-    return (
-      <div className="container max-w-4xl py-6">
-        <Card>
-          <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-bold mb-4">Error</h2>
-            <p className="text-muted-foreground mb-6">Quiz slug is missing. Please check the URL.</p>
-            <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (status === "loading" || !quizState || !quizState.questions || quizState.questions.length === 0) {
-    
-      <GlobalLoader  />
-
-  }
-
+function QuizJsonLd({ slug, title }: { slug: string; title: string }) {
+  const url = `${process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"}/dashboard/code/${slug}`
   return (
-    <QuizPlayLayout
-      quizSlug={slug}
-      quizType="code"
-      quizId={slug}
-      isPublic={true}
-      isFavorite={false}
-      quizData={quizData || null}
-    >
-      <QuizSEO
-        slug={slug}
-        quizType="code"
-        description={`Test your programming skills with this ${slug.replace(/-/g, ' ')} coding challenge. Write code and improve your development abilities!`}
-      />
-      <CodeQuizWrapper slug={slug} />
-    </QuizPlayLayout>
-  );
+    <QuizSchema
+      name={title}
+      url={url}
+      description={`Programming challenge on ${title}`}
+      questions={[]}
+    />
+  )
+}
+
+export default function CodeQuizPage({ params }: CodeQuizPageProps) {
+  const ClientWithJsonLd = async () => {
+    const { slug } = await params
+    const title = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    return (
+      <>
+        <QuizSEOClient />
+        <QuizJsonLd slug={slug} title={title} />
+        <CodeQuizClient params={params} />
+      </>
+    )
+  }
+  // @ts-expect-error Async Server Component
+  return <ClientWithJsonLd />
 }

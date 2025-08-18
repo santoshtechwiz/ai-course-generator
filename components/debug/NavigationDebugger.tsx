@@ -2,13 +2,17 @@
 
 import { useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
+import { nav } from "@/lib/utils/logger"
 
 export default function NavigationDebugger() {
   const pathname = usePathname()
   const router = useRouter()
 
   useEffect(() => {
-    console.log("🛣️ NAVIGATION DEBUG:", {
+    // Only run in development mode
+    if (process.env.NODE_ENV !== 'development') return
+
+    nav("Navigation change detected", {
       pathname,
       href: window.location.href,
       timestamp: new Date().toISOString()
@@ -17,7 +21,7 @@ export default function NavigationDebugger() {
     // Override router.push to track redirects
     const originalPush = router.push
     router.push = function(href, options) {
-      console.log("🔀 ROUTER.PUSH DETECTED:", {
+      nav("Router push detected", {
         from: window.location.href,
         to: href,
         timestamp: new Date().toISOString()
@@ -29,7 +33,7 @@ export default function NavigationDebugger() {
     const originalLocation = window.location.href
     const checkLocation = () => {
       if (window.location.href !== originalLocation) {
-        console.log("🌐 WINDOW.LOCATION CHANGED:", {
+        nav("Window location changed", {
           from: originalLocation,
           to: window.location.href,
           timestamp: new Date().toISOString()
@@ -44,6 +48,11 @@ export default function NavigationDebugger() {
       router.push = originalPush
     }
   }, [pathname, router])
+
+  // Don't render anything in production
+  if (process.env.NODE_ENV === 'production') {
+    return null
+  }
 
   return null
 }

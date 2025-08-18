@@ -1,7 +1,8 @@
 import { QuizType } from "../types/quiz-types";
 import { titleSubTopicToSlug } from "@/lib/slug";
-import { generateCodingMCQs } from "../api/quizzes/code/generator";
+
 import { BaseQuizService } from "./base-quiz.service";
+import { generateCodingMCQs } from "./generator";
 
 /**
  * Service for handling code quiz operations
@@ -14,7 +15,7 @@ export class CodeQuizService extends BaseQuizService {
   /**
    * Generate a new code quiz
    */
-  async generateCodeQuiz(userId: string, language: string, title: string, difficulty: string, amount: number) {
+ public async generateCodeQuiz(userId: string, language: string, title: string, difficulty: string, amount: number) {
     // Create a slug for the quiz
     const slug = titleSubTopicToSlug(language, title);
     
@@ -88,5 +89,13 @@ export class CodeQuizService extends BaseQuizService {
    */
   async completeCodeQuiz(slug: string, userId: string, score: number) {
     return this.completeQuiz(slug, userId, score);
+  }
+
+  async delete(slug: string, userId: string) {
+    const quiz = await this.quizRepository.findBySlug(slug);
+    if (!quiz || quiz.userId !== userId) {
+      throw new Error("Unauthorized or quiz not found");
+    }
+    return this.quizRepository.delete(quiz.id);
   }
 }

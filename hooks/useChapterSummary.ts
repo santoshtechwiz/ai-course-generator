@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
-import { useGlobalLoader } from "@/store/global-loader"
+import { useGlobalLoader } from "@/store/loaders/global-loader"
 
 interface SummaryResponse {
   success: boolean

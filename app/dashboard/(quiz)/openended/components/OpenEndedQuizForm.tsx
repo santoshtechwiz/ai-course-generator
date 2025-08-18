@@ -29,6 +29,8 @@ import type { QueryParams } from "@/app/types/types"
 import PlanAwareButton from "../../components/PlanAwareButton"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import FormContainer from "@/app/dashboard/FormContainer"
+import { useToast } from "@/components/ui/use-toast"
+import { useGlobalLoader } from "@/store/loaders/global-loader"
 
 
 const openEndedQuizSchema = z.object({
@@ -148,6 +150,8 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
+  const { toast } = useToast()
+  const { withLoading } = useGlobalLoader()
 
   const {
     control,
@@ -169,16 +173,17 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
       setSubmitError(null)
 
       try {
-        const response = await fetch("/api/quizzes/openended", {
+        const response = await fetch("/api/quizzes", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(data),
+          body: JSON.stringify({ ...data, title: data.topic, type: "openended" }),
         })
 
         if (!response.ok) {
-          throw new Error("Failed to generate quiz")
+          const payload = await response.json().catch(() => ({}))
+          throw new Error(payload?.error || "Failed to generate quiz")
         }
 
         const { slug } = await response.json()
@@ -186,16 +191,19 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
         // Set success state
         if (isMounted) {
           setIsSuccess(true)
+          toast({ title: "Success!", description: "Your open-ended quiz has been created." })
 
           // Add a slight delay to ensure the success message is shown before redirecting
           setTimeout(() => {
             if (isMounted) router.push(`/dashboard/openended/${slug}`)
-          }, 1000)
+          }, 600)
         }
       } catch (err) {
         if (isMounted) {
           console.error("Error generating quiz:", err)
-          setSubmitError(err instanceof Error ? err.message : "Failed to generate quiz")
+          const message = err instanceof Error ? err.message : "Failed to generate quiz"
+          setSubmitError(message)
+          toast({ title: "Error", description: message, variant: "destructive" })
         }
       } finally {
         if (isMounted) setIsLoading(false)
@@ -204,7 +212,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
         isMounted = false
       }
     },
-    [router],
+    [router, toast],
   )
   const handleConfirm = useCallback(async () => {
     setIsLoading(true)
@@ -212,8 +220,13 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
       topic: watch("topic"),
       amount: watch("amount"),
     }
-    await generateQuiz(data)
-  }, [generateQuiz, watch])
+    await withLoading(generateQuiz(data), {
+      message: "Generating your quiz...",
+      isBlocking: true,
+      minVisibleMs: 400,
+      autoProgress: true,
+    })
+  }, [generateQuiz, watch, withLoading])
 
   const onSubmit = useCallback(() => {
     if (isLoading) return
@@ -240,7 +253,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   return (
     <FormContainer spacing="lg">
       <div className="space-y-8 lg:space-y-10">
-        <form onSubmit={onSubmit} className="space-y-8 lg:space-y-10">
+        <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-8 lg:space-y-10">
           <motion.div
             className="space-y-3"
             initial={{ opacity: 0, y: 20 }}
@@ -420,7 +433,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
       >
         <div className="py-2">
           <p className="text-sm">
-            Generating {watch("amount")} open-ended questions for topic:{" "}
+            Generating {watch("amount")} open-ended questions for topic: {" "}
             <span className="font-medium">{watch("topic")}</span>
           </p>
         </div>

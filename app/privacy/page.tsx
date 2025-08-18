@@ -1,23 +1,27 @@
-import { generateMetadata, JsonLD } from "@/lib/seo"
+import { generateMetadata } from "@/lib/seo"
 import type { Metadata } from "next"
 import Link from "next/link"
+import { JsonLD } from "@/lib/seo"
 
 export const metadata: Metadata = generateMetadata({
-  title: "Privacy Policy | CourseAI Coding Education",
+  title: "Privacy Policy | CourseAI Educational Platform",
   description:
-    "Learn how CourseAI protects your data while providing programming education services. Our commitment to your privacy and security.",
+    "Learn how CourseAI protects your data while providing AI-powered educational services. Our commitment to your privacy and security in online learning.",
   keywords: [
-    "coding education privacy",
-    "programming learning data protection",
-    "developer education privacy policy",
-    "coding platform security",
-    "programming learning privacy",
-    "tech education data policy",
+    "privacy policy",
+    "data protection",
+    "educational platform privacy",
+    "AI education privacy",
+    "online learning security",
+    "courseai privacy",
+    "educational data policy",
     "developer training privacy",
     "coding course data protection",
     "programming quiz privacy",
     "AI learning data security",
   ],
+  canonical: "/privacy",
+  type: "article",
 })
 
 export default function PrivacyPolicy() {

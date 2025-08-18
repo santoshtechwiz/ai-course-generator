@@ -4,7 +4,8 @@ import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube
 import { Supadata, type TranscriptChunk } from "@supadata/js"
 import pRetry from "p-retry"
 import pTimeout from "p-timeout"
-import { useGlobalLoader } from "@/store/global-loader"
+import { useGlobalLoader } from "@/store/loaders/global-loader"
+import { Innertube } from "youtubei.js"
 
 export interface YoutubeSearchResponse {
   items: Array<{
@@ -36,9 +37,25 @@ class YoutubeService {
     params: { key: YoutubeService.YOUTUBE_API_KEY },
   })
 
+  // Optional provider tokens (kept in memory)
+  private static youtubeCookie: string | undefined
+
   static {
     this.currentSupadataKey = this.SUPDATA_KEY || ""
     this.initializeSupadata()
+  }
+
+  /**
+   * Allow runtime configuration of provider tokens without breaking current env-based flow
+   */
+  static setToken(provider: "supadata" | "youtubei", token: string) {
+    if (provider === "supadata") {
+      this.currentSupadataKey = token
+      this.initializeSupadata()
+    }
+    if (provider === "youtubei") {
+      this.youtubeCookie = token
+    }
   }
 
   private static initializeSupadata() {
@@ -107,7 +124,10 @@ class YoutubeService {
       )
 
       if (transcriptResult.transcript) {
-        this.transcriptCache.set(videoId, transcriptResult.transcript)
+        // Sanitize for better markdown summarization
+        const sanitized = this.sanitizeTranscript(transcriptResult.transcript)
+        this.transcriptCache.set(videoId, sanitized)
+        return { ...transcriptResult, transcript: sanitized }
       }
       return transcriptResult
     } catch (error) {
@@ -121,7 +141,8 @@ class YoutubeService {
   }
 
   static async fetchTranscript(videoId: string): Promise<TranscriptResult> {
-    const methods = [this.getYtTranscript, this.getLangchainTranscript, this.getSupadataTranscript]
+    // Try multiple providers with graceful fallback
+    const methods = [this.getYouTubeiTranscript, this.getYtTranscript, this.getLangchainTranscript, this.getSupadataTranscript]
 
     for (const method of methods) {
       try {
@@ -177,8 +198,72 @@ class YoutubeService {
   }
 
   private static async getYtTranscript(videoId: string): Promise<string | null> {
-    const transcript = await new YtTranscript({ videoId }).getTranscript()
-    return transcript ? transcript.map((item) => item?.text).join(" ") : null
+    try {
+      const transcript = await new YtTranscript({ videoId }).getTranscript()
+      return transcript ? transcript.map((item) => item?.text).join(" ") : null
+    } catch (error) {
+      console.warn('YtTranscript error:', error)
+      return null
+    }
+  }
+
+  // youtubei.js fallback (supports cookie token if provided)
+  private static async getYouTubeiTranscript(videoId: string): Promise<string | null> {
+    try {
+      const yt = await Innertube.create({
+        cookie: this.youtubeCookie,
+      })
+      
+      // Add parser error handling
+      try {
+        const info = await yt.getInfo(videoId)
+        const tracks = info?.captions?.captionTracks || []
+        const enTrack = tracks.find((t: any) => (t.language_code || t.languageCode || "").startsWith("en")) || tracks[0]
+        if (!enTrack) return null
+        const transcript = await enTrack.fetch()
+        // transcript.events: [{segs:[{utf8: "text"}], tStartMs, dDurationMs}, ...]
+        if (transcript?.events?.length) {
+          return transcript.events
+            .map((e: any) => (e?.segs || []).map((s: any) => s?.utf8 || "").join(" "))
+            .filter(Boolean)
+            .join(" ")
+        }
+        // Some tracks return .segments
+        if (transcript?.segments?.length) {
+          return transcript.segments.map((s: any) => s?.utf8 || s?.text || "").join(" ")
+        }
+        return null
+      } catch (parserError) {
+        // Handle YouTube.js parser errors gracefully
+        console.warn('YouTube.js parser error:', parserError)
+        if (parserError instanceof Error && parserError.message.includes('CompositeVideoPrimaryInfo')) {
+          console.warn('YouTube.js parser needs update for this video format')
+        }
+        return null
+      }
+    } catch (err) {
+      // Silent fail to allow other methods
+      console.warn('YouTube.js initialization error:', err)
+      return null
+    }
+  }
+
+  // Normalize and clean transcript prior to summarization
+  private static sanitizeTranscript(raw: string): string {
+    if (!raw) return ""
+    let text = raw
+      // Remove timestamps like 00:12 or 01:02:33
+      .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, " ")
+      // Remove bracketed or parenthetical cues [Music], (applause), [Laughter]
+      .replace(/\[(music|applause|laughter|noise|intro|outro)]/gi, " ")
+      .replace(/\((music|applause|laughter|noise|intro|outro)\)/gi, " ")
+      // Collapse repeated whitespace/newlines
+      .replace(/\s+/g, " ")
+      .trim()
+
+    // Guard too-short content
+    if (text.length < 20) return raw.trim()
+    return text
   }
 }
 

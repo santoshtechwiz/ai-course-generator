@@ -22,6 +22,7 @@ export interface QuizAnswer {
   isCorrect: boolean
   type: string
   timestamp: number
+  timeSpent?: number
 }
 
 export interface QuestionResult {
@@ -42,6 +43,8 @@ export interface QuizResults {
   completedAt: string
   answers: QuizAnswer[]
   results: QuestionResult[]
+  totalTime?: number
+  accuracy?: number
 }
 
 export interface QuizState {
@@ -53,14 +56,15 @@ export interface QuizState {
   answers: Record<string, QuizAnswer>
   results: QuizResults | null
   isCompleted: boolean
-  status: 'idle' | 'loading' | 'submitting' | 'succeeded' | 'failed'
+  status: 'idle' | 'loading' | 'submitting' | 'succeeded' | 'failed' | 'not-found'
   error: string | null
   requiresAuth: boolean
   redirectAfterLogin: string | null
   userId: string | null
+  questionStartTimes: Record<string, number>
 }
 
 // Type aliases for better readability
-export type QuizStatus = "idle" | "loading" | "succeeded" | "failed" | "submitting"
+export type QuizStatus = "idle" | "loading" | "succeeded" | "failed" | "submitting" | "not-found"
 export type AuthStatus = "checking" | "authenticated" | "unauthenticated" | "idle"
 export type QuestionType = "mcq" | "code" | "blanks" | "openended"

@@ -1,31 +1,13 @@
-'use client'
+"use client"
 
-import { useState, useMemo, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { Confetti } from '@/components/ui/confetti'
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from '@/components/ui/card'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
-import {
-  Flame,
-  RefreshCw,
-  Clock,
-  CheckCircle,
-  HelpCircle,
-  XCircle,
-  Share2,
-} from 'lucide-react'
+import { useState, useMemo, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { motion } from "framer-motion"
+import { Confetti } from "@/components/ui/confetti"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
+import { Flame, RefreshCw, Clock, CheckCircle, HelpCircle, XCircle, Share2, BookOpen } from "lucide-react"
 
 interface FlashCardQuestion {
   id: number
@@ -62,14 +44,14 @@ interface FlashCardResultsProps {
 
 export default function FlashCardResults({
   slug,
-  title = 'Flashcard Quiz',
+  title = "Flashcard Quiz",
   result,
   onRestart,
   onReview,
   onReviewStillLearning,
 }: FlashCardResultsProps) {
   const router = useRouter()
-  const [tab, setTab] = useState('correct')
+  const [tab, setTab] = useState("correct")
   const [copied, setCopied] = useState(false)
   // Add local state to track cards for review
   const [reviewCardsState, setReviewCardsState] = useState<number[]>([])
@@ -94,53 +76,59 @@ export default function FlashCardResults({
 
   // Update local state when result prop changes
   useEffect(() => {
-    if (!result) return;
-    
+    if (!result) return
+
     // Check if the counts have changed
-    const newReviewCards = result.reviewCards || [];
-    const newStillLearningCards = result.stillLearningCards || [];
-    
-    const reviewCountChanged = reviewCardsState.length !== newReviewCards.length;
-    const stillLearningCountChanged = stillLearningCardsState.length !== newStillLearningCards.length;
-    
+    const newReviewCards = result.reviewCards || []
+    const newStillLearningCards = result.stillLearningCards || []
+
+    const reviewCountChanged = reviewCardsState.length !== newReviewCards.length
+    const stillLearningCountChanged = stillLearningCardsState.length !== newStillLearningCards.length
+
     if (reviewCountChanged || stillLearningCountChanged) {
       // Set flag that values have updated to trigger animations
-      setHasUpdated(true);
-      
+      setHasUpdated(true)
+
       // Reset after animation completes
-      setTimeout(() => setHasUpdated(false), 1000);
+      setTimeout(() => setHasUpdated(false), 1000)
     }
-    
+
     // Update the state values
-    setReviewCardsState(newReviewCards);
-    setStillLearningCardsState(newStillLearningCards);
-    setReviewCardsCount(newReviewCards.length);
-    setStillLearningCardsCount(newStillLearningCards.length);
-  }, [result]);
-    // Add confetti effect when all cards are known
+    setReviewCardsState(newReviewCards)
+    setStillLearningCardsState(newStillLearningCards)
+    setReviewCardsCount(newReviewCards.length)
+    setStillLearningCardsCount(newStillLearningCards.length)
+  }, [result])
+  // Add confetti effect when all cards are known
   useEffect(() => {
     // Show confetti if there are no cards left to review and there were some before
-    if ((reviewCardsState.length === 0 && stillLearningCardsState.length === 0) && 
-        (result && 
-         ((result.reviewCards && result.reviewCards.length > 0) || 
-          (result.stillLearningCards && result.stillLearningCards.length > 0)))) {
+    if (
+      reviewCardsState.length === 0 &&
+      stillLearningCardsState.length === 0 &&
+      result &&
+      ((result.reviewCards && result.reviewCards.length > 0) ||
+        (result.stillLearningCards && result.stillLearningCards.length > 0))
+    ) {
       setShowConfetti(true)
-      
+
       // Hide confetti after a few seconds
       const timer = setTimeout(() => {
         setShowConfetti(false)
       }, 3000)
-      
+
       return () => clearTimeout(timer)
     }
   }, [reviewCardsState.length, stillLearningCardsState.length, result])
-  
-  const formatTime = (seconds: number) =>
-    seconds >= 60
-      ? `${Math.floor(seconds / 60)}m ${seconds % 60}s`
-      : `${seconds}s`
 
-  const avgTime = totalQuestions > 0 ? Math.round(totalTime / totalQuestions) : 0
+  const formatTime = (seconds: number) => {
+    if (!seconds || seconds < 0) return "0.00s"
+    if (seconds < 60) return `${seconds.toFixed(2)}s`
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toFixed(2).padStart(5, "0")}`
+  }
+
+  const avgTime = totalQuestions > 0 ? Number((totalTime / totalQuestions).toFixed(2)) : 0
 
   const answerMap = useMemo(() => {
     const map: Record<number | string, string> = {}
@@ -148,31 +136,34 @@ export default function FlashCardResults({
     return map
   }, [answers])
 
-  const grouped = useMemo(() => ({
-    correct: questions.filter(q => answerMap[q.id] === 'correct'),
-    still_learning: questions.filter(q => answerMap[q.id] === 'still_learning'),
-    incorrect: questions.filter(q => answerMap[q.id] === 'incorrect'),
-  }), [questions, answerMap])
+  const grouped = useMemo(
+    () => ({
+      correct: questions.filter((q) => answerMap[q.id] === "correct"),
+      still_learning: questions.filter((q) => answerMap[q.id] === "still_learning"),
+      incorrect: questions.filter((q) => answerMap[q.id] === "incorrect"),
+    }),
+    [questions, answerMap],
+  )
 
   // Add this useEffect to update when the results change
   useEffect(() => {
     // Force a re-evaluation of the tabs when answers change
     if (answers && answers.length > 0) {
-      setTab(prevTab => prevTab); // This triggers a re-render without changing the tab
+      setTab((prevTab) => prevTab) // This triggers a re-render without changing the tab
     }
-  }, [answers]);
-  
+  }, [answers])
+
   const performance = useMemo(() => {
-    if (percentage >= 90) return { emoji: '🏆', title: 'Mastery' }
-    if (percentage >= 75) return { emoji: '🔥', title: 'On Fire!' }
-    if (percentage >= 50) return { emoji: '💪', title: 'Getting There' }
-    return { emoji: '🚀', title: 'Keep Practicing' }
+    if (percentage >= 90) return { emoji: "🏆", title: "Mastery" }
+    if (percentage >= 75) return { emoji: "🔥", title: "On Fire!" }
+    if (percentage >= 50) return { emoji: "💪", title: "Getting There" }
+    return { emoji: "🚀", title: "Keep Practicing" }
   }, [percentage])
 
   const tabs = [
-    { key: 'correct', label: 'Known', icon: <CheckCircle className="w-4 h-4 text-green-600" /> },
-    { key: 'still_learning', label: 'Still Learning', icon: <HelpCircle className="w-4 h-4 text-yellow-500" /> },
-    { key: 'incorrect', label: 'Did Not Know', icon: <XCircle className="w-4 h-4 text-red-600" /> },
+    { key: "correct", label: "Known", icon: <CheckCircle className="w-4 h-4 text-green-600" /> },
+    { key: "still_learning", label: "Still Learning", icon: <HelpCircle className="w-4 h-4 text-yellow-500" /> },
+    { key: "incorrect", label: "Did Not Know", icon: <XCircle className="w-4 h-4 text-red-600" /> },
   ]
 
   const handleShare = async () => {
@@ -191,7 +182,7 @@ export default function FlashCardResults({
         setTimeout(() => setCopied(false), 3000)
       }
     } catch {
-      console.warn('Share failed')
+      console.warn("Share failed")
     }
   }
 
@@ -199,232 +190,326 @@ export default function FlashCardResults({
     <div className="max-w-6xl mx-auto px-4 py-10 space-y-10">
       {/* Confetti celebration */}
       {showConfetti && <Confetti isActive={showConfetti} />}
-      
-      {/* 🎉 Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center space-y-2"
-      >
-        <h1 className="text-3xl font-bold">{title}</h1>
-        <p className="text-muted-foreground text-sm">Quiz Complete!</p>
-        <div className="text-4xl pt-2">
-          {performance.emoji} <span className="font-bold">{performance.title}</span>
-        </div>
+
+      {/* Header */}
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
+        <motion.div
+          initial={{ scale: 0.8 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 300, delay: 0.2 }}
+        >
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            {title}
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 text-lg mt-2">Quiz Complete!</p>
+        </motion.div>
+
+        <motion.div
+          className="flex items-center justify-center gap-3"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="text-6xl">{performance.emoji}</div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{performance.title}</div>
+            <div className="text-lg text-gray-600 dark:text-gray-400">{Math.round(percentage)}% Score</div>
+          </div>
+        </motion.div>
       </motion.div>
 
-      {/* 📊 Summary */}
+      {/* Summary Cards */}
       <motion.div
-        className="grid grid-cols-1 md:grid-cols-3 gap-4"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.1 }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
       >
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex gap-2 items-center text-primary">
-              <Flame className="w-5 h-5" />
-              Score
-            </CardTitle>          </CardHeader>
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-2 border-blue-200 dark:border-blue-800 shadow-xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex gap-3 items-center text-blue-700 dark:text-blue-300">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center">
+                <Flame className="w-5 h-5 text-white" />
+              </div>
+              Your Score
+            </CardTitle>
+          </CardHeader>
           <CardContent className="text-center">
-            <motion.div 
+            <motion.div
               key={`percentage-${percentage}`}
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.4 }}
-              className="text-4xl font-bold text-primary"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.6, type: "spring" }}
+              className="text-5xl font-bold text-blue-600 dark:text-blue-400 mb-2"
             >
               {Math.round(percentage)}%
             </motion.div>
-            <p className="text-sm text-muted-foreground mt-1">
-              <motion.span 
+            <p className="text-gray-600 dark:text-gray-400">
+              <motion.span
                 key={`correct-count-${correctAnswers}`}
                 initial={{ opacity: 0.6 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.4 }}
+                className="font-semibold"
               >
                 {correctAnswers}
-              </motion.span> / {totalQuestions} correct
+              </motion.span>{" "}
+              out of {totalQuestions} correct
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex gap-2 items-center">
-              <Clock className="w-5 h-5" />
+        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20 border-2 border-emerald-200 dark:border-emerald-800 shadow-xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex gap-3 items-center text-emerald-700 dark:text-emerald-300">
+              <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-green-500 rounded-xl flex items-center justify-center">
+                <Clock className="w-5 h-5 text-white" />
+              </div>
               Time Spent
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-center text-muted-foreground">
-            <div><b>{formatTime(totalTime)}</b> total</div>
-            <div><b>{avgTime}s</b> avg/card</div>
+          <CardContent className="text-center space-y-2">
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatTime(totalTime)}</div>
+            <p className="text-gray-600 dark:text-gray-400">
+              <span className="font-semibold">{avgTime}s</span> average per card
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-muted-foreground">Stats</CardTitle>
+        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-2 border-purple-200 dark:border-purple-800 shadow-xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-purple-700 dark:text-purple-300">Performance</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-3 text-center text-sm">
-            <div>
-              <CheckCircle className="mx-auto text-green-600" />
-              <motion.div 
+          <CardContent className="grid grid-cols-3 text-center text-sm gap-4">
+            <div className="space-y-2">
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                className="w-12 h-12 mx-auto bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center"
+              >
+                <CheckCircle className="text-white w-6 h-6" />
+              </motion.div>
+              <motion.div
                 key={`correct-${correctAnswers}`}
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.3 }}
+                className="text-xl font-bold text-emerald-600 dark:text-emerald-400"
               >
                 {correctAnswers}
               </motion.div>
-              <div className="text-xs">Known</div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">Known</div>
             </div>
-            <div>
-              <HelpCircle className="mx-auto text-yellow-500" />
-              <motion.div 
+            <div className="space-y-2">
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                className="w-12 h-12 mx-auto bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center"
+              >
+                <HelpCircle className="text-white w-6 h-6" />
+              </motion.div>
+              <motion.div
                 key={`learning-${stillLearningAnswers}`}
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.3 }}
+                className="text-xl font-bold text-amber-600 dark:text-amber-400"
               >
                 {stillLearningAnswers}
               </motion.div>
-              <div className="text-xs">Still Learning</div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">Learning</div>
             </div>
-            <div>
-              <XCircle className="mx-auto text-red-600" />
-              <motion.div 
+            <div className="space-y-2">
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                className="w-12 h-12 mx-auto bg-gradient-to-r from-red-500 to-rose-500 rounded-full flex items-center justify-center"
+              >
+                <XCircle className="text-white w-6 h-6" />
+              </motion.div>
+              <motion.div
                 key={`incorrect-${incorrectAnswers}`}
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.3 }}
+                className="text-xl font-bold text-red-600 dark:text-red-400"
               >
                 {incorrectAnswers}
               </motion.div>
-              <div className="text-xs">Didn't Know</div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">Need Study</div>
             </div>
           </CardContent>
         </Card>
       </motion.div>
 
-      {/* 🧠 Review Tabs */}
-      <Tabs defaultValue="correct" value={tab} onValueChange={setTab}>
-        <TabsList className="w-full grid grid-cols-3 max-w-lg mx-auto">
-          {tabs.map(t => (
-            <TabsTrigger key={t.key} value={t.key}>
-              {t.icon} <span className="ml-1">{t.label}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      {/* Review Tabs */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+        <Tabs defaultValue="correct" value={tab} onValueChange={setTab}>
+          <TabsList className="w-full grid grid-cols-3 max-w-2xl mx-auto h-14 bg-gray-100 dark:bg-gray-800 rounded-2xl p-1">
+            {tabs.map((t) => (
+              <TabsTrigger
+                key={t.key}
+                value={t.key}
+                className="flex items-center gap-2 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-lg dark:data-[state=active]:bg-gray-700"
+              >
+                {t.icon}
+                <span className="hidden sm:inline">{t.label}</span>
+                <span className="sm:hidden text-xs">
+                  {t.key === "correct" ? "Known" : t.key === "still_learning" ? "Learning" : "Study"}
+                </span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        {tabs.map(t => (
-          <TabsContent key={t.key} value={t.key} className="mt-6 space-y-4">
-            {grouped[t.key as keyof typeof grouped].length === 0 ? (
-              <p className="text-center text-muted-foreground">No questions here yet.</p>
-            ) : (
-              grouped[t.key as keyof typeof grouped].map((q: FlashCardQuestion) => (
-                <Card key={q.id}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{q.question}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm text-muted-foreground">{q.answer}</CardContent>
-                </Card>
-              ))
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
-      
-      {/* 🧩 CTA Actions */}
-      <div className="space-y-6 pt-10">
-        <h3 className="text-center text-lg font-medium">What would you like to do next?</h3>
-        
+          {tabs.map((t) => (
+            <TabsContent key={t.key} value={t.key} className="mt-8 space-y-4">
+              {grouped[t.key as keyof typeof grouped].length === 0 ? (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
+                  <div className="text-6xl mb-4">
+                    {t.key === "correct" ? "🎉" : t.key === "still_learning" ? "📚" : "🤔"}
+                  </div>
+                  <p className="text-gray-500 dark:text-gray-400 text-lg">No {t.label.toLowerCase()} cards yet</p>
+                </motion.div>
+              ) : (
+                <div className="grid gap-4">
+                  {grouped[t.key as keyof typeof grouped].map((q: FlashCardQuestion, index: number) => (
+                    <motion.div
+                      key={q.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                    >
+                      <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-gray-300 dark:hover:border-gray-600">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg font-semibold text-gray-800 dark:text-gray-200 leading-relaxed">
+                            {q.question}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{q.answer}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          ))}
+        </Tabs>
+      </motion.div>
+
+      {/* Action Buttons */}
+      <motion.div
+        className="space-y-8 pt-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7 }}
+      >
+        <h3 className="text-center text-2xl font-semibold text-gray-800 dark:text-gray-200">What's next?</h3>
+
         {/* Review Options */}
         {(reviewCardsState.length > 0 || stillLearningCardsState.length > 0) && (
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {onReviewStillLearning && stillLearningCardsState.length > 0 && (
               <motion.div
                 animate={hasUpdated ? { scale: [1, 1.05, 1] } : {}}
                 transition={{ duration: 0.5 }}
+                whileHover={{ y: -4 }}
               >
-                <Card className="border-yellow-200 hover:border-yellow-400 transition-colors">
-                  <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
-                    <HelpCircle className="h-10 w-10 text-yellow-500" />
+                <Card className="border-2 border-amber-200 dark:border-amber-800 hover:border-amber-400 dark:hover:border-amber-600 transition-all duration-300 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 shadow-xl hover:shadow-2xl">
+                  <CardContent className="p-8 flex flex-col items-center text-center space-y-4">
+                    <div className="w-16 h-16 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+                      <HelpCircle className="h-8 w-8 text-white" />
+                    </div>
                     <div>
-                      <motion.h3 
-                        className="font-medium"
+                      <motion.h3
+                        className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2"
                         key={`still-learning-${stillLearningCardsCount}`}
                         initial={{ opacity: 0.8 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.3 }}
                       >
-                        Review {stillLearningCardsCount} Cards You're Learning
+                        Review {stillLearningCardsCount} Learning Cards
                       </motion.h3>
-                      <p className="text-sm text-muted-foreground">Focus on cards you marked as "still learning"</p>
+                      <p className="text-gray-600 dark:text-gray-400">Focus on cards you're still mastering</p>
                     </div>
-                    <Button 
-                      variant="default" 
-                      className="bg-yellow-500 hover:bg-yellow-600 mt-2"
+                    <Button
+                      size="lg"
+                      className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-0"
                       onClick={() => onReviewStillLearning(stillLearningCardsState)}
                     >
-                      Practice These Cards
+                      <BookOpen className="w-5 h-5 mr-2" />
+                      Practice These
                     </Button>
                   </CardContent>
                 </Card>
               </motion.div>
             )}
-            
+
             {onReview && reviewCardsState.length > 0 && (
               <motion.div
                 animate={hasUpdated ? { scale: [1, 1.05, 1] } : {}}
                 transition={{ duration: 0.5 }}
+                whileHover={{ y: -4 }}
               >
-                <Card className="border-red-200 hover:border-red-400 transition-colors">
-                  <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
-                    <XCircle className="h-10 w-10 text-red-500" />
+                <Card className="border-2 border-red-200 dark:border-red-800 hover:border-red-400 dark:hover:border-red-600 transition-all duration-300 bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/20 dark:to-rose-950/20 shadow-xl hover:shadow-2xl">
+                  <CardContent className="p-8 flex flex-col items-center text-center space-y-4">
+                    <div className="w-16 h-16 bg-gradient-to-r from-red-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg">
+                      <XCircle className="h-8 w-8 text-white" />
+                    </div>
                     <div>
-                      <motion.h3 
-                        className="font-medium"
+                      <motion.h3
+                        className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2"
                         key={`review-${reviewCardsCount}`}
                         initial={{ opacity: 0.8 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.3 }}
                       >
-                        Review {reviewCardsCount} Difficult Cards
+                        Study {reviewCardsCount} Difficult Cards
                       </motion.h3>
-                      <p className="text-sm text-muted-foreground">Focus on cards you marked as "didn't know"</p>
+                      <p className="text-gray-600 dark:text-gray-400">Focus on cards that need more attention</p>
                     </div>
-                    <Button 
-                      variant="default" 
-                      className="bg-red-500 hover:bg-red-600 mt-2"
+                    <Button
+                      size="lg"
+                      className="bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-0"
                       onClick={() => onReview(reviewCardsState)}
                     >
-                      Study These Cards
+                      <RefreshCw className="w-5 h-5 mr-2" />
+                      Study These
                     </Button>
                   </CardContent>
                 </Card>
               </motion.div>
             )}
-          </motion.div>
+          </div>
         )}
-        
-        {/* Other Actions */}
+
+        {/* General Actions */}
         <div className="flex flex-wrap justify-center gap-4">
-          <Button onClick={onRestart}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Restart Quiz
-          </Button>
-          <Button variant="ghost" onClick={handleShare}>
-            <Share2 className="w-4 h-4 mr-2" />
-            {copied ? 'Link Copied!' : 'Share Results'}
-          </Button>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              onClick={onRestart}
+              size="lg"
+              variant="outline"
+              className="px-8 py-3 rounded-2xl font-semibold border-2 border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 bg-transparent"
+            >
+              <RefreshCw className="w-5 h-5 mr-2" />
+              Restart Quiz
+            </Button>
+          </motion.div>
+
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant="ghost"
+              onClick={handleShare}
+              size="lg"
+              className="px-8 py-3 rounded-2xl font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300"
+            >
+              <Share2 className="w-5 h-5 mr-2" />
+              {copied ? "Link Copied!" : "Share Results"}
+            </Button>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

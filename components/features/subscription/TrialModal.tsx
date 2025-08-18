@@ -13,6 +13,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { migratedStorage } from "@/lib/storage"
 
 import { useSession } from "next-auth/react"
 import useSubscription from "@/hooks/use-subscription"
@@ -33,7 +34,7 @@ export default function TrialModal() {
   const currentMonth = new Date().toLocaleString("default", { month: "long" })
 
   useEffect(() => {
-    const hasSeenTrialModal = localStorage.getItem("hasSeenTrialModal") === "true"
+    const hasSeenTrialModal = migratedStorage.getPreference("seen_trial_modal", false)
     if (!hasSeenTrialModal && (!isSubscribed || totalTokens === 0)) {
       const timer = setTimeout(() => setIsOpen(true), 3000)
       return () => clearTimeout(timer)
@@ -44,7 +45,7 @@ export default function TrialModal() {
 
   const handleClose = () => {
     setIsOpen(false)
-    localStorage.setItem("hasSeenTrialModal", "true")
+    migratedStorage.setPreference("seen_trial_modal", true)
   }
 
   const handleStartTrial = () => {
@@ -85,45 +86,45 @@ export default function TrialModal() {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="max-w-lg p-0 overflow-hidden rounded-lg shadow-xl">
         {/* Header */}
-        <DialogHeader className="px-6 pt-6 pb-4 bg-white border-b">
+        <DialogHeader className="px-6 pt-6 pb-4 bg-card border-b">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-blue-50 text-blue-600">
+            <div className="p-2 rounded-full bg-primary/10 text-primary">
               <Gift className="h-6 w-6" />
             </div>
             <div>
-              <DialogTitle className="text-xl font-bold text-gray-900">Unlock Premium Features</DialogTitle>
-              <DialogDescription className="text-gray-600">Try our PRO plan with 5 FREE credits</DialogDescription>
+              <DialogTitle className="text-xl font-bold text-foreground">Unlock Premium Features</DialogTitle>
+              <DialogDescription className="text-muted-foreground">Try our PRO plan with 5 FREE credits</DialogDescription>
             </div>
           </div>
           <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none">
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 text-muted-foreground" />
           </DialogClose>
         </DialogHeader>
 
         {/* Main Content */}
-        <div className="px-6 py-4 bg-white">
+        <div className="px-6 py-4 bg-card">
           <div className="flex flex-col lg:flex-row lg:gap-6">
             {/* Left Column */}
             <div className="flex-1 space-y-4">
               {/* Limited Time Offer */}
-              <div className="flex items-center justify-center gap-2 p-2 rounded-md bg-blue-50 text-blue-700 text-sm font-medium">
+              <div className="flex items-center justify-center gap-2 p-2 rounded-md bg-primary/10 text-primary text-sm font-medium">
                 <Sparkles className="h-4 w-4" />
                 Limited Time Offer! Get 20% off any plan!
               </div>
 
               {/* Coupon Code */}
-              <div className="flex flex-col items-center p-4 border border-blue-200 rounded-lg bg-blue-50">
-                <p className="text-sm text-gray-600 mb-2">Use this code at checkout</p>
+              <div className="flex flex-col items-center p-4 border border-primary/20 rounded-lg bg-primary/10">
+                <p className="text-sm text-muted-foreground mb-2">Use this code at checkout</p>
                 <div className="relative w-full max-w-xs">
                   <Input
                     value="AILAUNCH20"
                     readOnly
-                    className="text-center text-lg font-bold h-11 bg-white border-blue-300"
+                    className="text-center text-lg font-bold h-11 bg-background border-primary/30"
                   />
                   <Button
                     variant="outline"
                     size="sm"
-                    className="mt-3 w-full bg-white hover:bg-gray-50 text-blue-600 border-blue-300"
+                    className="mt-3 w-full bg-background hover:bg-accent text-primary border-primary/30"
                     onClick={handleCopyCode}
                   >
                     {copied ? (
@@ -136,7 +137,7 @@ export default function TrialModal() {
                     )}
                   </Button>
                 </div>
-                <p className="text-center mt-2 text-xs text-gray-500">
+                <p className="text-center mt-2 text-xs text-muted-foreground">
                   20% off your first payment - Only in {currentMonth}!
                 </p>
               </div>
@@ -146,19 +147,19 @@ export default function TrialModal() {
             <div className="flex-1 space-y-4">
               {/* Features */}
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-gray-900">What You'll Get</h3>
+                <h3 className="text-lg font-semibold text-foreground">What You'll Get</h3>
                 <div className="space-y-3">
                   {features.map((feature, index) => (
                     <div
                       key={index}
-                      className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 border border-gray-200"
+                      className="flex items-start gap-3 p-3 rounded-lg bg-muted border border-border"
                     >
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white border">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-background border border-border">
                         {feature.icon}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{feature.title}</p>
-                        <p className="text-xs text-gray-600">{feature.description}</p>
+                        <p className="text-sm font-medium text-foreground">{feature.title}</p>
+                        <p className="text-xs text-muted-foreground">{feature.description}</p>
                       </div>
                     </div>
                   ))}
@@ -169,9 +170,9 @@ export default function TrialModal() {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t">
+        <div className="px-6 py-4 bg-muted border-t">
           <div className="flex flex-col items-center gap-3">
-            <p className="text-sm text-gray-600 text-center">
+            <p className="text-sm text-muted-foreground text-center">
               Join thousands of satisfied users who have upgraded to PRO!
             </p>
             <div className="flex gap-3 w-full">

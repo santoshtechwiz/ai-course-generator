@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { migratedStorage } from "@/lib/storage"
 import { useMediaQuery, useToast } from "@/hooks"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
@@ -107,7 +108,7 @@ export function PricingPage({
       
       if (!isAuthenticated) {
         onUnauthenticatedSubscribe?.(planName, duration, promoArgs.promoCode, promoArgs.promoDiscount)
-        localStorage.setItem("pendingSubscription", JSON.stringify({ planName, duration, ...promoArgs }))
+        migratedStorage.setItem("pendingSubscription", { planName, duration, ...promoArgs }, { secure: true })
           // Removed sign in message toast
         
         window.location.href = "/api/auth/signin"

@@ -1,10 +1,12 @@
-import React, { createElement, memo } from "react"
+import React, { createElement, memo, useMemo } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeRaw from "rehype-raw"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { remark } from "remark"
 import html from "remark-html"
+// Optional: lightweight highlighting if code fences appear
+import rehypeHighlight from "rehype-highlight"
 
 const markdownStyles = {
   h1: "text-3xl font-bold mt-6 mb-4 pb-2 border-b",
@@ -69,11 +71,19 @@ const MarkdownComponents = {
 }
 
 export const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => {
+  // Guard: ensure summary always has a heading for hierarchy
+  const safeContent = useMemo(() => {
+    if (!content || typeof content !== "string") return content
+    const hasHeading = /\n?\s*#+\s+/.test(content)
+    if (hasHeading) return content
+    return `### Summary\n\n${content}`
+  }, [content])
+
   return (
     <ReactMarkdown
       className="prose prose-slate dark:prose-invert max-w-none"
       remarkPlugins={[remarkGfm]}
-      rehypePlugins={[rehypeRaw]}
+      rehypePlugins={[rehypeRaw, rehypeHighlight]}
       components={{
         p: ({ children }) => <p className="mb-4 leading-relaxed text-base">{children}</p>,
         h3: ({ children }) => (
@@ -87,6 +97,7 @@ export const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => 
             Array.isArray(children) &&
             children.length > 0 &&
             React.isValidElement(children[0]) &&
+            // @ts-ignore
             children[0].type === "strong"
           ) {
             return (
@@ -126,7 +137,7 @@ export const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => 
         ),
       }}
     >
-      {content}
+      {safeContent}
     </ReactMarkdown>
   )
 }

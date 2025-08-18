@@ -25,7 +25,6 @@ interface VideoPlayerHookOptions {
   onCertificateClick?: () => void
   nextVideoId?: string | null
   courseId?: string | number
-  chapterId?: string | number
 }
 
 export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerReturn {
@@ -56,7 +55,10 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     theaterMode: false,
     userInteracted: !!options.autoPlay,
     autoPlayNext: savedPreferences.autoPlayNext ?? true,
+    isPictureInPicture: false,
+    isPiPSupported: false,
     isNearingCompletion: false, // Add state for preloading detection
+    isMiniPlayer: false,
   })
 
   const [bufferHealth, setBufferHealth] = useState(100)
@@ -82,7 +84,6 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   const progressTracking = useVideoProgress({
     videoId: options.courseId && options.videoId ? options.videoId : undefined,
     courseId: options.courseId || '',
-    chapterId: options.chapterId || '',
     duration: state.duration,
   });
 
@@ -100,15 +101,27 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       const newBufferHealth = calculateBufferHealth(progressState.loaded, progressState.played);
       setBufferHealth((prev) => (Math.abs(prev - newBufferHealth) > 5 ? newBufferHealth : prev));
 
-      // Track progress for course completion if enabled
-      if (progressTracking?.trackProgress) {
+      // Check if video is about to end (last 10 seconds) and trigger transition
+      if (state.duration && progressState.playedSeconds > 0) {
+        const timeRemaining = state.duration - progressState.playedSeconds;
+        
+        // Set nearing completion state for preloading
+        if (timeRemaining <= 10 && timeRemaining > 0) {
+          setState(prev => ({ ...prev, isNearingCompletion: true }));
+        }
+      }
+
+      // Avoid duplicate/noisy tracking while in mini-player if desired
+      const shouldTrack = !state.isMiniPlayer || state.played < 0.98
+
+      if (shouldTrack && progressTracking?.trackProgress) {
         progressTracking.trackProgress(progressState);
       }
 
-      // Pass to parent if provided
+      // Pass to parent callback (single call per tick)
       options.onProgress?.(progressState);
     },
-    [options.onProgress, progressTracking]
+    [options.onProgress, progressTracking, state.isMiniPlayer, state.played, state.duration]
   );
 
   // Memoized YouTube URL
@@ -263,18 +276,28 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     console.error("Video player error:", error)
   }, [])
 
-  // Theater mode handlers
-  const handleTheaterModeToggle = useCallback(() => {
-    setState((prev) => ({ ...prev, theaterMode: !prev.theaterMode }))
 
-    if (typeof document !== "undefined") {
-      if (!state.theaterMode) {
-        document.body.classList.add("theater-mode-active")
-      } else {
-        document.body.classList.remove("theater-mode-active")
-      }
-    }
-  }, [state.theaterMode])
+
+
+
+
+
+  // Enhanced PIP state management with debouncing
+  const [pipState, setPipState] = useState({
+    isActive: false,
+    lastToggle: 0
+  })
+
+  // Debounced PIP toggle to prevent rapid state changes
+  const debouncedPipToggle = useCallback(() => {
+    const now = Date.now()
+    if (now - pipState.lastToggle < 300) return // Prevent rapid toggles
+    
+    setPipState(prev => ({
+      isActive: !prev.isActive,
+      lastToggle: now
+    }))
+  }, [pipState.lastToggle])
 
   // Keyboard shortcuts handlers
   const handleShowKeyboardShortcuts = useCallback(() => {
@@ -341,6 +364,38 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     return () => screenfull.off("change", handleFullscreenChange)
   }, [])
 
+  // Theater mode toggle handler
+  const handleTheaterModeToggle = useCallback(() => {
+    setState((prev) => {
+      const newTheaterMode = !prev.theaterMode;
+      
+      // Toggle CSS class on body for theater mode styling
+      if (typeof document !== "undefined") {
+        if (newTheaterMode) {
+          document.body.classList.add("theater-mode-active");
+        } else {
+          document.body.classList.remove("theater-mode-active");
+        }
+      }
+      
+      return { ...prev, theaterMode: newTheaterMode };
+    });
+  }, []);
+
+  // Picture-in-Picture toggle handler
+  const handlePictureInPictureToggle = useCallback(() => {
+    setState((prev) => {
+      const newMiniPlayer = !prev.isMiniPlayer;
+      return { 
+        ...prev, 
+        isMiniPlayer: newMiniPlayer,
+        isPictureInPicture: false // Reset native PiP when using mini player
+      };
+    });
+  }, []);
+
+
+
   // Focus management for keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -396,8 +451,10 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       }
     }
 
+    // Always attach once when focused; cleanup ensures no duplicates
     if (isPlayerFocused && state.userInteracted) {
-      window.addEventListener("keydown", handleKeyDown)
+      window.removeEventListener("keydown", handleKeyDown)
+      window.addEventListener("keydown", handleKeyDown, { passive: false })
     }
 
     return () => {
@@ -462,6 +519,14 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     });
   }, []);
 
+  // Check PiP support on mount
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      const isPiPSupported = !!(document as any).pictureInPictureEnabled;
+      setState(prev => ({ ...prev, isPiPSupported }));
+    }
+  }, []);
+
   return {
     state,
     playerRef,
@@ -487,14 +552,9 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       handleShowKeyboardShortcuts,
       handleHideKeyboardShortcuts,
       handleTheaterModeToggle,
+      handlePictureInPictureToggle,
       handleShowControls,
       toggleAutoPlayNext,
-    },
-    // Add next video info
-    nextVideo: options.nextVideoId ? { 
-      id: options.nextVideoId,
-      isPreloading: state.isNearingCompletion 
-    } : null,
-    progressTracking // Add progress tracking info
+    }
   }
 }

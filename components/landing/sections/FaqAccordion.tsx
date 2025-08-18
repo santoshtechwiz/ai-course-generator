@@ -7,8 +7,8 @@ import { useEffect } from "react"
 import { useRef, useState, useCallback, useMemo } from "react"
 import { motion, AnimatePresence, useInView } from "framer-motion"
 import { Plus, Minus, Search } from "lucide-react"
-import { useGlobalLoader } from '@/store/global-loader'
-import { GlobalLoader } from '@/components/ui/loader'
+import { useGlobalLoader } from '@/store/loaders/global-loader'
+import { InlineSpinner } from '@/components/ui/loader'
 import { Input } from "@/components/ui/input"
 import { FeedbackButton } from "@/components/ui/feedback-button"
 import { useDebounce } from "@/hooks"
@@ -172,10 +172,10 @@ const FaqAccordion = () => {
 						className="pl-10 py-6 rounded-full bg-card/30 backdrop-blur-sm border-border/10"
 					/>
 					{isSearching && (
-						<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-							<GlobalLoader size="xs" theme="primary" />
-						</div>
-					)}
+							<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+								<InlineSpinner size={16} />
+							</div>
+						)}
 				</div>
 			</motion.div>
 
@@ -223,9 +223,9 @@ const FaqAccordion = () => {
 											e.stopPropagation()
 											toggleItem(faq.id)
 										}}
-										onClickAsync={async (e) => {
-											e.stopPropagation()
-											return toggleItem(faq.id)
+										onClickAsync={async () => {
+											await new Promise((resolve) => setTimeout(resolve, 600))
+											return true
 										}}
 										variant="ghost"
 										size="icon"

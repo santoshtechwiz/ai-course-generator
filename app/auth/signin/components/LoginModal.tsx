@@ -7,7 +7,7 @@ import { getProviders, signIn } from "next-auth/react"
 import { Loader2 } from "lucide-react"
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useGlobalLoader } from '@/store/global-loader'
+import { useGlobalLoader } from '@/store/loaders/global-loader'
 import { GlobalLoader } from '@/components/ui/loader'
 
 import { useToast } from "@/hooks"
@@ -187,23 +187,23 @@ export function LoginModal({
               case "google":
                 return {
                   icon: "G",
-                  bgColor: "bg-white hover:bg-gray-50",
-                  textColor: "text-gray-800",
-                  borderColor: "border-gray-300 hover:border-gray-400",
+                  bgColor: "bg-background hover:bg-accent",
+                  textColor: "text-foreground",
+                  borderColor: "border-border",
                 }
               case "github":
                 return {
                   icon: "GH",
-                  bgColor: "bg-gray-900 hover:bg-gray-800",
-                  textColor: "text-white",
-                  borderColor: "border-gray-800 hover:border-gray-700",
+                  bgColor: "bg-muted hover:bg-muted/80",
+                  textColor: "text-foreground",
+                  borderColor: "border-border",
                 }
               default:
                 return {
                   icon: id.charAt(0).toUpperCase(),
-                  bgColor: "bg-white hover:bg-gray-50",
-                  textColor: "text-gray-800",
-                  borderColor: "border-gray-300 hover:border-gray-400",
+                  bgColor: "bg-background hover:bg-accent",
+                  textColor: "text-foreground",
+                  borderColor: "border-border",
                 }
             }
           }

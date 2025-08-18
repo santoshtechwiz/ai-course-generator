@@ -3,7 +3,6 @@
 import { GlobalLoader } from "@/components/ui/loader";
 import { useQuizPlan } from "../../../../hooks/useQuizPlan";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
-
 import OpenEndedQuizForm from "./components/OpenEndedQuizForm";
 import { useAuth } from "@/modules/auth";
 

@@ -3,8 +3,23 @@
 import { prisma } from "@/lib/db"
 import type { QuizType } from "../types/quiz-types"
 import NodeCache from "node-cache"
+import { Quiz } from "../types/types"
 
-const quizCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }) // 5 minute cache
+// Global singletons for caches
+const globalForQuizCache = globalThis as unknown as {
+	__quizListCache?: NodeCache
+	__quizDetailCache?: NodeCache
+}
+
+if (!globalForQuizCache.__quizListCache) {
+	globalForQuizCache.__quizListCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }) // 5 minute cache
+}
+if (!globalForQuizCache.__quizDetailCache) {
+	globalForQuizCache.__quizDetailCache = new NodeCache({ stdTTL: 900, checkperiod: 60 }) // 15 minute cache for quiz details
+}
+
+const quizCache = globalForQuizCache.__quizListCache
+const quizDetailCache = globalForQuizCache.__quizDetailCache
 
 interface GetQuizzesParams {
   page?: number
@@ -55,7 +70,8 @@ export async function getQuizzes({
   tab = "all",
   categories = [],
 }: GetQuizzesParams): Promise<GetQuizzesResult> {
-  try {    const cacheKey = getCacheKey({
+  try {
+    const cacheKey = getCacheKey({
       page,
       limit,
       searchTerm,
@@ -71,7 +87,8 @@ export async function getQuizzes({
     const cachedResult = quizCache.get<GetQuizzesResult>(cacheKey)
     if (cachedResult) {
       return cachedResult
-    }    // Build the where clause
+    }
+    // Build the where clause
     const where: Record<string, unknown> = {}
 
     // Filter by user ID or public quizzes
@@ -208,4 +225,27 @@ export const invalidateQuizCache = async (slug?: string) => {
       quizCache.del(key)
     }
   })
+}
+
+export async function fetchQuizWithCache(quizId: string): Promise<Quiz | null> {
+  const cacheKey = `quiz_${quizId}`
+
+  // Check cache first
+  /* `const cachedQuiz = quizDetailCache.get<Quiz>(cacheKey)` is attempting to retrieve a cached value
+  from the `quizDetailCache` using the provided `cacheKey`. */
+  const cachedQuiz = quizDetailCache.get<Quiz>(cacheKey)
+  if (cachedQuiz) {
+    return cachedQuiz
+  }
+
+  // Fetch quiz from API or database
+  const quiz = await prisma.userQuiz.findUnique({
+    where: { id: quizId },
+  })
+
+  if (quiz) {
+    quizDetailCache.set(cacheKey, quiz)
+  }
+
+  return quiz
 }

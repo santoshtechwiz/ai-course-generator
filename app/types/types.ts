@@ -111,6 +111,9 @@ export interface UserQuiz {
       hints?: string[];
     };
   }>;
+  _count?: {
+    questions: number;
+  };
   timeStarted: string;
   timeEnded: string | null;
   progress?: number;
@@ -181,6 +184,8 @@ export interface Quiz {
   id: string;
   title: string;
   description?: string;
+  isPublic?: boolean;
+  createdAt?:string;
   questions: Array<{
     id: string;
     question: string;

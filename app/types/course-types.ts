@@ -150,6 +150,8 @@ export interface FullCourseType {
   id: number;
   title: string;
   slug: string;
+  userId?: string;
+  isCompleted: boolean;
   description?: string;
   image?: string;
   courseUnits: FullCourseUnit[]; // Ensure this is properly typed

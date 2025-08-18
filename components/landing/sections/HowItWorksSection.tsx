@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react"
 import { motion, useInView } from "framer-motion"
 import { FileText, Sparkles, Layers, CheckCircle, ChevronRight, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 
 // Apple-style easing function
 const APPLE_EASING = [0.25, 0.1, 0.25, 1]

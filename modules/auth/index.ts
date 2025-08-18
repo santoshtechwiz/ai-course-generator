@@ -1,6 +1,6 @@
 // Auth Module Exports
 export { AuthProvider, useAuth, useSubscription as useAuthSubscription, useUser, useAuthStatus } from './providers/AuthProvider'
-export { useSubscription } from './hooks/useSubscription'
+export { useSubscription, useSubscriptionPermissions, useSubscriptionTracking } from './hooks/useSubscription'
 export { LoginButton } from './components/LoginButton'
 export { LogoutButton } from './components/LogoutButton'
 export { AuthButtons } from './components/AuthButtons'

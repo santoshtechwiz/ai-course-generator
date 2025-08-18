@@ -3,7 +3,15 @@ import { redirect } from "next/navigation"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import AdminNav from "./components/admin-nav"
-import { PageWrapper, PageHeader } from "@/components/layout/PageWrapper"
+
+/**
+ * Admin Layout
+ * 
+ * Protected layout for admin-only pages with:
+ * - Authentication check and admin role validation
+ * - Consistent sidebar navigation
+ * - Responsive grid layout
+ */
 
 export default async function AdminLayout({
   children,
@@ -18,16 +26,13 @@ export default async function AdminLayout({
   }
 
   return (
-    <PageWrapper>
-      <PageHeader>
-        <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-8">
-          <aside className="hidden md:block">
-            <AdminNav user={{ isAdmin: true }} />
-          </aside>
-
-          <main>{children}</main>
-        </div>
-      </PageHeader>
-    </PageWrapper>
+    <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 lg:gap-8">
+        <aside className="hidden md:block">
+          <AdminNav user={{ isAdmin: true }} />
+        </aside>
+        <main className="min-w-0">{children}</main>
+      </div>
+    </div>
   )
 }

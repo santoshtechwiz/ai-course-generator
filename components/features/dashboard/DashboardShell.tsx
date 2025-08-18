@@ -10,11 +10,12 @@ interface DashboardShellProps {
 }
 
 export function DashboardShell({ children }: DashboardShellProps) {
-
-
   return (
     <div className="flex min-h-screen flex-col">
-      <ClientLayoutWrapper>
+      <ClientLayoutWrapper 
+        withTheme={true}
+        withSubscriptionSync={true}
+      >
         <MainNavbar />
         {children}
       </ClientLayoutWrapper>

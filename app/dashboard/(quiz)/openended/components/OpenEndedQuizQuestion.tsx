@@ -91,21 +91,21 @@ export function OpenEndedQuizQuestion({
   const getDifficultyColor = (difficulty = "medium") => {
     switch (difficulty?.toLowerCase()) {
       case "easy":
-        return "bg-green-500"
+        return "bg-emerald-500 text-primary-foreground"
       case "medium":
-        return "bg-yellow-500"
+        return "bg-amber-500 text-primary-foreground"
       case "hard":
-        return "bg-red-500"
+        return "bg-destructive text-destructive-foreground"
       default:
-        return "bg-blue-500"
+        return "bg-primary text-primary-foreground"
     }
   }
 
   const getWordCountColor = () => {
-    if (wordCount < 10) return "text-red-500"
-    if (wordCount < 25) return "text-orange-500"
-    if (wordCount < 50) return "text-yellow-500"
-    return "text-green-500"
+    if (wordCount < 10) return "text-destructive"
+    if (wordCount < 25) return "text-amber-600"
+    if (wordCount < 50) return "text-amber-500"
+    return "text-emerald-600 dark:text-emerald-400"
   }
 
   return (
@@ -125,7 +125,7 @@ export function OpenEndedQuizQuestion({
         >
       <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className={cn("text-white", getDifficultyColor("medium"))}>
+          <Badge variant="secondary" className={cn("text-xs", getDifficultyColor("medium"))}>
             Medium
           </Badge>
           
@@ -164,9 +164,10 @@ export function OpenEndedQuizQuestion({
           onChange={(e) => handleAnswerChange(e.target.value)}
           placeholder="Type your answer here..."
           className={cn(
-            "min-h-[150px] resize-none transition-all duration-200 focus:min-h-[200px] focus:ring-2 focus:ring-primary md:min-h-[200px]",
-            "border-2 border-border/60 hover:border-primary/40 focus:border-primary",
-            answerText.length > 0 && "border-primary/60"
+            "min-h-[180px] md:min-h-[220px] resize-none transition-all duration-200",
+            "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            "border border-border bg-background text-foreground placeholder:text-muted-foreground",
+            answerText.length > 0 && "border-primary/50"
           )}
           data-testid="answer-textarea"
           disabled={isSubmitting || stateManager.isSubmitting}

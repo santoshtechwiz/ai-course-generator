@@ -4,6 +4,8 @@ import { CheckCircle2, XCircle, Clock, Lightbulb, AlertCircle } from "lucide-rea
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
 
 interface ProcessedAnswer {
   questionId: string
@@ -15,6 +17,8 @@ interface ProcessedAnswer {
   explanation?: string
   difficulty?: string
   category?: string
+  codeSnippet?: string
+  language?: string
 }
 
 interface QuestionCardProps {
@@ -24,9 +28,13 @@ interface QuestionCardProps {
 
 export function QuestionCard({ question, index }: QuestionCardProps) {
   const formatTime = (seconds: number) => {
+    if (!seconds || seconds < 0) return "0.00s"
+    if (seconds < 60) {
+      return `${seconds.toFixed(2)}s`
+    }
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, "0")}`
+    return `${mins}:${secs.toFixed(2).padStart(5, "0")}` // mm:SS.ss
   }
 
   const getDifficultyColor = (difficulty?: string) => {
@@ -47,8 +55,8 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
       <Card
         className={`border-l-4 transition-all duration-200 hover:shadow-md ${
           question.isCorrect
-            ? "border-l-green-500 bg-green-50/30 dark:bg-green-950/10"
-            : "border-l-red-500 bg-red-50/30 dark:bg-red-950/10"
+            ? "border-l-green-500 bg-card"
+            : "border-l-red-500 bg-card"
         }`}
       >
         <CardContent className="p-6">
@@ -58,17 +66,17 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
               <div
                 className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
                   question.isCorrect
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-                    : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : "bg-destructive/10 text-destructive"
                 }`}
               >
                 {index + 1}
               </div>
               <div className="flex items-center gap-2">
                 {question.isCorrect ? (
-                  <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 ) : (
-                  <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                  <XCircle className="w-5 h-5 text-destructive" />
                 )}
                 <Badge variant={question.isCorrect ? "default" : "destructive"} className="text-xs">
                   {question.isCorrect ? "Correct" : "Incorrect"}
@@ -82,7 +90,7 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
                   {question.difficulty}
                 </Badge>
               )}
-              {question.timeSpent && (
+              {typeof question.timeSpent === 'number' && (
                 <Badge variant="outline" className="text-xs flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   {formatTime(question.timeSpent)}
@@ -101,27 +109,52 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
             )}
           </div>
 
+          {/* Code Snippet (if applicable) */}
+          {question.codeSnippet && (
+            <div className="mb-4 rounded-lg overflow-hidden border border-border bg-muted/30">
+              <div className="flex items-center justify-between px-3 py-2 text-xs text-muted-foreground bg-muted">
+                <div>Code</div>
+                <div className="font-mono opacity-80">{question.language || 'javascript'}</div>
+              </div>
+              <div className="max-h-96 overflow-auto">
+                <SyntaxHighlighter
+                  language={(question.language || 'javascript').toLowerCase()}
+                  style={vscDarkPlus}
+                  customStyle={{
+                    margin: 0,
+                    borderRadius: 0,
+                    background: 'transparent',
+                    fontSize: '0.85rem',
+                  }}
+                  wrapLongLines
+                >
+                  {question.codeSnippet}
+                </SyntaxHighlighter>
+              </div>
+            </div>
+          )}
+
           {/* Answer Section */}
           <div className="space-y-4">
             {/* User Answer */}
             <div
-              className={`p-4 rounded-lg border-2 ${
+              className={`p-4 rounded-lg border ${
                 question.isCorrect
-                  ? "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800"
-                  : "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800"
+                  ? "bg-emerald-500/10 border-emerald-300/50"
+                  : "bg-destructive/10 border-destructive/30"
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
                 {question.isCorrect ? (
-                  <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 ) : (
-                  <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  <XCircle className="w-4 h-4 text-destructive" />
                 )}
                 <span className="text-sm font-semibold text-foreground">Your Answer:</span>
               </div>
               <p
                 className={`text-sm font-medium ${
-                  question.isCorrect ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"
+                  question.isCorrect ? "text-emerald-700 dark:text-emerald-300" : "text-destructive"
                 }`}
               >
                 {question.userAnswer}
@@ -130,42 +163,29 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
 
             {/* Correct Answer (only show if user was wrong) */}
             {!question.isCorrect && (
-              <div className="p-4 rounded-lg border-2 bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800">
+              <div className="p-4 rounded-lg border bg-emerald-500/10 border-emerald-300/50">
                 <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span className="text-sm font-semibold text-foreground">Correct Answer:</span>
                 </div>
-                <p className="text-sm font-medium text-green-700 dark:text-green-300">{question.correctAnswer}</p>
+                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{question.correctAnswer}</p>
               </div>
             )}
 
-            {/* Explanation */}
-            {question.explanation && (
-              <>
-                <Separator className="my-4" />
-                <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-800">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Lightbulb className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm font-semibold text-foreground">Explanation:</span>
-                  </div>
-                  <p className="text-sm text-blue-700 dark:text-blue-300 leading-relaxed">{question.explanation}</p>
+          {/* Explanation */}
+          {question.explanation && (
+            <>
+              <Separator className="my-4" />
+              <div className="p-4 rounded-lg bg-muted border border-border">
+                <div className="flex items-center gap-2 mb-2">
+                  <Lightbulb className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Explanation:</span>
                 </div>
-              </>
-            )}
-          </div>
-
-          {/* Study Tip for Incorrect Answers */}
-          {!question.isCorrect && (
-            <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
-              <div className="flex items-center gap-2 mb-1">
-                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">Study Tip:</span>
+                <p className="text-sm text-muted-foreground leading-relaxed">{question.explanation}</p>
               </div>
-              <p className="text-xs text-amber-700 dark:text-amber-300">
-                Review this concept and try similar questions to strengthen your understanding.
-              </p>
-            </div>
+            </>
           )}
+          </div>
         </CardContent>
       </Card>
     </motion.div>

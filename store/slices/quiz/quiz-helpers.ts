@@ -11,7 +11,7 @@
  * @version 2.0.0
  */
 
-import { hydrateFromStorage } from "../../middleware/persistMiddleware"
+import { hydrateFromStorage } from "../../../middlewares/store/persistence"
 import { STORAGE_KEYS } from "@/constants/global"
 import type { QuizState, QuizAnswer, QuizQuestion, QuizResults, QuestionResult } from "./quiz-types"
 import type { QuizType } from "@/app/types/quiz-types"
@@ -26,6 +26,16 @@ export const API_ENDPOINTS = {
   blanks: API_PATHS.BLANKS,
   openended: API_PATHS.OPENENDED,
   common: API_PATHS.COMMON,
+  // Support for the unified API approach
+  unified: API_PATHS.UNIFIED,
+  byType: API_PATHS.byType,
+  byTypeAndSlug: API_PATHS.byTypeAndSlug,
+  // Type-specific helpers
+  getMcqQuiz: API_PATHS.getMcqQuiz,
+  getCodeQuiz: API_PATHS.getCodeQuiz,
+  getBlanksQuiz: API_PATHS.getBlanksQuiz,
+  getOpenEndedQuiz: API_PATHS.getOpenEndedQuiz,
+  getFlashcardQuiz: API_PATHS.getFlashcardQuiz
 } as const
 
 export class QuizHelpers {

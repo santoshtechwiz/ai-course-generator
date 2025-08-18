@@ -218,4 +218,58 @@ export class QuizRepository extends BaseRepository<any> {
       },
     });
   }
+
+  /**
+   * Add quiz to favorites
+   */
+  async addToFavorite(slug: string, userId: string) {
+    const quiz = await this.findBySlug(slug);
+    if (!quiz) {
+      throw new Error("Quiz not found");
+    }
+    if (quiz.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    return prisma.userQuiz.update({
+      where: { slug },
+      data: { isFavorite: true },
+    });
+  }
+
+  /**
+   * Remove quiz from favorites
+   */
+  async removeFromFavorite(slug: string, userId: string) {
+    const quiz = await this.findBySlug(slug);
+    if (!quiz) {
+      throw new Error("Quiz not found");
+    }
+    if (quiz.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    return prisma.userQuiz.update({
+      where: { slug },
+      data: { isFavorite: false },
+    });
+  }
+
+  /**
+   * Toggle quiz visibility (public/private)
+   */
+  async toggleVisibility(slug: string, userId: string) {
+    const quiz = await this.findBySlug(slug);
+    if (!quiz) {
+      throw new Error("Quiz not found");
+    }
+    if (quiz.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    return prisma.userQuiz.update({
+      where: { slug },
+      data: { isPublic: !quiz.isPublic },
+    });
+  }
 }

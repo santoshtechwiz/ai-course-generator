@@ -20,7 +20,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +28,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Input } from "@/components/ui/input"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { motion, AnimatePresence } from "framer-motion"
+import Image from "next/image"
 // Fix type import path
 import type { FullCourseType, FullChapterType } from "@/app/types/course-types"
 // Use our CourseProgress type instead of Prisma's
@@ -43,9 +44,6 @@ interface VideoNavigationSidebarProps {
   progress: CourseProgress | null
   completedChapters: (number | string)[]
   nextVideoId?: string
-  prevVideoId?: string
-  videoDurations?: Record<string, number>
-  formatDuration?: (seconds: number) => string
   courseStats?: {
     completedCount: number
     totalChapters: number
@@ -53,17 +51,35 @@ interface VideoNavigationSidebarProps {
   }
   isPlaying?: boolean
   onTogglePlay?: () => void
+  formatDuration?: (seconds: number) => string
+  isSubscribed: boolean
 }
 
-// Enhanced format duration function
-function formatDuration(seconds: number): string {
-  if (!seconds || isNaN(seconds)) return "--:--"
-
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = Math.floor(seconds % 60)
-
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
-}
+const Equalizer = () => (
+  <div className="flex items-end gap-0.5">
+    <motion.span
+      className="w-1 rounded-sm bg-primary"
+      initial={{ height: 6 }}
+      animate={{ height: [6, 14, 8, 12, 6] }}
+      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+      style={{ display: "inline-block" }}
+    />
+    <motion.span
+      className="w-1 rounded-sm bg-primary"
+      initial={{ height: 10 }}
+      animate={{ height: [10, 6, 12, 6, 10] }}
+      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+      style={{ display: "inline-block" }}
+    />
+    <motion.span
+      className="w-1 rounded-sm bg-primary"
+      initial={{ height: 8 }}
+      animate={{ height: [8, 12, 6, 14, 8] }}
+      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
+      style={{ display: "inline-block" }}
+    />
+  </div>
+)
 
 // Enhanced Chapter Item Component with better status indicators
 const ChapterItem = React.memo(
@@ -78,6 +94,7 @@ const ChapterItem = React.memo(
     onChapterClick,
     chapterIndex,
     totalChapters,
+    formatDuration,
   }: {
     chapter: FullChapterType
     isActive: boolean
@@ -89,13 +106,14 @@ const ChapterItem = React.memo(
     onChapterClick: (chapter: FullChapterType) => void
     chapterIndex: number
     totalChapters: number
+    formatDuration?: (seconds: number) => string
   }) => {
     const getStatusIcon = () => {
       if (isActive && isPlaying) {
-        return <Play className="h-4 w-4 text-green-500 animate-pulse" fill="currentColor" />
+        return <Equalizer />
       }
       if (isActive && !isPlaying) {
-        return <Pause className="h-4 w-4 text-blue-500" fill="currentColor" />
+        return <Play className="h-4 w-4 text-primary" />
       }
       if (isCompleted) {
         return <CheckCircle className="h-4 w-4 text-green-500" fill="currentColor" />
@@ -107,11 +125,11 @@ const ChapterItem = React.memo(
     }
 
     const getStatusBadges = () => {
-      const badges = []
+      const badges = [] as React.ReactNode[]
 
       if (isActive) {
         badges.push(
-          <Badge key="current" variant="default" className="text-[10px] py-0 h-5 bg-blue-500 text-white animate-pulse">
+          <Badge key="current" variant="default" className="text-[10px] py-0 h-5 bg-primary text-primary-foreground animate-pulse">
             {isPlaying ? "Playing" : "Current"}
           </Badge>,
         )
@@ -122,7 +140,7 @@ const ChapterItem = React.memo(
           <Badge
             key="next"
             variant="outline"
-            className="text-[10px] py-0 h-5 bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800"
+            className="text-[10px] py-0 h-5 bg-primary/10 text-primary border-primary/20"
           >
             Up Next
           </Badge>,
@@ -134,7 +152,7 @@ const ChapterItem = React.memo(
           <Badge
             key="free"
             variant="outline"
-            className="text-[10px] py-0 h-5 bg-green-50 text-green-600 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800"
+            className="text-[10px] py-0 h-5 bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800"
           >
             Free
           </Badge>,
@@ -145,27 +163,27 @@ const ChapterItem = React.memo(
     }
 
     return (
-      <motion.li
+      <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.2, delay: chapterIndex * 0.05 }}
       >
         <div
           className={cn(
-            "relative border-l-3 transition-all duration-200",
+            "relative border-l-4 transition-all duration-200",
             isActive
-              ? "border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/30"
+              ? "border-l-primary bg-primary/10"
               : isCompleted
-                ? "border-l-green-500/30 hover:border-l-green-500"
-                : "border-l-transparent hover:border-l-blue-300",
-            isNextVideo && !isActive && "border-l-orange-300 bg-orange-50/30 dark:bg-orange-950/20",
+                ? "border-l-green-500/40 hover:border-l-green-500/70"
+                : "border-l-transparent hover:border-l-primary/40",
+            isNextVideo && !isActive && "border-l-primary/30 bg-primary/5",
           )}
         >
           <button
             className={cn(
               "flex items-start w-full px-4 py-3 text-sm transition-all duration-200 text-left group",
-              "hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-              isActive && "bg-accent/30 font-medium",
+              "hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+              isActive && "bg-muted/80 font-medium",
               isLocked && "opacity-60 cursor-not-allowed",
               "relative overflow-hidden",
             )}
@@ -178,7 +196,7 @@ const ChapterItem = React.memo(
             {/* Progress indicator line for active chapter */}
             {isActive && (
               <motion.div
-                className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"
+                className="absolute left-0 top-0 bottom-0 w-1 bg-primary"
                 initial={{ scaleY: 0 }}
                 animate={{ scaleY: 1 }}
                 transition={{ duration: 0.3 }}
@@ -186,22 +204,41 @@ const ChapterItem = React.memo(
             )}
 
             {/* Chapter number and status icon */}
-            <div className="flex-shrink-0 flex items-center mr-3">
+            <div className="flex-shrink-0 flex items-center mr-3 min-w-[2rem]">
               <div
                 className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors",
                   isActive
-                    ? "bg-blue-500 text-white"
+                    ? "bg-primary text-primary-foreground"
                     : isCompleted
-                      ? "bg-green-500 text-white"
+                      ? "bg-emerald-600 text-white"
                       : isNextVideo
-                        ? "bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400"
-                        : "bg-muted text-muted-foreground",
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted text-foreground/80",
                 )}
               >
                 {isActive || isCompleted ? getStatusIcon() : chapterIndex + 1}
               </div>
             </div>
+
+            {/* Thumbnail */}
+            {chapter.videoId && (
+              <div className="relative mr-3 w-16 h-10 rounded-md overflow-hidden flex-shrink-0">
+                <Image
+                  src={`https://img.youtube.com/vi/${chapter.videoId}/mqdefault.jpg`}
+                  alt={chapter.title || "Chapter thumbnail"}
+                  fill
+                  className={cn("object-cover transition-transform duration-200", isLocked ? "opacity-60" : "group-hover:scale-[1.03]")}
+                  sizes="64px"
+                  priority={false}
+                />
+                {isLocked && (
+                  <div className="absolute inset-0 grid place-items-center bg-black/20">
+                    <Lock className="h-4 w-4 text-white" />
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Chapter content */}
             <div className="flex-1 min-w-0 space-y-1">
@@ -219,7 +256,7 @@ const ChapterItem = React.memo(
                 <ChevronRight
                   className={cn(
                     "h-4 w-4 text-muted-foreground/50 transition-all flex-shrink-0 mt-0.5",
-                    isActive ? "opacity-100 text-blue-500" : "opacity-0 group-hover:opacity-70",
+                    isActive ? "opacity-100 text-primary" : "opacity-0 group-hover:opacity-70",
                   )}
                 />
               </div>
@@ -229,7 +266,7 @@ const ChapterItem = React.memo(
                 {chapter.duration && (
                   <span className="flex items-center gap-1">
                     <Timer className="h-3 w-3" />
-                    {chapter.duration}
+                    {typeof chapter.duration === 'number' && formatDuration ? formatDuration(chapter.duration) : chapter.duration}
                   </span>
                 )}
 
@@ -244,7 +281,7 @@ const ChapterItem = React.memo(
             </div>
           </button>
         </div>
-      </motion.li>
+      </motion.div>
     )
   },
 )
@@ -273,7 +310,7 @@ const UnitCard = React.memo(
     return (
       <Collapsible open={isExpanded} onOpenChange={onToggle}>
         <CollapsibleTrigger asChild>
-          <button className="w-full px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors border-b border-border/50 text-left group">
+          <button className="w-full px-4 py-3 bg-card hover:bg-accent transition-colors border-b text-left group">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-sm truncate">{unit.title}</h3>
@@ -354,7 +391,7 @@ function MobileSidebar({
           <span className="sr-only">Open navigation menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-80 p-0 bg-background/95 backdrop-blur-sm">
+      <SheetContent side="right" className="w-80 p-0 bg-background/95 backdrop-blur-sm">
         <SheetHeader className="p-4 border-b border-border/50 bg-background/50">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-left line-clamp-2 text-base font-semibold">
@@ -382,6 +419,15 @@ function MobileSidebar({
         </SheetHeader>
         <div className="flex-1 overflow-hidden">{children}</div>
       </SheetContent>
+
+      {/* Floating mobile Chapters button bottom-right */}
+      <Button
+        onClick={() => setIsOpen(true)}
+        className="lg:hidden fixed bottom-6 right-6 z-40 rounded-full shadow-xl bg-primary text-primary-foreground"
+        aria-label="Open chapters"
+      >
+        Chapters
+      </Button>
     </Sheet>
   )
 }
@@ -405,7 +451,7 @@ function DesktopSidebar({
   onTogglePlay?: () => void
 }) {
   return (
-    <div className="hidden lg:flex flex-col h-full bg-background/95 backdrop-blur-sm border-r border-border/50">
+    <div className="hidden lg:flex flex-col h-full bg-background/95 backdrop-blur-sm border-l border-border/50">
       {/* Enhanced Header */}
       <div className="p-5 sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50">
         <div className="flex items-center justify-between mb-3">
@@ -451,6 +497,230 @@ function DesktopSidebar({
   )
 }
 
+// Memoize ChapterItem and UnitCard with stable keys and props
+const MemoizedChapterItem = React.memo(ChapterItem)
+const MemoizedUnitCard = React.memo(UnitCard)
+
+// SidebarContent with improved UX and performance
+const SidebarContent = React.memo(function SidebarContent({
+  filteredUnits,
+  expandedUnits,
+  toggleUnit,
+  completedChapters,
+  currentChapter,
+  nextVideoId,
+  isAuthenticated,
+  isSubscribed,
+  handleChapterClick,
+  totalChapters,
+  isPlaying,
+  searchQuery,
+  handleSearchChange,
+  courseId,
+  courseProgress,
+  computedStats,
+  loading,
+  scrollToActive,
+  formatDuration,
+}: {
+  filteredUnits: any[]
+  expandedUnits: Record<string, boolean>
+  toggleUnit: (unitId: string) => void
+  completedChapters: (number | string)[]
+  currentChapter?: FullChapterType | null
+  nextVideoId?: string
+  isAuthenticated: boolean
+  isSubscribed: boolean
+  handleChapterClick: (chapter: FullChapterType) => void
+  totalChapters: number
+  isPlaying?: boolean
+  searchQuery: string
+  handleSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  courseId: string | number
+  courseProgress: number
+  computedStats: {
+    completedCount: number
+    totalChapters: number
+    progressPercentage: number
+  }
+  loading?: boolean
+  scrollToActive?: boolean
+  formatDuration?: (seconds: number) => string
+}) {
+  // Ref for auto-scroll to active chapter
+  const activeChapterRef = React.useRef<HTMLLIElement>(null)
+
+  React.useEffect(() => {
+    if (scrollToActive && activeChapterRef.current) {
+      activeChapterRef.current.scrollIntoView({ behavior: "smooth", block: "center" })
+    }
+  }, [currentChapter?.id, scrollToActive])
+
+  // Skeleton loading for sidebar
+  if (loading) {
+    return (
+      <div className="p-4">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded" />
+          <div className="h-6 bg-muted rounded w-2/3" />
+          <div className="h-6 bg-muted rounded w-1/2" />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <React.Fragment>
+      {/* Sticky Search Bar */}
+      <div className="sticky top-0 z-10 p-4 border-b border-border/50 bg-background/80 backdrop-blur-sm">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search chapters..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="pl-9 h-9 bg-background/50 focus:ring-2 focus:ring-primary"
+            aria-label="Search chapters"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleSearchChange({ target: { value: "" } } as any)}
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+              tabIndex={0}
+              aria-label="Clear search"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Course Content Navigation */}
+      <ScrollArea className="flex-1">
+        <nav aria-label="Course navigation" className="pb-4">
+          {filteredUnits?.length > 0 ? (
+            filteredUnits.map((unit, unitIndex) => {
+              const unitCompletedChapters = unit.chapters.filter((chapter: any) =>
+                completedChapters?.includes(Number(chapter.id)),
+              ).length
+
+              // Precompute global chapter index for all chapters in this unit
+              const prevChaptersCount = React.useMemo(
+                () =>
+                  filteredUnits
+                    .slice(0, unitIndex)
+                    .reduce((acc, u) => acc + u.chapters.length, 0),
+                [filteredUnits, unitIndex]
+              )
+
+              return (
+                <motion.div
+                  key={unit.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: unitIndex * 0.1 }}
+                  className="mb-2 last:mb-0"
+                >
+                  <MemoizedUnitCard
+                    unit={unit}
+                    isExpanded={expandedUnits[unit.id] ?? true}
+                    onToggle={() => toggleUnit(unit.id)}
+                    completedChapters={unitCompletedChapters}
+                    totalChapters={unit.chapters.length}
+                  >
+                    <ul role="list" className="bg-background/30">
+                      {unit.chapters.map((chapter: FullChapterType, chapterIndex: number) => {
+                        const globalChapterIndex = prevChaptersCount + chapterIndex
+                        const isActive = currentChapter?.id === chapter.id
+                        const isCompleted = completedChapters?.includes(Number(chapter.id)) || false
+                        const isLocked = !(chapter.isFree || isSubscribed)
+                        const isNextVideo = chapter.videoId === nextVideoId
+                        const isPrevVideo = chapter.videoId === currentChapter?.videoId
+
+                        const chapterWithDescriptionFix = {
+                          ...chapter,
+                          description: chapter.description === null ? undefined : chapter.description,
+                        }
+
+                        return (
+                          <li
+                            key={chapter.id}
+                            ref={isActive ? activeChapterRef : undefined}
+                            tabIndex={isLocked ? -1 : 0}
+                            aria-current={isActive ? "page" : undefined}
+                          >
+                            <MemoizedChapterItem
+                              chapter={chapterWithDescriptionFix}
+                              isActive={isActive}
+                              isCompleted={isCompleted}
+                              isLocked={isLocked}
+                              isNextVideo={isNextVideo}
+                              isPrevVideo={isPrevVideo}
+                              isPlaying={isActive ? isPlaying : false}
+                              onChapterClick={handleChapterClick}
+                              chapterIndex={globalChapterIndex}
+                              totalChapters={totalChapters}
+                              formatDuration={formatDuration}
+                            />
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </MemoizedUnitCard>
+                </motion.div>
+              )
+            })
+          ) : (
+            <div className="p-5 text-center text-muted-foreground">
+              <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No chapters available.</p>
+            </div>
+          )}
+
+          {searchQuery && filteredUnits?.length === 0 && (
+            <div className="p-5 text-center text-muted-foreground">
+              <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No chapters found for "{searchQuery}"</p>
+              <Button variant="ghost" size="sm" onClick={() => handleSearchChange({ target: { value: "" } } as any)} className="mt-2">
+                Clear search
+              </Button>
+            </div>
+          )}
+        </nav>
+      </ScrollArea>
+
+      {/* Enhanced Footer */}
+      <div className="border-t border-border/50 p-4 bg-muted/30 text-xs text-muted-foreground">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center justify-between cursor-help">
+                <span className="flex items-center gap-2">
+                  <BookOpen className="h-3 w-3" />
+                  Course ID: {courseId}
+                </span>
+                {courseProgress === 100 && (
+                  <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Completed
+                  </Badge>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Your progress is saved automatically</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    </React.Fragment>
+  )
+})
+
+SidebarContent.displayName = "SidebarContent"
+
 export default function VideoNavigationSidebar({
   course,
   currentChapter,
@@ -458,24 +728,26 @@ export default function VideoNavigationSidebar({
   onChapterSelect,
   currentVideoId,
   isAuthenticated,
+  isSubscribed,
   progress,
   completedChapters = [],
   nextVideoId,
-  videoDurations = {},
-  formatDuration: formatDurationProp,
   courseStats,
   isPlaying = false,
   onTogglePlay,
+  formatDuration,
 }: VideoNavigationSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedUnits, setExpandedUnits] = useState<Record<string, boolean>>({})
+  const [loading, setLoading] = useState(false)
 
-  // Initialize all units as expanded by default
+  // Collapse all units on mobile by default, expand on desktop
   React.useEffect(() => {
     if (course?.courseUnits && Object.keys(expandedUnits).length === 0) {
+      const isMobile = typeof window !== "undefined" && window.innerWidth < 1024
       const initialExpanded = course.courseUnits.reduce(
         (acc, unit) => {
-          acc[unit.id] = true
+          acc[unit.id] = !isMobile // collapsed on mobile, expanded on desktop
           return acc
         },
         {} as Record<string, boolean>,
@@ -484,37 +756,10 @@ export default function VideoNavigationSidebar({
     }
   }, [course?.courseUnits, expandedUnits])
 
-  const formatDurationFn = useCallback(
-    (seconds: number): string => {
-      if (formatDurationProp) return formatDurationProp(seconds)
-      return formatDuration(seconds)
-    },
-    [formatDurationProp],
-  )
-
-  const effectiveProgress = useMemo(() => {
-    if (!course) {
-      return {
-        id: 0,
-        userId: "",
-        courseId: 0,
-        progress: 0,
-        completedChapters: [],
-        currentChapterId: currentChapter?.id || undefined,
-      }
-    }
-
-    return (
-      progress || {
-        id: 0,
-        userId: "",
-        courseId: typeof course.id === "string" ? Number.parseInt(course.id) : course.id || 0,
-        progress: 0,
-        completedChapters: [],
-        currentChapterId: currentChapter?.id || undefined,
-      }
-    )
-  }, [progress, course, currentChapter?.id])
+  // Optionally, show loading skeleton while course is loading
+  React.useEffect(() => {
+    setLoading(!course)
+  }, [course])
 
   const totalChapters = useMemo(() => {
     if (!course?.courseUnits) return 0
@@ -573,139 +818,8 @@ export default function VideoNavigationSidebar({
     }))
   }, [])
 
-  // Enhanced Sidebar Content
-  const SidebarContent = React.memo(() => (
-    <>
-      {/* Search functionality */}
-      <div className="p-4 border-b border-border/50 bg-background/50">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search chapters..."
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="pl-9 h-9 bg-background/50"
-          />
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSearchQuery("")}
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Course Content Navigation */}
-      <ScrollArea className="flex-1">
-        <nav aria-label="Course navigation" className="pb-4">
-          {filteredUnits?.map((unit, unitIndex) => {
-            const unitCompletedChapters = unit.chapters.filter((chapter) =>
-              completedChapters?.includes(Number(chapter.id)),
-            ).length
-
-            return (
-              <motion.div
-                key={unit.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: unitIndex * 0.1 }}
-                className="mb-1 last:mb-0"
-              >
-                <UnitCard
-                  unit={unit}
-                  isExpanded={expandedUnits[unit.id] ?? true}
-                  onToggle={() => toggleUnit(unit.id)}
-                  completedChapters={unitCompletedChapters}
-                  totalChapters={unit.chapters.length}
-                >
-                  <ul role="list" className="bg-background/30">
-                    {unit.chapters.map((chapter, chapterIndex) => {
-                      const globalChapterIndex =
-                        course?.courseUnits?.slice(0, unitIndex).reduce((acc, u) => acc + u.chapters.length, 0) +
-                        chapterIndex
-
-                      const isActive = currentChapter?.id === chapter.id
-                      const isCompleted = completedChapters?.includes(Number(chapter.id)) || false
-                      const isLocked = !isAuthenticated && !chapter.isFree
-                      const isNextVideo = chapter.videoId === nextVideoId
-                      const isPrevVideo = chapter.videoId === currentChapter?.videoId
-
-                      const chapterWithDescriptionFix = {
-                        ...chapter,
-                        description: chapter.description === null ? undefined : chapter.description,
-                      }
-
-                      return (
-                        <ChapterItem
-                          key={chapter.id}
-                          chapter={chapterWithDescriptionFix}
-                          isActive={isActive}
-                          isCompleted={isCompleted}
-                          isLocked={isLocked}
-                          isNextVideo={isNextVideo}
-                          isPrevVideo={isPrevVideo}
-                          isPlaying={isActive ? isPlaying : false}
-                          onChapterClick={handleChapterClick}
-                          chapterIndex={globalChapterIndex || chapterIndex}
-                          totalChapters={totalChapters}
-                        />
-                      )
-                    })}
-                  </ul>
-                </UnitCard>
-              </motion.div>
-            )
-          }) || (
-            <div className="p-5 text-center text-muted-foreground">
-              <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>No chapters available.</p>
-            </div>
-          )}
-
-          {searchQuery && filteredUnits?.length === 0 && (
-            <div className="p-5 text-center text-muted-foreground">
-              <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>No chapters found for "{searchQuery}"</p>
-              <Button variant="ghost" size="sm" onClick={() => setSearchQuery("")} className="mt-2">
-                Clear search
-              </Button>
-            </div>
-          )}
-        </nav>
-      </ScrollArea>
-
-      {/* Enhanced Footer */}
-      <div className="border-t border-border/50 p-4 bg-muted/30 text-xs text-muted-foreground">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center justify-between cursor-help">
-                <span className="flex items-center gap-2">
-                  <BookOpen className="h-3 w-3" />
-                  Course ID: {courseId}
-                </span>
-                {courseProgress === 100 && (
-                  <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Completed
-                  </Badge>
-                )}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Your progress is saved automatically</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-    </>
-  ))
-
-  SidebarContent.displayName = "SidebarContent"
+  // Auto-scroll to active chapter on navigation
+  const scrollToActive = true
 
   return (
     <>
@@ -718,7 +832,27 @@ export default function VideoNavigationSidebar({
         isPlaying={isPlaying}
         onTogglePlay={onTogglePlay}
       >
-        <SidebarContent />
+        <SidebarContent
+          filteredUnits={filteredUnits}
+          expandedUnits={expandedUnits}
+          toggleUnit={toggleUnit}
+          completedChapters={completedChapters}
+          currentChapter={currentChapter}
+          nextVideoId={nextVideoId}
+          isAuthenticated={isAuthenticated}
+          isSubscribed={isSubscribed}
+          handleChapterClick={handleChapterClick}
+          totalChapters={totalChapters}
+          isPlaying={isPlaying}
+          searchQuery={searchQuery}
+          handleSearchChange={handleSearchChange}
+          courseId={courseId}
+          courseProgress={courseProgress}
+          computedStats={computedStats}
+          loading={loading}
+          scrollToActive={scrollToActive}
+          formatDuration={formatDuration}
+        />
       </MobileSidebar>
 
       {/* Desktop Sidebar */}
@@ -730,7 +864,27 @@ export default function VideoNavigationSidebar({
         isPlaying={isPlaying}
         onTogglePlay={onTogglePlay}
       >
-        <SidebarContent />
+        <SidebarContent
+          filteredUnits={filteredUnits}
+          expandedUnits={expandedUnits}
+          toggleUnit={toggleUnit}
+          completedChapters={completedChapters}
+          currentChapter={currentChapter}
+          nextVideoId={nextVideoId}
+          isAuthenticated={isAuthenticated}
+          isSubscribed={isSubscribed}
+          handleChapterClick={handleChapterClick}
+          totalChapters={totalChapters}
+          isPlaying={isPlaying}
+          searchQuery={searchQuery}
+          handleSearchChange={handleSearchChange}
+          courseId={courseId}
+          courseProgress={courseProgress}
+          computedStats={computedStats}
+          loading={loading}
+          scrollToActive={scrollToActive}
+          formatDuration={formatDuration}
+        />
       </DesktopSidebar>
     </>
   )

@@ -17,6 +17,7 @@ import {
   resetQuiz,
   submitQuiz,
   fetchQuiz,
+  startQuestionTimer,
   resetSubmissionState,
   selectQuizType,
 } from "@/store/slices/quiz/quiz-slice"
@@ -27,8 +28,8 @@ import OpenEndedQuiz from "./OpenEndedQuiz"
 
 
 import { QuizActions } from "../../components/QuizActions"
-import { useGlobalLoader } from '@/store/global-loader'
-import { GlobalLoader } from '@/components/ui/loader'
+import { useGlobalLoader } from '@/store/loaders/global-loader'
+import { Skeleton } from "@/components/ui/skeleton"
 import { OpenEndedQuestion } from "@/app/types/quiz-types"
 
 
@@ -99,6 +100,13 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     return questions[currentQuestionIndex] || null
   }, [questions, currentQuestionIndex])
 
+  // Start timing when question changes
+  useEffect(() => {
+    if (currentQuestion) {
+      dispatch(startQuestionTimer({ questionId: String(currentQuestion.id) }))
+    }
+  }, [currentQuestion, dispatch])
+
   // Save answer
   const handleAnswer = useCallback(
     (answer: string) => {
@@ -161,7 +169,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     if (!currentQuestion) return null
     const cq = currentQuestion as OpenEndedQuestion
     return {
-      id: String(cq.id),
+      id: Number(cq.id) || cq.id,
       text: cq.text || cq.question || "",
       question: cq.question || cq.text || "",
      
@@ -173,7 +181,12 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   }, [currentQuestion])
 
   if (isLoading) {
-    return <GlobalLoader  />
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-6 w-36" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    )
   }
 
   if (hasError) {
@@ -203,22 +216,23 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     )
   }
 
-
   return (
-    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      
-      <OpenEndedQuiz
-        question={formattedQuestion}
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-        existingAnswer={existingAnswer}
-        onAnswer={handleAnswer}
-        onNext={handleNextQuestion}
-        onPrevious={handlePrevQuestion}
-        onSubmit={handleSubmitQuiz}
-        canGoNext={canGoNext}
-        canGoPrevious={canGoPrevious}
-        isLastQuestion={isLastQuestion}
-      />
+    <div className="w-full max-w-4xl ">
+      <div className="space-y-6">
+        <OpenEndedQuiz
+          question={formattedQuestion!}
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
+          existingAnswer={existingAnswer}
+          onAnswer={handleAnswer}
+          onNext={handleNextQuestion}
+          onPrevious={handlePrevQuestion}
+          onSubmit={handleSubmitQuiz}
+          canGoNext={canGoNext}
+          canGoPrevious={canGoPrevious}
+          isLastQuestion={isLastQuestion}
+        />
+      </div>
     </div>
   )
 }

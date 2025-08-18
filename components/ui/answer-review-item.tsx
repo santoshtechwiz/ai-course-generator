@@ -1,5 +1,10 @@
 "use client"
-import { formatQuizTime, getSimilarityLevel } from "@/lib/utils/quiz-utils"
+import { getSimilarityLevel } from "@/lib/utils/string"
+const formatQuizTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}m ${secs}s`
+}
 import { motion } from "framer-motion"
 
 import { CheckCircle, XCircle, Clock, HelpCircle } from "lucide-react"
@@ -151,9 +156,9 @@ export function AnswerReviewItem({
                   <p className="text-xs font-medium">Similarity score:</p>
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full ${
-                      similarityLevel === "high"
+                      similarityLevel === "high" || similarityLevel === "exact"
                         ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                        : similarityLevel === "moderate"
+                        : similarityLevel === "medium"
                           ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
                           : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                     }`}
@@ -167,9 +172,9 @@ export function AnswerReviewItem({
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                       <div
                         className={`h-1.5 rounded-full ${
-                          similarityLevel === "high"
+                          similarityLevel === "high" || similarityLevel === "exact"
                             ? "bg-green-500"
-                            : similarityLevel === "moderate"
+                            : similarityLevel === "medium"
                               ? "bg-yellow-500"
                               : "bg-red-500"
                         }`}

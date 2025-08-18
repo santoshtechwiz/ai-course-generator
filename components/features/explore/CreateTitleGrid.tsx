@@ -41,6 +41,56 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import useSubscription from "@/hooks/use-subscription";
 
+// Color mapping for Tailwind CSS classes (ensures classes are generated at build time)
+const getColorClasses = (color: string, isPremium: boolean) => {
+  const colorMap = {
+    blue: {
+      card: isPremium 
+        ? "bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 dark:from-amber-950 dark:to-orange-950 dark:hover:from-amber-900 dark:hover:to-orange-900 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+        : "bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+      button: "bg-blue-500 hover:bg-blue-600 text-white"
+    },
+    green: {
+      card: isPremium 
+        ? "bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 dark:from-amber-950 dark:to-orange-950 dark:hover:from-amber-900 dark:hover:to-orange-900 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+        : "bg-green-100 hover:bg-green-200 dark:bg-green-900 dark:hover:bg-green-800 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800",
+      button: "bg-green-500 hover:bg-green-600 text-white"
+    },
+    purple: {
+      card: isPremium 
+        ? "bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 dark:from-amber-950 dark:to-orange-950 dark:hover:from-amber-900 dark:hover:to-orange-900 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+        : "bg-purple-100 hover:bg-purple-200 dark:bg-purple-900 dark:hover:bg-purple-800 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800",
+      button: "bg-purple-500 hover:bg-purple-600 text-white"
+    },
+    orange: {
+      card: isPremium 
+        ? "bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 dark:from-amber-950 dark:to-orange-950 dark:hover:from-amber-900 dark:hover:to-orange-900 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+        : "bg-orange-100 hover:bg-orange-200 dark:bg-orange-900 dark:hover:bg-orange-800 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800",
+      button: "bg-orange-500 hover:bg-orange-600 text-white"
+    },
+    teal: {
+      card: isPremium 
+        ? "bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 dark:from-amber-950 dark:to-orange-950 dark:hover:from-amber-900 dark:hover:to-orange-900 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+        : "bg-teal-100 hover:bg-teal-200 dark:bg-teal-900 dark:hover:bg-teal-800 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800",
+      button: "bg-teal-500 hover:bg-teal-600 text-white"
+    },
+    indigo: {
+      card: isPremium 
+        ? "bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 dark:from-amber-950 dark:to-orange-950 dark:hover:from-amber-900 dark:hover:to-orange-900 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+        : "bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800",
+      button: "bg-indigo-500 hover:bg-indigo-600 text-white"
+    },
+    rose: {
+      card: isPremium 
+        ? "bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 dark:from-amber-950 dark:to-orange-950 dark:hover:from-amber-900 dark:hover:to-orange-900 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+        : "bg-rose-100 hover:bg-rose-200 dark:bg-rose-900 dark:hover:bg-rose-800 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800",
+      button: "bg-rose-500 hover:bg-rose-600 text-white"
+    }
+  };
+  
+  return colorMap[color as keyof typeof colorMap] || colorMap.blue;
+};
+
 interface CreateTileGridProps {
   icon: LucideIcon;
   title: string;
@@ -124,7 +174,7 @@ const tiles = [  {
       "Structure questions for different educational levels",
       "Create rubrics and grading criteria automatically",
     ],
-    isPremium: true,
+    isPremium: false,
     seoKeywords:
       "essay question generator, open-ended assessment, critical thinking questions",
     benefits: [
@@ -293,17 +343,17 @@ function Tile({
             }`}
             onClick={() => !isDisabled && setIsOpen(true)}
           >
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between text-xl sm:text-2xl">
-                <div className="flex items-center">
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="flex items-center justify-between text-base sm:text-lg md:text-xl">
+                <div className="flex items-center min-w-0 flex-1">
                   <motion.div
                     initial={{ rotate: 0 }}
                     animate={{ rotate: 360 }}
                     transition={{ duration: 0.5 }}
-                    className={`text-${color}-500`}
+                    className={`text-${color}-500 flex-shrink-0`}
                   >
                     <Icon
-                      className="h-8 w-8 sm:h-10 sm:w-10 mr-2 sm:mr-3"
+                      className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 mr-2"
                       aria-hidden="true"
                     />
                   </motion.div>
@@ -311,6 +361,7 @@ function Tile({
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.5, delay: 0.2 }}
+                    className="truncate"
                   >
                     {title}
                   </motion.span>
@@ -319,12 +370,12 @@ function Tile({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <motion.div
-                        className="ml-2 flex items-center"
+                        className="ml-2 flex items-center flex-shrink-0"
                         whileHover={{ scale: 1.2 }}
                       >
                         <Badge
                           variant="outline"
-                          className="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-300 font-medium"
+                          className="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-300 font-medium text-xs"
                         >
                           Premium
                         </Badge>
@@ -337,12 +388,12 @@ function Tile({
                 )}
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="py-2">
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
-                className="text-base sm:text-lg text-muted-foreground leading-relaxed"
+                className="text-sm sm:text-base text-muted-foreground leading-relaxed line-clamp-3"
               >
                 {description}
               </motion.p>
@@ -575,7 +626,7 @@ function Tile({
 
             <Button
               asChild
-              className={`w-full text-base h-12 sm:h-14 bg-${color}-500 hover:bg-${color}-600 text-white shadow-lg`}
+              className={`w-full text-base h-12 sm:h-14 ${getColorClasses(color, isPremium).button} shadow-lg`}
               aria-label={`Get started with ${title}`}
               disabled={isPremium && data?.plan !== "PREMIUM"}
             >
@@ -603,9 +654,9 @@ export function CreateTileGrid() {
     <>
       <section
         aria-labelledby="content-creation-tools"
-        className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10"
+        className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-5 py-4 sm:py-5"
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5 auto-rows-fr">
           {tiles.map((tile, index) => (
             <Tile
               key={index}
@@ -616,19 +667,20 @@ export function CreateTileGrid() {
           ))}
         </div>
 
-        <div className="mt-12 text-center">
+        <div className="mt-6 sm:mt-8 md:mt-10 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.8 }}
           >
-            <p className="text-muted-foreground mb-6 text-lg">
+            <p className="text-muted-foreground mb-4 text-base sm:text-lg">
               Looking for something specific? Our AI can help you create custom educational content.
             </p>
             <Button 
               variant="outline" 
               size="lg" 
-              className="mt-2 px-8 py-3 text-base hover:shadow-md transition-all duration-200"
+              className="mt-2 px-6 py-2 text-base hover:shadow-md transition-all duration-200"
+              onClick={() => window.location.href = '/contactus'}
             >
               Contact Support
             </Button>

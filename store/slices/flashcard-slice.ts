@@ -34,6 +34,7 @@ export interface FlashCard {
   keywords?: string[]
   imageUrl?: string
   audioUrl?: string
+  saved?: boolean
 }
 
 export interface QuizResultsState {
@@ -107,13 +108,40 @@ export const fetchFlashCardQuiz = createAsyncThunk(
         return rejectWithValue(errorData.message || `Failed to fetch flashcard quiz: ${response.status}`)
       }
       const data = await response.json()
-      return {
+      const result = {
         slug,
         id: data.id || slug,
         title: data.title || "Flashcard Quiz",
         userId: data.userId || null,
         questions: data.flashCards || [],
+        quizType: "flashcard",
+        // Ensure we have a consistent structure
       }
+
+      console.log("Fetched flashcard quiz:", result)
+      return result;
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Network error")
+    }
+  }
+)
+
+export const saveFlashCard = createAsyncThunk(
+  "flashcard/saveCard",
+  async ({ cardId, saved }: { cardId: number; saved: boolean }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/flashcards/${cardId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ saved }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        return rejectWithValue(errorData.message || `Failed to save flashcard: ${response.status}`)
+      }
+
+      return { cardId, saved }
     } catch (error: any) {
       return rejectWithValue(error.message || "Network error")
     }
@@ -384,6 +412,17 @@ clearQuizState: (state) => {
     .addCase(fetchFlashCardQuiz.rejected, (state, action) => {
       state.status = "failed"
       state.error = (action.payload as string) || action.error.message || "An unknown error occurred."
+    })
+    .addCase(saveFlashCard.fulfilled, (state, action) => {
+      // Update the saved status of the flashcard in the questions array
+      const { cardId, saved } = action.payload
+      const questionIndex = state.questions.findIndex(q => q.id === cardId.toString())
+      if (questionIndex >= 0) {
+        state.questions[questionIndex] = {
+          ...state.questions[questionIndex],
+          saved
+        }
+      }
     })
     .addCase(saveFlashCardResults.pending, (state) => {
       state.status = "submitting"

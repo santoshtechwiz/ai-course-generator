@@ -25,6 +25,9 @@ class ConsoleLogger implements Logger {
 
 export const logger = new ConsoleLogger()
 
+// Gate cache logs behind env flag
+const CACHE_DEBUG = process.env.CACHE_DEBUG === '1'
+
 // Cache configuration
 export const CACHE_TTL = {
   VIDEO_ID: 60 * 60 * 24, // 24 hours
@@ -67,36 +70,38 @@ export class MemoryCache implements CacheManager {
     this.locks = new Map()
     this.requestCounters = new Map()
     
-    // Log cache statistics periodically
-    setInterval(() => {
-      const stats = this.cache.getStats()
-      logger.info('Cache stats', {
-        keys: stats.keys,
-        hits: stats.hits,
-        misses: stats.misses,
-        hitRate: stats.hits / (stats.hits + stats.misses) || 0
-      })
-    }, 60000) // Every minute
+    // Log cache statistics periodically (debug only, every 5 minutes)
+    if (CACHE_DEBUG) {
+      setInterval(() => {
+        const stats = this.cache.getStats()
+        logger.info('Cache stats', {
+          keys: stats.keys,
+          hits: stats.hits,
+          misses: stats.misses,
+          hitRate: stats.hits / (stats.hits + stats.misses) || 0
+        })
+      }, 5 * 60 * 1000)
+    }
   }
 
   async get<T>(key: string): Promise<T | null> {
     const value = this.cache.get<T>(key)
     if (value !== undefined) {
-      logger.info('Cache hit', { key })
+      if (CACHE_DEBUG) logger.info('Cache hit', { key })
       return value
     }
-    logger.info('Cache miss', { key })
+    if (CACHE_DEBUG) logger.info('Cache miss', { key })
     return null
   }
 
   async set<T>(key: string, value: T, ttl = CACHE_TTL.VIDEO_ID): Promise<void> {
     this.cache.set(key, value, ttl)
-    logger.info('Cache set', { key, ttl })
+    if (CACHE_DEBUG) logger.info('Cache set', { key, ttl })
   }
 
   async del(key: string): Promise<void> {
     this.cache.del(key)
-    logger.info('Cache delete', { key })
+    if (CACHE_DEBUG) logger.info('Cache delete', { key })
   }
 
   async exists(key: string): Promise<boolean> {
@@ -110,7 +115,7 @@ export class MemoryCache implements CacheManager {
   // Lock mechanism for preventing duplicate requests
   async acquireLock(key: string, operation: () => Promise<any>): Promise<any> {
     if (this.locks.has(key)) {
-      logger.info('Waiting for existing operation', { key })
+      if (CACHE_DEBUG) logger.info('Waiting for existing operation', { key })
       return await this.locks.get(key)
     }
 
@@ -148,6 +153,6 @@ export class MemoryCache implements CacheManager {
 
 // Create cache manager
 export function createCacheManager(): MemoryCache {
-  logger.info('Using enhanced in-memory cache')
+  if (CACHE_DEBUG) logger.info('Using enhanced in-memory cache')
   return new MemoryCache()
 }

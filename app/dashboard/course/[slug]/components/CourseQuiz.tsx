@@ -12,7 +12,7 @@ import { useToast } from "@/hooks"
 import { useSession } from "next-auth/react"
 import { AccessControl } from "@/components/ui/access-control"
 import { AlertCircle, CheckCircle, BookOpen, Lightbulb, XCircle, Award } from "lucide-react" // Added Award
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 
 import type { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
 import type { AccessLevels } from "./CourseDetailsTabs"
@@ -111,11 +111,12 @@ const QuizSkeleton = () => (
 )
 
 export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, chapterId, accessLevels }: QuizProps) {
-  const hasQuizAccess = accessLevels.isSubscribed || accessLevels.isAuthenticated || accessLevels.isPublic
+  const hasQuizAccess = accessLevels.isSubscribed || accessLevels.isPublic || chapter?.isFree === true || (chapter as any)?.isFreeQuiz === true
   const { toast } = useToast()
   const { data: session } = useSession()
   const isUserAuthenticated = accessLevels.isAuthenticated || !!session
   const effectiveChapterId = chapterId || chapter?.id?.toString()
+  const canFetchQuestions = hasQuizAccess
 
   const initialQuizState: QuizState = {
     answers: {},
@@ -207,7 +208,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
               : [],
       }))
     },
-    enabled: !!effectiveChapterId && quizState.quizStarted && isUserAuthenticated,
+    enabled: !!effectiveChapterId && quizState.quizStarted && canFetchQuestions,
     retry: 2,
     onError: () => {
       toast({
