@@ -6,7 +6,6 @@ import type ReactPlayer from "react-player"
 import screenfull from "screenfull"
 import { useAppDispatch } from "@/store/hooks"
 import { addBookmark, removeBookmark } from "@/store/slices/course-slice"
-import { loadPlayerPreferences, savePlayerPreferences, calculateBufferHealth, formatTime } from "./progressUtils"
 // import { useVideoProgress } from "./useVideoProgress"
 import { useVideoPreloading } from "./useVideoPreloading"
 import type { VideoPlayerState, UseVideoPlayerReturn, ProgressState, BookmarkData, YouTubePlayerConfig } from "../types"
@@ -35,7 +34,10 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   const dispatch = useAppDispatch()
   
   // Load saved preferences
-  const savedPreferences = useMemo(() => loadPlayerPreferences(), [])
+  const savedPreferences = useMemo(() => {
+    const storedPrefs = localStorage.getItem("playerPreferences")
+    return storedPrefs ? JSON.parse(storedPrefs) : {}
+  }, [])
 
   const [state, setState] = useState<VideoPlayerState>({
     playing: !!options.autoPlay,
@@ -97,7 +99,7 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       }));
 
       // Update buffer health efficiently
-      const newBufferHealth = calculateBufferHealth(progressState.loaded, progressState.played);
+      const newBufferHealth = Math.round(progressState.loaded * 100 - progressState.played * 100);
       setBufferHealth((prev) => (Math.abs(prev - newBufferHealth) > 5 ? newBufferHealth : prev));
 
       // Check if video is about to end (last 10 seconds) and trigger transition
@@ -113,20 +115,19 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       // Avoid duplicate/noisy tracking while in mini-player if desired
       const shouldTrack = !state.isMiniPlayer || state.played < 0.98
 
-  // if (shouldTrack) {
-  //   dispatch(setLastPosition({
-  //     courseId: options.courseId,
-  //     chapterId: options.chapterId,
-  //     videoId: options.youtubeVideoId,
-  //     position: progressState.playedSeconds
-  //   }))
-  // }
-      }
+      // if (shouldTrack) {
+      //   dispatch(setLastPosition({
+      //     courseId: options.courseId,
+      //     chapterId: options.chapterId,
+      //     videoId: options.youtubeVideoId,
+      //     position: progressState.playedSeconds
+      //   }))
+      // }
 
       // Pass to parent callback (single call per tick)
       options.onProgress?.(progressState);
     },
-    [options.onProgress, progressTracking, state.isMiniPlayer, state.played, state.duration]
+    [options.onProgress, state.isMiniPlayer, state.played, state.duration]
   );
 
   // Memoized YouTube URL
@@ -185,13 +186,15 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       muted: volume === 0,
     }))
 
-    savePlayerPreferences({ volume, muted: volume === 0 })
+    // Save to localStorage
+    localStorage.setItem("playerPreferences", JSON.stringify({ ...savedPreferences, volume, muted: volume === 0 }))
   }, [])
 
   const onMute = useCallback(() => {
     setState((prev) => {
       const newMuted = !prev.muted
-      savePlayerPreferences({ muted: newMuted })
+      // Save to localStorage
+      localStorage.setItem("playerPreferences", JSON.stringify({ ...savedPreferences, muted: newMuted }))
       return { ...prev, muted: newMuted }
     })
   }, [])
@@ -204,7 +207,8 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
 
   const onPlaybackRateChange = useCallback((rate: number) => {
     setState((prev) => ({ ...prev, playbackRate: rate }))
-    savePlayerPreferences({ playbackRate: rate })
+    // Save to localStorage
+    localStorage.setItem("playerPreferences", JSON.stringify({ ...savedPreferences, playbackRate: rate }))
   }, [])
 
   // Fixed fullscreen implementation
@@ -519,7 +523,8 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   const toggleAutoPlayNext = useCallback(() => {
     setState((prev) => {
       const newAutoPlayNext = !prev.autoPlayNext;
-      savePlayerPreferences({ autoPlayNext: newAutoPlayNext });
+      // Save to localStorage
+      localStorage.setItem("playerPreferences", JSON.stringify({ ...savedPreferences, autoPlayNext: newAutoPlayNext }))
       return { ...prev, autoPlayNext: newAutoPlayNext };
     });
   }, []);
