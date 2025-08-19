@@ -56,9 +56,9 @@ export function useVideoProgress({
     isCompleted: false,
     completedChapters: initialProgress?.completedChapters 
       ? typeof initialProgress.completedChapters === 'string'
-        ? initialProgress.completedChapters.split(',')
+        ? initialProgress.completedChapters.split(',').filter(Boolean)
         : Array.isArray(initialProgress.completedChapters) 
-          ? initialProgress.completedChapters
+          ? initialProgress.completedChapters.filter(Boolean)
           : []
       : []
   })
@@ -125,9 +125,9 @@ export function useVideoProgress({
           
           if (initialProgress.completedChapters) {
             if (typeof initialProgress.completedChapters === 'string') {
-              completedChapters = initialProgress.completedChapters.split(',');
+              completedChapters = initialProgress.completedChapters.split(',').filter(Boolean);
             } else if (Array.isArray(initialProgress.completedChapters)) {
-              completedChapters = initialProgress.completedChapters;
+              completedChapters = initialProgress.completedChapters.filter(Boolean);
             }
           }
           
@@ -161,7 +161,7 @@ export function useVideoProgress({
     currentUnitId: initialProgress?.currentUnitId || null,
     completedChapters: Array.isArray(progressState.completedChapters) 
       ? progressState.completedChapters.join(',') 
-      : progressState.completedChapters.toString(),
+      : (progressState.completedChapters || []).toString(),
     progress: progressState.played,
     lastAccessedAt: new Date().toISOString(),
     timeSpent: initialProgress?.timeSpent || 0,
@@ -290,9 +290,9 @@ export function useVideoProgress({
         // Update local state
         if (data.completedChapters) {
           const chaptersArray = typeof data.completedChapters === 'string'
-            ? data.completedChapters.split(',')
+            ? data.completedChapters.split(',').filter(Boolean)
             : Array.isArray(data.completedChapters) 
-              ? data.completedChapters
+              ? data.completedChapters.filter(Boolean)
               : [];
               
           setProgressState(prev => ({

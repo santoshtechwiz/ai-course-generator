@@ -99,8 +99,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
         )
       }
 
-      // Ensure completedChapters is an array
-      const completedChapters = Array.isArray(data.completedChapters) ? data.completedChapters : [];
+      // Ensure completedChapters is an array and filter out empty values
+      const completedChapters = Array.isArray(data.completedChapters) 
+        ? data.completedChapters.filter(chapterId => chapterId !== null && chapterId !== undefined && chapterId !== '')
+        : [];
 
       // Convert currentChapterId to number
       const currentChapterId = Number(data.currentChapterId);
@@ -124,12 +126,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
       let existingCompletedChapters: number[] = []
       if (existingProgress && typeof existingProgress.completedChapters === "string") {
         try {
-          existingCompletedChapters = JSON.parse(existingProgress.completedChapters)
+          const parsed = JSON.parse(existingProgress.completedChapters)
+          existingCompletedChapters = Array.isArray(parsed) 
+            ? parsed.filter((id: any) => id !== null && id !== undefined && id !== '')
+            : []
         } catch (error) {
           console.error("Error parsing existing completedChapters:", error)
         }
       } else if (existingProgress && Array.isArray(existingProgress.completedChapters)) {
-        existingCompletedChapters = existingProgress.completedChapters
+        existingCompletedChapters = existingProgress.completedChapters.filter(id => id !== null && id !== undefined && id !== '')
       }
 
       // Merge and deduplicate the completed chapters
