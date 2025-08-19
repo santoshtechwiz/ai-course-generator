@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
       },
       take: 3,
       orderBy: [
-        { _count: { attempts: 'desc' } },
+        { attempts: { _count: 'desc' } },
         { createdAt: 'desc' },
       ],
     })

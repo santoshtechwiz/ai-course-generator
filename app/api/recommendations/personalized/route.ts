@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const userId = session.user.id
 
     // Get user's completed courses to understand their preferences
-    const userProgress = await prisma.userProgress.findMany({
+    const userProgress = await prisma.courseProgress.findMany({
       where: {
         userId: userId,
         isCompleted: true,
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         title: true,
-        category: true,
+        categoryId: true,
       },
     })
 
@@ -52,12 +52,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 })
     }
 
-    // Extract user's preferred categories
-    const completedCategories = userProgress.map(p => p.course.category).filter(Boolean)
-    const categoryFrequency = completedCategories.reduce((acc, category) => {
-      acc[category] = (acc[category] || 0) + 1
+    // Extract user's preferred category IDs
+    const completedCategoryIds = userProgress.map(p => p.course.categoryId).filter(Boolean) as number[]
+    const categoryFrequency = completedCategoryIds.reduce((acc, categoryId) => {
+      acc[categoryId] = (acc[categoryId] || 0) + 1
       return acc
-    }, {} as Record<string, number>)
+    }, {} as Record<number, number>)
 
     // Get completed course IDs to exclude them
     const completedCourseIds = userProgress.map(p => p.courseId)
@@ -71,12 +71,12 @@ export async function GET(request: NextRequest) {
           {
             OR: [
               // Prioritize user's preferred categories
-              ...(Object.keys(categoryFrequency).length > 0 
-                ? [{ category: { in: Object.keys(categoryFrequency) } }]
+              ...(completedCategoryIds.length > 0
+                ? [{ categoryId: { in: completedCategoryIds } }]
                 : []
               ),
               // Include courses similar to current course
-              { category: currentCourse.category },
+              { categoryId: currentCourse.categoryId },
             ],
           },
         ],
@@ -87,21 +87,21 @@ export async function GET(request: NextRequest) {
         description: true,
         slug: true,
         image: true,
-        category: true,
+        categoryId: true,
       },
       take: limit * 2, // Get more to allow for filtering
       orderBy: [
         { createdAt: "desc" },
       ],
     })
-
+    console.debug("Recommendations:", recommendations);
     // Transform and add match reasons
     const transformedRecommendations = recommendations.slice(0, limit).map((course) => {
       let matchReason = "Recommended for you"
       
-      if (categoryFrequency[course.category]) {
-        matchReason = `Based on your ${course.category} course history`
-      } else if (course.category === currentCourse.category) {
+      if (course.categoryId !== null && categoryFrequency[course.categoryId]) {
+        matchReason = `Based on your course history in this category`
+      } else if (course.categoryId === currentCourse.categoryId) {
         matchReason = `Similar to ${currentCourse.title}`
       } else {
         matchReason = "Popular among similar learners"
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
         matchReason,
       }
     })
-
+    console.debug("Personalized recommendations:", transformedRecommendations);
     return NextResponse.json({
       success: true,
       data: transformedRecommendations,

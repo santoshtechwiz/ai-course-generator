@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Play, Lock, User, Pause, SkipForward } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useToast } from "@/components/ui/use-toast"
+import { toast, useToast } from "@/components/ui/use-toast"
 import type { VideoPlayerProps } from "../types"
 import ChapterStartOverlay from "./ChapterStartOverlay"
 import ChapterEndOverlay from "./ChapterEndOverlay"
@@ -91,7 +91,7 @@ PlayButton.displayName = "PlayButton"
 type CertificateState = "idle" | "downloading" | "success" | "error"
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
-  videoId,
+  youtubeVideoId,
   chapterId,
   onEnded,
   onProgress,
@@ -130,7 +130,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   isKeyChapter = false,
 }) => {
   const { data: session } = useSession()
-  const { toast } = useToast()
+  const youtubeVideoIdRef = useRef(youtubeVideoId)
   const { startLoading, stopLoading ,isLoading} = useGlobalLoader()
 
   // State management with proper initialization
@@ -185,7 +185,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Refs for cleanup and performance
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const chapterTitleRef = useRef(chapterTitle)
-  const videoIdRef = useRef(videoId)
+  // Removed duplicate videoIdRef declaration after refactor
   const videoElementRef = useRef<HTMLVideoElement | null>(null)
   const lastFsToggleRef = useRef<number>(0)
   const lastTheaterToggleRef = useRef<number>(0)
@@ -233,8 +233,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [clamp])
 
   // Initialize video player hook BEFORE any usage of containerRef
-  const { state, playerRef, containerRef, bufferHealth, youtubeUrl, handleProgress, handlers } = useVideoPlayer({
-    videoId,
+  const { state, playerRef, containerRef, bufferHealth, youtubeUrl, handleProgress, handlers } =
+   useVideoPlayer({
+  youtubeVideoId,
+    courseId: String(courseId || ''),
+    chapterId: String(chapterId || ''),
     onEnded: () => {
       // Mark free video as played if not authenticated
       if (!isAuthenticated && !hasPlayedFreeVideo) {
@@ -250,7 +253,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     autoPlay: autoPlay && canPlayVideo,
     onVideoLoad,
     onCertificateClick,
-    chapterId,
+    
   })
 
   // Observe visibility of the container to toggle mini controls
@@ -302,20 +305,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Update refs when props change to ensure latest values
   useEffect(() => {
     chapterTitleRef.current = chapterTitle
-    videoIdRef.current = videoId
-  }, [chapterTitle, videoId])
+  youtubeVideoIdRef.current = youtubeVideoId
+  }, [chapterTitle, youtubeVideoId])
  
   // Play immediately when instructed and allowed, on video change
   const lastForcedVideoRef = useRef<string | null>(null)
   useEffect(() => {
-    if (!videoId || !canPlayVideo) return
-    if (forcePlay && lastForcedVideoRef.current !== videoId) {
+  console.log("VideoPlayer: Attempting to play video", youtubeVideoId, "forcePlay:", forcePlay, "canPlayVideo:", canPlayVideo)
+  if (!youtubeVideoId || !canPlayVideo) return
+  if (forcePlay && lastForcedVideoRef.current !== youtubeVideoId) {
       try {
         handlers.onPlay()
       } catch {}
-      lastForcedVideoRef.current = videoId
+  lastForcedVideoRef.current = youtubeVideoId
     }
-  }, [videoId, forcePlay, canPlayVideo])
+  }, [youtubeVideoId, forcePlay, canPlayVideo])
 
   // Check PiP support on mount with proper error handling
   useEffect(() => {
@@ -357,7 +361,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         handlers.onPlay()
       } catch {}
     }
-  }, [videoId, playerReady, autoPlay, autoPlayVideo, canPlayVideo, handlers, state.userInteracted, state.muted])
+  }, [youtubeVideoId, playerReady, autoPlay, autoPlayVideo, canPlayVideo, handlers, state.userInteracted, state.muted])
 
   // Safe video element getter with proper error handling (defined early for use in handlers and JSX)
   const getVideoElement = useCallback((): HTMLVideoElement | null => {
@@ -453,16 +457,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Handle PIP events with better performance and state management
   useEffect(() => {
     const handleEnterPiP = () => {
-      setState(prev => ({ 
-        ...prev, 
-        isPictureInPicture: true, 
-        isMiniPlayer: false // Ensure mini-player is off when native PiP is active
-      }))
+      if (handlers.setState) {
+        handlers.setState((prev: typeof state) => ({
+          ...prev,
+          isPictureInPicture: true,
+          isMiniPlayer: false // Ensure mini-player is off when native PiP is active
+        }))
+      }
       onPictureInPictureToggle?.(true)
     }
 
     const handleLeavePiP = () => {
-      setState(prev => ({ ...prev, isPictureInPicture: false }))
+      if (handlers.setState) {
+        handlers.setState((prev: typeof state) => ({
+          ...prev,
+          isPictureInPicture: false
+        }))
+      }
       onPictureInPictureToggle?.(false)
     }
 
@@ -475,7 +486,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         document.removeEventListener('leavepictureinpicture', handleLeavePiP)
       }
     }
-  }, [onPictureInPictureToggle])
+  }, [onPictureInPictureToggle, handlers.setState, state])
 
 
   // Memoized format time helper
@@ -505,7 +516,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           onVideoLoad?.({
             title: courseName || chapterTitleRef.current || "Video",
             duration,
-            thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+            thumbnail: `https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg`,
           })
         }
 
@@ -528,7 +539,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       // Attempt auto-resume from local storage (per-user or guest)
       try {
         const userKey = (typeof window !== 'undefined' && localStorage.getItem('video-guest-id')) || 'guest'
-        const storageKey = `video-progress-${userKey}-${videoId}`
+  const storageKey = `video-progress-${userKey}-${youtubeVideoId}`
         const saved = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null
         if (saved) {
           const parsed = JSON.parse(saved)
@@ -557,7 +568,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         handlers.onPlay()
       }
     } catch {}
-  }, [handlers, onVideoLoad, courseName, videoId, onPlayerReady, stopLoading, videoDuration, state.duration, initialSeekSeconds, autoPlay, autoPlayVideo, canPlayVideo, state.userInteracted, state.muted])
+  }, [handlers, onVideoLoad, courseName, youtubeVideoId, onPlayerReady, stopLoading, videoDuration, state.duration, initialSeekSeconds, autoPlay, autoPlayVideo, canPlayVideo, state.userInteracted, state.muted])
 
   // Enhanced play handler with better UX
   const handlePlayClick = useCallback(() => {
@@ -756,7 +767,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (controlsTimeoutRef.current) {
       clearTimeout(controlsTimeoutRef.current)
     }
-  }, [videoId])
+  }, [youtubeVideoId])
 
   // Enhanced overlay handlers with better state management
   const handleChapterStartComplete = useCallback(() => {
@@ -837,7 +848,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         clearInterval(nextNotifIntervalRef.current)
       }
     }
-  }, [videoId])
+  }, [youtubeVideoId])
 
   const handleNextChapter = useCallback(() => {
     setShowChapterEnd(false)
@@ -985,12 +996,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     return (
       <AuthPrompt
-        videoId={videoId}
+  videoId={youtubeVideoId}
         onSignIn={() => (window.location.href = "/api/auth/signin")}
         onClose={() => setShowAuthPrompt(false)}
       />
     )
-  }, [showAuthPrompt, canPlayVideo, videoId])
+  }, [showAuthPrompt, canPlayVideo, youtubeVideoId])
 
   // Early return for authentication prompt
   if (authPromptComponent) {
@@ -1179,7 +1190,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         courseTitle={courseName}
         onComplete={handleChapterStartComplete}
         duration={3500}
-        videoId={videoId}
+  videoId={youtubeVideoId}
       />
 
       {/* Chapter End Overlay - Only for final course completion; non-final overlays removed per request */}
@@ -1315,7 +1326,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {showBookmarkPanel && isAuthenticated && (
         <div className="absolute top-0 right-0 bottom-16 w-64 sm:w-72 bg-black/80 backdrop-blur-sm z-30 border-l border-white/10">
           <BookmarkManager
-            videoId={videoId}
+            videoId={youtubeVideoId}
             bookmarks={bookmarks}
             currentTime={state.lastPlayedTime}
             duration={videoDuration || state.duration}

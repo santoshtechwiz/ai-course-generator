@@ -99,6 +99,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   
   // Performance optimization: use ref for PIP state to prevent unnecessary re-renders
   const pipStateRef = useRef(false)
+  // Add per-chapter completion guard to sync playlist before video ends
+  const completionSentRef = useRef<Record<string, boolean>>({})
   
   // Mobile playlist state
   const [mobilePlaylistOpen, setMobilePlaylistOpen] = useState(false)
@@ -256,6 +258,14 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const isKeyChapter = useMemo(() => {
     return currentIndex > 0 && ((currentIndex + 1) % 3 === 0 || isLastVideo)
   }, [currentIndex, isLastVideo])
+
+  // Reset chapter completion sent flag on chapter change
+  useEffect(() => {
+    if (currentChapter?.id != null) {
+      const key = String(currentChapter.id);
+      completionSentRef.current[key] = false;
+    }
+  }, [currentChapter?.id]);
 
   // Progress tracking - only call if course is properly loaded
   const { progress, updateProgress, isLoading: progressLoading } = useProgress({
@@ -425,7 +435,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       if (currentChapter && progressState.played > 0.1) {
         updateProgress({
           currentChapterId: String(currentChapter.id),
-          videoId: currentVideoId,
+          videoId: currentVideoId || undefined,
           progress: progressState.played,
           lastAccessedAt: new Date().toISOString(),
         });
@@ -437,6 +447,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             timestamp: Math.floor(progressState.playedSeconds || 0),
           })
         )
+
+        // Mark chapter complete at 95% to update playlist immediately (without waiting for onEnded)
+        try {
+          const chIdStr = String(currentChapter.id);
+          if (!completionSentRef.current[chIdStr] && progressState.played >= 0.95) {
+            completionSentRef.current[chIdStr] = true;
+            // Update both legacy and new progress slices so the playlist reflects completion
+            dispatch(markChapterAsCompleted({ courseId: Number(course.id), chapterId: Number(currentChapter.id) }))
+            dispatch(
+              markLectureCompletedProgress({
+                courseId: String(course.id),
+                lectureId: String(currentChapter.id),
+              })
+            )
+          }
+        } catch {}
       }
     },
     [currentChapter, videoEnding, updateProgress, videoDurations, currentVideoId, course.id, dispatch],
@@ -458,7 +484,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       // Update progress
       updateProgress({
         currentChapterId: String(currentChapter.id),
-        videoId: currentVideoId,
+        videoId: currentVideoId || undefined,
         isCompleted: isLastVideo,
         lastAccessedAt: new Date().toISOString(),
       })
@@ -515,7 +541,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     // Update progress
     updateProgress({
       currentChapterId: String(chapterId),
-      videoId: currentVideoId,
+      videoId: currentVideoId || undefined,
       lastAccessedAt: new Date().toISOString(),
     })
 
@@ -802,7 +828,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Memoized video player props
   const videoPlayerProps = useMemo(() => ({
-    videoId: currentVideoId || '',
+  youtubeVideoId: currentVideoId || '',
     chapterId: currentChapter?.id,
     courseId: String(course.id),
     courseName: course.title,
@@ -1086,7 +1112,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                           <div className="flex items-center gap-2">
                             <span>Next chapter in:</span>
                             <span className="font-medium text-primary">
-                              {nextChapter.chapter.duration ? formatDuration(nextChapter.chapter.duration) : '~5 min'}
+                              {typeof nextChapter.chapter.duration === 'number' ? formatDuration(nextChapter.chapter.duration) : '~5 min'}
                             </span>
                           </div>
                         )}

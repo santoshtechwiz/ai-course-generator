@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       description: course.description || "",
       image: course.image || undefined,
     }))
-
+    console.debug("Related courses:", transformedCourses);
     return NextResponse.json({
       success: true,
       data: transformedCourses,

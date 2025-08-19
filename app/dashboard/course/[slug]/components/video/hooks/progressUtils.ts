@@ -1,3 +1,5 @@
+// DEPRECATED: This file is obsolete. All progress logic is managed via Redux slice.
+// Remove usages and migrate to Redux-powered logic.
 // Progress tracking milestones (percentages)
 export const PROGRESS_MILESTONES = [0.1, 0.25, 0.5, 0.75, 0.9, 1.0] as const
 

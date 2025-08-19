@@ -2,13 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { progressApi } from "../../../api/progressApi"
-
 import { useAppDispatch } from "@/store/hooks"
 import { PROGRESS_MILESTONES, checkMilestoneReached, throttle } from "./progressUtils"
-import type { CourseProgress } from "@/app/types/types"
+import type { CourseProgress } from "@/app/types/course-types"
 import { useAuth } from "@/hooks"
 
-// Simplified options interface
 interface VideoProgressOptions {
   videoId?: string | null
   courseId: number | string
@@ -31,19 +29,17 @@ export function useVideoProgress({
   initialProgress,
   onMilestoneReached,
 }: VideoProgressOptions) {
-  const { isAuthenticated, userId, getGuestId: authGetGuestId } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const dispatch = useAppDispatch()
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<Error | null>(null)
   
-  // Use numeric chapter ID only; never fall back to videoId (API requires currentChapterId)
   const effectiveChapterId = useMemo(() => {
     const cid = typeof chapterId !== 'undefined' ? chapterId : currentChapterId
     const n = Number(cid)
     return Number.isFinite(n) && !Number.isNaN(n) && n > 0 ? n : undefined
   }, [chapterId, currentChapterId])
   
-  // Validate required parameters
   useEffect(() => {
     if (!courseId || courseId === '') {
       console.warn('Progress tracking: courseId is missing or empty', { courseId, videoId, effectiveChapterId });
@@ -61,16 +57,21 @@ export function useVideoProgress({
       return;
     }
     
-    if (!userId && !authGetGuestId) {
+    if (!user?.id && !user) {
       setError(new Error('User authentication is required for progress tracking'));
       return;
     }
-  }, [courseId, videoId, effectiveChapterId, userId, authGetGuestId]);
+  }, [courseId, videoId, effectiveChapterId, user]);
   
-  // Convert courseId to string for consistent lookup
   const courseIdStr = String(courseId)
   
-  // Local state for tracking progress
+  // Load completed chapters from progressApi memory/localStorage
+  useEffect(() => {
+    if (user?.id) {
+      progressApi.loadCompletedChapters(user.id);
+    }
+  }, [user?.id]);
+
   const [progressState, setProgressState] = useState({
     time: 0,
     played: 0,
@@ -78,30 +79,20 @@ export function useVideoProgress({
     duration: duration || 0,
     bookmarks: [],
     isCompleted: false,
-    completedChapters: initialProgress?.completedChapters 
-      ? typeof initialProgress.completedChapters === 'string'
-        ? initialProgress.completedChapters.split(',').filter(Boolean)
-        : Array.isArray(initialProgress.completedChapters) 
-          ? initialProgress.completedChapters.filter(Boolean)
-          : []
-      : []
+    completedChapters: progressApi.completedChapters.map(String)
   })
 
-  // Refs for tracking state between renders
   const reachedMilestonesRef = useRef<Set<number>>(new Set())
   const isSyncingToAPIRef = useRef(false)
+  const lastSentProgressRef = useRef(0)
+  const lastUpdateTimeRef = useRef<number>(0)
   
-  // Certification states
   const [needsCertificatePrompt, setNeedsCertificatePrompt] = useState(false)
   const [hasPromptedCertificate, setHasPromptedCertificate] = useState(false)
   const [hasShownRestartPrompt, setHasShownRestartPrompt] = useState(false)
   
-  // Local storage ID helper
   const getStorageId = useCallback(() => {
-    if (isAuthenticated && userId) return userId;
-    
-    if (authGetGuestId) return authGetGuestId();
-    
+    if (isAuthenticated && user?.id) return user.id;
     try {
       let guestId = sessionStorage.getItem('video-guest-id');
       if (!guestId) {
@@ -112,15 +103,13 @@ export function useVideoProgress({
     } catch (e) {
       return 'anonymous';
     }
-  }, [isAuthenticated, userId, authGetGuestId]);
+  }, [isAuthenticated, user]);
   
-  // Initialize from local storage on mount
   useEffect(() => {
     const loadStoredProgress = () => {
       try {
         setIsLoading(true);
         
-        // Check for stored progress in localStorage
         if (videoId) {
           const storageKey = `video-progress-${getStorageId()}-${videoId}`;
           const storedProgress = localStorage.getItem(storageKey);
@@ -137,34 +126,32 @@ export function useVideoProgress({
           }
         }
         
-        // Check for certification status
         const certKey = `certificate-prompted-${getStorageId()}-${courseId}`;
         const hasPrompted = localStorage.getItem(certKey) === 'true';
         setHasPromptedCertificate(hasPrompted);
         
-        // Initialize course progress
         if (initialProgress) {
-          // Handle various formats of completedChapters
+          // Normalize completedChapters from initialProgress into string[] for local state
           let completedChapters: string[] = [];
           
-          if (initialProgress.completedChapters) {
-            if (typeof initialProgress.completedChapters === 'string') {
-              completedChapters = initialProgress.completedChapters.split(',').filter(Boolean);
-            } else if (Array.isArray(initialProgress.completedChapters)) {
-              completedChapters = initialProgress.completedChapters.filter(Boolean);
+          if (initialProgress && 'completedChapters' in initialProgress && initialProgress.completedChapters) {
+            if (Array.isArray(initialProgress.completedChapters)) {
+              completedChapters = (initialProgress.completedChapters as Array<string | number>)
+                .map((v) => String(v))
+                .filter(Boolean);
+            } else if (typeof initialProgress.completedChapters === 'string') {
+              completedChapters = (initialProgress.completedChapters as string).split(',').filter(Boolean);
             }
           }
           
           setProgressState(prev => ({
             ...prev,
             completedChapters,
-            isCompleted: !!initialProgress.isCompleted
+            isCompleted: !!(initialProgress as any).isCompleted
           }));
         }
         
-        // Load any pending updates
         progressApi.loadFromLocalStorage();
-        
         setIsLoading(false);
       } catch (err) {
         console.error("Error loading progress:", err);
@@ -176,56 +163,43 @@ export function useVideoProgress({
     loadStoredProgress();
   }, [videoId, courseId, getStorageId, duration, initialProgress]);
   
-  // Create standard progress object structure that matches the API format
   const progress = useMemo(() => ({
     id: initialProgress?.id || 0,
     userId: getStorageId(),
     courseId: Number(courseId) || 0,
-    currentChapterId: Number(effectiveChapterId) || initialProgress?.currentChapterId || 0,
-    currentUnitId: initialProgress?.currentUnitId || null,
-    completedChapters: Array.isArray(progressState.completedChapters) 
-      ? progressState.completedChapters.join(',') 
-      : (progressState.completedChapters || []).toString(),
+    currentChapterId: Number(effectiveChapterId) || (initialProgress && 'currentChapterId' in initialProgress ? (initialProgress as any).currentChapterId : 0) || 0,
+    // Expose as (string|number)[] for consumers like playlists/sidebar
+    completedChapters: Array.isArray(progressState.completedChapters)
+      ? (progressState.completedChapters as string[])
+      : [],
     progress: progressState.played,
     lastAccessedAt: new Date().toISOString(),
-    timeSpent: initialProgress?.timeSpent || 0,
+    timeSpent: initialProgress && 'timeSpent' in initialProgress ? (initialProgress as any).timeSpent ?? 0 : 0,
     isCompleted: progressState.isCompleted,
-    completionDate: initialProgress?.completionDate || null,
-    quizProgress: initialProgress?.quizProgress || null,
-    notes: initialProgress?.notes || null,
-    bookmarks: initialProgress?.bookmarks || null,
-    lastInteractionType: initialProgress?.lastInteractionType || null,
-    interactionCount: initialProgress?.interactionCount || 0,
-    engagementScore: initialProgress?.engagementScore || 0,
-    createdAt: initialProgress?.createdAt || new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
     resumePoint: progressState.playedSeconds || 0
   }), [progressState, courseId, effectiveChapterId, getStorageId, initialProgress]);
 
-  // Track progress with milestone detection
   const trackProgress = useCallback(
     throttle((progressState: { played: number; playedSeconds: number; loaded: number }) => {
-      // Skip if already completed or no valid chapter ID
       if (progress.isCompleted || !effectiveChapterId) return;
-      
 
+      const currentPlayed = progressState.played;
+      const currentPlayedSeconds = progressState.playedSeconds;
       
-      // Update local state
       setProgressState(prev => ({
         ...prev,
-        played: progressState.played,
-        playedSeconds: progressState.playedSeconds,
-        time: progressState.played
+        played: currentPlayed,
+        playedSeconds: currentPlayedSeconds,
+        time: currentPlayed
       }));
       
-      // Store progress locally
       try {
         if (videoId) {
           const storageKey = `video-progress-${getStorageId()}-${videoId}`;
           localStorage.setItem(storageKey, JSON.stringify({
-            time: progressState.played,
-            played: progressState.played,
-            playedSeconds: progressState.playedSeconds,
+            time: currentPlayed,
+            played: currentPlayed,
+            playedSeconds: currentPlayedSeconds,
             duration: duration,
             lastUpdated: Date.now()
           }));
@@ -234,127 +208,122 @@ export function useVideoProgress({
         console.warn('Error saving progress to localStorage:', err);
       }
       
-      // Check for milestone achievements and only send significant updates
-      let shouldSendUpdate = false;
-      
+      let hasSentUpdate = false;
+      const currentTime = Date.now();
+      const timeSinceLastUpdate = (currentTime - lastUpdateTimeRef.current) / 1000;
+      const progressChange = Math.abs(currentPlayed - lastSentProgressRef.current);
+
+      // Check milestones
       PROGRESS_MILESTONES.forEach((milestone) => {
-        if (checkMilestoneReached(progressState.played, milestone, reachedMilestonesRef.current)) {
+        if (checkMilestoneReached(currentPlayed, milestone, reachedMilestonesRef.current)) {
           reachedMilestonesRef.current.add(milestone);
           onMilestoneReached?.(milestone);
-          shouldSendUpdate = true;
-          
-          // Mark chapter as completed if we've reached threshold
+          hasSentUpdate = true;
+
+          // Handle chapter completion
           if (milestone >= playedThreshold && effectiveChapterId && !isSyncingToAPIRef.current) {
             isSyncingToAPIRef.current = true;
-            
-            // Mark locally completed
             setProgressState(prev => {
               const chapterIdStr = String(effectiveChapterId);
               if (prev.completedChapters.includes(chapterIdStr)) {
-                return prev; // No change needed
+                return prev;
+              }
+              // Update progressApi.completedChapters and persist
+              if (user?.id) {
+                progressApi.completedChapters.push(Number(chapterIdStr));
+                progressApi.saveCompletedChapters(user.id);
               }
               return {
                 ...prev,
                 completedChapters: [...prev.completedChapters, chapterIdStr]
               };
             });
-            
-            // Call API to update progress - this will be rate limited by progressApi
-            if (!courseId || courseId === '') {
-              console.warn('Progress update skipped: courseId is missing', { courseId, videoId, effectiveChapterId });
-              return;
+            if (courseId && courseId !== '') {
+              progressApi.queueUpdate({
+                courseId,
+                chapterId: effectiveChapterId,
+                videoId: String(videoId || ""),
+                progress: currentPlayed,
+                playedSeconds: currentPlayedSeconds,
+                duration: duration,
+                completed: true,
+                userId: getStorageId(),
+              });
             }
-            progressApi.queueUpdate({
-              courseId,
-              chapterId: effectiveChapterId,
-              videoId: String(videoId || ""),
-              progress: progressState.played,
-              playedSeconds: progressState.playedSeconds,
-              duration: duration,
-              completed: true,
-              userId: getStorageId(),
-            });
-            
             setTimeout(() => {
               isSyncingToAPIRef.current = false;
             }, 3000);
           }
         }
       });
+
+      // Send update if:
+      // - Milestone was reached OR
+      // - Significant progress change (>=5%) OR
+      // - Enough time has passed (30 seconds)
+      const shouldSendNonMilestone = 
+        !hasSentUpdate && 
+        (timeSinceLastUpdate >= 30 || progressChange >= 0.05);
       
-      // For non-milestone updates, only send every 15 seconds of playback
-      // This creates a secondary throttle on top of the main throttle
-      const secondsSinceLastUpdate = 
-        (Date.now() - (lastUpdateTimeRef.current || 0)) / 1000;
-        
-      if (secondsSinceLastUpdate > 15) {
-        shouldSendUpdate = true;
-        lastUpdateTimeRef.current = Date.now();
-      }
-      
-      // Only send non-milestone updates if significant progress has been made
-      if (shouldSendUpdate && effectiveChapterId) {
-        if (!courseId || courseId === '') {
-          console.warn('Progress update skipped: courseId is missing', { courseId, videoId, effectiveChapterId });
-          return;
-        }
+      if (shouldSendNonMilestone && effectiveChapterId && courseId && courseId !== '') {
         progressApi.queueUpdate({
           courseId,
           chapterId: effectiveChapterId,
           videoId: String(videoId || ""),
-          progress: progressState.played,
-          playedSeconds: progressState.playedSeconds,
+          progress: currentPlayed,
+          playedSeconds: currentPlayedSeconds,
           duration: duration,
           completed: false,
           userId: getStorageId(),
         });
+        hasSentUpdate = true;
       }
-    }, 10000), // Increase throttle delay to 10 seconds
+
+      // Update last sent values if we sent any update
+      if (hasSentUpdate) {
+        lastUpdateTimeRef.current = currentTime;
+        lastSentProgressRef.current = currentPlayed;
+      }
+    }, 30000), // 30 seconds throttle
     [videoId, courseId, effectiveChapterId, progress.isCompleted, getStorageId, duration, 
      onMilestoneReached, playedThreshold]
   );
 
-  // Add a ref to track last update time
-  const lastUpdateTimeRef = useRef<number>(Date.now());
+  type ProgressUpdateInput = Partial<CourseProgress> & { currentChapterId?: string | number; videoId?: string };
 
-  // Update progress method for compatibility with existing code
   const updateProgress = useCallback(
-    async (data: Partial<CourseProgress>) => {
+    async (data: ProgressUpdateInput) => {
       try {
-        // Update local state
-        if (data.completedChapters) {
-          const chaptersArray = typeof data.completedChapters === 'string'
-            ? data.completedChapters.split(',').filter(Boolean)
-            : Array.isArray(data.completedChapters) 
-              ? data.completedChapters.filter(Boolean)
-              : [];
-              
+        if (data && 'completedChapters' in data && data.completedChapters) {
+          let chaptersArray: string[] = [];
+          if (Array.isArray(data.completedChapters)) {
+            chaptersArray = (data.completedChapters as Array<string | number>)
+              .map((v) => String(v))
+              .filter(Boolean);
+          } else if (typeof (data as any).completedChapters === 'string') {
+            chaptersArray = ((data as any).completedChapters as string).split(',').filter(Boolean);
+          }
           setProgressState(prev => ({
             ...prev,
             completedChapters: chaptersArray
           }));
         }
         
-        // Queue API update
         if (typeof data.progress === "number") {
-          const chapterIdForApi = Number(data.currentChapterId ?? effectiveChapterId)
+          const chapterIdForApi = Number('currentChapterId' in data ? data.currentChapterId : effectiveChapterId)
           if (Number.isFinite(chapterIdForApi) && chapterIdForApi > 0) {
-            if (!courseId || courseId === '') {
-              console.warn('Progress update skipped: courseId is missing', { courseId, videoId, chapterIdForApi });
-              return;
+            if (courseId && courseId !== '') {
+              progressApi.queueUpdate({
+                courseId,
+                chapterId: chapterIdForApi,
+                videoId: String(('videoId' in data && data.videoId) ? data.videoId : (videoId || "")),
+                progress: data.progress,
+                playedSeconds: progressState.playedSeconds || 0,
+                duration: progressState.duration || 0,
+                completed: !!data.isCompleted,
+                userId: getStorageId(),
+              });
             }
-            progressApi.queueUpdate({
-              courseId,
-              chapterId: chapterIdForApi,
-              videoId: String(videoId || ""),
-              progress: data.progress,
-              playedSeconds: progressState.playedSeconds || 0,
-              duration: progressState.duration || 0,
-              completed: !!data.isCompleted,
-              userId: getStorageId(),
-            });
-          } else {
-            console.warn('Progress update skipped: invalid chapterId', data.currentChapterId, effectiveChapterId);
           }
         }
       } catch (err) {
@@ -365,7 +334,6 @@ export function useVideoProgress({
     [courseId, effectiveChapterId, getStorageId, videoId, progressState]
   );
 
-  // Certificate prompt handling
   const markCertificatePrompted = useCallback(() => {
     const certificateKey = `certificate-prompted-${getStorageId()}-${courseId}`;
     localStorage.setItem(certificateKey, 'true');
@@ -373,17 +341,17 @@ export function useVideoProgress({
     setNeedsCertificatePrompt(false);
   }, [courseId, getStorageId]);
 
-  // Restart prompt handling
   const markRestartPrompted = useCallback(() => {
     const restartKey = `restart-prompted-${getStorageId()}-${courseId}`;
     localStorage.setItem(restartKey, 'true');
     setHasShownRestartPrompt(true);
   }, [courseId, getStorageId]);
 
-  // Reset milestones when video changes
   useEffect(() => {
     reachedMilestonesRef.current.clear();
     isSyncingToAPIRef.current = false;
+    lastSentProgressRef.current = 0;
+    lastUpdateTimeRef.current = 0;
   }, [videoId]);
   
   return {
@@ -402,8 +370,5 @@ export function useVideoProgress({
   };
 }
 
-// Legacy hook for backward compatibility
 export const useProgress = useVideoProgress;
-
-// Default export for backward compatibility
 export default useVideoProgress;

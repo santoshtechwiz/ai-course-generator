@@ -7,13 +7,13 @@ import screenfull from "screenfull"
 import { useAppDispatch } from "@/store/hooks"
 import { addBookmark, removeBookmark } from "@/store/slices/course-slice"
 import { loadPlayerPreferences, savePlayerPreferences, calculateBufferHealth, formatTime } from "./progressUtils"
-import { useVideoProgress } from "./useVideoProgress"
+// import { useVideoProgress } from "./useVideoProgress"
 import { useVideoPreloading } from "./useVideoPreloading"
 import type { VideoPlayerState, UseVideoPlayerReturn, ProgressState, BookmarkData, YouTubePlayerConfig } from "../types"
 import { useToast } from "@/hooks"
 
 interface VideoPlayerHookOptions {
-  videoId: string
+  youtubeVideoId: string
   onEnded?: () => void
   onProgress?: (state: ProgressState) => void
   onTimeUpdate?: (time: number) => void
@@ -76,18 +76,15 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   
   // Enable preloading when nearing completion
   useVideoPreloading({
-    currentVideoId: options.videoId,
+    currentVideoId: options.youtubeVideoId,
     nextVideoId: options.nextVideoId || null,
     isNearingCompletion: state.isNearingCompletion
   });
   
-  // Progress tracking - always call the hook, but conditionally pass parameters
-  const progressTracking = useVideoProgress({
-    videoId: options.videoId,
-    courseId: String(options.courseId || ''),
-    chapterId: options.chapterId,
-    duration: state.duration,
-  });
+  // Progress tracking - use Redux slice instead of legacy hook
+  // TODO: Implement progress tracking via Redux actions/selectors
+  // Example: dispatch(setLastPosition({ courseId, chapterId, videoId, position }))
+  // Remove all references to progressTracking from below
 
   // Enhanced progress handler
   const handleProgress = useCallback(
@@ -116,8 +113,14 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       // Avoid duplicate/noisy tracking while in mini-player if desired
       const shouldTrack = !state.isMiniPlayer || state.played < 0.98
 
-      if (shouldTrack && progressTracking?.trackProgress) {
-        progressTracking.trackProgress(progressState);
+  // if (shouldTrack) {
+  //   dispatch(setLastPosition({
+  //     courseId: options.courseId,
+  //     chapterId: options.chapterId,
+  //     videoId: options.youtubeVideoId,
+  //     position: progressState.playedSeconds
+  //   }))
+  // }
       }
 
       // Pass to parent callback (single call per tick)
@@ -127,7 +130,7 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   );
 
   // Memoized YouTube URL
-  const youtubeUrl = useMemo(() => `https://www.youtube.com/watch?v=${options.videoId}`, [options.videoId])
+  const youtubeUrl = useMemo(() => `https://www.youtube.com/watch?v=${options.youtubeVideoId}`, [options.youtubeVideoId])
 
   // Memoized YouTube config
   const youtubeConfig = useMemo(
@@ -317,11 +320,11 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   // Bookmark handlers
   const handleAddBookmark = useCallback(
     (time: number, title?: string) => {
-      if (!options.videoId) return
+  if (!options.youtubeVideoId) return
 
       const bookmarkData: BookmarkData = {
-        id: `${options.videoId}-${Date.now()}`,
-        videoId: options.videoId,
+  id: `${options.youtubeVideoId}-${Date.now()}`,
+  videoId: options.youtubeVideoId,
         time,
         title: title || `Bookmark at ${formatTime(time)}`,
         description: title ? `${title} at ${formatTime(time)}` : `Bookmark at ${formatTime(time)}`,
@@ -336,19 +339,19 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
         description: "You can access your bookmarks in the timeline.",
       })
     },
-    [options.videoId, options.onBookmark, dispatch, toast],
+  [options.youtubeVideoId, options.onBookmark, dispatch, toast],
   )
 
   const handleRemoveBookmark = useCallback(
     (bookmarkId: string) => {
-      dispatch(removeBookmark({ bookmarkId, videoId: options.videoId }))
+  dispatch(removeBookmark({ bookmarkId, videoId: options.youtubeVideoId }))
 
       toast({
         title: "Bookmark removed",
         description: "The bookmark has been removed.",
       })
     },
-    [options.videoId, dispatch, toast],
+  [options.youtubeVideoId, dispatch, toast],
   )
 
   // Fullscreen state tracking
