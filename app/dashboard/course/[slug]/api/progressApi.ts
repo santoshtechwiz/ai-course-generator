@@ -152,9 +152,11 @@ class ProgressApiClient {
         },
         body: JSON.stringify({
           currentChapterId: update.chapterId,
-          videoId: update.videoId, 
+          videoId: update.videoId,
           progress: update.progress,
-          // Include required fields from the API
+          playedSeconds: update.playedSeconds,
+          duration: update.duration,
+          userId: update.userId,
           completedChapters: update.completed ? [Number(update.chapterId)] : [],
           isCompleted: update.completed
         }),
