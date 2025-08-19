@@ -89,6 +89,7 @@ export function useVideoProgress({
   // Refs for tracking state between renders
   const reachedMilestonesRef = useRef<Set<number>>(new Set())
   const isSyncingToAPIRef = useRef(false)
+  const lastProgressRef = useRef<number>(0)
   
   // Certification states
   const [needsCertificatePrompt, setNeedsCertificatePrompt] = useState(false)
@@ -207,6 +208,13 @@ export function useVideoProgress({
       // Skip if already completed or no valid chapter ID
       if (progress.isCompleted || !effectiveChapterId) return;
       
+      // Skip if progress hasn't changed significantly (less than 1%)
+      const progressChange = Math.abs(progressState.played - lastProgressRef.current);
+      if (progressChange < 0.01) return;
+      
+      // Update last progress for next comparison
+      lastProgressRef.current = progressState.played;
+      
       // Update local state
       setProgressState(prev => ({
         ...prev,
@@ -283,28 +291,35 @@ export function useVideoProgress({
         }
       });
       
-      // For non-milestone updates, only send every 15 seconds of playback
+      // For non-milestone updates, only send every 10 seconds of playback
       // This creates a secondary throttle on top of the main throttle
       const secondsSinceLastUpdate = 
         (Date.now() - (lastUpdateTimeRef.current || 0)) / 1000;
         
-      if (secondsSinceLastUpdate > 15) {
+      if (secondsSinceLastUpdate > 10) {
         shouldSendUpdate = true;
         lastUpdateTimeRef.current = Date.now();
       }
       
       // Only send non-milestone updates if significant progress has been made
+      // Prioritize updates based on progress amount
+      const isSignificantProgress = progressState.played > 0.05; // 5% or more
+      const isNearCompletion = progressState.played > 0.9; // 90% or more
+      
       if (shouldSendUpdate && effectiveChapterId && videoId && userId) {
-        progressApi.queueUpdate({
-          courseId,
-          chapterId: effectiveChapterId,
-          videoId: String(videoId),
-          progress: progressState.played,
-          playedSeconds: progressState.playedSeconds,
-          duration: duration,
-          completed: false,
-          userId: userId,
-        });
+        // Always send updates for significant progress or near completion
+        if (isSignificantProgress || isNearCompletion) {
+          progressApi.queueUpdate({
+            courseId,
+            chapterId: effectiveChapterId,
+            videoId: String(videoId),
+            progress: progressState.played,
+            playedSeconds: progressState.playedSeconds,
+            duration: duration,
+            completed: false,
+            userId: userId,
+          });
+        }
       } else if (shouldSendUpdate && (!effectiveChapterId || !videoId || !userId)) {
         console.warn('Progress update skipped: missing required parameters', {
           effectiveChapterId,
@@ -312,7 +327,7 @@ export function useVideoProgress({
           userId
         });
       }
-    }, 10000), // Increase throttle delay to 10 seconds
+    }, 5000), // Reduce throttle delay to 5 seconds for more responsive updates
     [videoId, courseId, effectiveChapterId, progress.isCompleted, userId, duration, 
      onMilestoneReached, playedThreshold, getStorageId]
   );

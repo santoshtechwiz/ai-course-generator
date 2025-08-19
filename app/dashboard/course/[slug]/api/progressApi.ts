@@ -70,7 +70,8 @@ class ProgressApiClient {
   private readonly QUEUE_KEY = 'progress-updates-queue';
   private readonly OFFLINE_FLAG = 'progress-offline-updates';
   private lastUpdatedTimestamps: Record<string, number> = {}; // Track timestamps for rate limiting
-  private readonly MIN_UPDATE_INTERVAL = 60000; // 1 minute in milliseconds
+  private readonly MIN_UPDATE_INTERVAL = 30000; // 30 seconds in milliseconds - reduced for better responsiveness
+  private apiCallCount: number = 0; // Track total API calls for debugging
   
   constructor() {
     // Load any queued updates from localStorage on init
@@ -110,8 +111,8 @@ class ProgressApiClient {
     const lastUpdate = this.lastUpdatedTimestamps[key] || 0;
     
     // Only queue update if it's been at least MIN_UPDATE_INTERVAL since last update
-    // Exception: always queue updates for completed videos
-    if (update.completed || now - lastUpdate >= this.MIN_UPDATE_INTERVAL) {
+    // Exception: always queue updates for completed videos or significant progress (>10%)
+    if (update.completed || update.progress > 0.1 || now - lastUpdate >= this.MIN_UPDATE_INTERVAL) {
       // Update timestamp tracker to prevent too frequent updates
       this.lastUpdatedTimestamps[key] = now;
       
@@ -133,7 +134,7 @@ class ProgressApiClient {
       
       // Log queue length in development
       if (process.env.NODE_ENV !== 'production') {
-        console.debug(`[ProgressAPI] Queued update for ${update.videoId}, queue length: ${this.queue.length}`);
+        console.debug(`[ProgressAPI] Queued update for ${update.videoId}, progress: ${(update.progress * 100).toFixed(1)}%, queue length: ${this.queue.length}`);
       }
       
       // Try to process immediately if we're online
@@ -255,6 +256,12 @@ class ProgressApiClient {
       // Success! Update timestamp for rate limiting
       const key = `${update.courseId}-${update.chapterId}-${update.videoId}`;
       this.lastUpdatedTimestamps[key] = Date.now();
+      this.apiCallCount++;
+      
+      // Log successful API call in development
+      if (process.env.NODE_ENV !== 'production') {
+        console.debug(`[ProgressAPI] Successfully updated progress for ${update.videoId}, total calls: ${this.apiCallCount}`);
+      }
       
       return await response.json();
     } catch (err) {
