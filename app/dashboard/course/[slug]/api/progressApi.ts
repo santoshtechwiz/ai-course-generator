@@ -40,6 +40,12 @@ class ProgressApiClient {
    * Queue a progress update to be sent when online
    */
   queueUpdate(update: ProgressUpdate): void {
+    // Validate required fields before queuing
+    if (!update.chapterId || !update.courseId || !update.videoId) {
+      console.warn('Progress update skipped: missing required fields', update);
+      return;
+    }
+
     // Check if we should rate limit this update
     const key = `${update.courseId}-${update.chapterId}-${update.videoId}`;
     const now = Date.now();
@@ -144,6 +150,13 @@ class ProgressApiClient {
    */
   private async sendProgressUpdate(update: ProgressUpdate): Promise<void> {
     try {
+      // Ensure chapterId is a valid number
+      const currentChapterId = Number(update.chapterId);
+      if (isNaN(currentChapterId) || currentChapterId <= 0) {
+        console.warn('Progress update skipped: invalid chapterId', update.chapterId);
+        return;
+      }
+
       // Format the API endpoint correctly
       const response = await fetch(`/api/progress/${update.courseId}`, {
         method: 'POST',
@@ -151,18 +164,20 @@ class ProgressApiClient {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          currentChapterId: update.chapterId,
+          currentChapterId: currentChapterId, // Use the validated number
           videoId: update.videoId,
           progress: update.progress,
           playedSeconds: update.playedSeconds,
           duration: update.duration,
           userId: update.userId,
-          completedChapters: update.completed ? [Number(update.chapterId)] : [],
+          completedChapters: update.completed ? [currentChapterId] : [],
           isCompleted: update.completed
         }),
       });
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Progress update failed: ${response.status} ${response.statusText}`, errorText);
         throw new Error(`Progress update failed: ${response.status} ${response.statusText}`);
       }
       

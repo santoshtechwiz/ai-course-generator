@@ -392,15 +392,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handlePictureInPicture = useCallback(async () => {
     try {
       const videoEl = getVideoElement()
-      // Prefer native PiP on the actual video element when available
-      if (videoEl && (videoEl as any).requestPictureInPicture && (document as any).pictureInPictureEnabled) {
+      
+      // Check if native PiP is supported and available
+      const isNativePiPSupported = !!(videoEl && (videoEl as any).requestPictureInPicture && (document as any).pictureInPictureEnabled);
+      
+      if (isNativePiPSupported) {
+        // Handle native PiP
         if ((document as any).pictureInPictureElement) {
+          // Exit native PiP
           await (document as any).exitPictureInPicture()
           onPictureInPictureToggle?.(false)
         } else {
+          // Enter native PiP
           // Ensure mini-player is off when entering native PiP
           if (state.isMiniPlayer && handlers.handlePictureInPictureToggle) {
-            // Force off mini-player state if any custom toggles are used internally
             handlers.handlePictureInPictureToggle()
           }
           await (videoEl as any).requestPictureInPicture()
@@ -412,11 +417,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       // Fallback to custom mini player when native PiP is not available
       if (handlers.handlePictureInPictureToggle) {
         const next = !state.isMiniPlayer
+        
         // If turning on mini-player, and native PiP is active, exit PiP first
         if (next && (document as any).pictureInPictureElement && (document as any).exitPictureInPicture) {
-          try { await (document as any).exitPictureInPicture() } catch {}
+          try { 
+            await (document as any).exitPictureInPicture() 
+          } catch (error) {
+            console.warn('Failed to exit native PiP:', error)
+          }
           onPictureInPictureToggle?.(false)
         }
+        
         handlers.handlePictureInPictureToggle()
         onPictureInPictureToggle?.(next)
       } else if (onPictureInPictureToggle) {
@@ -439,14 +450,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [getVideoElement, handlers.handlePictureInPictureToggle, onPictureInPictureToggle, toast, state.isMiniPlayer])
 
-  // Handle PIP events with better performance
+  // Handle PIP events with better performance and state management
   useEffect(() => {
     const handleEnterPiP = () => {
-      setState(prev => ({ ...prev, isPictureInPicture: true, isMiniPlayer: false }))
+      setState(prev => ({ 
+        ...prev, 
+        isPictureInPicture: true, 
+        isMiniPlayer: false // Ensure mini-player is off when native PiP is active
+      }))
+      onPictureInPictureToggle?.(true)
     }
 
     const handleLeavePiP = () => {
       setState(prev => ({ ...prev, isPictureInPicture: false }))
+      onPictureInPictureToggle?.(false)
     }
 
     if (typeof document !== "undefined") {
@@ -458,7 +475,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         document.removeEventListener('leavepictureinpicture', handleLeavePiP)
       }
     }
-  }, [])
+  }, [onPictureInPictureToggle])
 
 
   // Memoized format time helper
