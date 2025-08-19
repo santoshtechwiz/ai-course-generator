@@ -43,7 +43,13 @@ class ProgressApiClient {
   queueUpdate(update: ProgressUpdate): void {
     // Validate required fields before queuing
     if (!update.chapterId || !update.courseId || !update.videoId || !update.userId) {
-      console.warn('Progress update skipped: missing required fields', update);
+      console.warn('Progress update skipped: missing required fields', {
+        chapterId: update.chapterId,
+        courseId: update.courseId,
+        videoId: update.videoId,
+        userId: update.userId,
+        progress: update.progress
+      });
       return;
     }
 

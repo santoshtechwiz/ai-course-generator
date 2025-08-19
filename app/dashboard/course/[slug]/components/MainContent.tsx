@@ -260,6 +260,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Progress tracking
   const { progress, updateProgress, isLoading: progressLoading } = useProgress({
     courseId: Number(course.id),
+    videoId: currentVideoId,
     currentChapterId: currentChapter?.id?.toString(),
   })
 
@@ -407,7 +408,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       // Update progress periodically
       if (currentChapter && progressState.played > 0.1) {
         updateProgress({
-          // currentChapterId: String(currentChapter.id), // Remove invalid property
+          currentChapterId: String(currentChapter.id),
+          videoId: currentVideoId,
           progress: progressState.played,
           lastAccessedAt: new Date().toISOString(),
         });
@@ -439,7 +441,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
       // Update progress
       updateProgress({
-        // completedChapters: [...(progress?.completedChapters || []), Number(currentChapter.id)], // Remove invalid property
+        currentChapterId: String(currentChapter.id),
+        videoId: currentVideoId,
         isCompleted: isLastVideo,
         lastAccessedAt: new Date().toISOString(),
       })
@@ -495,7 +498,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
     // Update progress
     updateProgress({
-      // completedChapters: [...(progress?.completedChapters || []), Number(chapterId)], // Remove invalid property
+      currentChapterId: String(chapterId),
+      videoId: currentVideoId,
       lastAccessedAt: new Date().toISOString(),
     })
 
