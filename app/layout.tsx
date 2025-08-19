@@ -12,44 +12,56 @@ import { font } from "./font"
 import GlobalLoaderProvider from "@/components/GlobalLoaderProvider"
 import PageTransition from "@/components/shared/PageTransition"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
-import { DefaultSEO, generateMetadata } from "@/lib/seo"
+import { DefaultSEO, generateMetadata as generateBaseMetadata } from "@/lib/seo"
 
 import { GoogleAnalytics } from "@next/third-parties/google"
 
-export const metadata: Metadata = generateMetadata({
-  title: "CourseAI - AI-Powered Educational Content Creator",
-  description:
-    "Create professional courses, quizzes, and educational content with AI. Empower educators, trainers, and learners with intelligent content generation tools for any subject.",
-  keywords: [
-    "AI course creator",
-    "AI quiz generator",
-    "educational content creation",
-    "e-learning platform",
-    "course builder",
-    "quiz maker",
-    "AI education tools",
-    "interactive learning",
-    "assessment creation",
-    "training materials",
-    "online education",
-    "educational technology",
-    "automated content generation",
-    "learning management",
-    "course authoring",
-    "educational AI",
-    "teaching tools",
-    "exam creator",
-    "knowledge assessment",
-    "courseai",
-  ],
-  canonical: "/",
-  type: "website",
-})
+// Force dynamic rendering for this layout so metadata and content can be generated per-request
+export const dynamic = "force-dynamic"
+
+// Generate metadata dynamically using server session and the project's SEO helper.
+// Next.js will call this per-request.
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const session = await getServerAuthSession()
+    const userName = session?.user?.name
+    const title = userName
+      ? `${userName} • CourseAI`
+      : "CourseAI - AI-Powered Educational Content Creator"
+
+    // Delegate to the existing SEO helper to keep consistent metadata defaults.
+    // Provide per-request overrides (title, canonical, openGraph).
+    return generateBaseMetadata({
+      title,
+      description:
+        "Create professional courses, quizzes, and educational content with AI. Empower educators, trainers, and learners with intelligent content generation tools for any subject.",
+      canonical: process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io",
+      // add some basic openGraph defaults; the helper may extend/override these
+      openGraph: {
+        title,
+        description:
+          "Create professional courses, quizzes, and educational content with AI.",
+        url: process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io",
+      },
+      // leave keywords and other defaults to the helper
+    })
+  } catch (err) {
+    // On error, fall back to a safe, static metadata shape
+    return {
+      title: "CourseAI - AI-Powered Educational Content Creator",
+      description:
+        "Create professional courses, quizzes, and educational content with AI. Empower educators, trainers, and learners with intelligent content generation tools for any subject.",
+      metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"),
+    }
+  }
+}
+
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // session is used by Providers and may also be useful to render per-user layout choices
   const session = await getServerAuthSession()
 
   return (
@@ -80,12 +92,12 @@ export default async function RootLayout({
         </head>
 
         <body
-          className={`${font.inter.variable ?? ""} ${font.poppins.variable ?? ""} ${font.openSans.variable ?? ""} ${font.roboto.variable ?? ""} ${font.jakarta.variable ?? ""} antialiased bg-background text-foreground min-h-screen overflow-x-hidden text-base`}
+          className={`${font.inter.variable ?? ""} ${font.poppins.variable ?? ""} ${font.openSans.variable ?? ""} ${font.roboto.variable ?? ""} ${font.jakarta.variable ?? ""} antialiased bg-background text-foreground`}
           role="document"
         >
           <a
             href="#main-content"
-            className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded focus:shadow-lg focus:text-sm"
+            className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded focus:outline-none"
           >
             Skip to main content
           </a>
@@ -107,7 +119,7 @@ export default async function RootLayout({
 
           <DefaultSEO enableFAQ={false} />
         </body>
-        <GoogleAnalytics gaId="G-8E6345HNS4" />
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || "G-8E6345HNS4"} />
       </html>
     </GlobalLoaderProvider>
   )
