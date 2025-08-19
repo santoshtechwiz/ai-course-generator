@@ -17,9 +17,20 @@ import {
   RewindIcon,
   FastForwardIcon,
   PictureInPicture2,
-
+  Settings,
+  Minimize,
+  Volume1,
 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
+import { motion, AnimatePresence } from "framer-motion"
 
 interface PlayerControlsProps {
   playing: boolean
@@ -62,7 +73,6 @@ interface PlayerControlsProps {
   isPiPActive?: boolean
   onToggleTheaterMode?: () => void
   isTheaterMode?: boolean
-
 }
 
 const PlayerControls: React.FC<PlayerControlsProps> = ({
@@ -113,6 +123,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   const [isDragging, setIsDragging] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [useFallbackSlider, setUseFallbackSlider] = useState(false)
+  const [hoverPosition, setHoverPosition] = useState<number | null>(null)
   const progressBarRef = useRef<HTMLDivElement>(null)
   const volumeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -121,7 +132,6 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
     e.stopPropagation()
   }, [])
 
-  // Enhanced seeking functionality with proper state notification
   const handleSeek = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (!progressBarRef.current || !duration) return
@@ -135,6 +145,21 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       onSeekChange(seekTime)
     },
     [duration, onSeekChange],
+  )
+
+  const handleProgressHover = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!progressBarRef.current || !duration) return
+
+      const rect = progressBarRef.current.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const width = rect.width
+
+      const position = Math.max(0, Math.min(1, x / width))
+      setHoverPosition(position)
+      setHoveredTime(duration * position)
+    },
+    [duration],
   )
 
   // Enhanced mouse down handler for drag seeking
@@ -201,14 +226,14 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   // Handle slider errors globally
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
-      if (event.error && event.error.message && event.error.message.includes('getBoundingClientRect')) {
-        console.warn('Slider error detected, switching to fallback')
+      if (event.error && event.error.message && event.error.message.includes("getBoundingClientRect")) {
+        console.warn("Slider error detected, switching to fallback")
         setUseFallbackSlider(true)
       }
     }
 
-    window.addEventListener('error', handleError)
-    return () => window.removeEventListener('error', handleError)
+    window.addEventListener("error", handleError)
+    return () => window.removeEventListener("error", handleError)
   }, [])
 
   // Cleanup volume timeout
@@ -239,9 +264,9 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
     onSeekChange(newTime)
   }, [duration, played, onSeekChange])
 
-  // Memoized volume icon
   const VolumeIcon = useMemo(() => {
     if (muted || volume === 0) return VolumeX
+    if (volume < 0.5) return Volume1
     return Volume2
   }, [muted, volume])
 
@@ -267,6 +292,12 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   // Memoized playback speed options
   const playbackSpeeds = useMemo(() => [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2], [])
 
+  const getBufferHealthColor = useCallback((health: number) => {
+    if (health >= 0.8) return "text-green-400"
+    if (health >= 0.5) return "text-yellow-400"
+    return "text-red-400"
+  }, [])
+
   return (
     <div
       className={cn(
@@ -278,12 +309,17 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       role="toolbar"
       aria-label="Video player controls"
     >
-      {/* Enhanced Progress bar with bookmarks */}
       <div
         className="relative flex items-center mb-1 group h-8 sm:h-10 cursor-pointer touch-manipulation"
         ref={progressBarRef}
         onClick={handleSeek}
         onMouseDown={handleMouseDown}
+        onMouseMove={handleProgressHover}
+        onMouseEnter={() => setHoverPosition(0)}
+        onMouseLeave={() => {
+          setHoverPosition(null)
+          setHoveredTime(null)
+        }}
         role="slider"
         aria-label="Video progress"
         aria-valuemin={0}
@@ -302,23 +338,53 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       >
         <div className="absolute inset-0"></div>
 
+        <AnimatePresence>
+          {hoverPosition !== null && hoveredTime !== null && !isDragging && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.8 }}
+              transition={{ duration: 0.15 }}
+              className="absolute bottom-full mb-2 bg-black/90 text-white px-2 py-1 rounded text-xs font-medium pointer-events-none z-20 transform -translate-x-1/2 whitespace-nowrap"
+              style={{ left: `${hoverPosition * 100}%` }}
+            >
+              {formatTime(hoveredTime)}
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-black/90" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="absolute left-0 right-0 top-3 sm:top-4 h-1 bg-white/20 rounded group-hover:h-1.5 transition-all">
           <div
-            className="absolute left-0 top-0 bottom-0 bg-white/40 rounded"
+            className={cn(
+              "absolute left-0 top-0 bottom-0 rounded transition-all",
+              bufferHealth >= 0.8 ? "bg-white/40" : bufferHealth >= 0.5 ? "bg-yellow-400/40" : "bg-red-400/40",
+            )}
             style={{ width: `${loaded * 100}%` }}
           ></div>
           <div
-            className="absolute left-0 top-0 bottom-0 bg-primary rounded"
+            className="absolute left-0 top-0 bottom-0 bg-primary rounded transition-all"
             style={{ width: `${played * 100}%` }}
           ></div>
+
+          {hoverPosition !== null && !isDragging && (
+            <div
+              className="absolute top-0 bottom-0 w-0.5 bg-white/60 pointer-events-none"
+              style={{ left: `${hoverPosition * 100}%` }}
+            />
+          )}
         </div>
 
         {/* Enhanced bookmarks on timeline */}
         {bookmarks?.length > 0 &&
           bookmarks.map((time, index) => (
-            <button
+            <motion.button
               key={`bookmark-${index}`}
-              className="absolute w-2 h-4 bg-yellow-400 rounded-full transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 hover:bg-yellow-300 transition-colors touch-manipulation"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              whileHover={{ scale: 1.2 }}
+              whileTap={{ scale: 0.9 }}
+              className="absolute w-2 h-4 bg-yellow-400 rounded-full transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 hover:bg-yellow-300 transition-colors touch-manipulation shadow-sm"
               style={{ left: `${(time / duration) * 100}%`, top: "50%" }}
               onClick={(e) => {
                 e.stopPropagation()
@@ -334,16 +400,27 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       <div className="flex items-center justify-between">
         {/* Left controls */}
         <div className="flex items-center space-x-1 sm:space-x-2">
-          {/* Enhanced Play/Pause button */}
+          {/* Enhanced Play/Pause button with loading state */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
+            className="h-8 w-8 text-white touch-manipulation hover:bg-white/20 relative"
             onClick={onPlayPause}
-            title={playing ? "Pause" : "Play"}
+            title={playing ? "Pause (Space)" : "Play (Space)"}
             aria-label={playing ? "Pause video" : "Play video"}
+            disabled={isBuffering}
           >
-            {playing ? <Pause className="h-4 w-4 sm:h-5 sm:w-5" /> : <Play className="h-4 w-4 sm:h-5 sm:w-5" />}
+            {isBuffering ? (
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                className="h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent rounded-full"
+              />
+            ) : playing ? (
+              <Pause className="h-4 w-4 sm:h-5 sm:w-5" />
+            ) : (
+              <Play className="h-4 w-4 sm:h-5 sm:w-5" />
+            )}
           </Button>
 
           {/* Enhanced Skip backward */}
@@ -352,7 +429,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             size="icon"
             className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
             onClick={handleSkipBackward}
-            title="Skip backward 10 seconds"
+            title="Skip backward 10 seconds (←)"
             aria-label="Skip backward 10 seconds"
           >
             <RewindIcon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -364,7 +441,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             size="icon"
             className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
             onClick={handleSkipForward}
-            title="Skip forward 10 seconds"
+            title="Skip forward 10 seconds (→)"
             aria-label="Skip forward 10 seconds"
           >
             <FastForwardIcon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -373,7 +450,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
           {/* Next video button */}
           {nextVideoButton}
 
-          {/* Enhanced Volume control */}
+          {/* Enhanced Volume control with better UX */}
           <div
             className="relative flex items-center"
             onMouseEnter={handleVolumeMouseEnter}
@@ -384,69 +461,127 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               size="icon"
               className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
               onClick={onMute}
-              title={muted ? "Unmute" : "Mute"}
+              title={muted ? "Unmute (M)" : "Mute (M)"}
               aria-label={muted ? "Unmute audio" : "Mute audio"}
             >
               <VolumeIcon className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
 
-            {showVolumeSlider && isMounted && typeof window !== 'undefined' && (
-              <div className="absolute left-full ml-2 bg-black/90 p-2 rounded-lg z-10 w-20 sm:w-24">
-                <div 
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onTouchStart={(e) => e.stopPropagation()}
+            <AnimatePresence>
+              {showVolumeSlider && isMounted && typeof window !== "undefined" && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10, scale: 0.9 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -10, scale: 0.9 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute left-full ml-2 bg-black/90 p-3 rounded-lg z-10 w-24 sm:w-28 backdrop-blur-sm border border-white/10"
                 >
-                  {useFallbackSlider ? (
-                    <div 
-                      className="w-full h-2 bg-white/20 rounded-full cursor-pointer relative"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        const rect = e.currentTarget.getBoundingClientRect()
-                        const x = e.clientX - rect.left
-                        const width = rect.width
-                        const newVolume = Math.max(0, Math.min(1, x / width))
-                        onVolumeChange(newVolume)
-                      }}
-                    >
-                      <div 
-                        className="h-full bg-white rounded-full transition-all duration-150"
-                        style={{ width: `${muted ? 0 : volume * 100}%` }}
+                  <div className="flex items-center gap-2 mb-2">
+                    <VolumeIcon className="h-3 w-3 text-white/60" />
+                    <span className="text-xs text-white/80 font-medium">{Math.round((muted ? 0 : volume) * 100)}%</span>
+                  </div>
+                  <div
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                  >
+                    {useFallbackSlider ? (
+                      <div
+                        className="w-full h-2 bg-white/20 rounded-full cursor-pointer relative"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const rect = e.currentTarget.getBoundingClientRect()
+                          const x = e.clientX - rect.left
+                          const width = rect.width
+                          const newVolume = Math.max(0, Math.min(1, x / width))
+                          onVolumeChange(newVolume)
+                        }}
+                      >
+                        <div
+                          className="h-full bg-white rounded-full transition-all duration-150"
+                          style={{ width: `${muted ? 0 : volume * 100}%` }}
+                        />
+                      </div>
+                    ) : (
+                      <Slider
+                        value={[muted ? 0 : volume * 100]}
+                        max={100}
+                        step={1}
+                        onValueChange={([value]) => {
+                          try {
+                            onVolumeChange(value / 100)
+                          } catch (error) {
+                            console.warn("Volume change error:", error)
+                            setUseFallbackSlider(true)
+                          }
+                        }}
+                        className="touch-manipulation"
+                        aria-label="Volume control"
+                        onPointerDown={(e) => {
+                          e.stopPropagation()
+                        }}
                       />
-                    </div>
-                  ) : (
-                                         <Slider
-                       value={[muted ? 0 : volume * 100]}
-                       max={100}
-                       step={1}
-                       onValueChange={([value]) => {
-                         try {
-                           onVolumeChange(value / 100)
-                         } catch (error) {
-                           console.warn('Volume change error:', error)
-                           setUseFallbackSlider(true)
-                         }
-                       }}
-                       className="touch-manipulation"
-                       aria-label="Volume control"
-                       onPointerDown={(e) => {
-                         e.stopPropagation()
-                       }}
-                     />
-                  )}
-                </div>
-              </div>
-            )}
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* Enhanced Time display */}
-          <div className="text-xs sm:text-sm text-white hidden md:block font-mono">
-            {formatTime(isNaN(duration) ? 0 : duration * played)} / {formatTime(isNaN(duration) ? 0 : duration)}
+          {/* Enhanced Time display with buffer health */}
+          <div className="text-xs sm:text-sm text-white hidden md:flex items-center gap-2 font-mono">
+            <span>
+              {formatTime(isNaN(duration) ? 0 : duration * played)} / {formatTime(isNaN(duration) ? 0 : duration)}
+            </span>
+            <div
+              className={cn("w-1 h-1 rounded-full", getBufferHealthColor(bufferHealth))}
+              title={`Buffer health: ${Math.round(bufferHealth * 100)}%`}
+            />
           </div>
         </div>
 
         {/* Right controls */}
         <div className="flex items-center space-x-1 sm:space-x-2">
+          <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
+                title="Settings"
+                aria-label="Video settings"
+              >
+                <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-black/90 border-white/10 backdrop-blur-sm">
+              <div className="px-2 py-1.5 text-xs font-medium text-white/60">Playback Speed</div>
+              {playbackSpeeds.map((speed) => (
+                <DropdownMenuItem
+                  key={speed}
+                  onClick={() => onPlaybackRateChange(speed)}
+                  className="text-white hover:bg-white/10 cursor-pointer flex items-center justify-between"
+                >
+                  <span>{speed === 1 ? "Normal" : `${speed}x`}</span>
+                  {playbackRate === speed && (
+                    <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary">
+                      Active
+                    </Badge>
+                  )}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator className="bg-white/10" />
+              {onShowKeyboardShortcuts && (
+                <DropdownMenuItem
+                  onClick={onShowKeyboardShortcuts}
+                  className="text-white hover:bg-white/10 cursor-pointer"
+                >
+                  Keyboard Shortcuts
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {/* Auto-play video toggle */}
           {onToggleAutoPlayVideo && (
             <div className="hidden lg:flex items-center mr-3 px-2 py-1 rounded-md bg-white/10">
@@ -474,9 +609,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
           )}
 
           {/* Separator for content vs view controls */}
-          {(onToggleAutoPlayVideo || (hasNextVideo && onToggleAutoPlayNext)) && (isAuthenticated || onPictureInPicture) && (
-            <div className="hidden lg:block w-px h-6 bg-white/20 mx-1" />
-          )}
+          {(onToggleAutoPlayVideo || (hasNextVideo && onToggleAutoPlayNext)) &&
+            (isAuthenticated || onPictureInPicture) && <div className="hidden lg:block w-px h-6 bg-white/20 mx-1" />}
 
           {/* Enhanced Bookmark button */}
           {isAuthenticated && onAddBookmark && (
@@ -492,15 +626,34 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             </Button>
           )}
 
-          {/* Picture-in-Picture or Mini Player (fallback) */}
+          {/* Enhanced Picture-in-Picture with better visual feedback */}
           {onPictureInPicture && (
             <Button
               variant="ghost"
               size="icon"
-              className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-colors", isPiPActive && "bg-white/20 text-blue-400")}
+              className={cn(
+                "h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-all duration-200",
+                isPiPActive && "bg-white/20 text-blue-400 scale-110",
+              )}
               onClick={onPictureInPicture}
-              title={isPiPSupported ? (isPiPActive ? "Exit Picture-in-Picture (P)" : "Enter Picture-in-Picture (P)") : (isPiPActive ? "Close Mini Player (P)" : "Open Mini Player (P)")}
-              aria-label={isPiPSupported ? (isPiPActive ? "Exit Picture-in-Picture mode" : "Enter Picture-in-Picture mode") : (isPiPActive ? "Close Mini Player" : "Open Mini Player")}
+              title={
+                isPiPSupported
+                  ? isPiPActive
+                    ? "Exit Picture-in-Picture (P)"
+                    : "Enter Picture-in-Picture (P)"
+                  : isPiPActive
+                    ? "Close Mini Player (P)"
+                    : "Open Mini Player (P)"
+              }
+              aria-label={
+                isPiPSupported
+                  ? isPiPActive
+                    ? "Exit Picture-in-Picture mode"
+                    : "Enter Picture-in-Picture mode"
+                  : isPiPActive
+                    ? "Close Mini Player"
+                    : "Open Mini Player"
+              }
             >
               <PictureInPicture2 className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
@@ -511,12 +664,14 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-colors", isTheaterMode && "bg-white/20 text-blue-400")}
+              className={cn(
+                "h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-all duration-200",
+                isTheaterMode && "bg-white/20 text-blue-400",
+              )}
               onClick={onToggleTheaterMode}
               title={isTheaterMode ? "Exit theater mode (T)" : "Enter theater mode (T)"}
               aria-label={isTheaterMode ? "Exit theater mode" : "Enter theater mode"}
             >
-              {/* Use same Maximize icon for simplicity; can swap to RectangleHorizontal if available */}
               <svg
                 className="h-4 w-4 sm:h-5 sm:w-5"
                 viewBox="0 0 24 24"
@@ -535,12 +690,19 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-colors", isFullscreen && "bg-white/20 text-blue-400")}
+            className={cn(
+              "h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-all duration-200",
+              isFullscreen && "bg-white/20 text-blue-400",
+            )}
             onClick={onToggleFullscreen}
             title={isFullscreen ? "Exit fullscreen (F)" : "Enter fullscreen (F)"}
             aria-label={isFullscreen ? "Exit fullscreen mode" : "Enter fullscreen mode"}
           >
-            <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />
+            {isFullscreen ? (
+              <Minimize className="h-4 w-4 sm:h-5 sm:w-5" />
+            ) : (
+              <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />
+            )}
           </Button>
         </div>
       </div>
