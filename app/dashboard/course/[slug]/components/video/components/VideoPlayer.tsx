@@ -92,6 +92,7 @@ type CertificateState = "idle" | "downloading" | "success" | "error"
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
   videoId,
+  chapterId,
   onEnded,
   onProgress,
   onTimeUpdate,
@@ -249,6 +250,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     autoPlay: autoPlay && canPlayVideo,
     onVideoLoad,
     onCertificateClick,
+    chapterId,
   })
 
   // Observe visibility of the container to toggle mini controls
@@ -993,7 +995,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
        tabIndex={0}
      >
       {/* YouTube Player */}
-      <div className="absolute inset-0">
+      <div className={cn("absolute inset-0", state.isPictureInPicture && "opacity-0 pointer-events-none")}
+      >
         <ReactPlayer
           ref={playerRef}
           url={youtubeUrl}

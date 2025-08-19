@@ -783,6 +783,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Memoized video player props
   const videoPlayerProps = useMemo(() => ({
     videoId: currentVideoId || '',
+    chapterId: currentChapter?.id,
     courseId: course.id,
     courseName: course.title,
     chapterTitle: currentChapter?.title,
@@ -906,7 +907,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     
     if (twoCol) {
       // Udemy-style layout: video/content left, playlist right
-      return "md:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px]"
+      return "md:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_420px]"
     }
     
     return "grid-cols-1"
@@ -995,7 +996,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             </div>
 
             {/* Video player section */}
-            <div className={gridContainerClasses}> 
+            <div className={gridContainerClasses + " xl:max-w-[1400px] mx-auto w-full"}> 
               {/* Right column: Video and tabs (main content) */}
               <motion.div 
                 key="video-content"

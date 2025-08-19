@@ -36,8 +36,12 @@ export function useVideoProgress({
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<Error | null>(null)
   
-  // Use the more specific chapter ID available
-  const effectiveChapterId = chapterId || currentChapterId || videoId
+  // Use numeric chapter ID only; never fall back to videoId (API requires currentChapterId)
+  const effectiveChapterId = useMemo(() => {
+    const cid = typeof chapterId !== 'undefined' ? chapterId : currentChapterId
+    const n = Number(cid)
+    return Number.isFinite(n) && !Number.isNaN(n) ? n : undefined
+  }, [chapterId, currentChapterId])
   
   // Convert courseId to string for consistent lookup
   const courseIdStr = String(courseId)
@@ -214,7 +218,7 @@ export function useVideoProgress({
           shouldSendUpdate = true;
           
           // Mark chapter as completed if we've reached threshold
-          if (milestone >= playedThreshold && (effectiveChapterId || videoId) && !isSyncingToAPIRef.current) {
+          if (milestone >= playedThreshold && effectiveChapterId !== undefined && !isSyncingToAPIRef.current) {
             isSyncingToAPIRef.current = true;
             
             // Mark locally completed
@@ -232,8 +236,8 @@ export function useVideoProgress({
             // Call API to update progress - this will be rate limited by progressApi
             progressApi.queueUpdate({
               courseId,
-              chapterId: String(effectiveChapterId || videoId || ""),
-              videoId: String(videoId || effectiveChapterId || ""),
+              chapterId: Number(effectiveChapterId),
+              videoId: String(videoId || ""),
               progress: progressState.played,
               playedSeconds: progressState.playedSeconds,
               duration: duration,
@@ -259,11 +263,11 @@ export function useVideoProgress({
       }
       
       // Only send non-milestone updates if significant progress has been made
-      if (shouldSendUpdate && (effectiveChapterId || videoId)) {
+      if (shouldSendUpdate && effectiveChapterId !== undefined) {
         progressApi.queueUpdate({
           courseId,
-          chapterId: String(effectiveChapterId || videoId || ""),
-          videoId: String(videoId || effectiveChapterId || ""),
+          chapterId: Number(effectiveChapterId),
+          videoId: String(videoId || ""),
           progress: progressState.played,
           playedSeconds: progressState.playedSeconds,
           duration: duration,
@@ -299,16 +303,19 @@ export function useVideoProgress({
         
         // Queue API update
         if (typeof data.progress === "number") {
-          progressApi.queueUpdate({
-            courseId,
-            chapterId: String(data.currentChapterId || effectiveChapterId || videoId || ""),
-            videoId: String(videoId || data.currentChapterId || effectiveChapterId || ""),
-            progress: data.progress,
-            playedSeconds: progressState.playedSeconds || 0,
-            duration: progressState.duration || 0,
-            completed: !!data.isCompleted,
-            userId,
-          });
+          const chapterIdForApi = Number(data.currentChapterId ?? effectiveChapterId)
+          if (Number.isFinite(chapterIdForApi)) {
+            progressApi.queueUpdate({
+              courseId,
+              chapterId: chapterIdForApi,
+              videoId: String(videoId || ""),
+              progress: data.progress,
+              playedSeconds: progressState.playedSeconds || 0,
+              duration: progressState.duration || 0,
+              completed: !!data.isCompleted,
+              userId,
+            });
+          }
         }
       } catch (err) {
         console.error("Failed to update progress:", err);
