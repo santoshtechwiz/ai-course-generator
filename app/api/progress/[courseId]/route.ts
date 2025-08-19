@@ -99,34 +99,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
         )
       }
 
-      if (!data.videoId) {
-        return NextResponse.json(
-          { error: "Video ID is required", details: data },
-          { status: 400 }
-        )
-      }
 
-      if (!data.courseId) {
-        return NextResponse.json(
-          { error: "Course ID is required", details: data },
-          { status: 400 }
-        )
-      }
 
-      // Validate that courseId in URL matches courseId in body
-      const urlCourseId = Number.parseInt(courseId);
-      const bodyCourseId = Number(data.courseId);
-      if (urlCourseId !== bodyCourseId) {
-        return NextResponse.json(
-          { error: "Course ID mismatch between URL and body", details: { urlCourseId, bodyCourseId } },
-          { status: 400 }
-        )
-      }
-
-      // Ensure completedChapters is an array and filter out empty values
-      const completedChapters = Array.isArray(data.completedChapters) 
-        ? data.completedChapters.filter(chapterId => chapterId !== null && chapterId !== undefined && chapterId !== '')
-        : [];
+      // Ensure completedChapters is an array
+      const completedChapters = Array.isArray(data.completedChapters) ? data.completedChapters : [];
 
       // Convert currentChapterId to number
       const currentChapterId = Number(data.currentChapterId);
@@ -150,15 +126,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
       let existingCompletedChapters: number[] = []
       if (existingProgress && typeof existingProgress.completedChapters === "string") {
         try {
-          const parsed = JSON.parse(existingProgress.completedChapters)
-          existingCompletedChapters = Array.isArray(parsed) 
-            ? parsed.filter((id: any) => id !== null && id !== undefined && id !== '')
-            : []
+          existingCompletedChapters = JSON.parse(existingProgress.completedChapters)
         } catch (error) {
           console.error("Error parsing existing completedChapters:", error)
         }
       } else if (existingProgress && Array.isArray(existingProgress.completedChapters)) {
-        existingCompletedChapters = existingProgress.completedChapters.filter(id => id !== null && id !== undefined && id !== '')
+        existingCompletedChapters = existingProgress.completedChapters
       }
 
       // Merge and deduplicate the completed chapters
