@@ -84,7 +84,7 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   // Progress tracking - always call the hook, but conditionally pass parameters
   const progressTracking = useVideoProgress({
     videoId: options.videoId,
-    courseId: options.courseId || '',
+    courseId: String(options.courseId || ''),
     chapterId: options.chapterId,
     duration: state.duration,
   });

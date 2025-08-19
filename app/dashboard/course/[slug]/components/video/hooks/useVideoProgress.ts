@@ -45,7 +45,8 @@ export function useVideoProgress({
   
   // Validate required parameters
   useEffect(() => {
-    if (!courseId) {
+    if (!courseId || courseId === '') {
+      console.warn('Progress tracking: courseId is missing or empty', { courseId, videoId, effectiveChapterId });
       setError(new Error('Course ID is required for progress tracking'));
       return;
     }
@@ -179,7 +180,7 @@ export function useVideoProgress({
   const progress = useMemo(() => ({
     id: initialProgress?.id || 0,
     userId: getStorageId(),
-    courseId: Number(courseId),
+    courseId: Number(courseId) || 0,
     currentChapterId: Number(effectiveChapterId) || initialProgress?.currentChapterId || 0,
     currentUnitId: initialProgress?.currentUnitId || null,
     completedChapters: Array.isArray(progressState.completedChapters) 
@@ -259,6 +260,10 @@ export function useVideoProgress({
             });
             
             // Call API to update progress - this will be rate limited by progressApi
+            if (!courseId || courseId === '') {
+              console.warn('Progress update skipped: courseId is missing', { courseId, videoId, effectiveChapterId });
+              return;
+            }
             progressApi.queueUpdate({
               courseId,
               chapterId: effectiveChapterId,
@@ -289,6 +294,10 @@ export function useVideoProgress({
       
       // Only send non-milestone updates if significant progress has been made
       if (shouldSendUpdate && effectiveChapterId) {
+        if (!courseId || courseId === '') {
+          console.warn('Progress update skipped: courseId is missing', { courseId, videoId, effectiveChapterId });
+          return;
+        }
         progressApi.queueUpdate({
           courseId,
           chapterId: effectiveChapterId,
@@ -330,6 +339,10 @@ export function useVideoProgress({
         if (typeof data.progress === "number") {
           const chapterIdForApi = Number(data.currentChapterId ?? effectiveChapterId)
           if (Number.isFinite(chapterIdForApi) && chapterIdForApi > 0) {
+            if (!courseId || courseId === '') {
+              console.warn('Progress update skipped: courseId is missing', { courseId, videoId, chapterIdForApi });
+              return;
+            }
             progressApi.queueUpdate({
               courseId,
               chapterId: chapterIdForApi,

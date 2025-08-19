@@ -788,7 +788,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const videoPlayerProps = useMemo(() => ({
     videoId: currentVideoId || '',
     chapterId: currentChapter?.id,
-    courseId: course.id,
+    courseId: String(course.id),
     courseName: course.title,
     chapterTitle: currentChapter?.title,
     onEnded: handleVideoEnd,
