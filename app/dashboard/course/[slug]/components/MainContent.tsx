@@ -257,12 +257,28 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     return currentIndex > 0 && ((currentIndex + 1) % 3 === 0 || isLastVideo)
   }, [currentIndex, isLastVideo])
 
-  // Progress tracking
+  // Progress tracking - only call if course is properly loaded
   const { progress, updateProgress, isLoading: progressLoading } = useProgress({
-    courseId: Number(course.id),
+    courseId: course?.id || 0,
     videoId: currentVideoId,
     currentChapterId: currentChapter?.id?.toString(),
   })
+  
+  // Debug course object
+  useEffect(() => {
+    if (!course?.id) {
+      console.error('Course object is missing or has no id:', course);
+      return;
+    }
+    console.log('Course object debug:', {
+      courseId: course.id,
+      courseIdType: typeof course.id,
+      courseIdNumber: Number(course.id),
+      courseIdString: String(course.id),
+      courseKeys: Object.keys(course),
+      course: course
+    });
+  }, [course?.id]);
 
   // Determine user subscription once (used for gating below)
   const userSubscription = useMemo(() => {
