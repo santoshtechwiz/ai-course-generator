@@ -45,48 +45,45 @@ interface CourseNotificationsMenuProps {
 }
 
 // Hook to fetch course data
-const useCourseData = (courseIds: string[]) => {
+const useCourseData = (courseIds: string[], shouldFetch: boolean) => {
   const [courseData, setCourseData] = useState<Record<string, CourseData>>({})
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
+  const fetchCourseData = useCallback(async () => {
     if (courseIds.length === 0) return
-
-    const fetchCourseData = async () => {
-      setLoading(true)
-      try {
-        const response = await fetch('/api/courses/data', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ courseIds }),
-        })
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        const result = await response.json()
-        
-        if (result.success && result.data) {
-          setCourseData(result.data)
-        } else {
-          console.warn('Invalid course data response:', result)
-        }
-      } catch (error) {
-        console.error('Failed to fetch course data:', error)
-        // Fallback to empty data instead of crashing
-        setCourseData({})
-      } finally {
-        setLoading(false)
+    setLoading(true)
+    try {
+      const response = await fetch('/api/courses/data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ courseIds }),
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
+      const result = await response.json()
+      if (result.success && result.data) {
+        setCourseData(result.data)
+      } else {
+        console.warn('Invalid course data response:', result)
+      }
+    } catch (error) {
+      console.error('Failed to fetch course data:', error)
+      setCourseData({})
+    } finally {
+      setLoading(false)
     }
-
-    fetchCourseData()
   }, [courseIds])
 
-  return { courseData, loading }
+  useEffect(() => {
+    if (shouldFetch) {
+      fetchCourseData()
+    }
+  }, [shouldFetch, fetchCourseData])
+
+  return { courseData, loading, fetchCourseData }
 }
 
 export default function CourseNotificationsMenu({ className }: CourseNotificationsMenuProps) {
@@ -109,8 +106,8 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
     })
   }, [courseProgress])
 
-  // Fetch course data
-  const { courseData, loading: courseDataLoading } = useCourseData(courseIds)
+  // Fetch course data only when dropdown is opened
+  const { courseData, loading: courseDataLoading, fetchCourseData } = useCourseData(courseIds, false)
 
   // Generate notifications from course progress
   const generateNotifications = useCallback(() => {
@@ -285,6 +282,10 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
             "relative rounded-full hover:bg-accent hover:text-accent-foreground transition-all duration-300",
             className
           )}
+          onClick={() => {
+            setIsOpen(true)
+            fetchCourseData()
+          }}
         >
           <Bell className="h-4 w-4" />
           <AnimatePresence>

@@ -58,36 +58,6 @@ export async function fetchRelatedCourses(
 /**
  * Fetch personalized recommendations based on user progress and preferences
  */
-export async function fetchPersonalizedRecommendations(
-  userId: string,
-  completedCourses: string[],
-  currentCourse: FullCourseType,
-  limit: number = 3
-): Promise<PersonalizedRecommendation[]> {
-  try {
-    const response = await fetch(`/api/recommendations/personalized?courseId=${currentCourse.id}&limit=${limit}`)
-    
-    if (!response.ok) {
-      // If unauthorized or other error, return empty array
-      if (response.status === 401) {
-        console.warn("User not authenticated for personalized recommendations")
-        return []
-      }
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    const result = await response.json()
-    
-    if (result.success && result.data) {
-      return result.data
-    }
-    
-    throw new Error("Invalid response format")
-  } catch (error) {
-    console.error("Error fetching personalized recommendations:", error)
-    return []
-  }
-}
 
 /**
  * Fetch quiz suggestions for a specific chapter

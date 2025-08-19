@@ -278,9 +278,10 @@ export const forceSyncSubscription = createAsyncThunk<
     }
  
     if (!res?.ok) {
-      const status = res?.status ?? "unknown"
-      const statusText = (res && (res as any).statusText) || "Unknown"
-      throw new Error(`Force sync failed: ${status} - ${statusText}`)
+  const status = res?.status ?? "unknown"
+  const statusText = (res && (res as any).statusText) || "Unknown"
+  logger.warn(`Force sync warning: ${status} - ${statusText}`)
+  return DEFAULT_FREE_SUBSCRIPTION
     }
  
     const syncResult = await res.json()
