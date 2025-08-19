@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Extract user's preferred category IDs
-    const completedCategoryIds = userProgress.map(p => p.course.categoryId).filter(Boolean) as number[]
+    const completedCategoryIds = userProgress.map(p => p.course.category?.id).filter(Boolean) as number[]
     const categoryFrequency = completedCategoryIds.reduce((acc, categoryId) => {
       acc[categoryId] = (acc[categoryId] || 0) + 1
       return acc
