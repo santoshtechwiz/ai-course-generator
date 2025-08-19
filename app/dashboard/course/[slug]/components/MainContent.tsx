@@ -69,7 +69,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   isFullscreen = false
 }) => {
   // Always define all hooks at the top level - no early returns or conditions before hooks
-  console.log(course);
+  
   const router = useRouter()
   // Remove useSession  // const { data: session } = useSession()
   const { toast } = useToast() // Fix: Properly destructure toast from useToast hook
@@ -668,7 +668,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         });
       }
     },
-    [dispatch, canPlayVideo, course.id, videoStateStore, toast]
+    [dispatch, course.id, videoStateStore, toast, userSubscription]
   )
 
   const handleNextVideo = useCallback(() => {
@@ -790,7 +790,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     onProgress: handleVideoProgress,
     onVideoLoad: handleVideoLoad,
     onPlayerReady: handlePlayerReady,
-    onBookmark: handleSeekToBookmark,
     bookmarks: bookmarkItems,
     isAuthenticated: !!user,
     autoPlay: autoplayMode,
@@ -798,13 +797,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     showControls: true,
     onCertificateClick: handleCertificateClick,
     onChapterComplete: handleChapterComplete,
-    onNextVideo: handleNextVideo,
-    nextVideoId: nextChapter?.videoId || undefined,
-    nextVideoTitle: nextChapter?.chapter.title || '',
-    onPrevVideo: handlePrevVideo,
-    prevVideoTitle: prevChapter?.chapter.title || '',
-    hasNextVideo: !!nextChapter,
-    hasPrevVideo: !!prevChapter,
+    // Disable in-player next/prev navigation UI per current UX
+    onNextVideo: undefined,
+    hasNextVideo: false,
     onPictureInPictureToggle: handlePIPToggle,
     className: "h-full w-full",
      initialSeekSeconds: (function(){
