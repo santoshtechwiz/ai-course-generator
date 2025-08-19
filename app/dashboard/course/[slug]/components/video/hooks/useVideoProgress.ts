@@ -36,6 +36,24 @@ export function useVideoProgress({
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<Error | null>(null)
   
+  // Get a valid user ID for progress tracking (authenticated user or guest)
+  const effectiveUserId = useMemo(() => {
+    if (userId) return userId;
+    if (authGetGuestId) return authGetGuestId();
+    
+    // Fallback to session storage guest ID
+    try {
+      let guestId = sessionStorage.getItem('video-guest-id');
+      if (!guestId) {
+        guestId = `guest-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+        sessionStorage.setItem('video-guest-id', guestId);
+      }
+      return guestId;
+    } catch (e) {
+      return 'anonymous';
+    }
+  }, [userId, authGetGuestId]);
+  
   // Use numeric chapter ID only; never fall back to videoId (API requires currentChapterId)
   const effectiveChapterId = useMemo(() => {
     const cid = typeof chapterId !== 'undefined' ? chapterId : currentChapterId
@@ -43,28 +61,33 @@ export function useVideoProgress({
     return Number.isFinite(n) && !Number.isNaN(n) && n > 0 ? n : undefined
   }, [chapterId, currentChapterId])
   
-  // Validate required parameters
+  // Validate required parameters - but don't block the hook from working
   useEffect(() => {
+    const errors = [];
+    
     if (!courseId) {
-      setError(new Error('Course ID is required for progress tracking'));
-      return;
+      errors.push('Course ID is required for progress tracking');
     }
     
     if (!videoId) {
-      setError(new Error('Video ID is required for progress tracking'));
-      return;
+      errors.push('Video ID is required for progress tracking');
     }
     
     if (!effectiveChapterId) {
-      setError(new Error('Chapter ID is required for progress tracking'));
-      return;
+      errors.push('Chapter ID is required for progress tracking');
     }
     
-    if (!userId && !authGetGuestId) {
-      setError(new Error('User authentication is required for progress tracking'));
-      return;
+    if (!effectiveUserId) {
+      errors.push('User ID is required for progress tracking');
     }
-  }, [courseId, videoId, effectiveChapterId, userId, authGetGuestId]);
+    
+    if (errors.length > 0) {
+      console.warn('Progress tracking validation warnings:', errors);
+      // Don't set error state to prevent blocking the hook
+    } else {
+      setError(null); // Clear any existing errors
+    }
+  }, [courseId, videoId, effectiveChapterId, effectiveUserId]);
   
   // Convert courseId to string for consistent lookup
   const courseIdStr = String(courseId)
@@ -179,7 +202,7 @@ export function useVideoProgress({
   // Create standard progress object structure that matches the API format
   const progress = useMemo(() => ({
     id: initialProgress?.id || 0,
-    userId: userId || "",
+    userId: effectiveUserId || "",
     courseId: Number(courseId),
     currentChapterId: Number(effectiveChapterId) || initialProgress?.currentChapterId || 0,
     currentUnitId: initialProgress?.currentUnitId || null,
@@ -200,7 +223,7 @@ export function useVideoProgress({
     createdAt: initialProgress?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     resumePoint: progressState.playedSeconds || 0
-  }), [progressState, courseId, effectiveChapterId, userId, initialProgress]);
+  }), [progressState, courseId, effectiveChapterId, effectiveUserId, initialProgress]);
 
   // Track progress with milestone detection
   const trackProgress = useCallback(
@@ -265,7 +288,7 @@ export function useVideoProgress({
             });
             
             // Call API to update progress - this will be rate limited by progressApi
-            if (effectiveChapterId && videoId && userId) {
+            if (effectiveChapterId && videoId && effectiveUserId) {
               progressApi.queueUpdate({
                 courseId,
                 chapterId: effectiveChapterId,
@@ -274,13 +297,13 @@ export function useVideoProgress({
                 playedSeconds: progressState.playedSeconds,
                 duration: duration,
                 completed: true,
-                userId: userId,
+                userId: effectiveUserId,
               });
             } else {
               console.warn('Progress update skipped: missing required parameters', {
                 effectiveChapterId,
                 videoId,
-                userId
+                effectiveUserId
               });
             }
             
@@ -306,7 +329,7 @@ export function useVideoProgress({
       const isSignificantProgress = progressState.played > 0.05; // 5% or more
       const isNearCompletion = progressState.played > 0.9; // 90% or more
       
-      if (shouldSendUpdate && effectiveChapterId && videoId && userId) {
+      if (shouldSendUpdate && effectiveChapterId && videoId && effectiveUserId) {
         // Always send updates for significant progress or near completion
         if (isSignificantProgress || isNearCompletion) {
           progressApi.queueUpdate({
@@ -317,18 +340,18 @@ export function useVideoProgress({
             playedSeconds: progressState.playedSeconds,
             duration: duration,
             completed: false,
-            userId: userId,
+            userId: effectiveUserId,
           });
         }
-      } else if (shouldSendUpdate && (!effectiveChapterId || !videoId || !userId)) {
+      } else if (shouldSendUpdate && (!effectiveChapterId || !videoId || !effectiveUserId)) {
         console.warn('Progress update skipped: missing required parameters', {
           effectiveChapterId,
           videoId,
-          userId
+          effectiveUserId
         });
       }
     }, 5000), // Reduce throttle delay to 5 seconds for more responsive updates
-    [videoId, courseId, effectiveChapterId, progress.isCompleted, userId, duration, 
+    [videoId, courseId, effectiveChapterId, progress.isCompleted, effectiveUserId, duration, 
      onMilestoneReached, playedThreshold, getStorageId]
   );
 
@@ -356,23 +379,28 @@ export function useVideoProgress({
         // Queue API update
         if (typeof data.progress === "number") {
           const chapterIdForApi = Number(data.currentChapterId ?? effectiveChapterId)
-          if (Number.isFinite(chapterIdForApi) && chapterIdForApi > 0 && videoId && userId) {
+          const currentVideoId = data.videoId || videoId
+          const currentUserId = data.userId || effectiveUserId
+          
+          if (Number.isFinite(chapterIdForApi) && chapterIdForApi > 0 && currentVideoId && currentUserId) {
             progressApi.queueUpdate({
               courseId,
               chapterId: chapterIdForApi,
-              videoId: String(videoId),
+              videoId: String(currentVideoId),
               progress: data.progress,
               playedSeconds: progressState.playedSeconds || 0,
               duration: progressState.duration || 0,
               completed: !!data.isCompleted,
-              userId,
+              userId: currentUserId,
             });
           } else {
             console.warn('Progress update skipped: invalid parameters', {
               chapterId: data.currentChapterId,
               effectiveChapterId,
-              videoId,
-              userId
+              videoId: currentVideoId,
+              userId: currentUserId,
+              dataVideoId: data.videoId,
+              dataUserId: data.userId
             });
           }
         }
@@ -381,7 +409,7 @@ export function useVideoProgress({
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     },
-    [courseId, effectiveChapterId, userId, videoId, progressState]
+    [courseId, effectiveChapterId, effectiveUserId, videoId, progressState]
   );
 
   // Certificate prompt handling
