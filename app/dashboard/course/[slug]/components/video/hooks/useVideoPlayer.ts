@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import type { RefObject } from "react"
 import type ReactPlayer from "react-player"
 
 import screenfull from "screenfull"
@@ -322,29 +323,40 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   }, [])
 
   // Bookmark handlers
+  // Local formatTime helper
+  const formatTime = (seconds: number): string => {
+    if (isNaN(seconds) || seconds < 0) return "0:00";
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return h > 0
+      ? `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
+      : `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
   const handleAddBookmark = useCallback(
     (time: number, title?: string) => {
-  if (!options.youtubeVideoId) return
+      if (!options.youtubeVideoId) return;
 
       const bookmarkData: BookmarkData = {
-  id: `${options.youtubeVideoId}-${Date.now()}`,
-  videoId: options.youtubeVideoId,
+        id: `${options.youtubeVideoId}-${Date.now()}`,
+        videoId: options.youtubeVideoId,
         time,
         title: title || `Bookmark at ${formatTime(time)}`,
         description: title ? `${title} at ${formatTime(time)}` : `Bookmark at ${formatTime(time)}`,
         createdAt: new Date().toISOString(),
-      }
+      };
 
-      dispatch(addBookmark(bookmarkData))
-      options.onBookmark?.(time, title)
+      dispatch(addBookmark(bookmarkData));
+      options.onBookmark?.(time, title);
 
       toast({
         title: "Bookmark added",
         description: "You can access your bookmarks in the timeline.",
-      })
+      });
     },
-  [options.youtubeVideoId, options.onBookmark, dispatch, toast],
-  )
+    [options.youtubeVideoId, options.onBookmark, dispatch, toast]
+  );
 
   const handleRemoveBookmark = useCallback(
     (bookmarkId: string) => {

@@ -21,10 +21,11 @@ import ChapterStartOverlay from "./ChapterStartOverlay"
 import ChapterEndOverlay from "./ChapterEndOverlay"
 import AutoPlayNotification from "./AutoPlayNotification"
 import NextChapterNotification from "./NextChapterNotification"
+import NextChapterAutoOverlay from "./NextChapterAutoOverlay"
 import ChapterTransitionOverlay from "./ChapterTransitionOverlay"
 import AnimatedCourseAILogo from "./AnimatedCourseAILogo"
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
-// Removed in-player growth promo; we will show CTAs outside the player
+import MiniPlayerNode from "./MiniPlayer"
 
 // Memoized authentication prompt to prevent unnecessary re-renders
 const AuthPrompt = React.memo(
@@ -111,10 +112,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onPrevVideo,
   prevVideoTitle,
   hasNextVideo,
-
   isFullscreen = false,
-
-  onPictureInPictureToggle, // Add this prop
+  onPictureInPictureToggle,
   className,
   bookmarks = [],
   isAuthenticated = false,
@@ -131,7 +130,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
   const { data: session } = useSession()
   const youtubeVideoIdRef = useRef(youtubeVideoId)
-  const { startLoading, stopLoading ,isLoading} = useGlobalLoader()
+  const { startLoading, stopLoading, isLoading } = useGlobalLoader()
 
   // State management with proper initialization
   const [showBookmarkPanel, setShowBookmarkPanel] = useState(false)
@@ -156,56 +155,76 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [certificateState, setCertificateState] = useState<CertificateState>("idle")
   const [autoPlayVideo, setAutoPlayVideo] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+
+  // Picture-in-Picture state tracking
+  const [isNativePiPActive, setIsNativePiPActive] = useState(false)
+  const [isMiniPlayerActive, setIsMiniPlayerActive] = useState(false)
+
+  // Overlay state for auto-advance
+  const [showNextChapterAutoOverlay, setShowNextChapterAutoOverlay] = useState(false)
+  const [nextChapterAutoCountdown, setNextChapterAutoCountdown] = useState(5)
+
   // Mini player position and dragging
-  const [miniPos, setMiniPos] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('mini-player-pos')
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved)
-          // Ensure the saved position is still valid for current viewport
-          if (parsed.x >= 0 && parsed.y >= 0 && 
-              parsed.x <= window.innerWidth - 320 && 
-              parsed.y <= window.innerHeight - 180) {
-            return parsed
-          }
-        } catch {}
-      }
-      // Default position: bottom-right corner
-      return {
-        x: Math.max(8, window.innerWidth - 328),
-        y: Math.max(8, window.innerHeight - 188)
-      }
-    }
-    return { x: 100, y: 100 }
-  })
+  const [miniPos, setMiniPos] = useState<{ x: number; y: number }>({ x: 100, y: 100 })
   const draggingRef = useRef(false)
   const dragOffsetRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 })
 
   // Refs for cleanup and performance
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const chapterTitleRef = useRef(chapterTitle)
-  // Removed duplicate videoIdRef declaration after refactor
   const videoElementRef = useRef<HTMLVideoElement | null>(null)
   const lastFsToggleRef = useRef<number>(0)
   const lastTheaterToggleRef = useRef<number>(0)
+  const nextNotifIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const autoPlayIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Initialize video player hook BEFORE any usage of containerRef
+  const { state, playerRef, containerRef, bufferHealth, youtubeUrl, handleProgress, handlers } =
+    useVideoPlayer({
+      youtubeVideoId,
+      courseId: String(courseId || ''),
+      chapterId: String(chapterId || ''),
+      onEnded: () => {
+        // Mark free video as played if not authenticated
+        if (!isAuthenticated && !hasPlayedFreeVideo) {
+          localStorage.setItem("hasPlayedFreeVideo", "true")
+          setHasPlayedFreeVideo(true)
+        }
+      },
+      onProgress,
+      onTimeUpdate,
+      rememberPlaybackPosition,
+      rememberPlaybackSettings,
+      onBookmark,
+      autoPlay: autoPlay && canPlayVideo,
+      onVideoLoad,
+      onCertificateClick,
+    })
+
+  // Utility functions
+  const clamp = useCallback((val: number, min: number, max: number) => Math.max(min, Math.min(max, val)), [])
+
   // Save mini player position
   const saveMiniPos = useCallback((pos: { x: number; y: number }) => {
     try {
       localStorage.setItem('mini-player-pos', JSON.stringify(pos))
-    } catch {}
+    } catch {
+      console.warn('Failed to save mini player position')
+    }
   }, [])
-  const clamp = useCallback((val: number, min: number, max: number) => Math.max(min, Math.min(max, val)), [])
+
+  // Initialize mini player position
   useEffect(() => {
     if (typeof window === 'undefined') return
-    // Initialize mini position to bottom-right by default
+
     const w = window.innerWidth
     const h = window.innerHeight
     const width = 320
     const height = Math.round((9 / 16) * width)
     let initial = { x: w - width - 16, y: h - height - 16 }
+
     try {
-      const saved = localStorage.getItem("mini_player_pos")
+      const saved = localStorage.getItem("mini-player-pos")
       if (saved) {
         const parsed = JSON.parse(saved)
         if (typeof parsed?.x === 'number' && typeof parsed?.y === 'number') {
@@ -215,51 +234,30 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           }
         }
       }
-    } catch {}
+    } catch {
+      console.warn('Failed to load mini player position')
+    }
+
     setMiniPos(initial)
+
     const onResize = () => {
       const nw = window.innerWidth
       const nh = window.innerHeight
-      setMiniPos((pos) => {
-        if (!pos) return pos
-        return {
-          x: clamp(pos.x, 8, Math.max(8, nw - width - 8)),
-          y: clamp(pos.y, 8, Math.max(8, nh - height - 8)),
-        }
-      })
+      setMiniPos((pos) => ({
+        x: clamp(pos.x, 8, Math.max(8, nw - width - 8)),
+        y: clamp(pos.y, 8, Math.max(8, nh - height - 8)),
+      }))
     }
+
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [clamp])
-
-  // Initialize video player hook BEFORE any usage of containerRef
-  const { state, playerRef, containerRef, bufferHealth, youtubeUrl, handleProgress, handlers } =
-   useVideoPlayer({
-  youtubeVideoId,
-    courseId: String(courseId || ''),
-    chapterId: String(chapterId || ''),
-    onEnded: () => {
-      // Mark free video as played if not authenticated
-      if (!isAuthenticated && !hasPlayedFreeVideo) {
-        localStorage.setItem("hasPlayedFreeVideo", "true")
-        setHasPlayedFreeVideo(true)
-      }
-    },
-    onProgress,
-    onTimeUpdate,
-    rememberPlaybackPosition,
-    rememberPlaybackSettings,
-    onBookmark,
-    autoPlay: autoPlay && canPlayVideo,
-    onVideoLoad,
-    onCertificateClick,
-    
-  })
 
   // Observe visibility of the container to toggle mini controls
   const [isInView, setIsInView] = useState(true)
   useEffect(() => {
     if (!containerRef.current || typeof IntersectionObserver === 'undefined') return
+
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0]
@@ -267,15 +265,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       },
       { root: null, threshold: 0.3 },
     )
+
     observer.observe(containerRef.current)
     return () => observer.disconnect()
   }, [containerRef])
 
-  // Track mounting state to prevent "element not found" errors
+  // Track mounting state and initialize autoplay preference
   useEffect(() => {
     setIsMounted(true)
-    
-    // Load auto-play video preference
+
     try {
       const saved = localStorage.getItem('video-autoplay')
       if (saved) {
@@ -284,49 +282,54 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     } catch (error) {
       console.warn('Could not load auto-play preference:', error)
     }
- 
+
     return () => setIsMounted(false)
-  }, [autoPlay])
- 
-  // First-time volume init at 50% if no saved preference
-  const volumeInitRef = useRef(false)
-  useEffect(() => {
-    if (volumeInitRef.current) return
-    try {
-      const savedA = localStorage.getItem('VIDEO_PLAYER_VOLUME')
-      const savedB = localStorage.getItem('video-player-volume')
-      if (!savedA && !savedB) {
-        handlers.onVolumeChange(0.5)
-      }
-    } catch {}
-    volumeInitRef.current = true
   }, [])
- 
-  // Update refs when props change to ensure latest values
+
+  // Enhanced PiP detection and state management
+  useEffect(() => {
+    const checkPiPState = () => {
+      const pipElement = (document as any).pictureInPictureElement
+      setIsNativePiPActive(!!pipElement)
+    }
+
+    const handleEnterPiP = () => {
+      setIsNativePiPActive(true)
+      setIsMiniPlayerActive(false) // Disable mini player when native PiP is active
+      onPictureInPictureToggle?.(true)
+    }
+
+    const handleLeavePiP = () => {
+      setIsNativePiPActive(false)
+      onPictureInPictureToggle?.(false)
+    }
+
+    // Check initial state
+    checkPiPState()
+
+    if (typeof document !== "undefined") {
+      document.addEventListener('enterpictureinpicture', handleEnterPiP)
+      document.addEventListener('leavepictureinpicture', handleLeavePiP)
+
+      return () => {
+        document.removeEventListener('enterpictureinpicture', handleEnterPiP)
+        document.removeEventListener('leavepictureinpicture', handleLeavePiP)
+      }
+    }
+  }, [onPictureInPictureToggle])
+
+  // Sync mini player state with the hook's state
+  useEffect(() => {
+    setIsMiniPlayerActive(state.isMiniPlayer)
+  }, [state.isMiniPlayer])
+
+  // Update refs when props change
   useEffect(() => {
     chapterTitleRef.current = chapterTitle
-  youtubeVideoIdRef.current = youtubeVideoId
+    youtubeVideoIdRef.current = youtubeVideoId
   }, [chapterTitle, youtubeVideoId])
- 
-  // Play immediately when instructed and allowed, on video change
-  const lastForcedVideoRef = useRef<string | null>(null)
-  useEffect(() => {
-  console.log("VideoPlayer: Attempting to play video", youtubeVideoId, "forcePlay:", forcePlay, "canPlayVideo:", canPlayVideo)
-  if (!youtubeVideoId || !canPlayVideo) return
-  if (forcePlay && lastForcedVideoRef.current !== youtubeVideoId) {
-      try {
-        handlers.onPlay()
-      } catch {}
-  lastForcedVideoRef.current = youtubeVideoId
-    }
-  }, [youtubeVideoId, forcePlay, canPlayVideo])
 
-  // Check PiP support on mount with proper error handling
-  useEffect(() => {
-    // PiP support is now handled by the useVideoPlayer hook
-  }, [])
-
-  // Enhanced authentication check with memoization
+  // Enhanced authentication check
   const authenticationState = useMemo(() => {
     if (typeof window === "undefined") {
       return {
@@ -350,32 +353,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowAuthPrompt(authenticationState.showAuthPrompt)
   }, [authenticationState])
 
-  // Attempt muted autoplay when ready or when the video changes (if preference is enabled)
-  useEffect(() => {
-    const shouldAuto = (autoPlay || autoPlayVideo) && canPlayVideo
-    if (!playerReady || !shouldAuto) return
-
-    // Only attempt if user hasn't interacted yet
-    if (!state.userInteracted) {
-      try {
-        handlers.onPlay()
-      } catch {}
-    }
-  }, [youtubeVideoId, playerReady, autoPlay, autoPlayVideo, canPlayVideo, handlers, state.userInteracted, state.muted])
-
-  // Safe video element getter with proper error handling (defined early for use in handlers and JSX)
+  // Safe video element getter
   const getVideoElement = useCallback((): HTMLVideoElement | null => {
     if (!isMounted || !containerRef.current) return null
 
     try {
-      // First try to get from ReactPlayer internal structure
       const reactPlayerVideo = containerRef.current.querySelector("iframe")?.contentDocument?.querySelector("video")
       if (reactPlayerVideo) {
         videoElementRef.current = reactPlayerVideo as HTMLVideoElement
         return reactPlayerVideo as HTMLVideoElement
       }
 
-      // Fallback to direct video element
       const directVideo = containerRef.current.querySelector("video")
       if (directVideo) {
         videoElementRef.current = directVideo as HTMLVideoElement
@@ -389,57 +377,53 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [isMounted, containerRef])
 
-  // Interval ref for next-chapter countdown
-  const nextNotifIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  // Enhanced PIP handling with callback to parent
+  // Enhanced PIP handling with proper state management
   const handlePictureInPicture = useCallback(async () => {
     try {
       const videoEl = getVideoElement()
-      
-      // Check if native PiP is supported and available
-      const isNativePiPSupported = !!(videoEl && (videoEl as any).requestPictureInPicture && (document as any).pictureInPictureEnabled);
-      
+
+      // Check if native PiP is supported
+      const isNativePiPSupported = !!(
+        videoEl &&
+        (videoEl as any).requestPictureInPicture &&
+        (document as any).pictureInPictureEnabled
+      )
+
       if (isNativePiPSupported) {
-        // Handle native PiP
-        if ((document as any).pictureInPictureElement) {
+        if (isNativePiPActive) {
           // Exit native PiP
           await (document as any).exitPictureInPicture()
-          onPictureInPictureToggle?.(false)
         } else {
-          // Enter native PiP
           // Ensure mini-player is off when entering native PiP
-          if (state.isMiniPlayer && handlers.handlePictureInPictureToggle) {
+          if (isMiniPlayerActive && handlers.handlePictureInPictureToggle) {
             handlers.handlePictureInPictureToggle()
+            setIsMiniPlayerActive(false)
           }
           await (videoEl as any).requestPictureInPicture()
-          onPictureInPictureToggle?.(true)
         }
         return
       }
 
-      // Fallback to custom mini player when native PiP is not available
+      // Fallback to custom mini player
       if (handlers.handlePictureInPictureToggle) {
-        const next = !state.isMiniPlayer
-        
-        // If turning on mini-player, and native PiP is active, exit PiP first
-        if (next && (document as any).pictureInPictureElement && (document as any).exitPictureInPicture) {
-          try { 
-            await (document as any).exitPictureInPicture() 
+        const nextMiniState = !isMiniPlayerActive
+
+        // If turning on mini-player and native PiP is active, exit PiP first
+        if (nextMiniState && isNativePiPActive && (document as any).exitPictureInPicture) {
+          try {
+            await (document as any).exitPictureInPicture()
           } catch (error) {
             console.warn('Failed to exit native PiP:', error)
           }
-          onPictureInPictureToggle?.(false)
         }
-        
+
         handlers.handlePictureInPictureToggle()
-        onPictureInPictureToggle?.(next)
-      } else if (onPictureInPictureToggle) {
-        onPictureInPictureToggle(true)
+        setIsMiniPlayerActive(nextMiniState)
+        onPictureInPictureToggle?.(nextMiniState)
       } else {
         toast({
           title: "PiP not available",
-          description: "This video provider does not support Picture‑in‑Picture.",
+          description: "This video provider does not support Picture-in-Picture.",
           variant: "destructive",
         })
       }
@@ -447,49 +431,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       console.warn('Picture-in-Picture failed:', error)
       toast({
         title: "PiP Error",
-        description: "Could not toggle Picture‑in‑Picture.",
+        description: "Could not toggle Picture-in-Picture.",
         variant: "destructive",
       })
       onPictureInPictureToggle?.(false)
     }
-  }, [getVideoElement, handlers.handlePictureInPictureToggle, onPictureInPictureToggle, toast, state.isMiniPlayer])
+  }, [getVideoElement, handlers.handlePictureInPictureToggle, onPictureInPictureToggle, toast, isNativePiPActive, isMiniPlayerActive])
 
-  // Handle PIP events with better performance and state management
-  useEffect(() => {
-    const handleEnterPiP = () => {
-      if (handlers.setState) {
-        handlers.setState((prev: typeof state) => ({
-          ...prev,
-          isPictureInPicture: true,
-          isMiniPlayer: false // Ensure mini-player is off when native PiP is active
-        }))
-      }
-      onPictureInPictureToggle?.(true)
-    }
-
-    const handleLeavePiP = () => {
-      if (handlers.setState) {
-        handlers.setState((prev: typeof state) => ({
-          ...prev,
-          isPictureInPicture: false
-        }))
-      }
-      onPictureInPictureToggle?.(false)
-    }
-
-    if (typeof document !== "undefined") {
-      document.addEventListener('enterpictureinpicture', handleEnterPiP)
-      document.addEventListener('leavepictureinpicture', handleLeavePiP)
-
-      return () => {
-        document.removeEventListener('enterpictureinpicture', handleEnterPiP)
-        document.removeEventListener('leavepictureinpicture', handleLeavePiP)
-      }
-    }
-  }, [onPictureInPictureToggle, handlers.setState, state])
-
-
-  // Memoized format time helper
+  // Format time helper
   const formatTime = useCallback((seconds: number): string => {
     if (isNaN(seconds) || seconds < 0) return "0:00"
     const h = Math.floor(seconds / 3600)
@@ -500,12 +449,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       : `${m}:${s.toString().padStart(2, "0")}`
   }, [])
 
-  // Enhanced player ready handler with better error handling
+  // Enhanced player ready handler
   const handlePlayerReady = useCallback(() => {
     setPlayerReady(true)
     setIsLoadingDuration(false)
-    
-    // Stop global loading when video is ready
     stopLoading()
 
     if (playerRef.current) {
@@ -520,57 +467,71 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           })
         }
 
-        // Pass the player reference to the parent component
         onPlayerReady?.(playerRef)
       } catch (error) {
         console.warn("Error getting video duration:", error)
       }
 
-      // Attempt initial seek if provided by parent
+      // Handle initial seek
       if (typeof initialSeekSeconds === 'number' && initialSeekSeconds > 0) {
         try {
           const dur = playerRef.current.getDuration() || videoDuration || state.duration || 0
           if (dur > 0 && initialSeekSeconds < dur - 1) {
             playerRef.current.seekTo(Math.max(0, initialSeekSeconds))
           }
-        } catch {}
+        } catch (error) {
+          console.warn("Failed to seek to initial position:", error)
+        }
       }
 
-      // Attempt auto-resume from local storage (per-user or guest)
+      // Attempt auto-resume from local storage
       try {
         const userKey = (typeof window !== 'undefined' && localStorage.getItem('video-guest-id')) || 'guest'
-  const storageKey = `video-progress-${userKey}-${youtubeVideoId}`
+        const storageKey = `video-progress-${userKey}-${youtubeVideoId}`
         const saved = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null
         if (saved) {
           const parsed = JSON.parse(saved)
           const ts = Number(parsed?.playedSeconds || parsed?.time || 0)
           const dur = Number(parsed?.duration || videoDuration || state.duration || 0)
           if (!isNaN(ts) && ts > 0 && dur > 0 && ts < dur - 2) {
-            // Seek slightly before saved position for context
             playerRef.current.seekTo(Math.max(0, ts - 1))
           }
         }
       } catch (e) {
-        // ignore resume failures
+        console.warn("Failed to resume playback:", e)
       }
 
-      // Set initial volume to 50%
+      // Initialize volume
       try {
-        handlers.onVolumeChange(0.5)
-      } catch {}
+        const savedVolume = localStorage.getItem('VIDEO_PLAYER_VOLUME') || localStorage.getItem('video-player-volume')
+        if (!savedVolume) {
+          handlers.onVolumeChange(0.5)
+        }
+      } catch (error) {
+        console.warn("Failed to set initial volume:", error)
+      }
     }
+
     handlers.onReady()
 
-    // Attempt muted autoplay if the user preference is enabled
-    try {
-      const shouldAuto = (autoPlay || autoPlayVideo) && canPlayVideo
-      if (shouldAuto && !state.userInteracted) {
-        handlers.onPlay()
+    // Handle autoplay after player is ready
+    const shouldAutoPlay = (autoPlay || autoPlayVideo) && canPlayVideo && !state.userInteracted
+    if (shouldAutoPlay) {
+      try {
+        // Ensure muted for autoplay compliance
+        if (!state.muted) {
+          handlers.onMute()
+        }
+        setTimeout(() => {
+          handlers.onPlay()
+        }, 100) // Small delay to ensure player is fully ready
+      } catch (error) {
+        console.warn("Autoplay failed:", error)
       }
-    } catch {}
-  }, [handlers, onVideoLoad, courseName, youtubeVideoId, onPlayerReady, stopLoading, videoDuration, state.duration, initialSeekSeconds, autoPlay, autoPlayVideo, canPlayVideo, state.userInteracted, state.muted])
+    }
+  }, [handlers, onVideoLoad, courseName, youtubeVideoId, onPlayerReady, stopLoading, videoDuration, state.duration, state.userInteracted, state.muted, initialSeekSeconds, autoPlay, autoPlayVideo, canPlayVideo])
 
-  // Enhanced play handler with better UX
+  // Enhanced play handler
   const handlePlayClick = useCallback(() => {
     if (!canPlayVideo) {
       if (!isAuthenticated && hasPlayedFreeVideo) {
@@ -594,7 +555,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     handlers.onPlayPause()
   }, [canPlayVideo, isAuthenticated, hasPlayedFreeVideo, playerReady, handlers, toast])
 
-  // Enhanced bookmark handlers with better error handling
+  // Enhanced bookmark handlers
   const handleAddBookmark = useCallback(
     (time: number, title?: string) => {
       if (!isAuthenticated) {
@@ -657,7 +618,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     [handlers, canPlayVideo, toast],
   )
 
-  // Enhanced bookmark panel toggle
   const handleToggleBookmarkPanel = useCallback(() => {
     if (!isAuthenticated) {
       toast({
@@ -670,7 +630,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowBookmarkPanel((prev) => !prev)
   }, [isAuthenticated, toast])
 
-  // Enhanced certificate download handler with proper state management
+  // Certificate download handler
   const handleCertificateDownload = useCallback(async () => {
     if (certificateState !== "idle") return
 
@@ -685,7 +645,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         description: "Your course completion certificate has been downloaded successfully.",
       })
 
-      // Reset state after 3 seconds
       setTimeout(() => {
         setCertificateState("idle")
       }, 3000)
@@ -697,14 +656,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         variant: "destructive",
       })
 
-      // Reset state after 3 seconds
       setTimeout(() => {
         setCertificateState("idle")
       }, 3000)
     }
   }, [certificateState, onCertificateClick, toast])
 
-  // Enhanced auto-hide controls with better performance
+  // Auto-hide controls
   useEffect(() => {
     const handleMouseMove = () => {
       setShowControlsState(true)
@@ -735,10 +693,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [containerRef, state.playing, isHovering, showChapterStart, showChapterEnd, isMounted])
 
-  // Enhanced chapter start overlay logic with proper cleanup
+  // Chapter start overlay logic
   useEffect(() => {
     if (state.playing && !chapterStartShown && playerReady && canPlayVideo && !showChapterEnd && isMounted) {
-      // Use requestAnimationFrame for smoother animation timing
       const animationFrame = requestAnimationFrame(() => {
         setShowChapterStart(true)
         setChapterStartShown(true)
@@ -748,7 +705,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [state.playing, chapterStartShown, playerReady, canPlayVideo, showChapterEnd, isMounted])
 
-  // Reset overlay states when video changes with proper cleanup
+  // Reset overlay states when video changes
   useEffect(() => {
     setChapterStartShown(false)
     setShowChapterStart(false)
@@ -758,70 +715,68 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowChapterTransition(false)
     setChapterTransitionCountdown(5)
     setShowCourseAILogo(false)
+    setShowNextChapterAutoOverlay(false)
+    setNextChapterAutoCountdown(5)
     setPlayerReady(false)
     setVideoDuration(0)
     setIsLoadingDuration(true)
     setCertificateState("idle")
 
-    // Clear any pending timeouts
+    // Clear timeouts and intervals
     if (controlsTimeoutRef.current) {
       clearTimeout(controlsTimeoutRef.current)
     }
+    if (nextNotifIntervalRef.current) {
+      clearInterval(nextNotifIntervalRef.current)
+    }
+    if (autoPlayIntervalRef.current) {
+      clearInterval(autoPlayIntervalRef.current)
+    }
   }, [youtubeVideoId])
 
-  // Enhanced overlay handlers with better state management
+  // Chapter overlay handlers
   const handleChapterStartComplete = useCallback(() => {
     const animationFrame = requestAnimationFrame(() => {
       setShowChapterStart(false)
     })
-
     return () => cancelAnimationFrame(animationFrame)
   }, [])
 
-  // Show small next-chapter notification when 5s remain
+  // Auto-advance notification logic
   useEffect(() => {
     if (!state.playing || !state.duration || !onNextVideo) return
-    const check = () => {
+
+    const checkTimeRemaining = () => {
       const timeRemaining = state.duration - state.lastPlayedTime
-      if (timeRemaining <= 5 && timeRemaining > 0) {
+      if (timeRemaining <= 5 && timeRemaining > 0 && !showNextChapterAutoOverlay) {
         setShowNextChapterNotification(true)
         setNextChapterCountdown(Math.ceil(timeRemaining))
       }
     }
-    const id = setInterval(check, 500)
-    return () => clearInterval(id)
-  }, [state.playing, state.duration, state.lastPlayedTime, onNextVideo])
 
+    const intervalId = setInterval(checkTimeRemaining, 500)
+    return () => clearInterval(intervalId)
+  }, [state.playing, state.duration, state.lastPlayedTime, onNextVideo, showNextChapterAutoOverlay])
+
+  // Video end handler
   const handleVideoEnd = useCallback(() => {
-    console.log('Video ended - Debug info:', {
-      onNextVideo: !!onNextVideo,
-      autoPlayNext: state.autoPlayNext,
-      progressPercentage: progressStats?.progressPercentage,
-      isCourseCompleted: progressStats?.progressPercentage === 100
-    })
-    
     onEnded?.()
-    
-    // Check if this is the final chapter (course 100% completed)
+
     const isCourseCompleted = progressStats?.progressPercentage === 100
-    
+
     if (isCourseCompleted) {
-      // Show course completion overlay for final chapter
-      console.log('Showing course completion overlay')
-      const animationFrame = requestAnimationFrame(() => {
-        setShowChapterEnd(true)
-      })
-      return () => cancelAnimationFrame(animationFrame)
+      setShowChapterEnd(true)
     } else if (onNextVideo && state.autoPlayNext) {
-      // Show small bottom-right notification with countdown and auto-advance
-      setShowNextChapterNotification(true)
-      setNextChapterCountdown(5)
-      if (nextNotifIntervalRef.current) clearInterval(nextNotifIntervalRef.current)
-      nextNotifIntervalRef.current = setInterval(() => {
-        setNextChapterCountdown((prev) => {
+      setShowNextChapterAutoOverlay(true)
+      setNextChapterAutoCountdown(5)
+
+      if (autoPlayIntervalRef.current) clearInterval(autoPlayIntervalRef.current)
+
+      autoPlayIntervalRef.current = setInterval(() => {
+        setNextChapterAutoCountdown((prev) => {
           if (prev <= 1) {
-            if (nextNotifIntervalRef.current) clearInterval(nextNotifIntervalRef.current)
-            setShowNextChapterNotification(false)
+            if (autoPlayIntervalRef.current) clearInterval(autoPlayIntervalRef.current)
+            setShowNextChapterAutoOverlay(false)
             onNextVideo()
             return 5
           }
@@ -829,32 +784,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         })
       }, 1000)
     } else if (onNextVideo) {
-      // Auto-play disabled: do nothing intrusive
-      console.log('Auto-play disabled - staying on current chapter')
+      // Auto-play disabled, show manual continue option
+      setShowChapterEnd(true)
     } else {
-      // For chapters without next video but not course completion, show simple completion message
-      console.log('No next video - showing chapter completion')
-      const animationFrame = requestAnimationFrame(() => {
-        setShowChapterEnd(true)
-      })
-      return () => cancelAnimationFrame(animationFrame)
+      setShowChapterEnd(true)
     }
   }, [onEnded, onNextVideo, state.autoPlayNext, progressStats?.progressPercentage])
 
-  // Cleanup auto-advance timer on unmount or video change
-  useEffect(() => {
-    return () => {
-      if (nextNotifIntervalRef.current) {
-        clearInterval(nextNotifIntervalRef.current)
-      }
-    }
-  }, [youtubeVideoId])
-
-  const handleNextChapter = useCallback(() => {
-    setShowChapterEnd(false)
-    onNextVideo?.()
-  }, [onNextVideo])
-
+  // Handler functions for overlays
   const handleAutoPlayContinue = useCallback(() => {
     setShowAutoPlayNotification(false)
     onNextVideo?.()
@@ -863,6 +800,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleAutoPlayCancel = useCallback(() => {
     setShowAutoPlayNotification(false)
     setAutoPlayCountdown(5)
+  }, [])
+
+  const handleNextChapter = useCallback(() => {
+    setShowChapterEnd(false)
+    onNextVideo?.()
+  }, [onNextVideo])
+
+  const handleNextChapterAutoContinue = useCallback(() => {
+    setShowNextChapterAutoOverlay(false)
+    if (autoPlayIntervalRef.current) {
+      clearInterval(autoPlayIntervalRef.current)
+      autoPlayIntervalRef.current = null
+    }
+    onNextVideo?.()
+  }, [onNextVideo])
+
+  const handleNextChapterAutoCancel = useCallback(() => {
+    setShowNextChapterAutoOverlay(false)
+    setNextChapterAutoCountdown(5)
+    if (autoPlayIntervalRef.current) {
+      clearInterval(autoPlayIntervalRef.current)
+      autoPlayIntervalRef.current = null
+    }
   }, [])
 
   const handleNextChapterNotificationContinue = useCallback(() => {
@@ -896,18 +856,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [])
 
   const handleToggleAutoPlayVideo = useCallback(() => {
-    setAutoPlayVideo(prev => !prev)
-    // Save preference to localStorage
+    const newValue = !autoPlayVideo
+    setAutoPlayVideo(newValue)
+
     try {
-      localStorage.setItem('video-autoplay', JSON.stringify(!autoPlayVideo))
+      localStorage.setItem('video-autoplay', JSON.stringify(newValue))
     } catch (error) {
       console.warn('Could not save auto-play preference:', error)
     }
-    // Notify parent (Redux) if provided
-    try {
-      onToggleAutoPlay?.()
-    } catch {}
-  }, [autoPlayVideo])
+
+    onToggleAutoPlay?.()
+  }, [autoPlayVideo, onToggleAutoPlay])
 
   const handleReplay = useCallback(() => {
     setShowChapterEnd(false)
@@ -917,18 +876,31 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [handlers])
 
-  // Keyboard shortcuts with proper accessibility (throttled for f/t)
+  // Force play when instructed
+  const lastForcedVideoRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!youtubeVideoId || !canPlayVideo || !forcePlay) return
+
+    if (lastForcedVideoRef.current !== youtubeVideoId) {
+      try {
+        handlers.onPlay()
+        lastForcedVideoRef.current = youtubeVideoId
+      } catch (error) {
+        console.warn("Failed to force play:", error)
+      }
+    }
+  }, [youtubeVideoId, forcePlay, canPlayVideo, handlers])
+
+  // Keyboard shortcuts
   useEffect(() => {
     if (!isMounted || !canPlayVideo) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Don't handle keyboard events when typing in form elements
       const target = event.target as HTMLElement
       if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) {
         return
       }
 
-      // Don't handle when overlays are showing
       if (showChapterStart || showChapterEnd) return
 
       switch (event.key) {
@@ -960,7 +932,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             }
           }
           break
-
         case "p":
           event.preventDefault()
           handlePictureInPicture()
@@ -986,7 +957,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     videoDuration,
     state.lastPlayedTime,
     state.isFullscreen,
-    state.isPiPSupported,
     handlePictureInPicture,
   ])
 
@@ -996,7 +966,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     return (
       <AuthPrompt
-  videoId={youtubeVideoId}
+        videoId={youtubeVideoId}
         onSignIn={() => (window.location.href = "/api/auth/signin")}
         onClose={() => setShowAuthPrompt(false)}
       />
@@ -1008,29 +978,40 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return <div className={cn("relative w-full h-full", className)}>{authPromptComponent}</div>
   }
 
+  // Duration handler
+  const onDurationHandler = (duration: number) => {
+    setVideoDuration(duration)
+    setIsLoadingDuration(false)
+  }
+
+  // Determine if mini player should be shown
+  const shouldShowMiniPlayer = state.isMiniPlayer && !isNativePiPActive && isMounted
+
   return (
-        <div
-       ref={containerRef}
-       className={cn(
-         "relative object-contain w-full h-full bg-black overflow-hidden group video-player-container",
-         className,
-         state.theaterMode && "theater-mode-active",
-       )}
-       onMouseEnter={() => setIsHovering(true)}
-       onMouseLeave={() => setIsHovering(false)}
-       role="application"
-       aria-label="Video player"
-       tabIndex={0}
-     >
-      {/* YouTube Player */}
-      <div className={cn("absolute inset-0", state.isPictureInPicture && "opacity-0 pointer-events-none")}
-      >
+    <div
+      ref={containerRef}
+      className={cn(
+        "relative object-contain w-full h-full bg-black overflow-hidden group video-player-container",
+        className,
+        state.theaterMode && "theater-mode-active",
+      )}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+      role="application"
+      aria-label="Video player"
+      tabIndex={0}
+    >
+      {/* Main YouTube Player */}
+      <div className={cn(
+        "absolute inset-0",
+        (isNativePiPActive || shouldShowMiniPlayer) && "opacity-0 pointer-events-none"
+      )}>
         <ReactPlayer
           ref={playerRef}
           url={youtubeUrl}
           width="100%"
           height="100%"
-          playing={state.playing && canPlayVideo && !state.isMiniPlayer}
+          playing={state.playing && canPlayVideo && !shouldShowMiniPlayer && !isNativePiPActive}
           volume={state.volume}
           muted={state.muted || ((autoPlay || autoPlayVideo) && canPlayVideo && !state.userInteracted)}
           playbackRate={state.playbackRate}
@@ -1042,113 +1023,77 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           onError={handlers.onError}
           onEnded={handleVideoEnd}
           onReady={handlePlayerReady}
-          onDuration={(duration) => {
-            setVideoDuration(duration)
-            setIsLoadingDuration(false)
-          }}
-                     config={{
-             youtube: {
-               playerVars: {
-                 autoplay: ((autoPlay || autoPlayVideo) && canPlayVideo) ? 1 : 0,
-                 modestbranding: 1,
-                 rel: 0,
-                 showinfo: 0,
-                 iv_load_policy: 3,
-                 fs: 1,
-                 controls: 0,
-                 disablekb: 0,
-                 playsinline: 1,
-                 enablejsapi: 1,
-                 origin: typeof window !== "undefined" ? window.location.origin : "",
-                 widget_referrer: typeof window !== "undefined" ? window.location.origin : "",
-               },
-             },
-             attributes: {
-               allow:
-                 "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
-               allowFullScreen: true,
-               // Hint browsers that we intend to use PiP where supported
-               // Some browsers require explicit attribute on iframe
-               // ReactPlayer forwards these attributes to the iframe
-             },
-           } as any}
+          onDuration={onDurationHandler}
+          config={{
+            youtube: {
+              playerVars: {
+                autoplay: ((autoPlay || autoPlayVideo) && canPlayVideo) ? 1 : 0,
+                modestbranding: 1,
+                rel: 0,
+                showinfo: 0,
+                iv_load_policy: 3,
+                fs: 1,
+                controls: 0,
+                disablekb: 0,
+                playsinline: 1,
+                enablejsapi: 1,
+                origin: typeof window !== "undefined" ? window.location.origin : "",
+                widget_referrer: typeof window !== "undefined" ? window.location.origin : "",
+              },
+            },
+            attributes: {
+              allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
+              allowFullScreen: true,
+            },
+          } as any}
         />
       </div>
 
-      {/* Mini player fallback if PiP not supported: small re-mounted player */}
-      {state.isMiniPlayer && miniPos && (
-        <div
-          className="fixed z-50 w-[320px] max-w-[85vw] rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black/90 backdrop-blur-sm"
-          style={{ left: miniPos.x, top: miniPos.y }}
-          role="dialog"
-          aria-label="Mini player"
-        >
-          <div
-            className="absolute top-0 left-0 right-0 h-7 cursor-move bg-black/30 text-white/70 text-[11px] flex items-center px-2 select-none"
-            onMouseDown={(e) => {
-              draggingRef.current = true
-              const startX = e.clientX
-              const startY = e.clientY
-              const orig = miniPos
-              dragOffsetRef.current = { dx: startX - orig.x, dy: startY - orig.y }
-              const onMove = (ev: MouseEvent) => {
-                if (!draggingRef.current) return
-                const nx = ev.clientX - dragOffsetRef.current.dx
-                const ny = ev.clientY - dragOffsetRef.current.dy
-                const w = window.innerWidth
-                const h = window.innerHeight
-                const width = Math.min(320, Math.max(240, Math.round(w * 0.5)))
-                const height = Math.round((9 / 16) * width)
-                const clamped = {
-                  x: clamp(nx, 8, Math.max(8, w - width - 8)),
-                  y: clamp(ny, 8, Math.max(8, h - height - 8)),
-                }
-                setMiniPos(clamped)
-              }
-              const onUp = () => {
-                draggingRef.current = false
-                if (miniPos) saveMiniPos(miniPos)
-                document.removeEventListener('mousemove', onMove)
-                document.removeEventListener('mouseup', onUp)
-              }
-              document.addEventListener('mousemove', onMove)
-              document.addEventListener('mouseup', onUp)
-            }}
-          >
-            Drag to reposition
-          </div>
-          <div className="relative w-full aspect-video">
-            <ReactPlayer
-              url={youtubeUrl}
-              width="100%"
-              height="100%"
-              playing={state.playing && canPlayVideo}
-              volume={state.volume}
-              muted={state.muted}
-              playbackRate={state.playbackRate}
-              config={{ youtube: { playerVars: { controls: 1, playsinline: 1 } }, attributes: { allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" } } as any}
-            />
-            <div className="absolute top-1 right-1 flex gap-1">
-              <Button size="icon" variant="ghost" className="h-7 w-7 bg-black/40 text-white hover:bg-black/60" onClick={() => {
-                handlers.handlePictureInPictureToggle()
-                // Notify parent component about PIP state change
-                onPictureInPictureToggle?.(false)
-              }} aria-label="Return to main player">
-                ×
-              </Button>
-            </div>
-          </div>
-        </div>
+      {/* Mini Player */}
+      {shouldShowMiniPlayer && (
+        <MiniPlayerNode
+          visible={true}
+          position={miniPos}
+          onPositionChange={(pos) => {
+            setMiniPos(pos)
+            saveMiniPos(pos)
+          }}
+          onClose={() => {
+            if (handlers.handlePictureInPictureToggle) {
+              handlers.handlePictureInPictureToggle()
+            }
+            setIsMiniPlayerActive(false)
+            onPictureInPictureToggle?.(false)
+          }}
+          onExpand={() => {
+            // Handle expand logic if needed
+          }}
+          videoUrl={youtubeUrl}
+          playing={state.playing && canPlayVideo}
+          volume={state.volume}
+          muted={state.muted}
+          playbackRate={state.playbackRate}
+          title={chapterTitle || courseName}
+          currentTime={formatTime(state.lastPlayedTime)}
+          duration={formatTime(videoDuration || state.duration)}
+          onPlayPause={handlePlayClick}
+          onVolumeChange={handlers.onVolumeChange}
+          onSeek={(percent) => {
+            const time = (videoDuration || state.duration) * percent
+            handlers.onSeek(time)
+          }}
+          played={state.played}
+        />
       )}
 
-      {/* Persistent CourseAI Logo */}
+      {/* CourseAI Logo */}
       <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-30 opacity-70 hover:opacity-100 transition-opacity">
         <div className="bg-black/20 backdrop-blur-sm rounded-full p-1 sm:p-1.5 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
           <span className="text-white font-bold text-xs select-none">CourseAI</span>
         </div>
       </div>
 
-      {/* Error state */}
+      {/* Error State */}
       {state.playerError && (
         <VideoErrorState
           onReload={() => window.location.reload()}
@@ -1162,52 +1107,53 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         />
       )}
 
-      {/* Overlay when native PiP is active to avoid double-visual confusion */}
-      {state.isPictureInPicture && !state.isMiniPlayer && (
+      {/* Native PiP Overlay */}
+      {isNativePiPActive && !shouldShowMiniPlayer && (
         <div className="absolute inset-0 z-20 bg-black/30 backdrop-blur-sm flex items-center justify-center">
           <div className="px-3 py-2 rounded-md bg-black/60 text-white text-xs sm:text-sm flex items-center gap-3">
-            <span>Playing in Picture‑in‑Picture</span>
-            <Button size="sm" variant="secondary" onClick={() => {
-              handlePictureInPicture()
-              // Notify parent component about PIP state change
-              onPictureInPictureToggle?.(false)
-            }} aria-label="Return from Picture-in-Picture">
+            <span>Playing in Picture-in-Picture</span>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handlePictureInPicture}
+              aria-label="Return from Picture-in-Picture"
+            >
               Return
             </Button>
           </div>
         </div>
       )}
 
-      {/* Play button overlay when paused */}
-      {!state.playing && playerReady && canPlayVideo && !showChapterStart && !showChapterEnd && !state.isMiniPlayer && (
+      {/* Play Button Overlay */}
+      {!state.playing && playerReady && canPlayVideo && !showChapterStart && !showChapterEnd && !shouldShowMiniPlayer && (
         <PlayButton onClick={handlePlayClick} />
       )}
 
       {/* Chapter Start Overlay */}
       <ChapterStartOverlay
-        visible={showChapterStart && !state.isMiniPlayer}
+        visible={showChapterStart && !shouldShowMiniPlayer}
         chapterTitle={chapterTitleRef.current}
         courseTitle={courseName}
         onComplete={handleChapterStartComplete}
         duration={3500}
-  videoId={youtubeVideoId}
+        videoId={youtubeVideoId}
       />
 
-      {/* Chapter End Overlay - Only for final course completion; non-final overlays removed per request */}
-      {progressStats?.progressPercentage === 100 && (
+      {/* Chapter End Overlay */}
+      {(showChapterEnd && !shouldShowMiniPlayer && (!onNextVideo || progressStats?.progressPercentage === 100)) && (
         <ChapterEndOverlay
-          visible={showChapterEnd && !state.isMiniPlayer}
+          visible={true}
           chapterTitle={chapterTitleRef.current}
           nextChapterTitle={nextVideoTitle}
-          hasNextChapter={false}
+          hasNextChapter={!!onNextVideo}
           onNextChapter={handleNextChapter}
           onReplay={handleReplay}
           onClose={() => setShowChapterEnd(false)}
           autoAdvanceDelay={5}
-          autoAdvance={false}
+          autoAdvance={!!onNextVideo}
           onCertificateDownload={handleCertificateDownload}
           certificateState={certificateState}
-          isFinalChapter
+          isFinalChapter={progressStats?.progressPercentage === 100}
           courseTitle={courseName}
           relatedCourses={relatedCourses}
           progressStats={progressStats}
@@ -1217,18 +1163,27 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         />
       )}
 
-      {/* Auto-play notification for regular chapters */}
+      {/* Auto-play Notification */}
       <AutoPlayNotification
-        visible={showAutoPlayNotification && !state.isMiniPlayer}
+        visible={showAutoPlayNotification && !shouldShowMiniPlayer}
         nextChapterTitle={nextVideoTitle || "Next Chapter"}
         countdown={autoPlayCountdown}
         onContinue={handleAutoPlayContinue}
         onCancel={handleAutoPlayCancel}
       />
 
-      {/* Next Chapter Notification - Small modal in bottom right for auto-play */}
+      {/* Next Chapter Auto Overlay */}
+      <NextChapterAutoOverlay
+        visible={showNextChapterAutoOverlay && !shouldShowMiniPlayer}
+        nextChapterTitle={nextVideoTitle || "Next Chapter"}
+        countdown={nextChapterAutoCountdown}
+        onContinue={handleNextChapterAutoContinue}
+        onCancel={handleNextChapterAutoCancel}
+      />
+
+      {/* Next Chapter Notification */}
       <NextChapterNotification
-        visible={showNextChapterNotification && !state.isMiniPlayer}
+        visible={showNextChapterNotification && !shouldShowMiniPlayer}
         nextChapterTitle={nextVideoTitle || "Next Chapter"}
         countdown={nextChapterCountdown}
         onContinue={handleNextChapterNotificationContinue}
@@ -1236,17 +1191,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         autoAdvance={state.autoPlayNext}
       />
 
-      {/* Transition overlay removed per request */}
-
       {/* CourseAI Logo Overlay */}
       <AnimatedCourseAILogo
-        show={showCourseAILogo && !state.isMiniPlayer}
+        show={showCourseAILogo && !shouldShowMiniPlayer}
         videoEnding={showChapterTransition}
         onAnimationComplete={() => setShowCourseAILogo(false)}
       />
 
-      {/* Enhanced Custom controls */}
-      {canPlayVideo && !state.isMiniPlayer && (
+      {/* Player Controls */}
+      {canPlayVideo && !shouldShowMiniPlayer && (
         <div
           className={cn(
             "absolute bottom-0 left-0 right-0 z-40 transition-opacity duration-300",
@@ -1280,7 +1233,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             onSeekToBookmark={handleSeekToBookmark}
             isAuthenticated={isAuthenticated}
             onCertificateClick={onCertificateClick}
-
             show={showControlsState}
             onShowKeyboardShortcuts={handlers.handleShowKeyboardShortcuts}
             onNextVideo={onNextVideo}
@@ -1289,18 +1241,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             onToggleAutoPlayNext={handlers.toggleAutoPlayNext}
             autoPlayVideo={autoPlayVideo}
             onToggleAutoPlayVideo={handleToggleAutoPlayVideo}
-                                     onPictureInPicture={handlePictureInPicture}
+            onPictureInPicture={handlePictureInPicture}
             isPiPSupported={state.isPiPSupported}
-            isPiPActive={state.isPictureInPicture}
+            isPiPActive={isNativePiPActive || shouldShowMiniPlayer}
             onToggleTheaterMode={handlers.handleTheaterModeToggle}
             isTheaterMode={state.theaterMode}
-
-           />
+          />
         </div>
       )}
 
-      {/* Floating mini controls when player is not fully in view */}
-      {canPlayVideo && !isInView && !state.isMiniPlayer && (
+      {/* Floating Mini Controls */}
+      {canPlayVideo && !isInView && !shouldShowMiniPlayer && (
         <div className="fixed bottom-4 right-4 z-40 bg-black/80 text-white rounded-full shadow-lg border border-white/10 backdrop-blur-sm px-3 py-2 flex items-center gap-2">
           <button
             className="rounded-full h-8 w-8 flex items-center justify-center hover:bg-white/10"
@@ -1322,7 +1273,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         </div>
       )}
 
-      {/* Bookmark panel */}
+      {/* Bookmark Panel */}
       {showBookmarkPanel && isAuthenticated && (
         <div className="absolute top-0 right-0 bottom-16 w-64 sm:w-72 bg-black/80 backdrop-blur-sm z-30 border-l border-white/10">
           <BookmarkManager
@@ -1338,9 +1289,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         </div>
       )}
 
-      {/* Keyboard shortcuts modal */}
+      {/* Keyboard Shortcuts Modal */}
       {state.showKeyboardShortcuts && (
-        <KeyboardShortcutsModal onClose={handlers.handleHideKeyboardShortcuts} show={state.showKeyboardShortcuts} />
+        <KeyboardShortcutsModal
+          onClose={handlers.handleHideKeyboardShortcuts}
+          show={state.showKeyboardShortcuts}
+        />
       )}
     </div>
   )

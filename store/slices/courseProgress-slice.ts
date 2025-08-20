@@ -1,4 +1,6 @@
-import { createSlice, type PayloadAction, createSelector } from "@reduxjs/toolkit"
+import { createSlice, type PayloadAction, createSelector, createAsyncThunk } from "@reduxjs/toolkit"
+import debounce from "lodash.debounce"
+import axios from "axios"
 import type { RootState } from "@/store"
 
 export interface PerCourseProgress {
@@ -26,6 +28,30 @@ const initialState: CourseProgressSliceState = {
   byCourseId: {},
 }
 
+// Debounced API call for persisting progress
+const debouncedPersistProgress = debounce(async (courseId: string, progress: PerCourseProgress) => {
+  try {
+    await axios.post(`/api/progress/${courseId}`, progress)
+  } catch (err) {
+    // Optionally handle error (e.g., show toast)
+  }
+}, 1000)
+
+export const persistCourseProgress = createAsyncThunk(
+  "courseProgress/persistCourseProgress",
+  async (
+    { courseId, progress }: { courseId: string | number; progress: PerCourseProgress },
+    { rejectWithValue }
+  ) => {
+    try {
+      await debouncedPersistProgress(String(courseId), progress)
+      return { courseId, progress }
+    } catch (err) {
+      return rejectWithValue(err)
+    }
+  }
+)
+
 const courseProgressSlice = createSlice({
   name: "courseProgress",
   initialState,
@@ -41,7 +67,7 @@ const courseProgressSlice = createSlice({
 
       // Only update if jumped chapters, progressed forward, or at least 10s have passed
       if (!existing || action.payload.lectureId !== existing.lastLectureId || action.payload.timestamp - prevTs >= 10) {
-        state.byCourseId[courseKey] = {
+        const updated = {
           lastLectureId: action.payload.lectureId,
           lastTimestamp: Math.max(0, Math.floor(action.payload.timestamp)),
           completedLectures: existing?.completedLectures ?? [],
@@ -49,6 +75,9 @@ const courseProgressSlice = createSlice({
           certificateDownloaded: existing?.certificateDownloaded ?? false,
           lastUpdatedAt: now,
         }
+        state.byCourseId[courseKey] = updated
+        // Dispatch debounced API persist
+        debouncedPersistProgress(courseKey, updated)
       }
     },
     markLectureCompleted(
@@ -67,7 +96,9 @@ const courseProgressSlice = createSlice({
         existing.completedLectures = [...existing.completedLectures, action.payload.lectureId]
       }
       existing.lastLectureId = existing.lastLectureId || action.payload.lectureId
-      state.byCourseId[courseKey] = { ...existing, lastUpdatedAt: Date.now() }
+  const updated = { ...existing, lastUpdatedAt: Date.now() }
+  state.byCourseId[courseKey] = updated
+  debouncedPersistProgress(courseKey, updated)
     },
     setIsCourseCompleted(
       state,
@@ -86,7 +117,9 @@ const courseProgressSlice = createSlice({
       if (!action.payload.isCourseCompleted) {
         existing.certificateDownloaded = false
       }
-      state.byCourseId[courseKey] = { ...existing, lastUpdatedAt: Date.now() }
+  const updated = { ...existing, lastUpdatedAt: Date.now() }
+  state.byCourseId[courseKey] = updated
+  debouncedPersistProgress(courseKey, updated)
     },
     setCertificateDownloaded(
       state,
@@ -101,15 +134,27 @@ const courseProgressSlice = createSlice({
         certificateDownloaded: false,
       }
       existing.certificateDownloaded = action.payload.downloaded
-      state.byCourseId[courseKey] = { ...existing, lastUpdatedAt: Date.now() }
+  const updated = { ...existing, lastUpdatedAt: Date.now() }
+  state.byCourseId[courseKey] = updated
+  debouncedPersistProgress(courseKey, updated)
     },
     resetCourseProgress(state, action: PayloadAction<{ courseId: string | number }>) {
       const courseKey = String(action.payload.courseId)
-      delete state.byCourseId[courseKey]
+  delete state.byCourseId[courseKey]
+  // Optionally persist reset to API
     },
     resetAll(state) {
       state.byCourseId = {}
+      // Optionally persist reset to API
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(persistCourseProgress.fulfilled, (state: CourseProgressSliceState, action: PayloadAction<any>) => {
+      // No-op: state already updated by reducers
+    })
+    builder.addCase(persistCourseProgress.rejected, (state: CourseProgressSliceState, action: PayloadAction<any>) => {
+      // Optionally handle error state
+    })
   },
 })
 

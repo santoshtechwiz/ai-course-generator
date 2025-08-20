@@ -265,7 +265,7 @@ export type PlaybackSpeed = 0.25 | 0.5 | 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2
 export interface UseVideoPlayerReturn {
   state: VideoPlayerState
   playerRef: React.RefObject<any>
-  containerRef: React.RefObject<HTMLDivElement>
+  containerRef: React.RefObject<HTMLDivElement | null>
   bufferHealth: number
   youtubeUrl: string
   handleProgress: ProgressEventHandler
