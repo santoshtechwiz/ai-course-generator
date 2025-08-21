@@ -47,8 +47,6 @@ const manrope = Manrope({
   preload: true,
 })
 
-
-
 // Force dynamic rendering for personalized content
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -201,7 +199,9 @@ export default async function RootLayout({
           <link rel="dns-prefetch" href="https://www.google-analytics.com" />
           <link rel="dns-prefetch" href="https://api.openai.com" />
           <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
-          <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL} />
+          {process.env.NEXT_PUBLIC_API_URL && (
+            <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL} />
+          )}
           
           {/* Favicon and App Icons */}
           <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -232,7 +232,7 @@ export default async function RootLayout({
                   "@type": "Organization",
                   "name": "CourseAI"
                 }
-              })
+              }),
             }}
           />
         </head>
@@ -253,7 +253,6 @@ export default async function RootLayout({
             scroll-smooth
             overflow-x-hidden
           `}
-          role="document"
           suppressHydrationWarning
         >
           {/* Enhanced Skip Navigation */}
