@@ -21,7 +21,6 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { chapterIds, options } = bodyParser.parse(body)
 
-    console.log(`Received batch video generation request for ${chapterIds.length} chapters`)
     
     if (chapterIds.length === 0) {
       return NextResponse.json({

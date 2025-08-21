@@ -22,7 +22,6 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { chapterId, options } = bodyParser.parse(body)
 
-    console.log(`Received enhanced video generation request for chapter ${chapterId}`)
     
     // Process the video through the enhanced service layer
     const result = await enhancedVideoProcessingService.processVideo(chapterId, options)

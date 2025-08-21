@@ -90,7 +90,6 @@ async function fetchAndGenerateSummary(videoId: string): Promise<string | null> 
   const transcriptResponse = await YoutubeService.getTranscript(videoId)
 
   if (transcriptResponse.status !== 200 || !transcriptResponse.transcript) {
-    console.log(`No valid transcript for video ID ${videoId}.`)
     return null
   }
 

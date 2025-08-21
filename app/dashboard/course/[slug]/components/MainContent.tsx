@@ -41,7 +41,7 @@ import { fetchRelatedCourses, fetchQuizSuggestions } from "@/services/recommenda
 import type { RelatedCourse, PersonalizedRecommendation, QuizSuggestion } from "@/services/recommendationsService"
 import { isClient } from "@/lib/seo/core-utils"
 import { useCourseProgressSync } from "@/hooks/useCourseProgressSync"
-import { fetchPersonalizedRecommendations } from "@/services/recommendationsService"
+import { fetchPersonalizedRecommendations } from "@/app/services/recommendationsService"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -762,15 +762,20 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Fetch personalized recommendations when course is completed
   useEffect(() => {
-    if (isLastVideo && user) {
-      fetchPersonalizedRecommendations(
-        user.id,
-        completedChapters?.map(String) || [],
-        course,
-        3
-      ).then(setPersonalizedRecommendations)
-    }
-  }, [isLastVideo, user, completedChapters, course])
+    const fetchRecommendations = async () => {
+      if (isLastVideo && user) {
+        const result = await fetchPersonalizedRecommendations(course.id, 3);
+        // Ensure matchReason is always a string (fallback to empty string if undefined)
+        setPersonalizedRecommendations(
+          result.map(r => ({
+            ...r,
+            matchReason: typeof r.matchReason === "string" ? r.matchReason : ""
+          }))
+        );
+      }
+    };
+    fetchRecommendations();
+  }, [isLastVideo, user, completedChapters, course]);
 
   // Fetch quiz suggestions for key chapters
   useEffect(() => {
@@ -785,21 +790,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     }
   }, [isKeyChapter, currentChapter, course.id])
 
-  // Memoized course stats for better performance
-  const courseStats = useMemo(
-    () => {
-      const totalChapters = videoPlaylist.length
-      const completedChapters = progress?.completedChapters?.length || 0
-      const progressPercentage = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0
 
-      return {
-        totalChapters,
-        completedChapters,
-        progressPercentage,
-      }
-    },
-    [videoPlaylist.length, progress?.completedChapters],
-  )
 
   // Memoized sidebar props to prevent unnecessary re-renders
   const sidebarProps = useMemo(() => ({
@@ -1331,7 +1322,24 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                  {/* Sidebar responsive tweaks */}
           {false && (
             <aside className="hidden lg:block w-full max-w-[24rem] border-l bg-background/50 backdrop-blur-sm">
-              <MemoizedVideoNavigationSidebar {...sidebarProps} />
+              <MemoizedVideoNavigationSidebar
+                course={sidebarCourse}
+                currentChapter={sidebarCurrentChapter}
+                courseId={course.id.toString()}
+                onChapterSelect={handleSidebarChapterSelect}
+                progress={progress}
+                isAuthenticated={!!user}
+                completedChapters={completedChapters}
+                formatDuration={formatDuration}
+                nextVideoId={undefined}
+                currentVideoId={currentVideoId || ''}
+                courseStats={{
+                  completedCount: progress?.completedLectures?.length || 0,
+                  totalChapters: videoPlaylist.length,
+                  progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedLectures?.length || 0) / videoPlaylist.length) * 100) : 0,
+                }}
+                videoDurations={videoDurations}
+              />
             </aside>
           )}
        </div>

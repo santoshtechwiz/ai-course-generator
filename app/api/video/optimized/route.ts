@@ -17,7 +17,6 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { chapterId, topic } = bodyParser.parse(body)
 
-    console.log(`Received optimized video generation request for chapter ${chapterId}`)
     
     // Use topic from request or fallback to chapter-based search
     const searchTopic = topic || `programming tutorial chapter ${chapterId}`

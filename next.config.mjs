@@ -111,11 +111,11 @@ const nextConfig = {
     return config
   },
 
-
   // Experimental features
   experimental: {
     optimizeCss: true, // Optimize CSS
     // Faster development builds
+    serverSourceMaps: true,
     optimizePackageImports: ['lucide-react', 'recharts', '@radix-ui/react-icons'],
   },
 }

@@ -31,7 +31,6 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { action = 'diagnose', autoFix = false } = body
 
-    console.log(`[VideoFix] Running ${action} with autoFix=${autoFix}`)
     
     const diagnostics: DiagnosticResult[] = []
     const fixes: string[] = []
@@ -51,7 +50,6 @@ export async function POST(req: Request) {
         // Reset stuck chapters to idle
         for (const chapter of stuckChapters) {
           await videoRepository.updateChapterVideo(chapter.id, null, 'idle')
-          console.log(`[VideoFix] Reset chapter ${chapter.id} from processing to idle`)
         }
         issue.fixApplied = true
         fixes.push(`Reset ${stuckChapters.length} stuck chapters`)
