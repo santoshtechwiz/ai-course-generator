@@ -14,13 +14,15 @@ import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { DefaultSEO, generateMetadata as generateBaseMetadata } from "@/lib/seo"
 import { GoogleAnalytics } from "@next/third-parties/google"
 
-// Modern font stack for excellent readability and performance
+// Optimized font configurations with proper fallbacks
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
   weight: ["300", "400", "500", "600", "700"],
+  fallback: ["system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
   preload: true,
+  adjustFontFallback: false, // Prevents layout shift
 })
 
 const poppins = Poppins({
@@ -28,7 +30,9 @@ const poppins = Poppins({
   variable: "--font-poppins",
   display: "swap",
   weight: ["300", "400", "500", "600", "700", "800"],
+  fallback: ["system-ui", "-apple-system", "sans-serif"],
   preload: true,
+  adjustFontFallback: false,
 })
 
 const outfit = Outfit({
@@ -36,7 +40,9 @@ const outfit = Outfit({
   variable: "--font-outfit",
   display: "swap",
   weight: ["300", "400", "500", "600", "700", "800"],
-  preload: true,
+  fallback: ["system-ui", "sans-serif"],
+  preload: false, // Only preload critical fonts
+  adjustFontFallback: false,
 })
 
 const manrope = Manrope({
@@ -44,22 +50,25 @@ const manrope = Manrope({
   variable: "--font-manrope",
   display: "swap",
   weight: ["300", "400", "500", "600", "700", "800"],
-  preload: true,
+  fallback: ["system-ui", "sans-serif"],
+  preload: false,
+  adjustFontFallback: false,
 })
 
 // Force dynamic rendering for personalized content
 export const dynamic = "force-dynamic"
-export const revalidate = 0
 
-// Enhanced metadata generation with better SEO
+// Enhanced metadata generation with proper error handling
 export async function generateMetadata(): Promise<Metadata> {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
+  
   try {
     const session = await getServerAuthSession()
     const userName = session?.user?.name
-    const userTitle = userName ? `${userName}'s Dashboard` : null
     
-    const title = userTitle 
-      ? `${userTitle} • CourseAI` 
+    // Fix: Proper encoding for bullet character
+    const title = userName 
+      ? `${userName}'s Dashboard • CourseAI` 
       : "CourseAI - AI-Powered Educational Content Creator"
     
     const description = session?.user 
@@ -69,17 +78,17 @@ export async function generateMetadata(): Promise<Metadata> {
     return generateBaseMetadata({
       title,
       description,
-      canonical: process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io",
+      canonical: siteUrl,
       openGraph: {
         title,
         description,
-        url: process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io",
+        url: siteUrl,
         siteName: "CourseAI",
         type: "website",
         locale: "en_US",
         images: [
           {
-            url: "/og-image.png",
+            url: `${siteUrl}/og-image.png`,
             width: 1200,
             height: 630,
             alt: "CourseAI - AI-Powered Educational Content Creator"
@@ -92,7 +101,7 @@ export async function generateMetadata(): Promise<Metadata> {
         description,
         creator: "@courseai",
         site: "@courseai",
-        images: ["/og-image.png"],
+        images: [`${siteUrl}/og-image.png`],
       },
       robots: {
         index: true,
@@ -108,7 +117,7 @@ export async function generateMetadata(): Promise<Metadata> {
       category: "Education Technology",
       keywords: [
         "AI education",
-        "course creator",
+        "course creator", 
         "quiz maker",
         "educational content",
         "e-learning platform",
@@ -119,19 +128,33 @@ export async function generateMetadata(): Promise<Metadata> {
   } catch (error) {
     console.error("Metadata generation error:", error)
     
-    // Safe fallback metadata
+    // Comprehensive fallback metadata
     return {
       title: "CourseAI - AI-Powered Educational Content Creator",
       description: "Create professional courses, quizzes, and educational content with AI. Transform learning with intelligent content generation.",
-      metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"),
-      robots: "index, follow",
+      metadataBase: new URL(siteUrl),
+      alternates: {
+        canonical: siteUrl,
+      },
+      robots: {
+        index: true,
+        follow: true,
+      },
       openGraph: {
         title: "CourseAI - AI-Powered Educational Content Creator",
         description: "Create professional courses, quizzes, and educational content with AI.",
-        url: process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io",
+        url: siteUrl,
         siteName: "CourseAI",
         locale: "en_US",
         type: "website",
+        images: [
+          {
+            url: `${siteUrl}/og-image.png`,
+            width: 1200,
+            height: 630,
+            alt: "CourseAI Platform"
+          }
+        ],
       }
     }
   }
@@ -143,76 +166,61 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   const session = await getServerAuthSession()
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   return (
     <GlobalLoaderProvider>
       <html 
         lang="en" 
         suppressHydrationWarning 
-        className="scroll-smooth overflow-x-hidden"
-        style={{
-          colorScheme: "light dark",
-          scrollBehavior: "smooth",
-        }}
+        className="scroll-smooth"
       >
         <head>
-          {/* Enhanced Viewport and Mobile Optimization */}
+          {/* Critical Meta Tags */}
+          <meta charSet="utf-8" />
           <meta 
             name="viewport" 
-            content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5, viewport-fit=cover, user-scalable=yes" 
+            content="width=device-width, initial-scale=1, viewport-fit=cover" 
           />
           
-          {/* Search Engine Verification */}
+          {/* Search Engine Verification - Only if env vars exist */}
+          {process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION && (
+            <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION} />
+          )}
+          {process.env.NEXT_PUBLIC_YANDEX_VERIFICATION && (
+            <meta name="yandex-verification" content={process.env.NEXT_PUBLIC_YANDEX_VERIFICATION} />
+          )}
           <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
-          <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION} />
-          <meta name="yandex-verification" content={process.env.NEXT_PUBLIC_YANDEX_VERIFICATION} />
           
-          {/* Enhanced Theme and App Behavior */}
+          {/* Theme and App Configuration */}
           <meta name="theme-color" content="#0066cc" media="(prefers-color-scheme: light)" />
           <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
           <meta name="color-scheme" content="light dark" />
           
-          {/* Progressive Web App Enhancements */}
+          {/* PWA Configuration */}
           <meta name="mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
-          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
           <meta name="apple-mobile-web-app-title" content="CourseAI" />
           <meta name="application-name" content="CourseAI" />
           
-          {/* Enhanced Security Headers */}
-          <meta name="referrer" content="strict-origin-when-cross-origin" />
-          <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
-          {/* Removed X-Frame-Options meta tag; should be set via server/middleware */}
-          <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
-          <meta httpEquiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()" />
-          
           {/* Content Security and Optimization */}
+          <meta name="referrer" content="strict-origin-when-cross-origin" />
           <meta name="format-detection" content="telephone=no, date=no, email=no, address=no" />
-          <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
           
-          {/* Canonical URL */}
-          <link rel="canonical" href={process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"} />
-          
-          {/* Enhanced Resource Hints */}
+          {/* Resource Hints for Performance */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
           <link rel="dns-prefetch" href="https://www.google-analytics.com" />
-          <link rel="dns-prefetch" href="https://api.openai.com" />
-          <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
-          {process.env.NEXT_PUBLIC_API_URL && (
-            <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL} />
-          )}
+
           
-          {/* Favicon and App Icons */}
-          <link rel="icon" href="/favicon.ico" sizes="any" />
+          {/* App Icons and Manifest */}
+          <link rel="icon" href="/favicon.ico" sizes="32x32" />
           <link rel="icon" href="/icon.svg" type="image/svg+xml" />
           <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
           <link rel="manifest" href="/manifest.json" />
           
-          {/* Performance Optimization */}
-          <link rel="modulepreload" href="/js/main.js" />
-          
-          {/* Enhanced Schema Markup Preparation */}
+          {/* Structured Data */}
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
@@ -221,16 +229,20 @@ export default async function RootLayout({
                 "@type": "WebApplication",
                 "name": "CourseAI",
                 "description": "AI-powered educational content creation platform",
-                "url": process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io",
+                "url": siteUrl,
                 "applicationCategory": "EducationalApplication",
-                "operatingSystem": "All",
-                "offers": {
-                  "@type": "Offer",
-                  "category": "Educational Software"
-                },
+                "operatingSystem": "Web",
+                "browserRequirements": "Requires JavaScript. Requires HTML5.",
+                "softwareVersion": "2.0",
                 "author": {
                   "@type": "Organization",
-                  "name": "CourseAI"
+                  "name": "CourseAI",
+                  "url": siteUrl
+                },
+                "offers": {
+                  "@type": "Offer",
+                  "category": "Educational Software",
+                  "availability": "https://schema.org/InStock"
                 }
               }),
             }}
@@ -242,8 +254,7 @@ export default async function RootLayout({
             ${inter.variable} 
             ${poppins.variable} 
             ${outfit.variable} 
-            ${manrope.variable} 
-          
+            ${manrope.variable}
             font-sans
             antialiased 
             bg-background 
@@ -251,21 +262,21 @@ export default async function RootLayout({
             selection:bg-primary/20 
             selection:text-primary-foreground
             scroll-smooth
-            overflow-x-hidden
           `}
           suppressHydrationWarning
         >
-          {/* Enhanced Skip Navigation */}
+         
+
+          {/* Skip Navigation for Accessibility */}
           <a
             href="#main-content"
             className="
-              skip-link 
               sr-only 
               focus:not-sr-only 
               focus:absolute 
               focus:top-4 
               focus:left-4 
-              focus:z-[100] 
+              focus:z-[9999] 
               focus:px-6 
               focus:py-3 
               focus:bg-primary 
@@ -273,9 +284,8 @@ export default async function RootLayout({
               focus:rounded-lg 
               focus:outline-none 
               focus:ring-2 
-              focus:ring-primary 
+              focus:ring-primary-foreground 
               focus:ring-offset-2
-              focus:shadow-lg
               focus:font-medium
               transition-all
               duration-200
@@ -284,7 +294,7 @@ export default async function RootLayout({
             Skip to main content
           </a>
 
-          {/* Accessibility Announcements */}
+          {/* Screen Reader Announcements */}
           <div 
             id="announcements" 
             className="sr-only" 
@@ -293,120 +303,121 @@ export default async function RootLayout({
           />
           
           <Providers session={session}>
-            <div className="min-h-screen flex flex-col relative bg-gradient-to-br from-background via-background to-muted/20">
-              {/* Enhanced Loading States */}
+            <div className="min-h-screen flex flex-col relative">
+              {/* NoScript Fallback */}
               <noscript>
-                <div className="fixed inset-0 bg-background z-50 flex items-center justify-center">
-                  <div className="text-center p-8 max-w-md">
-                    <h1 className="text-2xl font-bold mb-4">JavaScript Required</h1>
-                    <p className="text-muted-foreground">
-                      Please enable JavaScript in your browser to use CourseAI's full features.
+                <div className="fixed inset-0 bg-background z-50 flex items-center justify-center p-4">
+                  <div className="text-center max-w-md bg-card p-8 rounded-lg border">
+                    <h1 className="text-2xl font-bold mb-4 text-card-foreground">JavaScript Required</h1>
+                    <p className="text-muted-foreground mb-4">
+                      CourseAI requires JavaScript to function properly. Please enable JavaScript in your browser settings.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      If you continue to see this message, try refreshing the page or contact support.
                     </p>
                   </div>
                 </div>
               </noscript>
 
-              {/* Main Content Area with Enhanced Structure */}
+              {/* Main Content */}
               <main
                 id="main-content"
-                className="
-                  flex-1 
-                  w-full 
-                  pb-12 
-                  sm:pb-16 
-                  md:pb-20 
-                  lg:pb-24 
-                  overflow-x-hidden
-                  relative
-                  z-10
-                "
+                className="flex-1 w-full pb-12 sm:pb-16 md:pb-20 lg:pb-24 relative"
                 role="main"
                 tabIndex={-1}
               >
                 <PageTransition>
-                  <Suspense 
-                    fallback={
-                      <SuspenseGlobalFallback 
-                        message="Loading your personalized experience..." 
-                      />
-                    }
-                  >
+                  <Suspense fallback={<SuspenseGlobalFallback />}>
                     {children}
                   </Suspense>
                 </PageTransition>
               </main>
 
-              {/* Enhanced Footer */}
               <Footer />
             </div>
           </Providers>
 
-          {/* Enhanced SEO Components */}
           <DefaultSEO enableFAQ={false} />
           
-          {/* Performance Monitoring */}
+          {/* Performance Monitoring - Production Only */}
           {process.env.NODE_ENV === 'production' && (
             <script
               dangerouslySetInnerHTML={{
                 __html: `
-                  // Performance monitoring
-                  if ('performance' in window) {
-                    window.addEventListener('load', function() {
-                      setTimeout(function() {
-                        const perfData = performance.getEntriesByType('navigation')[0];
-                        if (perfData && perfData.loadEventEnd > 0) {
-                          const loadTime = perfData.loadEventEnd - perfData.fetchStart;
-                          console.log('Page load time:', loadTime + 'ms');
-                        }
-                      }, 0);
-                    });
-                  }
+                  (function() {
+                    // Font loading optimization
+                    if ('fonts' in document && Promise) {
+                      var fontPromises = [
+                        document.fonts.load('400 1rem Inter'),
+                        document.fonts.load('500 1rem Inter'),
+                        document.fonts.load('600 1rem Inter')
+                      ];
+                      
+                      Promise.all(fontPromises).then(function() {
+                        document.documentElement.classList.add('fonts-loaded');
+                      }).catch(function(err) {
+                        console.warn('Font loading failed:', err);
+                      });
+                    }
+                    
+                    // Performance monitoring
+                    if ('performance' in window && 'getEntriesByType' in performance) {
+                      window.addEventListener('load', function() {
+                        setTimeout(function() {
+                          try {
+                            var perfData = performance.getEntriesByType('navigation')[0];
+                            if (perfData && perfData.loadEventEnd > 0) {
+                              var loadTime = Math.round(perfData.loadEventEnd - perfData.fetchStart);
+                              console.info('Page load time: ' + loadTime + 'ms');
+                              
+                              // Report Core Web Vitals if available
+                              if ('PerformanceObserver' in window) {
+                                try {
+                                  new PerformanceObserver(function(list) {
+                                    list.getEntries().forEach(function(entry) {
+                                      if (entry.entryType === 'largest-contentful-paint') {
+                                        console.info('LCP: ' + Math.round(entry.startTime) + 'ms');
+                                      }
+                                    });
+                                  }).observe({ entryTypes: ['largest-contentful-paint'] });
+                                } catch (e) {
+                                  // PerformanceObserver not supported
+                                }
+                              }
+                            }
+                          } catch (err) {
+                            console.warn('Performance monitoring failed:', err);
+                          }
+                        }, 100);
+                      });
+                    }
+                    
+                    // Critical resource prefetching
+                    if ('fetch' in window) {
+                      var criticalEndpoints = [
+                        '/api/auth/session',
+                        '/api/user/subscription'
+                      ];
+                      
+                      criticalEndpoints.forEach(function(url) {
+                        var link = document.createElement('link');
+                        link.rel = 'prefetch';
+                        link.href = url;
+                        link.crossOrigin = 'anonymous';
+                        document.head.appendChild(link);
+                      });
+                    }
+                  })();
                 `
               }}
             />
           )}
         </body>
         
-        {/* Enhanced Analytics with Privacy */}
-        <GoogleAnalytics 
-          gaId={process.env.NEXT_PUBLIC_GA_ID || "G-8E6345HNS4"} 
-        />
-        
-        {/* Additional Performance Script */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Enhanced font loading optimization
-              if ('fonts' in document) {
-                Promise.all([
-                  document.fonts.load('400 1em Inter'),
-                  document.fonts.load('600 1em Inter'),
-                  document.fonts.load('500 1em Poppins')
-                ]).then(function() {
-                  document.documentElement.classList.add('fonts-loaded');
-                });
-              }
-              
-              // Enhanced scroll behavior
-              if ('scrollBehavior' in document.documentElement.style) {
-                document.documentElement.style.scrollBehavior = 'smooth';
-              }
-              
-              // Preload critical resources
-              const criticalResources = [
-                '/api/auth/session',
-                '/api/subscription'
-              ];
-              
-              criticalResources.forEach(url => {
-                const link = document.createElement('link');
-                link.rel = 'prefetch';
-                link.href = url;
-                document.head.appendChild(link);
-              });
-            `
-          }}
-        />
+        {/* Analytics - Proper conditional rendering */}
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
+        )}
       </html>
     </GlobalLoaderProvider>
   )
