@@ -1,7 +1,7 @@
 import prisma from "@/lib/db";
 
 /**
- * Base repository with common CRUD operations
+ * Base repository with common CRUD operations bassic
  */
 export class BaseRepository<T> {
   protected prismaModel: any;

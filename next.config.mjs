@@ -163,16 +163,20 @@ const nextConfig = {
     return config
   },
 
-
   // Experimental features
   experimental: {
     optimizeCss: true, // Optimize CSS
     // Faster development builds
+
     optimizePackageImports: ['lucide-react', 'recharts', '@radix-ui/react-icons', 'framer-motion'],
     // Better performance
     scrollRestoration: true,
     // Better bundling
     bundlePagesRouterDependencies: true,
+
+    serverSourceMaps: true,
+    optimizePackageImports: ['lucide-react', 'recharts', '@radix-ui/react-icons'],
+
   },
 }
 

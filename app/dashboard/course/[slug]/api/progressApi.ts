@@ -16,12 +16,47 @@ interface ProgressUpdate {
  * with offline support and queuing
  */
 class ProgressApiClient {
+
   private queue: ProgressUpdate[] = [];
   private isProcessing = false;
   private readonly QUEUE_KEY = 'progress-updates-queue';
   private readonly OFFLINE_FLAG = 'progress-offline-updates';
   private lastUpdatedTimestamps: Record<string, number> = {}; // Track timestamps for rate limiting
-  private readonly MIN_UPDATE_INTERVAL = 60000; // 1 minute in milliseconds
+  private readonly MIN_UPDATE_INTERVAL = 120000; // 2 minutes in milliseconds
+
+  // Store completed chapters in memory
+  public completedChapters: number[] = [];
+
+  /**
+   * Load completed chapters from localStorage into memory
+   */
+  loadCompletedChapters(userId?: string): void {
+    if (typeof window !== 'undefined' && userId) {
+      try {
+        const key = `completed-chapters-${userId}`;
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          this.completedChapters = JSON.parse(stored);
+        }
+      } catch (err) {
+        console.error('Failed to load completed chapters from localStorage:', err);
+      }
+    }
+  }
+
+  /**
+   * Save completed chapters to localStorage
+   */
+  saveCompletedChapters(userId?: string): void {
+    if (typeof window !== 'undefined' && userId) {
+      try {
+        const key = `completed-chapters-${userId}`;
+        localStorage.setItem(key, JSON.stringify(this.completedChapters));
+      } catch (err) {
+        console.error('Failed to save completed chapters to localStorage:', err);
+      }
+    }
+  }
   
   constructor() {
     // Load any queued updates from localStorage on init
@@ -40,6 +75,17 @@ class ProgressApiClient {
    * Queue a progress update to be sent when online
    */
   queueUpdate(update: ProgressUpdate): void {
+    // Validate required fields before queuing
+    if (!update.chapterId || !update.courseId || !update.videoId || !update.userId) {
+      console.warn('Progress update skipped: missing required fields', update);
+      return;
+    }
+    // Additional validation for courseId
+    if (typeof update.courseId === 'undefined' || update.courseId === null || update.courseId === '' || isNaN(Number(update.courseId))) {
+      console.error('Progress update skipped: invalid courseId', update.courseId, update);
+      return;
+    }
+
     // Check if we should rate limit this update
     const key = `${update.courseId}-${update.chapterId}-${update.videoId}`;
     const now = Date.now();
@@ -144,6 +190,18 @@ class ProgressApiClient {
    */
   private async sendProgressUpdate(update: ProgressUpdate): Promise<void> {
     try {
+      // Ensure courseId is valid
+      if (typeof update.courseId === 'undefined' || update.courseId === null || update.courseId === '' || isNaN(Number(update.courseId))) {
+        console.error('Progress update skipped: invalid courseId in sendProgressUpdate', update.courseId, update);
+        return;
+      }
+      // Ensure chapterId is a valid number
+      const currentChapterId = Number(update.chapterId);
+      if (isNaN(currentChapterId) || currentChapterId <= 0) {
+        console.warn('Progress update skipped: invalid chapterId', update.chapterId);
+        return;
+      }
+
       // Format the API endpoint correctly
       const response = await fetch(`/api/progress/${update.courseId}`, {
         method: 'POST',
@@ -151,16 +209,19 @@ class ProgressApiClient {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          currentChapterId: update.chapterId,
-          videoId: update.videoId, 
+          currentChapterId: currentChapterId, // Use the validated number
+          videoId: update.videoId,
           progress: update.progress,
-          // Include required fields from the API
-          completedChapters: update.completed ? [Number(update.chapterId)] : [],
+          playedSeconds: update.playedSeconds,
+          duration: update.duration,
+          completedChapters: update.completed ? [currentChapterId] : [],
           isCompleted: update.completed
         }),
       });
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Progress update failed: ${response.status} ${response.statusText}`, errorText);
         throw new Error(`Progress update failed: ${response.status} ${response.statusText}`);
       }
       

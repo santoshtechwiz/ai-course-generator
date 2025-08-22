@@ -9,7 +9,6 @@ export async function GET(req: Request) {
     const url = new URL(req.url)
     const action = url.searchParams.get('action') || 'overview'
     
-    console.log(`[VideoDebug] Debug request: action=${action}`)
 
     switch (action) {
       case 'overview':
@@ -52,7 +51,6 @@ export async function GET(req: Request) {
           ? `Found ${stuckChapters.length} chapters stuck in processing state for over 30 minutes`
           : 'No stuck chapters detected'
 
-        console.log(`[VideoDebug] Stuck check: ${message}`)
 
         return NextResponse.json({
           success: true,
@@ -95,7 +93,6 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { action, chapterId } = body
 
-    console.log(`[VideoDebug] POST action: ${action}, chapterId: ${chapterId}`)
 
     switch (action) {
       case 'reset_stuck':
@@ -110,7 +107,6 @@ export async function POST(req: Request) {
         }
 
         const message = `Reset ${resetCount} stuck chapters from processing to idle`
-        console.log(`[VideoDebug] ${message}`)
 
         return NextResponse.json({
           success: true,

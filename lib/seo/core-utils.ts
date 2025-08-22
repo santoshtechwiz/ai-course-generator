@@ -243,3 +243,6 @@ export function validateMetadata(metadata: Metadata): {
     errors,
   };
 }
+export function isClient(): boolean {
+  return typeof window !== "undefined";
+} 

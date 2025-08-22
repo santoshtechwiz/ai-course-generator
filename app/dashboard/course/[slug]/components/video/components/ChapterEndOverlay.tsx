@@ -539,30 +539,7 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
                     </motion.div>
                   )}
 
-                  {/* Standard engagement suggestions */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <motion.a 
-                      href={`/dashboard/course/${encodeURIComponent(courseTitle || '')}#discussion`} 
-                      className="h-12 inline-flex items-center justify-center rounded-lg text-sm font-medium bg-gray-800/50 text-gray-200 hover:bg-gray-700/50 transition-colors border border-gray-700/30"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.1 }}
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      Discuss with peers
-                    </motion.a>
-                    <motion.a 
-                      href={`/dashboard/quizzes?course=${encodeURIComponent(courseTitle || '')}`} 
-                      className="h-12 inline-flex items-center justify-center rounded-lg text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-colors"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.2 }}
-                    >
-                      <BookOpen className="h-4 w-4 mr-2" />
-                      Practice quiz
-                    </motion.a>
-                  </div>
-
+                 
                   <div className="flex items-center gap-3 mt-6">
                     <Button
                       onClick={onReplay}

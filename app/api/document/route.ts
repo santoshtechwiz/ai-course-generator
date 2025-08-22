@@ -82,7 +82,6 @@ export async function POST(req: NextRequest) {
     const truncatedContent = truncateToTokenLimit(fileContent, 10000)
 
     // Log token estimation for debugging
-    console.log(`Estimated tokens in truncated content: ${estimateTokenCount(truncatedContent)}`)
 
     try {
       const result = await generateObject({

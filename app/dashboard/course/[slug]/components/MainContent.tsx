@@ -1,20 +1,19 @@
 "use client"
 
-import React from "react"
-import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { useProgress } from "@/hooks"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { setLastPosition, markLectureCompleted, setIsCourseCompleted, setCertificateDownloaded, makeSelectCourseProgressById } from "@/store/slices/courseProgress-slice"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Play, Lock, User as UserIcon, Award, Badge, ChevronLeft, ChevronRight, Clock, Maximize2, Minimize2, Download, Share2 } from "lucide-react"
-import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { store } from "@/store"
 import { setCurrentVideoApi, markChapterAsCompleted } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import CourseDetailsTabs, { AccessLevels } from "./CourseDetailsTabs"
 import { formatDuration } from "../utils/formatUtils"
 import VideoPlayer from "./video/components/VideoPlayer"
-import VideoNavigationSidebar from "./video/components/VideoNavigationSidebar"
+import VideoNavigationSidebar from "./VideoNavigationSidebar"
 import { migratedStorage } from "@/lib/storage"
 import AnimatedCourseAILogo from "./video/components/AnimatedCourseAILogo"
 import AutoplayOverlay from "./AutoplayOverlay"
@@ -33,14 +32,16 @@ import CourseActions from "./CourseActions"
 import ActionButtons from "./ActionButtons"
 import CourseInfo from "./CourseInfo"
 import ReviewsSection from "./ReviewsSection"
-import { setLastPosition, markLectureCompleted as markLectureCompletedProgress, setIsCourseCompleted, setCertificateDownloaded, makeSelectCourseProgressById } from "@/store/slices/courseProgress-slice"
 import { cn } from "@/lib/utils"
 import { PDFDownloadLink } from "@react-pdf/renderer"
 import CertificateGenerator from "./CertificateGenerator"
 import RecommendedSection from "@/components/shared/RecommendedSection"
 import type { BookmarkData } from "./video/types"
-import { fetchRelatedCourses, fetchPersonalizedRecommendations, fetchQuizSuggestions } from "@/services/recommendationsService"
+import { fetchRelatedCourses, fetchQuizSuggestions } from "@/services/recommendationsService"
 import type { RelatedCourse, PersonalizedRecommendation, QuizSuggestion } from "@/services/recommendationsService"
+import { isClient } from "@/lib/seo/core-utils"
+import { useCourseProgressSync } from "@/hooks/useCourseProgressSync"
+import { fetchPersonalizedRecommendations } from "@/app/services/recommendationsService"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -69,7 +70,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   isFullscreen = false
 }) => {
   // Always define all hooks at the top level - no early returns or conditions before hooks
-  console.log(course);
+  
   const router = useRouter()
   // Remove useSession  // const { data: session } = useSession()
   const { toast } = useToast() // Fix: Properly destructure toast from useToast hook
@@ -99,6 +100,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   
   // Performance optimization: use ref for PIP state to prevent unnecessary re-renders
   const pipStateRef = useRef(false)
+  // Add per-chapter completion guard to sync playlist before video ends
+  const completionSentRef = useRef<Record<string, boolean>>({})
   
   // Mobile playlist state
   const [mobilePlaylistOpen, setMobilePlaylistOpen] = useState(false)
@@ -118,7 +121,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const legacyCourseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
   const selectCourseProgress = useMemo(() => makeSelectCourseProgressById(), [])
-  const courseProgress = useAppSelector((state) => selectCourseProgress(state as any, course.id))
+  // Use the hook to sync progress with backend and Redux
+  const courseProgress = useCourseProgressSync(course.id)
   const twoCol = useMemo(() => !isFullscreen, [isFullscreen])
 
   // Get bookmarks for the current video - this is more reliable than trying to get them from Redux
@@ -142,8 +146,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Fix: Initialize completedChapters safely so it's always defined
   // Use courseProgress.completedChapters if available, otherwise empty array
   const completedChapters = useMemo(() => {
-    if (courseProgress?.completedLectures) return courseProgress.completedLectures.map((id: string) => Number(id)).filter((n: number) => !isNaN(n))
-    return (legacyCourseProgress?.completedChapters || []).map((id: number) => Number(id)).filter((n: number) => !isNaN(n))
+    if (courseProgress?.completedLectures) return courseProgress.completedLectures.map(String)
+    return (legacyCourseProgress?.completedChapters || []).map(String)
   }, [courseProgress, legacyCourseProgress])
 
   // Check free video status on mount
@@ -257,11 +261,40 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     return currentIndex > 0 && ((currentIndex + 1) % 3 === 0 || isLastVideo)
   }, [currentIndex, isLastVideo])
 
-  // Progress tracking
-  const { progress, updateProgress, isLoading: progressLoading } = useProgress({
-    courseId: Number(course.id),
-    currentChapterId: currentChapter?.id?.toString(),
-  })
+  // Reset chapter completion sent flag on chapter change
+  useEffect(() => {
+    if (currentChapter?.id != null) {
+      const key = String(currentChapter.id);
+      completionSentRef.current[key] = false;
+    }
+  }, [currentChapter?.id]);
+
+  // Progress tracking - only call if course is properly loaded
+  const progress = useAppSelector(state => selectCourseProgress(state, course?.id || 0));
+  const progressLoading = false; // Redux selectors are synchronous
+
+  // Example: update progress when video position changes
+  const updateProgress = useCallback((lectureId: string, timestamp: number) => {
+    if (course?.id && lectureId) {
+      dispatch(setLastPosition({ courseId: course.id, lectureId, timestamp }));
+    }
+  }, [course?.id, dispatch]);
+  
+  // Debug course object
+  useEffect(() => {
+    if (!course?.id) {
+      console.error('Course object is missing or has no id:', course);
+      return;
+    }
+    console.log('Course object debug:', {
+      courseId: course.id,
+      courseIdType: typeof course.id,
+      courseIdNumber: Number(course.id),
+      courseIdString: String(course.id),
+      courseKeys: Object.keys(course),
+      course: course
+    });
+  }, [course?.id]);
 
   // Determine user subscription once (used for gating below)
   const userSubscription = useMemo(() => {
@@ -298,7 +331,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     // If still not found, try to use the last watched video from progress (API hook)
     if (!targetVideo && progress?.currentChapterId) {
       targetVideo = videoPlaylist.find(
-        (entry) => String(entry.chapter.id) === String(progress.currentChapterId)
+        (entry) => String(entry.chapter.id) === String(progress.lastLectureId)
       )
     }
 
@@ -333,7 +366,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   useEffect(() => {
     if (progress && !resumePromptShown && progress.currentChapterId && !currentVideoId && user) {
       const resumeChapter = videoPlaylist.find(
-        (entry) => entry.chapter.id.toString() === progress.currentChapterId?.toString(),
+        (entry) => entry.chapter.id.toString() === progress.lastLectureId?.toString(),
       )
 
       if (resumeChapter) {
@@ -406,8 +439,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
       // Update progress periodically
       if (currentChapter && progressState.played > 0.1) {
-        updateProgress({
-          // currentChapterId: String(currentChapter.id), // Remove invalid property
+        updateProgress(course.id, {
+          currentChapterId: String(currentChapter.id),
+          videoId: currentVideoId || undefined,
           progress: progressState.played,
           lastAccessedAt: new Date().toISOString(),
         });
@@ -419,6 +453,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             timestamp: Math.floor(progressState.playedSeconds || 0),
           })
         )
+
+        // Mark chapter complete at 95% to update playlist immediately (without waiting for onEnded)
+        try {
+          const chIdStr = String(currentChapter.id);
+          if (!completionSentRef.current[chIdStr] && progressState.played >= 0.95) {
+            completionSentRef.current[chIdStr] = true;
+            // Update both legacy and new progress slices so the playlist reflects completion
+            dispatch(markChapterAsCompleted({ courseId: Number(course.id), chapterId: Number(currentChapter.id) }))
+            dispatch(
+              markLectureCompleted({
+                courseId: String(course.id),
+                lectureId: String(currentChapter.id),
+              })
+            )
+          }
+        } catch {}
       }
     },
     [currentChapter, videoEnding, updateProgress, videoDurations, currentVideoId, course.id, dispatch],
@@ -431,15 +481,16 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       dispatch(markChapterAsCompleted({ courseId: Number(course.id), chapterId: Number(currentChapter.id) }))
       // Mark in new progress slice
       dispatch(
-        markLectureCompletedProgress({
+        markLectureCompleted({
           courseId: String(course.id),
           lectureId: String(currentChapter.id),
         })
       )
 
       // Update progress
-      updateProgress({
-        // completedChapters: [...(progress?.completedChapters || []), Number(currentChapter.id)], // Remove invalid property
+      updateProgress(course.id, {
+        currentChapterId: String(currentChapter.id),
+        videoId: currentVideoId || undefined,
         isCompleted: isLastVideo,
         lastAccessedAt: new Date().toISOString(),
       })
@@ -494,8 +545,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     dispatch(markChapterAsCompleted({ courseId: Number(course.id), chapterId: Number(chapterId) }))
 
     // Update progress
-    updateProgress({
-      // completedChapters: [...(progress?.completedChapters || []), Number(chapterId)], // Remove invalid property
+    updateProgress(course.id, {
+      currentChapterId: String(chapterId),
+      videoId: currentVideoId || undefined,
       lastAccessedAt: new Date().toISOString(),
     })
 
@@ -668,7 +720,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         });
       }
     },
-    [dispatch, canPlayVideo, course.id, videoStateStore, toast]
+    [dispatch, course.id, videoStateStore, toast, userSubscription]
   )
 
   const handleNextVideo = useCallback(() => {
@@ -710,15 +762,20 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Fetch personalized recommendations when course is completed
   useEffect(() => {
-    if (isLastVideo && user) {
-      fetchPersonalizedRecommendations(
-        user.id,
-        completedChapters?.map(String) || [],
-        course,
-        3
-      ).then(setPersonalizedRecommendations)
-    }
-  }, [isLastVideo, user, completedChapters, course])
+    const fetchRecommendations = async () => {
+      if (isLastVideo && user) {
+        const result = await fetchPersonalizedRecommendations(course.id, 3);
+        // Ensure matchReason is always a string (fallback to empty string if undefined)
+        setPersonalizedRecommendations(
+          result.map(r => ({
+            ...r,
+            matchReason: typeof r.matchReason === "string" ? r.matchReason : ""
+          }))
+        );
+      }
+    };
+    fetchRecommendations();
+  }, [isLastVideo, user, completedChapters, course]);
 
   // Fetch quiz suggestions for key chapters
   useEffect(() => {
@@ -733,21 +790,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     }
   }, [isKeyChapter, currentChapter, course.id])
 
-  // Memoized course stats for better performance
-  const courseStats = useMemo(
-    () => {
-      const totalChapters = videoPlaylist.length
-      const completedChapters = progress?.completedChapters?.length || 0
-      const progressPercentage = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0
 
-      return {
-        totalChapters,
-        completedChapters,
-        progressPercentage,
-      }
-    },
-    [videoPlaylist.length, progress?.completedChapters],
-  )
 
   // Memoized sidebar props to prevent unnecessary re-renders
   const sidebarProps = useMemo(() => ({
@@ -757,40 +800,62 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     onChapterSelect: handleChapterSelect,
     progress,
     isAuthenticated: !!user,
-    isSubscribed: !!userSubscription,
     completedChapters,
     formatDuration,
     nextVideoId: undefined,
     currentVideoId: currentVideoId || '',
-    isPlaying: Boolean(currentVideoId),
     courseStats: {
-      completedCount: progress?.completedChapters?.length || 0,
+      completedCount: progress?.completedLectures?.length || 0,
       totalChapters: videoPlaylist.length,
-      progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
-    }
+      progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedLectures?.length || 0) / videoPlaylist.length) * 100) : 0,
+    },
+    videoDurations, // Include videoDurations for sidebar progress
   }), [
     course,
     currentChapter,
     progress,
     user,
-    userSubscription,
     completedChapters,
     formatDuration,
     currentVideoId,
-    videoPlaylist.length
+    videoPlaylist.length,
+    videoDurations
   ])
+
+  // Define sidebarCourse and sidebarCurrentChapter
+  const sidebarCourse = useMemo(() => ({
+    id: course.id,
+    title: course.title,
+    chapters: videoPlaylist.map(v => ({
+      id: String(v.chapter.id),
+      title: v.chapter.title,
+      videoId: v.chapter.videoId,
+      duration: v.chapter.duration,
+    }))
+  }), [course.id, course.title, videoPlaylist]);
+  const sidebarCurrentChapter = currentChapter ? {
+    id: String(currentChapter.id),
+    title: currentChapter.title,
+    videoId: currentChapter.videoId,
+    duration: currentChapter.duration,
+  } : null;
+  // Handler for sidebar chapter select
+  const handleSidebarChapterSelect = useCallback((chapter: FullChapterType) => {
+    const fullChapter = videoPlaylist.find(v => String(v.chapter.id) === String(chapter.id))?.chapter;
+    if (fullChapter) handleChapterSelect(fullChapter);
+  }, [videoPlaylist, handleChapterSelect]);
 
   // Memoized video player props
   const videoPlayerProps = useMemo(() => ({
-    videoId: currentVideoId || '',
-    courseId: course.id,
+  youtubeVideoId: currentVideoId || '',
+    chapterId: currentChapter?.id,
+    courseId: String(course.id),
     courseName: course.title,
     chapterTitle: currentChapter?.title,
     onEnded: handleVideoEnd,
     onProgress: handleVideoProgress,
     onVideoLoad: handleVideoLoad,
     onPlayerReady: handlePlayerReady,
-    onBookmark: handleSeekToBookmark,
     bookmarks: bookmarkItems,
     isAuthenticated: !!user,
     autoPlay: autoplayMode,
@@ -798,13 +863,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     showControls: true,
     onCertificateClick: handleCertificateClick,
     onChapterComplete: handleChapterComplete,
-    onNextVideo: handleNextVideo,
-    nextVideoId: nextChapter?.videoId || undefined,
-    nextVideoTitle: nextChapter?.chapter.title || '',
-    onPrevVideo: handlePrevVideo,
-    prevVideoTitle: prevChapter?.chapter.title || '',
-    hasNextVideo: !!nextChapter,
-    hasPrevVideo: !!prevChapter,
+    // Disable in-player next/prev navigation UI per current UX
+    onNextVideo: undefined,
+    hasNextVideo: false,
     onPictureInPictureToggle: handlePIPToggle,
     className: "h-full w-full",
      initialSeekSeconds: (function(){
@@ -911,7 +972,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     
     if (twoCol) {
       // Udemy-style layout: video/content left, playlist right
-      return "md:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px]"
+      return "md:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_420px]"
     }
     
     return "grid-cols-1"
@@ -984,10 +1045,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                       <span>Course Content</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{currentChapter ? `${currentIndex + 1}/${videoPlaylist.length}` : `0/${videoPlaylist.length}`}</span>
-                      {currentChapter && (
+                      <span>
+                        {isClient()
+                          ? (currentChapter ? `${currentIndex + 1}/${videoPlaylist.length}` : `0/${videoPlaylist.length}`)
+                          : `${videoPlaylist.length}` // fallback for SSR
+                        }
+                      </span>
+                      {isClient() && currentChapter && (
                         <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className="h-full bg-primary transition-all duration-300"
                             style={{ width: `${((currentIndex + 1) / videoPlaylist.length) * 100}%` }}
                           />
@@ -1000,7 +1066,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             </div>
 
             {/* Video player section */}
-            <div className={gridContainerClasses}> 
+            <div className={gridContainerClasses + " xl:max-w-[1400px] mx-auto w-full"}> 
               {/* Right column: Video and tabs (main content) */}
               <motion.div 
                 key="video-content"
@@ -1070,7 +1136,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                           <div className="flex items-center gap-2">
                             <span>Next chapter in:</span>
                             <span className="font-medium text-primary">
-                              {nextChapter.chapter.duration ? formatDuration(nextChapter.chapter.duration) : '~5 min'}
+                              {typeof nextChapter.chapter.duration === 'number' ? formatDuration(nextChapter.chapter.duration) : '~5 min'}
                             </span>
                           </div>
                         )}
@@ -1121,7 +1187,43 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                              <div className="h-4 bg-muted/40 rounded w-4/5" />
                            </div>
                          ) : (
-                           <MemoizedVideoNavigationSidebar {...sidebarProps} />
+                          <MemoizedVideoNavigationSidebar
+                            course={{
+                              id: course.id,
+                              title: course.title,
+                              chapters: videoPlaylist.map(v => ({
+                                id: String(v.chapter.id),
+                                title: v.chapter.title,
+                                videoId: v.chapter.videoId ?? undefined,
+                                duration: typeof v.chapter.duration === 'number' ? v.chapter.duration : undefined,
+                              }))
+                            }}
+                            currentChapter={sidebarCurrentChapter ? {
+                              id: String(sidebarCurrentChapter.id),
+                              title: sidebarCurrentChapter.title,
+                              videoId: sidebarCurrentChapter.videoId ?? undefined,
+                              duration: typeof sidebarCurrentChapter.duration === 'number' ? sidebarCurrentChapter.duration : undefined,
+                            } : null}
+                            courseId={course.id.toString()}
+                            onChapterSelect={(chapter) => handleSidebarChapterSelect({
+                              ...chapter,
+                              id: typeof chapter.id === 'string' ? Number(chapter.id) : chapter.id,
+                              videoId: typeof chapter.videoId === 'string' ? chapter.videoId : null,
+                              duration: typeof chapter.duration === 'number' ? chapter.duration : undefined,
+                            })}
+                            progress={{}}
+                            isAuthenticated={!!user}
+                            completedChapters={completedChapters.map(String)}
+                            formatDuration={formatDuration}
+                            nextVideoId={undefined}
+                            currentVideoId={currentVideoId || ''}
+                            courseStats={{
+                              completedCount: progress?.completedLectures?.length || 0,
+                              totalChapters: videoPlaylist.length,
+                              progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedLectures?.length || 0) / videoPlaylist.length) * 100) : 0,
+                            }}
+                            videoDurations={videoDurations}
+                          />
                          )}
                        </div>
                      </div>
@@ -1162,7 +1264,24 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                       </div>
                     </div>
                     <div className="p-4">
-                      <MemoizedVideoNavigationSidebar {...sidebarProps} />
+                      <MemoizedVideoNavigationSidebar
+                        course={sidebarCourse}
+                        currentChapter={sidebarCurrentChapter}
+                        courseId={course.id.toString()}
+                        onChapterSelect={handleSidebarChapterSelect}
+                        progress={progress}
+                        isAuthenticated={!!user}
+                        completedChapters={completedChapters}
+                        formatDuration={formatDuration}
+                        nextVideoId={undefined}
+                        currentVideoId={currentVideoId || ''}
+                        courseStats={{
+                          completedCount: progress?.completedLectures?.length || 0,
+                          totalChapters: videoPlaylist.length,
+                          progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedLectures?.length || 0) / videoPlaylist.length) * 100) : 0,
+                        }}
+                        videoDurations={videoDurations}
+                      />
                     </div>
                   </motion.div>
                 </motion.div>
@@ -1203,7 +1322,24 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                  {/* Sidebar responsive tweaks */}
           {false && (
             <aside className="hidden lg:block w-full max-w-[24rem] border-l bg-background/50 backdrop-blur-sm">
-              <MemoizedVideoNavigationSidebar {...sidebarProps} />
+              <MemoizedVideoNavigationSidebar
+                course={sidebarCourse}
+                currentChapter={sidebarCurrentChapter}
+                courseId={course.id.toString()}
+                onChapterSelect={handleSidebarChapterSelect}
+                progress={progress}
+                isAuthenticated={!!user}
+                completedChapters={completedChapters}
+                formatDuration={formatDuration}
+                nextVideoId={undefined}
+                currentVideoId={currentVideoId || ''}
+                courseStats={{
+                  completedCount: progress?.completedLectures?.length || 0,
+                  totalChapters: videoPlaylist.length,
+                  progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedLectures?.length || 0) / videoPlaylist.length) * 100) : 0,
+                }}
+                videoDurations={videoDurations}
+              />
             </aside>
           )}
        </div>

@@ -16,7 +16,6 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { chapterId } = bodyParser.parse(body)
 
-    console.log(`Received video generation request for chapter ${chapterId}`)
     
     // Process the video through the service layer
     const result = await videoService.processVideo(chapterId)

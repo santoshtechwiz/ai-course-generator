@@ -51,5 +51,6 @@ export * from "./use-user-dashboard"
 
 export * from "./use-chapter-summary" 
 export * from "./useCourseActions"
-export * from "../app/dashboard/course/[slug]/components/video/hooks/useVideoProgress"
+// Removed legacy useVideoProgress hook export; use Redux progress-slice instead
 export * from "./useRandomQuizzes"
+

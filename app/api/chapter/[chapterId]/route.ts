@@ -31,7 +31,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ c
     }
 
     const { chapterId } = await params
-    console.log("Received DELETE request:", { chapterId })
 
     // Use service to delete chapter summary (set to null)
     await courseService.updateChapterSummary(Number(chapterId), null)

@@ -7,7 +7,8 @@ import WelcomeEmail from "@/app/dashboard/admin/components/templates/welcome-ema
 import ContactResponseEmail from "@/app/dashboard/admin/components/templates/contact-response-email"
 import { render } from "@react-email/render"
 
-const resend = new Resend(process.env.RESEND_API_KEY || "")
+// Only create Resend instance if API key is available
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 type EmailResponse = {
   success: boolean
@@ -17,6 +18,11 @@ type EmailResponse = {
 
 export async function sendEmail(email: string, name: string, html?: string): Promise<EmailResponse> {
   try {
+    if (!resend) {
+      console.warn("Resend API key not configured, skipping email send")
+      return { success: true, messageId: "mock-message-id" }
+    }
+
     const emailHtml = html || (await render(WelcomeEmail({ name })))
 
     const response = await resend.emails.send({
@@ -44,6 +50,11 @@ export async function sendEmail(email: string, name: string, html?: string): Pro
 // Send contact form response
 export async function sendContactResponse(email: string, name: string, subject: string, message: string) {
   try {
+    if (!resend) {
+      console.warn("Resend API key not configured, skipping contact response email")
+      return { success: true, messageId: "mock-message-id" }
+    }
+
     // Use the ContactResponseEmail template
     const emailHtml = await render(ContactResponseEmail({ name, subject, message }) as React.ReactElement)
 
