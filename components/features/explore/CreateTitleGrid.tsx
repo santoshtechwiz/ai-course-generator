@@ -51,6 +51,47 @@ const getColorClasses = (color: string, isPremium: boolean) => {
   const colorMap = {
     blue: {
       card: isPremium 
+
+        ? "bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 dark:from-amber-950 dark:to-orange-950 dark:hover:from-amber-900 dark:hover:to-orange-900 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+        : "bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+      button: "bg-blue-500 hover:bg-blue-600 text-primary-foreground"
+    },
+    green: {
+      card: isPremium 
+        ? "bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 dark:from-amber-950 dark:to-orange-950 dark:hover:from-amber-900 dark:hover:to-orange-900 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+        : "bg-green-100 hover:bg-green-200 dark:bg-green-900 dark:hover:bg-green-800 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800",
+      button: "bg-green-500 hover:bg-green-600 text-primary-foreground"
+    },
+    purple: {
+      card: isPremium 
+        ? "bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 dark:from-amber-950 dark:to-orange-950 dark:hover:from-amber-900 dark:hover:to-orange-900 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+        : "bg-purple-100 hover:bg-purple-200 dark:bg-purple-900 dark:hover:bg-purple-800 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800",
+      button: "bg-purple-500 hover:bg-purple-600 text-primary-foreground"
+    },
+    orange: {
+      card: isPremium 
+        ? "bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 dark:from-amber-950 dark:to-orange-950 dark:hover:from-amber-900 dark:hover:to-orange-900 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+        : "bg-orange-100 hover:bg-orange-200 dark:bg-orange-900 dark:hover:bg-orange-800 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800",
+      button: "bg-orange-500 hover:bg-orange-600 text-primary-foreground"
+    },
+    teal: {
+      card: isPremium 
+        ? "bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 dark:from-amber-950 dark:to-orange-950 dark:hover:from-amber-900 dark:hover:to-orange-900 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+        : "bg-teal-100 hover:bg-teal-200 dark:bg-teal-900 dark:hover:bg-teal-800 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800",
+      button: "bg-teal-500 hover:bg-teal-600 text-primary-foreground"
+    },
+    indigo: {
+      card: isPremium 
+        ? "bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 dark:from-amber-950 dark:to-orange-950 dark:hover:from-amber-900 dark:hover:to-orange-900 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+        : "bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800",
+      button: "bg-indigo-500 hover:bg-indigo-600 text-primary-foreground"
+    },
+    rose: {
+      card: isPremium 
+        ? "bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 dark:from-amber-950 dark:to-orange-950 dark:hover:from-amber-900 dark:hover:to-orange-900 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+        : "bg-rose-100 hover:bg-rose-200 dark:bg-rose-900 dark:hover:bg-rose-800 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800",
+      button: "bg-rose-500 hover:bg-rose-600 text-primary-foreground"
+
         ? "bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 hover:from-amber-100 hover:via-orange-100 hover:to-yellow-100 dark:from-amber-950 dark:via-orange-950 dark:to-yellow-950 dark:hover:from-amber-900 dark:hover:via-orange-900 dark:hover:to-yellow-900 border-amber-200 dark:border-amber-700"
         : "bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 hover:from-blue-100 hover:via-indigo-100 hover:to-purple-100 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 dark:hover:from-blue-900 dark:hover:via-indigo-900 dark:hover:to-purple-900 border-blue-200 dark:border-blue-700",
       icon: isPremium ? "text-amber-600 dark:text-amber-400" : "text-blue-600 dark:text-blue-400",
@@ -97,6 +138,7 @@ const getColorClasses = (color: string, isPremium: boolean) => {
         : "bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 hover:from-rose-100 hover:via-pink-100 hover:to-purple-100 dark:from-rose-950 dark:via-pink-950 dark:to-purple-950 dark:hover:from-rose-900 dark:hover:via-pink-900 dark:hover:to-purple-900 border-rose-200 dark:border-rose-700",
       icon: isPremium ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400",
       button: isPremium ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600" : "bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600"
+
     }
   };
   

@@ -99,7 +99,7 @@ export default function Footer() {
                 asChild
                 variant="ghost"
                 size="icon"
-                className="rounded-full hover:bg-primary hover:text-white transition"
+                className="rounded-full hover:bg-primary hover:text-primary-foreground transition"
               >
                 <Link href={href} target="_blank" rel="noopener noreferrer" aria-label={label}>
                   <Icon className="h-5 w-5" />
