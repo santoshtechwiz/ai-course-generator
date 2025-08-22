@@ -201,9 +201,9 @@ const CourseAILandingPage = () => {
                 activeSection === item.id
                   ? "text-primary"
                   : "text-foreground hover:text-foreground/90",
-                // Theme-dependent colors only after hydration
-                isHydrated && theme === "dark" ? "text-white hover:text-white/90" : "",
-                isHydrated && theme === "light" ? "text-gray-800 hover:text-gray-900" : "",
+                // Use semantic colors consistently
+                isHydrated && theme === "dark" ? "text-foreground hover:text-foreground/90" : "",
+                isHydrated && theme === "light" ? "text-foreground hover:text-foreground/90" : "",
               )}
               aria-current={activeSection === item.id ? "page" : undefined}
               whileHover={{
