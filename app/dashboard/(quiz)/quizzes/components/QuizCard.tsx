@@ -26,6 +26,7 @@ import { motion } from "framer-motion"
 import { AsyncNavLink } from "@/components/loaders/AsyncNavLink"
 import { cn } from "@/lib/utils"
 import type { QuizType } from "@/app/types/quiz-types"
+import { useMobile } from "@/hooks"
 
 interface QuizCardProps {
   title: string
@@ -111,6 +112,16 @@ function QuizCardComponent({
 }: QuizCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isFavorited, setIsFavorited] = useState(false)
+  const [isInteracted, setIsInteracted] = useState(false) // For mobile touch interactions
+
+  // Use hook for mobile detection  
+  const isMobile = useMobile()
+
+  const handleCardInteraction = () => {
+    if (isMobile) {
+      setIsInteracted(!isInteracted)
+    }
+  }
 
   const config = quizTypeConfig[quizType] || quizTypeConfig.mcq
   const difficultyStyle = difficultyConfig[difficulty]
@@ -140,6 +151,13 @@ function QuizCardComponent({
       className={cn("h-full group block focus:outline-none", compact && "@container")}
       tabIndex={0}
       aria-label={`Open quiz: ${title}`}
+      onClick={(e) => {
+        // On mobile, first click shows actions, second click navigates
+        if (isMobile && !isInteracted) {
+          e.preventDefault()
+          handleCardInteraction()
+        }
+      }}
     >
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -211,6 +229,15 @@ function QuizCardComponent({
             </div>
           </CardHeader>
 
+          {/* Mobile tap indicator - only show on mobile when not interacted */}
+          {isMobile && !isInteracted && (
+            <div className="px-6 pb-2 md:hidden">
+              <div className="text-xs text-muted-foreground/60 text-center bg-muted/20 rounded-md py-1.5 border-dashed border border-muted-foreground/20">
+                Tap to reveal actions
+              </div>
+            </div>
+          )}
+
           <CardContent className={cn("flex-1 space-y-4 px-6", compact && "@sm:px-4 @sm:py-6")}>
             {/* Title and Rating */}
             <div className="space-y-3">
@@ -265,7 +292,13 @@ function QuizCardComponent({
             )}
           </CardContent>
 
-          <CardFooter className={cn("p-6 pt-0", compact && "@sm:p-4 @sm:pt-0 @sm:border-l @sm:border-white/10")}>
+          <CardFooter className={cn(
+            "p-6 pt-0 transition-all duration-300", 
+            compact && "@sm:p-4 @sm:pt-0 @sm:border-l @sm:border-white/10",
+            // On mobile (md:block for desktop), hide by default and show on interaction
+            isMobile ? (isInteracted ? "block" : "hidden") : "block",
+            "md:block" // Always show on desktop
+          )}>
             <Button className={cn("w-full group/btn", buttonContent.className)} size="lg" tabIndex={-1}>
               <ButtonIcon className="w-4 h-4 mr-2" />
               {buttonContent.text}
