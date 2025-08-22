@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useMediaQuery, useResponsive } from "@/hooks"
 import { usePathname } from "next/navigation"
 import { Suspense, useEffect, useState, useRef, useMemo, useCallback } from "react"
@@ -9,16 +8,38 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
-import { CheckCircle, Clock, Home, Maximize, Minimize, Menu, X, Target } from "lucide-react"
+import { 
+  CheckCircle, 
+  Clock, 
+  Home, 
+  Maximize, 
+  Minimize, 
+  Menu, 
+  X, 
+  Target, 
+  Play, 
+  Pause,
+  RotateCcw,
+  BookOpen,
+  Users,
+  TrendingUp,
+  Award,
+  Zap,
+  Eye,
+  EyeOff,
+  Edit3,
+  MessageSquare,
+  Brain
+} from "lucide-react"
 import { QuizActions } from "../QuizActions"
-
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { RandomQuiz } from "./RandomQuiz"
 import { useRelatedQuizzes } from "@/hooks/useRelatedQuizzes"
 import Confetti from "react-confetti"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Sparkles, Wand2 } from "lucide-react"
 import RecommendedSection from "@/components/shared/RecommendedSection"
+import { cn } from "@/lib/utils"
 
 export const dynamic = "force-dynamic"
 
@@ -43,32 +64,111 @@ const quizTypeLabel: Record<string, string> = {
   others: "Mixed Quiz",
 }
 
+const quizTypeIcons: Record<string, React.ComponentType<any>> = {
+  mcq: Target,
+  code: BookOpen,
+  blanks: Edit3,
+  openended: MessageSquare,
+  flashcard: Brain,
+  quiz: Award,
+  others: Zap,
+}
+
 const QuizSkeleton = () => (
-  <div className="w-full p-4 space-y-3">
+  <motion.div 
+    className="w-full p-6 space-y-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 to-gray-900 rounded-2xl border border-gray-200/50 dark:border-gray-700/50"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3 }}
+  >
     <div className="flex justify-between items-center">
-      <Skeleton className="h-6 w-36" />
-      <Skeleton className="h-6 w-20" />
+      <Skeleton className="h-7 w-48 rounded-lg" />
+      <Skeleton className="h-6 w-24 rounded-full" />
     </div>
-    <Skeleton className="h-4 w-full" />
-    <Skeleton className="h-48 w-full" />
-  </div>
+    <Skeleton className="h-5 w-full rounded-lg" />
+    <Skeleton className="h-5 w-3/4 rounded-lg" />
+    <Skeleton className="h-64 w-full rounded-xl" />
+    <div className="flex gap-3">
+      <Skeleton className="h-12 flex-1 rounded-xl" />
+      <Skeleton className="h-12 w-32 rounded-xl" />
+    </div>
+  </motion.div>
 )
 
-const Timer = ({ seconds }: { seconds: number }) => {
+const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) => {
   const formatTime = (s: number) => {
-    if (!s || s < 0) return "0.00s"
-    if (s < 60) return `${s.toFixed(2)}s`
+    if (!s || s < 0) return "0:00"
+    if (s < 60) return `0:${s.toString().padStart(2, "0")}`
     const m = Math.floor(s / 60)
     const rem = s % 60
-    return `${m}:${rem.toFixed(2).padStart(5, "0")}`
+    return `${m}:${rem.toString().padStart(2, "0")}`
   }
+
   return (
-    <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-muted text-xs">
-      <Clock className="h-3.5 w-3.5" />
-      <span className="tabular-nums">{formatTime(seconds)}</span>
-    </div>
+    <motion.div 
+      className={cn(
+        "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
+        isPaused 
+          ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300" 
+          : "bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 dark:from-blue-900/30 dark:to-purple-900/30 dark:text-blue-300 border border-blue-200/50 dark:border-blue-700/50"
+      )}
+      whileHover={{ scale: 1.05 }}
+      layout
+    >
+      <motion.div
+        animate={isPaused ? { rotate: 0 } : { rotate: 360 }}
+        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+      >
+        <Clock className="h-4 w-4" />
+      </motion.div>
+      <span className="tabular-nums font-mono">{formatTime(seconds)}</span>
+      {isPaused && <Pause className="h-3 w-3" />}
+    </motion.div>
   )
 }
+
+const ProgressBar = ({ progress, questionNumber, totalQuestions }: { progress: number; questionNumber: number; totalQuestions: number }) => (
+  <motion.div 
+    className="mb-6"
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+  >
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+          Question {questionNumber} of {totalQuestions}
+        </span>
+        <Badge variant="outline" className="text-xs font-medium">
+          {progress}% Complete
+        </Badge>
+      </div>
+      <motion.div 
+        className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
+        <CheckCircle className="h-4 w-4 text-green-500" />
+        <span>{questionNumber - 1} completed</span>
+      </motion.div>
+    </div>
+    <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+      <motion.div 
+        className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full relative overflow-hidden"
+        initial={{ width: 0 }}
+        animate={{ width: `${progress}%` }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+      >
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+          animate={{ x: [-100, 200] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </motion.div>
+    </div>
+  </motion.div>
+)
 
 export default function QuizPlayLayout({
   children,
@@ -87,8 +187,14 @@ export default function QuizPlayLayout({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isFocusMode, setIsFocusMode] = useState(false)
   const [showEngage, setShowEngage] = useState(false)
-  // window size is accessed directly when rendering confetti to avoid SSR issues
-  const { quizzes: relatedQuizzes } = useRelatedQuizzes({ quizType, difficulty: quizData?.difficulty, exclude: quizSlug, limit: 6, tags: Array.isArray(quizData?.tags) ? quizData?.tags : undefined })
+  const [isPaused, setIsPaused] = useState(false)
+  const { quizzes: relatedQuizzes } = useRelatedQuizzes({ 
+    quizType, 
+    difficulty: quizData?.difficulty, 
+    exclude: quizSlug, 
+    limit: 6, 
+    tags: Array.isArray(quizData?.tags) ? quizData?.tags : undefined 
+  })
   const [showConfetti, setShowConfetti] = useState(false)
   const mainRef = useRef<HTMLDivElement>(null)
 
@@ -97,10 +203,12 @@ export default function QuizPlayLayout({
   useEffect(() => {
     setIsLoaded(true)
     const interval = setInterval(() => {
-      setElapsed((e) => e + 1)
+      if (!isPaused) {
+        setElapsed((e) => e + 1)
+      }
     }, 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [isPaused])
 
   // Engagement modal: show once per slug
   useEffect(() => {
@@ -108,7 +216,7 @@ export default function QuizPlayLayout({
     const key = `ai_quiz_engagement_${quizSlug}`
     const seen = typeof window !== 'undefined' ? localStorage.getItem(key) : '1'
     if (!seen) {
-      const t = setTimeout(() => setShowEngage(true), 1500)
+      const t = setTimeout(() => setShowEngage(true), 2000)
       return () => clearTimeout(t)
     }
   }, [quizSlug])
@@ -128,66 +236,149 @@ export default function QuizPlayLayout({
       return next
     })
   }, [])
+
   const toggleFullscreen = useCallback(() => setIsFullscreen((s) => !s), [])
+  const togglePause = useCallback(() => setIsPaused((p) => !p), [])
   const goHome = useCallback(() => (window.location.href = "/dashboard/quizzes"), [])
+  const resetQuiz = useCallback(() => {
+    setElapsed(0)
+    // Add your reset logic here
+  }, [])
+
+  const QuizTypeIcon = quizTypeIcons[quizType] || Award
 
   const header = useMemo(() => {
     const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
     return (
-      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur border-b ai-glass dark:ai-glass-dark">
-        <div className="mx-auto w-full max-w-screen-2xl px-3 sm:px-4 lg:px-6 py-2.5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h1 className="text-base sm:text-lg font-semibold truncate">{title}</h1>
-              <div className="mt-1 flex items-center gap-2 text-xs">
-                <Badge variant="secondary">{quizTypeLabel[quizType] || "Quiz"}</Badge>
+      <motion.header 
+        className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm"
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
+        <div className="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <motion.div 
+              className="min-w-0 flex-1"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                  <QuizTypeIcon className="w-5 h-5" />
+                </div>
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">
+                  {title}
+                </h1>
+              </div>
+              
+              <div className="flex items-center gap-2 text-sm">
+                <Badge variant="secondary" className="bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 dark:from-blue-900/30 dark:to-purple-900/30 dark:text-blue-300 border-blue-200/50 dark:border-blue-700/50">
+                  {quizTypeLabel[quizType] || "Quiz"}
+                </Badge>
                 <DifficultyBadge difficulty={difficulty} />
                 {!isMobile && (
-                  <span className="text-muted-foreground">
+                  <Badge variant="outline" className="text-gray-600 dark:text-gray-400">
                     {questionNumber}/{totalQuestions}
-                  </span>
+                  </Badge>
                 )}
                 {isFocusMode && (
-                  <span className="inline-flex items-center gap-1 text-xs text-primary">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="inline-flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-full"
+                  >
                     <Target className="h-3 w-3" /> Focus mode
-                  </span>
+                  </motion.div>
                 )}
               </div>
-            </div>
+            </motion.div>
 
-            <div className="flex items-center gap-2">
-              {!isMobile && <Timer seconds={displaySeconds} />}
-              <Button variant="ghost" size="icon" aria-label="Home" onClick={goHome}>
+            <motion.div 
+              className="flex items-center gap-2"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              {!isMobile && <Timer seconds={displaySeconds} isPaused={isPaused} />}
+              
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={togglePause}
+                className="hidden sm:flex hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={resetQuiz}
+                className="hidden sm:flex hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+              
+              <Button variant="ghost" size="sm" onClick={goHome} className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                 <Home className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"} onClick={toggleFullscreen}>
+              
+              <Button variant="ghost" size="sm" onClick={toggleFullscreen} className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                 {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
               </Button>
-              <Button variant="outline" size="icon" onClick={toggleSidebar} aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}>
-                {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={toggleSidebar}
+                className={cn(
+                  "transition-all duration-300 hover:scale-105",
+                  sidebarOpen ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700" : ""
+                )}
+              >
+                {sidebarOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                <span className="hidden sm:inline ml-2">
+                  {sidebarOpen ? "Hide" : "Show"} Panel
+                </span>
               </Button>
-            </div>
+            </motion.div>
           </div>
+          
           {isMobile && (
-            <div className="mt-2">
-              <Timer seconds={displaySeconds} />
-            </div>
+            <motion.div 
+              className="mt-3 flex items-center justify-between"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Timer seconds={displaySeconds} isPaused={isPaused} />
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={togglePause}>
+                  {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={resetQuiz}>
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </div>
+            </motion.div>
           )}
         </div>
-      </header>
+      </motion.header>
     )
-  }, [title, quizType, difficulty, isMobile, questionNumber, totalQuestions, timeSpent, elapsed, isFullscreen, sidebarOpen, isFocusMode])
+  }, [title, quizType, difficulty, isMobile, questionNumber, totalQuestions, timeSpent, elapsed, isFullscreen, sidebarOpen, isFocusMode, isPaused, QuizTypeIcon])
 
   const progress = useMemo(() => Math.min(100, Math.max(0, Math.round((questionNumber / totalQuestions) * 100))), [questionNumber, totalQuestions])
+  
   useEffect(() => {
     if (progress === 100) {
       setShowConfetti(true)
-      const t = setTimeout(() => setShowConfetti(false), 1500)
+      const t = setTimeout(() => setShowConfetti(false), 3000)
       return () => clearTimeout(t)
     }
   }, [progress])
 
-  // Resume CTA visibility: show when progress exists and not at start
   const canResume = questionNumber > 1
 
   if (!isLoaded) return null
@@ -195,150 +386,321 @@ export default function QuizPlayLayout({
   const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
 
   return (
-    <div className={`min-h-screen relative ${isFullscreen ? "overflow-hidden" : ""}`}>
+    <div className={cn("min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative", isFullscreen && "overflow-hidden")}>
       {showConfetti && typeof window !== 'undefined' && (
-        <Confetti width={window.innerWidth} height={window.innerHeight} recycle={false} numberOfPieces={180} gravity={0.25} />
+        <Confetti 
+          width={window.innerWidth} 
+          height={window.innerHeight} 
+          recycle={false} 
+          numberOfPieces={300} 
+          gravity={0.3}
+          colors={['#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B']}
+        />
       )}
+      
       {header}
-      <main className="mx-auto w-full max-w-screen-2xl px-3 sm:px-4 lg:px-6 py-3">
-        {canResume && !isFullscreen && (
-          <div className="mb-3 flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2 text-xs">
-            <span className="text-muted-foreground">Continue where you left off?</span>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">Question {questionNumber} of {totalQuestions}</span>
-              <Button size="sm" variant="secondary" onClick={() => mainRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Resume</Button>
-            </div>
-          </div>
-        )}
-        <div className="flex gap-3 lg:gap-4">
-          <section ref={mainRef} className={`flex-1 rounded-xl border bg-card shadow-sm ${isFullscreen ? "p-3 sm:p-4 lg:p-5" : "p-3 sm:p-4"}`}>
-            {/* Progress (compact) hidden in focus mode */}
-            {!isFullscreen && !isFocusMode && (
-              <div className="mb-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium">Progress</span>
-                  <span className="text-xs font-semibold text-primary">{progress}%</span>
+      
+      <main className="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-6">
+        {/* Resume CTA */}
+        <AnimatePresence>
+          {canResume && !isFullscreen && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+              className="mb-6 p-4 rounded-2xl border border-blue-200 dark:border-blue-700/50 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/50">
+                    <Play className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">Continue where you left off</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Question {questionNumber} of {totalQuestions}</p>
+                  </div>
                 </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
-                </div>
+                <Button 
+                  onClick={() => mainRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  Resume Quiz
+                </Button>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="flex gap-6">
+          {/* Main Content */}
+          <motion.section 
+            ref={mainRef}
+            className={cn(
+              "flex-1 rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl shadow-xl transition-all duration-300",
+              isFullscreen ? "p-6 sm:p-8" : "p-6"
+            )}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            {!isFullscreen && !isFocusMode && (
+              <ProgressBar 
+                progress={progress} 
+                questionNumber={questionNumber} 
+                totalQuestions={totalQuestions} 
+              />
             )}
 
             <div className="w-full">{children}</div>
-          </section>
+          </motion.section>
 
-          {/* Sidebar: Quiz actions + Random Quiz */}
-          {sidebarOpen && !isFullscreen && (
-            <aside className="hidden lg:block w-80 shrink-0">
-              <div className="rounded-xl border bg-card p-3 space-y-3">
+          {/* Enhanced Sidebar */}
+          <AnimatePresence>
+            {sidebarOpen && !isFullscreen && (
+              <motion.aside 
+                className="hidden lg:block w-96 shrink-0"
+                initial={{ opacity: 0, x: 20, width: 0 }}
+                animate={{ opacity: 1, x: 0, width: 384 }}
+                exit={{ opacity: 0, x: 20, width: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              >
+                <div className="space-y-6">
+                  <motion.div 
+                    className="rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-6 shadow-xl"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <Suspense fallback={<QuizSkeleton />}>
+                      <QuizActions 
+                        quizId={quizId || quizSlug} 
+                        quizSlug={quizSlug} 
+                        quizType={quizType} 
+                        title={title} 
+                        isPublic={isPublic} 
+                        isFavorite={isFavorite} 
+                        className="w-full" 
+                      />
+                    </Suspense>
+                  </motion.div>
+
+                  <motion.div 
+                    className="rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-6 shadow-xl"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <Suspense fallback={<QuizSkeleton />}>
+                      <RandomQuiz autoRotate={true} />
+                    </Suspense>
+                  </motion.div>
+                </div>
+              </motion.aside>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Enhanced Related Quizzes */}
+        <AnimatePresence>
+          {!isFullscreen && relatedQuizzes.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+              className="mt-8"
+            >
+              <RecommendedSection title="Continue Learning">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {relatedQuizzes.slice(0, 3).map((rq, index) => (
+                    <motion.a
+                      key={rq.id}
+                      href={`/dashboard/${rq.quizType}/${rq.slug}`}
+                      className="group rounded-2xl border border-gray-200/50 dark:border-gray-700/50 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl p-6 hover:shadow-xl transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7 + index * 0.1 }}
+                      whileHover={{ y: -5, scale: 1.02 }}
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                          <BookOpen className="w-5 h-5" />
+                        </div>
+                        {rq.isFavorite && <Award className="w-5 h-5 text-yellow-500" />}
+                      </div>
+                      
+                      <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors mb-2">
+                        {rq.title}
+                      </h3>
+                      
+                      <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        <Badge variant="secondary" className="text-xs">
+                          {rq.quizType?.toUpperCase()}
+                        </Badge>
+                        <span>{rq.questionCount} questions</span>
+                        {rq.estimatedTime && <span>{rq.estimatedTime}min</span>}
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">
+                          Start Quiz
+                        </span>
+                        <Play className="w-4 h-4 text-purple-500 group-hover:text-purple-600 transition-colors" />
+                      </div>
+                    </motion.a>
+                  ))}
+                </div>
+              </RecommendedSection>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+
+      {/* Enhanced Mobile Sidebar */}
+      <AnimatePresence>
+        {sidebarOpen && !isFullscreen && (
+          <motion.div 
+            className="fixed inset-0 z-50 lg:hidden" 
+            role="dialog" 
+            aria-modal="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div 
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+              onClick={() => setSidebarOpen(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+            <motion.div 
+              className="absolute right-0 top-0 h-full w-5/6 max-w-sm bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-2xl"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            >
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Quiz Panel</h2>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setSidebarOpen(false)}
+                  className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              
+              <div className="overflow-y-auto max-h-[calc(100vh-5rem)] p-6 space-y-6">
                 <Suspense fallback={<QuizSkeleton />}>
-                  <QuizActions quizId={quizId || quizSlug} quizSlug={quizSlug} quizType={quizType} title={title} isPublic={isPublic} isFavorite={isFavorite} className="w-full" />
+                  <QuizActions 
+                    quizId={quizId || quizSlug} 
+                    quizSlug={quizSlug} 
+                    quizType={quizType} 
+                    title={title} 
+                    isPublic={isPublic} 
+                    isFavorite={isFavorite} 
+                    className="w-full" 
+                  />
                 </Suspense>
+                
                 <Suspense fallback={<QuizSkeleton />}>
                   <RandomQuiz autoRotate={true} />
                 </Suspense>
               </div>
-            </aside>
-          )}
-        </div>
-        {/* Related quizzes carousel */}
-        {!isFullscreen && relatedQuizzes.length > 0 && (
-          <RecommendedSection title="You might also like">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {relatedQuizzes.slice(0, 3).map((rq) => (
-                <a
-                  key={rq.id}
-                  href={`/dashboard/${rq.quizType}/${rq.slug}`}
-                  className="group rounded-lg border bg-background/40 p-3 hover:border-primary/50 hover:bg-primary/5 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                  aria-label={`Open ${rq.title}`}
-                >
-                  <div className="text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors">{rq.title}</div>
-                  <div className="mt-1 text-xs text-muted-foreground flex items-center gap-2">
-                    <Badge variant="secondary" className="text-[10px]">{rq.quizType}</Badge>
-                    <span>{rq.questionCount} qns</span>
-                    {rq.estimatedTime ? <span>{rq.estimatedTime}m</span> : null}
-                  </div>
-                </a>
-              ))}
-            </div>
-          </RecommendedSection>
+            </motion.div>
+          </motion.div>
         )}
-      </main>
+      </AnimatePresence>
 
-      {/* Mobile Sidebar */}
-      {sidebarOpen && !isFullscreen && (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-5/6 max-w-sm bg-card border-l p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold">Quiz Hub</h2>
-              <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="overflow-y-auto max-h-[calc(100vh-5rem)] space-y-3">
-              <Suspense fallback={<QuizSkeleton />}>
-                <QuizActions quizId={quizId || quizSlug} quizSlug={quizSlug} quizType={quizType} title={title} isPublic={isPublic} isFavorite={isFavorite} className="w-full" />
-              </Suspense>
-              <Suspense fallback={<QuizSkeleton />}>
-                <RandomQuiz autoRotate={true} />
-              </Suspense>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Non-blocking Engagement modal rendered after main to avoid empty content on dismiss */}
+      {/* Enhanced Engagement Modal */}
       <Dialog open={showEngage} onOpenChange={(open) => {
         setShowEngage(open)
         if (!open && quizSlug) localStorage.setItem(`ai_quiz_engagement_${quizSlug}`, "1")
       }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <motion.span
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-primary/10 text-primary"
+        <DialogContent className="max-w-2xl">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3 text-xl">
+                <motion.div
+                  className="p-3 rounded-2xl bg-gradient-to-br from-purple-500 to-blue-600 text-white"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                >
+                  <Sparkles className="h-6 w-6" />
+                </motion.div>
+                Level up your learning with AI
+              </DialogTitle>
+              <DialogDescription className="text-base">
+                This AI-powered quiz adapts to your learning style with smart hints, instant feedback, and a personalized path to mastery.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="mt-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="p-6 rounded-2xl bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200/50 dark:border-purple-700/50"
               >
-                <Sparkles className="h-5 w-5" />
-              </motion.span>
-              Level up your learning
-            </DialogTitle>
-            <DialogDescription>
-              This AI-powered quiz adapts to you with smart hints, instant feedback, and a tailored path to mastery.
-              Create your own in seconds to practice exactly what matters.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-2 text-sm">
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25 }}
-              className="flex items-center gap-3 p-3 rounded-lg bg-accent/20 border border-border/50"
-            >
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 grid place-items-center text-white">
-                <Wand2 className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="font-medium text-foreground">Create a custom quiz for free</p>
-                <p className="text-muted-foreground">Engage your audience, grow your skills, and track progress—no setup required.</p>
-              </div>
-            </motion.div>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-muted-foreground">
-              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-md border bg-card p-2">Adaptive hints</motion.div>
-              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-md border bg-card p-2">Instant feedback</motion.div>
-              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="rounded-md border bg-card p-2">Shareable results</motion.div>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="p-3 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white">
+                    <Wand2 className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 dark:text-white">Create custom quizzes instantly</h3>
+                    <p className="text-gray-600 dark:text-gray-400">AI-powered quiz generation tailored to your needs</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { icon: Target, label: "Adaptive Learning" },
+                    { icon: TrendingUp, label: "Progress Tracking" },
+                    { icon: Users, label: "Collaborative" }
+                  ].map((feature, i) => (
+                    <motion.div
+                      key={feature.label}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 + i * 0.1 }}
+                      className="flex items-center gap-2 p-3 rounded-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50"
+                    >
+                      <feature.icon className="h-4 w-4 text-purple-600" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {feature.label}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
             </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-3">
-            <Button variant="secondary" onClick={() => setShowEngage(false)}>Not now</Button>
-            <Button asChild className="btn-gradient">
-              <a href="/dashboard/mcq" className="gap-2"><Sparkles className="h-4 w-4" /> Create a quiz</a>
-            </Button>
-          </DialogFooter>
+            
+            <DialogFooter className="gap-3 mt-6">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowEngage(false)}
+                className="hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                Maybe later
+              </Button>
+              <Button 
+                asChild 
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <a href="/dashboard/mcq" className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" /> 
+                  Create AI Quiz
+                </a>
+              </Button>
+            </DialogFooter>
+          </motion.div>
         </DialogContent>
       </Dialog>
     </div>
