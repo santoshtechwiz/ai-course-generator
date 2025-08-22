@@ -161,19 +161,18 @@ const CourseAILandingPage = () => {
     }
   }, [isMenuOpen])
 
-  if (!isHydrated) return null
-
+  // Provide SSR-safe initial render instead of null to prevent blank page
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
       {/* Header with Apple-style animations */}
       <motion.header
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-4 transition-all duration-300"
-        style={{
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-4 transition-all duration-300 bg-background/80 backdrop-blur-xl border-b border-border/60"
+        style={isHydrated ? {
           backgroundColor: theme === "dark" ? headerBgDark : headerBg,
           borderBottom: `1px solid ${theme === "dark" ? headerBorderDark : headerBorder}`,
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-        }}
+        } : {}}
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: APPLE_EASING, delay: 0.2 }}
@@ -201,9 +200,10 @@ const CourseAILandingPage = () => {
                 "text-sm font-medium transition-colors relative px-2 py-1",
                 activeSection === item.id
                   ? "text-primary"
-                  : theme === "dark"
-                    ? "text-white hover:text-white/90"
-                    : "text-gray-800 hover:text-gray-900",
+                  : "text-foreground hover:text-foreground/90",
+                // Theme-dependent colors only after hydration
+                isHydrated && theme === "dark" ? "text-white hover:text-white/90" : "",
+                isHydrated && theme === "light" ? "text-gray-800 hover:text-gray-900" : "",
               )}
               aria-current={activeSection === item.id ? "page" : undefined}
               whileHover={{
