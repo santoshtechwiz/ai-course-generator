@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { CourseSidebar } from "./CourseSidebar"
-import CoursesClient from "./CoursesClient"
-import type { CategoryId } from "@/config/categories"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Button } from "@/components/ui/button"
-import { Menu, ChevronLeft, ChevronRight, Filter, X } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
+import { useState } from "react";
+import { CourseSidebar } from "./CourseSidebar";
+import CoursesClient from "./CoursesClient";
+import type { CategoryId } from "@/config/categories";
+import { useCategories } from "@/hooks/useCategories";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, Filter, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
 
 interface CourseListProps {
   url: string
@@ -23,55 +23,33 @@ interface Category {
 }
 
 export default function CourseList({ url, userId }: CourseListProps) {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [categories, setCategories] = useState<Category[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [ratingFilter, setRatingFilter] = useState(0)
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      setIsLoading(true)
-      try {
-        const response = await fetch("/api/categories")
-        if (response.ok) {
-          const data = await response.json()
-          setCategories(data)
-        }
-      } catch (error) {
-        console.error("Error fetching categories:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchCategories()
-  }, [])
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const { data: categories = [] } = useCategories();
+  const [ratingFilter, setRatingFilter] = useState(0);
 
   const handleCategoryChange = (categoryId: CategoryId | null) => {
-    setSelectedCategory(categoryId === selectedCategory ? null : categoryId)
-    setMobileSidebarOpen(false) // Close mobile sidebar when category is selected
-  }
+    setSelectedCategory(categoryId === selectedCategory ? null : categoryId);
+    setMobileSidebarOpen(false);
+  };
 
   const resetFilters = () => {
-    setSearchQuery("")
-    setSelectedCategory(null)
-    setRatingFilter(0)
-  }
+    setSearchQuery("");
+    setSelectedCategory(null);
+    setRatingFilter(0);
+  };
 
-  // Get active filters count for mobile badge
   const activeFiltersCount = [
     searchQuery.trim() !== "",
     selectedCategory !== null,
     ratingFilter > 0,
-  ].filter(Boolean).length
+  ].filter(Boolean).length;
 
-  // Get selected category name for display
-  const selectedCategoryName = selectedCategory 
-    ? categories.find(cat => cat.id === selectedCategory)?.name 
-    : null
+  const selectedCategoryName = selectedCategory
+    ? categories.find((cat) => cat.id === selectedCategory)?.name
+    : null;
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-background">
@@ -197,19 +175,14 @@ export default function CourseList({ url, userId }: CourseListProps) {
         </div>
       </div>
 
-      {/* Desktop Active Filters chips */}
-      <div className="hidden lg:block fixed top-[64px] left-0 right-0 z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border-b">
-        {activeFiltersCount > 0 && (
+      {/* Desktop Active Filters chips (simplified) */}
+      {activeFiltersCount > 0 && (
+        <div className="hidden lg:block fixed top-[64px] left-0 right-0 z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border-b">
           <div className="max-w-[1600px] mx-auto px-6 py-2 flex items-center gap-2">
             {searchQuery && (
               <Badge variant="secondary" className="flex items-center gap-1">
                 Search: "{searchQuery.slice(0, 20)}{searchQuery.length > 20 ? '...' : ''}"
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-4 w-4 p-0 hover:bg-transparent"
-                  onClick={() => setSearchQuery("")}
-                >
+                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-transparent" onClick={() => setSearchQuery("")}>
                   <X className="h-3 w-3" />
                 </Button>
               </Badge>
@@ -217,12 +190,7 @@ export default function CourseList({ url, userId }: CourseListProps) {
             {selectedCategoryName && (
               <Badge variant="secondary" className="flex items-center gap-1">
                 {selectedCategoryName}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-4 w-4 p-0 hover:bg-transparent"
-                  onClick={() => setSelectedCategory(null)}
-                >
+                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-transparent" onClick={() => setSelectedCategory(null)}>
                   <X className="h-3 w-3" />
                 </Button>
               </Badge>
@@ -230,22 +198,15 @@ export default function CourseList({ url, userId }: CourseListProps) {
             {ratingFilter > 0 && (
               <Badge variant="secondary" className="flex items-center gap-1">
                 {ratingFilter}+ ⭐
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-4 w-4 p-0 hover:bg-transparent"
-                  onClick={() => setRatingFilter(0)}
-                >
+                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-transparent" onClick={() => setRatingFilter(0)}>
                   <X className="h-3 w-3" />
                 </Button>
               </Badge>
             )}
-            <Button variant="ghost" size="sm" className="ml-2" onClick={resetFilters}>
-              Clear all
-            </Button>
+            <Button variant="ghost" size="sm" className="ml-2" onClick={resetFilters}>Clear all</Button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Desktop sidebar with enhanced toggle */}
       <div
@@ -264,10 +225,7 @@ export default function CourseList({ url, userId }: CourseListProps) {
             className="absolute right-[-12px] top-4 h-6 w-6 rounded-full border bg-background z-10 shadow-md hover:shadow-lg transition-shadow"
             aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
-            <motion.div
-              animate={{ rotate: sidebarOpen ? 0 : 180 }}
-              transition={{ duration: 0.2 }}
-            >
+            <motion.div animate={{ rotate: sidebarOpen ? 0 : 180 }} transition={{ duration: 0.2 }}>
               <ChevronLeft className="h-3 w-3" />
             </motion.div>
           </Button>
@@ -320,18 +278,8 @@ export default function CourseList({ url, userId }: CourseListProps) {
       {/* Floating action button for quick access (mobile) */}
       <AnimatePresence>
         {!mobileSidebarOpen && activeFiltersCount > 0 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0 }}
-            className="lg:hidden fixed bottom-6 right-6 z-20"
-          >
-            <Button
-              onClick={resetFilters}
-              size="sm"
-              variant="outline"
-              className="rounded-full shadow-lg bg-background/95 backdrop-blur-sm border-2"
-            >
+          <motion.div initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0 }} className="lg:hidden fixed bottom-6 right-6 z-20">
+            <Button onClick={resetFilters} size="sm" variant="outline" className="rounded-full shadow-lg bg-background/95 backdrop-blur-sm border-2">
               Clear Filters ({activeFiltersCount})
             </Button>
           </motion.div>
