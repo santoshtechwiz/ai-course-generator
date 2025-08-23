@@ -25,7 +25,7 @@ import NextChapterAutoOverlay from "./NextChapterAutoOverlay"
 import ChapterTransitionOverlay from "./ChapterTransitionOverlay"
 import AnimatedCourseAILogo from "./AnimatedCourseAILogo"
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
-import MiniPlayerNode from "./MiniPlayer"
+import EnhancedMiniPlayer from "./EnhancedMiniPlayer"
 
 // Memoized authentication prompt to prevent unnecessary re-renders
 const AuthPrompt = React.memo(
@@ -799,16 +799,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (isCourseCompleted) {
       setShowChapterEnd(true)
     } else if (onNextVideo && state.autoPlayNext) {
-      setShowNextChapterAutoOverlay(true)
-      setNextChapterAutoCountdown(5)
+      // Use the corner notification instead of overlay
+      setShowAutoPlayNotification(true)
+      setAutoPlayCountdown(5)
 
       if (autoPlayIntervalRef.current) clearInterval(autoPlayIntervalRef.current)
 
       autoPlayIntervalRef.current = setInterval(() => {
-        setNextChapterAutoCountdown((prev) => {
+        setAutoPlayCountdown((prev) => {
           if (prev <= 1) {
             if (autoPlayIntervalRef.current) clearInterval(autoPlayIntervalRef.current)
-            setShowNextChapterAutoOverlay(false)
+            setShowAutoPlayNotification(false)
             onNextVideo()
             return 5
           }
@@ -1034,8 +1035,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     >
       {/* Main YouTube Player */}
       <div className={cn(
-        "absolute inset-0",
-        (isNativePiPActive || shouldShowMiniPlayer) && "opacity-0 pointer-events-none"
+        "absolute inset-0 transition-all duration-300",
+        (isNativePiPActive || shouldShowMiniPlayer) && "opacity-0 pointer-events-none scale-95"
       )}>
         <ReactPlayer
           ref={playerRef}
@@ -1080,9 +1081,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         />
       </div>
 
-      {/* Mini Player */}
+      {/* Enhanced Mini Player */}
       {shouldShowMiniPlayer && (
-        <MiniPlayerNode
+        <EnhancedMiniPlayer
           visible={true}
           position={miniPos}
           onPositionChange={(pos) => {
@@ -1097,23 +1098,31 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             onPictureInPictureToggle?.(false)
           }}
           onExpand={() => {
-            // Handle expand logic if needed
+            if (handlers.handlePictureInPictureToggle) {
+              handlers.handlePictureInPictureToggle()
+            }
+            setIsMiniPlayerActive(false)
+            onPictureInPictureToggle?.(false)
           }}
           videoUrl={youtubeUrl}
           playing={state.playing && canPlayVideo}
           volume={state.volume}
           muted={state.muted}
-          playbackRate={state.playbackRate}
-          title={chapterTitle || courseName}
+          title={courseName}
+          chapterTitle={chapterTitle}
           currentTime={formatTime(state.lastPlayedTime)}
           duration={formatTime(videoDuration || state.duration)}
           onPlayPause={handlePlayClick}
-          onVolumeChange={handlers.onVolumeChange}
+          onVolumeToggle={handlers.onMute}
+          onNext={onNextVideo}
+          hasNext={!!onNextVideo}
+          nextTitle={nextVideoTitle}
+          played={state.played}
           onSeek={(percent) => {
             const time = (videoDuration || state.duration) * percent
             handlers.onSeek(time)
           }}
-          played={state.played}
+          thumbnail={`https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg`}
         />
       )}
 
