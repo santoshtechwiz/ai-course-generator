@@ -384,6 +384,32 @@
     @apply opacity-0 hover:opacity-100 transition-opacity duration-300;
   }
 
+  /* AI Themed Utilities */
+  .ai-gradient-text {
+    @apply bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent;
+  }
+  .ai-surface {
+    @apply bg-gradient-to-br from-background to-muted/40 dark:from-background dark:to-muted/20 backdrop-blur-sm;
+  }
+  .ai-border {
+    @apply border border-primary/10 hover:border-primary/30 transition-colors;
+  }
+  .ai-glow {
+    box-shadow: 0 0 0 1px hsl(var(--primary)/0.15), 0 0 8px -2px hsl(var(--primary)/0.6), 0 0 24px -8px hsl(var(--accent)/0.5);
+  }
+  .ai-ring-focus:focus-visible {
+    @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
+  }
+  .ai-card-hover {
+    @apply transition-shadow hover:shadow-lg hover:shadow-primary/10;
+  }
+  .ai-divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-border to-transparent;
+  }
+  .ai-chip {
+    @apply inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium bg-background/60 backdrop-blur-sm;
+  }
+
   /* Course specific styles - Udemy-like UI */
   .course-header {
     @apply sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b;

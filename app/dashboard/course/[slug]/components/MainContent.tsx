@@ -95,6 +95,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const [mobilePlaylistOpen, setMobilePlaylistOpen] = useState(false)
   const [autoplayMode, setAutoplayMode] = useState(false)
   const [headerCompact, setHeaderCompact] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // Mark when client is mounted to safely render client-only derived data (prevents hydration mismatch)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
   const isOwner = user?.id === course.userId
 
   // Redux state
@@ -691,24 +697,31 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
               : "bg-background py-3 text-foreground"
           )}>
             <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-4">
-              <div className={cn("flex items-center gap-4 min-w-0 transition-all", headerCompact ? "text-sm" : "text-base")}>
+              <div className={cn("flex items-center gap-4 min-w-0 transition-all", headerCompact ? "text-sm" : "text-base")}> 
                 <div className="flex-shrink-0 min-w-0">
-                  <div className="font-semibold truncate">{course.title}</div>
-                  <div className="text-xs text-muted-foreground hidden md:block truncate">{currentChapter?.title || ''}</div>
+                  <div className="font-semibold truncate" suppressHydrationWarning>{course.title}</div>
+                  <div 
+                    className="text-xs text-muted-foreground hidden md:block truncate" 
+                    suppressHydrationWarning
+                  >
+                    {mounted && currentChapter?.title ? currentChapter.title : ''}
+                  </div>
                 </div>
 
-                <div className="hidden sm:flex items-center gap-3 ml-4">
-                  <div className="text-xs font-medium">{courseStats.completedCount}/{courseStats.totalChapters} completed</div>
+                <div className="hidden sm:flex items-center gap-3 ml-4" suppressHydrationWarning>
+                  <div className="text-xs font-medium">
+                    {mounted ? `${courseStats.completedCount}/${courseStats.totalChapters} completed` : `0/${courseStats.totalChapters} completed`}
+                  </div>
                   <div className="w-48">
-                    <Progress value={courseStats.progressPercentage} className="h-2 rounded-full" />
+                    <Progress value={mounted ? courseStats.progressPercentage : 0} className="h-2 rounded-full" />
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3" suppressHydrationWarning>
                 <Badge variant="outline" className="hidden sm:flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3" /> 
-                  <span>{courseStats.progressPercentage}%</span>
+                  <CheckCircle className="h-3 w-3" />
+                  <span>{mounted ? courseStats.progressPercentage : 0}%</span>
                 </Badge>
                 <ActionButtons slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
               </div>
