@@ -22,7 +22,8 @@ class ProgressApiClient {
   private readonly QUEUE_KEY = 'progress-updates-queue';
   private readonly OFFLINE_FLAG = 'progress-offline-updates';
   private lastUpdatedTimestamps: Record<string, number> = {}; // Track timestamps for rate limiting
-  private readonly MIN_UPDATE_INTERVAL = 120000; // 2 minutes in milliseconds
+  private lastProgressValues: Record<string, number> = {}; // Track last progress values for jump detection
+  private readonly MIN_UPDATE_INTERVAL = 15000; // 15 seconds in milliseconds - better balance between frequency and performance
 
   // Store completed chapters in memory
   public completedChapters: number[] = [];
@@ -72,7 +73,7 @@ class ProgressApiClient {
   }
   
   /**
-   * Queue a progress update to be sent when online
+   * Queue a progress update to be sent when online with improved throttling
    */
   queueUpdate(update: ProgressUpdate): void {
     // Validate required fields before queuing
@@ -80,6 +81,7 @@ class ProgressApiClient {
       console.warn('Progress update skipped: missing required fields', update);
       return;
     }
+    
     // Additional validation for courseId
     if (typeof update.courseId === 'undefined' || update.courseId === null || update.courseId === '' || isNaN(Number(update.courseId))) {
       console.error('Progress update skipped: invalid courseId', update.courseId, update);
@@ -91,11 +93,17 @@ class ProgressApiClient {
     const now = Date.now();
     const lastUpdate = this.lastUpdatedTimestamps[key] || 0;
     
-    // Only queue update if it's been at least MIN_UPDATE_INTERVAL since last update
-    // Exception: always queue updates for completed videos
-    if (update.completed || now - lastUpdate >= this.MIN_UPDATE_INTERVAL) {
+    // Conditions to always queue update:
+    // 1. Video completed
+    // 2. Significant progress jump (>5%)
+    // 3. Enough time has passed since last update
+    const progressJump = Math.abs(update.progress - (this.lastProgressValues[key] || 0)) > 5;
+    const shouldUpdate = update.completed || progressJump || (now - lastUpdate >= this.MIN_UPDATE_INTERVAL);
+    
+    if (shouldUpdate) {
       // Update timestamp tracker to prevent too frequent updates
       this.lastUpdatedTimestamps[key] = now;
+      this.lastProgressValues[key] = update.progress;
       
       // Check if there's already a similar update in the queue
       const existingIndex = this.queue.findIndex(item => 
