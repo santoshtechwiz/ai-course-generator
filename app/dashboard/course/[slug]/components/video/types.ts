@@ -131,6 +131,7 @@ export interface PlayerControlsProps {
   onShowKeyboardShortcuts?: () => void
   onNextVideo?: () => void
   onToggleBookmarkPanel?: () => void
+  bookmarkPanelOpen?: boolean
   autoPlayNext?: boolean
   onToggleAutoPlayNext?: () => void
   autoPlayVideo?: boolean

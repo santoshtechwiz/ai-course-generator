@@ -150,6 +150,8 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
   isTheaterMode = false,
 }) => {
   const { data: session } = useSession()
+  // Derive effective authentication (prop can override but session acts as fallback)
+  const effectiveIsAuthenticated = isAuthenticated || !!session?.user
   const youtubeVideoIdRef = useRef(youtubeVideoId)
   const { startLoading, stopLoading, isLoading } = useGlobalLoader()
 
@@ -748,6 +750,17 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
           event.preventDefault()
           handlePlayClick()
           break
+        case "b":
+        case "B":
+          if (event.shiftKey) {
+            event.preventDefault()
+            handleToggleBookmarkPanel()
+          } else {
+            event.preventDefault()
+            // Add bookmark at current time
+            handleAddBookmark(state.lastPlayedTime)
+          }
+          break
         case "ArrowRight":
           event.preventDefault()
           handlers.onSeek(Math.min(playerState.videoDuration, state.lastPlayedTime + 10))
@@ -859,7 +872,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
   // Bookmark handlers
   const handleAddBookmark = useCallback(
     (time: number, title?: string) => {
-      if (!isAuthenticated) {
+  if (!effectiveIsAuthenticated) {
         toast({
           title: "Sign in required",
           description: "Please sign in to add bookmarks.",
@@ -882,7 +895,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
         })
       }
     },
-    [handlers, isAuthenticated, toast, formatTime],
+  [handlers, effectiveIsAuthenticated, toast, formatTime],
   )
 
   const handleRemoveBookmark = useCallback(
@@ -1266,12 +1279,13 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
             formatTime={formatTime}
             bookmarks={bookmarks.map((b) => b.time)}
             onSeekToBookmark={handleSeekToBookmark}
-            isAuthenticated={isAuthenticated}
+            isAuthenticated={effectiveIsAuthenticated}
             onCertificateClick={onCertificateClick}
             show={playerState.showControlsState}
             onShowKeyboardShortcuts={handlers.handleShowKeyboardShortcuts}
             onNextVideo={onNextVideo}
             onToggleBookmarkPanel={handleToggleBookmarkPanel}
+              bookmarkPanelOpen={overlayState.showBookmarkPanel}
             autoPlayNext={state.autoPlayNext}
             onToggleAutoPlayNext={handlers.toggleAutoPlayNext}
             autoPlayVideo={playerState.autoPlayVideo}
@@ -1286,7 +1300,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
       )}
 
       {/* Bookmark Panel */}
-      {overlayState.showBookmarkPanel && isAuthenticated && !shouldHideMainPlayer && (
+  {overlayState.showBookmarkPanel && effectiveIsAuthenticated && !shouldHideMainPlayer && (
         <div className="absolute top-0 right-0 bottom-16 w-64 sm:w-72 bg-black/80 backdrop-blur-sm z-30 border-l border-white/10">
           <BookmarkManager
             videoId={youtubeVideoId}
