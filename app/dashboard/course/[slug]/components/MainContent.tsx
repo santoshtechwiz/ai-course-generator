@@ -6,33 +6,27 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { selectCourseProgressById } from "@/store/slices/courseProgress-slice"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
-import { Lock, User as UserIcon, Play, ChevronLeft } from "lucide-react"
+import { 
+  Lock, 
+  User as UserIcon, 
+  Play, 
+  ChevronLeft, 
+  Star,
+  Clock,
+  Users,
+  GraduationCap,
+  Calendar,
+  CheckCircle 
+} from "lucide-react"
 import { store } from "@/store"
 import { setCurrentVideoApi } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import CourseDetailsTabs, { AccessLevels } from "./CourseDetailsTabs"
 import { formatDuration } from "../utils/formatUtils"
 import { VideoDebug } from "./video/components/VideoDebug"
-import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { AnimatePresence, motion } from "framer-motion"
-"use client"
-
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
-import { useRouter } from "next/navigation"
-import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { makeSelectCourseProgressById } from "@/store/slices/courseProgress-slice"
-import { useToast } from "@/components/ui/use-toast"
-import { Button } from "@/components/ui/button"
-import { Lock, User as UserIcon, Play, ChevronLeft } from "lucide-react"
-import { store } from "@/store"
-import { setCurrentVideoApi } from "@/store/slices/course-slice"
-import type { FullCourseType, FullChapterType } from "@/app/types/types"
-import CourseDetailsTabs, { AccessLevels } from "./CourseDetailsTabs"
-import { formatDuration } from "../utils/formatUtils"
-import { VideoDebug } from "./video/components/VideoDebug"
-import { Card, CardContent } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 import { AnimatePresence, motion } from "framer-motion"
 import { useAuth } from "@/modules/auth"
 import ActionButtons from "./ActionButtons"
@@ -47,6 +41,8 @@ import { fetchPersonalizedRecommendations } from "@/app/services/recommendations
 import { useVideoState } from "./video/hooks/useVideoState"
 import { migratedStorage } from "@/lib/storage"
 import VideoGenerationSection from "./VideoGenerationSection"
+import { useVideoProgressTracker } from "@/hooks/useVideoProgressTracker"
+import MobilePlaylistCount from "@/components/course/MobilePlaylistCount"
 
 // Use existing components
 import CertificateModal from "./CertificateModal"
@@ -98,6 +94,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const [isPiPActive, setIsPiPActive] = useState(false)
   const [mobilePlaylistOpen, setMobilePlaylistOpen] = useState(false)
   const [autoplayMode, setAutoplayMode] = useState(false)
+  const [headerCompact, setHeaderCompact] = useState(false)
   const isOwner = user?.id === course.userId
 
   // Redux state
@@ -416,10 +413,21 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const handlePIPToggle = useCallback((isPiPActive: boolean) => {
     setIsPiPActive(isPiPActive)
   }, [])
-        ? "Chapters will automatically advance when completed" 
-        : "You'll be prompted before each chapter transition",
+
+  // Autoplay toggle handler (replaces broken inline code)
+  const handleAutoplayToggle = useCallback(() => {
+    setAutoplayMode(prev => {
+      const next = !prev
+      try { localStorage.setItem(`autoplay_mode_course_${course.id}`, String(next)) } catch {}
+      toast({
+        title: next ? "Auto-advance enabled" : "Manual advance mode",
+        description: next
+          ? "Chapters will automatically advance when completed"
+          : "You'll be prompted before each chapter transition",
+      })
+      return next
     })
-  }, [autoplayMode, course.id, toast])
+  }, [course.id, toast])
 
   // Collapse header on scroll to give more vertical space for the player
   useEffect(() => {
@@ -671,32 +679,37 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Regular content
   const regularContent = (
     <div className="min-h-screen bg-background">
-      {/* Mobile header */}
+      {/* Main content layout */}
       <div className="flex">
         {/* Main content */}
         <main className="flex-1 min-w-0">
           {/* Udemy-like sticky header */}
           <header className={cn(
-            "w-full sticky top-0 z-50 text-white transition-all",
-            headerCompact ? "bg-card/80 py-1" : "bg-gradient-to-b from-black/95 to-black/80 py-3"
+            "w-full sticky top-0 z-50 transition-all shadow-sm border-b", 
+            headerCompact 
+              ? "bg-background/95 backdrop-blur-sm py-2 text-foreground" 
+              : "bg-background py-3 text-foreground"
           )}>
             <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-4">
               <div className={cn("flex items-center gap-4 min-w-0 transition-all", headerCompact ? "text-sm" : "text-base")}>
                 <div className="flex-shrink-0 min-w-0">
                   <div className="font-semibold truncate">{course.title}</div>
-                  <div className="text-xs text-muted-foreground/70 hidden md:block truncate">{currentChapter?.title || ''}</div>
+                  <div className="text-xs text-muted-foreground hidden md:block truncate">{currentChapter?.title || ''}</div>
                 </div>
 
-                <div className="hidden sm:flex items-center gap-3 ml-2">
-                  <div className="text-xs text-muted-foreground/70">{courseStats.completedCount}/{courseStats.totalChapters}</div>
+                <div className="hidden sm:flex items-center gap-3 ml-4">
+                  <div className="text-xs font-medium">{courseStats.completedCount}/{courseStats.totalChapters} completed</div>
                   <div className="w-48">
-                    <Progress value={courseStats.progressPercentage} className="h-2 rounded-md" />
+                    <Progress value={courseStats.progressPercentage} className="h-2 rounded-full" />
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="hidden sm:block">{courseStats.progressPercentage}%</Badge>
+              <div className="flex items-center gap-3">
+                <Badge variant="outline" className="hidden sm:flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" /> 
+                  <span>{courseStats.progressPercentage}%</span>
+                </Badge>
                 <ActionButtons slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
               </div>
             </div>

@@ -362,7 +362,7 @@
     @apply rounded-none;
   }
 
-  .theater-mode-active .sidebar,
+  .theater-mode-active .course-sidebar,
   .theater-mode-active .course-navigation {
     @apply hidden;
   }
@@ -382,5 +382,46 @@
 
   .pip-active .video-controls {
     @apply opacity-0 hover:opacity-100 transition-opacity duration-300;
+  }
+
+  /* Course specific styles - Udemy-like UI */
+  .course-header {
+    @apply sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b;
+  }
+  
+  .course-video-container {
+    @apply rounded-lg overflow-hidden border shadow-sm transition-all;
+  }
+  
+  .course-sidebar {
+    @apply border rounded-lg bg-card/95 shadow-sm;
+  }
+  
+  .course-chapter {
+    @apply border-b last:border-b-0 transition-colors;
+  }
+  
+  .course-chapter-active {
+    @apply bg-primary/5 border-l-2 border-l-primary;
+  }
+  
+  .course-chapter-completed {
+    @apply border-l-2 border-l-success/50;
+  }
+  
+  .course-chapter-locked {
+    @apply opacity-60;
+  }
+
+  .chapter-progress-indicator {
+    @apply inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-medium;
+  }
+
+  .ai-glass {
+    @apply bg-background/80 backdrop-blur-sm;
+  }
+
+  .dark .ai-glass-dark {
+    @apply bg-background/80 backdrop-blur-sm;
   }
 }
