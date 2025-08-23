@@ -33,10 +33,16 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   const { toast } = useToast()
   const dispatch = useAppDispatch()
   
-  // Load saved preferences
+  // Load saved preferences - only on client side
   const savedPreferences = useMemo(() => {
-    const storedPrefs = localStorage.getItem("playerPreferences")
-    return storedPrefs ? JSON.parse(storedPrefs) : {}
+    if (typeof window === 'undefined') return {}
+    try {
+      const storedPrefs = localStorage.getItem("playerPreferences")
+      return storedPrefs ? JSON.parse(storedPrefs) : {}
+    } catch (error) {
+      console.warn('Failed to load player preferences:', error)
+      return {}
+    }
   }, [])
 
   const [state, setState] = useState<VideoPlayerState>({

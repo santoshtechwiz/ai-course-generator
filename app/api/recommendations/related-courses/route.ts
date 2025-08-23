@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
         title: true,
         description: true,
         category: true,
-        units: {
+        courseUnits: {
           select: {
             id: true,
             name: true,
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
             name: true
           }
         },
-        units: {
+        courseUnits: {
           select: {
             id: true,
             name: true,
@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
       description: course.description || "No description available",
       image: course.image || "/api/placeholder/400/225",
       category: course.category?.name,
-      unitCount: course.units.length,
+      unitCount: course.courseUnits.length,
       studentCount: course._count.courseProgress,
       rating: 4.5 + Math.random() * 0.5, // Mock rating for now
     }))

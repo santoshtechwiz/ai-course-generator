@@ -83,6 +83,7 @@ export interface VideoPlayerProps {
   onNextVideo?: () => void
   nextVideoTitle?: string
   nextVideoId?: string
+  autoAdvanceNext?: boolean
   chapterTitle?: string
   courseName?: string
   courseId?: string | number

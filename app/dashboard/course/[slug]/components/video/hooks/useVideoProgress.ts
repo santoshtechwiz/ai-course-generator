@@ -2,7 +2,9 @@
 
 import { useCallback, useRef, useEffect } from "react"
 import { useSession } from "next-auth/react"
-import { progressApi } from "../../../api/progressApi"
+import { useVideoProgressTracker } from "@/hooks/useVideoProgressTracker"
+import { useAppSelector } from "@/store/hooks"
+import { selectCourseProgressById } from "@/store/slices/courseProgress-slice"
 import type { ProgressState } from "../types"
 
 interface UseVideoProgressOptions {
@@ -36,11 +38,18 @@ export function useVideoProgress({
     completed: false,
   })
 
+  // Use centralized tracker for persistence and completion handling
+  const tracker = useVideoProgressTracker({
+    courseId,
+    chapterId,
+    videoId,
+    throttleMs: Math.max(5000, saveInterval),
+  })
+
   // Initialize completed chapters on mount
   useEffect(() => {
-    if (session?.user?.id) {
-      progressApi.loadCompletedChapters(session.user.id)
-    }
+    // Completed chapters are synchronized via server -> Redux on mount elsewhere.
+  }, [session?.user?.id])
   }, [session?.user?.id])
 
   // Save progress to API
@@ -57,29 +66,11 @@ export function useVideoProgress({
       }
 
       try {
-        progressApi.queueUpdate({
-          courseId,
-          chapterId,
-          videoId,
-          progress: data.progress,
-          playedSeconds: data.playedSeconds,
-          duration: data.duration,
-          completed: data.completed,
-          userId: session.user.id,
-        })
-
+        // Delegate persistence to the centralized tracker
+        tracker.handleVideoProgress({ played: data.progress / 100, playedSeconds: data.playedSeconds })
         lastSaveTimeRef.current = now
-        
-        // Update completed chapters locally
-        if (data.completed) {
-          const chapterNum = Number(chapterId)
-          if (!progressApi.completedChapters.includes(chapterNum)) {
-            progressApi.completedChapters.push(chapterNum)
-            progressApi.saveCompletedChapters(session.user.id)
-          }
-        }
       } catch (error) {
-        console.error("Failed to save video progress:", error)
+        console.error("Failed to save video progress via tracker:", error)
       }
     },
     [enabled, session?.user?.id, courseId, chapterId, videoId, saveInterval]
@@ -114,8 +105,8 @@ export function useVideoProgress({
       completed: true,
     }
 
-    // Force save when video ends
-    saveProgress(data, true)
+  // Use tracker to persist completion
+  tracker.handleVideoEnd()
   }, [saveProgress])
 
   // Handle manual seek - save immediately
@@ -126,8 +117,12 @@ export function useVideoProgress({
         playedSeconds: seconds,
       }
 
-      // Force save on seek
-      saveProgress(data, true)
+      // Forward seek update to tracker as an immediate progress update
+      try {
+        tracker.handleVideoProgress({ played: Math.min(1, (seconds / (data.duration || seconds)) || 0), playedSeconds: seconds })
+      } catch (err) {
+        // Fallback: nothing
+      }
     },
     [saveProgress]
   )
@@ -156,7 +151,10 @@ export function useVideoProgress({
   // Get completion status
   const isChapterCompleted = useCallback((): boolean => {
     const chapterNum = Number(chapterId)
-    return progressApi.completedChapters.includes(chapterNum)
+    const progress = useAppSelector((state) => selectCourseProgressById(state, courseId))
+    try {
+      return (progress?.videoProgress?.completedChapters || []).includes(chapterNum)
+    } catch { return false }
   }, [chapterId])
 
   return {

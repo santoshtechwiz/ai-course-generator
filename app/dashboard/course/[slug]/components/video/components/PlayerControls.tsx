@@ -71,6 +71,8 @@ interface PlayerControlsProps {
   onPictureInPicture?: () => void
   isPiPSupported?: boolean
   isPiPActive?: boolean
+  isTheaterMode?: boolean
+  onToggleTheaterMode?: () => void
 }
 
 const PlayerControls: React.FC<PlayerControlsProps> = ({
@@ -112,6 +114,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   onPictureInPicture,
   isPiPSupported = false,
   isPiPActive = false,
+  isTheaterMode = false,
+  onToggleTheaterMode,
 }) => {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)

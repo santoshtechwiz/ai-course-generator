@@ -16,7 +16,6 @@ import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/modules/auth"
 import { useAppSelector } from "@/store/hooks"
-import { makeSelectCourseProgressById } from "@/store/slices/courseProgress-slice"
 import { cn } from "@/lib/utils"
 
 interface CourseNotification {
@@ -102,7 +101,7 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
     if (!courseProgress) return []
     return Object.keys(courseProgress).filter(courseId => {
       const progress = courseProgress[courseId]
-      return progress && !progress.isCourseCompleted
+      return progress && progress.videoProgress && !progress.videoProgress.isCompleted
     })
   }, [courseProgress])
 
@@ -118,12 +117,13 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
     const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000
 
     Object.entries(courseProgress).forEach(([courseId, progress]) => {
-      // Skip if course is completed
-      if (progress.isCourseCompleted) return
+      // Skip if no video progress or course is completed
+      if (!progress.videoProgress || progress.videoProgress.isCompleted) return
 
-      // Calculate progress percentage (this would need to be calculated based on total chapters)
-      const progressPercentage = progress.completedLectures.length > 0 ? 
-        (progress.completedLectures.length / 10) * 100 : 0 // Assuming 10 chapters per course
+      // Calculate progress percentage based on completed chapters
+      const completedChapters = progress.videoProgress.completedChapters || []
+      const progressPercentage = completedChapters.length > 0 ? 
+        (completedChapters.length / 10) * 100 : 0 // Assuming 10 chapters per course
 
       // Check if course was accessed recently
       const lastAccessed = progress.lastUpdatedAt ? new Date(progress.lastUpdatedAt) : new Date(oneWeekAgo)
@@ -145,7 +145,7 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
             description: `You're ${Math.round(progressPercentage)}% through this course`,
             courseId,
             courseSlug: courseSlug,
-            chapterId: progress.lastLectureId || undefined,
+            chapterId: progress.videoProgress.currentChapterId?.toString() || undefined,
             progress: progressPercentage,
             lastAccessed,
             priority: isRecentlyAccessed ? 'high' : 'medium'
