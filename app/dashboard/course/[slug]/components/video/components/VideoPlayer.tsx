@@ -253,6 +253,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return () => window.removeEventListener('resize', onResize)
   }, [clamp])
 
+  // Initialize auto-play video setting from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    try {
+      const saved = localStorage.getItem('video-autoplay')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (typeof parsed === 'boolean') {
+          setAutoPlayVideo(parsed)
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load auto-play video preference:', error)
+    }
+  }, [])
+
   // Observe visibility of the container to toggle mini controls
   const [isInView, setIsInView] = useState(true)
   useEffect(() => {
@@ -733,6 +750,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       clearInterval(autoPlayIntervalRef.current)
     }
   }, [youtubeVideoId])
+
+  // Auto-start video when autoPlayVideo is enabled and player is ready
+  useEffect(() => {
+    if (!autoPlayVideo || !playerReady || !canPlayVideo || state.playing) return
+
+    const timeout = setTimeout(() => {
+      try {
+        handlers.onPlay()
+      } catch (error) {
+        console.warn('Failed to auto-start video:', error)
+      }
+    }, 100) // Small delay to ensure player is fully ready
+
+    return () => clearTimeout(timeout)
+  }, [autoPlayVideo, playerReady, canPlayVideo, youtubeVideoId, handlers, state.playing])
 
   // Chapter overlay handlers
   const handleChapterStartComplete = useCallback(() => {
