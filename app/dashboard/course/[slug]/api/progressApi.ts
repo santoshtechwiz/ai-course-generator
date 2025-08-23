@@ -195,6 +195,7 @@ class ProgressApiClient {
         console.error('Progress update skipped: invalid courseId in sendProgressUpdate', update.courseId, update);
         return;
       }
+      
       // Ensure chapterId is a valid number
       const currentChapterId = Number(update.chapterId);
       if (isNaN(currentChapterId) || currentChapterId <= 0) {
@@ -202,21 +203,30 @@ class ProgressApiClient {
         return;
       }
 
+      // Prepare the request body with comprehensive data
+      const requestBody = {
+        currentChapterId: currentChapterId,
+        chapterId: currentChapterId, // Support both for backward compatibility
+        videoId: update.videoId,
+        progress: Math.max(0, Math.min(100, update.progress || 0)),
+        playedSeconds: Math.max(0, update.playedSeconds || 0),
+        duration: Math.max(0, update.duration || 0),
+        completedChapters: update.completed ? [currentChapterId] : [],
+        isCompleted: update.completed || false
+      };
+
+      console.log(`[ProgressAPI] Sending update:`, {
+        courseId: update.courseId,
+        ...requestBody
+      });
+
       // Format the API endpoint correctly
       const response = await fetch(`/api/progress/${update.courseId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          currentChapterId: currentChapterId, // Use the validated number
-          videoId: update.videoId,
-          progress: update.progress,
-          playedSeconds: update.playedSeconds,
-          duration: update.duration,
-          completedChapters: update.completed ? [currentChapterId] : [],
-          isCompleted: update.completed
-        }),
+        body: JSON.stringify(requestBody),
       });
       
       if (!response.ok) {
@@ -225,11 +235,14 @@ class ProgressApiClient {
         throw new Error(`Progress update failed: ${response.status} ${response.statusText}`);
       }
       
+      const result = await response.json();
+      console.log(`[ProgressAPI] Update successful:`, result);
+      
       // Success! Update timestamp for rate limiting
       const key = `${update.courseId}-${update.chapterId}-${update.videoId}`;
       this.lastUpdatedTimestamps[key] = Date.now();
       
-      return await response.json();
+      return result;
     } catch (err) {
       console.error(`Failed to update progress for course ${update.courseId}, video ${update.videoId}:`, err);
       throw err;

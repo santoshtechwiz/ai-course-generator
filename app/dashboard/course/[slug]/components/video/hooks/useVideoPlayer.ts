@@ -7,7 +7,6 @@ import type ReactPlayer from "react-player"
 import screenfull from "screenfull"
 import { useAppDispatch } from "@/store/hooks"
 import { addBookmark, removeBookmark } from "@/store/slices/course-slice"
-// import { useVideoProgress } from "./useVideoProgress"
 import { useVideoPreloading } from "./useVideoPreloading"
 import type { VideoPlayerState, UseVideoPlayerReturn, ProgressState, BookmarkData, YouTubePlayerConfig } from "../types"
 import { useToast } from "@/hooks"
@@ -56,7 +55,7 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     hasStarted: false,
     lastPlayedTime: 0,
     showKeyboardShortcuts: false,
-    theaterMode: false,
+  theaterMode: false,
     userInteracted: !!options.autoPlay,
     autoPlayNext: savedPreferences.autoPlayNext ?? true,
     isPictureInPicture: false,
@@ -269,6 +268,18 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     }
   }, [])
 
+  // Keep hook state in sync when parent toggles autoplay after init
+  // (e.g., when `canPlayVideo` changes in the parent and it re-passes autoPlay)
+  useEffect(() => {
+    try {
+      if (options.autoPlay && !state.userInteracted) {
+        setState((prev) => ({ ...prev, playing: true }))
+      }
+    } catch (e) {
+      // defensive
+    }
+  }, [options.autoPlay, state.userInteracted])
+
   const onBuffer = useCallback(() => {
     setState((prev) => ({ ...prev, isBuffering: true }))
   }, [])
@@ -285,12 +296,7 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     }))
     console.error("Video player error:", error)
   }, [])
-
-
-
-
-
-
+  // (Progress persistence handled at component level through progressApi queue)
 
   // Enhanced PIP state management with debouncing
   const [pipState, setPipState] = useState({

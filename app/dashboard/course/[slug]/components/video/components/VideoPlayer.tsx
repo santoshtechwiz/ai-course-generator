@@ -26,6 +26,7 @@ import ChapterTransitionOverlay from "./ChapterTransitionOverlay"
 import AnimatedCourseAILogo from "./AnimatedCourseAILogo"
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
 import EnhancedMiniPlayer from "./EnhancedMiniPlayer"
+import { progressApi } from "../../../api/progressApi"
 
 // Memoized authentication prompt to prevent unnecessary re-renders
 const AuthPrompt = React.memo(
@@ -190,8 +191,47 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           localStorage.setItem("hasPlayedFreeVideo", "true")
           setHasPlayedFreeVideo(true)
         }
+        
+        // Handle video end for authenticated users
+        if (isAuthenticated && hasNextVideo) {
+          setShowAutoPlayNotification(true)
+          setAutoPlayCountdown(5)
+          
+          const interval = setInterval(() => {
+            setAutoPlayCountdown(prev => {
+              if (prev <= 1) {
+                clearInterval(interval)
+                setShowAutoPlayNotification(false)
+                onNextVideo?.()
+                return 0
+              }
+              return prev - 1
+            })
+          }, 1000)
+        }
       },
-      onProgress,
+      onProgress: (progressState) => {
+        // Enhanced progress tracking with real-time saving
+        if (isAuthenticated && courseId && chapterId) {
+          const progress = Math.round(progressState.played * 100)
+          const completed = progress >= 90
+          
+          // Queue progress update
+          progressApi.queueUpdate({
+            courseId: String(courseId),
+            chapterId: String(chapterId),
+            videoId: youtubeVideoId,
+            progress,
+            playedSeconds: progressState.playedSeconds,
+            duration: videoDuration,
+            completed,
+            userId: session?.user?.id,
+          })
+        }
+        
+        // Call parent progress handler
+        onProgress?.(progressState)
+      },
       onTimeUpdate,
       rememberPlaybackPosition,
       rememberPlaybackSettings,
@@ -269,6 +309,55 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       console.warn('Failed to load auto-play video preference:', error)
     }
   }, [])
+
+  // Load saved progress position and show resume prompt
+  useEffect(() => {
+    const loadSavedPosition = async () => {
+      if (!isAuthenticated || !rememberPlaybackPosition || !courseId || !chapterId) return
+      
+      try {
+        const response = await fetch(`/api/progress/${courseId}`)
+        if (response.ok) {
+          const result = await response.json()
+          const progress = result.progress
+          
+          if (progress && progress.currentChapterId === Number(chapterId)) {
+            const savedSeconds = progress.playedSeconds || 0
+            
+            // Only resume if there's meaningful progress (more than 30 seconds)
+            if (savedSeconds > 30) {
+              // Show resume prompt
+              const shouldResume = window.confirm(
+                `Resume from ${Math.floor(savedSeconds / 60)}:${Math.floor(savedSeconds % 60).toString().padStart(2, '0')}?`
+              )
+              
+              if (shouldResume && playerRef.current) {
+                playerRef.current.seekTo(savedSeconds)
+                toast({
+                  title: "Playback resumed",
+                  description: `Resumed from ${Math.floor(savedSeconds / 60)}:${Math.floor(savedSeconds % 60).toString().padStart(2, '0')}`,
+                })
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load saved position:", error)
+      }
+    }
+    
+    // Load position after player is ready
+    if (playerReady) {
+      loadSavedPosition()
+    }
+  }, [isAuthenticated, rememberPlaybackPosition, courseId, chapterId, playerReady])
+
+  // Initialize completed chapters on mount
+  useEffect(() => {
+    if (session?.user?.id) {
+      progressApi.loadCompletedChapters(session.user.id)
+    }
+  }, [session?.user?.id])
 
   // Observe visibility of the container to toggle mini controls
   const [isInView, setIsInView] = useState(true)
@@ -757,7 +846,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     const timeout = setTimeout(() => {
       try {
-        handlers.onPlay()
+        // only call onPlay if playerRef exists and is not playing
+        if (playerRef.current && !state.playing) {
+          handlers.onPlay()
+        }
       } catch (error) {
         console.warn('Failed to auto-start video:', error)
       }
