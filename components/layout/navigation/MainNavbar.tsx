@@ -245,7 +245,7 @@ export default function MainNavbar() {
               href={item.href}
               onClick={() => setIsMobileMenuOpen(false)}
               className={cn(
-                "flex items-center gap-3 px-4 py-4 text-base font-medium rounded-lg whitespace-nowrap min-h-[48px]", // Added min-h for better touch targets
+                "flex items-center gap-3 px-4 py-3.5 text-base font-medium rounded-lg whitespace-nowrap",
                 isActive
                   ? "text-primary bg-primary/5 border-l-2 border-primary"
                   : "text-foreground/80 hover:text-foreground/90 hover:bg-accent/70 border-l-2 border-transparent",
@@ -401,13 +401,13 @@ export default function MainNavbar() {
           {/* Mobile menu button */}
           <motion.div className="md:hidden flex items-center gap-2" variants={itemVariants}>
             <Button variant="ghost" size="icon" onClick={handleSearchOpen} aria-label="Open search" aria-expanded={isSearchModalOpen}
-              className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors h-10 w-10"> {/* Larger touch target */}
+              className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors">
               <Search className="h-5 w-5" />
             </Button>
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" aria-label="Open menu" onClick={handleMobileMenuToggle}
-                  className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors h-10 w-10"> {/* Larger touch target */}
+                  className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors">
                   {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                 </Button>
               </SheetTrigger>
@@ -421,23 +421,9 @@ export default function MainNavbar() {
                           <ThemeToggle />
                         </div>
                       </div>
-                      <nav className="flex-1 p-4 space-y-2"> {/* Improved spacing */}
+                      <nav className="flex-1 p-3 space-y-1">
                         {mobileNavigationItems}
                       </nav>
-                      {/* Mobile credits display - shown when authenticated */}
-                      {isAuthenticated && availableCredits !== null && (
-                        <div className="px-4 pb-2">
-                          <div className="flex items-center justify-between p-3 bg-card/80 backdrop-blur border rounded-lg shadow-sm">
-                            <div className="flex items-center space-x-2">
-                              <CreditCard className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm font-medium">Credits</span>
-                            </div>
-                            <span className={cn("text-sm font-medium tabular-nums", availableCredits < 10 ? "text-destructive" : "text-foreground")}>
-                              {availableCredits}
-                            </span>
-                          </div>
-                        </div>
-                      )}
                       <div className="p-3 border-t border-border/60 flex items-center gap-2">
                         {isAuthenticated ? (
                           <UserMenu className="flex-1">

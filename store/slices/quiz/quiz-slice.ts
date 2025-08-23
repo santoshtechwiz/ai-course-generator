@@ -149,23 +149,9 @@ export const fetchQuiz = createAsyncThunk(
         loader.startLoading({ message: 'Loading quiz...', isBlocking: true, autoProgress: true, minVisibleMs: 200 })
       } catch {}
 
-      // Add timeout to prevent infinite loading
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => {
-        controller.abort()
-      }, 30000) // 30 second timeout
-
-      try {
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        })
-        clearTimeout(timeoutId)
-        
-        if (!response.ok) {
-          const errorText = await response.text()
+      const response = await fetch(url)
+      if (!response.ok) {
+        const errorText = await response.text()
         
         // Handle 404 specifically as not found
         if (response.status === 404) {
@@ -251,18 +237,7 @@ export const fetchQuiz = createAsyncThunk(
 
       return normalized
     } catch (err: any) {
-      clearTimeout(timeoutId) // Clean up timeout
       try { useGlobalLoader.getState().stopLoading() } catch {}
-      
-      // Handle specific error types
-      if (err.name === 'AbortError') {
-        return rejectWithValue({ 
-          error: 'Quiz loading timed out',
-          status: 'timeout',
-          details: 'The request took too long to complete. Please check your connection and try again.'
-        })
-      }
-      
       return rejectWithValue({ error: err?.message || 'Unknown error' })
     }
   }
@@ -705,9 +680,6 @@ const quizSlice = createSlice({
         if (payload?.status === 'not-found') {
           state.status = 'not-found'
           state.error = payload.error || 'Quiz not found'
-        } else if (payload?.status === 'timeout') {
-          state.status = 'failed'
-          state.error = payload.error || 'Quiz loading timed out'
         } else {
           state.status = 'failed'
           state.error = payload?.error || action.error.message || 'Quiz loading failed'

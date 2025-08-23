@@ -103,7 +103,7 @@ export default function DashboardPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 sm:p-8 text-center">
         <h2 className="text-2xl font-semibold mb-2">You are not authorized</h2>
-        <p className="text-muted-foreground mb-4">Please sign in to access your dashboard.</p>
+        <p className="text-gray-600 mb-4">Please sign in to access your dashboard.</p>
         <Button onClick={() => signIn()} size="lg">
           Sign in
         </Button>
