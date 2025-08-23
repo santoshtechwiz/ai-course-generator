@@ -341,31 +341,31 @@ export default function CourseDetailsTabs({
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full flex flex-col overflow-hidden">
-        <TabsList className="grid w-full grid-cols-4 h-14 bg-gradient-to-r from-muted/20 via-muted/10 to-muted/20 rounded-none flex-shrink-0 border-b border-border/50">
+        <TabsList className="grid w-full grid-cols-4 h-16 bg-muted/30 rounded-none flex-shrink-0 border-b border-border/30 p-1">
           <TabsTrigger
             value="summary"
-            className="flex items-center gap-2 text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+            className="flex items-center gap-2 text-sm h-12 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/40 transition-all rounded-lg font-medium"
           >
             <FileText className="h-4 w-4 text-primary" />
             <span className="hidden sm:inline">Summary</span>
           </TabsTrigger>
           <TabsTrigger
             value="quiz"
-            className="flex items-center gap-2 text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+            className="flex items-center gap-2 text-sm h-12 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/40 transition-all rounded-lg font-medium"
           >
             <MessageSquare className="h-4 w-4 text-purple-500" />
             <span className="hidden sm:inline">Quiz</span>
           </TabsTrigger>
           <TabsTrigger
             value="progress"
-            className="flex items-center gap-2 text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+            className="flex items-center gap-2 text-sm h-12 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/40 transition-all rounded-lg font-medium"
           >
             <BarChart3 className="h-4 w-4 text-emerald-600" />
             <span className="hidden sm:inline">Progress</span>
           </TabsTrigger>
           <TabsTrigger
             value="bookmarks"
-            className="flex items-center gap-2 text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+            className="flex items-center gap-2 text-sm h-12 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/40 transition-all rounded-lg font-medium"
           >
             <BookmarkIcon className="h-4 w-4 text-amber-600" />
             <span className="hidden sm:inline">Bookmarks</span>

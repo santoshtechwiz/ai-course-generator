@@ -69,12 +69,21 @@ export default function CoursesClient({
   const [loadingProgress, setLoadingProgress] = useState(0)
 
   // Update query key to include ratingFilter
+  const { beginTask, endTask, startLoading } = useGlobalLoader()
+
+  // Kick off a task-mode loader on first mount (only if not already loading)
+  useEffect(() => {
+    startLoading({ message: 'Loading courses...', useTasks: true, minVisibleMs: 300 })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, refetch, isLoading } = useInfiniteQuery({
     queryKey: ["courses", { search: debouncedSearchQuery, category: selectedCategory, userId, rating: ratingFilter }],
     initialPageParam: 1,
     // Update the queryFn to include ratingFilter in the API call
-    queryFn: async ({ pageParam = 1 }) => {
+  queryFn: async ({ pageParam = 1, signal }) => {
       try {
+    // Start loader in task mode if not already active
+    beginTask(`courses-page-${pageParam}`, 1)
         setLoadingProgress(20)
         // Build the API URL with proper parameters
         const apiUrl = new URL("/api/course", window.location.origin)
@@ -106,10 +115,17 @@ export default function CoursesClient({
         setLoadingProgress(50)
         console.log("Fetching courses from:", apiUrl.toString())
 
+        const controller = new AbortController()
+        const abortHandler = () => controller.abort()
+        if (signal) {
+          if (signal.aborted) controller.abort()
+          else signal.addEventListener('abort', abortHandler)
+        }
         const response = await fetch(apiUrl.toString(), {
           headers: {
             "Cache-Control": "no-cache",
           },
+          signal: controller.signal,
         })
 
         setLoadingProgress(80)
@@ -126,6 +142,8 @@ export default function CoursesClient({
         setLoadingProgress(0)
         console.error("Error fetching courses:", error)
         throw error
+      } finally {
+        endTask(`courses-page-${pageParam}`)
       }
     },
     getNextPageParam: (lastPage, allPages) => {
@@ -206,7 +224,8 @@ export default function CoursesClient({
 
   // Fix the "No course found" flash issue by improving loading state handling
   // Update the isLoading condition to include when selectedCategory changes
-  const isLoadingState = isLoading || (selectedCategory !== null && status === "loading")
+  // react-query v5 status values: 'pending' | 'error' | 'success'
+  const isLoadingState = isLoading || (selectedCategory !== null && status === "pending")
 
   // Remove the local loading spinner/logic
   // Use useGlobalLoader for loading state
@@ -493,7 +512,7 @@ export default function CoursesClient({
                   category={course.category?.name || (typeof course.category === "string" ? course.category : "")}
                   duration={typeof course.duration === "string" ? course.duration : "4-6 weeks"}
                   image={course.image}
-                  difficulty={course.difficulty}
+                  difficulty={(course.difficulty === 'Beginner' || course.difficulty === 'Intermediate' || course.difficulty === 'Advanced') ? course.difficulty : undefined}
                   className={viewMode === "list" ? "max-w-none" : ""}
                 />
               </motion.div>

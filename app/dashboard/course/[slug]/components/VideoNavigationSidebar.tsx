@@ -353,7 +353,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                             title: chapter.title || 'Untitled Chapter',
                             videoId: chapter.videoId,
                             duration: chapter.duration,
-                            thumbnail: chapter.thumbnail,
+                            thumbnail: chapter.thumbnail || (chapter.videoId ? `https://img.youtube.com/vi/${chapter.videoId}/mqdefault.jpg` : undefined),
                             locked: chapter.locked
                           };
 
@@ -397,18 +397,50 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                     data-chapter-id={safeChapter.id}
                                     data-has-video={hasVideo ? "true" : "false"}
                                   >
-                                    {/* Thumbnail or Status Icon */}
+                                    {/* Enhanced Thumbnail or Status Icon */}
                                     <div className="flex-shrink-0 relative">
-                                      {safeChapter.thumbnail ? (
-                                        <div className="w-16 h-10 rounded-md overflow-hidden border border-border/50 relative">
+                                      {safeChapter.thumbnail && hasVideo ? (
+                                        <div className="w-20 h-12 rounded-lg overflow-hidden border border-border/50 relative group">
                                           <img 
                                             src={safeChapter.thumbnail} 
                                             alt={safeChapter.title}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                                            loading="lazy"
+                                            onError={(e) => {
+                                              // Fallback to default thumbnail on error
+                                              const target = e.target as HTMLImageElement;
+                                              target.src = `https://img.youtube.com/vi/${safeChapter.videoId}/default.jpg`;
+                                            }}
                                           />
+                                          {/* Duration overlay */}
+                                          {duration && (
+                                            <div className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 py-0.5 rounded">
+                                              {formatDuration(duration)}
+                                            </div>
+                                          )}
+                                          {/* Play overlay on hover */}
+                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center transition-all duration-200">
+                                            <Play className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                                          </div>
+                                          {/* Lock overlay for locked content */}
                                           {isLocked && (
-                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                              <Lock className="h-5 w-5 text-white" />
+                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                              <Lock className="h-4 w-4 text-white" />
+                                            </div>
+                                          )}
+                                          {/* Progress bar */}
+                                          {chapterProgress > 0 && !isCompleted && (
+                                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
+                                              <div 
+                                                className="h-full bg-primary transition-all duration-500"
+                                                style={{ width: `${chapterProgress}%` }}
+                                              />
+                                            </div>
+                                          )}
+                                          {/* Completion badge */}
+                                          {isCompleted && (
+                                            <div className="absolute top-1 left-1">
+                                              <CheckCircle className="h-4 w-4 text-green-500 bg-white rounded-full" />
                                             </div>
                                           )}
                                         </div>

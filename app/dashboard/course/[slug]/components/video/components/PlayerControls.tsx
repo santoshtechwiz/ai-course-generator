@@ -60,6 +60,7 @@ interface PlayerControlsProps {
   onShowKeyboardShortcuts?: () => void
   onNextVideo?: () => void
   onToggleBookmarkPanel?: () => void
+  bookmarkPanelOpen?: boolean
   autoPlayNext?: boolean
   onToggleAutoPlayNext?: () => void
   autoPlayVideo?: boolean
@@ -71,8 +72,8 @@ interface PlayerControlsProps {
   onPictureInPicture?: () => void
   isPiPSupported?: boolean
   isPiPActive?: boolean
-  onToggleTheaterMode?: () => void
   isTheaterMode?: boolean
+  onToggleTheaterMode?: () => void
 }
 
 const PlayerControls: React.FC<PlayerControlsProps> = ({
@@ -103,6 +104,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   onShowKeyboardShortcuts,
   onNextVideo,
   onToggleBookmarkPanel,
+  bookmarkPanelOpen,
   autoPlayNext = true,
   onToggleAutoPlayNext,
   autoPlayVideo = false,
@@ -114,8 +116,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   onPictureInPicture,
   isPiPSupported = false,
   isPiPActive = false,
-  onToggleTheaterMode,
   isTheaterMode = false,
+  onToggleTheaterMode,
 }) => {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -126,11 +128,30 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   const [hoverPosition, setHoverPosition] = useState<number | null>(null)
   const progressBarRef = useRef<HTMLDivElement>(null)
   const volumeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const progressRafRef = useRef<number | null>(null)
+  const [lastAnnouncement, setLastAnnouncement] = useState("")
+  const [isCompact, setIsCompact] = useState(false)
+  // Local optimistic bookmark list so new bookmark shows immediately
+  const [localBookmarks, setLocalBookmarks] = useState<number[]>(bookmarks || [])
 
   // Prevent event bubbling that could interfere with controls
   const handleControlsClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
   }, [])
+  
+  // Sync external bookmark updates into local state (while preserving optimistic additions)
+  useEffect(() => {
+    if (Array.isArray(bookmarks)) {
+      setLocalBookmarks((prev) => {
+        // Merge & de-dupe (precision to 2 decimals to avoid near-duplicate floats)
+        const merged = [...prev]
+        for (const b of bookmarks) {
+          if (!merged.some((m) => Math.abs(m - b) < 0.01)) merged.push(b)
+        }
+        return merged.sort((a, b) => a - b)
+      })
+    }
+  }, [bookmarks])
 
   const handleSeek = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -150,14 +171,15 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   const handleProgressHover = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (!progressBarRef.current || !duration) return
-
       const rect = progressBarRef.current.getBoundingClientRect()
       const x = e.clientX - rect.left
-      const width = rect.width
-
+      const width = rect.width || 1
       const position = Math.max(0, Math.min(1, x / width))
-      setHoverPosition(position)
-      setHoveredTime(duration * position)
+      if (progressRafRef.current) cancelAnimationFrame(progressRafRef.current)
+      progressRafRef.current = requestAnimationFrame(() => {
+        setHoverPosition(position)
+        setHoveredTime(duration * position)
+      })
     },
     [duration],
   )
@@ -221,6 +243,14 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   // Set mounted state
   useEffect(() => {
     setIsMounted(true)
+    // Compact mode for narrow viewports
+    if (typeof window !== 'undefined') {
+      const mq = window.matchMedia('(max-width: 460px)')
+      const apply = () => setIsCompact(mq.matches)
+      apply()
+      mq.addEventListener('change', apply)
+      return () => mq.removeEventListener('change', apply)
+    }
   }, [])
 
   // Handle slider errors globally
@@ -242,6 +272,9 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       if (volumeTimeoutRef.current) {
         clearTimeout(volumeTimeoutRef.current)
       }
+      if (progressRafRef.current) {
+        cancelAnimationFrame(progressRafRef.current)
+      }
     }
   }, [])
 
@@ -250,8 +283,14 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
     if (onAddBookmark) {
       const currentTime = duration * played
       onAddBookmark(currentTime)
+      // Optimistically add if not duplicate
+      setLocalBookmarks((prev) => {
+        if (prev.some((t) => Math.abs(t - currentTime) < 0.01)) return prev
+        return [...prev, currentTime].sort((a, b) => a - b)
+      })
+      setLastAnnouncement(`Bookmark added at ${formatTime(currentTime)}`)
     }
-  }, [onAddBookmark, duration, played])
+  }, [onAddBookmark, duration, played, formatTime])
 
   // Enhanced skip handlers
   const handleSkipBackward = useCallback(() => {
@@ -309,6 +348,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       role="toolbar"
       aria-label="Video player controls"
     >
+      <div aria-live="polite" className="sr-only">{lastAnnouncement}</div>
       <div
         className="relative flex items-center mb-1 group h-8 sm:h-10 cursor-pointer touch-manipulation"
         ref={progressBarRef}
@@ -325,6 +365,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
         aria-valuemin={0}
         aria-valuemax={duration}
         aria-valuenow={duration * played}
+        aria-valuetext={`${formatTime(duration * played)} of ${formatTime(duration)}`}
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === "ArrowLeft") {
@@ -333,10 +374,23 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
           } else if (e.key === "ArrowRight") {
             e.preventDefault()
             handleSkipForward()
+          } else if (e.key === 'Home') {
+            e.preventDefault()
+            onSeekChange(0)
+          } else if (e.key === 'End') {
+            e.preventDefault()
+            onSeekChange(duration)
+          } else if (e.key === 'PageUp') {
+            e.preventDefault()
+            onSeekChange(Math.min(duration, duration * played + 30))
+          } else if (e.key === 'PageDown') {
+            e.preventDefault()
+            onSeekChange(Math.max(0, duration * played - 30))
           }
         }}
       >
         <div className="absolute inset-0"></div>
+        <span className="sr-only">Use Arrow keys to seek 10 seconds, PageUp/PageDown 30 seconds, Home/End to jump.</span>
 
         <AnimatePresence>
           {hoverPosition !== null && hoveredTime !== null && !isDragging && (
@@ -376,8 +430,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
         </div>
 
         {/* Enhanced bookmarks on timeline */}
-        {bookmarks?.length > 0 &&
-          bookmarks.map((time, index) => (
+        {localBookmarks?.length > 0 &&
+          localBookmarks.map((time, index) => (
             <motion.button
               key={`bookmark-${index}`}
               initial={{ scale: 0 }}
@@ -385,7 +439,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               whileHover={{ scale: 1.2 }}
               whileTap={{ scale: 0.9 }}
               className="absolute w-2 h-4 bg-yellow-400 rounded-full transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 hover:bg-yellow-300 transition-colors touch-manipulation shadow-sm"
-              style={{ left: `${(time / duration) * 100}%`, top: "50%" }}
+              style={{ left: `${duration > 0 ? (time / duration) * 100 : 0}%`, top: '50%' }}
               onClick={(e) => {
                 e.stopPropagation()
                 onSeekToBookmark?.(time)
@@ -397,14 +451,14 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       </div>
 
       {/* Enhanced Controls row */}
-      <div className="flex items-center justify-between">
+      <div className={cn("flex items-center justify-between", isCompact && "gap-1")}>        
         {/* Left controls */}
-        <div className="flex items-center space-x-1 sm:space-x-2">
+        <div className={cn("flex items-center space-x-1 sm:space-x-2", isCompact && "space-x-0.5")}>        
           {/* Enhanced Play/Pause button with loading state */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-white touch-manipulation hover:bg-white/20 relative"
+            className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20 relative", isCompact && "h-7 w-7")}
             onClick={onPlayPause}
             title={playing ? "Pause (Space)" : "Play (Space)"}
             aria-label={playing ? "Pause video" : "Play video"}
@@ -427,7 +481,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
+            className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20", isCompact && "h-7 w-7")}
             onClick={handleSkipBackward}
             title="Skip backward 10 seconds (←)"
             aria-label="Skip backward 10 seconds"
@@ -439,7 +493,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
+            className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20", isCompact && "h-7 w-7")}
             onClick={handleSkipForward}
             title="Skip forward 10 seconds (→)"
             aria-label="Skip forward 10 seconds"
@@ -452,14 +506,16 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
 
           {/* Enhanced Volume control with better UX */}
           <div
-            className="relative flex items-center"
+            className="relative flex items-center h-8 sm:h-8 shrink-0"
             onMouseEnter={handleVolumeMouseEnter}
             onMouseLeave={handleVolumeMouseLeave}
+            role="group"
+            aria-label="Volume controls"
           >
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
+              className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20", isCompact && "h-7 w-7")}
               onClick={onMute}
               title={muted ? "Unmute (M)" : "Mute (M)"}
               aria-label={muted ? "Unmute audio" : "Mute audio"}
@@ -470,11 +526,11 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             <AnimatePresence>
               {showVolumeSlider && isMounted && typeof window !== "undefined" && (
                 <motion.div
-                  initial={{ opacity: 0, x: -10, scale: 0.9 }}
+                  initial={{ opacity: 0, x: -6, scale: 0.95 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: -10, scale: 0.9 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute left-full ml-2 bg-black/90 p-3 rounded-lg z-10 w-24 sm:w-28 backdrop-blur-sm border border-white/10"
+                  exit={{ opacity: 0, x: -6, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-black/90 p-3 rounded-lg z-10 w-24 sm:w-28 backdrop-blur-sm border border-white/10 shadow-lg"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <VolumeIcon className="h-3 w-3 text-white/60" />
@@ -541,15 +597,17 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
         </div>
 
         {/* Right controls */}
-        <div className="flex items-center space-x-1 sm:space-x-2">
+  <div className={cn("flex items-center space-x-1 sm:space-x-2", isCompact && "space-x-0.5")}> 
           <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
+                className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20", isCompact && "h-7 w-7")}
                 title="Settings"
                 aria-label="Video settings"
+                aria-haspopup="true"
+                aria-expanded={isSettingsOpen}
               >
                 <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
@@ -584,12 +642,11 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
 
           {/* Auto-play video toggle */}
           {onToggleAutoPlayVideo && (
-            <div className="hidden lg:flex items-center mr-3 px-2 py-1 rounded-md bg-white/10">
+            <div className="hidden lg:flex items-center mr-3 px-2 py-1 rounded-md bg-white/10" role="group" aria-label="Auto play on load">
               <span className="text-xs text-white mr-2">Auto-play</span>
               <Switch
                 checked={autoPlayVideo}
                 onCheckedChange={onToggleAutoPlayVideo}
-                size="sm"
                 aria-label="Toggle auto-play video on page load"
               />
             </div>
@@ -597,12 +654,11 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
 
           {/* Enhanced Autoplay next toggle */}
           {hasNextVideo && onToggleAutoPlayNext && (
-            <div className="hidden lg:flex items-center mr-3 px-2 py-1 rounded-md bg-white/10">
+            <div className="hidden lg:flex items-center mr-3 px-2 py-1 rounded-md bg-white/10" role="group" aria-label="Auto next video">
               <span className="text-xs text-white mr-2">Auto-next</span>
               <Switch
                 checked={autoPlayNext}
                 onCheckedChange={onToggleAutoPlayNext}
-                size="sm"
                 aria-label="Toggle autoplay next video"
               />
             </div>
@@ -612,18 +668,45 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
           {(onToggleAutoPlayVideo || (hasNextVideo && onToggleAutoPlayNext)) &&
             (isAuthenticated || onPictureInPicture) && <div className="hidden lg:block w-px h-6 bg-white/20 mx-1" />}
 
-          {/* Enhanced Bookmark button */}
-          {isAuthenticated && onAddBookmark && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-colors hover:text-blue-400"
-              onClick={handleAddBookmark}
-              title="Add bookmark (B)"
-              aria-label="Add bookmark at current time"
-            >
-              <BookmarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Button>
+          {/* Bookmark buttons: add + panel toggle */}
+          {typeof onAddBookmark === 'function' && (
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8 text-white touch-manipulation transition-colors",
+                  isAuthenticated ? "hover:bg-white/20 hover:text-blue-400" : "opacity-60 cursor-not-allowed",
+                )}
+                onClick={() => {
+                  if (!isAuthenticated) return
+                  handleAddBookmark()
+                }}
+                disabled={!isAuthenticated}
+                title={isAuthenticated ? "Add bookmark (B)" : "Sign in to add bookmarks"}
+                aria-label={isAuthenticated ? "Add bookmark at current time" : "Sign in to add bookmarks"}
+              >
+                <BookmarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+              </Button>
+              {onToggleBookmarkPanel && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "h-8 w-8 text-white touch-manipulation transition-colors",
+                    bookmarkPanelOpen && "bg-white/20 text-blue-400",
+                  )}
+                  onClick={() => {
+                    onToggleBookmarkPanel()
+                  }}
+                  title={bookmarkPanelOpen ? "Hide bookmarks (Shift+B)" : "Show bookmarks (Shift+B)"}
+                  aria-label={bookmarkPanelOpen ? "Hide bookmark panel" : "Show bookmark panel"}
+                >
+                  {/* Reuse icon; optionally could use different icon for panel */}
+                  <BookmarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                </Button>
+              )}
+            </div>
           )}
 
           {/* Enhanced Picture-in-Picture with better visual feedback */}
@@ -656,33 +739,6 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               }
             >
               <PictureInPicture2 className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Button>
-          )}
-
-          {/* Theater mode toggle */}
-          {onToggleTheaterMode && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-all duration-200",
-                isTheaterMode && "bg-white/20 text-blue-400",
-              )}
-              onClick={onToggleTheaterMode}
-              title={isTheaterMode ? "Exit theater mode (T)" : "Enter theater mode (T)"}
-              aria-label={isTheaterMode ? "Exit theater mode" : "Enter theater mode"}
-            >
-              <svg
-                className="h-4 w-4 sm:h-5 sm:w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="3" y="7" width="18" height="10" rx="2" ry="2"></rect>
-              </svg>
             </Button>
           )}
 

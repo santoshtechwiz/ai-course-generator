@@ -1,53 +1,84 @@
 import { createSlice, type PayloadAction, createSelector, createAsyncThunk } from "@reduxjs/toolkit"
-import debounce from "lodash.debounce"
-import axios from "axios"
 import type { RootState } from "@/store"
 
-export interface PerCourseProgress {
-  lastLectureId: string | null
-  lastTimestamp: number
-  completedLectures: string[]
-  isCourseCompleted: boolean
-  certificateDownloaded?: boolean
-  lastUpdatedAt?: number
+export interface VideoProgress {
+  currentChapterId: number | null
+  currentUnitId: number | null
+  progress: number // 0-100 percentage
+  timeSpent: number // in minutes
+  playedSeconds: number // current position in seconds
+  isCompleted: boolean
+  lastAccessedAt: string
+  completedChapters: number[]
+  bookmarks: string[]
+}
+
+export interface CourseProgressData {
+  courseId: string
+  userId: string
+  videoProgress: VideoProgress
+  lastUpdatedAt: number
 }
 
 // Type for course progress state
-export type CourseProgressState = Record<string, PerCourseProgress>
+export type CourseProgressState = Record<string, CourseProgressData>
 
 // Type for the entire course progress slice
 export interface CourseProgressSliceState {
   byCourseId: CourseProgressState
-}
-
-export interface CourseProgressRootState {
-  byCourseId: Record<string, PerCourseProgress>
+  isLoading: boolean
+  error: string | null
 }
 
 const initialState: CourseProgressSliceState = {
   byCourseId: {},
+  isLoading: false,
+  error: null,
 }
 
-// Debounced API call for persisting progress
-const debouncedPersistProgress = debounce(async (courseId: string, progress: PerCourseProgress) => {
-  try {
-    await axios.post(`/api/progress/${courseId}`, progress)
-  } catch (err) {
-    // Optionally handle error (e.g., show toast)
-  }
-}, 1000)
-
-export const persistCourseProgress = createAsyncThunk(
-  "courseProgress/persistCourseProgress",
+// Async thunk for persisting progress to API
+export const persistVideoProgress = createAsyncThunk(
+  "courseProgress/persistVideoProgress",
   async (
-    { courseId, progress }: { courseId: string | number; progress: PerCourseProgress },
+    { 
+      courseId, 
+      chapterId, 
+      progress, 
+      playedSeconds, 
+      completed,
+      userId 
+    }: { 
+      courseId: string | number
+      chapterId: string | number
+      progress: number
+      playedSeconds: number
+      completed: boolean
+      userId: string
+    },
     { rejectWithValue }
   ) => {
     try {
-      await debouncedPersistProgress(String(courseId), progress)
-      return { courseId, progress }
+      const response = await fetch(`/api/progress/${courseId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentChapterId: Number(chapterId),
+          progress: Math.max(0, Math.min(100, progress)),
+          playedSeconds: Math.max(0, playedSeconds),
+          isCompleted: completed,
+          completedChapters: completed ? [Number(chapterId)] : [],
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to save progress: ${response.statusText}`)
+      }
+
+      return await response.json()
     } catch (err) {
-      return rejectWithValue(err)
+      return rejectWithValue(err instanceof Error ? err.message : 'Failed to save progress')
     }
   }
 )
@@ -56,127 +87,153 @@ const courseProgressSlice = createSlice({
   name: "courseProgress",
   initialState,
   reducers: {
-    setLastPosition(
+    setVideoProgress(
       state,
-      action: PayloadAction<{ courseId: string | number; lectureId: string; timestamp: number }>,
+      action: PayloadAction<{
+        courseId: string | number
+        chapterId: number
+        progress: number
+        playedSeconds: number
+        timeSpent?: number
+        completed?: boolean
+        userId: string
+      }>
+    ) {
+      const courseKey = String(action.payload.courseId)
+      const now = Date.now()
+      
+      const existing = state.byCourseId[courseKey]
+      const currentProgress = existing?.videoProgress || {
+        currentChapterId: null,
+        currentUnitId: null,
+        progress: 0,
+        timeSpent: 0,
+        playedSeconds: 0,
+        isCompleted: false,
+        lastAccessedAt: new Date().toISOString(),
+        completedChapters: [],
+        bookmarks: [],
+      }
+
+      // Update video progress
+      const updatedProgress: VideoProgress = {
+        ...currentProgress,
+        currentChapterId: action.payload.chapterId,
+        progress: Math.max(0, Math.min(100, action.payload.progress)),
+        playedSeconds: Math.max(0, action.payload.playedSeconds),
+        timeSpent: (action.payload.timeSpent || currentProgress.timeSpent) + Math.floor(action.payload.playedSeconds / 60),
+        isCompleted: action.payload.completed || action.payload.progress >= 90,
+        lastAccessedAt: new Date().toISOString(),
+        completedChapters: action.payload.completed && !currentProgress.completedChapters.includes(action.payload.chapterId)
+          ? [...currentProgress.completedChapters, action.payload.chapterId]
+          : currentProgress.completedChapters,
+      }
+
+      state.byCourseId[courseKey] = {
+        courseId: courseKey,
+        userId: action.payload.userId,
+        videoProgress: updatedProgress,
+        lastUpdatedAt: now,
+      }
+    },
+
+    markChapterCompleted(
+      state,
+      action: PayloadAction<{ courseId: string | number; chapterId: number; userId: string }>
     ) {
       const courseKey = String(action.payload.courseId)
       const existing = state.byCourseId[courseKey]
-      const now = Date.now()
-      const prevTs = existing?.lastTimestamp ?? 0
-
-      // Only update if jumped chapters, progressed forward, or at least 10s have passed
-      if (!existing || action.payload.lectureId !== existing.lastLectureId || action.payload.timestamp - prevTs >= 10) {
-        const updated = {
-          lastLectureId: action.payload.lectureId,
-          lastTimestamp: Math.max(0, Math.floor(action.payload.timestamp)),
-          completedLectures: existing?.completedLectures ?? [],
-          isCourseCompleted: existing?.isCourseCompleted ?? false,
-          certificateDownloaded: existing?.certificateDownloaded ?? false,
-          lastUpdatedAt: now,
+      
+      if (existing) {
+        const completedChapters = existing.videoProgress.completedChapters
+        if (!completedChapters.includes(action.payload.chapterId)) {
+          existing.videoProgress.completedChapters = [...completedChapters, action.payload.chapterId]
+          existing.videoProgress.isCompleted = true
+          existing.videoProgress.lastAccessedAt = new Date().toISOString()
+          existing.lastUpdatedAt = Date.now()
         }
-        state.byCourseId[courseKey] = updated
-        // Dispatch debounced API persist
-        debouncedPersistProgress(courseKey, updated)
       }
     },
-    markLectureCompleted(
+
+    addBookmark(
       state,
-      action: PayloadAction<{ courseId: string | number; lectureId: string }>,
+      action: PayloadAction<{ courseId: string | number; bookmark: string; userId: string }>
     ) {
       const courseKey = String(action.payload.courseId)
-      const existing = state.byCourseId[courseKey] || {
-        lastLectureId: action.payload.lectureId,
-        lastTimestamp: 0,
-        completedLectures: [],
-        isCourseCompleted: false,
-        certificateDownloaded: false,
+      const existing = state.byCourseId[courseKey]
+      
+      if (existing) {
+        existing.videoProgress.bookmarks = [...existing.videoProgress.bookmarks, action.payload.bookmark]
+        existing.lastUpdatedAt = Date.now()
       }
-      if (!existing.completedLectures.includes(action.payload.lectureId)) {
-        existing.completedLectures = [...existing.completedLectures, action.payload.lectureId]
-      }
-      existing.lastLectureId = existing.lastLectureId || action.payload.lectureId
-  const updated = { ...existing, lastUpdatedAt: Date.now() }
-  state.byCourseId[courseKey] = updated
-  debouncedPersistProgress(courseKey, updated)
     },
-    setIsCourseCompleted(
+
+    removeBookmark(
       state,
-      action: PayloadAction<{ courseId: string | number; isCourseCompleted: boolean }>,
+      action: PayloadAction<{ courseId: string | number; bookmark: string; userId: string }>
     ) {
       const courseKey = String(action.payload.courseId)
-      const existing = state.byCourseId[courseKey] || {
-        lastLectureId: null,
-        lastTimestamp: 0,
-        completedLectures: [],
-        isCourseCompleted: false,
-        certificateDownloaded: false,
+      const existing = state.byCourseId[courseKey]
+      
+      if (existing) {
+        existing.videoProgress.bookmarks = existing.videoProgress.bookmarks.filter(b => b !== action.payload.bookmark)
+        existing.lastUpdatedAt = Date.now()
       }
-      existing.isCourseCompleted = action.payload.isCourseCompleted
-      // Reset certificate downloaded flag when course completion status changes
-      if (!action.payload.isCourseCompleted) {
-        existing.certificateDownloaded = false
-      }
-  const updated = { ...existing, lastUpdatedAt: Date.now() }
-  state.byCourseId[courseKey] = updated
-  debouncedPersistProgress(courseKey, updated)
     },
-    setCertificateDownloaded(
-      state,
-      action: PayloadAction<{ courseId: string | number; downloaded: boolean }>,
+
+    resetCourseProgress(
+      state, 
+      action: PayloadAction<{ courseId: string | number }>
     ) {
       const courseKey = String(action.payload.courseId)
-      const existing = state.byCourseId[courseKey] || {
-        lastLectureId: null,
-        lastTimestamp: 0,
-        completedLectures: [],
-        isCourseCompleted: false,
-        certificateDownloaded: false,
-      }
-      existing.certificateDownloaded = action.payload.downloaded
-  const updated = { ...existing, lastUpdatedAt: Date.now() }
-  state.byCourseId[courseKey] = updated
-  debouncedPersistProgress(courseKey, updated)
+      delete state.byCourseId[courseKey]
     },
-    resetCourseProgress(state, action: PayloadAction<{ courseId: string | number }>) {
-      const courseKey = String(action.payload.courseId)
-  delete state.byCourseId[courseKey]
-  // Optionally persist reset to API
-    },
+
     resetAll(state) {
       state.byCourseId = {}
-      // Optionally persist reset to API
+      state.error = null
+    },
+
+    setLoading(state, action: PayloadAction<boolean>) {
+      state.isLoading = action.payload
+    },
+
+    setError(state, action: PayloadAction<string | null>) {
+      state.error = action.payload
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(persistCourseProgress.fulfilled, (state: CourseProgressSliceState, action: PayloadAction<any>) => {
-      // No-op: state already updated by reducers
-    })
-    builder.addCase(persistCourseProgress.rejected, (state: CourseProgressSliceState, action: PayloadAction<any>) => {
-      // Optionally handle error state
-    })
+    builder
+      .addCase(persistVideoProgress.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(persistVideoProgress.fulfilled, (state) => {
+        state.isLoading = false
+        state.error = null
+      })
+      .addCase(persistVideoProgress.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload as string
+      })
   },
 })
 
 export const {
-  setLastPosition,
-  markLectureCompleted,
-  setIsCourseCompleted,
-  setCertificateDownloaded,
+  setVideoProgress,
+  markChapterCompleted,
+  addBookmark,
+  removeBookmark,
   resetCourseProgress,
   resetAll,
+  setLoading,
+  setError,
 } = courseProgressSlice.actions
 
 export default courseProgressSlice.reducer
 
 // Memoized selectors
 export const selectCourseProgressState = (state: RootState) => state.courseProgress
-
-export const makeSelectCourseProgressById = () =>
-  createSelector(
-    [selectCourseProgressState, (_: RootState, courseId: string | number) => String(courseId)],
-    (slice, id) => slice.byCourseId[id] || null,
-  )
 
 export const selectCourseProgressById = (state: RootState, courseId: string | number) =>
   selectCourseProgressState(state).byCourseId[String(courseId)] || null
@@ -187,14 +244,14 @@ export const selectAllCourseProgress = (state: RootState) => state.courseProgres
 export const selectIncompleteCourses = createSelector(
   [selectAllCourseProgress],
   (courseProgress) => {
-    return Object.entries(courseProgress).filter(([_, progress]) => !progress.isCourseCompleted)
+    return Object.entries(courseProgress).filter(([_, progress]) => !progress.videoProgress.isCompleted)
   }
 )
 
 export const selectCompletedCourses = createSelector(
   [selectAllCourseProgress],
   (courseProgress) => {
-    return Object.entries(courseProgress).filter(([_, progress]) => progress.isCourseCompleted)
+    return Object.entries(courseProgress).filter(([_, progress]) => progress.videoProgress.isCompleted)
   }
 )
 
@@ -205,7 +262,7 @@ export const selectCourseProgressByCourseId = (courseId: string | number) =>
   )
 
 // Utility functions for type-safe course progress operations
-export const getCourseProgress = (state: RootState, courseId: string | number): PerCourseProgress | null => {
+export const getCourseProgress = (state: RootState, courseId: string | number): CourseProgressData | null => {
   return state.courseProgress.byCourseId[String(courseId)] || null
 }
 
@@ -215,10 +272,25 @@ export const hasCourseProgress = (state: RootState, courseId: string | number): 
 
 export const isCourseCompleted = (state: RootState, courseId: string | number): boolean => {
   const progress = state.courseProgress.byCourseId[String(courseId)]
-  return progress?.isCourseCompleted || false
+  return progress?.videoProgress.isCompleted || false
 }
 
-export const getCompletedLectures = (state: RootState, courseId: string | number): string[] => {
+export const getCompletedChapters = (state: RootState, courseId: string | number): number[] => {
   const progress = state.courseProgress.byCourseId[String(courseId)]
-  return progress?.completedLectures || []
+  return progress?.videoProgress.completedChapters || []
+}
+
+export const getCurrentChapterId = (state: RootState, courseId: string | number): number | null => {
+  const progress = state.courseProgress.byCourseId[String(courseId)]
+  return progress?.videoProgress.currentChapterId || null
+}
+
+export const getPlayedSeconds = (state: RootState, courseId: string | number): number => {
+  const progress = state.courseProgress.byCourseId[String(courseId)]
+  return progress?.videoProgress.playedSeconds || 0
+}
+
+export const getVideoProgress = (state: RootState, courseId: string | number): number => {
+  const progress = state.courseProgress.byCourseId[String(courseId)]
+  return progress?.videoProgress.progress || 0
 }

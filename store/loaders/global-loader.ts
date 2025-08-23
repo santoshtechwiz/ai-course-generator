@@ -11,7 +11,12 @@ export interface LoaderOptions {
   progress?: number;
   isBlocking?: boolean;
   minVisibleMs?: number;
+  /** When true, legacy random auto progress (kept for backward compatibility). */
   autoProgress?: boolean;
+  /** Deterministic linear progress target duration in ms (overrides autoProgress random mode). */
+  linearDurationMs?: number;
+  /** Use task based progress if tasks are registered. */
+  useTasks?: boolean;
 }
 
 interface GlobalLoaderStore {
@@ -27,6 +32,16 @@ interface GlobalLoaderStore {
   startedAtMs?: number;
   minVisibleMs?: number;
   autoProgressIntervalId?: NodeJS.Timeout | null;
+  linearProgressRaf?: number | null;
+
+  // Task based deterministic progress
+  tasks: Record<string, { weight: number; done: boolean }>; // active & completed tasks
+  totalWeight: number; // sum of weights for all begun tasks
+  completedWeight: number; // sum of weights for finished tasks
+  recalcProgress: () => void;
+  beginTask: (id: string, weight?: number) => void;
+  endTask: (id: string) => void;
+  withTask: <T>(id: string, task: () => Promise<T>, weight?: number) => Promise<T>;
 
   // Actions
   startLoading: (options?: LoaderOptions) => void;
@@ -60,6 +75,58 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
       startedAtMs: undefined,
       minVisibleMs: 0,
       autoProgressIntervalId: null,
+      linearProgressRaf: null,
+      tasks: {},
+      totalWeight: 0,
+      completedWeight: 0,
+      recalcProgress: () => {
+        const { tasks } = get();
+        const entries = Object.values(tasks);
+        if (!entries.length) return; // nothing to do
+        const total = entries.reduce((a, t) => a + t.weight, 0) || 1;
+        const completed = entries.filter(t => t.done).reduce((a, t) => a + t.weight, 0);
+        const pct = Math.min(99, (completed / total) * 100);
+        set({ progress: pct });
+      },
+      beginTask: (id: string, weight = 1) => {
+        const { tasks, totalWeight, state } = get();
+        if (state !== 'loading') {
+          // Ensure loader started (non-blocking default)
+          get().startLoading({ message: 'Loading...', useTasks: true });
+        }
+        if (!tasks[id]) {
+          tasks[id] = { weight: Math.max(0.01, weight), done: false };
+          set({ tasks: { ...tasks }, totalWeight: totalWeight + weight });
+        }
+        get().recalcProgress();
+      },
+      endTask: (id: string) => {
+        const { tasks, state } = get();
+        if (!tasks[id]) return;
+        if (!tasks[id].done) {
+          tasks[id].done = true;
+          set({ tasks: { ...tasks } });
+          get().recalcProgress();
+        }
+        // If all tasks complete, finish loader
+        if (state === 'loading' && Object.values(tasks).every(t => t.done)) {
+          // brief frame to show 100%
+            set({ progress: 100 });
+            setTimeout(() => get().stopLoading(), 150);
+        }
+      },
+      withTask: async (id, task, weight = 1) => {
+        get().beginTask(id, weight);
+        try {
+          const result = await task();
+          get().endTask(id);
+          return result;
+        } catch (e) {
+          get().setError(e instanceof Error ? e.message : 'Task failed');
+          get().endTask(id);
+          throw e;
+        }
+      },
 
       startLoading: (options = {}) => {
         // Clear any existing timeout
@@ -70,18 +137,40 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
         if (currentState.autoProgressIntervalId) {
           clearInterval(currentState.autoProgressIntervalId);
         }
+        if (currentState.linearProgressRaf) {
+          cancelAnimationFrame(currentState.linearProgressRaf);
+        }
 
         const startedAt = Date.now();
         const minVisible = typeof options.minVisibleMs === 'number' ? Math.max(0, options.minVisibleMs) : 0;
 
-        // Optional auto-progress up to 90%
+        // Determine progress strategy
         let intervalId: NodeJS.Timeout | null = null;
-        if (options.autoProgress) {
+        let rafId: number | null = null;
+        if (options.useTasks) {
+          // Reset tasks for a fresh cycle
+          set({ tasks: {}, totalWeight: 0, completedWeight: 0, progress: 0 });
+        } else if (options.linearDurationMs && options.linearDurationMs > 300) {
+          const totalMs = options.linearDurationMs;
+          set({ progress: 0 });
+          const start = performance.now();
+          const step = () => {
+            const elapsed = performance.now() - start;
+            const ratio = Math.min(0.985, elapsed / totalMs); // cap before 100
+            set({ progress: Math.max(5, ratio * 100) });
+            if (ratio < 0.985) {
+              rafId = requestAnimationFrame(step);
+              set({ linearProgressRaf: rafId });
+            }
+          };
+          rafId = requestAnimationFrame(step);
+        } else if (options.autoProgress) {
+          // Legacy random behavior retained if explicitly requested
           set({ progress: 5 });
           intervalId = setInterval(() => {
             const { progress } = get();
             const current = typeof progress === 'number' ? progress : 0;
-            const next = Math.min(98, current + Math.random() * 6 + 4);
+            const next = Math.min(98, current + 5); // deterministic +5 steps
             set({ progress: next });
             if (next >= 98) {
               if (get().autoProgressIntervalId) {
@@ -89,7 +178,7 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
               }
               set({ autoProgressIntervalId: null });
             }
-          }, 150);
+          }, 160);
         }
 
         set({
@@ -104,6 +193,7 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
           startedAtMs: startedAt,
           minVisibleMs: minVisible,
           autoProgressIntervalId: intervalId,
+          linearProgressRaf: rafId,
         });
       },
 
@@ -117,9 +207,8 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
         if (currentState.autoResetTimeoutId) {
           clearTimeout(currentState.autoResetTimeoutId);
         }
-        if (currentState.autoProgressIntervalId) {
-          clearInterval(currentState.autoProgressIntervalId);
-        }
+  if (currentState.autoProgressIntervalId) clearInterval(currentState.autoProgressIntervalId);
+  if (currentState.linearProgressRaf) cancelAnimationFrame(currentState.linearProgressRaf);
 
         const finalize = () => set({
           state: "idle",
@@ -156,9 +245,8 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
         if (currentState.autoResetTimeoutId) {
           clearTimeout(currentState.autoResetTimeoutId);
         }
-        if (currentState.autoProgressIntervalId) {
-          clearInterval(currentState.autoProgressIntervalId);
-        }
+  if (currentState.autoProgressIntervalId) clearInterval(currentState.autoProgressIntervalId);
+  if (currentState.linearProgressRaf) cancelAnimationFrame(currentState.linearProgressRaf);
 
         const timeoutId = setTimeout(() => {
           // Only reset if still in success state and this is the same timeout
@@ -185,9 +273,8 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
         if (currentState.autoResetTimeoutId) {
           clearTimeout(currentState.autoResetTimeoutId);
         }
-        if (currentState.autoProgressIntervalId) {
-          clearInterval(currentState.autoProgressIntervalId);
-        }
+  if (currentState.autoProgressIntervalId) clearInterval(currentState.autoProgressIntervalId);
+  if (currentState.linearProgressRaf) cancelAnimationFrame(currentState.linearProgressRaf);
 
         const timeoutId = setTimeout(() => {
           // Only reset if still in error state and this is the same timeout

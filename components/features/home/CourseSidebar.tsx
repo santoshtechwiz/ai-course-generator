@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, Filter, Loader2, Star, StarHalf, X, TrendingUp, Users, BookOpen } from "lucide-react"
@@ -42,36 +42,11 @@ export function CourseSidebar({
   ratingFilter = 0,
   setRatingFilter = () => {},
 }: CourseSidebarProps) {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  // Categories now fully supplied via props (SWR in parent). Avoid local fetch duplication.
+  const [categories] = useState<Category[]>(courseTypes)
+  const isLoading = false
   const [searchFocused, setSearchFocused] = useState(false)
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      setIsLoading(true)
-      try {
-        const response = await fetch("/api/categories")
-        if (response.ok) {
-          const data = await response.json()
-          console.log("Fetched categories:", data)
-          setCategories(data)
-        }
-      } catch (error) {
-        console.error("Error fetching categories:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    // Only fetch if courseTypes is empty
-    if (courseTypes.length === 0) {
-      fetchCategories()
-    } else {
-      setCategories(courseTypes)
-    }
-  }, [courseTypes])
-
-  const displayCategories = categories.length > 0 ? categories : courseTypes
+  const displayCategories = categories
 
   // Rating options for Udemy-like filter
   const ratingOptions = [

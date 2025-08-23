@@ -1,16 +1,15 @@
 import { useEffect } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
-  setLastPosition,
-  markLectureCompleted,
-  makeSelectCourseProgressById,
+  setVideoProgress,
+  markChapterCompleted,
+  selectCourseProgressById,
 } from "@/store/slices/courseProgress-slice"
 
 // Utility to fetch course progress from API and sync to Redux
 export function useCourseProgressSync(courseId: string | number) {
   const dispatch = useAppDispatch()
-  const selectCourseProgress = makeSelectCourseProgressById()
-  const courseProgress = useAppSelector((state) => selectCourseProgress(state, courseId))
+  const courseProgress = useAppSelector((state) => selectCourseProgressById(state, courseId))
 
   // Fetch progress from API on mount
   useEffect(() => {
@@ -20,20 +19,24 @@ export function useCourseProgressSync(courseId: string | number) {
         if (!res.ok) return
         const { progress } = await res.json()
         if (progress) {
-          // Sync completed chapters to Redux
+          // Sync video progress to Redux
           dispatch(
-            setLastPosition({
+            setVideoProgress({
               courseId: String(courseId),
-              lectureId: String(progress.currentChapterId || progress.lastLectureId || ""),
-              timestamp: 0,
+              chapterId: Number(progress.currentChapterId || 0),
+              progress: progress.progress || 0,
+              playedSeconds: progress.playedSeconds || 0,
+              completed: progress.isCompleted || false,
+              userId: progress.userId || '',
             })
           )
           if (Array.isArray(progress.completedChapters)) {
             progress.completedChapters.forEach((chapterId: string | number) => {
               dispatch(
-                markLectureCompleted({
+                markChapterCompleted({
                   courseId: String(courseId),
-                  lectureId: String(chapterId),
+                  chapterId: Number(chapterId),
+                  userId: progress.userId || '',
                 })
               )
             })
@@ -46,27 +49,9 @@ export function useCourseProgressSync(courseId: string | number) {
     fetchProgress()
   }, [courseId, dispatch])
 
-  // Save progress to API when completedLectures changes
-  useEffect(() => {
-    if (!courseProgress) return
-    async function saveProgress() {
-      try {
-        await fetch(`/api/progress/${courseId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            currentChapterId: courseProgress.lastLectureId,
-            completedChapters: courseProgress.completedLectures,
-            progress: 0,
-            isCompleted: courseProgress.isCourseCompleted,
-          }),
-        })
-      } catch (err) {
-        // Silent fail
-      }
-    }
-    saveProgress()
-  }, [courseId, courseProgress?.completedLectures, courseProgress?.lastLectureId, courseProgress?.isCourseCompleted])
+  // NOTE: We intentionally do NOT auto-save here when Redux state changes.
+  // The `useVideoProgressTracker` hook is responsible for throttled API saves
+  // and will write progress to `/api/progress` (to avoid duplicate requests).
 
   // Return current progress for convenience
   return courseProgress

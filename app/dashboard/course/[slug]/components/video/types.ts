@@ -40,13 +40,13 @@ export interface VideoPlayerState {
   hasStarted: boolean
   lastPlayedTime: number
   showKeyboardShortcuts: boolean
-  theaterMode: boolean
   userInteracted: boolean
   autoPlayNext: boolean
   isPictureInPicture: boolean
   isPiPSupported: boolean
   isNearingCompletion: boolean
   isMiniPlayer: boolean
+  theaterMode: boolean
 }
 
 export interface ProgressState {
@@ -83,6 +83,7 @@ export interface VideoPlayerProps {
   onNextVideo?: () => void
   nextVideoTitle?: string
   nextVideoId?: string
+  autoAdvanceNext?: boolean
   chapterTitle?: string
   courseName?: string
   courseId?: string | number
@@ -128,11 +129,13 @@ export interface PlayerControlsProps {
 
   show?: boolean
   onShowKeyboardShortcuts?: () => void
-  onTheaterMode?: () => void
   onNextVideo?: () => void
   onToggleBookmarkPanel?: () => void
+  bookmarkPanelOpen?: boolean
   autoPlayNext?: boolean
   onToggleAutoPlayNext?: () => void
+  autoPlayVideo?: boolean
+  onToggleAutoPlayVideo?: () => void
   hasNextVideo?: boolean
   nextVideoTitle?: string
   canAccessNextVideo?: boolean
