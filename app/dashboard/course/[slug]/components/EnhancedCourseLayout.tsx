@@ -91,7 +91,7 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
               <div className="flex items-center gap-2">
                 {/* Keyboard shortcuts hint */}
                 <Badge variant="outline" className="text-xs text-muted-foreground hidden lg:inline-flex">
-                  Press T for Theater • F for Fullscreen • H to hide controls
+                  Press F for Fullscreen • H to hide controls
                 </Badge>
               </div>
             </div>
@@ -124,7 +124,6 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
             course={course} 
             initialChapterId={initialChapterId}
             isFullscreen={isFullscreen}
-            onFullscreenToggle={toggleFullscreen}
           />
         </div>
       </div>

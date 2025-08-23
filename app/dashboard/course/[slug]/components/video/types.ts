@@ -40,7 +40,6 @@ export interface VideoPlayerState {
   hasStarted: boolean
   lastPlayedTime: number
   showKeyboardShortcuts: boolean
-  theaterMode: boolean
   userInteracted: boolean
   autoPlayNext: boolean
   isPictureInPicture: boolean
@@ -128,11 +127,12 @@ export interface PlayerControlsProps {
 
   show?: boolean
   onShowKeyboardShortcuts?: () => void
-  onTheaterMode?: () => void
   onNextVideo?: () => void
   onToggleBookmarkPanel?: () => void
   autoPlayNext?: boolean
   onToggleAutoPlayNext?: () => void
+  autoPlayVideo?: boolean
+  onToggleAutoPlayVideo?: () => void
   hasNextVideo?: boolean
   nextVideoTitle?: string
   canAccessNextVideo?: boolean

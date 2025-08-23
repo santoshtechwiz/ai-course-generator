@@ -993,7 +993,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       className={cn(
         "relative object-contain w-full h-full bg-black overflow-hidden group video-player-container",
         className,
-        state.theaterMode && "theater-mode-active",
       )}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
@@ -1244,8 +1243,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             onPictureInPicture={handlePictureInPicture}
             isPiPSupported={state.isPiPSupported}
             isPiPActive={isNativePiPActive || shouldShowMiniPlayer}
-            onToggleTheaterMode={handlers.handleTheaterModeToggle}
-            isTheaterMode={state.theaterMode}
           />
         </div>
       )}

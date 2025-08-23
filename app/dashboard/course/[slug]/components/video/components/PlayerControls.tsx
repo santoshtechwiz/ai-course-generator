@@ -71,8 +71,6 @@ interface PlayerControlsProps {
   onPictureInPicture?: () => void
   isPiPSupported?: boolean
   isPiPActive?: boolean
-  onToggleTheaterMode?: () => void
-  isTheaterMode?: boolean
 }
 
 const PlayerControls: React.FC<PlayerControlsProps> = ({
@@ -114,8 +112,6 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   onPictureInPicture,
   isPiPSupported = false,
   isPiPActive = false,
-  onToggleTheaterMode,
-  isTheaterMode = false,
 }) => {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -589,7 +585,6 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               <Switch
                 checked={autoPlayVideo}
                 onCheckedChange={onToggleAutoPlayVideo}
-                size="sm"
                 aria-label="Toggle auto-play video on page load"
               />
             </div>
@@ -602,7 +597,6 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               <Switch
                 checked={autoPlayNext}
                 onCheckedChange={onToggleAutoPlayNext}
-                size="sm"
                 aria-label="Toggle autoplay next video"
               />
             </div>
@@ -613,7 +607,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             (isAuthenticated || onPictureInPicture) && <div className="hidden lg:block w-px h-6 bg-white/20 mx-1" />}
 
           {/* Enhanced Bookmark button */}
-          {isAuthenticated && onAddBookmark && (
+          {isAuthenticated && typeof onAddBookmark === 'function' && (
             <Button
               variant="ghost"
               size="icon"
@@ -656,33 +650,6 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               }
             >
               <PictureInPicture2 className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Button>
-          )}
-
-          {/* Theater mode toggle */}
-          {onToggleTheaterMode && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-all duration-200",
-                isTheaterMode && "bg-white/20 text-blue-400",
-              )}
-              onClick={onToggleTheaterMode}
-              title={isTheaterMode ? "Exit theater mode (T)" : "Enter theater mode (T)"}
-              aria-label={isTheaterMode ? "Exit theater mode" : "Enter theater mode"}
-            >
-              <svg
-                className="h-4 w-4 sm:h-5 sm:w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="3" y="7" width="18" height="10" rx="2" ry="2"></rect>
-              </svg>
             </Button>
           )}
 
