@@ -8,11 +8,11 @@ import { Providers } from "@/store/provider"
 import { getServerAuthSession } from "@/lib/server-auth"
 import { StrictMode, Suspense } from "react"
 
-import GlobalLoaderProvider from "@/components/GlobalLoaderProvider"
 import PageTransition from "@/components/shared/PageTransition"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { DefaultSEO, generateMetadata as generateBaseMetadata } from "@/lib/seo"
 import { GoogleAnalytics } from "@next/third-parties/google"
+import GlobalLoaderProvider from "@/components/loaders/GlobalLoaderProvider"
 
 
 // Fonts with consistent config

@@ -16,11 +16,12 @@ import { CourseCard } from "./CourseCard"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { motion, AnimatePresence } from "framer-motion"
-import { useGlobalLoader } from "@/store/loaders/global-loader"
+
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 // Add memo and useCallback to optimize rendering
 const MemoizedCourseCard = React.memo(CourseCard)
@@ -69,11 +70,16 @@ export default function CoursesClient({
   const [loadingProgress, setLoadingProgress] = useState(0)
 
   // Update query key to include ratingFilter
-  const { beginTask, endTask, startLoading } = useGlobalLoader()
+  // useGlobalLoader now exposes startLoading/stopLoading/updateProgress etc.
+  const { startLoading, stopLoading } = useGlobalLoader()
 
   // Kick off a task-mode loader on first mount (only if not already loading)
   useEffect(() => {
-    startLoading({ message: 'Loading courses...', useTasks: true, minVisibleMs: 300 })
+    // start a global loader without deprecated options
+    const id = startLoading({ message: 'Loading courses...', type: 'data', minVisibleMs: 300 })
+    return () => {
+      try { stopLoading(id) } catch {}
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -87,9 +93,9 @@ export default function CoursesClient({
         throw new Error('Query was aborted')
       }
 
+      // Use a dedicated loader id for this page fetch so we can stop it in finally
+      const loaderId = startLoading({ message: `Loading courses (page ${pageParam})`, type: 'data', showProgress: true, minVisibleMs: 150 })
       try {
-        // Start loader in task mode if not already active
-        beginTask(`courses-page-${pageParam}`, 1)
         setLoadingProgress(20)
         
         // Build the API URL with proper parameters
@@ -153,7 +159,7 @@ export default function CoursesClient({
           console.log("Fetched courses data:", data)
         }
         return data
-      } catch (error: any) {
+  } catch (error: any) {
         setLoadingProgress(0)
         
         // Handle abort errors gracefully
@@ -167,7 +173,7 @@ export default function CoursesClient({
         console.error("Error fetching courses:", error)
         throw error
       } finally {
-        endTask(`courses-page-${pageParam}`)
+        try { stopLoading(loaderId) } catch {}
       }
     },
     getNextPageParam: (lastPage, allPages) => {

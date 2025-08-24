@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useCallback } from "react"
-import { useGlobalLoader } from "@/store/loaders/global-loader"
+
 
 interface SuspenseFallbackProps {
   message?: string
@@ -28,10 +28,10 @@ export function SuspenseGlobalFallback({
   timeoutMs = 15000
 }: SuspenseFallbackProps) {
   const { startLoading, stopLoading, updateProgress } = useGlobalLoader()
-  const loadingIdRef = useRef<string>()
+  const loadingIdRef = useRef<string | undefined>(undefined)
   const stoppedRef = useRef(false)
-  const timeoutRef = useRef<NodeJS.Timeout>()
-  const progressIntervalRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
+  const progressIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined)
   
   // Generate stable ID
   const instanceId = fallbackId || `suspense-${type}-${Date.now()}`
@@ -267,5 +267,6 @@ export function withAdaptiveSuspense<T extends {}>(
 
 // React import for the HOC
 import React from 'react'
+import { useGlobalLoader } from "./global-loaders"
 
 export default SuspenseGlobalFallback

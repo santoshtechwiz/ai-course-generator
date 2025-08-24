@@ -24,7 +24,7 @@ import {
 
 import type { AppDispatch } from '@/store'
 import { QuizType } from '@/app/types/quiz-types'
-import { InlineSpinner as LoadingSpinner } from '@/components/loaders/GlobalLoader'
+import { InlineSpinner as LoadingSpinner } from '@/components/loaders/Loader'
 
 interface Props {
   slug: string

@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useCallback } from 'react'
-import { useGlobalLoaderStore } from '@/store/loaders/global-loader'
+import { useGlobalLoaderStore } from './global-loaders'
+
 
 // Custom router with loader integration
 export function useRouterWithLoader() {

@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { HashLoader, PulseLoader, ClipLoader } from "react-spinners"
 import { AlertCircle, CheckCircle, X, Loader2, Upload, Route, Database, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useGlobalLoader, LoaderType } from "@/store/loaders/global-loader"
+import { LoaderType, useGlobalLoader } from "./global-loaders"
+
 
 interface IconProps {
   size?: number
@@ -490,4 +491,13 @@ function getContainerColor(state: string, type?: LoaderType): string {
   
   if (state === 'success') {
     switch (type) {
-      case 'route': return "bg-purple
+      case 'route': return "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800/30"
+      case 'upload': return "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/30"
+      case 'data': return "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/30"
+      case 'action': return "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800/30"
+      default: return "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/30"
+    }
+  }
+  
+  return "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+}

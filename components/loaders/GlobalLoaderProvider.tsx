@@ -1,9 +1,11 @@
 "use client"
 
 import React, { useEffect } from "react"
-import { GlobalLoader } from "@/components/loaders/GlobalLoader"
-import { useAdvancedRouteLoaderBridge } from "@/components/loaders/RouteLoaderBridge"
-import { useGlobalLoaderStore } from "@/store/loaders/global-loader"
+import { GlobalLoader } from "@/components/loaders/Loader"
+
+
+import { useAdvancedRouteLoaderBridge } from "./RouteLoaderBridge"
+import { useGlobalLoaderStore } from "./global-loaders"
 
 interface GlobalLoaderProviderProps {
   children: React.ReactNode
@@ -61,7 +63,7 @@ function useNetworkDetection(enabled: boolean) {
     }
 
     const handleOffline = () => {
-      reconnectingId = startLoading('network-offline', {
+      const id = startLoading('network-offline', {
         message: 'Connection lost',
         subMessage: 'Waiting for network connection...',
         isBlocking: false,
@@ -70,6 +72,7 @@ function useNetworkDetection(enabled: boolean) {
         allowCancel: false,
         maxDurationMs: 0, // Don't timeout
       })
+      reconnectingId = typeof id === 'string' ? id : undefined
     }
 
     // Check initial connection state

@@ -4,7 +4,7 @@ import { API_ENDPOINTS } from './quiz-helpers'
 import { QuizQuestion, QuizResults, QuizState } from './quiz-types'
 import { QuizType } from '@/app/types/quiz-types'
 import { STORAGE_KEYS } from '@/constants/global'
-import { useGlobalLoader } from '@/store/loaders/global-loader'
+import { useGlobalLoader } from '@/components/loaders/global-loaders'
 
 // In-memory cache for fetched quizzes (per session). Keeps last N entries with TTL.
 const QUIZ_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
@@ -148,7 +148,7 @@ export const fetchQuiz = createAsyncThunk(
       }
       
       // Show a deterministic global loader only when performing network request
-      const loader = useGlobalLoader.getState()
+      const loader = useGlobalLoader()
       try {
         // Avoid passing unknown options to loader.startLoading in case API changed
         loader.startLoading({ message: 'Loading quiz...', isBlocking: true, minVisibleMs: 200 })
@@ -242,7 +242,7 @@ export const fetchQuiz = createAsyncThunk(
 
       return normalized
     } catch (err: any) {
-      try { useGlobalLoader.getState().stopLoading() } catch {}
+      try { useGlobalLoader().stopLoading() } catch {}
       return rejectWithValue({ error: err?.message || 'Unknown error' })
     }
   }

@@ -29,10 +29,11 @@ import {
   Bookmark,
   Share2,
 } from "lucide-react"
-import { useGlobalLoader } from '@/store/loaders/global-loader'
+
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 // Enhanced course images with better variety
 const COURSE_IMAGES = ["/course.png", "/course_2.png", "/course_3.png", "/course_4.png"]
