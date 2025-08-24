@@ -138,7 +138,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   const handleControlsClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
   }, [])
-  
+
   // Sync external bookmark updates into local state (while preserving optimistic additions)
   useEffect(() => {
     if (Array.isArray(bookmarks)) {
@@ -244,12 +244,12 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   useEffect(() => {
     setIsMounted(true)
     // Compact mode for narrow viewports
-    if (typeof window !== 'undefined') {
-      const mq = window.matchMedia('(max-width: 460px)')
+    if (typeof window !== "undefined") {
+      const mq = window.matchMedia("(max-width: 460px)")
       const apply = () => setIsCompact(mq.matches)
       apply()
-      mq.addEventListener('change', apply)
-      return () => mq.removeEventListener('change', apply)
+      mq.addEventListener("change", apply)
+      return () => mq.removeEventListener("change", apply)
     }
   }, [])
 
@@ -348,7 +348,9 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       role="toolbar"
       aria-label="Video player controls"
     >
-      <div aria-live="polite" className="sr-only">{lastAnnouncement}</div>
+      <div aria-live="polite" className="sr-only">
+        {lastAnnouncement}
+      </div>
       <div
         className="relative flex items-center mb-1 group h-8 sm:h-10 cursor-pointer touch-manipulation"
         ref={progressBarRef}
@@ -374,23 +376,25 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
           } else if (e.key === "ArrowRight") {
             e.preventDefault()
             handleSkipForward()
-          } else if (e.key === 'Home') {
+          } else if (e.key === "Home") {
             e.preventDefault()
             onSeekChange(0)
-          } else if (e.key === 'End') {
+          } else if (e.key === "End") {
             e.preventDefault()
             onSeekChange(duration)
-          } else if (e.key === 'PageUp') {
+          } else if (e.key === "PageUp") {
             e.preventDefault()
             onSeekChange(Math.min(duration, duration * played + 30))
-          } else if (e.key === 'PageDown') {
+          } else if (e.key === "PageDown") {
             e.preventDefault()
             onSeekChange(Math.max(0, duration * played - 30))
           }
         }}
       >
         <div className="absolute inset-0"></div>
-        <span className="sr-only">Use Arrow keys to seek 10 seconds, PageUp/PageDown 30 seconds, Home/End to jump.</span>
+        <span className="sr-only">
+          Use Arrow keys to seek 10 seconds, PageUp/PageDown 30 seconds, Home/End to jump.
+        </span>
 
         <AnimatePresence>
           {hoverPosition !== null && hoveredTime !== null && !isDragging && (
@@ -439,7 +443,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               whileHover={{ scale: 1.2 }}
               whileTap={{ scale: 0.9 }}
               className="absolute w-2 h-4 bg-yellow-400 rounded-full transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 hover:bg-yellow-300 transition-colors touch-manipulation shadow-sm"
-              style={{ left: `${duration > 0 ? (time / duration) * 100 : 0}%`, top: '50%' }}
+              style={{ left: `${duration > 0 ? (time / duration) * 100 : 0}%`, top: "50%" }}
               onClick={(e) => {
                 e.stopPropagation()
                 onSeekToBookmark?.(time)
@@ -451,9 +455,9 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       </div>
 
       {/* Enhanced Controls row */}
-      <div className={cn("flex items-center justify-between", isCompact && "gap-1")}>        
+      <div className={cn("flex items-center justify-between", isCompact && "gap-1")}>
         {/* Left controls */}
-        <div className={cn("flex items-center space-x-1 sm:space-x-2", isCompact && "space-x-0.5")}>        
+        <div className={cn("flex items-center space-x-1 sm:space-x-2", isCompact && "space-x-0.5")}>
           {/* Enhanced Play/Pause button with loading state */}
           <Button
             variant="ghost"
@@ -597,7 +601,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
         </div>
 
         {/* Right controls */}
-  <div className={cn("flex items-center space-x-1 sm:space-x-2", isCompact && "space-x-0.5")}> 
+        <div className={cn("flex items-center space-x-1 sm:space-x-2", isCompact && "space-x-0.5")}>
           <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <DropdownMenuTrigger asChild>
               <Button
@@ -642,7 +646,11 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
 
           {/* Auto-play video toggle */}
           {onToggleAutoPlayVideo && (
-            <div className="hidden lg:flex items-center mr-3 px-2 py-1 rounded-md bg-white/10" role="group" aria-label="Auto play on load">
+            <div
+              className="hidden lg:flex items-center mr-3 px-2 py-1 rounded-md bg-white/10"
+              role="group"
+              aria-label="Auto play on load"
+            >
               <span className="text-xs text-white mr-2">Auto-play</span>
               <Switch
                 checked={autoPlayVideo}
@@ -654,7 +662,11 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
 
           {/* Enhanced Autoplay next toggle */}
           {hasNextVideo && onToggleAutoPlayNext && (
-            <div className="hidden lg:flex items-center mr-3 px-2 py-1 rounded-md bg-white/10" role="group" aria-label="Auto next video">
+            <div
+              className="hidden lg:flex items-center mr-3 px-2 py-1 rounded-md bg-white/10"
+              role="group"
+              aria-label="Auto next video"
+            >
               <span className="text-xs text-white mr-2">Auto-next</span>
               <Switch
                 checked={autoPlayNext}
@@ -669,7 +681,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             (isAuthenticated || onPictureInPicture) && <div className="hidden lg:block w-px h-6 bg-white/20 mx-1" />}
 
           {/* Bookmark buttons: add + panel toggle */}
-          {typeof onAddBookmark === 'function' && (
+          {typeof onAddBookmark === "function" && (
             <div className="flex items-center">
               <Button
                 variant="ghost"
@@ -709,57 +721,93 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             </div>
           )}
 
-          {/* Enhanced Picture-in-Picture with better visual feedback */}
           {onPictureInPicture && (
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8 text-white touch-manipulation transition-all duration-300 relative overflow-hidden",
+                  isPiPActive
+                    ? "bg-gradient-to-br from-blue-500/30 to-purple-600/30 text-blue-300 shadow-lg shadow-blue-500/20"
+                    : "hover:bg-white/20 hover:shadow-lg",
+                )}
+                onClick={onPictureInPicture}
+                title={
+                  isPiPSupported
+                    ? isPiPActive
+                      ? "Exit Picture-in-Picture (P)"
+                      : "Enter Picture-in-Picture (P)"
+                    : isPiPActive
+                      ? "Close Mini Player (P)"
+                      : "Open Mini Player (P)"
+                }
+                aria-label={
+                  isPiPSupported
+                    ? isPiPActive
+                      ? "Exit Picture-in-Picture mode"
+                      : "Enter Picture-in-Picture mode"
+                    : isPiPActive
+                      ? "Close Mini Player"
+                      : "Open Mini Player"
+                }
+              >
+                <motion.div
+                  animate={{
+                    rotate: isPiPActive ? 360 : 0,
+                    scale: isPiPActive ? 1.1 : 1,
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <PictureInPicture2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                </motion.div>
+                {isPiPActive && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 w-2 h-2 bg-blue-400 rounded-full"
+                  />
+                )}
+              </Button>
+            </motion.div>
+          )}
+
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               variant="ghost"
               size="icon"
               className={cn(
-                "h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-all duration-200",
-                isPiPActive && "bg-white/20 text-blue-400 scale-110",
+                "h-8 w-8 text-white touch-manipulation transition-all duration-300 relative overflow-hidden",
+                isFullscreen
+                  ? "bg-gradient-to-br from-green-500/30 to-emerald-600/30 text-green-300 shadow-lg shadow-green-500/20"
+                  : "hover:bg-white/20 hover:shadow-lg",
               )}
-              onClick={onPictureInPicture}
-              title={
-                isPiPSupported
-                  ? isPiPActive
-                    ? "Exit Picture-in-Picture (P)"
-                    : "Enter Picture-in-Picture (P)"
-                  : isPiPActive
-                    ? "Close Mini Player (P)"
-                    : "Open Mini Player (P)"
-              }
-              aria-label={
-                isPiPSupported
-                  ? isPiPActive
-                    ? "Exit Picture-in-Picture mode"
-                    : "Enter Picture-in-Picture mode"
-                  : isPiPActive
-                    ? "Close Mini Player"
-                    : "Open Mini Player"
-              }
+              onClick={onToggleFullscreen}
+              title={isFullscreen ? "Exit fullscreen (F)" : "Enter fullscreen (F)"}
+              aria-label={isFullscreen ? "Exit fullscreen mode" : "Enter fullscreen mode"}
             >
-              <PictureInPicture2 className="h-4 w-4 sm:h-5 sm:w-5" />
+              <motion.div
+                animate={{
+                  rotate: isFullscreen ? 180 : 0,
+                  scale: isFullscreen ? 1.1 : 1,
+                }}
+                transition={{ duration: 0.3 }}
+              >
+                {isFullscreen ? (
+                  <Minimize className="h-4 w-4 sm:h-5 sm:w-5" />
+                ) : (
+                  <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />
+                )}
+              </motion.div>
+              {isFullscreen && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full"
+                />
+              )}
             </Button>
-          )}
-
-          {/* Enhanced Fullscreen */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-all duration-200",
-              isFullscreen && "bg-white/20 text-blue-400",
-            )}
-            onClick={onToggleFullscreen}
-            title={isFullscreen ? "Exit fullscreen (F)" : "Enter fullscreen (F)"}
-            aria-label={isFullscreen ? "Exit fullscreen mode" : "Enter fullscreen mode"}
-          >
-            {isFullscreen ? (
-              <Minimize className="h-4 w-4 sm:h-5 sm:w-5" />
-            ) : (
-              <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />
-            )}
-          </Button>
+          </motion.div>
         </div>
       </div>
     </div>

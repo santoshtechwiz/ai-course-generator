@@ -1,6 +1,6 @@
+import { useGlobalLoader } from "@/components/loaders/global-loaders"
 import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
-import { useGlobalLoader } from "@/store/loaders/global-loader"
 
 interface SummaryResponse {
   success: boolean
@@ -19,17 +19,16 @@ const fetchChapterSummary = async (chapterId: number): Promise<SummaryResponse> 
  * @returns Query object with summary data and status
  */
 export const useChapterSummary = (chapterId: number) => {
-  const { withLoading } = useGlobalLoader()
+  useGlobalLoader() // If you need loader state, you can destructure it here
 
   return useQuery({
     queryKey: ["chapterSummary", chapterId],
-    queryFn: () => withLoading(fetchChapterSummary(chapterId)),
+    queryFn: () => fetchChapterSummary(chapterId),
     retry: 3,
     retryDelay: 60000, // 1 minute
     enabled: false, // Disable automatic fetching
     refetchInterval: false, // Disable automatic refetching
     staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
-    cacheTime: 30 * 60 * 1000, // Cache for 30 minutes
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
   })
 }
