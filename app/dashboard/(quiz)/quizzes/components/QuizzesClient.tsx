@@ -173,12 +173,20 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     activeTab !== "all"
   )
 
-  // Load more when in view
+  // Load more when in view - prevent infinite loading by adding more conditions
   useEffect(() => {
-    if (inView && hasNextPage && !isFetchingNextPage && !isError && !noResults) {
+    if (
+      inView && 
+      hasNextPage && 
+      !isFetchingNextPage && 
+      !isLoading && 
+      !isError && 
+      !noResults && 
+      quizzes.length > 0 // Additional guard to prevent fetching when no initial data
+    ) {
       fetchNextPage()
     }
-  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage, isError, noResults])
+  }, [inView, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage, isError, noResults, quizzes.length])
 
   // Event Handlers
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {

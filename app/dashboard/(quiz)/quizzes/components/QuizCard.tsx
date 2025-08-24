@@ -111,6 +111,7 @@ function QuizCardComponent({
 }: QuizCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isFavorited, setIsFavorited] = useState(false)
+  const [hasInteracted, setHasInteracted] = useState(false)
 
   const config = quizTypeConfig[quizType] || quizTypeConfig.mcq
   const difficultyStyle = difficultyConfig[difficulty]
@@ -132,6 +133,11 @@ function QuizCardComponent({
     e.preventDefault()
     e.stopPropagation()
     setIsFavorited(!isFavorited)
+    setHasInteracted(true)
+  }
+
+  const handleCardInteraction = () => {
+    setHasInteracted(true)
   }
 
   return (
@@ -149,6 +155,8 @@ function QuizCardComponent({
         className="h-full"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        onTouchStart={handleCardInteraction}
+        onClick={handleCardInteraction}
       >
         <Card
           className={cn(
@@ -202,7 +210,12 @@ function QuizCardComponent({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 w-8 p-0 opacity-60 hover:opacity-100"
+                  className={cn(
+                    "h-8 w-8 p-0 transition-all duration-300",
+                    "md:opacity-60 md:hover:opacity-100",
+                    "opacity-0 md:opacity-60", // Hidden on mobile by default
+                    (hasInteracted || isHovered) && "opacity-100" // Show when interacted
+                  )}
                   onClick={handleFavorite}
                 >
                   <Heart className={cn("h-4 w-4", isFavorited && "fill-current text-primary")} />
