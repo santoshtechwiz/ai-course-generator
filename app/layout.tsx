@@ -6,13 +6,14 @@ import "../globals.css"
 import Footer from "@/components/shared/Footer"
 import { Providers } from "@/store/provider"
 import { getServerAuthSession } from "@/lib/server-auth"
-import { Suspense } from "react"
+import { StrictMode, Suspense } from "react"
 
 import GlobalLoaderProvider from "@/components/GlobalLoaderProvider"
 import PageTransition from "@/components/shared/PageTransition"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { DefaultSEO, generateMetadata as generateBaseMetadata } from "@/lib/seo"
 import { GoogleAnalytics } from "@next/third-parties/google"
+
 
 // Fonts with consistent config
 const inter = Inter({
@@ -157,7 +158,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <GlobalLoaderProvider>
-  <html lang="en" suppressHydrationWarning className="scroll-smooth" data-scroll-behavior="smooth">
+      <html lang="en" suppressHydrationWarning className="scroll-smooth" data-scroll-behavior="smooth">
         <head>
           <meta charSet="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -247,33 +248,35 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {/* Screen Reader Announcements */}
           <div id="announcements" className="sr-only" aria-live="polite" aria-atomic="true" />
 
-          <Providers session={session}>
-            <div className="min-h-screen flex flex-col relative">
-              <noscript>
-                <div className="fixed inset-0 bg-background z-50 flex items-center justify-center p-4">
-                  <div className="text-center max-w-md bg-card p-8 rounded-lg border">
-                    <h1 className="text-2xl font-bold mb-4 text-card-foreground">JavaScript Required</h1>
-                    <p className="text-muted-foreground mb-4">
-                      CourseAI requires JavaScript to function properly. Please enable JavaScript in
-                      your browser settings.
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      If you continue to see this message, try refreshing the page or contact
-                      support.
-                    </p>
+          <StrictMode>
+            <Providers session={session}>
+              <div className="min-h-screen flex flex-col relative">
+                <noscript>
+                  <div className="fixed inset-0 bg-background z-50 flex items-center justify-center p-4">
+                    <div className="text-center max-w-md bg-card p-8 rounded-lg border">
+                      <h1 className="text-2xl font-bold mb-4 text-card-foreground">JavaScript Required</h1>
+                      <p className="text-muted-foreground mb-4">
+                        CourseAI requires JavaScript to function properly. Please enable JavaScript in
+                        your browser settings.
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        If you continue to see this message, try refreshing the page or contact
+                        support.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </noscript>
+                </noscript>
 
-              <main id="main-content" className="flex-1 w-full pb-16 relative" role="main" tabIndex={-1}>
-                <PageTransition>
-                  <Suspense fallback={<SuspenseGlobalFallback />}>{children}</Suspense>
-                </PageTransition>
-              </main>
+                <main id="main-content" className="flex-1 w-full pb-16 relative" role="main" tabIndex={-1}>
+                  <PageTransition>
+                    <Suspense fallback={<SuspenseGlobalFallback />}>{children}</Suspense>
+                  </PageTransition>
+                </main>
 
-              <Footer />
-            </div>
-          </Providers>
+                <Footer />
+              </div>
+            </Providers>
+          </StrictMode>
 
           <DefaultSEO enableFAQ={false} />
 

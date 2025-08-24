@@ -50,8 +50,7 @@ export function useVideoProgress({
   useEffect(() => {
     // Completed chapters are synchronized via server -> Redux on mount elsewhere.
   }, [session?.user?.id])
-  }, [session?.user?.id])
-
+ 
   // Save progress to API
   const saveProgress = useCallback(
     async (data: VideoProgressData, force = false) => {

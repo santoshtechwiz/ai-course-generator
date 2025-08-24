@@ -7,6 +7,15 @@
  ****************************************/
 @layer base {
   :root {
+  /* New helpers for modern AI UI */
+  --glass-opacity: 0.72;
+  --glass-gradient: linear-gradient(135deg, hsl(var(--primary)/0.06), hsl(var(--secondary)/0.04));
+  --surface-elev-1: 0 6px 18px rgba(16,24,40,0.06);
+  --surface-elev-2: 0 10px 30px rgba(16,24,40,0.08);
+  --background-accent: 0 0% 98%;
+  /* Convenient RGB helpers for subtle overlays (fall back to previous rgb variables) */
+  --primary-rgb-fallback: 63, 126, 235;
+  --glass-border: rgba(255,255,255,0.06);
     /* Surfaces */
     --background: 0 0% 100%;
     --foreground: 222 47% 11%;
@@ -60,6 +69,9 @@
   }
 
   .dark {
+  /* dark mode subtle accent tweaks */
+  --glass-gradient: linear-gradient(135deg, hsl(var(--primary)/0.04), hsl(var(--secondary)/0.02));
+  --glass-border: rgba(0,0,0,0.32);
     --background: 222 47% 10%;
     --foreground: 210 40% 98%;
     --card: 224 40% 14%;
@@ -102,9 +114,13 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     background-image:
       radial-gradient(1200px 600px at 10% -10%, hsl(var(--primary)/0.08), transparent 60%),
-      radial-gradient(800px 400px at 110% 10%, hsl(var(--secondary)/0.08), transparent 60%),
-      radial-gradient(1000px 500px at 50% 120%, hsl(var(--accent)/0.08), transparent 60%);
+      radial-gradient(800px 400px at 110% 10%, hsl(var(--secondary)/0.06), transparent 60%),
+      radial-gradient(1000px 500px at 50% 120%, hsl(var(--accent)/0.04), transparent 60%),
+  conic-gradient(from 180deg at 50% 50%, rgba(var(--primary-rgb-fallback), 0.02) 0%, rgba(var(--ai-cyan-rgb), 0.02) 30%, transparent 60%);
     background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   :focus-visible {
@@ -162,15 +178,25 @@
   }
 
   ::-webkit-scrollbar {
-    @apply w-2;
+    width: 12px;
+    height: 12px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-muted/20;
+    background: transparent;
+    border-radius: 999px;
+    margin: 6px 0;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-primary/50 rounded-full;
+    background: linear-gradient(180deg, hsl(var(--primary)/0.6), hsl(var(--secondary)/0.6));
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12) inset;
   }
 }
 
@@ -402,6 +428,15 @@
   }
   .ai-card-hover {
     @apply transition-shadow hover:shadow-lg hover:shadow-primary/10;
+  }
+  /* modern glassmorphism utility */
+  .ai-glass {
+    background: var(--glass-gradient);
+    background-color: rgba(255,255,255,var(--glass-opacity));
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+    box-shadow: var(--surface-elev-1);
   }
   .ai-divider {
     @apply h-px w-full bg-gradient-to-r from-transparent via-border to-transparent;

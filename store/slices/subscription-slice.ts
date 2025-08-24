@@ -113,7 +113,7 @@ export const fetchSubscription = createAsyncThunk<
       credentials: "include",
     }, 12000)
 
-    if (res?.status === 401) {
+    if (!res || res?.status === 401) {
       logger.warn("User not authenticated for subscription")
       return DEFAULT_FREE_SUBSCRIPTION
     }
@@ -174,13 +174,13 @@ export const cancelSubscription = createAsyncThunk<
       body: JSON.stringify({ subscriptionId: currentSubscription.subscriptionId }),
     }, 10000)
 
-    if (!res.ok) {
-      throw new Error(`Failed to cancel subscription: ${res.statusText}`)
+    if (!res || !res.ok) {
+      throw new Error(`Failed to cancel subscription: ${res?.statusText ?? 'Unknown status'}`)
     }
     
     // After successful cancel, refetch status for a consistent shape
     const statusRes = await fetchWithTimeout(`/api/subscriptions/status?nocache=${Date.now()}`, { credentials: "include" }, 10000)
-    if (!statusRes.ok) {
+  if (!statusRes || !statusRes.ok) {
       return {
         ...currentSubscription,
         status: "CANCELED",
@@ -188,7 +188,7 @@ export const cancelSubscription = createAsyncThunk<
         isSubscribed: false,
       }
     }
-    const refreshed: SubscriptionStatusResponse = await statusRes.json()
+  const refreshed: SubscriptionStatusResponse = await statusRes!.json()
     return {
       credits: Math.max(0, refreshed.credits || 0),
       tokensUsed: Math.max(0, refreshed.tokensUsed || 0),
@@ -224,13 +224,13 @@ export const resumeSubscription = createAsyncThunk<
       body: JSON.stringify({ subscriptionId: currentSubscription.subscriptionId }),
     }, 10000)
 
-    if (!res.ok) {
-      throw new Error(`Failed to resume subscription: ${res.statusText}`)
+    if (!res || !res.ok) {
+      throw new Error(`Failed to resume subscription: ${res?.statusText ?? 'Unknown status'}`)
     }
     
     // After successful resume, refetch status
     const statusRes = await fetchWithTimeout(`/api/subscriptions/status?nocache=${Date.now()}`, { credentials: "include" }, 10000)
-    if (!statusRes.ok) {
+  if (!statusRes || !statusRes.ok) {
       return {
         ...currentSubscription,
         status: "ACTIVE",
@@ -238,7 +238,7 @@ export const resumeSubscription = createAsyncThunk<
         isSubscribed: true,
       }
     }
-    const refreshed: SubscriptionStatusResponse = await statusRes.json()
+  const refreshed: SubscriptionStatusResponse = await statusRes!.json()
     return {
       credits: Math.max(0, refreshed.credits || 0),
       tokensUsed: Math.max(0, refreshed.tokensUsed || 0),
@@ -459,8 +459,10 @@ export const selectIsExpired = createSelector(
   [selectSubscriptionData],
   (data): boolean => {
     if (!data) return false
-    return data.status === "EXPIRED" || 
-           (data.expirationDate && new Date(data.expirationDate) < new Date())
+    return (
+      data.status === "EXPIRED" || 
+      Boolean(data.expirationDate && new Date(data.expirationDate) < new Date())
+    )
   }
 )
 

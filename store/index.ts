@@ -114,6 +114,12 @@ export const store = configureStore({
         ],
       },
     }),
+  // Enable Redux DevTools with useful tracing during development
+  devTools: process.env.NODE_ENV !== 'production' ? {
+    name: 'ai-learning',
+    trace: true,
+    traceLimit: 25,
+  } : false,
 })
 
 // ✅ Persistor for <PersistGate />
