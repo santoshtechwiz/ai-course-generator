@@ -48,7 +48,6 @@ const initializeTrie = async () => {
       courseTrie.insert(course.title?.toLowerCase(), course.id)
     })
 
-    console.log("Trie initialized with courses data.")
     isTrieInitialized = true
   } catch (error) {
     console.error("Failed to initialize Trie:", error)

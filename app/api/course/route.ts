@@ -73,11 +73,9 @@ export async function POST(req: Request) {
     // Parse request body
     const data = await req.json()
     const parsedData = createChaptersSchema.parse(data)
-    console.log("Creating course with data:", { ...parsedData, units: parsedData.units.length }) // Log without full unit data
 
     // Use service to create the course
     const result = await courseService.createCourse(session.user.id, parsedData)
-    console.log("Course created successfully with result:", result) // Debug log
     
     // Ensure we're returning the slug in the response
     if (!result.slug) {

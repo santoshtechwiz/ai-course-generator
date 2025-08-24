@@ -193,6 +193,12 @@ const flashcardSlice = createSlice({
   name: "flashcard",
   initialState,
   reducers: {
+    clearFlashcardResults: (state) => {
+      state.results = null;
+      state.isCompleted = false;
+      state.shouldRedirectToResults = false;
+      state.status = "idle";
+    },
     initFlashCardQuiz: (
       state,
       action: PayloadAction<{ id: string; userId:string, slug: string; title: string; questions: FlashCard[] }>
@@ -398,9 +404,12 @@ clearQuizState: (state) => {
  extraReducers: (builder) => {
   builder
     .addCase(fetchFlashCardQuiz.pending, (state) => {
-      state.status = "loading"
-      state.error = null
-      state.questions = []
+  state.status = "loading"
+  state.error = null
+  state.questions = []
+  state.results = null
+  state.isCompleted = false
+  state.shouldRedirectToResults = false
     })
     .addCase(fetchFlashCardQuiz.fulfilled, (state, action) => {
       state.status = "succeeded"

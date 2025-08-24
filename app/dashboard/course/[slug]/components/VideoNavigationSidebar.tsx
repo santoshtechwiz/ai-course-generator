@@ -14,6 +14,8 @@ interface Chapter {
   title: string;
   videoId?: string;
   duration?: number;
+  thumbnail?: string;
+  locked?: boolean;
 }
 
 interface Course {
@@ -88,7 +90,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
   const groupedChapters = useMemo(() => {
     if (!course?.chapters?.length) return [];
 
-    const moduleRegex = /^(Module\s+\d+|Chapter\s+\d+|Section\s+\d+):\s*(.+)$/i;
+    const moduleRegex = /^(Module\s+\d+|Unit\s+\d+|Chapter\s+\d+|Section\s+\d+):\s*(.+)$/i;
     const modules: Record<string, { title: string; chapters: Chapter[]; moduleNumber?: number }> = {};
     
     // First pass - identify modules
@@ -145,6 +147,9 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
   }, []);
 
   const handleChapterClick = useCallback((chapter: Chapter, index: number) => {
+    // Don't allow navigation if chapter is locked
+    if (chapter.locked) return;
+    
     if (!chapter.videoId) {
       console.info("Chapter doesn't have a videoId:", chapter);
       return;
@@ -347,7 +352,9 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                             id: String(chapter.id || `chapter-${moduleIndex}-${chapterIndex}`),
                             title: chapter.title || 'Untitled Chapter',
                             videoId: chapter.videoId,
-                            duration: chapter.duration
+                            duration: chapter.duration,
+                            thumbnail: chapter.thumbnail || (chapter.videoId ? `https://img.youtube.com/vi/${chapter.videoId}/mqdefault.jpg` : undefined),
+                            locked: chapter.locked
                           };
 
                           const isActive = currentChapter && safeChapter.id === String(currentChapter.id);
@@ -357,6 +364,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                           const duration = safeChapter.videoId ? videoDurations?.[safeChapter.videoId] : undefined;
                           const hasVideo = !!safeChapter.videoId;
                           const isHovered = hoveredChapter === safeChapter.id;
+                          const isLocked = safeChapter.locked || (!isAuthenticated && hasVideo);
                           
                           return (
                             <motion.li 
@@ -370,7 +378,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <button
-                                    onClick={() => hasVideo ? handleChapterClick(chapter, chapterIndex) : null}
+                                    onClick={() => !isLocked && hasVideo ? handleChapterClick(chapter, chapterIndex) : null}
                                     onMouseEnter={() => setHoveredChapter(safeChapter.id)}
                                     onMouseLeave={() => setHoveredChapter(null)}
                                     className={cn(
@@ -381,87 +389,137 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                         "bg-primary/10 text-primary font-medium border-primary/20 shadow-sm" : 
                                         "hover:bg-muted/50",
                                       !hasVideo && "opacity-70 cursor-not-allowed",
+                                      isLocked && "opacity-60 cursor-not-allowed",
                                       isCompleted && !isActive && "bg-green-50 dark:bg-green-950/20 border-green-200/50 dark:border-green-800/50"
                                     )}
                                     aria-current={isActive ? "true" : "false"}
-                                    disabled={!hasVideo}
+                                    disabled={!hasVideo || isLocked}
                                     data-chapter-id={safeChapter.id}
                                     data-has-video={hasVideo ? "true" : "false"}
                                   >
-                                    {/* Status Icon */}
-                                    <div className="flex-shrink-0 w-6 h-6 mt-0.5 relative">
-                                      <AnimatePresence mode="wait">
-                                        {isCompleted ? (
-                                          <motion.div
-                                            key="completed"
-                                            initial={{ scale: 0, rotate: -180 }}
-                                            animate={{ scale: 1, rotate: 0 }}
-                                            exit={{ scale: 0, rotate: 180 }}
-                                            transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                                          >
-                                            <CheckCircle className="h-6 w-6 text-green-500" />
-                                          </motion.div>
-                                        ) : isActive ? (
-                                          <motion.div
-                                            key="active"
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1 }}
-                                            exit={{ scale: 0 }}
-                                            className="relative"
-                                          >
-                                            <Play className="h-6 w-6 text-primary fill-primary" />
-                                            <motion.div
-                                              animate={{ scale: [1, 1.2, 1] }}
-                                              transition={{ repeat: Infinity, duration: 2 }}
-                                              className="absolute inset-0 rounded-full bg-primary/20"
-                                            />
-                                          </motion.div>
-                                        ) : !hasVideo ? (
-                                          <motion.div
-                                            key="no-video"
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                          >
-                                            <VideoOff className="h-6 w-6 text-muted-foreground/70" />
-                                          </motion.div>
-                                        ) : !isAuthenticated ? (
-                                          <motion.div
-                                            key="locked"
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                          >
-                                            <Lock className="h-6 w-6 text-muted-foreground" />
-                                          </motion.div>
-                                        ) : (
-                                          <motion.div
-                                            key="progress"
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            className={cn(
-                                              "h-6 w-6 rounded-full border-2 relative overflow-hidden",
-                                              chapterProgress > 0 ? "border-primary" : "border-muted-foreground/30",
-                                            )}
-                                          >
-                                            {chapterProgress > 0 && (
-                                              <motion.div 
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${chapterProgress}%` }}
-                                                transition={{ duration: 0.5, ease: "easeOut" }}
-                                                className="bg-primary h-full"
+                                    {/* Enhanced Thumbnail or Status Icon */}
+                                    <div className="flex-shrink-0 relative">
+                                      {safeChapter.thumbnail && hasVideo ? (
+                                        <div className="w-20 h-12 rounded-lg overflow-hidden border border-border/50 relative group">
+                                          <img 
+                                            src={safeChapter.thumbnail} 
+                                            alt={safeChapter.title}
+                                            className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                                            loading="lazy"
+                                            onError={(e) => {
+                                              // Fallback to default thumbnail on error
+                                              const target = e.target as HTMLImageElement;
+                                              target.src = `https://img.youtube.com/vi/${safeChapter.videoId}/default.jpg`;
+                                            }}
+                                          />
+                                          {/* Duration overlay */}
+                                          {duration && (
+                                            <div className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 py-0.5 rounded">
+                                              {formatDuration(duration)}
+                                            </div>
+                                          )}
+                                          {/* Play overlay on hover */}
+                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center transition-all duration-200">
+                                            <Play className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                                          </div>
+                                          {/* Lock overlay for locked content */}
+                                          {isLocked && (
+                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                              <Lock className="h-4 w-4 text-white" />
+                                            </div>
+                                          )}
+                                          {/* Progress bar */}
+                                          {chapterProgress > 0 && !isCompleted && (
+                                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
+                                              <div 
+                                                className="h-full bg-primary transition-all duration-500"
+                                                style={{ width: `${chapterProgress}%` }}
                                               />
-                                            )}
-                                            {isHovered && (
+                                            </div>
+                                          )}
+                                          {/* Completion badge */}
+                                          {isCompleted && (
+                                            <div className="absolute top-1 left-1">
+                                              <CheckCircle className="h-4 w-4 text-green-500 bg-white rounded-full" />
+                                            </div>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="w-6 h-6 mt-0.5 relative">
+                                          <AnimatePresence mode="wait">
+                                            {isLocked ? (
                                               <motion.div
+                                                key="locked"
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                              >
+                                                <Lock className="h-6 w-6 text-muted-foreground" />
+                                              </motion.div>
+                                            ) : isCompleted ? (
+                                              <motion.div
+                                                key="completed"
+                                                initial={{ scale: 0, rotate: -180 }}
+                                                animate={{ scale: 1, rotate: 0 }}
+                                                exit={{ scale: 0, rotate: 180 }}
+                                                transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                                              >
+                                                <CheckCircle className="h-6 w-6 text-green-500" />
+                                              </motion.div>
+                                            ) : isActive ? (
+                                              <motion.div
+                                                key="active"
                                                 initial={{ scale: 0 }}
                                                 animate={{ scale: 1 }}
-                                                className="absolute inset-0 flex items-center justify-center bg-primary/10 rounded-full"
+                                                exit={{ scale: 0 }}
+                                                className="relative"
                                               >
-                                                <Play className="h-3 w-3 text-primary" />
+                                                <Play className="h-6 w-6 text-primary fill-primary" />
+                                                <motion.div
+                                                  animate={{ scale: [1, 1.2, 1] }}
+                                                  transition={{ repeat: Infinity, duration: 2 }}
+                                                  className="absolute inset-0 rounded-full bg-primary/20"
+                                                />
+                                              </motion.div>
+                                            ) : !hasVideo ? (
+                                              <motion.div
+                                                key="no-video"
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                              >
+                                                <VideoOff className="h-6 w-6 text-muted-foreground/70" />
+                                              </motion.div>
+                                            ) : (
+                                              <motion.div
+                                                key="progress"
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                className={cn(
+                                                  "h-6 w-6 rounded-full border-2 relative overflow-hidden",
+                                                  chapterProgress > 0 ? "border-primary" : "border-muted-foreground/30",
+                                                )}
+                                              >
+                                                {chapterProgress > 0 && (
+                                                  <motion.div 
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${chapterProgress}%` }}
+                                                    transition={{ duration: 0.5, ease: "easeOut" }}
+                                                    className="bg-primary h-full"
+                                                  />
+                                                )}
+                                                {isHovered && (
+                                                  <motion.div
+                                                    initial={{ scale: 0 }}
+                                                    animate={{ scale: 1 }}
+                                                    className="absolute inset-0 flex items-center justify-center bg-primary/10 rounded-full"
+                                                  >
+                                                    <Play className="h-3 w-3 text-primary" />
+                                                  </motion.div>
+                                                )}
                                               </motion.div>
                                             )}
-                                          </motion.div>
-                                        )}
-                                      </AnimatePresence>
+                                          </AnimatePresence>
+                                        </div>
+                                      )}
                                     </div>
                                     
                                     {/* Chapter Content */}
@@ -471,10 +529,12 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                           "line-clamp-2 leading-relaxed",
                                           isActive ? "text-primary font-medium" : 
                                           isCompleted ? "text-foreground" : "text-muted-foreground",
-                                          !hasVideo && "italic"
+                                          !hasVideo && "italic",
+                                          isLocked && "text-muted-foreground/70"
                                         )}>
                                           {safeChapter.title}
                                           {!hasVideo && " (No Video)"}
+                                          {isLocked && " (Locked)"}
                                         </p>
                                         
                                         {/* Chapter Number Badge */}
@@ -485,14 +545,14 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                       
                                       {/* Duration and Progress Info */}
                                       <div className="flex items-center justify-between mt-2">
-                                        {duration && hasVideo && (
+                                        {duration && hasVideo && !isLocked && (
                                           <div className="flex items-center text-xs text-muted-foreground">
                                             <Clock className="h-3 w-3 mr-1" />
                                             {formatDuration(duration)}
                                           </div>
                                         )}
                                         
-                                        {chapterProgress > 0 && chapterProgress < 100 && hasVideo && (
+                                        {chapterProgress > 0 && chapterProgress < 100 && hasVideo && !isLocked && (
                                           <div className="text-xs text-primary font-medium">
                                             {Math.round(chapterProgress)}% watched
                                           </div>
@@ -500,7 +560,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                       </div>
                                       
                                       {/* Enhanced Progress Bar */}
-                                      {chapterProgress > 0 && chapterProgress < 100 && hasVideo && (
+                                      {chapterProgress > 0 && chapterProgress < 100 && hasVideo && !isLocked && (
                                         <motion.div 
                                           initial={{ scaleX: 0 }}
                                           animate={{ scaleX: 1 }}
@@ -520,12 +580,12 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                 <TooltipContent side="right" className="max-w-xs">
                                   <div className="space-y-1">
                                     <p className="font-medium">{safeChapter.title}</p>
-                                    {duration && hasVideo && (
+                                    {duration && hasVideo && !isLocked && (
                                       <p className="text-xs text-muted-foreground">
                                         Duration: {formatDuration(duration)}
                                       </p>
                                     )}
-                                    {chapterProgress > 0 && (
+                                    {chapterProgress > 0 && !isLocked && (
                                       <p className="text-xs text-muted-foreground">
                                         Progress: {Math.round(chapterProgress)}%
                                       </p>
@@ -533,6 +593,11 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                     {!hasVideo && (
                                       <p className="text-xs text-muted-foreground">
                                         This chapter doesn't have a video
+                                      </p>
+                                    )}
+                                    {isLocked && (
+                                      <p className="text-xs text-muted-foreground">
+                                        {!isAuthenticated ? "Sign in to access this chapter" : "Complete previous chapters to unlock"}
                                       </p>
                                     )}
                                   </div>
@@ -596,4 +661,3 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
 };
 
 export default React.memo(VideoNavigationSidebar);
-

@@ -1,19 +1,18 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import type { RefObject } from "react"
 import type ReactPlayer from "react-player"
 
 import screenfull from "screenfull"
 import { useAppDispatch } from "@/store/hooks"
 import { addBookmark, removeBookmark } from "@/store/slices/course-slice"
-import { loadPlayerPreferences, savePlayerPreferences, calculateBufferHealth, formatTime } from "./progressUtils"
-import { useVideoProgress } from "./useVideoProgress"
 import { useVideoPreloading } from "./useVideoPreloading"
 import type { VideoPlayerState, UseVideoPlayerReturn, ProgressState, BookmarkData, YouTubePlayerConfig } from "../types"
 import { useToast } from "@/hooks"
 
 interface VideoPlayerHookOptions {
-  videoId: string
+  youtubeVideoId: string
   onEnded?: () => void
   onProgress?: (state: ProgressState) => void
   onTimeUpdate?: (time: number) => void
@@ -25,6 +24,7 @@ interface VideoPlayerHookOptions {
   onCertificateClick?: () => void
   nextVideoId?: string | null
   courseId?: string | number
+  chapterId?: string | number
 }
 
 export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerReturn {
@@ -33,8 +33,17 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   const { toast } = useToast()
   const dispatch = useAppDispatch()
   
-  // Load saved preferences
-  const savedPreferences = useMemo(() => loadPlayerPreferences(), [])
+  // Load saved preferences - only on client side
+  const savedPreferences = useMemo(() => {
+    if (typeof window === 'undefined') return {}
+    try {
+      const storedPrefs = localStorage.getItem("playerPreferences")
+      return storedPrefs ? JSON.parse(storedPrefs) : {}
+    } catch (error) {
+      console.warn('Failed to load player preferences:', error)
+      return {}
+    }
+  }, [])
 
   const [state, setState] = useState<VideoPlayerState>({
     playing: !!options.autoPlay,
@@ -52,7 +61,7 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     hasStarted: false,
     lastPlayedTime: 0,
     showKeyboardShortcuts: false,
-    theaterMode: false,
+  theaterMode: false,
     userInteracted: !!options.autoPlay,
     autoPlayNext: savedPreferences.autoPlayNext ?? true,
     isPictureInPicture: false,
@@ -75,17 +84,15 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   
   // Enable preloading when nearing completion
   useVideoPreloading({
-    currentVideoId: options.videoId,
+    currentVideoId: options.youtubeVideoId,
     nextVideoId: options.nextVideoId || null,
     isNearingCompletion: state.isNearingCompletion
   });
   
-  // Progress tracking - always call the hook, but conditionally pass parameters
-  const progressTracking = useVideoProgress({
-    videoId: options.courseId && options.videoId ? options.videoId : undefined,
-    courseId: options.courseId || '',
-    duration: state.duration,
-  });
+  // Progress tracking - use Redux slice instead of legacy hook
+  // TODO: Implement progress tracking via Redux actions/selectors
+  // Example: dispatch(setLastPosition({ courseId, chapterId, videoId, position }))
+  // Remove all references to progressTracking from below
 
   // Enhanced progress handler
   const handleProgress = useCallback(
@@ -98,7 +105,7 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       }));
 
       // Update buffer health efficiently
-      const newBufferHealth = calculateBufferHealth(progressState.loaded, progressState.played);
+      const newBufferHealth = Math.round(progressState.loaded * 100 - progressState.played * 100);
       setBufferHealth((prev) => (Math.abs(prev - newBufferHealth) > 5 ? newBufferHealth : prev));
 
       // Check if video is about to end (last 10 seconds) and trigger transition
@@ -114,18 +121,23 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       // Avoid duplicate/noisy tracking while in mini-player if desired
       const shouldTrack = !state.isMiniPlayer || state.played < 0.98
 
-      if (shouldTrack && progressTracking?.trackProgress) {
-        progressTracking.trackProgress(progressState);
-      }
+      // if (shouldTrack) {
+      //   dispatch(setLastPosition({
+      //     courseId: options.courseId,
+      //     chapterId: options.chapterId,
+      //     videoId: options.youtubeVideoId,
+      //     position: progressState.playedSeconds
+      //   }))
+      // }
 
       // Pass to parent callback (single call per tick)
       options.onProgress?.(progressState);
     },
-    [options.onProgress, progressTracking, state.isMiniPlayer, state.played, state.duration]
+    [options.onProgress, state.isMiniPlayer, state.played, state.duration]
   );
 
   // Memoized YouTube URL
-  const youtubeUrl = useMemo(() => `https://www.youtube.com/watch?v=${options.videoId}`, [options.videoId])
+  const youtubeUrl = useMemo(() => `https://www.youtube.com/watch?v=${options.youtubeVideoId}`, [options.youtubeVideoId])
 
   // Memoized YouTube config
   const youtubeConfig = useMemo(
@@ -180,13 +192,15 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       muted: volume === 0,
     }))
 
-    savePlayerPreferences({ volume, muted: volume === 0 })
+    // Save to localStorage
+    localStorage.setItem("playerPreferences", JSON.stringify({ ...savedPreferences, volume, muted: volume === 0 }))
   }, [])
 
   const onMute = useCallback(() => {
     setState((prev) => {
       const newMuted = !prev.muted
-      savePlayerPreferences({ muted: newMuted })
+      // Save to localStorage
+      localStorage.setItem("playerPreferences", JSON.stringify({ ...savedPreferences, muted: newMuted }))
       return { ...prev, muted: newMuted }
     })
   }, [])
@@ -199,7 +213,8 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
 
   const onPlaybackRateChange = useCallback((rate: number) => {
     setState((prev) => ({ ...prev, playbackRate: rate }))
-    savePlayerPreferences({ playbackRate: rate })
+    // Save to localStorage
+    localStorage.setItem("playerPreferences", JSON.stringify({ ...savedPreferences, playbackRate: rate }))
   }, [])
 
   // Fixed fullscreen implementation
@@ -259,6 +274,18 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     }
   }, [])
 
+  // Keep hook state in sync when parent toggles autoplay after init
+  // (e.g., when `canPlayVideo` changes in the parent and it re-passes autoPlay)
+  useEffect(() => {
+    try {
+      if (options.autoPlay && !state.userInteracted) {
+        setState((prev) => ({ ...prev, playing: true }))
+      }
+    } catch (e) {
+      // defensive
+    }
+  }, [options.autoPlay, state.userInteracted])
+
   const onBuffer = useCallback(() => {
     setState((prev) => ({ ...prev, isBuffering: true }))
   }, [])
@@ -275,12 +302,7 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     }))
     console.error("Video player error:", error)
   }, [])
-
-
-
-
-
-
+  // (Progress persistence handled at component level through progressApi queue)
 
   // Enhanced PIP state management with debouncing
   const [pipState, setPipState] = useState({
@@ -313,40 +335,51 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   }, [])
 
   // Bookmark handlers
+  // Local formatTime helper
+  const formatTime = (seconds: number): string => {
+    if (isNaN(seconds) || seconds < 0) return "0:00";
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return h > 0
+      ? `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
+      : `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
   const handleAddBookmark = useCallback(
     (time: number, title?: string) => {
-      if (!options.videoId) return
+      if (!options.youtubeVideoId) return;
 
       const bookmarkData: BookmarkData = {
-        id: `${options.videoId}-${Date.now()}`,
-        videoId: options.videoId,
+        id: `${options.youtubeVideoId}-${Date.now()}`,
+        videoId: options.youtubeVideoId,
         time,
         title: title || `Bookmark at ${formatTime(time)}`,
         description: title ? `${title} at ${formatTime(time)}` : `Bookmark at ${formatTime(time)}`,
         createdAt: new Date().toISOString(),
-      }
+      };
 
-      dispatch(addBookmark(bookmarkData))
-      options.onBookmark?.(time, title)
+      dispatch(addBookmark(bookmarkData));
+      options.onBookmark?.(time, title);
 
       toast({
         title: "Bookmark added",
         description: "You can access your bookmarks in the timeline.",
-      })
+      });
     },
-    [options.videoId, options.onBookmark, dispatch, toast],
-  )
+    [options.youtubeVideoId, options.onBookmark, dispatch, toast]
+  );
 
   const handleRemoveBookmark = useCallback(
     (bookmarkId: string) => {
-      dispatch(removeBookmark({ bookmarkId, videoId: options.videoId }))
+  dispatch(removeBookmark({ bookmarkId, videoId: options.youtubeVideoId }))
 
       toast({
         title: "Bookmark removed",
         description: "The bookmark has been removed.",
       })
     },
-    [options.videoId, dispatch, toast],
+  [options.youtubeVideoId, dispatch, toast],
   )
 
   // Fullscreen state tracking
@@ -514,7 +547,8 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   const toggleAutoPlayNext = useCallback(() => {
     setState((prev) => {
       const newAutoPlayNext = !prev.autoPlayNext;
-      savePlayerPreferences({ autoPlayNext: newAutoPlayNext });
+      // Save to localStorage
+      localStorage.setItem("playerPreferences", JSON.stringify({ ...savedPreferences, autoPlayNext: newAutoPlayNext }))
       return { ...prev, autoPlayNext: newAutoPlayNext };
     });
   }, []);

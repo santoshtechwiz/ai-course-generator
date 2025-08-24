@@ -16,7 +16,6 @@ import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/modules/auth"
 import { useAppSelector } from "@/store/hooks"
-import { makeSelectCourseProgressById } from "@/store/slices/courseProgress-slice"
 import { cn } from "@/lib/utils"
 
 interface CourseNotification {
@@ -45,48 +44,45 @@ interface CourseNotificationsMenuProps {
 }
 
 // Hook to fetch course data
-const useCourseData = (courseIds: string[]) => {
+const useCourseData = (courseIds: string[], shouldFetch: boolean) => {
   const [courseData, setCourseData] = useState<Record<string, CourseData>>({})
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
+  const fetchCourseData = useCallback(async () => {
     if (courseIds.length === 0) return
-
-    const fetchCourseData = async () => {
-      setLoading(true)
-      try {
-        const response = await fetch('/api/courses/data', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ courseIds }),
-        })
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        const result = await response.json()
-        
-        if (result.success && result.data) {
-          setCourseData(result.data)
-        } else {
-          console.warn('Invalid course data response:', result)
-        }
-      } catch (error) {
-        console.error('Failed to fetch course data:', error)
-        // Fallback to empty data instead of crashing
-        setCourseData({})
-      } finally {
-        setLoading(false)
+    setLoading(true)
+    try {
+      const response = await fetch('/api/courses/data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ courseIds }),
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
+      const result = await response.json()
+      if (result.success && result.data) {
+        setCourseData(result.data)
+      } else {
+        console.warn('Invalid course data response:', result)
+      }
+    } catch (error) {
+      console.error('Failed to fetch course data:', error)
+      setCourseData({})
+    } finally {
+      setLoading(false)
     }
-
-    fetchCourseData()
   }, [courseIds])
 
-  return { courseData, loading }
+  useEffect(() => {
+    if (shouldFetch) {
+      fetchCourseData()
+    }
+  }, [shouldFetch, fetchCourseData])
+
+  return { courseData, loading, fetchCourseData }
 }
 
 export default function CourseNotificationsMenu({ className }: CourseNotificationsMenuProps) {
@@ -105,12 +101,12 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
     if (!courseProgress) return []
     return Object.keys(courseProgress).filter(courseId => {
       const progress = courseProgress[courseId]
-      return progress && !progress.isCourseCompleted
+      return progress && progress.videoProgress && !progress.videoProgress.isCompleted
     })
   }, [courseProgress])
 
-  // Fetch course data
-  const { courseData, loading: courseDataLoading } = useCourseData(courseIds)
+  // Fetch course data only when dropdown is opened
+  const { courseData, loading: courseDataLoading, fetchCourseData } = useCourseData(courseIds, false)
 
   // Generate notifications from course progress
   const generateNotifications = useCallback(() => {
@@ -121,12 +117,13 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
     const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000
 
     Object.entries(courseProgress).forEach(([courseId, progress]) => {
-      // Skip if course is completed
-      if (progress.isCourseCompleted) return
+      // Skip if no video progress or course is completed
+      if (!progress.videoProgress || progress.videoProgress.isCompleted) return
 
-      // Calculate progress percentage (this would need to be calculated based on total chapters)
-      const progressPercentage = progress.completedLectures.length > 0 ? 
-        (progress.completedLectures.length / 10) * 100 : 0 // Assuming 10 chapters per course
+      // Calculate progress percentage based on completed chapters
+      const completedChapters = progress.videoProgress.completedChapters || []
+      const progressPercentage = completedChapters.length > 0 ? 
+        (completedChapters.length / 10) * 100 : 0 // Assuming 10 chapters per course
 
       // Check if course was accessed recently
       const lastAccessed = progress.lastUpdatedAt ? new Date(progress.lastUpdatedAt) : new Date(oneWeekAgo)
@@ -148,7 +145,7 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
             description: `You're ${Math.round(progressPercentage)}% through this course`,
             courseId,
             courseSlug: courseSlug,
-            chapterId: progress.lastLectureId || undefined,
+            chapterId: progress.videoProgress.currentChapterId?.toString() || undefined,
             progress: progressPercentage,
             lastAccessed,
             priority: isRecentlyAccessed ? 'high' : 'medium'
@@ -285,6 +282,10 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
             "relative rounded-full hover:bg-accent hover:text-accent-foreground transition-all duration-300",
             className
           )}
+          onClick={() => {
+            setIsOpen(true)
+            fetchCourseData()
+          }}
         >
           <Bell className="h-4 w-4" />
           <AnimatePresence>

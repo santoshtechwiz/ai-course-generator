@@ -22,7 +22,6 @@ export async function GET(req: NextRequest) {
         error: result.error || "Failed to retrieve billing history" 
       }, { status: 500 })
     }
-    console.log("Billing history retrieved successfully:", result.history);
     return NextResponse.json({
       success: true,
       history: result.history || [],

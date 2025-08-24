@@ -139,6 +139,11 @@ const courseSlice = createSlice({
       if (!state.bookmarks[videoId]) {
         state.bookmarks[videoId] = [];
       }
+      // Prevent duplicates within 0.75s tolerance
+      const DUP_TOLERANCE = 0.75
+      if (state.bookmarks[videoId].some(b => Math.abs(b.time - time) < DUP_TOLERANCE)) {
+        return
+      }
       
       // Create a unique ID for the bookmark
       const bookmarkId = `bookmark_${Date.now()}_${Math.floor(Math.random() * 1000)}`;

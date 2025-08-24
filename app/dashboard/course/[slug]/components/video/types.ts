@@ -40,13 +40,13 @@ export interface VideoPlayerState {
   hasStarted: boolean
   lastPlayedTime: number
   showKeyboardShortcuts: boolean
-  theaterMode: boolean
   userInteracted: boolean
   autoPlayNext: boolean
   isPictureInPicture: boolean
   isPiPSupported: boolean
   isNearingCompletion: boolean
   isMiniPlayer: boolean
+  theaterMode: boolean
 }
 
 export interface ProgressState {
@@ -58,7 +58,8 @@ export interface ProgressState {
 export type CertificateState = "idle" | "downloading" | "success" | "error"
 
 export interface VideoPlayerProps {
-  videoId: string
+  youtubeVideoId: string
+  chapterId?: string | number
   onEnded?: () => void
   onProgress?: (state: ProgressState) => void
   onTimeUpdate?: (time: number) => void
@@ -82,6 +83,7 @@ export interface VideoPlayerProps {
   onNextVideo?: () => void
   nextVideoTitle?: string
   nextVideoId?: string
+  autoAdvanceNext?: boolean
   chapterTitle?: string
   courseName?: string
   courseId?: string | number
@@ -127,11 +129,13 @@ export interface PlayerControlsProps {
 
   show?: boolean
   onShowKeyboardShortcuts?: () => void
-  onTheaterMode?: () => void
   onNextVideo?: () => void
   onToggleBookmarkPanel?: () => void
+  bookmarkPanelOpen?: boolean
   autoPlayNext?: boolean
   onToggleAutoPlayNext?: () => void
+  autoPlayVideo?: boolean
+  onToggleAutoPlayVideo?: () => void
   hasNextVideo?: boolean
   nextVideoTitle?: string
   canAccessNextVideo?: boolean
@@ -264,7 +268,7 @@ export type PlaybackSpeed = 0.25 | 0.5 | 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2
 export interface UseVideoPlayerReturn {
   state: VideoPlayerState
   playerRef: React.RefObject<any>
-  containerRef: React.RefObject<HTMLDivElement>
+  containerRef: React.RefObject<HTMLDivElement | null>
   bufferHealth: number
   youtubeUrl: string
   handleProgress: ProgressEventHandler
