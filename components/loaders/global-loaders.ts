@@ -275,8 +275,14 @@ export function useGlobalLoader(watchId?: string) {
       storeStopLoading(idOrResult, result)
     } else if (watchId) {
       storeStopLoading(watchId, idOrResult)
+    } else {
+      // Backward compatibility - stop the active instance
+      const currentActive = store.activeInstance
+      if (currentActive) {
+        storeStopLoading(currentActive.id, idOrResult as { success: boolean; error?: string })
+      }
     }
-  }, [watchId, storeStopLoading])
+  }, [watchId, storeStopLoading, store.activeInstance])
 
   const updateProgress = useCallback((progressOrId: number | string, progress?: number, message?: string) => {
     if (typeof progressOrId === 'number' && watchId) {
@@ -289,6 +295,53 @@ export function useGlobalLoader(watchId?: string) {
   const cancelLoading = useCallback((id?: string) => {
     storeCancelLoading(id || watchId!)
   }, [watchId, storeCancelLoading])
+
+  // Backward compatibility methods
+  const setError = useCallback((error: string, options?: Partial<LoaderOptions>) => {
+    const id = watchId || store.activeInstance?.id || `error-${Date.now()}`
+    if (store.activeInstance || watchId) {
+      storeStopLoading(id, { success: false, error })
+    } else {
+      // No active loader, create error state
+      const errorId = storeStartLoading(id, {
+        message: error,
+        type: 'custom',
+        isBlocking: false,
+        priority: 'medium',
+        minVisibleMs: 3000,
+        ...options
+      })
+      // Immediately set to error state
+      setTimeout(() => {
+        storeStopLoading(errorId, { success: false, error })
+      }, 100)
+    }
+  }, [watchId, store.activeInstance, storeStartLoading, storeStopLoading])
+
+  const setSuccess = useCallback((message: string = 'Success!', options?: Partial<LoaderOptions>) => {
+    const id = watchId || store.activeInstance?.id || `success-${Date.now()}`
+    if (store.activeInstance || watchId) {
+      storeStopLoading(id, { success: true })
+    } else {
+      // No active loader, create success state
+      const successId = storeStartLoading(id, {
+        message,
+        type: 'custom',
+        isBlocking: false,
+        priority: 'medium',
+        minVisibleMs: 2000,
+        ...options
+      })
+      // Immediately set to success state
+      setTimeout(() => {
+        storeStopLoading(successId, { success: true })
+      }, 100)
+    }
+  }, [watchId, store.activeInstance, storeStartLoading, storeStopLoading])
+
+  // Legacy method aliases for backward compatibility
+  const setGlobalError = setError
+  const setGlobalSuccess = setSuccess
 
   return {
     // State
@@ -311,6 +364,12 @@ export function useGlobalLoader(watchId?: string) {
     updateProgress,
     cancelLoading,
     clearAll,
+    
+    // Backward compatibility methods
+    setError,
+    setSuccess,
+    setGlobalError,
+    setGlobalSuccess,
     
     // Instance info
     instanceId: watchedInstance?.id,

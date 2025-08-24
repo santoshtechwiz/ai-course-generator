@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
-import { useGlobalLoader } from '@/store/loaders/global-loader'
+import { useGlobalLoader } from '../loaders/global-loaders'
 
 export type QuizState = 'idle' | 'submitting' | 'navigating' | 'success' | 'error'
 

@@ -431,39 +431,10 @@
   }
 
   /* Theater Mode Styles */
-  .theater-mode-active {
-    @apply bg-black;
-  }
-
-  .theater-mode-active .video-player-container {
-    @apply max-w-4xl mx-auto;
-  }
-
-  .theater-mode-active .video-player-container .video-player {
-    @apply rounded-none;
-  }
-
-  .theater-mode-active .course-sidebar,
-  .theater-mode-active .course-navigation {
-    @apply hidden;
-  }
-
-  .theater-mode-active .main-content {
-    @apply max-w-none px-0;
-  }
+  /* Theater Mode Styles (enhanced version appears later; keeping only the detailed rules) */
 
   /* Picture-in-Picture Styles */
-  .pip-active {
-    @apply fixed bottom-4 right-4 z-50;
-  }
-
-  .pip-active .video-player {
-    @apply w-80 h-45 rounded-lg shadow-2xl border-2 border-white/20;
-  }
-
-  .pip-active .video-controls {
-    @apply opacity-0 hover:opacity-100 transition-opacity duration-300;
-  }
+  /* Picture-in-Picture Styles (enhanced version appears later; keeping only the detailed rules) */
 
   /* AI Themed Utilities */
   .ai-gradient-text {
@@ -533,11 +504,62 @@
     @apply inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-medium;
   }
 
-  .ai-glass {
-    @apply bg-background/80 backdrop-blur-sm;
-  }
-
   .dark .ai-glass-dark {
     @apply bg-background/80 backdrop-blur-sm;
   }
+  /* Enhanced theater mode styles with smooth transitions and better visual hierarchy */
+.theater-mode-active {
+  background: #000 !important;
 }
+
+.theater-mode-active .video-player-container {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  background: #000 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.theater-mode-active .video-player-container .theater-mode {
+  border-radius: 0 !important;
+}
+
+/* Enhanced PiP styles */
+.pip-active {
+  transform: scale(0.3) !important;
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  z-index: 10000 !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.pip-active:hover {
+  transform: scale(0.35) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Smooth fullscreen transitions */
+.video-player-container {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced control animations */
+.video-controls {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Better focus states for accessibility */
+.video-player-container:focus-within {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+}
+
