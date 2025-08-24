@@ -1,16 +1,33 @@
 "use client"
 
-import React, { useState, useEffect, useCallback, useMemo } from "react"
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { selectCourseProgressById } from "@/store/slices/courseProgress-slice"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
-import { Lock, UserIcon, CheckCircle, Menu, X, BookOpen, BarChart3, Zap } from "lucide-react"
+import { 
+  Lock, 
+  User as UserIcon, 
+  Play, 
+  ChevronLeft, 
+  Star,
+  Clock,
+  Users,
+  GraduationCap,
+  Calendar,
+  CheckCircle,
+  Menu,
+  X,
+  BookOpen,
+  Award,
+  BarChart3,
+  Zap
+} from "lucide-react"
 import { store } from "@/store"
 import { setCurrentVideoApi } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
-import CourseDetailsTabs, { type AccessLevels } from "./CourseDetailsTabs"
+import CourseDetailsTabs, { AccessLevels } from "./CourseDetailsTabs"
 import { formatDuration } from "../utils/formatUtils"
 import { VideoDebug } from "./video/components/VideoDebug"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -24,6 +41,7 @@ import { cn } from "@/lib/utils"
 import type { BookmarkData } from "./video/types"
 import { fetchRelatedCourses, fetchQuizSuggestions } from "@/services/recommendationsService"
 import type { RelatedCourse, PersonalizedRecommendation, QuizSuggestion } from "@/services/recommendationsService"
+import { isClient } from "@/lib/seo/core-utils"
 import { useCourseProgressSync } from "@/hooks/useCourseProgressSync"
 import { fetchPersonalizedRecommendations } from "@/app/services/recommendationsService"
 import { useVideoState } from "./video/hooks/useVideoState"
@@ -50,15 +68,19 @@ function validateChapter(chapter: any): boolean {
   return Boolean(
     chapter &&
       typeof chapter === "object" &&
-      chapter.id &&
-      (typeof chapter.id === "string" || typeof chapter.id === "number"),
-  )
+      chapter.id && 
+      (typeof chapter.id === "string" || typeof chapter.id === "number")
+  );
 }
 
 // CourseDetailsTabs is still memoized for better performance
 const MemoizedCourseDetailsTabs = React.memo(CourseDetailsTabs)
 
-const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId, isFullscreen = false }) => {
+const MainContent: React.FC<ModernCoursePageProps> = ({ 
+  course, 
+  initialChapterId,
+  isFullscreen = false
+}) => {
   const router = useRouter()
   const { toast } = useToast()
   const dispatch = useAppDispatch()
@@ -93,29 +115,26 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   const legacyCourseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
   const courseProgress = useCourseProgressSync(course.id)
   const twoCol = useMemo(() => !isFullscreen, [isFullscreen])
-
+  
   // Get direct access to the Zustand video state store and its methods
   const videoStateStore = useVideoState
-  const getVideoBookmarks = useCallback(
-    (videoId?: string | null) => {
-      try {
-        const key = String(videoId ?? "")
-        // Access bookmarks defensively
-        const state = videoStateStore.getState()
-        const bookmarks = (state && (state.bookmarks as Record<string, any[]>)) || {}
-        const result = bookmarks[key] || []
-        return Array.isArray(result) ? result : []
-      } catch (e) {
-        if (process.env.NODE_ENV !== "production") {
-          console.warn("No videos available in the playlist", e)
-        }
-        return []
+  const getVideoBookmarks = useCallback((videoId?: string | null) => {
+    try {
+      const key = String(videoId ?? "")
+      // Access bookmarks defensively
+      const state = videoStateStore.getState()
+      const bookmarks = (state && (state.bookmarks as Record<string, any[]>)) || {}
+      const result = bookmarks[key] || []
+      return Array.isArray(result) ? result : []
+    } catch (e) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn("No videos available in the playlist", e)
       }
-    },
-    [videoStateStore],
-  )
+      return []
+    }
+  }, [videoStateStore])
 
-  // video generated handler - logging removed or gated elsewhere
+                    // video generated handler - logging removed or gated elsewhere
   const bookmarks = useMemo(() => {
     return getVideoBookmarks(currentVideoId)
   }, [currentVideoId, getVideoBookmarks])
@@ -129,6 +148,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     } catch {
       return []
     }
+
   }, [currentVideoId, getVideoBookmarks])
 
   // Provide a sanitized bookmark list to the VideoPlayer
@@ -148,11 +168,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   useEffect(() => {
     const freeVideoPlayed = migratedStorage.getPreference("played_free_video", false)
     setHasPlayedFreeVideo(Boolean(freeVideoPlayed))
-
+    
     // Restore auto-play mode preference
     try {
       const savedAutoplay = localStorage.getItem(`autoplay_mode_course_${course.id}`)
-      if (savedAutoplay === "true") {
+      if (savedAutoplay === 'true') {
         setAutoplayMode(true)
       }
     } catch {}
@@ -161,7 +181,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   // Memoized video playlist
   const videoPlaylist = useMemo(() => {
     const playlist: { videoId: string; chapter: FullChapterType }[] = []
-
+    
     if (!course?.courseUnits) {
       return playlist
     }
@@ -246,7 +266,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   }, [currentIndex, videoPlaylist])
 
   const nextVideoId = nextVideoEntry?.videoId || null
-  const nextVideoTitle = nextVideoEntry?.chapter?.title || ""
+  const nextVideoTitle = nextVideoEntry?.chapter?.title || ''
   const hasNextVideo = Boolean(nextVideoEntry)
 
   // Handler to advance to the next chapter/video
@@ -270,7 +290,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   }, [hasNextVideo, nextVideoEntry, isLastVideo, handleCertificateClick, dispatch, videoStateStore, course.id])
 
   // Progress tracking
-  const progress = useAppSelector((state) => selectCourseProgressById(state, course?.id || 0))
+  const progress = useAppSelector(state => selectCourseProgressById(state, course?.id || 0))
 
   // Determine user subscription
   const userSubscription = useMemo(() => {
@@ -301,16 +321,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
     if (!targetVideo && progress?.videoProgress?.currentChapterId) {
       targetVideo = videoPlaylist.find(
-        (entry) => String(entry.chapter.id) === String(progress.videoProgress.currentChapterId),
+        (entry) => String(entry.chapter.id) === String(progress.videoProgress.currentChapterId)
       )
     }
 
     try {
       if (!targetVideo && courseProgress?.videoProgress?.currentChapterId) {
-        targetVideo =
-          videoPlaylist.find(
-            (entry) => String(entry.chapter.id) === String(courseProgress.videoProgress.currentChapterId),
-          ) || null
+        targetVideo = videoPlaylist.find(
+          (entry) => String(entry.chapter.id) === String(courseProgress.videoProgress.currentChapterId)
+        ) || null
       }
     } catch {}
 
@@ -338,7 +357,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
         setResumePromptShown(true)
         toast({
           title: "Resume Learning",
-          description: `Continue from \"${resumeChapter.chapter.title}\"? (Resume feature available in your dashboard)`,
+          description: `Continue from \"${resumeChapter.chapter.title}\"? (Resume feature available in your dashboard)`
         })
       }
     }
@@ -348,10 +367,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   const handleVideoLoad = useCallback(
     (metadata: { duration: number; title: string }) => {
       setVideoDurations((prev) => ({
-        ...prev,
-        [currentVideoId || ""]: metadata.duration,
+        ...prev, 
+        [currentVideoId || ""]: metadata.duration
       }))
-
+      
       setIsVideoLoading(false)
     },
     [currentVideoId],
@@ -371,7 +390,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
         if (title) {
           toast({
             title: "Seeking to Bookmark",
-            description: `Jumping to "${title}" at ${formatDuration(time)}`,
+            description: `Jumping to "${title}" at ${formatDuration(time)}`
           })
         }
       }
@@ -393,9 +412,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   const handleAutoplayToggle = useCallback(() => {
     const next = !autoplayMode
     setAutoplayMode(next)
-    try {
-      localStorage.setItem(`autoplay_mode_course_${course.id}`, String(next))
-    } catch {}
+    try { localStorage.setItem(`autoplay_mode_course_${course.id}`, String(next)) } catch {}
     toast({
       title: next ? "Auto-advance enabled" : "Manual advance mode",
       description: next
@@ -409,7 +426,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     const onScroll = () => {
       try {
         setHeaderCompact(window.scrollY > 32)
-      } catch {}
+      } catch { }
     }
     onScroll()
     window.addEventListener("scroll", onScroll, { passive: true })
@@ -418,7 +435,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
   // Mobile playlist toggle
   const handleMobilePlaylistToggle = useCallback(() => {
-    setMobilePlaylistOpen((prev) => !prev)
+    setMobilePlaylistOpen(prev => !prev)
   }, [])
 
   const handleChapterSelect = useCallback(
@@ -433,12 +450,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
           ...chapter,
           id: String(chapter.id),
         }
-
-        const fullChapter =
-          typeof chapter.id === "string"
-            ? videoPlaylist.find((v) => String(v.chapter.id) === chapter.id)?.chapter
-            : videoPlaylist.find((v) => v.chapter.id === chapter.id)?.chapter
-
+        
+        const fullChapter = typeof chapter.id === 'string' 
+          ? videoPlaylist.find(v => String(v.chapter.id) === chapter.id)?.chapter 
+          : videoPlaylist.find(v => v.chapter.id === chapter.id)?.chapter
+        
         if (!validateChapter(safeChapter)) {
           console.error("Invalid chapter selected:", safeChapter)
           toast({
@@ -456,7 +472,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
         }
 
         const videoId = safeChapter.videoId || (fullChapter ? fullChapter.videoId : null)
-
+        
         if (!videoId) {
           console.error(`Chapter has no videoId: ${safeChapter.id} - ${safeChapter.title}`)
           toast({
@@ -483,7 +499,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
         })
       }
     },
-    [dispatch, course.id, videoStateStore, toast, userSubscription, videoPlaylist],
+    [dispatch, course.id, videoStateStore, toast, userSubscription, videoPlaylist]
   )
 
   // Fetch related courses
@@ -497,10 +513,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       if (isLastVideo && user) {
         const result = await fetchPersonalizedRecommendations(course.id, 3)
         setPersonalizedRecommendations(
-          result.map((r) => ({
+          result.map(r => ({
             ...r,
-            matchReason: typeof r.matchReason === "string" ? r.matchReason : "",
-          })),
+            matchReason: typeof r.matchReason === "string" ? r.matchReason : ""
+          }))
         )
       }
     }
@@ -510,48 +526,45 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   // Fetch quiz suggestions for key chapters
   useEffect(() => {
     if (isKeyChapter && currentChapter) {
-      fetchQuizSuggestions(course.id, currentChapter.id, currentChapter.title).then(setQuizSuggestions)
+      fetchQuizSuggestions(
+        course.id,
+        currentChapter.id,
+        currentChapter.title
+      ).then(setQuizSuggestions)
     } else {
       setQuizSuggestions([])
     }
   }, [isKeyChapter, currentChapter, course.id])
 
   // Define sidebarCourse and sidebarCurrentChapter with proper types
-  const sidebarCourse = useMemo(
-    () => ({
-      id: String(course.id),
-      title: course.title,
-      chapters: videoPlaylist.map((v) => ({
-        id: String(v.chapter.id),
-        title: v.chapter.title,
-        videoId: v.chapter.videoId || undefined,
-        duration: typeof v.chapter.duration === "number" ? v.chapter.duration : undefined,
-        isFree: v.chapter.isFree,
-      })),
-    }),
-    [course.id, course.title, videoPlaylist],
-  )
-
-  const sidebarCurrentChapter = currentChapter
-    ? {
-        id: String(currentChapter.id),
-        title: currentChapter.title,
-        videoId: currentChapter.videoId || undefined,
-        duration: typeof currentChapter.duration === "number" ? currentChapter.duration : undefined,
-        isFree: currentChapter.isFree,
-      }
-    : null
+  const sidebarCourse = useMemo(() => ({
+    id: String(course.id),
+    title: course.title,
+    chapters: videoPlaylist.map(v => ({
+      id: String(v.chapter.id),
+      title: v.chapter.title,
+      videoId: v.chapter.videoId || undefined,
+      duration: typeof v.chapter.duration === 'number' ? v.chapter.duration : undefined,
+      isFree: v.chapter.isFree
+    }))
+  }), [course.id, course.title, videoPlaylist])
+  
+  const sidebarCurrentChapter = currentChapter ? {
+    id: String(currentChapter.id),
+    title: currentChapter.title,
+    videoId: currentChapter.videoId || undefined,
+    duration: typeof currentChapter.duration === 'number' ? currentChapter.duration : undefined,
+    isFree: currentChapter.isFree
+  } : null
 
   // Calculate course stats for display in sidebar
-  const courseStats = useMemo(
-    () => ({
-      completedCount: completedChapters?.length || 0,
-      totalChapters: videoPlaylist.length,
-      progressPercentage:
-        videoPlaylist.length > 0 ? Math.round(((completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
-    }),
-    [completedChapters, videoPlaylist.length],
-  )
+  const courseStats = useMemo(() => ({
+    completedCount: completedChapters?.length || 0,
+    totalChapters: videoPlaylist.length,
+    progressPercentage: videoPlaylist.length > 0 
+      ? Math.round(((completedChapters?.length || 0) / videoPlaylist.length) * 100) 
+      : 0
+  }), [completedChapters, videoPlaylist.length])
 
   // Define video progress tracking functions
   const {
@@ -568,12 +581,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     },
   })
 
-  const handleVideoProgress = useCallback(
-    (state: { played: number; playedSeconds: number }) => {
-      trackedHandleVideoProgress(state)
-    },
-    [trackedHandleVideoProgress],
-  )
+  const handleVideoProgress = useCallback((state: { played: number, playedSeconds: number }) => {
+    trackedHandleVideoProgress(state)
+  }, [trackedHandleVideoProgress])
 
   const handleVideoEnded = useCallback(() => {
     trackedHandleVideoEnd()
@@ -610,13 +620,16 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             >
               <Lock className="h-10 w-10 text-primary" />
             </motion.div>
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
               <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
                 Unlock this lesson
               </h3>
               <p className="text-muted-foreground mb-8 leading-relaxed">
-                The first two chapters (including summary and quiz) are free. Upgrade your plan to access all remaining
-                lessons and premium features.
+                The first two chapters (including summary and quiz) are free. Upgrade your plan to access all remaining lessons and premium features.
               </p>
             </motion.div>
             <motion.div
@@ -625,25 +638,25 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
               transition={{ delay: 0.3 }}
               className="space-y-3"
             >
-              <Button
-                onClick={() => (window.location.href = "/dashboard/subscription")}
-                className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200"
+              <Button 
+                onClick={() => (window.location.href = "/dashboard/subscription")} 
+                className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200" 
                 size="lg"
               >
                 <Zap className="h-4 w-4 mr-2" />
                 Upgrade Now
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => (window.location.href = "/api/auth/signin")}
+              <Button 
+                variant="outline" 
+                onClick={() => (window.location.href = "/api/auth/signin")} 
                 className="w-full hover:bg-muted/50 transition-colors"
               >
                 <UserIcon className="h-4 w-4 mr-2" />
                 Sign In
               </Button>
-              <Button
-                variant="ghost"
-                onClick={() => setShowAuthPrompt(false)}
+              <Button 
+                variant="ghost" 
+                onClick={() => setShowAuthPrompt(false)} 
                 className="w-full text-muted-foreground hover:text-foreground"
               >
                 Back to Course
@@ -657,16 +670,17 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
   // Regular content with improved layout and visual hierarchy
   const regularContent = (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/5">
-      <motion.header
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+      {/* Enhanced sticky header with better visual hierarchy */}
+      <motion.header 
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
         className={cn(
-          "sticky top-0 z-50 transition-all duration-300 border-b backdrop-blur-lg",
-          headerCompact
-            ? "bg-background/95 py-3 shadow-lg border-border/50"
-            : "bg-background/90 py-4 shadow-md border-border/30",
+          "sticky top-0 z-50 transition-all duration-300 border-b backdrop-blur-md", 
+          headerCompact 
+            ? "bg-background/90 py-2 shadow-lg border-border/40" 
+            : "bg-background/80 py-4 shadow-sm border-border/20"
         )}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -674,45 +688,41 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             {/* Course info section */}
             <div className="flex items-center gap-4 min-w-0 flex-1">
               <div className="min-w-0 flex-shrink">
-                <motion.h1
+                <motion.h1 
                   layout
                   className={cn(
                     "font-bold truncate transition-all duration-300",
-                    headerCompact ? "text-lg" : "text-xl",
+                    headerCompact ? "text-lg" : "text-xl"
                   )}
                   suppressHydrationWarning
                 >
                   {course.title}
                 </motion.h1>
-                <motion.div
+                <motion.div 
                   layout
-                  className="text-sm text-muted-foreground hidden sm:block truncate"
+                  className="text-sm text-muted-foreground hidden sm:block truncate" 
                   suppressHydrationWarning
                 >
-                  {mounted && currentChapter?.title ? currentChapter.title : "Select a chapter to begin"}
+                  {mounted && currentChapter?.title ? currentChapter.title : 'Select a chapter to begin'}
                 </motion.div>
               </div>
 
+              {/* Progress section - enhanced with better colors */}
               <div className="hidden lg:flex items-center gap-4 ml-6">
-                <div className="bg-gradient-to-r from-muted/20 to-muted/30 rounded-full px-4 py-2 border border-border/20 backdrop-blur-sm">
+                <div className="bg-muted/30 rounded-full px-3 py-1 border border-border/20">
                   <div className="text-xs font-medium text-foreground">
-                    {mounted
-                      ? `${courseStats.completedCount}/${courseStats.totalChapters}`
-                      : `0/${courseStats.totalChapters}`}{" "}
-                    completed
+                    {mounted ? `${courseStats.completedCount}/${courseStats.totalChapters}` : `0/${courseStats.totalChapters}`} completed
                   </div>
                 </div>
-                <div className="w-32 sm:w-48 relative">
-                  <Progress value={mounted ? courseStats.progressPercentage : 0} className="h-2.5 bg-muted/30" />
-                  <motion.div
-                    className="absolute inset-0 h-2.5 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full opacity-0"
-                    animate={{ opacity: mounted && courseStats.progressPercentage > 0 ? [0, 0.3, 0] : 0 }}
-                    transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+                <div className="w-32 sm:w-48">
+                  <Progress 
+                    value={mounted ? courseStats.progressPercentage : 0} 
+                    className="h-2 bg-muted/30" 
                   />
                 </div>
-                <Badge
-                  variant="secondary"
-                  className="bg-gradient-to-r from-primary/10 to-primary/20 text-primary border-primary/20 font-medium shadow-sm"
+                <Badge 
+                  variant="secondary" 
+                  className="bg-primary/10 text-primary border-primary/20 font-medium"
                   suppressHydrationWarning
                 >
                   <BarChart3 className="h-3 w-3 mr-1" />
@@ -727,29 +737,34 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="hidden xl:flex text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200"
+                className="hidden xl:flex text-muted-foreground hover:text-foreground"
               >
-                <motion.div animate={{ rotate: sidebarCollapsed ? 0 : 180 }} transition={{ duration: 0.2 }}>
-                  {sidebarCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                </motion.div>
+                {sidebarCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
               </Button>
-              <ActionButtons slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
+              <ActionButtons 
+                slug={course.slug} 
+                isOwner={isOwner} 
+                variant="compact" 
+                title={course.title} 
+              />
             </div>
           </div>
 
           {/* Mobile progress bar */}
-          <motion.div layout className="lg:hidden mt-3 flex items-center gap-3" suppressHydrationWarning>
-            <div className="flex-1 relative">
-              <Progress value={mounted ? courseStats.progressPercentage : 0} className="h-2.5 bg-muted/30" />
-              <motion.div
-                className="absolute inset-0 h-2.5 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full opacity-0"
-                animate={{ opacity: mounted && courseStats.progressPercentage > 0 ? [0, 0.3, 0] : 0 }}
-                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+          <motion.div 
+            layout
+            className="lg:hidden mt-3 flex items-center gap-3"
+            suppressHydrationWarning
+          >
+            <div className="flex-1">
+              <Progress 
+                value={mounted ? courseStats.progressPercentage : 0} 
+                className="h-2 bg-muted/30" 
               />
             </div>
-            <Badge
-              variant="secondary"
-              className="bg-gradient-to-r from-primary/10 to-primary/20 text-primary border-primary/20 text-xs font-medium"
+            <Badge 
+              variant="secondary" 
+              className="bg-primary/10 text-primary border-primary/20 text-xs"
             >
               {mounted ? courseStats.progressPercentage : 0}%
             </Badge>
@@ -767,7 +782,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-b border-blue-200/50 dark:border-blue-800/50"
           >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <VideoGenerationSection
+              <VideoGenerationSection 
                 course={course}
                 onVideoGenerated={(chapterId, videoId) => {
                   console.log(`Video generated for chapter ${chapterId}: ${videoId}`)
@@ -806,48 +821,51 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
       {/* Main content area */}
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div
-            className={cn(
-              "grid gap-10 transition-all duration-300",
-              sidebarCollapsed || isPiPActive ? "grid-cols-1" : "grid-cols-1 xl:grid-cols-[1fr_440px]",
-            )}
-          >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className={cn(
+            "grid gap-6 transition-all duration-300",
+            sidebarCollapsed || isPiPActive 
+              ? "grid-cols-1" 
+              : "grid-cols-1 xl:grid-cols-[1fr_400px]"
+          )}>
             {/* Left column: Video and content */}
-            <motion.div layout transition={{ duration: 0.3, ease: "easeInOut" }} className="space-y-10">
+            <motion.div 
+              layout
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="space-y-6"
+            >
+              {/* Video player section with enhanced styling */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
                 className="relative"
               >
-                <Card className="overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-background via-background/98 to-muted/20 backdrop-blur-sm ring-1 ring-border/20">
-                  <div className="aspect-video bg-gradient-to-br from-slate-900 via-slate-800 to-black relative overflow-hidden rounded-lg">
+                <Card className="overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-background to-muted/20">
+                  <div className="aspect-video bg-black relative overflow-hidden">
                     {isVideoLoading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-black/95 via-black/90 to-black/95 backdrop-blur-sm z-10">
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-10">
                         <motion.div
                           animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                          className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full shadow-lg"
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full"
                         />
                       </div>
                     )}
-                    <VideoPlayer
-                      youtubeVideoId={currentVideoId || ""}
+                    <VideoPlayer 
+                      youtubeVideoId={currentVideoId || ''}
                       chapterId={currentChapter?.id?.toString()}
-                      chapterTitle={currentChapter?.title || ""}
+                      chapterTitle={currentChapter?.title || ''}
                       bookmarks={sanitizedBookmarkItems}
                       onProgress={handleVideoProgress}
                       onEnded={handleVideoEnded}
                       onVideoLoad={handleVideoLoad}
                       onPlayerReady={handlePlayerReady}
                       onPictureInPictureToggle={handlePIPToggle}
-                      initialSeekSeconds={(() => {
+                      initialSeekSeconds={(function(){
                         try {
-                          if (
-                            courseProgress?.videoProgress?.playedSeconds &&
-                            String(courseProgress.videoProgress.currentChapterId) === String(currentChapter?.id)
-                          ) {
+                          if (courseProgress?.videoProgress?.playedSeconds && 
+                              String(courseProgress.videoProgress.currentChapterId) === String(currentChapter?.id)) {
                             const ts = Number(courseProgress.videoProgress.playedSeconds)
                             if (!isNaN(ts) && ts > 0) return ts
                           }
@@ -868,14 +886,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                 </Card>
               </motion.div>
 
+              {/* Course details tabs - Enhanced with section styling */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
               >
-                <Card className="border-0 shadow-xl bg-gradient-to-br from-card via-card/98 to-card/95 backdrop-blur-sm overflow-hidden ring-1 ring-border/10">
-                  <div className="bg-gradient-to-r from-primary/8 via-primary/12 to-secondary/8 border-b border-border/30 p-2">
-                    <div className="bg-background/95 backdrop-blur-sm rounded-xl p-2 shadow-inner">
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/50 backdrop-blur-sm">
+                  <div className="bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border/20 px-1 py-1">
+                    <div className="bg-background/80 backdrop-blur-sm rounded-lg p-1">
                       <MemoizedCourseDetailsTabs
                         course={course}
                         currentChapter={currentChapter}
@@ -887,18 +906,20 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                 </Card>
               </motion.div>
 
+              {/* Reviews Section - Enhanced styling */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
-                className="bg-gradient-to-br from-emerald-50/40 via-teal-50/30 to-emerald-50/40 dark:from-emerald-950/15 dark:via-teal-950/10 dark:to-emerald-950/15 rounded-2xl border border-emerald-200/40 dark:border-emerald-800/40 p-2 shadow-xl"
+                className="bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/50 p-1"
               >
-                <div className="bg-background/95 backdrop-blur-sm rounded-xl overflow-hidden shadow-inner">
+                <div className="bg-background/80 backdrop-blur-sm rounded-lg">
                   <ReviewsSection slug={course.slug} />
                 </div>
               </motion.div>
             </motion.div>
 
+            {/* Right column: Playlist sidebar (desktop) */}
             <AnimatePresence mode="wait">
               {!sidebarCollapsed && !isPiPActive && (
                 <motion.div
@@ -906,55 +927,47 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.3 }}
-                  className="hidden xl:block space-y-8"
+                  className="hidden xl:block space-y-4"
                 >
-                  <Card className="border-0 shadow-xl bg-gradient-to-br from-background via-background/98 to-muted/15 backdrop-blur-sm ring-1 ring-border/20">
-                    <CardHeader className="pb-4 pt-6 px-6">
+                  {/* Sidebar header */}
+                  <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20">
+                    <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-xl flex items-center gap-3">
-                          <motion.div
-                            animate={{ rotate: [0, 8, -8, 0] }}
-                            transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-                            className="p-2 bg-gradient-to-br from-primary/15 to-primary/25 rounded-xl"
-                          >
-                            <BookOpen className="h-6 w-6 text-primary" />
-                          </motion.div>
-                          <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                            Course Content
-                          </span>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <BookOpen className="h-5 w-5 text-primary" />
+                          Course Content
                         </CardTitle>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setSidebarCollapsed(true)}
-                          className="text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-200 rounded-xl"
+                          className="text-muted-foreground hover:text-foreground"
                         >
-                          <X className="h-5 w-5" />
+                          <X className="h-4 w-4" />
                         </Button>
                       </div>
-                      <CardDescription className="flex items-center gap-3 mt-2">
-                        <div className="flex items-center gap-2 text-sm bg-gradient-to-r from-emerald-100/80 to-emerald-200/60 dark:from-emerald-900/30 dark:to-emerald-800/20 px-3 py-1.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/30">
-                          <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                          <span className="font-medium text-emerald-700 dark:text-emerald-300">
-                            {courseStats.completedCount} completed
-                          </span>
+                      <CardDescription className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 text-xs">
+                          <CheckCircle className="h-3 w-3 text-emerald-500" />
+                          {courseStats.completedCount} completed
                         </div>
                         <div className="text-muted-foreground">•</div>
-                        <div className="text-sm text-muted-foreground font-medium">
+                        <div className="text-xs text-muted-foreground">
                           {courseStats.totalChapters} total
                         </div>
                       </CardDescription>
                     </CardHeader>
                   </Card>
 
-                  <div className="bg-gradient-to-br from-card via-card/98 to-card/95 rounded-2xl border-0 shadow-2xl backdrop-blur-sm overflow-hidden ring-1 ring-border/10">
+                  {/* Playlist content */}
+                  <div className="bg-gradient-to-br from-background to-muted/10 rounded-xl border border-border/20 shadow-lg">
                     <PlaylistSidebar
-                      course={course}
-                      currentChapter={currentChapter}
+                      course={sidebarCourse}
+                      currentChapter={sidebarCurrentChapter}
                       courseId={course.id.toString()}
-                      currentVideoId={currentVideoId || ""}
-                      isAuthenticated={Boolean(user)}
-                      completedChapters={completedChapters}
+                      currentVideoId={currentVideoId || ''}
+                      isAuthenticated={!!user}
+                      completedChapters={completedChapters.map(String)}
                       formatDuration={formatDuration}
                       videoDurations={videoDurations}
                       courseStats={courseStats}
@@ -976,7 +989,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
         course={sidebarCourse}
         currentChapter={sidebarCurrentChapter}
         courseId={course.id.toString()}
-        currentVideoId={currentVideoId || ""}
+        currentVideoId={currentVideoId || ''}
         isAuthenticated={!!user}
         completedChapters={completedChapters.map(String)}
         formatDuration={formatDuration}
@@ -1001,7 +1014,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             >
               <motion.div
                 animate={{ rotate: 360 }}
-                transition={{ duration: 8, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
               />
               <Zap className="h-4 w-4 mr-2 group-hover:animate-pulse" />
@@ -1025,9 +1038,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       {process.env.NODE_ENV !== "production" && (
         <div className="fixed bottom-4 left-4 z-50">
           <VideoDebug
-            videoId={typeof currentVideoId === "string" ? currentVideoId : ""}
+            videoId={typeof currentVideoId === 'string' ? currentVideoId : ''}
             courseId={course.id}
-            chapterId={currentChapter?.id ? String(currentChapter.id) : ""}
+            chapterId={currentChapter?.id ? String(currentChapter.id) : ''}
           />
         </div>
       )}
@@ -1038,4 +1051,4 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   return showAuthPrompt ? authPromptContent : regularContent
 }
 
-export default MainContent
+export default React.memo(MainContent)
