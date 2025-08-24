@@ -3,6 +3,16 @@ import { getAuthSession } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import { QuizType } from "@/app/types/quiz-types"
 
+// Guarded debug logger: only emits in non-production environments
+const logDebug = (...args: unknown[]) => {
+  if (process.env.NODE_ENV !== 'production') {
+    // Use console.debug so production consoles that filter info won't show these by default
+    // Keep usage minimal to avoid leaking sensitive data
+    // eslint-disable-next-line no-console
+    console.debug(...(args as any))
+  }
+}
+
 // Define proper types for quiz answers
 export interface QuizAnswer {
   questionId: string | number
@@ -153,8 +163,8 @@ function validateAnswersFormat(
     }
   }
 
-  // Log first answer for debugging
-  console.log(`Validating ${type} answer format. First answer:`, JSON.stringify(answers[0], null, 2))
+  // Log first answer for debugging (development only)
+  logDebug(`Validating ${type} answer format. First answer:`, JSON.stringify(answers[0], null, 2))
 
   // For code and MCQ quizzes, we're more lenient with validation
   if (type === "code" || type === "mcq") {
@@ -253,7 +263,7 @@ function calculateAccuracy(answers: QuizAnswerUnion[], totalQuestions: number): 
 
 // Fixed calculatePercentageScore function
 function calculatePercentageScore(score: number, totalQuestions: number, type: QuizType): number {
-  console.log(`Calculating percentage score: score=${score}, totalQuestions=${totalQuestions}, type=${type}`)
+  logDebug(`Calculating percentage score: score=${score}, totalQuestions=${totalQuestions}, type=${type}`)
   
   // Ensure we have valid inputs
   if (totalQuestions <= 0) {
@@ -275,7 +285,7 @@ function calculatePercentageScore(score: number, totalQuestions: number, type: Q
 // Separate function to handle course progress updates (outside main transaction)
 async function updateCourseProgress(userId: string, quiz: any, totalTime: number) {
   try {
-    console.log(`Looking for course association for quiz: ${quiz.id}, slug: ${quiz.slug}`);
+  logDebug(`Looking for course association for quiz: ${quiz.id}, slug: ${quiz.slug}`);
     
     // Try to find a course quiz linked to this user quiz
     // The connection between userQuiz and courseQuiz is based on matching content
@@ -305,7 +315,7 @@ async function updateCourseProgress(userId: string, quiz: any, totalTime: number
       }
     });
     
-    console.log(courseQuiz ? 
+    logDebug(courseQuiz ? 
       `Found associated course quiz: ${JSON.stringify({
         chapterId: courseQuiz.chapterId,
         questionId: courseQuiz.id
@@ -319,11 +329,11 @@ async function updateCourseProgress(userId: string, quiz: any, totalTime: number
         const courseId = chapter.unit?.courseId;
         
         if (!courseId) {
-          console.log(`Missing course info for chapter ${chapter.id}`);
+          logDebug(`Missing course info for chapter ${chapter.id}`);
           return;
         }
         
-        console.log(`Found associated chapter ${chapter.id} for course ${courseId}`);
+          logDebug(`Found associated chapter ${chapter.id} for course ${courseId}`);
         
         // Mark the chapter as completed
         await tx.chapter.update({
@@ -697,7 +707,7 @@ async function processQuestionAnswers(
 
     // Continue even if some questions fail
     const results = await Promise.allSettled(questionPromises);
-    console.log(`Processed ${results.length} questions, ${results.filter(r => r.status === 'fulfilled').length} successful`);
+  logDebug(`Processed ${results.length} questions, ${results.filter(r => r.status === 'fulfilled').length} successful`);
     
     return results;
   } catch (error) {
@@ -745,7 +755,7 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
     let body: Record<string, any>
     try {
       const text = await request.text()
-      console.log("Raw request body:", text)
+  logDebug("Raw request body:", text)
 
       try {
         body = JSON.parse(text) as Record<string, any>
@@ -770,8 +780,8 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
       )
     }
 
-    // Add debug logging
-    console.log("Received quiz submission:", {
+    // Add debug logging (development only)
+    logDebug("Received quiz submission:", {
       quizId: body?.quizId,
       type: body?.type,
       answersCount: body?.answers?.length,
@@ -806,8 +816,8 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
       )
     }
 
-    // Add debug logging for the quizId
-    console.log("Quiz submission - quizId value:", submission.quizId, "type:", typeof submission.quizId);
+  // Add debug logging for the quizId (development only)
+  logDebug("Quiz submission - quizId value:", submission.quizId, "type:", typeof submission.quizId);
     
     // Attempt to get the quiz, with better error handling for invalid IDs
     let quiz;
@@ -836,7 +846,7 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
     const percentageScore = calculatePercentageScore(submission.score, totalQuestions, submission.type)
     const accuracyScore = calculateAccuracy(submission.answers, totalQuestions)
 
-    console.log('Quiz calculation results:', {
+    logDebug('Quiz calculation results:', {
       totalQuestions,
       originalScore: submission.score,
       percentageScore,
@@ -847,7 +857,7 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
     try {
       const result = await retryTransaction(() => processQuizSubmission(userId, submission, quiz, percentageScore, accuracyScore))
 
-      // Ensure all required fields are included in the response
+  // Ensure all required fields are included in the response
       return NextResponse.json({
         success: true,
         result: {

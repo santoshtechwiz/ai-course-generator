@@ -335,8 +335,8 @@ export default function MainNavbar() {
   
   return (
     <>
-      {/* Skip to content for accessibility */}
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[1000] focus:bg-background focus:border focus:rounded px-3 py-1 shadow">
+  {/* Skip to content for accessibility */}
+  <a href="#main-content" className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-[1000] focus-visible:bg-background focus-visible:border focus-visible:rounded px-3 py-1 shadow">
         Skip to content
       </a>
       <MotionConfig reducedMotion={prefersReducedMotion ? "always" : "never"}>
@@ -382,8 +382,15 @@ export default function MainNavbar() {
           {/* Right section */}
           <motion.div className="hidden md:flex items-center gap-3" variants={itemVariants}>
             {CreditsDisplay}
-            <Button variant="ghost" size="icon" aria-label="Open search" aria-expanded={isSearchModalOpen} onClick={handleSearchOpen}
-              className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Open search (Press / or Ctrl/Cmd+K)"
+              title="Search — press / or Ctrl/Cmd+K"
+              aria-expanded={isSearchModalOpen}
+              onClick={handleSearchOpen}
+              className="p-2 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
+            >
               <Search className="h-5 w-5" />
             </Button>
             <ThemeToggle />
@@ -406,14 +413,20 @@ export default function MainNavbar() {
             </Button>
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Open menu" onClick={handleMobileMenuToggle}
-                  className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Open menu"
+                  aria-controls="main-mobile-menu"
+                  onClick={handleMobileMenuToggle}
+                  className="p-2 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
+                >
                   {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                 </Button>
               </SheetTrigger>
               <AnimatePresence>
                 {isMobileMenuOpen && (
-                  <SheetContent side="right" className="w-80 p-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-l border-border/60 ai-glass dark:ai-glass-dark">
+                  <SheetContent id="main-mobile-menu" side="right" className="w-80 p-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-l border-border/60 ai-glass dark:ai-glass-dark">
                     <motion.div initial="hidden" animate="visible" exit="exit" variants={mobileMenuVariants} className="h-full flex flex-col">
                       <div className="p-4 border-b border-border/60">
                         <div className="flex items-center justify-between">
@@ -430,7 +443,7 @@ export default function MainNavbar() {
                             <Button variant="outline" className="w-full">Account</Button>
                           </UserMenu>
                         ) : (
-                          <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleSignIn}>Sign in</Button>
+                          <Button className="btn btn-primary w-full" onClick={handleSignIn}>Sign in</Button>
                         )}
                       </div>
                     </motion.div>

@@ -367,9 +367,10 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
     }
 
     // Initialize completed chapters
-    if (session?.user?.id) {
-      progressApi.loadCompletedChapters(session.user.id)
-    }
+    // TODO: Implement completed chapters loading if needed
+    // if (session?.user?.id) {
+    //   progressApi.loadCompletedChapters(session.user.id)
+    // }
 
     return () => {
       setPlayerState(prev => ({ ...prev, isMounted: false }))

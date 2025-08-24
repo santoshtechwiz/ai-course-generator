@@ -36,7 +36,7 @@ export default function CourseLayout({
   children: React.ReactNode
 }) {
   return (
-    <ModuleLayout variant="default" suspense={true} className="course-module-layout">
+    <ModuleLayout variant="default" className="course-module-layout">
       {children}
     </ModuleLayout>
   )

@@ -4,13 +4,14 @@ import { getAuthSession } from "@/lib/auth"
 import { getQuizzes, type QuizListItem } from "@/app/actions/getQuizes"
 
 
-import ClientOnly from "@/components/ClientOnly"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper"
-import { BookOpen, Sparkles, Zap, Target } from "lucide-react"
 import { JsonLD } from "@/lib/seo"
 import { generateMetadata } from "@/lib/seo"
 import QuizzesClientClient from "./components/QuizzesClientClient"
+
+export const dynamic = "force-dynamic" // Disable caching for this page
+
 
 export const metadata: Metadata = generateMetadata({
   title: "Interactive Quizzes – Master Your Knowledge | CourseAI",
@@ -73,33 +74,7 @@ const Page = async () => {
         </div>
 
         <PageHeader
-          title={
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="p-4 bg-gradient-to-br from-primary to-primary/80 rounded-2xl text-primary-foreground shadow-lg">
-                  <BookOpen className="h-8 w-8" />
-                </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-amber-400 to-amber-500 rounded-full animate-bounce">
-                  <Sparkles className="h-3 w-3 text-white m-0.5" />
-                </div>
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  Explore Quizzes
-                </h1>
-                <div className="flex items-center gap-3 mt-2">
-                  <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
-                    <Zap className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium text-primary">Interactive</span>
-                  </div>
-                  <div className="flex items-center gap-2 px-3 py-1 bg-accent/10 rounded-full border border-accent/20">
-                    <Target className="h-4 w-4 text-accent-foreground" />
-                    <span className="text-sm font-medium text-accent-foreground">Skill Building</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          }
+          title="Explore Quizzes"
           description="Test your knowledge with interactive quizzes designed to boost your learning"
         />
 
@@ -143,7 +118,7 @@ const Page = async () => {
           }}
         />
 
-        <Suspense fallback={<SuspenseGlobalFallback message="Loading your amazing quizzes..." />}>
+        <Suspense fallback={<SuspenseGlobalFallback message="Loading quizzes..." />}>
           <QuizzesClientClient initialQuizzesData={initialQuizzesData} userId={userId} />
         </Suspense>
       </div>

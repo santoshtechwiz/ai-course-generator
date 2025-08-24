@@ -34,14 +34,29 @@ const DialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
+  <DialogOverlay />
+  <DialogPrimitive.Content
       ref={ref}
       className={cn(
         "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background/95 supports-[backdrop-filter]:bg-background/80 backdrop-blur-xl p-6 shadow-xl duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-xl",
         className
       )}
       {...props}
+      // Prevent aria-hidden conflicts when an element outside the dialog is focused.
+      // Radix will call this when auto-focusing; we blur any currently focused element first.
+      onOpenAutoFocus={(event) => {
+        try {
+          const active = (document && document.activeElement) as HTMLElement | null
+          if (active && typeof active.blur === 'function') {
+            active.blur()
+          }
+        } catch (e) {
+          // ignore
+        }
+        // If caller passed their own handler, call it
+        // @ts-ignore
+        if (typeof props.onOpenAutoFocus === 'function') props.onOpenAutoFocus(event)
+      }}
     >
       {children}
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-md p-1.5 bg-background/60 backdrop-blur hover:bg-background/80 transition-colors opacity-90 ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
