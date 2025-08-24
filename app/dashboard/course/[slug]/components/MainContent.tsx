@@ -6,31 +6,13 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { selectCourseProgressById } from "@/store/slices/courseProgress-slice"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
-import { 
-  Lock, 
-  User as UserIcon, 
-  Play, 
-  ChevronLeft, 
-  Star,
-  Clock,
-  Users,
-  GraduationCap,
-  Calendar,
-  CheckCircle 
-} from "lucide-react"
 import { store } from "@/store"
 import { setCurrentVideoApi } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
-import CourseDetailsTabs, { AccessLevels } from "./CourseDetailsTabs"
-import { formatDuration } from "../utils/formatUtils"
+import { AccessLevels } from "./CourseDetailsTabs"
 import { VideoDebug } from "./video/components/VideoDebug"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { AnimatePresence, motion } from "framer-motion"
+import { AnimatePresence } from "framer-motion"
 import { useAuth } from "@/modules/auth"
-import ActionButtons from "./ActionButtons"
-import ReviewsSection from "./ReviewsSection"
 import { cn } from "@/lib/utils"
 import type { BookmarkData } from "./video/types"
 import { fetchRelatedCourses, fetchQuizSuggestions } from "@/services/recommendationsService"
@@ -42,14 +24,19 @@ import { useVideoState } from "./video/hooks/useVideoState"
 import { migratedStorage } from "@/lib/storage"
 import VideoGenerationSection from "./VideoGenerationSection"
 import { useVideoProgressTracker } from "@/hooks/useVideoProgressTracker"
-import MobilePlaylistCount from "@/components/course/MobilePlaylistCount"
+import { getChapterIdString, isValidChapter } from "../utils/courseUtils"
 
-// Use existing components
+// Extracted components
 import CertificateModal from "./CertificateModal"
-// Import sidebar components
 import PlaylistSidebar from "./PlaylistSidebar"
 import MobilePlaylistOverlay from "./MobilePlaylistOverlay"
-import VideoPlayer from "./video/components/VideoPlayer"
+import { CourseHeader } from "./CourseHeader"
+import MobilePlaylistToggle from "./MobilePlaylistToggle"
+import AuthPrompt from "./AuthPrompt"
+import MainContentGrid from "./MainContentGrid"
+import ActionButtons from "./ActionButtons"
+import ReviewsSection from "./ReviewsSection"
+import CourseErrorBoundary from "./CourseErrorBoundary"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -57,15 +44,8 @@ interface ModernCoursePageProps {
   isFullscreen?: boolean
 }
 
-// Helper function to validate chapter
-function validateChapter(chapter: any): boolean {
-  return Boolean(
-    chapter &&
-      typeof chapter === "object" &&
-      chapter.id && 
-      (typeof chapter.id === "string" || typeof chapter.id === "number") // Allow number IDs too
-  );
-}
+// Helper function to validate chapter - replaced with utility
+// Use isValidChapter from courseUtils instead
 
 // CourseDetailsTabs is still memoized for better performance
 const MemoizedCourseDetailsTabs = React.memo(CourseDetailsTabs)
@@ -82,6 +62,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Local state - simplified from original
   const [showCertificate, setShowCertificate] = useState(false)
+  const [certificateShown, setCertificateShown] = useState(false) // Track if certificate was already shown
   const [relatedCourses, setRelatedCourses] = useState<RelatedCourse[]>([])
   const [personalizedRecommendations, setPersonalizedRecommendations] = useState<PersonalizedRecommendation[]>([])
   const [quizSuggestions, setQuizSuggestions] = useState<QuizSuggestion[]>([])
@@ -100,6 +81,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Mark when client is mounted to safely render client-only derived data (prevents hydration mismatch)
   useEffect(() => {
     setMounted(true)
+    
+    // Add error boundary for blank refresh issue
+    const handleError = (error: ErrorEvent) => {
+      console.error('Course page error:', error)
+      // Optionally redirect or show error state
+    }
+    
+    window.addEventListener('error', handleError)
+    return () => window.removeEventListener('error', handleError)
   }, [])
   const isOwner = user?.id === course.userId
 
@@ -238,14 +228,19 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Certificate handler (moved up to avoid TDZ when referenced by other callbacks)
   const handleCertificateClick = useCallback(() => {
+    // Only show certificate once per session to prevent duplicates
+    if (certificateShown) return
+    
     const courseProgress = selectCourseProgressById(store.getState(), String(course.id))
     if (courseProgress?.videoProgress?.isCompleted) {
       setShowCertificate(true)
+      setCertificateShown(true)
     } else {
       // Allow manual access if course not completed yet (for testing/admin)
       setShowCertificate(true)
+      setCertificateShown(true)
     }
-  }, [course.id])
+  }, [course.id, certificateShown])
 
   // Compute next video details for autoplay/navigation
   const nextVideoEntry = useMemo(() => {
@@ -344,7 +339,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
       console.log(`[MainContent] Initialized with video: ${targetVideo.videoId}, course: ${course.id}`)
     } else {
-      console.error("Failed to select a video")
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to select a video")
+      }
     }
   }, [course.id, initialChapterId, videoPlaylist, dispatch, videoStateStore, currentVideoId, progress, courseProgress])
 
@@ -412,7 +409,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Handle chapter complete callback
   const handleChapterComplete = useCallback((chapterId: string) => {
-    console.log(`Chapter completed: ${chapterId}`)
+    // Chapter completion logic handled by the progress tracker
   }, [])
 
   // Enhanced PIP handling
@@ -473,8 +470,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           : videoPlaylist.find(v => v.chapter.id === chapter.id)?.chapter
         
         // First, check if the chapter actually exists and is valid
-        if (!validateChapter(safeChapter)) {
-          console.error("Invalid chapter selected:", safeChapter)
+        if (!isValidChapter(safeChapter)) {
+          if (process.env.NODE_ENV === "development") {
+            console.error("Invalid chapter selected:", safeChapter)
+          }
           toast({
             title: "Error",
             description: "Invalid chapter selected. Please try another chapter.",
@@ -495,7 +494,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         
         // Check if the chapter has a videoId - this is critical
         if (!videoId) {
-          console.error(`Chapter has no videoId: ${safeChapter.id} - ${safeChapter.title}`)
+          if (process.env.NODE_ENV === "development") {
+            console.error(`Chapter has no videoId: ${safeChapter.id} - ${safeChapter.title}`)
+          }
           toast({
             title: "Video Unavailable",
             description: "This chapter doesn't have a video available.",
@@ -510,7 +511,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         // Update Zustand store with both videoId and courseId
         videoStateStore.getState().setCurrentVideo(videoId, course.id)
 
-        console.log(`[MainContent] Selected chapter: ${safeChapter.title}, videoId: ${videoId}, id: ${safeChapter.id}`)
+        if (process.env.NODE_ENV === "development") {
+          console.log(`[MainContent] Selected chapter: ${safeChapter.title}, videoId: ${videoId}, id: ${safeChapter.id}`)
+        }
 
         setMobilePlaylistOpen(false)
         setIsVideoLoading(true)
@@ -653,34 +656,18 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     }
   }, [userSubscription, user])
 
-  // Auth prompt content
-  const authPromptContent = (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="max-w-md w-full">
-        <CardContent className="p-6 text-center">
-          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mx-auto mb-4">
-            <Lock className="h-8 w-8 text-primary" />
-          </div>
-          <h3 className="text-xl font-semibold mb-2">Unlock this lesson</h3>
-          <p className="text-muted-foreground mb-6">
-            The first two chapters (including summary and quiz) are free. Upgrade your plan to access all remaining lessons.
-          </p>
-          <div className="space-y-3">
-            <Button onClick={() => (window.location.href = "/dashboard/subscription")} className="w-full" size="lg">
-              Upgrade Now
-            </Button>
-            <Button variant="outline" onClick={() => (window.location.href = "/api/auth/signin")} className="w-full">
-              <UserIcon className="h-4 w-4 mr-2" />
-              Sign In
-            </Button>
-            <Button variant="ghost" onClick={() => setShowAuthPrompt(false)} className="w-full">
-              Back to Course
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
+  // Auth prompt handlers
+  const handleUpgrade = useCallback(() => {
+    window.location.href = "/dashboard/subscription"
+  }, [])
+
+  const handleSignIn = useCallback(() => {
+    window.location.href = "/api/auth/signin"
+  }, [])
+
+  const handleBackToCourse = useCallback(() => {
+    setShowAuthPrompt(false)
+  }, [])
 
   // Regular content
   const regularContent = (
@@ -690,50 +677,38 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         {/* Main content */}
         <main className="flex-1 min-w-0">
           {/* Udemy-like sticky header */}
-          <header className={cn(
-            "w-full sticky top-0 z-50 transition-all shadow-sm border-b", 
-            headerCompact 
-              ? "bg-background/95 backdrop-blur-sm py-2 text-foreground" 
-              : "bg-background py-3 text-foreground"
-          )}>
-            <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-4">
-              <div className={cn("flex items-center gap-4 min-w-0 transition-all", headerCompact ? "text-sm" : "text-base")}> 
-                <div className="flex-shrink-0 min-w-0">
-                  <div className="font-semibold truncate" suppressHydrationWarning>{course.title}</div>
-                  <div 
-                    className="text-xs text-muted-foreground hidden md:block truncate" 
-                    suppressHydrationWarning
-                  >
-                    {mounted && currentChapter?.title ? currentChapter.title : ''}
-                  </div>
-                </div>
-
-                <div className="hidden sm:flex items-center gap-3 ml-4" suppressHydrationWarning>
-                  <div className="text-xs font-medium">
-                    {mounted ? `${courseStats.completedCount}/${courseStats.totalChapters} completed` : `0/${courseStats.totalChapters} completed`}
-                  </div>
-                  <div className="w-48">
-                    <Progress value={mounted ? courseStats.progressPercentage : 0} className="h-2 rounded-full" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3" suppressHydrationWarning>
-                <Badge variant="outline" className="hidden sm:flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3" />
-                  <span>{mounted ? courseStats.progressPercentage : 0}%</span>
-                </Badge>
-                <ActionButtons slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
-              </div>
-            </div>
-          </header>
+          <CourseHeader
+            courseTitle={course.title}
+            chapterTitle={mounted && currentChapter?.title ? currentChapter.title : undefined}
+            isCompact={headerCompact}
+            progress={{
+              completedCount: mounted ? courseStats.completedCount : 0,
+              totalChapters: courseStats.totalChapters,
+              progressPercentage: mounted ? courseStats.progressPercentage : 0
+            }}
+            ratingInfo={{
+              averageRating: 4.8, // TODO: Get from course data
+              ratingCount: 1234 // TODO: Get from course data
+            }}
+            instructor={course.userId} // TODO: Get instructor name
+            actions={
+              <ActionButtons 
+                slug={course.slug} 
+                isOwner={isOwner} 
+                variant="compact" 
+                title={course.title} 
+              />
+            }
+          />
 
           {/* Video Generation Section */}
           {(isOwner || user?.isAdmin) && (
             <VideoGenerationSection 
               course={course}
               onVideoGenerated={(chapterId, videoId) => {
-                console.log(`Video generated for chapter ${chapterId}: ${videoId}`)
+                if (process.env.NODE_ENV === "development") {
+                  console.log(`Video generated for chapter ${chapterId}: ${videoId}`)
+                }
                 // Optionally auto-select the newly generated video
                 if (videoId) {
                   dispatch(setCurrentVideoApi(videoId))
@@ -743,27 +718,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           )}
 
           {/* Mobile playlist toggle */}
-          <div className="mb-4 flex items-center justify-end">
-            <div className="md:hidden w-full">
-              <Button
-                variant="outline"
-                onClick={handleMobilePlaylistToggle}
-                className="w-full bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-background/90 relative overflow-hidden"
-              >
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center">
-                    <ChevronLeft className="h-4 w-4 mr-2" />
-                    <span>Course Content</span>
-                  </div>
-                  <MobilePlaylistCount
-                    currentIndex={currentIndex}
-                    hasCurrentChapter={Boolean(currentChapter)}
-                    total={videoPlaylist.length}
-                  />
-                </div>
-              </Button>
-            </div>
-          </div>
+          <MobilePlaylistToggle
+            onToggle={handleMobilePlaylistToggle}
+            currentIndex={currentIndex}
+            currentChapter={currentChapter}
+            totalVideos={videoPlaylist.length}
+          />
 
           {/* Main grid layout with video player and playlist */}
           <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 xl:max-w-[1400px] mx-auto w-full"> 
@@ -899,7 +859,19 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   )
 
   // Return the correct content based on auth state
-  return showAuthPrompt ? authPromptContent : regularContent
+  return (
+    <CourseErrorBoundary>
+      {showAuthPrompt ? (
+        <AuthPrompt
+          onUpgrade={handleUpgrade}
+          onSignIn={handleSignIn}
+          onBack={handleBackToCourse}
+        />
+      ) : (
+        regularContent
+      )}
+    </CourseErrorBoundary>
+  )
 }
 
 export default React.memo(MainContent)
