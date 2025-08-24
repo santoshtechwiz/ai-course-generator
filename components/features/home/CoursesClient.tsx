@@ -76,15 +76,22 @@ export default function CoursesClient({
     startLoading({ message: 'Loading courses...', useTasks: true, minVisibleMs: 300 })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, refetch, isLoading } = useInfiniteQuery({
     queryKey: ["courses", { search: debouncedSearchQuery, category: selectedCategory, userId, rating: ratingFilter }],
     initialPageParam: 1,
     // Update the queryFn to include ratingFilter in the API call
-  queryFn: async ({ pageParam = 1, signal }) => {
+    queryFn: async ({ pageParam = 1, signal }) => {
+      // Check if component is unmounted or signal is already aborted
+      if (signal?.aborted) {
+        throw new Error('Query was aborted')
+      }
+
       try {
-    // Start loader in task mode if not already active
-    beginTask(`courses-page-${pageParam}`, 1)
+        // Start loader in task mode if not already active
+        beginTask(`courses-page-${pageParam}`, 1)
         setLoadingProgress(20)
+        
         // Build the API URL with proper parameters
         const apiUrl = new URL("/api/course", window.location.origin)
         apiUrl.searchParams.set("page", pageParam.toString())
@@ -113,20 +120,26 @@ export default function CoursesClient({
         apiUrl.searchParams.set("sortOrder", "desc")
 
         setLoadingProgress(50)
-        console.log("Fetching courses from:", apiUrl.toString())
-
-        const controller = new AbortController()
-        const abortHandler = () => controller.abort()
-        if (signal) {
-          if (signal.aborted) controller.abort()
-          else signal.addEventListener('abort', abortHandler)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log("Fetching courses from:", apiUrl.toString())
         }
+
+        // Check again if signal is aborted before making the request
+        if (signal?.aborted) {
+          throw new Error('Request aborted before fetch')
+        }
+
         const response = await fetch(apiUrl.toString(), {
           headers: {
             "Cache-Control": "no-cache",
           },
-          signal: controller.signal,
+          signal: signal, // Use the signal directly from react-query
         })
+
+        // Check if request was aborted during fetch
+        if (signal?.aborted) {
+          throw new Error('Request aborted during fetch')
+        }
 
         setLoadingProgress(80)
 
@@ -136,10 +149,21 @@ export default function CoursesClient({
 
         const data = await response.json()
         setLoadingProgress(100)
-        console.log("Fetched courses data:", data)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log("Fetched courses data:", data)
+        }
         return data
-      } catch (error) {
+      } catch (error: any) {
         setLoadingProgress(0)
+        
+        // Handle abort errors gracefully
+        if (error?.name === 'AbortError' || error?.message?.includes('aborted') || signal?.aborted) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('Request was aborted, this is expected behavior')
+          }
+          throw error // Re-throw to let react-query handle it
+        }
+        
         console.error("Error fetching courses:", error)
         throw error
       } finally {
@@ -151,6 +175,14 @@ export default function CoursesClient({
     },
     refetchOnWindowFocus: false,
     staleTime: 60000, // 1 minute
+    retry: (failureCount, error: any) => {
+      // Don't retry if the error is an abort error
+      if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
+        return false
+      }
+      // Retry up to 3 times for other errors
+      return failureCount < 3
+    },
   })
 
   // Add this after the query definition

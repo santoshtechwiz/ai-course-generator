@@ -132,7 +132,9 @@ export const fetchQuiz = createAsyncThunk(
       if (API_ENDPOINTS.byTypeAndSlug) {
         // Use the unified API pattern
         url = API_ENDPOINTS.byTypeAndSlug(type, slug);
-        console.log(`Using unified API endpoint: ${url}`);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`Using unified API endpoint: ${url}`);
+        }
       } else {
         // Fallback to legacy approach only if unified approach isn't available
         const endpoint = API_ENDPOINTS[type as keyof typeof API_ENDPOINTS];
@@ -140,13 +142,16 @@ export const fetchQuiz = createAsyncThunk(
           return rejectWithValue({ error: `Invalid quiz type: ${type}` });
         }
         url = `${endpoint}/${slug}`;
-        console.log(`Using legacy API endpoint: ${url}`);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`Using legacy API endpoint: ${url}`);
+        }
       }
       
       // Show a deterministic global loader only when performing network request
       const loader = useGlobalLoader.getState()
       try {
-        loader.startLoading({ message: 'Loading quiz...', isBlocking: true, autoProgress: true, minVisibleMs: 200 })
+        // Avoid passing unknown options to loader.startLoading in case API changed
+        loader.startLoading({ message: 'Loading quiz...', isBlocking: true, minVisibleMs: 200 })
       } catch {}
 
       const response = await fetch(url)
@@ -365,13 +370,15 @@ export const submitQuiz = createAsyncThunk(
       const total = questions.length
 
       // Submit to backend API
-      console.log('Submitting quiz to backend:', {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Submitting quiz to backend:', {
         quizId: slug,
         score,
         totalTime: totalTimeSpent,
         type: quizType,
         answersCount: answersForAPI.length
-      })
+        })
+      }
 
       const response = await fetch(`/api/quizzes/${quizType}/${slug}/submit`, {
         method: 'POST',
@@ -397,7 +404,9 @@ export const submitQuiz = createAsyncThunk(
       }
 
       const responseData = await response.json()
-      console.log('Quiz submitted successfully:', responseData)
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Quiz submitted successfully:', responseData)
+      }
 
       // Return client-side calculated results for immediate UI feedback
       const results: QuizResults = {
@@ -445,7 +454,9 @@ export const checkAuthAndLoadResults = createAsyncThunk(
     // Try to fetch saved results from the API
     if (quiz.slug && quiz.quizType) {
       try {
-        console.log('Fetching saved quiz results for:', quiz.slug, quiz.quizType)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('Fetching saved quiz results for:', quiz.slug, quiz.quizType)
+        }
         
         // First, try to get the quiz data to check if it's been completed
         const quizResponse = await fetch(`/api/quizzes/${quiz.quizType}/${quiz.slug}`)
@@ -469,14 +480,20 @@ export const checkAuthAndLoadResults = createAsyncThunk(
               accuracy: 0, // We don't have this saved
             }
             
-            console.log('Found saved quiz results:', savedResults)
+            if (process.env.NODE_ENV !== 'production') {
+              console.log('Found saved quiz results:', savedResults)
+            }
             return savedResults
           } else {
-            console.log('Quiz not completed yet, no results to load')
+            if (process.env.NODE_ENV !== 'production') {
+              console.log('Quiz not completed yet, no results to load')
+            }
             return rejectWithValue({ error: 'Quiz not completed' })
           }
         } else {
-          console.log('Failed to fetch quiz data:', quizResponse.status)
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('Failed to fetch quiz data:', quizResponse.status)
+          }
           return rejectWithValue({ error: 'Failed to fetch quiz data' })
         }
       } catch (error) {

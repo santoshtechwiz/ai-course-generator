@@ -250,8 +250,8 @@ export const CourseCard = React.memo(
         },
       },
       hover: {
-        y: -8,
-        scale: 1.02,
+        y: -10,
+        scale: 1.03,
         transition: { type: "spring", stiffness: 400, damping: 25 },
       },
     }

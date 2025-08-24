@@ -2,11 +2,10 @@
 
 import React from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { HashLoader } from "react-spinners"
-import { AlertCircle, CheckCircle } from "lucide-react"
-
+import { HashLoader, PulseLoader, ClipLoader } from "react-spinners"
+import { AlertCircle, CheckCircle, X, Loader2, Upload, Route, Database, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useGlobalLoader } from "@/store/loaders/global-loader"
+import { useGlobalLoader, LoaderType } from "@/store/loaders/global-loader"
 
 interface IconProps {
   size?: number
@@ -15,12 +14,24 @@ interface IconProps {
 interface InlineSpinnerProps {
   size?: number
   className?: string
+  type?: LoaderType
 }
 
-export function InlineSpinner({ size = 16, className = "" }: InlineSpinnerProps) {
+// Enhanced spinner with type-specific styling
+export function InlineSpinner({ size = 16, className = "", type = 'custom' }: InlineSpinnerProps) {
+  const getSpinnerColor = () => {
+    switch (type) {
+      case 'route': return '#8B5CF6' // Purple
+      case 'upload': return '#10B981' // Green
+      case 'data': return '#3B82F6' // Blue
+      case 'action': return '#F59E0B' // Orange
+      default: return '#3B82F6'
+    }
+  }
+
   return (
-    <HashLoader
-      color="#3B82F6"
+    <PulseLoader
+      color={getSpinnerColor()}
       size={size}
       cssOverride={{
         display: 'inline-block',
@@ -30,38 +41,91 @@ export function InlineSpinner({ size = 16, className = "" }: InlineSpinnerProps)
   )
 }
 
-export function LoadingSpinner({ size = 40 }: IconProps) {
+// Adaptive loading spinner based on type and priority
+export function LoadingSpinner({ size = 40, type = 'custom', priority = 'medium' }: IconProps & { type?: LoaderType, priority?: string }) {
+  const getSpinnerProps = () => {
+    switch (type) {
+      case 'route':
+        return {
+          component: ClipLoader,
+          color: '#8B5CF6',
+          icon: Route,
+        }
+      case 'upload':
+        return {
+          component: HashLoader,
+          color: '#10B981',
+          icon: Upload,
+        }
+      case 'data':
+        return {
+          component: ClipLoader,
+          color: '#3B82F6',
+          icon: Database,
+        }
+      case 'action':
+        return {
+          component: HashLoader,
+          color: '#F59E0B',
+          icon: Zap,
+        }
+      default:
+        return {
+          component: HashLoader,
+          color: '#6B7280',
+          icon: Loader2,
+        }
+    }
+  }
+
+  const { component: SpinnerComponent, color, icon: IconComponent } = getSpinnerProps()
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8 }}
-      transition={{ duration: 0.2 }}
+      transition={{ 
+        duration: priority === 'critical' ? 0.1 : 0.2,
+        type: "spring",
+        stiffness: priority === 'critical' ? 400 : 200
+      }}
+      className="relative flex items-center justify-center"
     >
-      <HashLoader 
-        color="#3B82F6"
+      <SpinnerComponent
+        color={color}
         size={size}
         cssOverride={{
           display: 'block',
-          margin: '0 auto',
         }}
       />
+      
+      {/* Type indicator icon */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-30">
+        <IconComponent size={size * 0.4} color={color} />
+      </div>
     </motion.div>
   )
 }
 
-function SuccessIcon({ size = 40 }: IconProps) {
+function SuccessIcon({ size = 40, type }: IconProps & { type?: LoaderType }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0 }}
-      transition={{ duration: 0.3, type: "spring" }}
+      transition={{ duration: 0.3, type: "spring", bounce: 0.5 }}
       className="flex items-center justify-center"
     >
       <CheckCircle 
         size={size} 
-        className="text-emerald-500"
+        className={cn(
+          type === 'route' ? "text-purple-500" :
+          type === 'upload' ? "text-emerald-500" :
+          type === 'data' ? "text-blue-500" :
+          type === 'action' ? "text-orange-500" :
+          "text-emerald-500"
+        )}
       />
     </motion.div>
   )
@@ -84,21 +148,91 @@ function ErrorIcon({ size = 40 }: IconProps) {
   )
 }
 
-function ProgressBar({ progress }: { progress: number }) {
+// Enhanced progress bar with animations and estimations
+function ProgressBar({ 
+  progress, 
+  showProgress, 
+  estimatedDuration, 
+  startTime, 
+  type 
+}: { 
+  progress: number
+  showProgress: boolean
+  estimatedDuration?: number
+  startTime?: number
+  type?: LoaderType
+}) {
+  const [estimatedProgress, setEstimatedProgress] = React.useState(progress)
+
+  // Auto-estimate progress for certain types
+  React.useEffect(() => {
+    if (!showProgress && estimatedDuration && startTime) {
+      const interval = setInterval(() => {
+        const elapsed = Date.now() - startTime
+        const estimated = Math.min(95, (elapsed / estimatedDuration) * 100)
+        setEstimatedProgress(estimated)
+      }, 100)
+
+      return () => clearInterval(interval)
+    }
+  }, [showProgress, estimatedDuration, startTime])
+
+  const displayProgress = showProgress ? progress : estimatedProgress
+  
+  const getProgressColor = () => {
+    switch (type) {
+      case 'route': return 'from-purple-500 to-purple-600'
+      case 'upload': return 'from-emerald-500 to-emerald-600'
+      case 'data': return 'from-blue-500 to-cyan-500'
+      case 'action': return 'from-orange-500 to-orange-600'
+      default: return 'from-blue-500 to-cyan-500'
+    }
+  }
+
   return (
     <div className="w-64 mt-4">
       <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
         <motion.div
-          className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"
+          className={cn("h-full rounded-full bg-gradient-to-r", getProgressColor())}
           initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
+          animate={{ width: `${displayProgress}%` }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
         />
       </div>
-      <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-1">
-        {Math.round(progress)}% complete
-      </p>
+      <div className="flex justify-between items-center mt-2">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          {Math.round(displayProgress)}% complete
+        </p>
+        {estimatedDuration && startTime && (
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            ~{Math.max(0, Math.round((estimatedDuration - (Date.now() - startTime)) / 1000))}s remaining
+          </p>
+        )}
+      </div>
     </div>
+  )
+}
+
+// Cancel button component
+function CancelButton({ onCancel, disabled }: { onCancel: () => void, disabled?: boolean }) {
+  return (
+    <motion.button
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={onCancel}
+      disabled={disabled}
+      className={cn(
+        "flex items-center space-x-2 px-3 py-2 rounded-md text-sm transition-colors mt-4",
+        disabled 
+          ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
+          : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+      )}
+    >
+      <X size={16} />
+      <span>Cancel</span>
+    </motion.button>
   )
 }
 
@@ -110,71 +244,86 @@ export function GlobalLoader() {
     subMessage, 
     progress, 
     isBlocking, 
-    error 
+    error,
+    allowCancel,
+    showProgress,
+    type,
+    priority,
+    cancelLoading,
+    estimatedDuration,
+    startTime,
+    instanceId,
+    routeChangeInProgress
   } = useGlobalLoader()
 
-  // Don't render anything if idle
-  if (state === 'idle') {
+  // Don't render if idle and no route change
+  if (state === 'idle' && !routeChangeInProgress) {
     return null
   }
 
   const renderIcon = () => {
     switch (state) {
       case 'loading':
-        return <LoadingSpinner />
+        return <LoadingSpinner type={type} priority={priority} />
       case 'success':
-        return <SuccessIcon />
+        return <SuccessIcon type={type} />
       case 'error':
         return <ErrorIcon />
       default:
-        return null
+        return <LoadingSpinner type={type} priority={priority} />
     }
   }
 
   const getMessage = () => {
+    if (routeChangeInProgress && state === 'idle') {
+      return 'Navigating...'
+    }
+    
     switch (state) {
       case 'success':
-        return message || 'Operation completed successfully!'
+        return message || getDefaultSuccessMessage(type)
       case 'error':
         return error || 'An error occurred'
       default:
-        return message || 'Loading...'
+        return message || getDefaultLoadingMessage(type)
     }
   }
 
   const getSubMessage = () => {
+    if (routeChangeInProgress && state === 'idle') {
+      return 'Loading new page...'
+    }
+    
     if (subMessage) return subMessage
     
     switch (state) {
       case 'success':
-        return 'Your request has been processed'
+        return getDefaultSuccessSubMessage(type)
       case 'error':
         return 'Please try again or contact support'
       default:
-        return undefined
+        return getDefaultLoadingSubMessage(type)
     }
   }
 
   // Non-blocking loader (inline)
-  if (!isBlocking) {
+  if (!isBlocking && !routeChangeInProgress) {
     return (
       <AnimatePresence mode="wait">
         <motion.div
-          key={state}
+          key={`${state}-${instanceId}`}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: priority === 'critical' ? 0.1 : 0.2 }}
           className="flex flex-col items-center justify-center p-6"
         >
           {renderIcon()}
           
           <motion.p 
             className={cn(
-              "text-sm font-medium mt-3 text-center",
-              state === 'error' ? "text-red-600 dark:text-red-400" :
-              state === 'success' ? "text-emerald-600 dark:text-emerald-400" :
-              "text-gray-700 dark:text-gray-300"
+              "text-sm font-medium mt-3 text-center max-w-sm",
+              getMessageColor(state, type)
             )}
           >
             {getMessage()}
@@ -182,42 +331,57 @@ export function GlobalLoader() {
           
           {getSubMessage() && (
             <motion.p 
-              className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center"
+              className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center max-w-sm"
             >
               {getSubMessage()}
             </motion.p>
           )}
-          {state === 'loading' && typeof progress === 'number' && (
-            <ProgressBar progress={progress} />
+          
+          {(showProgress || estimatedDuration) && state === 'loading' && (
+            <ProgressBar 
+              progress={progress} 
+              showProgress={showProgress}
+              estimatedDuration={estimatedDuration}
+              startTime={startTime}
+              type={type}
+            />
+          )}
+
+          {allowCancel && state === 'loading' && instanceId && (
+            <CancelButton onCancel={() => cancelLoading(instanceId)} />
           )}
         </motion.div>
       </AnimatePresence>
     )
   }
 
-  // Blocking loader (fullscreen)
+  // Blocking loader (fullscreen) or route change indicator
   return (
     <AnimatePresence mode="wait">
       <motion.div
-        key={state}
+        key={`${state}-${instanceId}-${routeChangeInProgress}`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm"
+        transition={{ 
+          duration: priority === 'critical' ? 0.1 : 0.3,
+          ease: "easeOut"
+        }}
+        className={cn(
+          "fixed inset-0 z-50 flex items-center justify-center",
+          routeChangeInProgress || isBlocking 
+            ? "bg-background/90 backdrop-blur-sm"
+            : "bg-background/70 backdrop-blur-sm"
+        )}
       >
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.2, type: "spring" }}
           className={cn(
-            "flex flex-col items-center space-y-4 p-8 rounded-xl shadow-2xl border max-w-sm mx-4",
-            state === 'error' 
-              ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30" 
-              : state === 'success'
-              ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/30"
-              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+            "flex flex-col items-center space-y-4 p-8 rounded-xl shadow-2xl border max-w-md mx-4",
+            getContainerColor(state, type)
           )}
         >
           {renderIcon()}
@@ -226,11 +390,7 @@ export function GlobalLoader() {
             <motion.h3 
               className={cn(
                 "text-lg font-semibold",
-                state === 'error' 
-                  ? "text-red-700 dark:text-red-300" 
-                  : state === 'success'
-                  ? "text-emerald-700 dark:text-emerald-300"
-                  : "text-gray-900 dark:text-gray-100"
+                getMessageColor(state, type)
               )}
             >
               {getMessage()}
@@ -245,11 +405,89 @@ export function GlobalLoader() {
             )}
           </div>
 
-          {state === 'loading' && typeof progress === 'number' && (
-            <ProgressBar progress={progress} />
+          {(showProgress || estimatedDuration) && state === 'loading' && (
+            <ProgressBar 
+              progress={progress} 
+              showProgress={showProgress}
+              estimatedDuration={estimatedDuration}
+              startTime={startTime}
+              type={type}
+            />
+          )}
+
+          {allowCancel && state === 'loading' && instanceId && (
+            <CancelButton onCancel={() => cancelLoading(instanceId)} />
           )}
         </motion.div>
       </motion.div>
     </AnimatePresence>
   )
 }
+
+// Utility functions
+function getDefaultLoadingMessage(type?: LoaderType): string {
+  switch (type) {
+    case 'route': return 'Navigating...'
+    case 'upload': return 'Uploading files...'
+    case 'data': return 'Loading data...'
+    case 'action': return 'Processing...'
+    default: return 'Loading...'
+  }
+}
+
+function getDefaultLoadingSubMessage(type?: LoaderType): string {
+  switch (type) {
+    case 'route': return 'Loading new page'
+    case 'upload': return 'Please wait while we process your files'
+    case 'data': return 'Fetching the latest information'
+    case 'action': return 'Completing your request'
+    default: return 'Please wait...'
+  }
+}
+
+function getDefaultSuccessMessage(type?: LoaderType): string {
+  switch (type) {
+    case 'route': return 'Page loaded!'
+    case 'upload': return 'Upload complete!'
+    case 'data': return 'Data loaded!'
+    case 'action': return 'Success!'
+    default: return 'Operation completed successfully!'
+  }
+}
+
+function getDefaultSuccessSubMessage(type?: LoaderType): string {
+  switch (type) {
+    case 'route': return 'Welcome to your new page'
+    case 'upload': return 'Your files have been processed'
+    case 'data': return 'Information is now available'
+    case 'action': return 'Your request has been completed'
+    default: return 'Your request has been processed'
+  }
+}
+
+function getMessageColor(state: string, type?: LoaderType): string {
+  if (state === 'error') {
+    return "text-red-600 dark:text-red-400"
+  }
+  
+  if (state === 'success') {
+    switch (type) {
+      case 'route': return "text-purple-600 dark:text-purple-400"
+      case 'upload': return "text-emerald-600 dark:text-emerald-400"
+      case 'data': return "text-blue-600 dark:text-blue-400"
+      case 'action': return "text-orange-600 dark:text-orange-400"
+      default: return "text-emerald-600 dark:text-emerald-400"
+    }
+  }
+  
+  return "text-gray-700 dark:text-gray-300"
+}
+
+function getContainerColor(state: string, type?: LoaderType): string {
+  if (state === 'error') {
+    return "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30"
+  }
+  
+  if (state === 'success') {
+    switch (type) {
+      case 'route': return "bg-purple

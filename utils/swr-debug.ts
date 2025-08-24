@@ -4,19 +4,27 @@
  */
 
 export function debugAbortSignal(url: string, reason?: string) {
-  console.log(`[DEBUG] Request to ${url} - ${reason || 'Starting'}`)
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[DEBUG] Request to ${url} - ${reason || 'Starting'}`)
+  }
   
   return {
     onAbort: (signal: AbortSignal) => {
       signal.addEventListener('abort', () => {
-        console.warn(`[DEBUG] Request to ${url} was aborted - Reason: ${signal.reason || 'Unknown'}`)
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn(`[DEBUG] Request to ${url} was aborted - Reason: ${signal.reason || 'Unknown'}`)
+        }
       })
     },
     onComplete: () => {
-      console.log(`[DEBUG] Request to ${url} completed successfully`)
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[DEBUG] Request to ${url} completed successfully`)
+      }
     },
     onError: (error: Error) => {
-      console.error(`[DEBUG] Request to ${url} failed:`, error.message)
+      if (process.env.NODE_ENV !== 'production') {
+        console.error(`[DEBUG] Request to ${url} failed:`, error.message)
+      }
     }
   }
 }

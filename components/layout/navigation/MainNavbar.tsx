@@ -163,13 +163,13 @@ export default function MainNavbar() {
   const handleSearchClose = useCallback(() => setIsSearchModalOpen(false), [])
   const handleMobileMenuToggle = useCallback(() => setIsMobileMenuOpen((prev) => !prev), [])
   const handleSignIn = useCallback(() => {
-    startLoading({ message: "Loading...", minVisibleMs: 200, autoProgress: true });
+    startLoading({ message: "Loading...", minVisibleMs: 200 });
     router.push("/api/auth/signin")
   }, [router, startLoading])
 
   const handleSearchResult = useCallback(
     (url: string) => {
-      startLoading({ message: "Loading...", minVisibleMs: 200, autoProgress: true });
+      startLoading({ message: "Loading...", minVisibleMs: 200 });
       router.push(url)
       handleSearchClose()
     },
@@ -181,7 +181,6 @@ export default function MainNavbar() {
     () =>
       navItems.map((item) => {
         const isActive = pathname === item.href
-        const Icon = item.icon || (() => null)
         
         return (
           <motion.div
@@ -201,22 +200,7 @@ export default function MainNavbar() {
               data-testid={`nav-item-${item.name.toLowerCase()}`}
               aria-current={isActive ? "page" : undefined}
             >
-              <div className="flex items-center gap-2">
-                <div
-                  className={cn(
-                    "p-1 rounded-md transition-colors",
-                    isActive ? "bg-primary/10" : "group-hover:bg-accent/60"
-                  )}
-                >
-                  <Icon
-                    className={cn(
-                      "h-4 w-4 transition-colors",
-                      isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-                    )}
-                  />
-                </div>
-                <span className="font-medium whitespace-nowrap">{item.name}</span>
-              </div>
+              <span className="font-medium whitespace-nowrap">{item.name}</span>
               {/* Active underline */}
               <motion.span
                 layoutId={`nav-underline-${item.name}`}
@@ -237,7 +221,6 @@ export default function MainNavbar() {
   const mobileNavigationItems = useMemo(
     () => navItems.map((item) => {
         const isActive = pathname === item.href
-        const Icon = item.icon || (() => null)
         
         return (
           <motion.div key={item.name} variants={itemVariants}>
@@ -245,16 +228,13 @@ export default function MainNavbar() {
               href={item.href}
               onClick={() => setIsMobileMenuOpen(false)}
               className={cn(
-                "flex items-center gap-3 px-4 py-3.5 text-base font-medium rounded-lg whitespace-nowrap",
+                "flex items-center px-4 py-3.5 text-base font-medium rounded-lg whitespace-nowrap",
                 isActive
                   ? "text-primary bg-primary/5 border-l-2 border-primary"
                   : "text-foreground/80 hover:text-foreground/90 hover:bg-accent/70 border-l-2 border-transparent",
               )}
               aria-current={isActive ? "page" : undefined}
             >
-              <div className={cn("p-2 rounded-md", isActive ? "bg-primary/10" : "bg-muted/50")}> 
-                <Icon className="w-4 h-4" />
-              </div>
               {item.name}
             </AsyncNavLink>
           </motion.div>
@@ -439,7 +419,7 @@ export default function MainNavbar() {
                       </nav>
                       <div className="p-3 border-t border-border/60 flex items-center gap-2">
                         {isAuthenticated ? (
-                          <UserMenu className="flex-1">
+                          <UserMenu>
                             <Button variant="outline" className="w-full">Account</Button>
                           </UserMenu>
                         ) : (

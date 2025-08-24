@@ -21,6 +21,8 @@ import {
   Heart,
   Users,
   Brain,
+  TrendingUp,
+  Sparkles,
 } from "lucide-react"
 import { motion } from "framer-motion"
 import { AsyncNavLink } from "@/components/loaders/AsyncNavLink"
@@ -150,8 +152,8 @@ function QuizCardComponent({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -4, scale: 1.01 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
+        whileHover={{ y: -6, scale: 1.02 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
         className="h-full"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -160,9 +162,9 @@ function QuizCardComponent({
       >
         <Card
           className={cn(
-            "h-full overflow-hidden flex flex-col relative transition-all duration-300 border-0 shadow-md hover:shadow-xl",
+            "h-full overflow-hidden flex flex-col relative transition-all duration-300 border shadow-md hover:shadow-xl backdrop-blur-sm",
             config.bgColor,
-            "backdrop-blur-sm",
+            "group-hover:border-primary/20 hover:scale-[1.01]",
             compact && "@sm:flex-row @sm:items-stretch",
           )}
         >
@@ -172,53 +174,57 @@ function QuizCardComponent({
             <div className={cn("absolute inset-0 rounded-xl border-2 opacity-30", config.borderColor)} />
           </div>
           {/* Header */}
-          <CardHeader className={cn("pb-4 relative", compact && "@sm:w-1/3 @sm:shrink-0")}>
+          <CardHeader className={cn("pb-4 relative space-y-3", compact && "@sm:w-1/3 @sm:shrink-0")}>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <motion.div
-                  className={cn("p-2.5 rounded-xl bg-gradient-to-r text-white shadow-sm", config.gradient)}
-                  whileHover={{ scale: 1.05 }}
+                  className={cn("p-3 rounded-xl bg-gradient-to-r text-white shadow-lg", config.gradient)}
+                  whileHover={{ scale: 1.1, rotate: 5 }}
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
                 >
                   <config.icon className="h-5 w-5" />
                 </motion.div>
-                <div>
+                <div className="space-y-1">
                   <Badge
                     variant="outline"
-                    className={cn("text-xs font-medium", difficultyStyle.bg, difficultyStyle.color)}
+                    className={cn("text-xs font-semibold border-0", difficultyStyle.bg, difficultyStyle.color)}
                   >
                     {difficulty}
                   </Badge>
-                  <p className={cn("text-sm font-medium mt-1", config.textColor)}>{config.label}</p>
+                  <p className={cn("text-sm font-medium", config.textColor)}>{config.label}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
                 {(isTrending || isPopular) && (
-                  <Badge
-                    className={cn(
-                      "text-xs border-0 text-white",
-                      isTrending
-                        ? "bg-gradient-to-r from-amber-500 to-amber-600"
-                        : "bg-gradient-to-r from-primary to-primary/80",
+                  <div className="flex gap-1">
+                    {isTrending && (
+                      <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                        Trending
+                      </Badge>
                     )}
-                  >
-                    {isTrending ? "Trending" : "Popular"}
-                  </Badge>
+                    {isPopular && (
+                      <Badge variant="secondary" className="text-xs bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        Popular
+                      </Badge>
+                    )}
+                  </div>
                 )}
 
                 <Button
                   variant="ghost"
                   size="sm"
                   className={cn(
-                    "h-8 w-8 p-0 transition-all duration-300",
-                    "md:opacity-60 md:hover:opacity-100",
-                    "opacity-0 md:opacity-60", // Hidden on mobile by default
-                    (hasInteracted || isHovered) && "opacity-100" // Show when interacted
+                    "h-8 w-8 p-0 transition-all duration-300 rounded-full",
+                    "md:opacity-60 md:hover:opacity-100 hover:bg-primary/10 hover:text-primary",
+                    "opacity-0 md:opacity-60",
+                    (hasInteracted || isHovered) && "opacity-100"
                   )}
                   onClick={handleFavorite}
                 >
-                  <Heart className={cn("h-4 w-4", isFavorited && "fill-current text-primary")} />
+                  <Heart className={cn("h-4 w-4 transition-colors", isFavorited && "fill-current text-primary")} />
                 </Button>
               </div>
             </div>

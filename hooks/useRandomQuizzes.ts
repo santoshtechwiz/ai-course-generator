@@ -2,6 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 
+// Module-level cache to prevent multiple components from repeatedly
+// fetching the same random quizzes endpoint. This reduces network churn
+// when multiple consumers mount at the same time.
+let __cachedRandomQuizzes: RandomQuiz[] | null = null
+let __cachedRandomQuizzesAt: number | null = null
+let __fetchInProgress: Promise<RandomQuiz[] | null> | null = null
+const CACHE_TTL_MS = 60 * 1000 // 60 seconds
+
 export interface RandomQuiz {
   id: string
   title: string
@@ -131,6 +139,33 @@ export const useRandomQuizzes = (maxQuizzes = 6): UseRandomQuizzesReturn => {
   }, [maxQuizzes, shuffleArray])
 
   const fetchRandomQuizzes = useCallback(async (isRetry = false) => {
+    // If we have cached data that's fresh, reuse it and avoid a network call.
+    const now = Date.now()
+    if (!isRetry && __cachedRandomQuizzes && __cachedRandomQuizzesAt && now - __cachedRandomQuizzesAt < CACHE_TTL_MS) {
+      setQuizzes(__cachedRandomQuizzes.slice(0, maxQuizzes))
+      setError(null)
+      setRetryCount(0)
+      setLastFetchTime(new Date(__cachedRandomQuizzesAt))
+      setIsLoading(false)
+      setCurrentIndex(0)
+      return
+    }
+
+    // If a fetch is already in progress, wait for it instead of firing a parallel one
+    if (!isRetry && __fetchInProgress) {
+      try {
+        const result = await __fetchInProgress
+        if (result) {
+          setQuizzes(result.slice(0, maxQuizzes))
+          setLastFetchTime(new Date(__cachedRandomQuizzesAt || Date.now()))
+        }
+      } catch (e) {
+        // swallow; downstream logic will handle showing fallback
+      }
+      setIsLoading(false)
+      return
+    }
+
     // Cancel previous request if it exists
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
@@ -147,33 +182,34 @@ export const useRandomQuizzes = (maxQuizzes = 6): UseRandomQuizzesReturn => {
 
     try {
       // Primary endpoint for random quizzes
-      let response = await fetch("/api/quizzes/common/random", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: abortControllerRef.current.signal,
-      })
-
-      // Fallback to general quizzes endpoint if primary fails
-      if (!response.ok) {
-        response = await fetch(`/api/quizzes?limit=${maxQuizzes}&random=true`, {
+      const fetchPromise = (async () => {
+        let response = await fetch("/api/quizzes/common/random", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
           },
-          signal: abortControllerRef.current.signal,
+          signal: abortControllerRef.current!.signal,
         })
-      }
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch quizzes: ${response.status} ${response.statusText}`)
-      }
+      // Fallback to general quizzes endpoint if primary fails
+        if (!response.ok) {
+          response = await fetch(`/api/quizzes?limit=${maxQuizzes}&random=true`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            signal: abortControllerRef.current!.signal,
+          })
+        }
 
-      const data = await response.json()
+        if (!response.ok) {
+          throw new Error(`Failed to fetch quizzes: ${response.status} ${response.statusText}`)
+        }
 
-      // Transform API data to match component interface
-      const transformedQuizzes: RandomQuiz[] = (data.quizzes || data || []).slice(0, maxQuizzes).map((quiz: any) => ({
+        const data = await response.json()
+
+        // Transform API data to match component interface
+        const transformedQuizzes: RandomQuiz[] = (data.quizzes || data || []).slice(0, maxQuizzes).map((quiz: any) => ({
         id: quiz.id,
         title: quiz.title || "Untitled Quiz",
         quizType: quiz.quizType || quiz.type || "mcq",
@@ -190,44 +226,63 @@ export const useRandomQuizzes = (maxQuizzes = 6): UseRandomQuizzesReturn => {
         estimatedTime: quiz.estimatedTime || Math.ceil((quiz.questionCount || 10) * 1.5),
         timeStarted: quiz.timeStarted ? new Date(quiz.timeStarted) : undefined,
       }))
+        if (transformedQuizzes.length === 0) {
+          // Use fallback quizzes if no data received
+          const fallbackQuizzes = generateFallbackQuizzes()
+          __cachedRandomQuizzes = fallbackQuizzes
+          __cachedRandomQuizzesAt = Date.now()
+          return fallbackQuizzes
+        }
 
-      if (transformedQuizzes.length === 0) {
-        // Use fallback quizzes if no data received
-        const fallbackQuizzes = generateFallbackQuizzes()
-        setQuizzes(fallbackQuizzes)
-      } else {
         // Shuffle the quizzes for variety
         const shuffledQuizzes = shuffleArray(transformedQuizzes)
-        setQuizzes(shuffledQuizzes)
-      }
+        // Populate module-level cache
+        __cachedRandomQuizzes = shuffledQuizzes
+        __cachedRandomQuizzesAt = Date.now()
+        return shuffledQuizzes
+      })()
 
-      setError(null)
-      setRetryCount(0)
-      setLastFetchTime(new Date())
-      setCurrentIndex(0) // Reset to first quiz on successful fetch
+      // Mark fetch in progress so other callers can wait
+      __fetchInProgress = fetchPromise
+
+      const result = await fetchPromise
+
+      __fetchInProgress = null
+
+      if (result && result.length > 0) {
+        setQuizzes(result)
+        setError(null)
+        setRetryCount(0)
+        setLastFetchTime(new Date())
+        setCurrentIndex(0) // Reset to first quiz on successful fetch
+      } else if (result && result.length === 0) {
+        const fallbackQuizzes = generateFallbackQuizzes()
+        setQuizzes(fallbackQuizzes)
+      }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
         // Request was aborted, don't update state
         return
       }
 
-      console.error("Error fetching random quizzes:", err)
       const errorMessage = err instanceof Error ? err.message : "Failed to load quizzes"
-      
+
       if (retryCount < maxRetries) {
         // Retry with exponential backoff
         const delay = retryDelay * Math.pow(2, retryCount)
         setRetryCount(prev => prev + 1)
-        
+
         setTimeout(() => {
           fetchRandomQuizzes(true)
         }, delay)
-        
+
         setError(`Retrying... (${retryCount + 1}/${maxRetries})`)
       } else {
         // Max retries reached, use fallback quizzes
         setError(errorMessage)
         const fallbackQuizzes = generateFallbackQuizzes()
+        __cachedRandomQuizzes = fallbackQuizzes
+        __cachedRandomQuizzesAt = Date.now()
         setQuizzes(fallbackQuizzes)
         setCurrentIndex(0)
       }

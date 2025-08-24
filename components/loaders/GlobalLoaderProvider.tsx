@@ -2,9 +2,8 @@
 
 import React, { useEffect } from "react"
 import { GlobalLoader } from "@/components/loaders/GlobalLoader"
-import { useAdvancedRouteLoaderBridge } from "@/store/loaders/RouteLoaderBridge"
-
-
+import { useAdvancedRouteLoaderBridge } from "@/components/loaders/RouteLoaderBridge"
+import { useGlobalLoaderStore } from "@/store/loaders/global-loader"
 
 interface GlobalLoaderProviderProps {
   children: React.ReactNode

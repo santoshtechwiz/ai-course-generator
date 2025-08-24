@@ -73,82 +73,34 @@ export async function generateMetadata(): Promise<Metadata> {
       ? "Access your personalized dashboard to create courses, quizzes, and educational content with AI-powered tools."
       : "Create professional courses, quizzes, and educational content with AI. Transform learning with intelligent content generation for educators and trainers."
 
+    const keywords = [
+      "AI education",
+      "course creator",
+      "quiz maker",
+      "educational content",
+      "e-learning platform",
+      "AI tutor",
+      "learning management",
+    ]
+
+    // Call the unified generator with a MetadataConfig-compatible object.
     return generateBaseMetadata({
       title,
       description,
       canonical: siteUrl,
-      openGraph: {
-        title,
-        description,
-        url: siteUrl,
-        siteName: "CourseAI",
-        type: "website",
-        locale: "en_US",
-        images: [
-          {
-            url: `${siteUrl}/og-image.png`,
-            width: 1200,
-            height: 630,
-            alt: "CourseAI - AI-Powered Educational Content Creator",
-          },
-        ],
-      },
-      twitter: {
-        card: "summary_large_image",
-        title,
-        description,
-        creator: "@courseai",
-        site: "@courseai",
-        images: [`${siteUrl}/og-image.png`],
-      },
-      robots: {
-        index: true,
-        follow: true,
-        googleBot: {
-          index: true,
-          follow: true,
-          "max-image-preview": "large",
-          "max-snippet": -1,
-          "max-video-preview": -1,
-        },
-      },
-      category: "Education Technology",
-      keywords: [
-        "AI education",
-        "course creator",
-        "quiz maker",
-        "educational content",
-        "e-learning platform",
-        "AI tutor",
-        "learning management",
-      ],
+      keywords,
+      type: "website",
+      url: siteUrl,
     })
   } catch (error) {
     console.error("Metadata generation error:", error)
-    return {
+    return generateBaseMetadata({
       title: "CourseAI - AI-Powered Educational Content Creator",
       description:
         "Create professional courses, quizzes, and educational content with AI. Transform learning with intelligent content generation.",
-      metadataBase: new URL(siteUrl),
-      alternates: { canonical: siteUrl },
-      robots: { index: true, follow: true },
-      openGraph: {
-        title: "CourseAI - AI-Powered Educational Content Creator",
-        description: "Create professional courses, quizzes, and educational content with AI.",
-        url: siteUrl,
-        siteName: "CourseAI",
-        locale: "en_US",
-        type: "website",
-        images: [
-          {
-            url: `${siteUrl}/og-image.png`,
-            width: 1200,
-            height: 630,
-            alt: "CourseAI Platform",
-          },
-        ],
-      },
-    }
+      canonical: siteUrl,
+      type: "website",
+    })
   }
 }
 
@@ -157,8 +109,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   return (
-    <GlobalLoaderProvider>
-      <html lang="en" suppressHydrationWarning className="scroll-smooth" data-scroll-behavior="smooth">
+    <html lang="en" suppressHydrationWarning className="scroll-smooth" data-scroll-behavior="smooth">
         <head>
           <meta charSet="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -234,6 +185,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             selection:bg-primary/20 selection:text-primary-foreground`}
           suppressHydrationWarning
         >
+          <GlobalLoaderProvider>
           {/* Skip Navigation */}
           <a
             href="#main-content"
@@ -281,8 +233,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <DefaultSEO enableFAQ={false} />
 
           {process.env.NEXT_PUBLIC_GA_ID && <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />}
+          </GlobalLoaderProvider>
         </body>
       </html>
-    </GlobalLoaderProvider>
   )
 }
