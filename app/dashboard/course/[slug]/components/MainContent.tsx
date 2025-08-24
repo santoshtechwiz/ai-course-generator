@@ -24,6 +24,7 @@ import { useVideoState } from "./video/hooks/useVideoState"
 import { migratedStorage } from "@/lib/storage"
 import VideoGenerationSection from "./VideoGenerationSection"
 import { useVideoProgressTracker } from "@/hooks/useVideoProgressTracker"
+import { getChapterIdString, isValidChapter } from "../utils/courseUtils"
 
 // Extracted components
 import CertificateModal from "./CertificateModal"
@@ -43,15 +44,8 @@ interface ModernCoursePageProps {
   isFullscreen?: boolean
 }
 
-// Helper function to validate chapter
-function validateChapter(chapter: any): boolean {
-  return Boolean(
-    chapter &&
-      typeof chapter === "object" &&
-      chapter.id && 
-      (typeof chapter.id === "string" || typeof chapter.id === "number") // Allow number IDs too
-  );
-}
+// Helper function to validate chapter - replaced with utility
+// Use isValidChapter from courseUtils instead
 
 // CourseDetailsTabs is still memoized for better performance
 const MemoizedCourseDetailsTabs = React.memo(CourseDetailsTabs)
@@ -345,7 +339,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
       console.log(`[MainContent] Initialized with video: ${targetVideo.videoId}, course: ${course.id}`)
     } else {
-      console.error("Failed to select a video")
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to select a video")
+      }
     }
   }, [course.id, initialChapterId, videoPlaylist, dispatch, videoStateStore, currentVideoId, progress, courseProgress])
 
@@ -413,7 +409,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Handle chapter complete callback
   const handleChapterComplete = useCallback((chapterId: string) => {
-    console.log(`Chapter completed: ${chapterId}`)
+    // Chapter completion logic handled by the progress tracker
   }, [])
 
   // Enhanced PIP handling
@@ -474,8 +470,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           : videoPlaylist.find(v => v.chapter.id === chapter.id)?.chapter
         
         // First, check if the chapter actually exists and is valid
-        if (!validateChapter(safeChapter)) {
-          console.error("Invalid chapter selected:", safeChapter)
+        if (!isValidChapter(safeChapter)) {
+          if (process.env.NODE_ENV === "development") {
+            console.error("Invalid chapter selected:", safeChapter)
+          }
           toast({
             title: "Error",
             description: "Invalid chapter selected. Please try another chapter.",
@@ -496,7 +494,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         
         // Check if the chapter has a videoId - this is critical
         if (!videoId) {
-          console.error(`Chapter has no videoId: ${safeChapter.id} - ${safeChapter.title}`)
+          if (process.env.NODE_ENV === "development") {
+            console.error(`Chapter has no videoId: ${safeChapter.id} - ${safeChapter.title}`)
+          }
           toast({
             title: "Video Unavailable",
             description: "This chapter doesn't have a video available.",
@@ -511,7 +511,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         // Update Zustand store with both videoId and courseId
         videoStateStore.getState().setCurrentVideo(videoId, course.id)
 
-        console.log(`[MainContent] Selected chapter: ${safeChapter.title}, videoId: ${videoId}, id: ${safeChapter.id}`)
+        if (process.env.NODE_ENV === "development") {
+          console.log(`[MainContent] Selected chapter: ${safeChapter.title}, videoId: ${videoId}, id: ${safeChapter.id}`)
+        }
 
         setMobilePlaylistOpen(false)
         setIsVideoLoading(true)
@@ -704,7 +706,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             <VideoGenerationSection 
               course={course}
               onVideoGenerated={(chapterId, videoId) => {
-                console.log(`Video generated for chapter ${chapterId}: ${videoId}`)
+                if (process.env.NODE_ENV === "development") {
+                  console.log(`Video generated for chapter ${chapterId}: ${videoId}`)
+                }
                 // Optionally auto-select the newly generated video
                 if (videoId) {
                   dispatch(setCurrentVideoApi(videoId))
