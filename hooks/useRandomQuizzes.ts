@@ -168,7 +168,14 @@ export const useRandomQuizzes = (maxQuizzes = 6): UseRandomQuizzesReturn => {
 
     // Cancel previous request if it exists
     if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
+      try {
+        abortControllerRef.current.abort()
+      } catch (e) {
+        // ignore
+      }
+      // If we abort an in-flight request, clear the shared fetch marker so callers
+      // don't await a permanently-rejected promise.
+      __fetchInProgress = null
     }
 
     // Create new abort controller
@@ -245,9 +252,13 @@ export const useRandomQuizzes = (maxQuizzes = 6): UseRandomQuizzesReturn => {
       // Mark fetch in progress so other callers can wait
       __fetchInProgress = fetchPromise
 
-      const result = await fetchPromise
-
-      __fetchInProgress = null
+      let result: RandomQuiz[] | null = null
+      try {
+        result = await fetchPromise
+      } finally {
+        // Always clear the shared in-progress marker regardless of success/failure
+        __fetchInProgress = null
+      }
 
       if (result && result.length > 0) {
         setQuizzes(result)
@@ -260,12 +271,21 @@ export const useRandomQuizzes = (maxQuizzes = 6): UseRandomQuizzesReturn => {
         setQuizzes(fallbackQuizzes)
       }
     } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        // Request was aborted, don't update state
+      // Some environments throw DOMException (name === 'AbortError') which may not
+      // pass `instanceof Error` in all runtimes, so check name too.
+      if ((err as any)?.name === 'AbortError') {
+        // Request was aborted, don't update state or report an error.
+        // Ensure the shared in-progress marker is cleared so other callers don't
+        // wait on a rejected promise.
+        __fetchInProgress = null
         return
       }
 
-      const errorMessage = err instanceof Error ? err.message : "Failed to load quizzes"
+      const errorMessage = (err && (err as any).message) ? (err as any).message : String(err || "Failed to load quizzes")
+
+      // Log object trace when available for debugging, but make the console
+      // message helpful if the error had no message.
+      console.error('useRandomQuizzes error:', err)
 
       if (retryCount < maxRetries) {
         // Retry with exponential backoff

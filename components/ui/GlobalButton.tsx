@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { CheckCircle2, AlertCircle, XCircle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { useGlobalLoader } from '@/store/loaders/global-loader'
+import { useGlobalLoader } from '@/components/loaders/global-loaders'
 import { InlineSpinner } from '@/components/ui/loader'
 
 const buttonVariants = cva(

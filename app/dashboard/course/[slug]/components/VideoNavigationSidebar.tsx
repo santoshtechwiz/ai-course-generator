@@ -301,14 +301,14 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                 <motion.div 
                   key={moduleIndex} 
                   variants={itemVariants}
-                  className="mb-6 last:mb-0"
+                  className="mb-8 last:mb-0"
                 >
                   {/* Module Header */}
-                  <div className="mb-3">
+                  <div className="mb-4">
                     <Button
                       variant="ghost"
                       onClick={() => toggleModule(module.title)}
-                      className="w-full justify-between p-3 h-auto hover:bg-muted/50 group"
+                      className="w-full justify-between p-4 h-auto hover:bg-muted/50 group"
                     >
                       <div className="flex items-center gap-3">
                         <motion.div
@@ -345,7 +345,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="space-y-1 ml-4"
+                        className="space-y-2 ml-4"
                       >
                         {module.chapters.map((chapter, chapterIndex) => {
                           const safeChapter = {
@@ -358,7 +358,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                           };
 
                           const isActive = currentChapter && safeChapter.id === String(currentChapter.id);
-                          const isCompleted = completedChapters?.includes(Number(safeChapter.id)) ||
+                          const isCompleted = completedChapters?.includes(String(safeChapter.id)) ||
                                               completedChapters?.includes(safeChapter.id);
                           const chapterProgress = safeChapter.videoId ? (progress?.[safeChapter.videoId] || 0) : 0;
                           const duration = safeChapter.videoId ? videoDurations?.[safeChapter.videoId] : undefined;
@@ -382,8 +382,8 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                     onMouseEnter={() => setHoveredChapter(safeChapter.id)}
                                     onMouseLeave={() => setHoveredChapter(null)}
                                     className={cn(
-                                      "w-full text-left px-4 py-3 rounded-lg text-sm transition-all duration-300",
-                                      "flex items-start gap-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                                      "w-full text-left px-4 py-4 rounded-lg text-sm transition-all duration-300",
+                                      "flex items-start gap-4 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                                       "border border-transparent hover:border-border/50",
                                       isActive ? 
                                         "bg-primary/10 text-primary font-medium border-primary/20 shadow-sm" : 
@@ -400,7 +400,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                     {/* Enhanced Thumbnail or Status Icon */}
                                     <div className="flex-shrink-0 relative">
                                       {safeChapter.thumbnail && hasVideo ? (
-                                        <div className="w-20 h-12 rounded-lg overflow-hidden border border-border/50 relative group">
+                                        <div className="w-28 h-16 rounded-lg overflow-hidden border border-border/50 relative group">
                                           <img 
                                             src={safeChapter.thumbnail} 
                                             alt={safeChapter.title}
@@ -445,7 +445,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                           )}
                                         </div>
                                       ) : (
-                                        <div className="w-6 h-6 mt-0.5 relative">
+                                        <div className="w-7 h-7 mt-0.5 relative">
                                           <AnimatePresence mode="wait">
                                             {isLocked ? (
                                               <motion.div
@@ -453,7 +453,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
                                               >
-                                                <Lock className="h-6 w-6 text-muted-foreground" />
+                                                <Lock className="h-7 w-7 text-muted-foreground" />
                                               </motion.div>
                                             ) : isCompleted ? (
                                               <motion.div
@@ -463,7 +463,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                                 exit={{ scale: 0, rotate: 180 }}
                                                 transition={{ type: "spring", stiffness: 200, damping: 15 }}
                                               >
-                                                <CheckCircle className="h-6 w-6 text-green-500" />
+                                                <CheckCircle className="h-7 w-7 text-green-500" />
                                               </motion.div>
                                             ) : isActive ? (
                                               <motion.div
@@ -473,7 +473,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                                 exit={{ scale: 0 }}
                                                 className="relative"
                                               >
-                                                <Play className="h-6 w-6 text-primary fill-primary" />
+                                                <Play className="h-7 w-7 text-primary fill-primary" />
                                                 <motion.div
                                                   animate={{ scale: [1, 1.2, 1] }}
                                                   transition={{ repeat: Infinity, duration: 2 }}
@@ -486,7 +486,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
                                               >
-                                                <VideoOff className="h-6 w-6 text-muted-foreground/70" />
+                                                <VideoOff className="h-7 w-7 text-muted-foreground/70" />
                                               </motion.div>
                                             ) : (
                                               <motion.div
@@ -494,7 +494,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
                                                 className={cn(
-                                                  "h-6 w-6 rounded-full border-2 relative overflow-hidden",
+                                                  "h-7 w-7 rounded-full border-2 relative overflow-hidden",
                                                   chapterProgress > 0 ? "border-primary" : "border-muted-foreground/30",
                                                 )}
                                               >
@@ -524,10 +524,10 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                     
                                     {/* Chapter Content */}
                                     <div className="flex-1 min-w-0">
-                                      <div className="flex items-start justify-between gap-2">
+                                      <div className="flex items-start justify-between gap-3">
                                         <p className={cn(
-                                          "line-clamp-2 leading-relaxed",
-                                          isActive ? "text-primary font-medium" : 
+                                          "line-clamp-2 leading-relaxed text-sm font-medium",
+                                          isActive ? "text-primary" : 
                                           isCompleted ? "text-foreground" : "text-muted-foreground",
                                           !hasVideo && "italic",
                                           isLocked && "text-muted-foreground/70"
@@ -538,13 +538,13 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                         </p>
                                         
                                         {/* Chapter Number Badge */}
-                                        <Badge variant="outline" className="text-xs shrink-0">
+                                        <Badge variant="outline" className="text-xs shrink-0 min-w-6 text-center">
                                           {chapterIndex + 1}
                                         </Badge>
                                       </div>
                                       
-                                      {/* Duration and Progress Info */}
-                                      <div className="flex items-center justify-between mt-2">
+                                        {/* Duration and Progress Info */}
+                                      <div className="flex items-center justify-between mt-3">
                                         {duration && hasVideo && !isLocked && (
                                           <div className="flex items-center text-xs text-muted-foreground">
                                             <Clock className="h-3 w-3 mr-1" />

@@ -20,7 +20,7 @@ import UserNotFound from "@/components/common/UserNotFound"
 import { useUserData, useUserStats } from "@/hooks/useUserDashboard"
 import DashboardHeader from "./components/DashboardHeader"
 import DashboardSidebar from "./components/DashboardSidebar"
-import { useGlobalLoader } from "@/store/loaders/global-loader"
+import { useGlobalLoader } from "@/components/loaders/global-loaders"
 import dynamic from "next/dynamic"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 

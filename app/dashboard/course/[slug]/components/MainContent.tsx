@@ -603,8 +603,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Auth prompt content with improved styling
   const authPromptContent = (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center p-4">
-      <motion.div
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-background to-muted/20">      <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.3 }}
@@ -670,7 +669,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Regular content with improved layout and visual hierarchy
   const regularContent = (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
       {/* Enhanced sticky header with better visual hierarchy */}
       <motion.header 
         initial={{ y: -100, opacity: 0 }}

@@ -23,10 +23,8 @@ export function GlobalLoaderProvider({
   debugMode = false
 }: GlobalLoaderProviderProps) {
   
-  // Initialize route change detection
-  if (enableRouteLoading) {
-    useAdvancedRouteLoaderBridge()
-  }
+  // Always call the hook (Rules of Hooks) and let it early-return if disabled
+  useAdvancedRouteLoaderBridge(enableRouteLoading)
 
   // Network status detection
   useNetworkDetection(enableNetworkDetection)
@@ -118,9 +116,10 @@ function usePerformanceMonitoring(enabled: boolean) {
               showProgress: true,
             })
 
-            // Simulate progress based on navigation timing
-            const totalTime = navEntry.loadEventEnd - navEntry.navigationStart
-            let currentTime = navEntry.domContentLoadedEventEnd - navEntry.navigationStart
+            // navigationStart is part of PerformanceEntry.timeOrigin implicitly; use startTime for relative calc
+            const navStart = navEntry.startTime // typically 0 for navigation entries
+            const totalTime = navEntry.loadEventEnd - navStart
+            let currentTime = navEntry.domContentLoadedEventEnd - navStart
             
             const progressInterval = setInterval(() => {
               if (currentTime < totalTime) {
@@ -214,7 +213,10 @@ function useDebugMode(enabled: boolean) {
 
 // Debug panel component
 function LoaderDebugPanel() {
-  const { allInstances, activeInstanceId, routeChangeInProgress } = useGlobalLoaderStore()
+  const store = useGlobalLoaderStore()
+  const allInstances = Array.from(store.instances.values())
+  const activeInstanceId = store.activeInstance?.id
+  const routeChangeInProgress = store.routeChangeInProgress
 
   if (allInstances.length === 0 && !routeChangeInProgress) {
     return null

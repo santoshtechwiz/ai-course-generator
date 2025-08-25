@@ -402,8 +402,8 @@ export default function MainNavbar() {
             mass: 0.8,
           }}
         >
-          <motion.div
-            className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
+      <motion.div
+        className="container flex h-20 items-center justify-between px-6 sm:px-8 lg:px-12 max-w-7xl mx-auto"
             initial="hidden"
             animate="visible"
             variants={navbarVariants}
@@ -424,7 +424,7 @@ export default function MainNavbar() {
             </motion.div>
 
             <motion.nav
-              className="hidden lg:flex items-center space-x-2"
+              className="hidden lg:flex items-center space-x-6"
               data-testid="nav-items"
               variants={itemVariants}
               aria-label="Primary navigation"
@@ -432,9 +432,9 @@ export default function MainNavbar() {
               {navigationItems}
             </motion.nav>
 
-            <motion.div className="hidden md:flex items-center gap-3" variants={itemVariants}>
+            <motion.div className="hidden md:flex items-center gap-6" variants={itemVariants}>
               {CreditsDisplay}
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -442,7 +442,7 @@ export default function MainNavbar() {
                   title="Search — press / or Ctrl/Cmd+K"
                   aria-expanded={isSearchModalOpen}
                   onClick={handleSearchOpen}
-                  className="p-2 rounded-full hover:bg-primary/10 hover:text-primary transition-all duration-300 hover:shadow-sm"
+          className="p-2.5 rounded-full hover:bg-primary/10 hover:text-primary transition-all duration-300 hover:shadow-sm"
                 >
                   <Search className="h-5 w-5" />
                 </Button>
@@ -471,7 +471,7 @@ export default function MainNavbar() {
               )}
             </motion.div>
 
-            <motion.div className="flex md:hidden items-center gap-2" variants={itemVariants}>
+            <motion.div className="flex md:hidden items-center gap-3" variants={itemVariants}>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
                   variant="ghost"
@@ -493,7 +493,7 @@ export default function MainNavbar() {
                       aria-label="Open menu"
                       aria-controls="main-mobile-menu"
                       onClick={handleMobileMenuToggle}
-                      className="p-2 rounded-full hover:bg-primary/10 hover:text-primary transition-all duration-300"
+                      className="p-2.5 rounded-full hover:bg-primary/10 hover:text-primary transition-all duration-300"
                     >
                       <AnimatePresence mode="wait">
                         <motion.div

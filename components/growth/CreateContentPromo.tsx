@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Sparkles, Wand2, X, Target, BookOpen, Code2, PenTool } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useGlobalLoader } from "@/store/loaders/global-loader"
+import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 interface CreateContentPromoProps {
   context?: "quiz" | "results" | "video"

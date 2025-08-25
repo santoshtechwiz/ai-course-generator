@@ -20,7 +20,7 @@ import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { FeedbackButton } from "@/components/ui/feedback-button"
 import { useMobile } from "@/hooks"
-import { useGlobalLoader } from '@/store/loaders/global-loader'
+import { useGlobalLoader } from '@/components/loaders/global-loaders'
 
 // Types based on the API response
 interface CourseQuizCard {

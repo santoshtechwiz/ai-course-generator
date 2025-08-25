@@ -176,7 +176,8 @@ export const CourseCard = React.memo(
     const handleCardClick = (e: React.MouseEvent) => {
       e.preventDefault();
       setIsNavigating(true);
-      startLoading({ message: "Loading course...", isBlocking: true });
+  // Rely on central RouteLoaderBridge; start a lightweight data loader that will merge into route loader if navigation already in progress
+  startLoading({ message: "Opening course...", subMessage: "Preparing content", isBlocking: false, type: 'data', priority: 'high', combineWithRoute: true });
       setTimeout(() => {
         router.push(`/dashboard/course/${slug}`);
       }, 100);

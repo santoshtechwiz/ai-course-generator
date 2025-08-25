@@ -23,6 +23,11 @@ export interface LoaderOptions {
   allowCancel?: boolean
   onCancel?: () => void
   metadata?: Record<string, any>
+  // Auto progress simulation: if true, progress will advance until stopped
+  autoProgress?: boolean
+  // When true (default) a non-route loader will merge into the active route loader
+  // instead of spawning a second overlay during initial page hydration.
+  combineWithRoute?: boolean
 }
 
 interface LoaderInstance {
@@ -43,10 +48,13 @@ interface GlobalLoaderState {
   routeChangeInProgress: boolean
   routeChangeStartTime?: number
   queuedOperations: Array<{ id: string; action: 'start' | 'stop'; options?: LoaderOptions }>
+  // deterministic id generator
+  nextId: number
 }
 
 interface GlobalLoaderActions {
-  startLoading: (id: string, options?: LoaderOptions) => void
+  // if `id` is omitted the store will generate a deterministic id and return it
+  startLoading: (id?: string, options?: LoaderOptions) => string
   stopLoading: (id: string, result?: { success: boolean; error?: string }) => void
   updateProgress: (id: string, progress: number, message?: string) => void
   cancelLoading: (id: string) => void
@@ -65,6 +73,8 @@ const DEFAULT_OPTIONS: Required<Omit<LoaderOptions, 'onCancel' | 'metadata'>> = 
   type: 'custom',
   showProgress: false,
   allowCancel: false,
+  autoProgress: false,
+  combineWithRoute: true,
 }
 
 const PRIORITY_ORDER: Record<LoaderPriority, number> = {
@@ -74,30 +84,105 @@ const PRIORITY_ORDER: Record<LoaderPriority, number> = {
   low: 1,
 }
 
+// Canonical id used for route change loader instances so they are reused
+export const ROUTE_LOADER_ID = 'route-change'
+
 // Create the store with subscriptions
 export const useGlobalLoaderStore = create<GlobalLoaderState & GlobalLoaderActions>()(
   subscribeWithSelector((set, get) => ({
-    instances: new Map(),
+  instances: new Map(),
     activeInstance: null,
     routeChangeInProgress: false,
     routeChangeStartTime: undefined,
     queuedOperations: [],
-
-    startLoading: (id: string, options: LoaderOptions = {}) => {
+  nextId: 0,
+    startLoading: (id?: string, options: LoaderOptions = {}) => {
       const mergedOptions = { ...DEFAULT_OPTIONS, ...options }
-      const instance: LoaderInstance = {
-        id,
-        state: 'loading',
-        options: mergedOptions,
-        startTime: Date.now(),
-        estimatedDuration: options.type === 'route' ? 1500 : undefined,
+
+      // Deduplicate route loaders: reuse existing active one, optionally update message/subMessage
+      if (mergedOptions.type === 'route') {
+        const existing = Array.from(get().instances.values()).find(inst => inst.state === 'loading' && inst.options.type === 'route')
+        if (existing) {
+          if (mergedOptions.message && mergedOptions.message !== existing.options.message) {
+            // Update message/subMessage of existing loader
+            useGlobalLoaderStore.setState(state => {
+              const map = new Map(state.instances)
+              const inst = map.get(existing.id)
+              if (inst) {
+                inst.options = {
+                  ...inst.options,
+                  message: mergedOptions.message || inst.options.message,
+                  subMessage: mergedOptions.subMessage || inst.options.subMessage,
+                  priority: mergedOptions.priority || inst.options.priority,
+                }
+                map.set(existing.id, inst)
+              }
+              return { ...state, instances: map }
+            })
+          }
+          return existing.id
+        }
+      }
+
+      // Merge a new non-route loader into existing route loader when conditions apply
+      if (
+        mergedOptions.type !== 'route' &&
+        mergedOptions.combineWithRoute &&
+        get().routeChangeInProgress
+      ) {
+        const existingRoute = Array.from(get().instances.values()).find(inst => inst.state === 'loading' && inst.options.type === 'route')
+        if (existingRoute) {
+          useGlobalLoaderStore.setState(state => {
+            const map = new Map(state.instances)
+            const inst = map.get(existingRoute.id)
+            if (inst) {
+              inst.options = {
+                ...inst.options,
+                // Prefer new message/subMessage if provided and not default
+                message: mergedOptions.message && mergedOptions.message !== DEFAULT_OPTIONS.message ? mergedOptions.message : inst.options.message,
+                subMessage: mergedOptions.subMessage || inst.options.subMessage,
+                // Elevate priority if higher requested
+                priority: PRIORITY_ORDER[mergedOptions.priority] > PRIORITY_ORDER[inst.options.priority] ? mergedOptions.priority : inst.options.priority,
+                // Show progress if either wants it
+                showProgress: inst.options.showProgress || mergedOptions.showProgress,
+              }
+              // Attach metadata note
+              inst.options.metadata = {
+                ...inst.options.metadata,
+                mergedTypes: Array.from(new Set([...(inst.options.metadata?.mergedTypes || []), mergedOptions.type])),
+              }
+              map.set(existingRoute.id, inst)
+            }
+            return { ...state, instances: map }
+          })
+          return existingRoute.id
+        }
+      }
+
+      // Determine deterministic / canonical id
+      let resolvedId = id
+      if (mergedOptions.type === 'route') {
+        resolvedId = ROUTE_LOADER_ID
       }
 
       set(state => {
+        let newNextId = state.nextId
+        if (!resolvedId) {
+          newNextId = state.nextId + 1
+          resolvedId = `loader-${newNextId}`
+        }
+
+        const instance: LoaderInstance = {
+          id: resolvedId!,
+          state: 'loading',
+          options: mergedOptions,
+          startTime: Date.now(),
+          estimatedDuration: mergedOptions.type === 'route' ? 1500 : undefined,
+        }
+
         const newInstances = new Map(state.instances)
-        newInstances.set(id, instance)
-        
-        // Determine the highest priority active instance
+        newInstances.set(resolvedId!, instance)
+
         const activeInstance = Array.from(newInstances.values())
           .filter(inst => inst.state === 'loading')
           .sort((a, b) => PRIORITY_ORDER[b.options.priority] - PRIORITY_ORDER[a.options.priority])[0] || null
@@ -106,22 +191,26 @@ export const useGlobalLoaderStore = create<GlobalLoaderState & GlobalLoaderActio
           ...state,
           instances: newInstances,
           activeInstance,
+          nextId: newNextId,
+          routeChangeInProgress: mergedOptions.type === 'route' ? true : state.routeChangeInProgress,
+          routeChangeStartTime: mergedOptions.type === 'route' ? (state.routeChangeStartTime || Date.now()) : state.routeChangeStartTime,
         }
       })
 
-      // Auto-timeout handling
       if (mergedOptions.maxDurationMs > 0) {
+        const timeoutId = resolvedId!
         setTimeout(() => {
-          const currentState = get()
-          const currentInstance = currentState.instances.get(id)
-          if (currentInstance?.state === 'loading') {
-            get().stopLoading(id, { success: false, error: 'Operation timed out' })
-          }
+          const current = get().instances.get(timeoutId)
+            if (current?.state === 'loading') {
+              get().stopLoading(timeoutId, { success: false, error: 'Operation timed out' })
+            }
         }, mergedOptions.maxDurationMs)
       }
+
+      return resolvedId!
     },
 
-    stopLoading: (id: string, result: { success: boolean; error?: string } = { success: true }) => {
+  stopLoading: (id: string, result: { success: boolean; error?: string } = { success: true }) => {
       set(state => {
         const instance = state.instances.get(id)
         if (!instance) return state
@@ -265,9 +354,12 @@ export function useGlobalLoader(watchId?: string) {
   const watchedInstance = watchId ? instances.get(watchId) : activeInstance
 
   const startLoading = useCallback((options?: LoaderOptions) => {
-    const id = watchId || `loader-${Date.now()}-${Math.random().toString(36).slice(2)}`
-    storeStartLoading(id, options)
-    return id
+    // Deterministic: delegate ID generation to the store (counter-based) unless a watchId is supplied.
+    if (watchId) {
+      storeStartLoading(watchId, options)
+      return watchId
+    }
+    return storeStartLoading(undefined, options)
   }, [watchId, storeStartLoading])
 
   const stopLoading = useCallback((idOrResult?: string | { success: boolean; error?: string }, result?: { success: boolean; error?: string }) => {
@@ -286,9 +378,11 @@ export function useGlobalLoader(watchId?: string) {
 
   const updateProgress = useCallback((progressOrId: number | string, progress?: number, message?: string) => {
     if (typeof progressOrId === 'number' && watchId) {
-      storeUpdateProgress(watchId, progressOrId, progress as string)
+      // when first arg is number and watchId is present, treat it as progress value
+      storeUpdateProgress(watchId, progressOrId, message)
     } else if (typeof progressOrId === 'string') {
-      storeUpdateProgress(progressOrId, progress!, message)
+      // when first arg is string, it's an id and progress should be provided
+      storeUpdateProgress(progressOrId, typeof progress === 'number' ? progress : 0, message)
     }
   }, [watchId, storeUpdateProgress])
 
@@ -379,6 +473,32 @@ export function useGlobalLoader(watchId?: string) {
     // All instances (for debugging)
     allInstances: Array.from(instances.values()),
     activeInstanceId: activeInstance?.id,
+    // Convenience async wrapper similar to legacy withLoading
+    withLoading: async <T>(promise: Promise<T>, opts?: LoaderOptions): Promise<T> => {
+      const id = startLoading(opts)
+      let progressTimer: any
+      if (opts?.autoProgress) {
+        // Simple auto progress simulation
+        progressTimer = setInterval(() => {
+          const storeState = useGlobalLoaderStore.getState()
+          const inst = id ? storeState.instances.get(id) : null
+          if (inst && inst.state === 'loading') {
+            const next = Math.min(95, (inst.options.progress || 0) + Math.random() * 5 + 1)
+            storeState.updateProgress(id, next)
+          }
+        }, 400)
+      }
+      try {
+        const result = await promise
+        stopLoading(id, { success: true })
+        return result
+      } catch (e: any) {
+        stopLoading(id, { success: false, error: e?.message })
+        throw e
+      } finally {
+        if (progressTimer) clearInterval(progressTimer)
+      }
+    },
   }
 }
 
@@ -387,7 +507,7 @@ export function useRouteLoaderBridge() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { setRouteChangeState, startLoading, stopLoading } = useGlobalLoaderStore()
-  const routeChangeId = useRef<string>()
+  const routeChangeId = useRef<string | undefined>(undefined)
   const isNavigatingRef = useRef(false)
   
   // Detect route changes
@@ -430,4 +550,4 @@ export function useRouteLoaderBridge() {
 }
 
 // Backward compatibility exports - maintain existing API
-export type { LoaderState, LoaderOptions }
+// types are exported earlier in this module; no-op here to avoid duplicate exports

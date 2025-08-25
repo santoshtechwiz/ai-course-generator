@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useCallback } from 'react'
-import { useGlobalLoaderStore } from './global-loaders'
+import { useGlobalLoaderStore, ROUTE_LOADER_ID } from './global-loaders'
 
 
 // Custom router with loader integration
@@ -49,16 +49,29 @@ export function useRouterWithLoader() {
 }
 
 // Enhanced route change detection with better UX
-export function useAdvancedRouteLoaderBridge() {
+/**
+ * Advanced route change bridge.
+ * Responsibilities:
+ *  - Listen for explicit custom events (navigation-start) fired by custom navigation helpers.
+ *  - Intercept native in-app link clicks (client-side navigation) and emit loader start.
+ *  - Track completion by observing pathname+search changes and enforce a minimum visible duration.
+ *  - Provide deterministic loader instance id ("route-change").
+ *  - Allow being disabled without violating React's rules (hook is always called, early exit if disabled).
+ */
+export function useAdvancedRouteLoaderBridge(enabled: boolean = true) {
+  // Early no-op (still a hook call each render to satisfy Rules of Hooks)
+  if (!enabled) {
+    return
+  }
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { setRouteChangeState, startLoading, stopLoading } = useGlobalLoaderStore()
   
-  const routeChangeId = useRef<string>()
+  const routeChangeId = useRef<string>('')
   const isNavigatingRef = useRef(false)
-  const routeStartTimeRef = useRef<number>()
+  const routeStartTimeRef = useRef<number>(undefined)
   const previousPathnameRef = useRef<string>(pathname)
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout>(undefined)
 
   // Detect route changes completion
   useEffect(() => {
@@ -102,6 +115,16 @@ export function useAdvancedRouteLoaderBridge() {
       clearTimeout(timeoutRef.current)
     }
 
+    // Reuse existing active route loader if one is in progress
+    const state = useGlobalLoaderStore.getState()
+    const existingRoute = Array.from(state.instances.values()).find(i => i.state === 'loading' && i.options.type === 'route')
+    if (existingRoute) {
+      routeChangeId.current = existingRoute.id
+      isNavigatingRef.current = true
+      setRouteChangeState(true)
+      return
+    }
+
     isNavigatingRef.current = true
     routeStartTimeRef.current = Date.now()
     setRouteChangeState(true)
@@ -134,7 +157,7 @@ export function useAdvancedRouteLoaderBridge() {
       }
     }
     
-    routeChangeId.current = startLoading('route-change', {
+  routeChangeId.current = startLoading(ROUTE_LOADER_ID, {
       message,
       subMessage,
       isBlocking: false,
@@ -161,23 +184,58 @@ export function useAdvancedRouteLoaderBridge() {
     }, 15000)
   }, [setRouteChangeState, startLoading, stopLoading])
 
-  // Setup event listeners
+  // Setup event listeners (custom events + popstate + global link interception)
   useEffect(() => {
-    window.addEventListener('navigation-start', handleNavigationStart as EventListener)
-    
-    // Also listen for browser navigation events
+    const navStartListener = handleNavigationStart as EventListener
+    window.addEventListener('navigation-start', navStartListener)
+
+    // Browser history navigation
     const handlePopState = () => {
-      window.dispatchEvent(new CustomEvent('navigation-start', { 
-        detail: { action: 'popstate' }
-      }))
+      window.dispatchEvent(new CustomEvent('navigation-start', { detail: { action: 'popstate' } }))
     }
-    
     window.addEventListener('popstate', handlePopState)
-    
+
+    // Global link click interception (capture phase)
+    const handleDocumentClick = (e: MouseEvent) => {
+      if (e.defaultPrevented) return
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+      // Only left clicks
+      if (e.button !== 0) return
+      // Traverse up to find anchor
+      let el = e.target as HTMLElement | null
+      while (el && el.tagName !== 'A') {
+        el = el.parentElement
+      }
+      if (!el) return
+      const anchor = el as HTMLAnchorElement
+      // Ignore external links or with target _blank
+      const href = anchor.getAttribute('href')
+      if (!href || href.startsWith('http') && !href.startsWith(window.location.origin)) return
+      if (anchor.target === '_blank') return
+      // Same-page hash navigation skip
+      if (href.startsWith('#')) return
+      // Ignore if modifier attribute data-no-loader present
+      if (anchor.dataset?.noLoader === 'true') return
+
+      // If path changes, trigger navigation start BEFORE Next.js intercepts
+      try {
+        const url = new URL(href, window.location.origin)
+        const nextPath = url.pathname + url.search
+        const currentPath = window.location.pathname + window.location.search
+        if (nextPath !== currentPath) {
+          window.dispatchEvent(new CustomEvent('navigation-start', { detail: { href } }))
+        }
+      } catch {
+        // Fallback: still dispatch generic
+        window.dispatchEvent(new CustomEvent('navigation-start', { detail: { href } }))
+      }
+    }
+    document.addEventListener('click', handleDocumentClick, true) // capture
+
     return () => {
-      window.removeEventListener('navigation-start', handleNavigationStart as EventListener)
+      window.removeEventListener('navigation-start', navStartListener)
       window.removeEventListener('popstate', handlePopState)
-      
+      document.removeEventListener('click', handleDocumentClick, true)
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }

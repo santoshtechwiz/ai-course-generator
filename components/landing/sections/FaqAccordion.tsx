@@ -7,7 +7,7 @@ import { useEffect } from "react"
 import { useRef, useState, useCallback, useMemo } from "react"
 import { motion, AnimatePresence, useInView } from "framer-motion"
 import { Plus, Minus, Search } from "lucide-react"
-import { useGlobalLoader } from '@/store/loaders/global-loader'
+import { useGlobalLoader } from '@/components/loaders/global-loaders'
 import { InlineSpinner } from '@/components/ui/loader'
 import { Input } from "@/components/ui/input"
 import { FeedbackButton } from "@/components/ui/feedback-button"

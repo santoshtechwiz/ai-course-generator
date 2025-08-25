@@ -23,7 +23,7 @@ import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import BlanksQuiz from "./BlanksQuiz"
 
-import { useGlobalLoader } from "@/store/loaders/global-loader"
+import { useGlobalLoader } from "@/components/loaders/global-loaders"
 import { BlankQuizQuestion } from "@/app/types/quiz-types"
 import { Skeleton } from "@/components/ui/skeleton"
 

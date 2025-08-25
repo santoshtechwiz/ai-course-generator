@@ -4,7 +4,20 @@ import { API_ENDPOINTS } from './quiz-helpers'
 import { QuizQuestion, QuizResults, QuizState } from './quiz-types'
 import { QuizType } from '@/app/types/quiz-types'
 import { STORAGE_KEYS } from '@/constants/global'
-import { useGlobalLoader } from '@/components/loaders/global-loaders'
+import { useGlobalLoaderStore } from '@/components/loaders/global-loaders'
+
+// Lightweight non-hook helper to interact with global loader store inside thunks
+function startQuizLoader(id: string, message: string) {
+  if (typeof window === 'undefined') return null
+  try {
+    const store = useGlobalLoaderStore.getState()
+    return store.startLoading(id, { message, isBlocking: true, minVisibleMs: 200, type: 'data', priority: 'medium' })
+  } catch { return null }
+}
+function stopQuizLoader(id: string | null, success: boolean, error?: string) {
+  if (!id || typeof window === 'undefined') return
+  try { useGlobalLoaderStore.getState().stopLoading(id, { success, error }) } catch {}
+}
 
 // In-memory cache for fetched quizzes (per session). Keeps last N entries with TTL.
 const QUIZ_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
@@ -90,6 +103,7 @@ export const fetchQuiz = createAsyncThunk(
     },
     { rejectWithValue }
   ) => {
+    let loaderId: string | null = null
     try {
       if (!payload) {
         return rejectWithValue('No payload provided')
@@ -147,12 +161,8 @@ export const fetchQuiz = createAsyncThunk(
         }
       }
       
-      // Show a deterministic global loader only when performing network request
-      const loader = useGlobalLoader()
-      try {
-        // Avoid passing unknown options to loader.startLoading in case API changed
-        loader.startLoading({ message: 'Loading quiz...', isBlocking: true, minVisibleMs: 200 })
-      } catch {}
+  // Start loader (browser only)
+  loaderId = startQuizLoader(`quiz-${type}-${slug}`, 'Loading quiz...')
 
       const response = await fetch(url)
       if (!response.ok) {
@@ -160,23 +170,22 @@ export const fetchQuiz = createAsyncThunk(
         
         // Handle 404 specifically as not found
         if (response.status === 404) {
-          try { loader.stopLoading() } catch {}
+          stopQuizLoader(loaderId, false, '404')
           return rejectWithValue({
             error: `Quiz not found`,
             status: 'not-found',
             details: `Quiz with slug "${slug}" and type "${type}" does not exist.`,
           })
         }
-        
-        try { loader.stopLoading() } catch {}
+        stopQuizLoader(loaderId, false, String(response.status))
         return rejectWithValue({
           error: `Error loading quiz: ${response.status}`,
           details: errorText,
         })
       }
 
-      const data = await response.json()
-      try { loader.stopLoading() } catch {}
+  const data = await response.json()
+  stopQuizLoader(loaderId, true)
 
       if (!data || !Array.isArray(data.questions)) {
         return rejectWithValue({ 
@@ -241,8 +250,8 @@ export const fetchQuiz = createAsyncThunk(
       setCachedQuiz(type, slug, normalized)
 
       return normalized
-    } catch (err: any) {
-      try { useGlobalLoader().stopLoading() } catch {}
+  } catch (err: any) {
+  stopQuizLoader(loaderId, false, String(err?.message || 'error'))
       return rejectWithValue({ error: err?.message || 'Unknown error' })
     }
   }

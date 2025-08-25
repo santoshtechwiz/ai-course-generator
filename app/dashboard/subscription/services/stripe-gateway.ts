@@ -189,7 +189,8 @@ export class StripeGateway implements PaymentGateway {
           allow_promotion_codes: !promoCodeApplied, // Only allow additional promo codes if none applied yet
         })
 
-        logger.info(`Created Stripe checkout session: ${session.id}`)
+  // Avoid logging raw Stripe IDs; log presence instead
+  logger.info('Created Stripe checkout session', { hasSessionId: !!session.id, hasUrl: !!session.url })
 
         // Make sure we have a URL
         if (!session.url) {
@@ -253,7 +254,8 @@ export class StripeGateway implements PaymentGateway {
       } catch (stripeError: any) {
         // If the subscription doesn't exist in Stripe, log the error but don't fail
         if (stripeError.code === "resource_missing") {
-          logger.warn(`Stripe subscription ${userSubscription.stripeSubscriptionId} not found for user ${userId}`)
+          // Sanitize log: don't emit the raw Stripe subscription ID
+          logger.warn('Stripe subscription not found for user', { userId, hasStripeSubscriptionId: !!userSubscription.stripeSubscriptionId })
 
           // Update our database anyway
           await prisma.userSubscription.update({
@@ -313,7 +315,8 @@ export class StripeGateway implements PaymentGateway {
       } catch (stripeError: any) {
         // If the subscription doesn't exist in Stripe, log the error but don't fail
         if (stripeError.code === "resource_missing") {
-          logger.warn(`Stripe subscription ${userSubscription.stripeSubscriptionId} not found for user ${userId}`)
+          // Sanitize log: don't emit the raw Stripe subscription ID
+          logger.warn('Stripe subscription not found for user when resuming', { userId, hasStripeSubscriptionId: !!userSubscription.stripeSubscriptionId })
           return false
         } else {
           this.handleStripeError(stripeError, "resuming subscription")
@@ -771,11 +774,12 @@ export class StripeGateway implements PaymentGateway {
         },
       })
 
-      // Cache the customer ID
-      customerCache.set(user.id, customer.id)
+  // Cache the customer ID
+  customerCache.set(user.id, customer.id)
 
-      logger.info(`Created new Stripe customer for user ${user.id}: ${customer.id}`)
-      return customer.id
+  // Avoid logging the raw Stripe customer ID
+  logger.info('Created new Stripe customer for user', { userId: user.id, hasCustomerId: !!customer.id })
+  return customer.id
     } catch (stripeError: any) {
       this.handleStripeError(stripeError, "creating customer")
       throw stripeError

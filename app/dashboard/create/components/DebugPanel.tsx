@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChevronDown, ChevronUp } from "lucide-react"
 import { InlineSpinner } from "@/components/ui/loader"
-import { useGlobalLoader } from "@/store/loaders/global-loader"
+import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 interface DebugPanelProps {
   editingChapterId: string | null

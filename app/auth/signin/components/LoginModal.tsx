@@ -7,7 +7,7 @@ import { getProviders, signIn } from "next-auth/react"
 import { Loader2 } from "lucide-react"
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useGlobalLoader } from '@/store/loaders/global-loader'
+import { useGlobalLoader } from '@/components/loaders/global-loaders'
 import { GlobalLoader } from '@/components/ui/loader'
 
 import { useToast } from "@/hooks"

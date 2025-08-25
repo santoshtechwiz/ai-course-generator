@@ -29,7 +29,7 @@ import type { QueryParams } from "@/app/types/types"
 import PlanAwareButton from "../../components/PlanAwareButton"
 import { SubscriptionSlider } from "../../../subscription/components/SubscriptionSlider"
 import FormContainer from "@/app/dashboard/FormContainer"
-import { useGlobalLoader } from "@/store/loaders/global-loader"
+import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 
 interface Subscription {
@@ -576,8 +576,8 @@ export default function CreateQuizForm({
         confirmText="Generate Now"
         cancelText="Cancel"
         showTokenUsage={true}
-        status={isLoading ? "loading" : submissionError ? "error" : isSuccess ? "success" : "idle"}
-        errorMessage={submissionError}
+  status={isLoading ? "loading" : submissionError ? "error" : isSuccess ? "success" : undefined}
+  errorMessage={submissionError || undefined}
         tokenUsage={{
           used: Math.max(0, maxQuestions - credits),
           available: maxQuestions,

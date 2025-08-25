@@ -297,7 +297,362 @@
  */
 /*   } */
 
+/* Course Details Page Layout Styles */
 
+/* Container and Layout */
+.course-container {
+  @apply w-full max-w-none;
+}
+
+.course-header {
+  @apply sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border/40;
+}
+
+.course-main-grid {
+  @apply grid grid-cols-1 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px] gap-8 px-6 lg:px-8 xl:px-12 py-8;
+}
+
+/* Video Player Enhancements */
+.video-container {
+  @apply relative w-full;
+}
+
+.video-player {
+  @apply aspect-video bg-black rounded-xl overflow-hidden shadow-2xl ring-1 ring-black/5;
+}
+
+/* Typography System */
+.course-title {
+  @apply text-2xl lg:text-3xl xl:text-4xl font-bold text-foreground leading-tight;
+}
+
+.chapter-title {
+  @apply text-lg lg:text-xl font-semibold text-foreground leading-snug;
+}
+
+.section-title {
+  @apply text-xl lg:text-2xl font-bold text-foreground mb-4;
+}
+
+.subsection-title {
+  @apply text-lg font-semibold text-foreground mb-3;
+}
+
+.body-text {
+  @apply text-base text-muted-foreground leading-relaxed;
+}
+
+.small-text {
+  @apply text-sm text-muted-foreground;
+}
+
+.caption-text {
+  @apply text-xs text-muted-foreground;
+}
+
+/* Spacing System */
+.content-spacing {
+  @apply space-y-8;
+}
+
+.section-spacing {
+  @apply space-y-6;
+}
+
+.item-spacing {
+  @apply space-y-4;
+}
+
+.tight-spacing {
+  @apply space-y-2;
+}
+
+/* Card and Panel Styles */
+.enhanced-card {
+  @apply bg-card rounded-xl border border-border/40 shadow-lg overflow-hidden;
+}
+
+.card-header-enhanced {
+  @apply p-6 pb-4 border-b border-border/20;
+}
+
+.card-content-enhanced {
+  @apply p-6;
+}
+
+.sidebar-card {
+  @apply bg-card rounded-xl border border-border/40 shadow-lg h-full overflow-hidden;
+}
+
+/* Tab System Enhancements */
+.enhanced-tabs-list {
+  @apply grid w-full grid-cols-4 h-auto bg-muted/30 rounded-none border-b border-border/30 p-2 gap-2;
+}
+
+.enhanced-tab-trigger {
+  @apply flex items-center gap-3 text-sm font-medium h-14 
+         data-[state=active]:bg-background data-[state=active]:shadow-lg 
+         data-[state=active]:border data-[state=active]:border-border/40 
+         transition-all rounded-xl hover:bg-muted/50;
+}
+
+.enhanced-tab-content {
+  @apply flex-1 overflow-auto p-8;
+}
+
+/* Progress and Status Indicators */
+.progress-ring {
+  @apply w-36 h-36;
+}
+
+.progress-stats-grid {
+  @apply grid grid-cols-2 lg:grid-cols-4 gap-6;
+}
+
+.progress-stat-card {
+  @apply bg-card border border-border/40 rounded-xl p-6 
+         hover:shadow-lg transition-all duration-300;
+}
+
+.skill-badge {
+  @apply px-6 py-3 text-base font-semibold rounded-full;
+}
+
+/* Playlist Sidebar Enhancements */
+.playlist-header {
+  @apply flex-shrink-0 p-6 border-b border-border/40;
+}
+
+.playlist-content {
+  @apply flex-1 overflow-hidden;
+}
+
+.playlist-footer {
+  @apply flex-shrink-0 p-6 border-t border-border/40 bg-muted/20;
+}
+
+.chapter-item {
+  @apply w-full p-4 h-auto justify-start text-left relative group 
+         transition-all duration-200 hover:bg-muted/60 hover:shadow-md 
+         rounded-xl border border-transparent;
+}
+
+.chapter-item-active {
+  @apply bg-primary/10 border-primary/20 text-primary shadow-md;
+}
+
+.chapter-item-completed {
+  @apply bg-emerald-50 dark:bg-emerald-950/20;
+}
+
+.chapter-number {
+  @apply w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm;
+}
+
+.chapter-number-active {
+  @apply bg-primary text-primary-foreground;
+}
+
+.chapter-number-completed {
+  @apply bg-emerald-500 text-white;
+}
+
+.chapter-number-default {
+  @apply bg-muted text-foreground;
+}
+
+/* Bookmark Enhancements */
+.bookmark-item {
+  @apply group flex items-center justify-between p-6 bg-card 
+         border border-border/40 rounded-xl cursor-pointer 
+         hover:shadow-lg transition-all duration-300 hover:border-primary/30;
+}
+
+.bookmark-number {
+  @apply w-14 h-14 bg-primary/10 rounded-xl flex items-center 
+         justify-center text-primary font-bold shadow-sm text-lg;
+}
+
+/* Interactive Elements */
+.action-button {
+  @apply bg-gradient-to-r from-primary to-primary/80 
+         hover:from-primary/90 hover:to-primary/70 
+         text-primary-foreground shadow-lg 
+         transition-all duration-200 hover:scale-105;
+}
+
+.outline-button {
+  @apply border border-border/40 bg-background/50 
+         hover:bg-muted/50 transition-all duration-200;
+}
+
+/* Animation Classes */
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes scaleIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.95); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1024px) {
+  .course-main-grid {
+    @apply grid-cols-1 gap-6 px-4 py-6;
+  }
+  
+  .course-title {
+    @apply text-xl;
+  }
+  
+  .section-title {
+    @apply text-lg;
+  }
+  
+  .progress-stats-grid {
+    @apply grid-cols-2 gap-4;
+  }
+  
+  .enhanced-tab-content {
+    @apply p-6;
+  }
+}
+
+@media (max-width: 768px) {
+  .course-main-grid {
+    @apply px-4 py-4;
+  }
+  
+  .enhanced-tab-content {
+    @apply p-4;
+  }
+  
+  .progress-ring {
+    @apply w-28 h-28;
+  }
+  
+  .progress-stats-grid {
+    @apply grid-cols-1 gap-4;
+  }
+  
+  .bookmark-item {
+    @apply p-4;
+  }
+  
+  .bookmark-number {
+    @apply w-12 h-12 text-base;
+  }
+}
+
+/* Dark Mode Adjustments */
+@media (prefers-color-scheme: dark) {
+  .video-player {
+    @apply ring-white/5;
+  }
+  
+  .enhanced-card {
+    @apply border-border/30;
+  }
+  
+  .chapter-item-completed {
+    @apply bg-emerald-950/20;
+  }
+}
+
+/* Focus and Accessibility */
+.enhanced-tab-trigger:focus-visible,
+.chapter-item:focus-visible,
+.action-button:focus-visible {
+  @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+}
+
+/* Loading States */
+.loading-skeleton {
+  @apply animate-pulse bg-muted/50 rounded;
+}
+
+.loading-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground)) hsl(var(--muted));
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground));
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--foreground));
+}
   /* Improved button gradient with better hover states */
   .btn-gradient { 
     @apply bg-gradient-to-r from-primary to-primary/80 text-primary-foreground;
