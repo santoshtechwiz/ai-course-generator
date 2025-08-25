@@ -26,7 +26,7 @@ interface Course {
   lessonCount?: number
   quizCount?: number
   viewCount?: number
-  category?: CategoryId
+  category?: CategoryId | { id: string; name: string } | null
   duration?: string
   createdAt: string
   difficulty?: string
@@ -283,7 +283,7 @@ export default function CoursesClient({
                 lessonCount={course.lessonCount || 0}
                 quizCount={course.quizCount || 0}
                 viewCount={course.viewCount || 0}
-                category={course.category || ""}
+                category={(typeof course.category === 'object' && course.category?.name ? course.category.name : (typeof course.category === 'string' ? course.category : "")) || ""}
                 duration={course.duration || "4-6 weeks"}
                 image={course.image}
                 difficulty={course.difficulty as "Beginner" | "Intermediate" | "Advanced"}

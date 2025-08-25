@@ -321,7 +321,7 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
           {/* Category Badge */}
           {course.category && (
             <Badge className="absolute left-3 top-3 bg-primary/90 text-primary-foreground shadow-lg backdrop-blur-sm border-0 font-medium">
-              {course.category.name}
+              {typeof course.category === 'object' ? course.category.name : course.category}
             </Badge>
           )}
 
@@ -479,7 +479,7 @@ function CourseListItem({ course, progress, isLoading, onClick }: CourseCardProp
                 <div className="space-y-1">
                   {course.category && (
                     <Badge variant="outline" className="text-xs">
-                      {course.category.name}
+                      {typeof course.category === 'object' ? course.category.name : course.category}
                     </Badge>
                   )}
                   <h3 className="line-clamp-1 text-lg font-semibold group-hover:text-primary transition-colors">
