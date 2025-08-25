@@ -8,6 +8,7 @@ import { routeConfig } from "@/config/routes"
 import { protectAdminRoutes, protectAuthenticatedRoutes } from "@/middlewares/auth/route-protection"
 import { csrfMiddleware } from "@/middlewares/security/csrf-protection"
 import { securityHeadersMiddleware, corsMiddleware } from "@/middlewares/security/headers"
+import { validateSubscriptionMiddleware } from "@/middlewares/subscription-middleware"
 
 // Define matcher to exclude API, static files, and favicon requests
 export const config = {
@@ -131,6 +132,10 @@ export async function middleware(req: NextRequest) {
   // Check admin routes
   const adminResponse = await protectAdminRoutes(req)
   if (adminResponse) return adminResponse
+
+  // Check subscription for protected routes
+  const subscriptionResponse = await validateSubscriptionMiddleware(req)
+  if (subscriptionResponse) return subscriptionResponse
 
   // Handle redirects
   const redirectResponse = await handleRedirects(req)

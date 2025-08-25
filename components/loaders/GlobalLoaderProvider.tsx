@@ -1,11 +1,19 @@
 "use client"
 
-import React, { useEffect } from "react"
-import { GlobalLoader } from "@/components/loaders/Loader"
-
-
+import React, { createContext, useContext, useEffect } from "react"
+import { GlobalLoader } from "@/components/loaders/UnifiedLoader"
 import { useAdvancedRouteLoaderBridge } from "./RouteLoaderBridge"
-import { useGlobalLoaderStore } from "./global-loaders"
+import { useGlobalLoaderStore, GlobalLoaderState, GlobalLoaderActions } from "./global-loaders"
+
+const GlobalLoaderContext = createContext<(GlobalLoaderState & GlobalLoaderActions) | null>(null)
+
+export const useGlobalLoader = () => {
+  const context = useContext(GlobalLoaderContext)
+  if (!context) {
+    throw new Error('useGlobalLoader must be used within GlobalLoaderProvider')
+  }
+  return context
+}
 
 interface GlobalLoaderProviderProps {
   children: React.ReactNode
@@ -22,6 +30,7 @@ export function GlobalLoaderProvider({
   enablePerformanceMonitoring = false,
   debugMode = false
 }: GlobalLoaderProviderProps) {
+  const store = useGlobalLoaderStore()
   
   // Always call the hook (Rules of Hooks) and let it early-return if disabled
   useAdvancedRouteLoaderBridge(enableRouteLoading)
@@ -36,11 +45,11 @@ export function GlobalLoaderProvider({
   useDebugMode(debugMode)
 
   return (
-    <>
+    <GlobalLoaderContext.Provider value={store}>
       {children}
       <GlobalLoader />
       {debugMode && <LoaderDebugPanel />}
-    </>
+    </GlobalLoaderContext.Provider>
   )
 }
 

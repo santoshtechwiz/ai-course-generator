@@ -327,7 +327,6 @@ function Tile({
   const [isOpen, setIsOpen] = useState(false);
   const [currentTagline, setCurrentTagline] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const { data } = useSubscription();
 
   const taglineInterval = useMemo(() => {
     if (isOpen) {
@@ -344,7 +343,6 @@ function Tile({
     };
   }, [taglineInterval]);
 
-  const isDisabled = isPremium && data?.plan === "FREE";
   const colorClasses = getColorClasses(color, isPremium);
 
   return (
@@ -354,21 +352,15 @@ function Tile({
           custom={index}
           initial="hidden"
           animate="visible"
-          whileHover={!isDisabled ? "hover" : undefined}
+          whileHover="hover"
           variants={cardVariants}
           onHoverStart={() => setIsHovered(true)}
           onHoverEnd={() => setIsHovered(false)}
           className="h-full"
         >
           <Card
-            className={`h-full flex flex-col justify-between transition-all duration-500 border-2 ${
-              colorClasses.card
-            } ${
-              isDisabled 
-                ? "opacity-60 cursor-not-allowed" 
-                : "cursor-pointer hover:shadow-2xl hover:shadow-black/10"
-            } relative overflow-hidden group`}
-            onClick={() => !isDisabled && setIsOpen(true)}
+            className={`h-full flex flex-col justify-between transition-all duration-500 border-2 ${colorClasses.card} cursor-pointer hover:shadow-2xl hover:shadow-black/10 relative overflow-hidden group`}
+            onClick={() => setIsOpen(true)}
           >
             {/* Floating elements background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -480,31 +472,11 @@ function Tile({
             </CardContent>
 
             <CardFooter className="pt-4">
-              <motion.div
-                whileHover={{ scale: isDisabled ? 1 : 1.05 }}
-                whileTap={{ scale: isDisabled ? 1 : 0.95 }}
-                className="w-full"
-              >
-                <Button
-                  className={`w-full transition-all duration-300 font-semibold ${
-                    isDisabled 
-                      ? "bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-100" 
-                      : `${colorClasses.button} text-white shadow-lg hover:shadow-xl`
-                  } group`}
-                  disabled={isDisabled}
-                >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full">
+                <Button className={`w-full transition-all duration-300 font-semibold ${colorClasses.button} text-white shadow-lg hover:shadow-xl group`}>
                   <span className="flex items-center justify-center">
-                    {isDisabled ? (
-                      <>
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Upgrade to Access
-                      </>
-                    ) : (
-                      <>
-                        Get Started
-                        <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                      </>
-                    )}
+                    Get Started
+                    <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </Button>
               </motion.div>
@@ -513,7 +485,7 @@ function Tile({
         </motion.div>
       </TooltipProvider>
       
-      <Dialog open={isOpen && !isDisabled} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
           <ScrollArea className="max-h-[80vh] pr-6">
             <DialogHeader className="space-y-6">
@@ -702,25 +674,6 @@ function Tile({
           </ScrollArea>
 
           <DialogFooter className="flex-col sm:flex-row gap-3 pt-6 border-t">
-            {data?.plan === "FREE" && isPremium && (
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full sm:w-auto"
-              >
-                <Button
-                  variant="outline"
-                  className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 font-semibold"
-                  asChild
-                >
-                  <Link href="/dashboard/subscription">
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Upgrade to Pro
-                  </Link>
-                </Button>
-              </motion.div>
-            )}
-
             <motion.div
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -729,9 +682,8 @@ function Tile({
               <Button
                 asChild
                 className={`w-full h-12 font-bold text-lg ${colorClasses.button} text-white shadow-xl hover:shadow-2xl transition-all duration-300 group`}
-                disabled={isPremium && data?.plan === "FREE"}
               >
-                <Link href={isPremium && data?.plan === "FREE" ? "/pricing" : url}>
+                <Link href={url}>
                   <motion.span 
                     className="flex items-center justify-center"
                     whileHover={{ x: 5 }}

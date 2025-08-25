@@ -1,11 +1,12 @@
 "use client"
 
-import React from "react"
+import React, { useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { HashLoader, PulseLoader, ClipLoader } from "react-spinners"
 import { AlertCircle, CheckCircle, X, Loader2, Upload, Route, Database, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { LoaderType, useGlobalLoader } from "./global-loaders"
+import { LoaderType } from "./global-loaders"
+import { useGlobalLoader } from "./GlobalLoaderProvider"
 
 
 interface IconProps {
@@ -238,46 +239,77 @@ function CancelButton({ onCancel, disabled }: { onCancel: () => void, disabled?:
 }
 
 export function GlobalLoader() {
-  const { 
-    state, 
-    isLoading, 
-    message, 
-    subMessage, 
-    progress, 
-    isBlocking, 
-    error,
-    allowCancel,
-    showProgress,
-    type,
-    priority,
-    cancelLoading,
-    estimatedDuration,
-    startTime,
-    instanceId,
-    routeChangeInProgress
-  } = useGlobalLoader()
+  const store = useGlobalLoader()
+  const { activeInstance, routeChangeInProgress, cancelLoading } = store
+  
+  // Calculate state from active instance
+  const state = activeInstance?.state || 'idle'
+  const message = activeInstance?.options?.message || ''
+  const subMessage = activeInstance?.options?.subMessage || ''
+  const progress = activeInstance?.options?.progress || 0
+  const isBlocking = activeInstance?.options?.isBlocking || false
+  const allowCancel = activeInstance?.options?.allowCancel || false
+  const showProgress = activeInstance?.options?.showProgress || false
+  const type = activeInstance?.options?.type || 'custom'
+  const priority = activeInstance?.options?.priority || 'medium'
+  const error = activeInstance?.error
+  const estimatedDuration = activeInstance?.estimatedDuration
+  const startTime = activeInstance?.startTime
+  const instanceId = activeInstance?.id || ''
 
-  // Don't render if idle and no route change
-  if (state === 'idle' && !routeChangeInProgress) {
+  // Check if we should show the loader
+  const shouldShow = activeInstance || (routeChangeInProgress && type === 'route')
+
+  // Don't render if nothing to show
+  if (!shouldShow) {
     return null
   }
+
+  // Determine the loader variant based on context
+  const variant = useMemo(() => {
+    if (isBlocking || (type === 'route' && routeChangeInProgress)) {
+      return 'fullscreen'
+    }
+    if (priority === 'high' || type === 'route') {
+      return 'page'
+    }
+    return 'inline'
+  }, [isBlocking, type, routeChangeInProgress, priority])
 
   const renderIcon = () => {
     switch (state) {
       case 'loading':
-        return <LoadingSpinner type={type} priority={priority} />
+        return <LoadingSpinner 
+          type={type} 
+          priority={priority}
+          size={variant === 'inline' ? 24 : 40} 
+        />
       case 'success':
-        return <SuccessIcon type={type} />
+        return <SuccessIcon 
+          type={type}
+          size={variant === 'inline' ? 24 : 40}
+        />
       case 'error':
-        return <ErrorIcon />
+        return <ErrorIcon 
+          size={variant === 'inline' ? 24 : 40}
+        />
       default:
-        return <LoadingSpinner type={type} priority={priority} />
+        return <LoadingSpinner 
+          type={type} 
+          priority={priority}
+          size={variant === 'inline' ? 24 : 40}
+        />
     }
   }
 
+  // Unified message handling for better UX
   const getMessage = () => {
-    if (routeChangeInProgress && state === 'idle') {
-      return 'Navigating...'
+    // For route changes, always show navigation message
+    if (type === 'route' || (routeChangeInProgress && state === 'idle')) {
+      if (message && message !== 'Loading...') {
+        return message
+      }
+      return state === 'loading' ? 'Loading page...' : 'Navigating...'
     }
     
     switch (state) {
@@ -290,9 +322,11 @@ export function GlobalLoader() {
     }
   }
 
+  // Unified submessage handling
   const getSubMessage = () => {
-    if (routeChangeInProgress && state === 'idle') {
-      return 'Loading new page...'
+    // For route changes, never show "Loading new page..."
+    if (type === 'route' || routeChangeInProgress) {
+      return subMessage || '' // Only show explicit submessages
     }
     
     if (subMessage) return subMessage

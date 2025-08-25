@@ -10,6 +10,24 @@ export type LoaderState = 'idle' | 'loading' | 'success' | 'error'
 export type LoaderPriority = 'low' | 'medium' | 'high' | 'critical'
 export type LoaderType = 'route' | 'action' | 'data' | 'upload' | 'custom'
 
+export interface GlobalLoaderState {
+  instances: Map<string, LoaderInstance>
+  activeInstance: LoaderInstance | null
+  routeChangeInProgress: boolean
+  routeChangeStartTime?: number
+  queuedOperations: Array<{ id: string; action: 'start' | 'stop'; options?: LoaderOptions }>
+  nextId: number
+}
+
+export interface GlobalLoaderActions {
+  startLoading: (id?: string, options?: LoaderOptions) => string
+  stopLoading: (id: string, result?: { success: boolean; error?: string }) => void
+  updateProgress: (id: string, progress: number, message?: string) => void
+  cancelLoading: (id: string) => void
+  clearAll: () => void
+  setRouteChangeState: (inProgress: boolean) => void
+}
+
 export interface LoaderOptions {
   message?: string
   subMessage?: string
@@ -23,6 +41,7 @@ export interface LoaderOptions {
   allowCancel?: boolean
   onCancel?: () => void
   metadata?: Record<string, any>
+  estimatedDuration?: number
   // Auto progress simulation: if true, progress will advance until stopped
   autoProgress?: boolean
   // When true (default) a non-route loader will merge into the active route loader
@@ -42,18 +61,14 @@ interface LoaderInstance {
   estimatedDuration?: number
 }
 
-interface GlobalLoaderState {
+export type GlobalLoaderStore = {
   instances: Map<string, LoaderInstance>
   activeInstance: LoaderInstance | null
   routeChangeInProgress: boolean
   routeChangeStartTime?: number
   queuedOperations: Array<{ id: string; action: 'start' | 'stop'; options?: LoaderOptions }>
-  // deterministic id generator
   nextId: number
-}
-
-interface GlobalLoaderActions {
-  // if `id` is omitted the store will generate a deterministic id and return it
+  // Actions
   startLoading: (id?: string, options?: LoaderOptions) => string
   stopLoading: (id: string, result?: { success: boolean; error?: string }) => void
   updateProgress: (id: string, progress: number, message?: string) => void
@@ -75,6 +90,7 @@ const DEFAULT_OPTIONS: Required<Omit<LoaderOptions, 'onCancel' | 'metadata'>> = 
   allowCancel: false,
   autoProgress: false,
   combineWithRoute: true,
+  estimatedDuration: 0,
 }
 
 const PRIORITY_ORDER: Record<LoaderPriority, number> = {

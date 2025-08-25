@@ -1,37 +1,12 @@
 
+"use client";
+
 import { CreateComponent } from "@/components/features/explore/CreateComponent";
-import type { Metadata } from "next";
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper";
-import { generateMetadata } from "@/lib/seo";
 import { FAQSchema } from "@/lib/seo";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-
-// Enhanced metadata for better SEO
-export const metadata: Metadata = generateMetadata({
-  title: "AI Content Creator - Generate Courses, Quizzes & Assessments",
-  description:
-    "Create professional educational content instantly with AI. Generate interactive courses, multiple-choice questions, open-ended assessments, and fill-in-the-blank exercises for any subject. Perfect for educators, trainers, and content creators.",
-  keywords: [
-    "AI content generator",
-    "course creation tool",
-    "quiz generator",
-    "MCQ creator",
-    "educational content AI",
-    "assessment builder",
-    "e-learning tools",
-    "automated question generation",
-    "teaching materials creator",
-    "educational technology",
-    "AI-powered education",
-    "content authoring",
-    "quiz maker",
-    "exam creator",
-    "learning material generator",
-    "courseai"
-  ],
-  canonical: '/dashboard/explore',
-  type: 'website',
-});
+import { Suspense } from "react"
+import { GlobalLoader } from "@/components/loaders/UnifiedLoader"
 
 export default function ExplorePage() {
   // FAQ items for CourseAI explore page
@@ -74,10 +49,18 @@ export default function ExplorePage() {
         
         <PageHeader
           title="Explore AI-Powered Content Creation"
-          description="Create professional-quality educational content in minutes with our AI tools. "
+          description="Create professional-quality educational content in minutes with our AI tools."
         />
 
-        <CreateComponent />
+        <Suspense 
+          fallback={
+            <div className="w-full flex items-center justify-center min-h-[60vh]">
+              <GlobalLoader />
+            </div>
+          }
+        >
+          <CreateComponent />
+        </Suspense>
       </PageWrapper>
     </>
   );

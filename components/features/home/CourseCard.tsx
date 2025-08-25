@@ -144,9 +144,9 @@ export const CourseCard = React.memo(
 
     // Memoized random selections for consistent rendering
     const { selectedImage, gradientBg, categoryConfig } = useMemo(() => {
-      const imageIndex = Math.abs(title.split("").reduce((a, b) => a + b.charCodeAt(0), 0)) % COURSE_IMAGES.length
+      const imageIndex = Math.abs(title?.split("")?.reduce((a, b) => a + b.charCodeAt(0), 0)) % COURSE_IMAGES.length
       const gradientIndex =
-        Math.abs(slug.split("").reduce((a, b) => a + b.charCodeAt(0), 0)) % GRADIENT_BACKGROUNDS.length
+        Math.abs(slug?.split("")?.reduce((a, b) => a + b.charCodeAt(0), 0)) % GRADIENT_BACKGROUNDS.length
       const normalizedCategory = category.toLowerCase()
       const config =
         CATEGORY_CONFIG[normalizedCategory] ||

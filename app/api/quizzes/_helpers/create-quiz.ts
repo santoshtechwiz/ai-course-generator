@@ -11,6 +11,7 @@ import { QuizRepository } from "@/app/repositories/quiz.repository"
 import { UserRepository } from "@/app/repositories/user.repository"
 import { generateFlashCards } from "@/lib/chatgpt/ai-service"
 import type { QuizType } from "@/app/types/quiz-types"
+import { validateSubscriptionServer } from "@/lib/subscription-validation"
 
 const questionRepo = new QuestionRepository()
 const quizRepo = new QuizRepository()
@@ -29,6 +30,17 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
 
     if (!userId) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    }
+
+    // Validate subscription
+    const validation = await validateSubscriptionServer(userId, {
+      requireSubscription: true,
+      requireCredits: true,
+      requiredPlan: "FREE" // Adjust plan requirement based on quiz type if needed
+    })
+
+    if (!validation.isValid) {
+      return NextResponse.json({ error: validation.error }, { status: 403 })
     }
 
     // Parse body safely once
@@ -51,11 +63,7 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 })
     }
 
-    // Ensure user has credits before generation
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { credits: true } })
-    if (!user || user.credits <= 0) {
-      return NextResponse.json({ error: "Insufficient credits" }, { status: 403 })
-    }
+    // Credits are already validated by subscription validation above
 
     const slug = await generateUniqueSlug(title)
 

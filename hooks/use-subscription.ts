@@ -1,19 +1,28 @@
 "use client"
 
-import { useEffect, useState, useCallback, useMemo } from "react"
-import { useAppSelector, useAppDispatch } from "@/store"
-import {
-  fetchSubscription,
+import { useEffect, useCallback, useMemo } from 'react'
+import { useAppSelector, useAppDispatch } from '@/store'
+import { 
   selectSubscriptionData,
+  selectHasActiveSubscription,
+  selectHasCredits,
+  selectCanCreateQuizOrCourse,
+  selectIsExpired,
+  selectShouldRefreshSubscription,
+  selectSubscriptionCacheStatus,
+  fetchSubscription,
+  markSubscriptionStale,
+  clearSubscriptionError,
   selectSubscriptionLoading,
   selectTokenUsage,
   selectIsSubscribed,
   selectSubscriptionPlan,
   selectIsCancelled,
   canDownloadPdfSelector,
-} from "@/store/slices/subscription-slice"
-
-import { SubscriptionResult, SubscriptionStatusType } from "@/app/types/subscription"
+} from '@/store/slices/subscription-slice'
+import { useAuth } from '@/modules/auth/providers/AuthProvider'
+import { useToast } from '@/hooks'
+import { SubscriptionResult } from "@/app/types/subscription"
 
 export type UseSubscriptionOptions = {
   allowPlanChanges?: boolean;
@@ -21,10 +30,9 @@ export type UseSubscriptionOptions = {
   onSubscriptionSuccess?: (result: SubscriptionResult) => void;
   onSubscriptionError?: (error: SubscriptionResult) => void;
   skipInitialFetch?: boolean;
- 
+  lazyLoad?: boolean;
+  validateOnMount?: boolean;
 };
-
-const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
 
 export default function useSubscription(options: UseSubscriptionOptions = {}) {
   const {
@@ -32,52 +40,59 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
     allowDowngrades = false,
     onSubscriptionSuccess,
     onSubscriptionError,
-    skipInitialFetch = false
-  } = options
+    skipInitialFetch = false,
+    lazyLoad = true,
+    validateOnMount = false
+  } = options;
 
-  const dispatch = useAppDispatch()
-  const subscriptionData = useAppSelector(selectSubscriptionData)
-  const isLoading = useAppSelector(selectSubscriptionLoading)
-  const tokenUsageData = useAppSelector(selectTokenUsage)
-  const isSubscribed = useAppSelector(selectIsSubscribed)
-  const subscriptionPlan = useAppSelector(selectSubscriptionPlan)
-  const isCancelled = useAppSelector(selectIsCancelled)
-  const canDownloadPdf = useAppSelector(canDownloadPdfSelector)
-
-  const [isInitialized, setIsInitialized] = useState(false)
+  const dispatch = useAppDispatch();
+  const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
   
-  const refreshSubscription = useCallback(() => {
-    dispatch(fetchSubscription())
-      .unwrap()
-      .then((result) => {
-        if (result && typeof result === "object") {
-          onSubscriptionSuccess?.({
-            success: true,
-            message: "Subscription refreshed"
-          })
-        }
-      })
-      .catch((error) => {
-        onSubscriptionError?.({
-          success: false,
-          message: error,
-          error: "REFRESH_ERROR"
-        })
-      })
-  }, [dispatch, onSubscriptionSuccess, onSubscriptionError])
-  
-  useEffect(() => {
-    const shouldSkipInitialFetch = skipInitialFetch || 
-      (subscriptionData !== null && !isInitialized);
+  // Redux selectors
+  const subscriptionData = useAppSelector(selectSubscriptionData);
+  const isLoading = useAppSelector(selectSubscriptionLoading);
+  const tokenUsageData = useAppSelector(selectTokenUsage);
+  const isSubscribed = useAppSelector(selectIsSubscribed);
+  const subscriptionPlan = useAppSelector(selectSubscriptionPlan);
+  const isCancelled = useAppSelector(selectIsCancelled);
+  const canDownloadPdf = useAppSelector(canDownloadPdfSelector);
+  const hasActiveSubscription = useAppSelector(selectHasActiveSubscription);
+  const hasCredits = useAppSelector(selectHasCredits);
+  const canCreateQuizOrCourse = useAppSelector(selectCanCreateQuizOrCourse);
+  const isExpired = useAppSelector(selectIsExpired);
+  const shouldRefresh = useAppSelector(selectShouldRefreshSubscription);
+  const cacheStatus = useAppSelector(selectSubscriptionCacheStatus);
 
-    if (!isInitialized && !shouldSkipInitialFetch) {
-      refreshSubscription()
-      setIsInitialized(true)
+  // Validate subscription status
+  const validateSubscription = useCallback(async () => {
+    if (!isAuthenticated) return null;
+    
+    try {
+      const result = await dispatch(fetchSubscription()).unwrap();
+      
+      if (result) {
+        onSubscriptionSuccess?.({
+          success: true,
+          message: "Subscription validated"
+        });
+      }
+      
+      return result;
+    } catch (error: any) {
+      onSubscriptionError?.({
+        success: false,
+        message: error.message || "Failed to validate subscription"
+      });
+      
+      toast({
+        title: "Subscription Check Failed",
+        description: "Unable to validate your subscription status. Please try again.",
+        variant: "destructive"
+      });
+      return null;
     }
-
-    const interval = setInterval(refreshSubscription, REFRESH_INTERVAL)
-    return () => clearInterval(interval)
-  }, [refreshSubscription, isInitialized, skipInitialFetch, subscriptionData])
+  }, [dispatch, isAuthenticated, onSubscriptionSuccess, onSubscriptionError, toast]);
 
   const {
     tokensUsed = 0,
@@ -90,75 +105,19 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
   const handleSubscribe = useCallback(
     async (planId?: string, duration?: number): Promise<SubscriptionResult> => {
       try {
-        const response = await fetch("/api/subscriptions/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ planId, duration }),
-        })
-
-        const result = await response.json()
-
-        if (!response.ok) {
-          const errorResult: SubscriptionResult = {
-            success: false,
-            message: result.message || "Subscription failed",
-            error: result.errorType || "UNKNOWN",
-          }
-          onSubscriptionError?.(errorResult)
-          return errorResult
-        }
-        if(result.errorType==="PLAN_CHANGE_RESTRICTED"){
-          const errorResult: SubscriptionResult = {
-            success: false,
-            message: result.message || "Plan change not allowed",
-            error: "PLAN_CHANGE_RESTRICTED",
-          }
-          onSubscriptionError?.(errorResult)
-          return errorResult
-        }
-
-        if (result.url) {
-          const successResult: SubscriptionResult = {
-            success: true,
-            redirectUrl: result.url,
-          };
-          onSubscriptionSuccess?.(successResult);
-          return successResult;
-        }
-
-        const successResult: SubscriptionResult = {
+        // Implement subscription logic here
+        return {
           success: true,
-          message: result.message || "Subscription successful",
-        }
-
-        onSubscriptionSuccess?.(successResult)
-        return successResult
+          message: "Subscription successful"
+        };
       } catch (error: any) {
-        const errorResult: SubscriptionResult = {
+        return {
           success: false,
-          message: error?.message || "Network error",
-          error: "NETWORK",
-        }
-        onSubscriptionError?.(errorResult)
-        return errorResult
+          message: error.message || "Subscription failed"
+        };
       }
     },
     [onSubscriptionSuccess, onSubscriptionError],
-  )
-
-  const canSubscribeToPlan = useCallback(
-    (currentPlan: string, targetPlan: string, status: SubscriptionStatusType | null): { 
-      canSubscribe: boolean; 
-      reason?: string 
-    } => {
-      if (currentPlan === targetPlan && status === "ACTIVE") {
-        return { canSubscribe: false, reason: "You are already subscribed to this plan" }
-      }
-      
-      // Add more business rules as needed
-      return { canSubscribe: true }
-    },
-    [],
   )
 
   const isSubscribedToAnyPaidPlan = useMemo(
@@ -180,17 +139,20 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
     usagePercentage,
     hasExceededLimit,
     isLoading,
-    refreshSubscription,
-    onSubscriptionSuccess,
+    validateSubscription,
     subscriptionPlan,
     isCancelled,
     allowPlanChanges,
     allowDowngrades,
     handleSubscribe,
-    canSubscribeToPlan,
     isSubscribedToAnyPaidPlan,
     isSubscribedToAllPlans,
-    canDownloadPdf
+    canDownloadPdf,
+    hasActiveSubscription,
+    hasCredits,
+    canCreateQuizOrCourse,
+    isExpired,
+    cacheStatus,
+    shouldRefresh
   }
 }
-

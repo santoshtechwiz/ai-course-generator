@@ -14,8 +14,15 @@ interface SuspenseFallbackProps {
   timeoutMs?: number
 }
 
+// Quadratic easing function for smooth progress
+function easeInOutQuad(t: number): number {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
+}
+
 /**
- * Enhanced Suspense fallback with intelligent loading states and better UX
+ * Enhanced Suspense fallback with intelligent loading states and better UX.
+ * This component triggers a global loader when a Suspense boundary is hit and
+ * ensures proper cleanup when content is loaded.
  */
 export function SuspenseGlobalFallback({ 
   message = "Loading content...",
@@ -27,30 +34,46 @@ export function SuspenseGlobalFallback({
   onTimeout,
   timeoutMs = 15000
 }: SuspenseFallbackProps) {
-  const { startLoading, stopLoading, updateProgress } = useGlobalLoader()
+  const store = useGlobalLoader()
+  const { startLoading, stopLoading, updateProgress } = store
+  
+  // Use refs to maintain state across re-renders
   const loadingIdRef = useRef<string | undefined>(undefined)
   const stoppedRef = useRef(false)
   const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const progressIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined)
   
-  // Generate stable ID
+  // Generate stable, deterministic ID for this fallback instance
   const instanceId = fallbackId || `suspense-${type}-${Date.now()}`
+  
+  // Track whether this is the first render
+  const isFirstRender = useRef(true)
 
+  // Enhanced cleanup with better state handling
   const cleanup = useCallback(() => {
+    // Clear all timers first
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
+      timeoutRef.current = undefined
     }
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current)
+      progressIntervalRef.current = undefined
     }
+
+    // Stop the loading state if it's still active
     if (loadingIdRef.current && !stoppedRef.current) {
       try {
         stopLoading(loadingIdRef.current, { success: true })
+        loadingIdRef.current = undefined
+        stoppedRef.current = true
       } catch (e) {
         console.warn('Failed to stop loading on cleanup:', e)
       }
-      stoppedRef.current = true
     }
+
+    // Reset first render flag
+    isFirstRender.current = false
   }, [stopLoading])
 
   const handleTimeout = useCallback(() => {
@@ -76,46 +99,76 @@ export function SuspenseGlobalFallback({
   }, [onTimeout, timeoutMs, stopLoading])
 
   useEffect(() => {
-    // Prevent double initialization
-    if (loadingIdRef.current || stoppedRef.current) {
+    // Skip if already initialized or stopped
+    if (!isFirstRender.current || loadingIdRef.current || stoppedRef.current) {
       return
     }
 
     try {
-      // Start the loading state
-      loadingIdRef.current = startLoading({
+      // Start the loading state with deterministic behavior
+      const id = startLoading({
         message,
-        subMessage: getSubMessage(type),
+        subMessage: type === 'route' ? 'Loading page content...' : 'Loading content...',
         isBlocking: type === 'route' || priority === 'critical',
         priority,
         type,
         showProgress: showProgress || !!estimatedDuration,
-        minVisibleMs: getMinVisibleTime(type, priority),
+        minVisibleMs: type === 'route' ? 500 : 300,
         maxDurationMs: timeoutMs,
         estimatedDuration,
+        // Prevent merging with route loaders for Suspense boundaries
+        combineWithRoute: false,
+        // Use instance ID as metadata for debugging
+        metadata: { instanceId }
       })
 
-      // Setup progress simulation if estimated duration is provided
-      if (estimatedDuration && showProgress) {
+      loadingIdRef.current = id
+
+      // Setup deterministic progress updates if duration is known
+      if (estimatedDuration && showProgress && loadingIdRef.current) {
+        let elapsedTime = 0
+        const updateInterval = Math.min(estimatedDuration / 100, 1000) // Max 1 update per second
         let progress = 0
         const progressIncrement = 100 / (estimatedDuration / 200) // Update every 200ms
         
+        // Use a smoothed progress simulation
         progressIntervalRef.current = setInterval(() => {
-          progress += progressIncrement
-          if (progress < 90 && loadingIdRef.current && !stoppedRef.current) { // Cap at 90% until real completion
-            updateProgress(loadingIdRef.current, Math.min(progress, 90))
+          elapsedTime += updateInterval
+          
+          // Calculate progress with easing
+          const progressRatio = Math.min(elapsedTime / estimatedDuration, 0.9) // Cap at 90%
+          progress = easeInOutQuad(progressRatio) * 100
+          
+          if (loadingIdRef.current && !stoppedRef.current) {
+            updateProgress(loadingIdRef.current, progress)
           }
-        }, 200)
+          
+          // Stop updating if we hit 90%
+          if (progress >= 90) {
+            if (progressIntervalRef.current) {
+              clearInterval(progressIntervalRef.current)
+              progressIntervalRef.current = undefined
+            }
+          }
+        }, updateInterval)
       }
 
-      // Setup timeout handler
-      timeoutRef.current = setTimeout(handleTimeout, timeoutMs)
+      // Setup timeout handler with proper cleanup
+      timeoutRef.current = setTimeout(() => {
+        handleTimeout()
+        cleanup()
+      }, timeoutMs)
 
     } catch (error) {
       console.warn('Failed to start suspense loading:', error)
+      // Ensure we clean up on error
+      cleanup()
     }
 
-    return cleanup
+    // Return cleanup function for useEffect
+    return () => {
+      cleanup()
+    }
   }, [
     instanceId, 
     message, 

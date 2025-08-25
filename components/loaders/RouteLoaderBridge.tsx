@@ -67,13 +67,13 @@ export function useAdvancedRouteLoaderBridge(enabled: boolean = true) {
   const searchParams = useSearchParams()
   const { setRouteChangeState, startLoading, stopLoading } = useGlobalLoaderStore()
   
-  const routeChangeId = useRef<string>('')
+  const routeChangeId = useRef<string | null>(null)
   const isNavigatingRef = useRef(false)
   const routeStartTimeRef = useRef<number>(undefined)
   const previousPathnameRef = useRef<string>(pathname)
   const timeoutRef = useRef<NodeJS.Timeout>(undefined)
 
-  // Detect route changes completion
+  // Detect route changes completion with improved synchronization
   useEffect(() => {
     const currentPath = pathname + searchParams.toString()
     const previousPath = previousPathnameRef.current + (searchParams?.toString() || '')
@@ -83,18 +83,40 @@ export function useAdvancedRouteLoaderBridge(enabled: boolean = true) {
       const duration = routeStartTimeRef.current ? Date.now() - routeStartTimeRef.current : 0
       
       // Ensure minimum loading time for better UX (prevent flash)
-      const minLoadingTime = 300
+      const minLoadingTime = 500 // Increased for better UX
       const remainingTime = Math.max(0, minLoadingTime - duration)
       
-      setTimeout(() => {
-        if (routeChangeId.current) {
-          stopLoading(routeChangeId.current, { success: true })
-          routeChangeId.current = undefined
+      // Create a promise that resolves after remainingTime
+      const delayPromise = new Promise<void>(resolve => {
+        setTimeout(() => {
+          resolve()
+        }, remainingTime)
+      })
+
+      // Wait for both delay and any pending Suspense boundaries
+      Promise.resolve().then(async () => {
+        try {
+          await delayPromise
+          
+          if (routeChangeId.current) {
+            stopLoading(routeChangeId.current, { success: true })
+            routeChangeId.current = null
+          }
+          
+          setRouteChangeState(false)
+          isNavigatingRef.current = false
+          routeStartTimeRef.current = undefined
+          
+        } catch (error) {
+          console.error('Error completing route change:', error)
+          if (routeChangeId.current) {
+            stopLoading(routeChangeId.current, { 
+              success: false,
+              error: 'Failed to complete navigation'
+            })
+          }
         }
-        setRouteChangeState(false)
-        isNavigatingRef.current = false
-        routeStartTimeRef.current = undefined
-      }, remainingTime)
+      })
       
       // Clear any existing timeout
       if (timeoutRef.current) {
@@ -177,7 +199,7 @@ export function useAdvancedRouteLoaderBridge(enabled: boolean = true) {
           success: false, 
           error: 'Navigation timeout' 
         })
-        routeChangeId.current = undefined
+        routeChangeId.current = null
         setRouteChangeState(false)
         isNavigatingRef.current = false
       }
@@ -345,7 +367,7 @@ export function usePrefetchWithProgress() {
     })
     
     // Use Next.js prefetch
-    router.prefetch(href, options)
+    router.prefetch(href)
     
     // Simulate prefetch completion (Next.js doesn't provide callback)
     setTimeout(() => {

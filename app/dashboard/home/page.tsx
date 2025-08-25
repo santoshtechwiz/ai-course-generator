@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button"
 import UserNotFound from "@/components/common/UserNotFound"
 
 import { useUserData, useUserStats } from "@/hooks/useUserDashboard"
+import { GlobalLoader } from "@/components/loaders/UnifiedLoader"
 import DashboardHeader from "./components/DashboardHeader"
 import DashboardSidebar from "./components/DashboardSidebar"
 import { useGlobalLoader } from "@/components/loaders/global-loaders"
@@ -224,7 +225,11 @@ export default function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="courses" className="mt-0">
-              <Suspense fallback={<SuspenseGlobalFallback message="Loading Courses..." />}>
+              <Suspense fallback={
+                <div className="min-h-[400px] flex items-center justify-center">
+                  <GlobalLoader />
+                </div>
+              }>
                 <CoursesTab userData={safeUserData} />
               </Suspense>
             </TabsContent>

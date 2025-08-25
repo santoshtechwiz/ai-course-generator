@@ -1,9 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import { motion } from "framer-motion";
 import { CreateTileGrid } from "./CreateTitleGrid";
 import { WavyBackground } from "./WavyBackground";
 import { FloatingShapes } from "./FloatingShapes";
+import { GlobalLoader } from "@/components/loaders/UnifiedLoader";
 
 export function CreateComponent() {
   return (
@@ -15,9 +17,15 @@ export function CreateComponent() {
       {/* Main Content */}
       <main className="flex-grow flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12 relative z-10">
         {/* Tile Grid Section */}
-        <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-          <CreateTileGrid />
-        </div>
+        <Suspense fallback={
+          <div className="w-full flex items-center justify-center min-h-[60vh]">
+            <GlobalLoader />
+          </div>
+        }>
+          <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+            <CreateTileGrid />
+          </div>
+        </Suspense>
       </main>
     </div>
   );
