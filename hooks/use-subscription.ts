@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useCallback, useMemo } from 'react'
+import { useEffect, useCallback, useMemo, useState } from 'react'
 import { useAppSelector, useAppDispatch } from '@/store'
 import { 
   selectSubscriptionData,
@@ -22,7 +22,13 @@ import {
 } from '@/store/slices/subscription-slice'
 import { useAuth } from '@/modules/auth/providers/AuthProvider'
 import { useToast } from '@/hooks'
-import { SubscriptionResult } from "@/app/types/subscription"
+import { SubscriptionResult, SubscriptionStatusType, SubscriptionPlanType } from "@/app/types/subscription"
+
+// Cache invalidation time (5 minutes)
+const CACHE_INVALIDATION_TIME = 5 * 60 * 1000;
+
+// Refresh interval for background updates (10 minutes)
+const REFRESH_INTERVAL = 10 * 60 * 1000;
 
 export type UseSubscriptionOptions = {
   allowPlanChanges?: boolean;
@@ -64,12 +70,25 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
   const shouldRefresh = useAppSelector(selectShouldRefreshSubscription);
   const cacheStatus = useAppSelector(selectSubscriptionCacheStatus);
 
-  // Validate subscription status
-  const validateSubscription = useCallback(async () => {
-    if (!isAuthenticated) return null;
+  // State
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [lastValidated, setLastValidated] = useState<number | null>(null);
+  
+  // Check if cache is stale
+  const isCacheStale = useCallback(() => {
+    if (!lastValidated) return true;
+    return Date.now() - lastValidated > CACHE_INVALIDATION_TIME;
+  }, [lastValidated]);
+
+  // Smart fetch that only validates when needed
+  const validateSubscription = useCallback(async (force = false) => {
+    if (!isAuthenticated || (!force && isValidating)) return null;
     
     try {
+      setIsValidating(true);
       const result = await dispatch(fetchSubscription()).unwrap();
+      setLastValidated(Date.now());
       
       if (result) {
         onSubscriptionSuccess?.({
@@ -79,10 +98,10 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
       }
       
       return result;
-    } catch (error: any) {
+    } catch (err: any) {
       onSubscriptionError?.({
         success: false,
-        message: error.message || "Failed to validate subscription"
+        message: err.message || "Failed to validate subscription"
       });
       
       toast({
@@ -91,8 +110,51 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
         variant: "destructive"
       });
       return null;
+    } finally {
+      setIsValidating(false);
     }
-  }, [dispatch, isAuthenticated, onSubscriptionSuccess, onSubscriptionError, toast]);
+  }, [dispatch, isAuthenticated, isValidating, onSubscriptionSuccess, onSubscriptionError, toast]);
+
+  // Initial validation
+  useEffect(() => {
+    if (!lazyLoad && validateOnMount && !lastValidated) {
+      validateSubscription();
+    }
+  }, [lazyLoad, validateOnMount, lastValidated, validateSubscription]);
+
+  // Background refresh
+  useEffect(() => {
+    if (skipInitialFetch || !isAuthenticated) return;
+
+    const interval = setInterval(() => {
+      if (!isValidating && isCacheStale()) {
+        validateSubscription();
+      }
+    }, REFRESH_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [skipInitialFetch, isAuthenticated, isValidating, isCacheStale, validateSubscription]);
+
+  // Plan validation helpers
+  const canSubscribeToPlan = useCallback((
+    currentPlan: string,
+    targetPlan: string,
+    status: SubscriptionStatusType | null
+  ): { canSubscribe: boolean; reason?: string } => {
+    if (!allowPlanChanges) {
+      return { canSubscribe: false, reason: "Plan changes are not allowed" };
+    }
+
+    if (!allowDowngrades && currentPlan > targetPlan) {
+      return { canSubscribe: false, reason: "Downgrading is not allowed" };
+    }
+
+    if (status === "CANCELED") {
+      return { canSubscribe: false, reason: "Cannot change plan while cancelled" };
+    }
+
+    return { canSubscribe: true };
+  }, [allowPlanChanges, allowDowngrades]);
 
   const {
     tokensUsed = 0,
@@ -131,28 +193,146 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
   )
 
   return {
-    data: subscriptionData,
-    isSubscribed,
-    tokenUsage: tokensUsed,
-    totalTokens,
-    remainingTokens,
-    usagePercentage,
-    hasExceededLimit,
+    // Core subscription data
+    subscription: subscriptionData,
     isLoading,
-    validateSubscription,
+    tokenUsage: tokenUsageData,
+    isSubscribed,
     subscriptionPlan,
     isCancelled,
-    allowPlanChanges,
-    allowDowngrades,
-    handleSubscribe,
-    isSubscribedToAnyPaidPlan,
-    isSubscribedToAllPlans,
     canDownloadPdf,
     hasActiveSubscription,
     hasCredits,
     canCreateQuizOrCourse,
     isExpired,
+    
+    // Cache and validation
+    isValidating,
+    lastValidated,
+    isCacheStale: isCacheStale(),
     cacheStatus,
-    shouldRefresh
-  }
+    shouldRefresh,
+    
+    // Actions
+    validateSubscription,
+    canSubscribeToPlan,
+    
+    // Permission helpers
+    canCreateContent: hasActiveSubscription && hasCredits,
+    needsUpgrade: !hasActiveSubscription,
+    needsCredits: !hasCredits,
+    
+    // Legacy support
+    data: subscriptionData,
+    totalTokens,
+    remainingTokens,
+    usagePercentage,
+    hasExceededLimit,
+    allowPlanChanges,
+    allowDowngrades,
+    handleSubscribe,
+    isSubscribedToAnyPaidPlan,
+    isSubscribedToAllPlans,
+  };
+}
+
+/**
+ * Hook for protected actions that require subscription validation
+ */
+export function useProtectedAction() {
+  const { validateSubscription, hasActiveSubscription, hasCredits, isValidating, isCacheStale } = useSubscription();
+  const { toast } = useToast();
+
+  const executeProtectedAction = async <T,>(
+    action: () => Promise<T>,
+    options: {
+      requireSubscription?: boolean;
+      requireCredits?: boolean;
+      validateFirst?: boolean;
+    } = {}
+  ): Promise<T | null> => {
+    const { 
+      requireSubscription = true, 
+      requireCredits = true,
+      validateFirst = true 
+    } = options;
+
+    try {
+      // Validate subscription if cache is stale or forced
+      if ((isCacheStale || validateFirst) && !isValidating) {
+        await validateSubscription(true);
+      }
+
+      // Check subscription requirements
+      if (requireSubscription && !hasActiveSubscription) {
+        toast({
+          title: "Subscription Required",
+          description: "Please upgrade your subscription to access this feature.",
+          variant: "destructive"
+        });
+        return null;
+      }
+
+      // Check credits
+      if (requireCredits && !hasCredits) {
+        toast({
+          title: "Insufficient Credits",
+          description: "You don't have enough credits for this action.",
+          variant: "destructive"
+        });
+        return null;
+      }
+
+      // Execute the protected action
+      return await action();
+    } catch (error: any) {
+      toast({
+        title: "Action Failed",
+        description: error.message || "An error occurred while performing this action.",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
+
+  return {
+    executeProtectedAction,
+    isValidating,
+    hasActiveSubscription,
+    hasCredits
+  };
+}
+
+/**
+ * Hook for components that need to check permissions
+ */
+export function useSubscriptionPermissions() {
+  const { 
+    hasActiveSubscription, 
+    hasCredits, 
+    canCreateQuizOrCourse,
+    validateSubscription,
+    isCacheStale
+  } = useSubscription({ lazyLoad: true });
+  
+  return useMemo(() => ({
+    canCreateQuiz: canCreateQuizOrCourse,
+    canCreateCourse: canCreateQuizOrCourse,
+    canUsePremiumFeatures: hasActiveSubscription,
+    hasAvailableCredits: hasCredits,
+    validateSubscription,
+    isCacheStale,
+    
+    // Specific permission checks
+    canGenerateContent: canCreateQuizOrCourse,
+    canAccessAdvancedFeatures: hasActiveSubscription,
+    needsSubscriptionUpgrade: !hasActiveSubscription,
+    needsCredits: !hasCredits,
+  }), [
+    hasActiveSubscription, 
+    hasCredits, 
+    canCreateQuizOrCourse,
+    validateSubscription,
+    isCacheStale
+  ]);
 }

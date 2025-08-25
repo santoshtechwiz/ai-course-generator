@@ -147,7 +147,7 @@ export const CourseCard = React.memo(
       const imageIndex = Math.abs(title?.split("")?.reduce((a, b) => a + b.charCodeAt(0), 0)) % COURSE_IMAGES.length
       const gradientIndex =
         Math.abs(slug?.split("")?.reduce((a, b) => a + b.charCodeAt(0), 0)) % GRADIENT_BACKGROUNDS.length
-      const normalizedCategory = category.toLowerCase()
+      const normalizedCategory = (typeof category === 'string' ? category : '')?.toLowerCase()
       const config =
         CATEGORY_CONFIG[normalizedCategory] ||
         Object.entries(CATEGORY_CONFIG).find(([key]) => normalizedCategory.includes(key))?.[1] ||
