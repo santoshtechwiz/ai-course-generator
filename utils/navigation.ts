@@ -43,7 +43,9 @@ export const redirectFromNumericId = async (
         try {
           const pendingQuiz = JSON.parse(pendingQuizStr);
           if (pendingQuiz.slug && pendingQuiz.slug !== currentSlugOrId) {
-            console.log(`Redirecting from numeric ID ${currentSlugOrId} to proper slug ${pendingQuiz.slug}`);
+            if (process.env.NODE_ENV !== 'production') {
+              console.log(`Redirecting from numeric ID ${currentSlugOrId} to proper slug ${pendingQuiz.slug}`);
+            }
             const path = getNormalizedQuizPath(quizType, pendingQuiz.slug, segment);
             router.replace(path);
             return true;
@@ -59,7 +61,9 @@ export const redirectFromNumericId = async (
         try {
           const resultsData = JSON.parse(storedResults);
           if (resultsData.slug && resultsData.slug !== currentSlugOrId && !/^\d+$/.test(resultsData.slug)) {
-            console.log(`Redirecting from numeric ID ${currentSlugOrId} to slug from results ${resultsData.slug}`);
+            if (process.env.NODE_ENV !== 'production') {
+              console.log(`Redirecting from numeric ID ${currentSlugOrId} to slug from results ${resultsData.slug}`);
+            }
             const path = getNormalizedQuizPath(quizType, resultsData.slug, segment);
             router.replace(path);
             return true;
@@ -69,7 +73,9 @@ export const redirectFromNumericId = async (
         }
       }
     } catch (e) {
-      console.error("Error accessing sessionStorage:", e);
+      if (process.env.NODE_ENV !== 'production') {
+        console.error("Error accessing sessionStorage:", e);
+      }
       return false;
     }
   }

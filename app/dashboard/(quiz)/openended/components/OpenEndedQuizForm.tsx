@@ -30,7 +30,7 @@ import PlanAwareButton from "../../components/PlanAwareButton"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import FormContainer from "@/app/dashboard/FormContainer"
 import { useToast } from "@/components/ui/use-toast"
-import { useGlobalLoader } from "@/store/loaders/global-loader"
+import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 
 const openEndedQuizSchema = z.object({
@@ -416,8 +416,8 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
         confirmText="Generate Now"
         cancelText="Cancel"
         showTokenUsage={true}
-        status={isLoading ? "loading" : submitError ? "error" : isSuccess ? "success" : "idle"}
-        errorMessage={submitError}
+  status={isLoading ? "loading" : submitError ? "error" : isSuccess ? "success" : undefined}
+  errorMessage={submitError || undefined}
         tokenUsage={{
           used: Math.max(0, maxQuestions - credits),
           available: maxQuestions,
@@ -464,7 +464,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
             exit={{ opacity: 0, y: -10 }}
             className="absolute top-0 right-0 mt-4 mr-4"
           >
-            <Alert variant="success" className="flex items-center gap-2">
+            <Alert className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5" />
               <AlertTitle>Success</AlertTitle>
               <AlertDescription>Your quiz has been generated successfully!</AlertDescription>

@@ -36,7 +36,7 @@ const CountUp: React.FC<{ end: number; separator?: string; prefix?: string }> = 
 }
 import CTASVG from "../svg/CTASVG"
 import { FeedbackButton } from "@/components/ui/feedback-button"
-import { useGlobalLoader } from '@/store/loaders/global-loader'
+import { useGlobalLoader } from '@/components/loaders/global-loaders'
 
 const CTASection = () => {
   const containerRef = useRef<HTMLDivElement>(null)

@@ -16,11 +16,12 @@ import { CourseCard } from "./CourseCard"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { motion, AnimatePresence } from "framer-motion"
-import { useGlobalLoader } from "@/store/loaders/global-loader"
+
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 // Add memo and useCallback to optimize rendering
 const MemoizedCourseCard = React.memo(CourseCard)
@@ -69,22 +70,34 @@ export default function CoursesClient({
   const [loadingProgress, setLoadingProgress] = useState(0)
 
   // Update query key to include ratingFilter
-  const { beginTask, endTask, startLoading } = useGlobalLoader()
+  // useGlobalLoader now exposes startLoading/stopLoading/updateProgress etc.
+  const { startLoading, stopLoading } = useGlobalLoader()
 
   // Kick off a task-mode loader on first mount (only if not already loading)
   useEffect(() => {
-    startLoading({ message: 'Loading courses...', useTasks: true, minVisibleMs: 300 })
+    // start a global loader without deprecated options
+    const id = startLoading({ message: 'Loading courses...', type: 'data', minVisibleMs: 300 })
+    return () => {
+      try { stopLoading(id) } catch {}
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, refetch, isLoading } = useInfiniteQuery({
     queryKey: ["courses", { search: debouncedSearchQuery, category: selectedCategory, userId, rating: ratingFilter }],
     initialPageParam: 1,
     // Update the queryFn to include ratingFilter in the API call
-  queryFn: async ({ pageParam = 1, signal }) => {
+    queryFn: async ({ pageParam = 1, signal }) => {
+      // Check if component is unmounted or signal is already aborted
+      if (signal?.aborted) {
+        throw new Error('Query was aborted')
+      }
+
+      // Use a dedicated loader id for this page fetch so we can stop it in finally
+      const loaderId = startLoading({ message: `Loading courses (page ${pageParam})`, type: 'data', showProgress: true, minVisibleMs: 150 })
       try {
-    // Start loader in task mode if not already active
-    beginTask(`courses-page-${pageParam}`, 1)
         setLoadingProgress(20)
+        
         // Build the API URL with proper parameters
         const apiUrl = new URL("/api/course", window.location.origin)
         apiUrl.searchParams.set("page", pageParam.toString())
@@ -113,20 +126,26 @@ export default function CoursesClient({
         apiUrl.searchParams.set("sortOrder", "desc")
 
         setLoadingProgress(50)
-        console.log("Fetching courses from:", apiUrl.toString())
-
-        const controller = new AbortController()
-        const abortHandler = () => controller.abort()
-        if (signal) {
-          if (signal.aborted) controller.abort()
-          else signal.addEventListener('abort', abortHandler)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log("Fetching courses from:", apiUrl.toString())
         }
+
+        // Check again if signal is aborted before making the request
+        if (signal?.aborted) {
+          throw new Error('Request aborted before fetch')
+        }
+
         const response = await fetch(apiUrl.toString(), {
           headers: {
             "Cache-Control": "no-cache",
           },
-          signal: controller.signal,
+          signal: signal, // Use the signal directly from react-query
         })
+
+        // Check if request was aborted during fetch
+        if (signal?.aborted) {
+          throw new Error('Request aborted during fetch')
+        }
 
         setLoadingProgress(80)
 
@@ -136,14 +155,25 @@ export default function CoursesClient({
 
         const data = await response.json()
         setLoadingProgress(100)
-        console.log("Fetched courses data:", data)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log("Fetched courses data:", data)
+        }
         return data
-      } catch (error) {
+  } catch (error: any) {
         setLoadingProgress(0)
+        
+        // Handle abort errors gracefully
+        if (error?.name === 'AbortError' || error?.message?.includes('aborted') || signal?.aborted) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('Request was aborted, this is expected behavior')
+          }
+          throw error // Re-throw to let react-query handle it
+        }
+        
         console.error("Error fetching courses:", error)
         throw error
       } finally {
-        endTask(`courses-page-${pageParam}`)
+        try { stopLoading(loaderId) } catch {}
       }
     },
     getNextPageParam: (lastPage, allPages) => {
@@ -151,6 +181,14 @@ export default function CoursesClient({
     },
     refetchOnWindowFocus: false,
     staleTime: 60000, // 1 minute
+    retry: (failureCount, error: any) => {
+      // Don't retry if the error is an abort error
+      if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
+        return false
+      }
+      // Retry up to 3 times for other errors
+      return failureCount < 3
+    },
   })
 
   // Add this after the query definition

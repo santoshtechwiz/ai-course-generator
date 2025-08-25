@@ -118,7 +118,9 @@ export const fetchFlashCardQuiz = createAsyncThunk(
         // Ensure we have a consistent structure
       }
 
-      console.log("Fetched flashcard quiz:", result)
+      if (process.env.NODE_ENV !== 'production') {
+        console.log("Fetched flashcard quiz:", result)
+      }
       return result;
     } catch (error: any) {
       return rejectWithValue(error.message || "Network error")

@@ -19,6 +19,10 @@ export interface CourseProgress {
   lastPlayedAt?: string
   resumePoint?: number
   lastUpdated?: number // Add timestamp for cache invalidation
+  learningStreak?: number
+  studyTimeThisWeek?: number
+  averageQuizScore?: number
+  lastActivityDate?: string
 }
 
 export interface BookmarkItem {
@@ -64,6 +68,12 @@ export interface CourseState {
   prevVideoId: string | null
   isLoading: boolean
   certificateStatus?: { generated: boolean }
+  videoCache?: Record<string, { cachedAt: string; [key: string]: any }>
+  performanceSettings?: Record<string, any>
+  userPreferences?: Record<string, any>
+  analytics?: {
+    events: any[]
+  }
 }
 
 // Initial state with strong typing

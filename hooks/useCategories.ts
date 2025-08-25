@@ -1,5 +1,6 @@
+import { useGlobalLoader } from '@/components/loaders/global-loaders'
 import useSWR from 'swr'
-import { useGlobalLoader } from '@/store/loaders/global-loader'
+
 
 export interface Category {
   id: string
@@ -17,15 +18,19 @@ const fetcher = (url: string) => fetch(url).then(r => {
  * Caches for 60s and avoids refetch on window focus for stability.
  */
 export function useCategories() {
-  const { beginTask, endTask } = useGlobalLoader()
+  // useGlobalLoader no longer exposes beginTask/endTask; use startLoading/stopLoading
+  const { startLoading, stopLoading } = useGlobalLoader()
   const swr = useSWR<Category[]>(
     '/api/categories',
     async (url: string) => {
-      beginTask('categories', 1)
+      // startLoading returns a loader id we must use to stop it later
+      const loaderId = startLoading({ message: 'Loading categories...', type: 'data', minVisibleMs: 150 })
       try {
         return await fetcher(url)
       } finally {
-        endTask('categories')
+        try {
+          stopLoading(loaderId)
+        } catch {}
       }
     },
     {

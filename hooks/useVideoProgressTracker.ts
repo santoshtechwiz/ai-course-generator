@@ -38,7 +38,8 @@ export function useVideoProgressTracker({
   videoId,
   isLastVideo = false,
   onCompletion,
-  throttleMs = 5000, // Default to update every 5 seconds
+  // Increase default throttle to 12s to cut API chatter (can be overridden explicitly)
+  throttleMs = 12000, // Default to update every 12 seconds
   completionThreshold = 0.95 // Default to mark completed at 95%
 }: UseVideoProgressTrackerOptions) {
   const dispatch = useAppDispatch();
@@ -68,7 +69,9 @@ export function useVideoProgressTracker({
 
     const now = Date.now()
     // If progress hasn't changed significantly and recent save happened, skip
-    if (now - cache.lastSavedAt < 2000 && Math.abs(params.progress - cache.lastProgress) < 0.01) {
+  // Require at least 4 seconds gap OR a meaningful progress delta (>=1%)
+  const progressDelta = Math.abs(params.progress - cache.lastProgress)
+  if (now - cache.lastSavedAt < 4000 && progressDelta < 0.01) {
       return
     }
 
@@ -85,6 +88,12 @@ export function useVideoProgressTracker({
       const playedSeconds = Math.max(0, Math.floor(params.playedSeconds || 0))
 
       // Dispatch and don't await to avoid blocking UI, but catch synchronous errors
+      // Skip if percent value hasn't changed by at least 1 point to avoid spam
+      const percentInt = progressPercent
+      if (Math.abs(percentInt - Math.round(cache.lastProgress * 100)) < 1 && !params.isCompleted) {
+        return
+      }
+
       dispatch(persistVideoProgress({
         courseId: params.courseId,
         chapterId: params.currentChapterId,
@@ -100,7 +109,7 @@ export function useVideoProgressTracker({
         progressCacheRef.current[key] = { ...existing, lastSavedAt: 0 }
       }
     }
-  }, []);
+  }, [dispatch]);
 
   // Save video duration
   const setVideoDuration = useCallback((videoId: string, duration: number) => {
@@ -136,7 +145,7 @@ export function useVideoProgressTracker({
     }
     
     // Only update progress if we've passed the throttle time
-    if (progressState.played > 0.1 && (timeSinceLastUpdate > throttleMs)) {
+  if (progressState.played > 0.1 && (timeSinceLastUpdate > throttleMs)) {
       lastUpdateTimeRef.current = now;
       
       // Only send API updates periodically to reduce server load
@@ -183,17 +192,7 @@ export function useVideoProgressTracker({
         }
       }
     }
-  }, [
-    chapterId, 
-    courseId, 
-    dispatch, 
-    updateProgress, 
-    throttleMs, 
-    completionThreshold, 
-    videoId, 
-    videoEnding,
-    onCompletion
-  ]);
+  }, [chapterId, courseId, updateProgress, throttleMs, completionThreshold, videoId, videoEnding, onCompletion]);
   
   // Handle video completion
   const handleVideoEnd = useCallback(() => {

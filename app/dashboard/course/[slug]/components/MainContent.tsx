@@ -6,13 +6,37 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { selectCourseProgressById } from "@/store/slices/courseProgress-slice"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
+import { 
+  Lock, 
+  User as UserIcon, 
+  Play, 
+  ChevronLeft, 
+  Star,
+  Clock,
+  Users,
+  GraduationCap,
+  Calendar,
+  CheckCircle,
+  Menu,
+  X,
+  BookOpen,
+  Award,
+  BarChart3,
+  Zap
+} from "lucide-react"
 import { store } from "@/store"
 import { setCurrentVideoApi } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
-import { AccessLevels } from "./CourseDetailsTabs"
+import CourseDetailsTabs, { AccessLevels } from "./CourseDetailsTabs"
+import { formatDuration } from "../utils/formatUtils"
 import { VideoDebug } from "./video/components/VideoDebug"
-import { AnimatePresence } from "framer-motion"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import { AnimatePresence, motion } from "framer-motion"
 import { useAuth } from "@/modules/auth"
+import ActionButtons from "./ActionButtons"
+import ReviewsSection from "./ReviewsSection"
 import { cn } from "@/lib/utils"
 import type { BookmarkData } from "./video/types"
 import { fetchRelatedCourses, fetchQuizSuggestions } from "@/services/recommendationsService"
@@ -24,19 +48,14 @@ import { useVideoState } from "./video/hooks/useVideoState"
 import { migratedStorage } from "@/lib/storage"
 import VideoGenerationSection from "./VideoGenerationSection"
 import { useVideoProgressTracker } from "@/hooks/useVideoProgressTracker"
-import { getChapterIdString, isValidChapter } from "../utils/courseUtils"
+import MobilePlaylistCount from "@/components/course/MobilePlaylistCount"
 
-// Extracted components
+// Use existing components
 import CertificateModal from "./CertificateModal"
+// Import sidebar components
 import PlaylistSidebar from "./PlaylistSidebar"
 import MobilePlaylistOverlay from "./MobilePlaylistOverlay"
-import { CourseHeader } from "./CourseHeader"
-import MobilePlaylistToggle from "./MobilePlaylistToggle"
-import AuthPrompt from "./AuthPrompt"
-import MainContentGrid from "./MainContentGrid"
-import ActionButtons from "./ActionButtons"
-import ReviewsSection from "./ReviewsSection"
-import CourseErrorBoundary from "./CourseErrorBoundary"
+import VideoPlayer from "./video/components/VideoPlayer"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -44,8 +63,15 @@ interface ModernCoursePageProps {
   isFullscreen?: boolean
 }
 
-// Helper function to validate chapter - replaced with utility
-// Use isValidChapter from courseUtils instead
+// Helper function to validate chapter
+function validateChapter(chapter: any): boolean {
+  return Boolean(
+    chapter &&
+      typeof chapter === "object" &&
+      chapter.id && 
+      (typeof chapter.id === "string" || typeof chapter.id === "number")
+  );
+}
 
 // CourseDetailsTabs is still memoized for better performance
 const MemoizedCourseDetailsTabs = React.memo(CourseDetailsTabs)
@@ -62,7 +88,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Local state - simplified from original
   const [showCertificate, setShowCertificate] = useState(false)
-  const [certificateShown, setCertificateShown] = useState(false) // Track if certificate was already shown
   const [relatedCourses, setRelatedCourses] = useState<RelatedCourse[]>([])
   const [personalizedRecommendations, setPersonalizedRecommendations] = useState<PersonalizedRecommendation[]>([])
   const [quizSuggestions, setQuizSuggestions] = useState<QuizSuggestion[]>([])
@@ -77,19 +102,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const [autoplayMode, setAutoplayMode] = useState(false)
   const [headerCompact, setHeaderCompact] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
-  // Mark when client is mounted to safely render client-only derived data (prevents hydration mismatch)
+  // Mark when client is mounted to safely render client-only derived data
   useEffect(() => {
     setMounted(true)
-    
-    // Add error boundary for blank refresh issue
-    const handleError = (error: ErrorEvent) => {
-      console.error('Course page error:', error)
-      // Optionally redirect or show error state
-    }
-    
-    window.addEventListener('error', handleError)
-    return () => window.removeEventListener('error', handleError)
   }, [])
   const isOwner = user?.id === course.userId
 
@@ -102,33 +119,44 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Get direct access to the Zustand video state store and its methods
   const videoStateStore = useVideoState
   const getVideoBookmarks = useCallback((videoId?: string | null) => {
-    if (!videoId) return []
     try {
-      return videoStateStore.getState().bookmarks[videoId] || []
-    } catch {
+      const key = String(videoId ?? "")
+      // Access bookmarks defensively
+      const state = videoStateStore.getState()
+      const bookmarks = (state && (state.bookmarks as Record<string, any[]>)) || {}
+      const result = bookmarks[key] || []
+      return Array.isArray(result) ? result : []
+    } catch (e) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn("No videos available in the playlist", e)
+      }
       return []
     }
   }, [videoStateStore])
 
-  // Get bookmarks for the current video
+                    // video generated handler - logging removed or gated elsewhere
   const bookmarks = useMemo(() => {
     return getVideoBookmarks(currentVideoId)
   }, [currentVideoId, getVideoBookmarks])
-
+  // chapter completion logging gated or handled elsewhere
   // Adapt raw bookmark times to BookmarkData objects expected by VideoPlayer
   const bookmarkItems: BookmarkData[] = useMemo(() => {
-    if (!currentVideoId) return []
-    return (bookmarks || []).map((time: number, idx: number) => ({
-      id: `${currentVideoId}-${time}-${idx}`,
-      videoId: currentVideoId,
-      time,
-      title: `Bookmark ${formatDuration(time)}`,
-      createdAt: new Date().toISOString(),
-      description: undefined,
-    }))
-  }, [bookmarks, currentVideoId, formatDuration])
+    try {
+      const raw = getVideoBookmarks(currentVideoId)
+      if (!Array.isArray(raw)) return []
+      return raw as BookmarkData[]
+    } catch {
+      return []
+    }
 
-  // Initialize completedChapters safely
+  }, [currentVideoId, getVideoBookmarks])
+
+  // Provide a sanitized bookmark list to the VideoPlayer
+  const sanitizedBookmarkItems: BookmarkData[] = useMemo(() => {
+    return bookmarkItems.slice(2)
+  }, [bookmarkItems])
+
+  // chapter completed handler - logging removed
   const completedChapters = useMemo(() => {
     if (courseProgress?.videoProgress?.completedChapters) {
       return courseProgress.videoProgress.completedChapters.map(String)
@@ -158,7 +186,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       return playlist
     }
 
-    // Global index across all units/chapters to support implicit free gating
     let globalIndex = 0
 
     course.courseUnits.forEach((unit) => {
@@ -166,7 +193,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
       unit.chapters
         .filter((chapter) => {
-          // Enhanced validation to make sure we have valid chapters
           const isValid = Boolean(
             chapter &&
               typeof chapter === "object" &&
@@ -176,7 +202,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           )
 
           if (!isValid && chapter) {
-            // Log invalid chapter in development for debugging
             if (process.env.NODE_ENV !== "production") {
               console.debug(`Skipping invalid chapter:`, {
                 id: chapter.id,
@@ -189,13 +214,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           return isValid
         })
         .forEach((chapter) => {
-          // Ensure description is never null, only string or undefined
           const safeChapter = {
             ...chapter,
             description: chapter.description === null ? undefined : chapter.description,
-            // Implicit free gating for first two videos
             isFree: Boolean(chapter.isFree) || globalIndex < 2,
-            // Unlock only the first quiz (after two free videos we unlock the first quiz slot)
             isFreeQuiz: globalIndex === 1,
           } as FullChapterType & { isFreeQuiz?: boolean }
 
@@ -221,26 +243,19 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     return currentIndex === videoPlaylist.length - 1
   }, [currentIndex, videoPlaylist])
 
-  // Determine if current chapter is a key chapter
   const isKeyChapter = useMemo(() => {
     return currentIndex > 0 && ((currentIndex + 1) % 3 === 0 || isLastVideo)
   }, [currentIndex, isLastVideo])
 
-  // Certificate handler (moved up to avoid TDZ when referenced by other callbacks)
+  // Certificate handler
   const handleCertificateClick = useCallback(() => {
-    // Only show certificate once per session to prevent duplicates
-    if (certificateShown) return
-    
     const courseProgress = selectCourseProgressById(store.getState(), String(course.id))
     if (courseProgress?.videoProgress?.isCompleted) {
       setShowCertificate(true)
-      setCertificateShown(true)
     } else {
-      // Allow manual access if course not completed yet (for testing/admin)
       setShowCertificate(true)
-      setCertificateShown(true)
     }
-  }, [course.id, certificateShown])
+  }, [course.id])
 
   // Compute next video details for autoplay/navigation
   const nextVideoEntry = useMemo(() => {
@@ -257,7 +272,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Handler to advance to the next chapter/video
   const handleNextVideo = useCallback(() => {
     if (!hasNextVideo || !nextVideoEntry) {
-      // If no next video, do nothing (or show certificate)
       if (isLastVideo) {
         handleCertificateClick()
       }
@@ -267,13 +281,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     const nextVid = nextVideoEntry.videoId
     if (!nextVid) return
 
-    // Update Redux and Zustand stores so the player will switch
     dispatch(setCurrentVideoApi(nextVid))
     try {
       videoStateStore.getState().setCurrentVideo(nextVid, course.id)
     } catch (e) {}
 
-    // Ensure UI reflects a loading state while the next video initializes
     setIsVideoLoading(true)
   }, [hasNextVideo, nextVideoEntry, isLastVideo, handleCertificateClick, dispatch, videoStateStore, course.id])
 
@@ -299,24 +311,20 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       return
     }
 
-    // First try to get the video from URL param (initialChapterId)
     let targetVideo = initialChapterId
       ? videoPlaylist.find((entry) => String(entry.chapter.id) === initialChapterId)
       : null
 
-    // If not found, try to use the current video from Redux
     if (!targetVideo && currentVideoId) {
       targetVideo = videoPlaylist.find((entry) => entry.videoId === currentVideoId)
     }
 
-    // If still not found, try to use the last watched video from progress
     if (!targetVideo && progress?.videoProgress?.currentChapterId) {
       targetVideo = videoPlaylist.find(
         (entry) => String(entry.chapter.id) === String(progress.videoProgress.currentChapterId)
       )
     }
 
-    // If still not found, try to use the last watched lecture from the course progress
     try {
       if (!targetVideo && courseProgress?.videoProgress?.currentChapterId) {
         targetVideo = videoPlaylist.find(
@@ -325,23 +333,16 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       }
     } catch {}
 
-    // If all else fails, use the first video in the playlist
     if (!targetVideo && videoPlaylist.length > 0) {
       targetVideo = videoPlaylist[0]
     }
 
     if (targetVideo?.videoId) {
-      // Update Redux state
       dispatch(setCurrentVideoApi(targetVideo.videoId))
-
-      // Update Zustand store
       videoStateStore.getState().setCurrentVideo(targetVideo.videoId, course.id)
-
       console.log(`[MainContent] Initialized with video: ${targetVideo.videoId}, course: ${course.id}`)
     } else {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to select a video")
-      }
+      console.error("Failed to select a video")
     }
   }, [course.id, initialChapterId, videoPlaylist, dispatch, videoStateStore, currentVideoId, progress, courseProgress])
 
@@ -361,25 +362,16 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       }
     }
   }, [progress, resumePromptShown, currentVideoId, videoPlaylist, toast, user])
-  
-
 
   // Update the handleVideoLoad callback
   const handleVideoLoad = useCallback(
     (metadata: { duration: number; title: string }) => {
-      // Store the duration for the current video
       setVideoDurations((prev) => ({
         ...prev, 
         [currentVideoId || ""]: metadata.duration
       }))
       
-      // Make sure loading state is updated
       setIsVideoLoading(false)
-      
-      // Store duration for future reference
-      if (currentVideoId && metadata.duration) {
-        // We're using videoDurations object directly
-      }
     },
     [currentVideoId],
   )
@@ -387,7 +379,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Update the handlePlayerReady function
   const handlePlayerReady = useCallback((player: React.RefObject<any>) => {
     setPlayerRef(player)
-    // Ensure loading is completed
     setIsVideoLoading(false)
   }, [])
 
@@ -409,7 +400,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Handle chapter complete callback
   const handleChapterComplete = useCallback((chapterId: string) => {
-    // Chapter completion logic handled by the progress tracker
+    console.log(`Chapter completed: ${chapterId}`)
   }, [])
 
   // Enhanced PIP handling
@@ -417,22 +408,20 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     setIsPiPActive(isPiPActive)
   }, [])
 
-  // Autoplay toggle handler (replaces broken inline code)
+  // Autoplay toggle handler
   const handleAutoplayToggle = useCallback(() => {
-    setAutoplayMode(prev => {
-      const next = !prev
-      try { localStorage.setItem(`autoplay_mode_course_${course.id}`, String(next)) } catch {}
-      toast({
-        title: next ? "Auto-advance enabled" : "Manual advance mode",
-        description: next
-          ? "Chapters will automatically advance when completed"
-          : "You'll be prompted before each chapter transition",
-      })
-      return next
+    const next = !autoplayMode
+    setAutoplayMode(next)
+    try { localStorage.setItem(`autoplay_mode_course_${course.id}`, String(next)) } catch {}
+    toast({
+      title: next ? "Auto-advance enabled" : "Manual advance mode",
+      description: next
+        ? "Chapters will automatically advance when completed"
+        : "You'll be prompted before each chapter transition",
     })
-  }, [course.id, toast])
+  }, [course.id, toast, autoplayMode])
 
-  // Collapse header on scroll to give more vertical space for the player
+  // Collapse header on scroll
   useEffect(() => {
     const onScroll = () => {
       try {
@@ -448,11 +437,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const handleMobilePlaylistToggle = useCallback(() => {
     setMobilePlaylistOpen(prev => !prev)
   }, [])
-  // Ensure CourseID is set when changing videos
-  // This version of handleChapterSelect works with both Chapter type from sidebar and FullChapterType
+
   const handleChapterSelect = useCallback(
     (chapter: { id: string | number; title: string; videoId?: string; isFree?: boolean }) => {
-      // Create a safe chapter object with properly formatted ID
       let safeChapter
       try {
         if (!chapter) {
@@ -461,19 +448,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
         safeChapter = {
           ...chapter,
-          id: String(chapter.id), // Convert ID to string to ensure consistency
+          id: String(chapter.id),
         }
         
-        // Find the corresponding full chapter from the playlist if needed
         const fullChapter = typeof chapter.id === 'string' 
           ? videoPlaylist.find(v => String(v.chapter.id) === chapter.id)?.chapter 
           : videoPlaylist.find(v => v.chapter.id === chapter.id)?.chapter
         
-        // First, check if the chapter actually exists and is valid
-        if (!isValidChapter(safeChapter)) {
-          if (process.env.NODE_ENV === "development") {
-            console.error("Invalid chapter selected:", safeChapter)
-          }
+        if (!validateChapter(safeChapter)) {
+          console.error("Invalid chapter selected:", safeChapter)
           toast({
             title: "Error",
             description: "Invalid chapter selected. Please try another chapter.",
@@ -482,21 +465,16 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           return
         }
 
-        // Check if user can play the selected video (free chapter or subscribed)
         const allowed = Boolean(safeChapter.isFree || userSubscription)
         if (!allowed) {
           setShowAuthPrompt(true)
           return
         }
 
-        // Use videoId from the parameter or from the full chapter object
         const videoId = safeChapter.videoId || (fullChapter ? fullChapter.videoId : null)
         
-        // Check if the chapter has a videoId - this is critical
         if (!videoId) {
-          if (process.env.NODE_ENV === "development") {
-            console.error(`Chapter has no videoId: ${safeChapter.id} - ${safeChapter.title}`)
-          }
+          console.error(`Chapter has no videoId: ${safeChapter.id} - ${safeChapter.title}`)
           toast({
             title: "Video Unavailable",
             description: "This chapter doesn't have a video available.",
@@ -505,15 +483,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           return
         }
 
-        // Update Redux state
         dispatch(setCurrentVideoApi(videoId))
-
-        // Update Zustand store with both videoId and courseId
         videoStateStore.getState().setCurrentVideo(videoId, course.id)
 
-        if (process.env.NODE_ENV === "development") {
-          console.log(`[MainContent] Selected chapter: ${safeChapter.title}, videoId: ${videoId}, id: ${safeChapter.id}`)
-        }
+        console.log(`[MainContent] Selected chapter: ${safeChapter.title}, videoId: ${videoId}, id: ${safeChapter.id}`)
 
         setMobilePlaylistOpen(false)
         setIsVideoLoading(true)
@@ -529,7 +502,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     [dispatch, course.id, videoStateStore, toast, userSubscription, videoPlaylist]
   )
 
-
   // Fetch related courses
   useEffect(() => {
     fetchRelatedCourses(course.id, 5).then(setRelatedCourses)
@@ -540,7 +512,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     const fetchRecommendations = async () => {
       if (isLastVideo && user) {
         const result = await fetchPersonalizedRecommendations(course.id, 3)
-        // Ensure matchReason is always a string
         setPersonalizedRecommendations(
           result.map(r => ({
             ...r,
@@ -567,12 +538,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Define sidebarCourse and sidebarCurrentChapter with proper types
   const sidebarCourse = useMemo(() => ({
-    id: String(course.id),  // Convert to string for compatibility
+    id: String(course.id),
     title: course.title,
     chapters: videoPlaylist.map(v => ({
       id: String(v.chapter.id),
       title: v.chapter.title,
-      videoId: v.chapter.videoId || undefined,  // Convert null to undefined for type compatibility
+      videoId: v.chapter.videoId || undefined,
       duration: typeof v.chapter.duration === 'number' ? v.chapter.duration : undefined,
       isFree: v.chapter.isFree
     }))
@@ -581,7 +552,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const sidebarCurrentChapter = currentChapter ? {
     id: String(currentChapter.id),
     title: currentChapter.title,
-    videoId: currentChapter.videoId || undefined,  // Convert null to undefined
+    videoId: currentChapter.videoId || undefined,
     duration: typeof currentChapter.duration === 'number' ? currentChapter.duration : undefined,
     isFree: currentChapter.isFree
   } : null
@@ -595,32 +566,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       : 0
   }), [completedChapters, videoPlaylist.length])
 
-  // Memoized grid layout classes for better performance
-  const gridLayoutClasses = useMemo(() => {
-    if (isPiPActive) {
-      // When PIP is active, use single column layout to move video to top
-      return "grid-cols-1"
-    }
-    
-    if (twoCol) {
-      // Udemy-style layout: video/content left, playlist right
-      return "md:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_420px]"
-    }
-    
-    return "grid-cols-1"
-  }, [twoCol, isPiPActive])
-
-  // Enhanced grid container with smooth transitions
-  const gridContainerClasses = useMemo(() => {
-    return cn(
-      "grid gap-4 transition-all duration-300 ease-in-out",
-      gridLayoutClasses
-    )
-  }, [gridLayoutClasses])
-  
-
   // Define video progress tracking functions
-  // Use the centralized progress tracker which will update Redux and persist via thunk
   const {
     handleVideoProgress: trackedHandleVideoProgress,
     handleVideoEnd: trackedHandleVideoEnd,
@@ -635,7 +581,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     },
   })
 
-  // Expose functions matching previous names used by VideoPlayer
   const handleVideoProgress = useCallback((state: { played: number, playedSeconds: number }) => {
     trackedHandleVideoProgress(state)
   }, [trackedHandleVideoProgress])
@@ -656,157 +601,385 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     }
   }, [userSubscription, user])
 
-  // Auth prompt handlers
-  const handleUpgrade = useCallback(() => {
-    window.location.href = "/dashboard/subscription"
-  }, [])
+  // Auth prompt content with improved styling
+  const authPromptContent = (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-background to-muted/20">      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="w-full max-w-md"
+      >
+        <Card className="border-2 border-primary/10 shadow-2xl bg-card/95 backdrop-blur-sm">
+          <CardContent className="p-8 text-center">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+              className="flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 mx-auto mb-6"
+            >
+              <Lock className="h-10 w-10 text-primary" />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                Unlock this lesson
+              </h3>
+              <p className="text-muted-foreground mb-8 leading-relaxed">
+                The first two chapters (including summary and quiz) are free. Upgrade your plan to access all remaining lessons and premium features.
+              </p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="space-y-3"
+            >
+              <Button 
+                onClick={() => (window.location.href = "/dashboard/subscription")} 
+                className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200" 
+                size="lg"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Upgrade Now
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => (window.location.href = "/api/auth/signin")} 
+                className="w-full hover:bg-muted/50 transition-colors"
+              >
+                <UserIcon className="h-4 w-4 mr-2" />
+                Sign In
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={() => setShowAuthPrompt(false)} 
+                className="w-full text-muted-foreground hover:text-foreground"
+              >
+                Back to Course
+              </Button>
+            </motion.div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
+  )
 
-  const handleSignIn = useCallback(() => {
-    window.location.href = "/api/auth/signin"
-  }, [])
-
-  const handleBackToCourse = useCallback(() => {
-    setShowAuthPrompt(false)
-  }, [])
-
-  // Regular content
+  // Regular content with improved layout and visual hierarchy
   const regularContent = (
-    <div className="min-h-screen bg-background">
-      {/* Main content layout */}
-      <div className="flex">
-        {/* Main content */}
-        <main className="flex-1 min-w-0">
-          {/* Udemy-like sticky header */}
-          <CourseHeader
-            courseTitle={course.title}
-            chapterTitle={mounted && currentChapter?.title ? currentChapter.title : undefined}
-            isCompact={headerCompact}
-            progress={{
-              completedCount: mounted ? courseStats.completedCount : 0,
-              totalChapters: courseStats.totalChapters,
-              progressPercentage: mounted ? courseStats.progressPercentage : 0
-            }}
-            ratingInfo={{
-              averageRating: 4.8, // TODO: Get from course data
-              ratingCount: 1234 // TODO: Get from course data
-            }}
-            instructor={course.userId} // TODO: Get instructor name
-            actions={
+     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+      {/* Enhanced sticky header with better visual hierarchy */}
+      <motion.header 
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className={cn(
+          "sticky top-0 z-50 transition-all duration-300 border-b backdrop-blur-md", 
+          headerCompact 
+            ? "bg-background/90 py-2 shadow-lg border-border/40" 
+            : "bg-background/80 py-4 shadow-sm border-border/20"
+        )}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-4">
+            {/* Course info section */}
+            <div className="flex items-center gap-4 min-w-0 flex-1">
+              <div className="min-w-0 flex-shrink">
+                <motion.h1 
+                  layout
+                  className={cn(
+                    "font-bold truncate transition-all duration-300",
+                    headerCompact ? "text-lg" : "text-xl"
+                  )}
+                  suppressHydrationWarning
+                >
+                  {course.title}
+                </motion.h1>
+                <motion.div 
+                  layout
+                  className="text-sm text-muted-foreground hidden sm:block truncate" 
+                  suppressHydrationWarning
+                >
+                  {mounted && currentChapter?.title ? currentChapter.title : 'Select a chapter to begin'}
+                </motion.div>
+              </div>
+
+              {/* Progress section - enhanced with better colors */}
+              <div className="hidden lg:flex items-center gap-4 ml-6">
+                <div className="bg-muted/30 rounded-full px-3 py-1 border border-border/20">
+                  <div className="text-xs font-medium text-foreground">
+                    {mounted ? `${courseStats.completedCount}/${courseStats.totalChapters}` : `0/${courseStats.totalChapters}`} completed
+                  </div>
+                </div>
+                <div className="w-32 sm:w-48">
+                  <Progress 
+                    value={mounted ? courseStats.progressPercentage : 0} 
+                    className="h-2 bg-muted/30" 
+                  />
+                </div>
+                <Badge 
+                  variant="secondary" 
+                  className="bg-primary/10 text-primary border-primary/20 font-medium"
+                  suppressHydrationWarning
+                >
+                  <BarChart3 className="h-3 w-3 mr-1" />
+                  {mounted ? courseStats.progressPercentage : 0}%
+                </Badge>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="hidden xl:flex text-muted-foreground hover:text-foreground"
+              >
+                {sidebarCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+              </Button>
               <ActionButtons 
                 slug={course.slug} 
                 isOwner={isOwner} 
                 variant="compact" 
                 title={course.title} 
               />
-            }
-          />
+            </div>
+          </div>
 
-          {/* Video Generation Section */}
-          {(isOwner || user?.isAdmin) && (
-            <VideoGenerationSection 
-              course={course}
-              onVideoGenerated={(chapterId, videoId) => {
-                if (process.env.NODE_ENV === "development") {
+          {/* Mobile progress bar */}
+          <motion.div 
+            layout
+            className="lg:hidden mt-3 flex items-center gap-3"
+            suppressHydrationWarning
+          >
+            <div className="flex-1">
+              <Progress 
+                value={mounted ? courseStats.progressPercentage : 0} 
+                className="h-2 bg-muted/30" 
+              />
+            </div>
+            <Badge 
+              variant="secondary" 
+              className="bg-primary/10 text-primary border-primary/20 text-xs"
+            >
+              {mounted ? courseStats.progressPercentage : 0}%
+            </Badge>
+          </motion.div>
+        </div>
+      </motion.header>
+
+      {/* Video Generation Section - Enhanced styling */}
+      <AnimatePresence>
+        {(isOwner || user?.isAdmin) && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-b border-blue-200/50 dark:border-blue-800/50"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <VideoGenerationSection 
+                course={course}
+                onVideoGenerated={(chapterId, videoId) => {
                   console.log(`Video generated for chapter ${chapterId}: ${videoId}`)
-                }
-                // Optionally auto-select the newly generated video
-                if (videoId) {
-                  dispatch(setCurrentVideoApi(videoId))
-                }
-              }}
-            />
-          )}
+                  if (videoId) {
+                    dispatch(setCurrentVideoApi(videoId))
+                  }
+                }}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-          {/* Mobile playlist toggle */}
-          <MobilePlaylistToggle
-            onToggle={handleMobilePlaylistToggle}
-            currentIndex={currentIndex}
-            currentChapter={currentChapter}
-            totalVideos={videoPlaylist.length}
-          />
+      {/* Mobile playlist toggle - Enhanced design */}
+      <div className="xl:hidden bg-muted/20 border-b border-border/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <Button
+            variant="outline"
+            onClick={handleMobilePlaylistToggle}
+            className="w-full bg-background/60 backdrop-blur-sm border-primary/20 hover:bg-background/80 transition-all duration-200 group"
+          >
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center">
+                <BookOpen className="h-4 w-4 mr-2 text-primary" />
+                <span className="font-medium">Course Content</span>
+              </div>
+              <MobilePlaylistCount
+                currentIndex={currentIndex}
+                hasCurrentChapter={Boolean(currentChapter)}
+                total={videoPlaylist.length}
+              />
+            </div>
+          </Button>
+        </div>
+      </div>
 
-          {/* Main grid layout with video player and playlist */}
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 xl:max-w-[1400px] mx-auto w-full"> 
-            {/* Left column: Video and tabs */}
+      {/* Main content area */}
+      <main className="flex-1">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className={cn(
+            "grid gap-6 transition-all duration-300",
+            sidebarCollapsed || isPiPActive 
+              ? "grid-cols-1" 
+              : "grid-cols-1 xl:grid-cols-[1fr_400px]"
+          )}>
+            {/* Left column: Video and content */}
             <motion.div 
-              key="video-content"
               layout
               transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="min-w-0 order-2 xl:order-1"
+              className="space-y-6"
             >
-              {/* Video player component */}
-              <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
-                {/* Player area: header moved to sticky top header above to match Udemy layout */}
+              {/* Video player section with enhanced styling */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="relative"
+              >
+                <Card className="overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-background to-muted/20">
+                  <div className="aspect-video bg-black relative overflow-hidden">
+                    {isVideoLoading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-10">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full"
+                        />
+                      </div>
+                    )}
+                    <VideoPlayer 
+                      youtubeVideoId={currentVideoId || ''}
+                      chapterId={currentChapter?.id?.toString()}
+                      chapterTitle={currentChapter?.title || ''}
+                      bookmarks={sanitizedBookmarkItems}
+                      onProgress={handleVideoProgress}
+                      onEnded={handleVideoEnded}
+                      onVideoLoad={handleVideoLoad}
+                      onPlayerReady={handlePlayerReady}
+                      onPictureInPictureToggle={handlePIPToggle}
+                      initialSeekSeconds={(function(){
+                        try {
+                          if (courseProgress?.videoProgress?.playedSeconds && 
+                              String(courseProgress.videoProgress.currentChapterId) === String(currentChapter?.id)) {
+                            const ts = Number(courseProgress.videoProgress.playedSeconds)
+                            if (!isNaN(ts) && ts > 0) return ts
+                          }
+                        } catch {}
+                        return undefined
+                      })()}
+                      courseId={course.id}
+                      courseName={course.title}
+                      autoPlay={autoplayMode}
+                      onToggleAutoPlay={() => handleAutoplayToggle()}
+                      onNextVideo={handleNextVideo}
+                      nextVideoId={nextVideoId || undefined}
+                      nextVideoTitle={nextVideoTitle}
+                      hasNextVideo={hasNextVideo}
+                      autoAdvanceNext={autoplayMode}
+                    />
+                  </div>
+                </Card>
+              </motion.div>
 
-                <VideoPlayer 
-                  youtubeVideoId={currentVideoId || ''}
-                  chapterId={currentChapter?.id?.toString()}
-                  chapterTitle={currentChapter?.title || ''}
-                  bookmarks={bookmarkItems}
-                  onProgress={handleVideoProgress}
-                  onEnded={handleVideoEnded}
-                  onVideoLoad={handleVideoLoad}
-                  onPlayerReady={handlePlayerReady}
-                  onPictureInPictureToggle={handlePIPToggle}
-                  initialSeekSeconds={(function(){
-                    try {
-                      if (courseProgress?.videoProgress?.playedSeconds && 
-                          String(courseProgress.videoProgress.currentChapterId) === String(currentChapter?.id)) {
-                        const ts = Number(courseProgress.videoProgress.playedSeconds)
-                        if (!isNaN(ts) && ts > 0) return ts
-                      }
-                    } catch {}
-                    return undefined
-                  })()}
-                  courseId={course.id}
-                  courseName={course.title}
-                  autoPlay={autoplayMode}
-                  onToggleAutoPlay={() => handleAutoplayToggle()}
-                  onNextVideo={handleNextVideo}
-                  nextVideoId={nextVideoId || undefined}
-                  nextVideoTitle={nextVideoTitle}
-                  hasNextVideo={hasNextVideo}
-                  autoAdvanceNext={autoplayMode}
-                />
-              </div>
+              {/* Course details tabs - Enhanced with section styling */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+              >
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/50 backdrop-blur-sm">
+                  <div className="bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border/20 px-1 py-1">
+                    <div className="bg-background/80 backdrop-blur-sm rounded-lg p-1">
+                      <MemoizedCourseDetailsTabs
+                        course={course}
+                        currentChapter={currentChapter}
+                        accessLevels={accessLevels}
+                        onSeekToBookmark={handleSeekToBookmark}
+                      />
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
 
-              {/* Tabs below video: Summary, Quiz, Bookmarks, etc */}
-              <div className="rounded-xl border bg-card shadow-sm mt-4 min-h-[400px]">
-                <MemoizedCourseDetailsTabs
-                  course={course}
-                  currentChapter={currentChapter}
-                  accessLevels={accessLevels}
-                  onSeekToBookmark={handleSeekToBookmark}
-                />
-              </div>
-
-              {/* Reviews Section */}
-              <ReviewsSection slug={course.slug} />
+              {/* Reviews Section - Enhanced styling */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/50 p-1"
+              >
+                <div className="bg-background/80 backdrop-blur-sm rounded-lg">
+                  <ReviewsSection slug={course.slug} />
+                </div>
+              </motion.div>
             </motion.div>
 
             {/* Right column: Playlist sidebar (desktop) */}
             <AnimatePresence mode="wait">
-              {!isPiPActive && (
-                <div className="order-1 xl:order-2 hidden xl:block">
-                  <PlaylistSidebar
-                    course={sidebarCourse}
-                    currentChapter={sidebarCurrentChapter}
-                    courseId={course.id.toString()}
-                    currentVideoId={currentVideoId || ''}
-                    isAuthenticated={!!user}
-                    completedChapters={completedChapters.map(String)}
-                    formatDuration={formatDuration}
-                    videoDurations={videoDurations}
-                    courseStats={courseStats}
-                    onChapterSelect={handleChapterSelect}
-                    isPiPActive={isPiPActive}
-                  />
-                </div>
+              {!sidebarCollapsed && !isPiPActive && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}
+                  className="hidden xl:block space-y-4"
+                >
+                  {/* Sidebar header */}
+                  <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <BookOpen className="h-5 w-5 text-primary" />
+                          Course Content
+                        </CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSidebarCollapsed(true)}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <CardDescription className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 text-xs">
+                          <CheckCircle className="h-3 w-3 text-emerald-500" />
+                          {courseStats.completedCount} completed
+                        </div>
+                        <div className="text-muted-foreground">•</div>
+                        <div className="text-xs text-muted-foreground">
+                          {courseStats.totalChapters} total
+                        </div>
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+
+                  {/* Playlist content */}
+                  <div className="bg-gradient-to-br from-background to-muted/10 rounded-xl border border-border/20 shadow-lg">
+                    <PlaylistSidebar
+                      course={sidebarCourse}
+                      currentChapter={sidebarCurrentChapter}
+                      courseId={course.id.toString()}
+                      currentVideoId={currentVideoId || ''}
+                      isAuthenticated={!!user}
+                      completedChapters={completedChapters.map(String)}
+                      formatDuration={formatDuration}
+                      videoDurations={videoDurations}
+                      courseStats={courseStats}
+                      onChapterSelect={handleChapterSelect}
+                      isPiPActive={isPiPActive}
+                    />
+                  </div>
+                </motion.div>
               )}
             </AnimatePresence>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
 
       {/* Mobile playlist overlay */}
       <MobilePlaylistOverlay
@@ -824,18 +997,31 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         onChapterSelect={handleChapterSelect}
       />
 
-      {/* Floating subscribe CTA for guests/free users */}
-      {!userSubscription && (
-        <div className="fixed bottom-6 right-6 z-40">
-          <Button
-            size="lg"
-            onClick={() => (window.location.href = "/dashboard/subscription")}
-            className="shadow-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:opacity-90 transition-transform hover:scale-[1.02] rounded-full"
+      {/* Enhanced floating subscribe CTA */}
+      <AnimatePresence>
+        {!userSubscription && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            className="fixed bottom-6 right-6 z-40"
           >
-            Subscribe to Unlock
-          </Button>
-        </div>
-      )}
+            <Button
+              size="lg"
+              onClick={() => (window.location.href = "/dashboard/subscription")}
+              className="shadow-2xl bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground hover:shadow-3xl transition-all duration-300 hover:scale-105 rounded-full group relative overflow-hidden"
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+              />
+              <Zap className="h-4 w-4 mr-2 group-hover:animate-pulse" />
+              Subscribe to Unlock
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Certificate modal */}
       <CertificateModal
@@ -847,31 +1033,21 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         totalLessons={videoPlaylist.length}
       />
 
-      {/* Add debug component in development */}
+      {/* Debug component in development */}
       {process.env.NODE_ENV !== "production" && (
-        <VideoDebug
-          videoId={typeof currentVideoId === 'string' ? currentVideoId : ''}
-          courseId={course.id}
-          chapterId={currentChapter?.id ? String(currentChapter.id) : ''}
-        />
+        <div className="fixed bottom-4 left-4 z-50">
+          <VideoDebug
+            videoId={typeof currentVideoId === 'string' ? currentVideoId : ''}
+            courseId={course.id}
+            chapterId={currentChapter?.id ? String(currentChapter.id) : ''}
+          />
+        </div>
       )}
     </div>
   )
 
   // Return the correct content based on auth state
-  return (
-    <CourseErrorBoundary>
-      {showAuthPrompt ? (
-        <AuthPrompt
-          onUpgrade={handleUpgrade}
-          onSignIn={handleSignIn}
-          onBack={handleBackToCourse}
-        />
-      ) : (
-        regularContent
-      )}
-    </CourseErrorBoundary>
-  )
+  return showAuthPrompt ? authPromptContent : regularContent
 }
 
 export default React.memo(MainContent)

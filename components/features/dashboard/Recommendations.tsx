@@ -12,7 +12,7 @@ import { toast } from "@/components/ui/use-toast"
 import type { CourseUnit, Chapter, CourseProgress as AppCourseProgress } from "@/app/types/course-types"
 import type { UserQuizAttempt as AppUserQuizAttempt } from "@/app/types/quiz-types"
 import { useLocalStorage } from "@/lib/storage"
-import { useGlobalLoader } from '@/store/loaders/global-loader'
+import { useGlobalLoader } from '@/components/loaders/global-loaders'
 
 interface AIRecommendationsProps {
   courses: any[] // fallback to any for now due to type mismatch
@@ -271,7 +271,7 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
     if (recommendation.type === "quiz") {
       generatePersonalizedQuiz(recommendation)
     } else {
-      startLoading({ message: "Loading course..." });
+  startLoading({ message: "Opening course...", subMessage: "Preparing recommended content", type: 'data', priority: 'high', combineWithRoute: true });
       router.push(`/dashboard/course/${recommendation.slug}?chapter=${recommendation.chapterId}`)
     }
   }
@@ -353,7 +353,7 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
       // Navigate to the course page
       const recommendation = recommendations.find((r) => r.type === "quiz")
       if (recommendation) {
-        startLoading({ message: "Loading course..." });
+  startLoading({ message: "Opening course...", subMessage: "Preparing personalized content", type: 'data', priority: 'high', combineWithRoute: true });
         router.push(`/dashboard/course/${recommendation.slug}?chapter=${recommendation.chapterId}`)
       }
     }

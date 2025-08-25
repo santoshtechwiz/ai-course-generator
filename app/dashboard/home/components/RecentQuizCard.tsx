@@ -6,7 +6,9 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle2, Clock } from "lucide-react"
-import type { UserQuiz, QuizType } from "@/app/types/types"
+import type { UserQuiz } from "@/app/types/types"
+import { QuizType } from "@/app/types/quiz-types"
+import { cn } from "@/lib/utils"
 
 interface RecentQuizCardProps {
   quiz: UserQuiz
@@ -61,41 +63,45 @@ const RecentQuizCard = memo(function RecentQuizCard({ quiz }: RecentQuizCardProp
 
   return (
     <Link href={`/dashboard/${buildQuizSlug(quiz.quizType as QuizType)}/${quiz.slug}`}>
-      <Card className="p-4 hover:shadow-md transition-shadow">
-        <div className="flex items-center justify-between mb-2">
-          <Badge className={getQuizTypeColor(quiz.quizType as QuizType)}>
+      <Card className="p-6 hover:shadow-lg transition-all duration-300 border hover:border-primary/20 group">
+        <div className="flex items-center justify-between mb-4">
+          <Badge className={cn("text-xs font-semibold", getQuizTypeColor(quiz.quizType as QuizType))}>
             {getQuizTypeLabel(quiz.quizType as QuizType)}
           </Badge>
           {quiz.timeEnded ? (
-            <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+            <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200">
               <CheckCircle2 className="mr-1 h-3 w-3" />
               Completed
             </Badge>
           ) : (
-            <Badge variant="outline" className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+            <Badge variant="outline" className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200">
               <Clock className="mr-1 h-3 w-3" />
               In Progress
             </Badge>
           )}
         </div>
 
-        <h3 className="font-semibold text-lg line-clamp-1">{quiz.title}</h3>
+        <h3 className="font-bold text-lg line-clamp-1 mb-3 group-hover:text-primary transition-colors duration-300">{quiz.title}</h3>
 
         {!quiz.timeEnded && (
-          <div className="mt-3">
-            <div className="flex items-center justify-between text-xs mb-1">
-              <span className="text-muted-foreground">Progress</span>
-              <span>{quiz.progress || 0}%</span>
+          <div className="mt-4 mb-4">
+            <div className="flex items-center justify-between text-xs mb-2">
+              <span className="text-muted-foreground font-medium">Progress</span>
+              <span className="font-semibold text-primary">{quiz.progress || 0}%</span>
             </div>
-            <Progress value={quiz.progress || 0} className="h-2" />
+            <Progress value={quiz.progress || 0} className="h-2.5 bg-muted/50" />
           </div>
         )}
 
-        <div className="flex items-center justify-between mt-4">
-          <div className="text-sm text-muted-foreground">{(quiz as any)?._count?.questions || quiz.questions?.length || 0} questions</div>
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/50">
+          <div className="text-sm text-muted-foreground font-medium">
+            {(quiz as any)?._count?.questions || quiz.questions?.length || 0} questions
+          </div>
 
           {quiz.timeEnded && (
-            <div className="text-lg font-bold text-green-600 dark:text-green-400">{quiz.bestScore || 0}%</div>
+            <div className="text-lg font-bold text-green-600 dark:text-green-400">
+              {quiz.bestScore || 0}%
+            </div>
           )}
         </div>
       </Card>

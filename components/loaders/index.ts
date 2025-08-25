@@ -1,1 +1,1 @@
-export { GlobalLoader, LoadingSpinner, InlineSpinner } from "./GlobalLoader";
+export { GlobalLoader, LoadingSpinner, InlineSpinner } from "./Loader";

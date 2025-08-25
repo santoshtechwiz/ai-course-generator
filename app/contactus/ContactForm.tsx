@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
 import Logo from "@/components/shared/Logo"
-import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
+import { LoadingSpinner } from "@/components/loaders/Loader"
 
 
 interface ContactFormData {

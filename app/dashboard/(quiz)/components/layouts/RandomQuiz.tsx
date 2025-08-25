@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo, memo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef, memo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -235,10 +235,6 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
       animate="visible" 
       exit="exit" 
       className="w-full"
-      animate={{
-        ...CARD_ANIMATIONS.visible,
-        ...FLOATING_ANIMATION
-      }}
     >
       <Card
         className={cn(
@@ -446,7 +442,7 @@ const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
       <CardContent className="p-12 text-center">
         <motion.div 
           className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-red-100 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30 flex items-center justify-center"
-          animate={{ shake: [0, -5, 5, 0] }}
+          animate={{ x: [0, -6, 6, 0] }}
           transition={{ duration: 0.5, repeat: 3 }}
         >
           <Zap className="w-10 h-10 text-red-600 dark:text-red-400" />
@@ -472,61 +468,9 @@ const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
 ))
 ErrorState.displayName = "ErrorState"
 
-// Custom hook for random quizzes
-const useRandomQuizzes = (maxQuizzes = 5) => {
-  const [quizzes, setQuizzes] = useState<Quiz[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+// Use the shared hook to avoid duplicate network calls and console spam
+import { useRandomQuizzes as useSharedRandomQuizzes } from "@/hooks/useRandomQuizzes"
 
-  const fetchQuizzes = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const response = await fetch("/api/quizzes/common/random", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch quizzes: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      
-      const transformedQuizzes: Quiz[] = (data.quizzes || data || []).slice(0, maxQuizzes).map((quiz: any) => ({
-        id: quiz.id,
-        title: quiz.title,
-        quizType: quiz.quizType || "mcq",
-        difficulty: quiz.difficulty || "medium", 
-        questionCount: quiz.questionCount || quiz._count?.questions || 0,
-        timeStarted: quiz.timeStarted ? new Date(quiz.timeStarted) : undefined,
-        slug: quiz.slug,
-        isPublic: quiz.isPublic ?? true,
-        isFavorite: quiz.isFavorite || false,
-        description: quiz.description,
-        tags: quiz.tags || [],
-        estimatedTime: quiz.estimatedTime || Math.ceil((quiz.questionCount || 10) * 1.5),
-        rating: quiz.rating || (Math.random() * 2 + 3), // 3-5 rating
-        viewCount: quiz.viewCount || Math.floor(Math.random() * 1000) + 100,
-        likeCount: quiz.likeCount || Math.floor(Math.random() * 50) + 10,
-      }))
-
-      setQuizzes(transformedQuizzes)
-    } catch (err) {
-      console.error("Error fetching random quizzes:", err)
-      setError(err instanceof Error ? err.message : "Failed to fetch quizzes")
-    } finally {
-      setLoading(false)
-    }
-  }, [maxQuizzes])
-
-  useEffect(() => {
-    fetchQuizzes()
-  }, [fetchQuizzes])
-
-  return { quizzes, loading, error, refetch: fetchQuizzes }
-}
 
 // Main component
 export const RandomQuiz = memo(({ 
@@ -536,7 +480,7 @@ export const RandomQuiz = memo(({
   showControls = true, 
   maxQuizzes = 5 
 }: RandomQuizProps) => {
-  const { quizzes, loading, error, refetch } = useRandomQuizzes(maxQuizzes)
+  const { quizzes, isLoading: loading, error, refreshQuizzes: refetch } = useSharedRandomQuizzes(maxQuizzes)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
 
@@ -557,6 +501,26 @@ export const RandomQuiz = memo(({
     const interval = setInterval(nextQuiz, rotationInterval)
     return () => clearInterval(interval)
   }, [autoRotate, isPaused, rotationInterval, nextQuiz, quizzes.length])
+
+  // Debounced refetch when component mounts or when user explicitly triggers refetch
+  const refetchRef = useRef<number | null>(null)
+  const debouncedRefetch = useCallback(() => {
+    if (refetchRef.current) {
+      window.clearTimeout(refetchRef.current)
+    }
+    refetchRef.current = window.setTimeout(() => {
+      refetch()
+      refetchRef.current = null
+    }, 250)
+  }, [refetch])
+
+  useEffect(() => {
+    // ensure we kick off a refresh on mount but debounce to avoid duplicate triggers
+    debouncedRefetch()
+    return () => {
+      if (refetchRef.current) window.clearTimeout(refetchRef.current)
+    }
+  }, [debouncedRefetch])
 
   // Reset index when quizzes change
   useEffect(() => {
@@ -653,13 +617,31 @@ export const RandomQuiz = memo(({
       {/* Quiz Card */}
       <div className="relative min-h-[500px]">
         <AnimatePresence mode="wait">
-          {currentQuiz && (
-            <QuizCard 
-              key={currentQuiz.id} 
-              quiz={currentQuiz} 
-              isActive={true} 
-            />
-          )}
+          {currentQuiz && (() => {
+            // Normalize API data to the local `Quiz` shape expected by QuizCard
+            const safeQuiz = {
+              id: currentQuiz.id,
+              title: currentQuiz.title || 'Untitled Quiz',
+              // Ensure quizType matches expected union; fallback to 'mcq'
+              quizType: ((currentQuiz.quizType as unknown) as keyof typeof QUIZ_ROUTES) || 'mcq',
+              difficulty: currentQuiz.difficulty || 'medium',
+              questionCount: currentQuiz.questionCount || 0,
+              timeStarted: currentQuiz.timeStarted,
+              slug: currentQuiz.slug || String(currentQuiz.id),
+              isPublic: currentQuiz.isPublic ?? true,
+              isFavorite: currentQuiz.isFavorite ?? false,
+              description: currentQuiz.description,
+              tags: currentQuiz.tags,
+              estimatedTime: currentQuiz.estimatedTime,
+              rating: typeof currentQuiz.rating === 'number' ? currentQuiz.rating : undefined,
+              viewCount: currentQuiz.viewCount,
+              likeCount: currentQuiz.likeCount,
+            }
+
+            return (
+              <QuizCard key={safeQuiz.id} quiz={safeQuiz as any} isActive={true} />
+            )
+          })()}
         </AnimatePresence>
       </div>
 

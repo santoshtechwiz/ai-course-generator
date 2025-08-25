@@ -7,7 +7,7 @@ const ReactPlayer: any = dynamic(() => import("react-player/youtube"), { ssr: fa
 import { useSession } from "next-auth/react"
 import { useVideoPlayer } from "../hooks/useVideoPlayer"
 import PlayerControls from "./PlayerControls"
-import { useGlobalLoader } from '@/store/loaders/global-loader'
+
 import VideoErrorState from "./VideoErrorState"
 import BookmarkManager from "./BookmarkManager"
 import KeyboardShortcutsModal from "../../KeyboardShortcutsModal"
@@ -21,6 +21,7 @@ import ChapterStartOverlay from "./ChapterStartOverlay"
 import ChapterEndOverlay from "./ChapterEndOverlay"
 import AutoPlayNotification from "./AutoPlayNotification"
 import EnhancedMiniPlayer from "./EnhancedMiniPlayer"
+import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 // Memoized authentication prompt to prevent unnecessary re-renders
 const AuthPrompt = React.memo(
@@ -239,7 +240,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
     
     const isCourseCompleted = progressStats?.progressPercentage === 100
 
-    if (isCourseCompleted) {
+  if (isCourseCompleted) {
       setOverlayState(prev => ({ ...prev, showChapterEnd: true }))
     } else if (onNextVideo && playerState.autoPlayVideo) {
       // Start auto-advance countdown
@@ -250,10 +251,11 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
       intervalRefs.current.autoPlay = setInterval(() => {
         setCountdowns(prev => {
           const newCount = prev.autoPlay - 1
-          if (newCount <= 0) {
+            if (newCount <= 0) {
             if (intervalRefs.current.autoPlay) clearInterval(intervalRefs.current.autoPlay)
             setOverlayState(prevOverlay => ({ ...prevOverlay, showAutoPlayNotification: false }))
-            onNextVideo()
+            // Use safe deferred caller to avoid setState during render
+            safeOnNextVideo()
             return { ...prev, autoPlay: 5 }
           }
           return { ...prev, autoPlay: newCount }
@@ -263,6 +265,18 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
       setOverlayState(prev => ({ ...prev, showChapterEnd: true }))
     }
   }, [onEnded, isAuthenticated, playerState.hasPlayedFreeVideo, progressStats?.progressPercentage, onNextVideo, playerState.autoPlayVideo])
+
+  // Safe deferred call to onNextVideo to avoid updating parent while rendering this component
+  const safeOnNextVideo = useCallback(() => {
+    if (!onNextVideo) return
+    setTimeout(() => {
+      try {
+        onNextVideo()
+      } catch (e) {
+        console.warn('safeOnNextVideo failed', e)
+      }
+    }, 0)
+  }, [onNextVideo])
 
   // Initialize video player hook
   const { state, playerRef, containerRef, bufferHealth, youtubeUrl, handleProgress, handlers } =
@@ -824,7 +838,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
       clearInterval(intervalRefs.current.autoPlay)
       intervalRefs.current.autoPlay = null
     }
-    onNextVideo?.()
+  safeOnNextVideo()
   }, [onNextVideo])
 
   const handleAutoPlayCancel = useCallback(() => {
@@ -838,7 +852,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
 
   const handleNextChapter = useCallback(() => {
     setOverlayState(prev => ({ ...prev, showChapterEnd: false }))
-    onNextVideo?.()
+  safeOnNextVideo()
   }, [onNextVideo])
 
   const handleReplay = useCallback(() => {
@@ -1127,7 +1141,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
           duration={formatTime(playerState.videoDuration || state.duration)}
           onPlayPause={handlePlayClick}
           onVolumeToggle={handlers.onMute}
-          onNext={onNextVideo}
+          onNext={safeOnNextVideo}
           hasNext={!!onNextVideo}
           nextTitle={nextVideoTitle}
           played={state.played}
@@ -1283,7 +1297,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
             onCertificateClick={onCertificateClick}
             show={playerState.showControlsState}
             onShowKeyboardShortcuts={handlers.handleShowKeyboardShortcuts}
-            onNextVideo={onNextVideo}
+            onNextVideo={safeOnNextVideo}
             onToggleBookmarkPanel={handleToggleBookmarkPanel}
               bookmarkPanelOpen={overlayState.showBookmarkPanel}
             autoPlayNext={state.autoPlayNext}

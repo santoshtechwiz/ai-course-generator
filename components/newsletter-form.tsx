@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { Mail, ArrowRight, CheckCircle, AlertCircle } from "lucide-react"
-import { useGlobalLoader } from '@/store/loaders/global-loader'
+import { useGlobalLoader } from '@/components/loaders/global-loaders'
 import { InlineSpinner } from '@/components/ui/loader'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

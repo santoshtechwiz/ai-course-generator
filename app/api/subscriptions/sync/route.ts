@@ -57,14 +57,27 @@ export async function POST(req: NextRequest) {
           userSubscription.stripeSubscriptionId,
           { expand: ['customer'] }
         )
-        logger.info(`Stripe subscription status: ${stripeSubscription.status}`, {
-          subscriptionId: stripeSubscription.id,
+        // Log only non-sensitive, high-level Stripe info
+        logger.info(`Stripe subscription status fetched`, {
+          status: stripeSubscription.status,
           currentPeriodEnd: stripeSubscription.current_period_end,
-          planId: stripeSubscription.items.data[0]?.price?.id,
+          hasPrice: !!stripeSubscription.items.data[0]?.price?.id,
         })
       }
-    } catch (stripeError) {
-      logger.error('Failed to fetch subscription from Stripe:', stripeError)
+    } catch (stripeError: any) {
+      // Handle 'resource_missing' (subscription not found) gracefully without logging sensitive details
+      if (stripeError?.type === 'StripeInvalidRequestError' && stripeError?.code === 'resource_missing') {
+        logger.info('Stripe reported subscription not found for user; proceeding with DB state')
+      } else {
+        // Log a sanitized error message (avoid dumping raw Stripe error object)
+        logger.error('Failed to fetch subscription from Stripe (sanitized):', {
+          message: stripeError?.message,
+          code: stripeError?.code,
+          type: stripeError?.type,
+          requestId: stripeError?.requestId,
+          statusCode: stripeError?.statusCode,
+        })
+      }
       // Continue with database data if Stripe is unavailable
     }
 
@@ -100,8 +113,9 @@ export async function POST(req: NextRequest) {
 
       currentPeriodEnd = new Date(stripeSubscription.current_period_end * 1000)
         // Try to determine plan ID from Stripe price ID
-      const stripePriceId = stripeSubscription.items.data[0]?.price?.id
-      logger.info(`Stripe price ID found: ${stripePriceId}`)
+  const stripePriceId = stripeSubscription.items.data[0]?.price?.id
+  // Avoid logging the raw price ID; only note its presence
+  logger.info('Stripe price information present', { hasPriceId: !!stripePriceId })
       
       if (stripePriceId) {
         // Enhanced price ID mapping with fallback logic
@@ -115,14 +129,14 @@ export async function POST(req: NextRequest) {
         const mappedPlan = priceIdToPlans[stripePriceId]
         if (mappedPlan) {
           correctPlanId = mappedPlan
-          logger.info(`Mapped price ID ${stripePriceId} to plan ${mappedPlan}`)
+          logger.info(`Mapped Stripe price to internal plan`, { plan: mappedPlan })
         } else {
-          // Fallback: Try to infer from price amount or nickname
+          // Fallback: Try to infer from price amount or nickname, but avoid logging raw price IDs
           const priceAmount = stripeSubscription.items.data[0]?.price?.unit_amount
           const priceNickname = stripeSubscription.items.data[0]?.price?.nickname
-          
-          logger.warn(`Unknown price ID: ${stripePriceId}, amount: ${priceAmount}, nickname: ${priceNickname}`)
-          
+
+          logger.warn('Unknown Stripe price ID; using fallback plan inference', { hasAmount: !!priceAmount, hasNickname: !!priceNickname })
+
           // Intelligent fallback based on amount or keep existing plan
           if (priceAmount && priceAmount > 0) {
             // If there's a price, it's likely not FREE
@@ -130,8 +144,8 @@ export async function POST(req: NextRequest) {
           } else {
             correctPlanId = userSubscription.planId
           }
-          
-          logger.info(`Using fallback plan: ${correctPlanId}`)
+
+          logger.info('Using fallback plan', { plan: correctPlanId })
         }
       } else {
         correctPlanId = userSubscription.planId
@@ -180,10 +194,9 @@ export async function POST(req: NextRequest) {
       currentPeriodEnd: currentPeriodEnd?.toISOString(),
       stripeStatus: stripeSubscription?.status,
       synced: needsUpdate,
+      // Keep only non-sensitive debug info in production; include minimal debug context
       debug: {
-        stripePriceId: stripeSubscription?.items.data[0]?.price?.id,
-        stripePriceAmount: stripeSubscription?.items.data[0]?.price?.unit_amount,
-        stripePriceNickname: stripeSubscription?.items.data[0]?.price?.nickname,
+        stripePricePresent: !!stripeSubscription?.items.data[0]?.price?.id,
         originalPlan: userSubscription.planId,
         originalStatus: userSubscription.status,
       }

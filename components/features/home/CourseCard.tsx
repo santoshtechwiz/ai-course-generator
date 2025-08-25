@@ -29,10 +29,11 @@ import {
   Bookmark,
   Share2,
 } from "lucide-react"
-import { useGlobalLoader } from '@/store/loaders/global-loader'
+
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 // Enhanced course images with better variety
 const COURSE_IMAGES = ["/course.png", "/course_2.png", "/course_3.png", "/course_4.png"]
@@ -175,7 +176,8 @@ export const CourseCard = React.memo(
     const handleCardClick = (e: React.MouseEvent) => {
       e.preventDefault();
       setIsNavigating(true);
-      startLoading({ message: "Loading course...", isBlocking: true });
+  // Rely on central RouteLoaderBridge; start a lightweight data loader that will merge into route loader if navigation already in progress
+  startLoading({ message: "Opening course...", subMessage: "Preparing content", isBlocking: false, type: 'data', priority: 'high', combineWithRoute: true });
       setTimeout(() => {
         router.push(`/dashboard/course/${slug}`);
       }, 100);
@@ -250,8 +252,8 @@ export const CourseCard = React.memo(
         },
       },
       hover: {
-        y: -8,
-        scale: 1.02,
+        y: -10,
+        scale: 1.03,
         transition: { type: "spring", stiffness: 400, damping: 25 },
       },
     }

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Home, ArrowLeft } from "lucide-react"
 import { quizStore } from "@/lib/quiz-store"
 import { QuizPlayer } from "../components/QuizPlay"
-import { useGlobalLoader } from "@/store/loaders/global-loader"
+import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 interface DocumentQuizClientProps {
   params: Promise<{ quizId: string }>
@@ -36,7 +36,7 @@ export default function DocumentQuizClient({ params }: DocumentQuizClientProps) 
           setQuizTitle(quiz.title)
         }
       } catch (error) {
-        console.error("Failed to load quiz:", error)
+        console.error("Failed to load quiz:", error && (error as any).message ? (error as any).message : String(error))
       } finally {
         setLoading(false)
         stopLoading()

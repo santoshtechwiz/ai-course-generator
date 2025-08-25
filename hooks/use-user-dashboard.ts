@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import type { DashboardUser, UserStats } from "@/app/types/types"
-import { useGlobalLoader } from "@/store/loaders/global-loader"
+import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 /**
  * Fetch user data from the API

@@ -19,19 +19,17 @@ export const viewport = {
   maximumScale: 1,
 }
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getAuthSession()
 
+  if (!session) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>
+  }
+
   return (
-    <div className="flex flex-col font-body  flex-1">
+    <div className="flex flex-col font-body flex-1">
       <DashboardShell>
-        <main className="flex-1 pt-16">
-          {children}
-        </main>          
+        <main className="flex-1 pt-16">{children}</main>
         <Toaster />
         <Chatbot userId={session?.user?.id} />
         {process.env.NODE_ENV !== "production" && <CourseAIState />}

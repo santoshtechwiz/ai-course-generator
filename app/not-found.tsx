@@ -27,12 +27,20 @@ export default function NotFound() {
       <JsonLD type="website" data={notFoundStructuredData} />
 
       <motion.div
-        className="relative mb-8"
+        className="relative mb-8 flex items-center justify-center"
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.2 }}
       >
-        <Frown className="h-24 w-24 text-primary/80 opacity-80" />
+        {/* Use included SVG asset to avoid missing image requests */}
+        <img
+          src="/not-found.svg"
+          alt="Not found"
+          className="h-24 w-24 object-contain"
+          width={96}
+          height={96}
+        />
+
         <motion.div
           className="absolute inset-0 h-24 w-24 rounded-full bg-primary/10 animate-ping-slow"
           initial={{ scale: 0.8, opacity: 0 }}
