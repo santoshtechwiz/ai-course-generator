@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/auth/authOptions";
+import { authOptions } from "@/lib/auth";
 import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service";
 import { SubscriptionPlanType } from "@/app/types/subscription";
 

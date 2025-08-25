@@ -151,19 +151,12 @@ export default function DashboardPage() {
   const safeUserData: DashboardUser = userData || fallbackUserData
   const safeUserStats: UserStats = userStats || {
     totalQuizzes: 0,
-    totalAttempts: 0,
     averageScore: 0,
     highestScore: 0,
-    completedCourses: 0,
     totalTimeSpent: 0,
-    averageTimePerQuiz: 0,
-    topPerformingTopics: [],
-    recentImprovement: 0,
     quizzesPerMonth: 0,
-    courseCompletionRate: 0,
-    consistencyScore: 0,
-    learningEfficiency: 0,
-    difficultyProgression: 0,
+    recentImprovement: 0,
+    topPerformingTopics: [],
   }
 
   const quickStats = useMemo(() => [

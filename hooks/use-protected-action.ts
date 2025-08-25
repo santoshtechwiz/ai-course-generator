@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { useToast } from '@/hooks';
-import { useSubscription } from '@/modules/auth';
+import useSubscription from '@/hooks/use-subscription';
 import { PROTECTED_ACTIONS } from '@/config/subscription-routes';
 
 export interface UseProtectedActionOptions {
