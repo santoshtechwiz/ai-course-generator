@@ -34,7 +34,7 @@
   "dependencies": {
     "@ai-sdk/google": "^1.1.14",
     "@ai-sdk/openai": "^1.1.13",
-    "@ai-sdk/react": "^1.1.17",
+    "@ai-sdk/react": "1.2.12",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@google/generative-ai": "^0.21.0",
@@ -95,7 +95,7 @@
     "@xstate/react": "6.0.0",
     "ag-grid-community": "^31.0.1",
     "ag-grid-react": "^31.0.1",
-    "ai": "5.0.22",
+  "ai": "^3.3.0",   
     "autoprefixer": "10.4.21",
     "axios": "^1.7.7",
     "babel-plugin-react-compiler": "19.1.0-rc.2",
