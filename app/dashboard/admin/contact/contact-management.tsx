@@ -281,7 +281,7 @@ export default function ContactManagement() {
                 <TabsContent value="new" className="mt-4">
                   {isLoading ? (
                     <div className="flex justify-center py-8">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <Loader2 className="h-8 w-8 text-primary" />
                     </div>
                   ) : filteredSubmissions.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">No new inquiries found</div>
@@ -312,7 +312,7 @@ export default function ContactManagement() {
                 <TabsContent value="responded" className="mt-4">
                   {isLoading ? (
                     <div className="flex justify-center py-8">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <Loader2 className="h-8 w-8 text-primary" />
                     </div>
                   ) : filteredSubmissions.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">No responded inquiries found</div>
@@ -343,7 +343,7 @@ export default function ContactManagement() {
                 <TabsContent value="archived" className="mt-4">
                   {isLoading ? (
                     <div className="flex justify-center py-8">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <Loader2 className="h-8 w-8 text-primary" />
                     </div>
                   ) : filteredSubmissions.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">No archived inquiries found</div>
@@ -470,7 +470,7 @@ export default function ContactManagement() {
                         <Button type="submit" disabled={isSending}>
                           {isSending ? (
                             <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              <Loader2 className="h-4 w-4 mr-2" />
                               Sending...
                             </>
                           ) : (

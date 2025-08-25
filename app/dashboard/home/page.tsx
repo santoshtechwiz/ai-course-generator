@@ -18,17 +18,14 @@ import { Button } from "@/components/ui/button"
 import UserNotFound from "@/components/common/UserNotFound"
 
 import { useUserData, useUserStats } from "@/hooks/useUserDashboard"
-import { GlobalLoader } from "@/components/loaders/UnifiedLoader"
 import DashboardHeader from "./components/DashboardHeader"
 import DashboardSidebar from "./components/DashboardSidebar"
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
 import dynamic from "next/dynamic"
-import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
+// Removed SuspenseGlobalFallback; using inline spinner fallbacks
 
 
 import type { DashboardUser, UserStats } from "@/app/types/types"
 import { useAuth } from "@/hooks"
-import { LoadingSpinner } from "@/components/loaders/Loader"
 
 const OverviewTab = dynamic(() => import("./components/OverviewTab"), {
   loading: () => <Skeleton className="h-[500px] w-full" />,
@@ -62,7 +59,8 @@ const LoadingState = memo(() => (
 export default function DashboardPage() {
   const { isAuthenticated, user, isLoading } = useAuth();
   const router = useRouter()
-  const { startLoading, stopLoading } = useGlobalLoader()
+  const startLoading = () => {}
+  const stopLoading = () => {}
 
   const userId = user?.id || ""
   const [activeTab, setActiveTab] = useState("overview")
@@ -92,12 +90,8 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    if (isLoading ) {
-      startLoading({ message: "Verifying session..." })
-    } else {
-      stopLoading()
-    }
-  }, [isLoading, startLoading, stopLoading])
+    // previously triggered global loader; now no-op
+  }, [isLoading])
 
   // Show Sign In if not authenticated
   if (!isAuthenticated) {
@@ -212,7 +206,7 @@ export default function DashboardPage() {
             </TabsList>
 
             <TabsContent value="overview" className="mt-0">
-              <Suspense fallback={<SuspenseGlobalFallback message="Loading Overview..." />}>
+              <Suspense fallback={<div className="flex justify-center py-10"><div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary" /></div>}>
                 <OverviewTab userData={safeUserData} userStats={safeUserStats} />
               </Suspense>
             </TabsContent>
@@ -220,7 +214,10 @@ export default function DashboardPage() {
             <TabsContent value="courses" className="mt-0">
               <Suspense fallback={
                 <div className="min-h-[400px] flex items-center justify-center">
-                  <GlobalLoader />
+                  <div className="flex flex-col items-center gap-2 py-8">
+                    <div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary" />
+                    <p className="text-xs text-muted-foreground">Loading courses...</p>
+                  </div>
                 </div>
               }>
                 <CoursesTab userData={safeUserData} />
@@ -228,13 +225,13 @@ export default function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="quizzes" className="mt-0">
-              <Suspense fallback={<SuspenseGlobalFallback message="Loading Quizzes..." />}>
+              <Suspense fallback={<div className="flex justify-center py-10"><div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary" /></div>}>
                 <QuizzesTab userData={safeUserData} />
               </Suspense>
             </TabsContent>
 
             <TabsContent value="stats" className="mt-0">
-              <Suspense fallback={<SuspenseGlobalFallback message="Loading Statistics..." />}>
+              <Suspense fallback={<div className="flex justify-center py-10"><div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary" /></div>}>
                 <StatsTab userStats={safeUserStats} quizAttempts={safeUserData.quizAttempts} />
               </Suspense>
             </TabsContent>

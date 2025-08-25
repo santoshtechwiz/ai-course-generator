@@ -10,8 +10,7 @@ import { motion } from "framer-motion"
 import MainNavbar from "@/components/layout/navigation/MainNavbar"
 import ClientOnly from "@/components/ClientOnly"
 import { notFoundStructuredData, setNotFoundHeaders } from "@/app/utils/not-found-utils"
-import AsyncNavLink from "@/components/loaders/AsyncNavLink"
-import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
+// duplicate import removed
 import { JsonLD } from "@/lib/seo"
 import RecommendedSection from "@/components/shared/RecommendedSection"
 
@@ -159,7 +158,7 @@ export default function NotFound() {
           >
             <RecommendedSection title="Recommended for You">
               <ClientOnly>
-                <Suspense fallback={<SuspenseGlobalFallback />}>
+                <Suspense fallback={<div className="flex items-center justify-center py-10"><span className="text-xs text-muted-foreground">Loading...</span></div>}>
                   <Recommendations />
                 </Suspense>
               </ClientOnly>

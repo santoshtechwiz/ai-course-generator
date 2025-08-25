@@ -288,7 +288,7 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
                 className="ml-auto flex items-center h-7 px-2 bg-transparent"
               >
                 {isGenerating ? (
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  <Loader2 className="h-3 w-3 mr-1" />
                 ) : (
                   <PlayCircle className="h-3 w-3 mr-1" />
                 )}

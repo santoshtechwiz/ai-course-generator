@@ -249,7 +249,7 @@ export function PricingPage({
                   onChange={(e) => setPromoCode(e.target.value)}
                 />
                 <Button onClick={handleApplyPromoCode} disabled={isPromoValid || isApplyingPromo}>
-                  {isApplyingPromo ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Gift className="mr-2" />}
+                  {isApplyingPromo ? <Loader2 className="h-4 w-4 mr-2" /> : <Gift className="mr-2" />}
                   {isPromoValid ? "Applied" : "Apply"}
                 </Button>
               </div>
@@ -302,7 +302,7 @@ export function PricingPage({
                   onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, selectedDuration)}
                   disabled={loading !== null}
                 >
-                  {loading === plan.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {loading === plan.id ? <Loader2 className="mr-2 h-4 w-4" /> : null}
                   {plan.id === currentPlan ? "Current Plan" : "Subscribe"}
                 </Button>
               </div>

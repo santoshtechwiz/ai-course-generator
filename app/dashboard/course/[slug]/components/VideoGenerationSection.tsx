@@ -160,7 +160,7 @@ export default function VideoGenerationSection({ course, onVideoGenerated }: Vid
           {/* Status Information */}
           {processingCount > 0 && (
             <Alert>
-              <Loader2 className="h-4 w-4 animate-spin" />              <AlertDescription>
+              <Loader2 className="h-4 w-4" />              <AlertDescription>
                 Currently generating {processingCount} video{processingCount !== 1 ? 's' : ''}...
                 <div className="mt-2 text-xs text-muted-foreground">
                   Queue status: {queueStatus.pending} pending, {queueStatus.size} in queue
@@ -180,7 +180,7 @@ export default function VideoGenerationSection({ course, onVideoGenerated }: Vid
                 >
                   <span className="truncate">{chapter.title}</span>                  <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                     {isProcessing[chapter.id] ? (
-                      <Loader2 className="h-3 w-3 animate-spin text-orange-500" />
+                      <Loader2 className="h-3 w-3 text-orange-500" />
                     ) : statuses[chapter.id]?.status === "completed" ? (
                       <CheckCircle className="h-3 w-3 text-green-500" />
                     ) : statuses[chapter.id]?.status === "error" ? (
@@ -208,7 +208,7 @@ export default function VideoGenerationSection({ course, onVideoGenerated }: Vid
             >
               {isGenerating || processingCount > 0 ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2" />
                   Generating Videos...
                 </>
               ) : (

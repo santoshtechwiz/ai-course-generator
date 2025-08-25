@@ -262,7 +262,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4" />
                     Creating...
                   </>
                 ) : (

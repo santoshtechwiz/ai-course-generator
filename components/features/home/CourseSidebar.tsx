@@ -284,7 +284,7 @@ export function CourseSidebar({
           {isLoading ? (
             <div className="flex justify-center items-center h-20">
               <div className="space-y-2">
-                <Loader2 className="h-5 w-5 animate-spin text-primary mx-auto" />
+                <Loader2 className="h-5 w-5 text-primary mx-auto" />
                 {!isCollapsed && (
                   <p className="text-xs text-muted-foreground text-center">Loading categories...</p>
                 )}

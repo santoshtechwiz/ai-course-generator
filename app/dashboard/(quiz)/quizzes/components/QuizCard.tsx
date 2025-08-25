@@ -25,7 +25,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import { motion } from "framer-motion"
-import { AsyncNavLink } from "@/components/loaders/AsyncNavLink"
+import Link from "next/link"
 import { cn } from "@/lib/utils"
 import type { QuizType } from "@/app/types/quiz-types"
 
@@ -143,7 +143,7 @@ function QuizCardComponent({
   }
 
   return (
-    <AsyncNavLink
+    <Link
       href={`/dashboard/${quizType}/${slug}`}
       className={cn("h-full group block focus:outline-none", compact && "@container")}
       tabIndex={0}
@@ -303,7 +303,7 @@ function QuizCardComponent({
           />
         </Card>
       </motion.div>
-    </AsyncNavLink>
+  </Link>
   )
 }
 

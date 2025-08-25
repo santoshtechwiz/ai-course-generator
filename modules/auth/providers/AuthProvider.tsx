@@ -73,10 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  // Load fresh subscription on session load
+  // Load fresh subscription on session load - non-blocking background fetch
   useEffect(() => {
     if (session?.user?.id && status === 'authenticated' && shouldSyncSubscription(pathname)) {
-      dispatch(fetchSubscription({ forceRefresh: true }));
+      // Use background fetch to avoid blocking render
+      dispatch(fetchSubscription({ forceRefresh: true, isBackground: true }));
     }
   }, [session?.user?.id, status, dispatch, pathname]); // More specific dependencies
 
@@ -90,7 +91,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshSubscription = useCallback(async () => {
     try {
-      await dispatch(fetchSubscription({ forceRefresh: true })).unwrap();
+      // Use background fetch to avoid blocking UI
+      await dispatch(fetchSubscription({ forceRefresh: true, isBackground: true })).unwrap();
     } catch (error) {
       console.error("Failed to refresh subscription data:", error);
     }

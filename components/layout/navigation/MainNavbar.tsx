@@ -17,18 +17,17 @@ import { useAuth, useSubscription } from "@/modules/auth"
 import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
 import CourseNotificationsMenu from "@/components/Navbar/CourseNotificationsMenu"
 import { cn } from "@/lib/utils"
-import { AsyncNavLink } from "@/components/loaders/AsyncNavLink"
+import Link from "next/link"
 
 import { motion, AnimatePresence, MotionConfig, useReducedMotion } from "framer-motion"
 import Logo from "@/components/shared/Logo"
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 export default function MainNavbar() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const subscription = useSubscription()
-  const { startLoading } = useGlobalLoader()
+  const startLoading = () => {}
 
   // Extract subscription details
   const totalTokens = user?.credits || 0
@@ -198,7 +197,7 @@ export default function MainNavbar() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <AsyncNavLink
+            <Link
               href={item.href}
               className={cn(
                 "relative px-4 py-2.5 text-sm font-medium transition-all duration-300 group block rounded-lg whitespace-nowrap",
@@ -229,7 +228,7 @@ export default function MainNavbar() {
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 />
               )}
-            </AsyncNavLink>
+            </Link>
           </motion.div>
         )
       }),
@@ -248,7 +247,7 @@ export default function MainNavbar() {
             whileHover={{ x: 4, scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
           >
-            <AsyncNavLink
+            <Link
               href={item.href}
               onClick={() => setIsMobileMenuOpen(false)}
               className={cn(
@@ -270,7 +269,7 @@ export default function MainNavbar() {
                   />
                 )}
               </span>
-            </AsyncNavLink>
+            </Link>
           </motion.div>
         )
       }),
@@ -414,13 +413,13 @@ export default function MainNavbar() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <AsyncNavLink
+              <Link
                 href="/"
                 aria-label="Return to homepage"
                 className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 rounded-lg"
               >
                 <Logo />
-              </AsyncNavLink>
+              </Link>
             </motion.div>
 
             <motion.nav

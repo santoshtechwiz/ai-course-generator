@@ -319,9 +319,13 @@ export const subscriptionSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchSubscription.pending, (state) => {
+      .addCase(fetchSubscription.pending, (state, action) => {
+        const isBackground = (action.meta.arg as any)?.isBackground
+        // Only show loading state for non-background fetches
+        if (!isBackground) {
+          state.isLoading = true
+        }
         state.isFetching = true
-        state.isLoading = true
         state.error = null
       })
       .addCase(fetchSubscription.fulfilled, (state, action) => {

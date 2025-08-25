@@ -148,7 +148,7 @@ export function CancellationDialog({ isOpen, onClose, onConfirm, expirationDate,
                 Back
               </Button>
               <Button variant="destructive" onClick={handleSubmit} disabled={isSubmitting || !reason}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4" />}
                 Confirm Cancellation
               </Button>
             </DialogFooter>

@@ -2,15 +2,13 @@
 
 import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
-import { GlobalLoader } from "@/components/ui/loader"
 import { useAuth } from "@/modules/auth"
 import { PageWrapper, PageHeader } from "@/components/layout/PageWrapper"
 
 // Dynamically import the CourseList component to avoid hydration issues
 const CourseList = dynamic(() => import("@/components/features/home/CourseLists"), {
   ssr: false,
-  loading: () => <GlobalLoader />,
+  loading: () => <div className="flex justify-center py-8"><span className="text-xs text-muted-foreground">Loading...</span></div>,
 })
 
 const url = process.env.NEXT_PUBLIC_WEBSITE_URL

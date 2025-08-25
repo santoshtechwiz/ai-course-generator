@@ -2,7 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query"
 import type { DashboardUser, UserStats } from "@/app/types/types"
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 /**
  * Fetch user data from the API
@@ -65,5 +64,4 @@ export const useUserDashboard = { useUserData, useUserStats }
 export default useUserDashboard
 
 // Example usage in async actions:
-// const { withLoading } = useGlobalLoader()
 // await withLoading(apiCall())

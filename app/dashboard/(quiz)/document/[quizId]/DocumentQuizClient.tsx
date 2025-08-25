@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Home, ArrowLeft } from "lucide-react"
 import { quizStore } from "@/lib/quiz-store"
 import { QuizPlayer } from "../components/QuizPlay"
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 interface DocumentQuizClientProps {
   params: Promise<{ quizId: string }>
@@ -19,17 +18,11 @@ export default function DocumentQuizClient({ params }: DocumentQuizClientProps) 
   const router = useRouter()
   const [quizTitle, setQuizTitle] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const { startLoading, stopLoading } = useGlobalLoader()
 
   useEffect(() => {
     // Get quiz title for the header
     const loadQuiz = async () => {
       try {
-        startLoading({
-          message: "Loading Document Quiz...",
-          subMessage: "Please wait while we prepare your quiz",
-          isBlocking: true
-        })
         
         const quiz = await quizStore.getQuiz(quizId)
         if (quiz?.title) {
@@ -39,7 +32,6 @@ export default function DocumentQuizClient({ params }: DocumentQuizClientProps) 
         console.error("Failed to load quiz:", error && (error as any).message ? (error as any).message : String(error))
       } finally {
         setLoading(false)
-        stopLoading()
       }
     }
 

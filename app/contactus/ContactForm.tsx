@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { GlobalLoader } from '@/components/ui/loader'
 
 import { createContactSubmission } from "@/app/actions/actions"
 import { Bug, CreditCard, Lightbulb, HelpCircle, MessageSquare, ChevronRight, CheckCircle, Send, AlertCircle } from 'lucide-react'
@@ -17,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
 import Logo from "@/components/shared/Logo"
-import { LoadingSpinner } from "@/components/loaders/Loader"
+// loader removed
 
 
 interface ContactFormData {
@@ -124,11 +123,7 @@ export default function ImprovedContactForm() {
 
   if (isPending) {
     return (
-      <div className="max-w-3xl mx-auto mt-10">
-        <LoadingSpinner 
-         
-        />
-      </div>
+      <div className="max-w-3xl mx-auto mt-10 text-center text-sm text-muted-foreground">Submitting...</div>
     )
   }
   

@@ -4,7 +4,6 @@ import { use, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { GlobalLoader } from "@/components/ui/loader"
 import QuizPlayLayout from "../../../components/layouts/QuizPlayLayout"
 
 interface FlashCardReviewPageProps {
@@ -78,7 +77,7 @@ export default function FlashCardReviewPage({ params }: FlashCardReviewPageProps
   return (
     <QuizPlayLayout quizSlug={slug} quizType="flashcard">
       <div className="container max-w-4xl py-6 flex items-center justify-center min-h-[300px]">
-        <GlobalLoader />
+  <span className="h-6 w-6 inline-block rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
         <span className="ml-2 text-muted-foreground">Loading review...</span>
       </div>
     </QuizPlayLayout>

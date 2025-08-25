@@ -21,7 +21,6 @@ import ChapterStartOverlay from "./ChapterStartOverlay"
 import ChapterEndOverlay from "./ChapterEndOverlay"
 import AutoPlayNotification from "./AutoPlayNotification"
 import EnhancedMiniPlayer from "./EnhancedMiniPlayer"
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 // Memoized authentication prompt to prevent unnecessary re-renders
 const AuthPrompt = React.memo(
@@ -153,7 +152,6 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
   // Derive effective authentication (prop can override but session acts as fallback)
   const effectiveIsAuthenticated = isAuthenticated || !!session?.user
   const youtubeVideoIdRef = useRef(youtubeVideoId)
-  const { startLoading, stopLoading, isLoading } = useGlobalLoader()
 
   // Consolidated state management with performance optimizations
   const [overlayState, setOverlayState] = useState({

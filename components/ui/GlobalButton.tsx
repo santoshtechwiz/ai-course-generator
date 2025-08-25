@@ -7,8 +7,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import { CheckCircle2, AlertCircle, XCircle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { useGlobalLoader } from '@/components/loaders/global-loaders'
-import { InlineSpinner } from '@/components/ui/loader'
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 relative overflow-hidden",
@@ -101,7 +99,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       }
     }, [currentState, resetStateAfter, externalState])
     
-    const handleClick = React.useCallback(
+  const handleClick = React.useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
         if (currentState === "loading" || disabled) {
           e.preventDefault()
@@ -155,7 +153,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               exit={{ opacity: 0 }}
               className="flex items-center gap-2"
             >
-              <InlineSpinner size={16} />
+              <span className="sr-only">Loading</span>
               {loadingText || ""}
             </motion.div>
           )

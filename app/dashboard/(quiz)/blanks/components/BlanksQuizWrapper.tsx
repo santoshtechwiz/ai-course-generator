@@ -23,7 +23,6 @@ import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import BlanksQuiz from "./BlanksQuiz"
 
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
 import { BlankQuizQuestion } from "@/app/types/quiz-types"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -37,7 +36,6 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   const { user } = useAuth()
-  const { startLoading, stopLoading } = useGlobalLoader()
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [error, setError] = useState<string | null>(null)
   // Redux selectors
@@ -115,10 +113,6 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   }, [currentQuestionIndex, dispatch])
   // Submit quiz and navigate to results
   const handleSubmitQuiz = useCallback(async () => {
-    startLoading({
-      message: "🎉 Quiz completed! Calculating your results...",
-      isBlocking: true
-    })
     
     try {
       await dispatch(submitQuiz()).unwrap()
@@ -128,7 +122,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
     } finally {
-      stopLoading()
+  // No global loader; rely on page state
     }
   }, [dispatch, startLoading, stopLoading, slug, router])
 

@@ -1,6 +1,7 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit"
 import { persistReducer, persistStore } from "redux-persist"
 import storage from "redux-persist/lib/storage"
+import { performanceMiddleware } from "./middleware/performance"
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux"
 
 // Core reducers (session-based auth, no user slice needed)

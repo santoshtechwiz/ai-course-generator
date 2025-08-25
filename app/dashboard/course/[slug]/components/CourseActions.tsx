@@ -103,7 +103,7 @@ export default function CourseActions({
             )}
           >
             {loading === "favorite" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4" />
             ) : (
               <Heart className={cn("h-4 w-4", status.isFavorite && "fill-current")} />
             )}
@@ -124,7 +124,7 @@ export default function CourseActions({
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handlePrivacyToggle} disabled={loading === "privacy"}>
                 {loading === "privacy" ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2" />
                 ) : status.isPublic ? (
                   <Lock className="h-4 w-4 mr-2" />
                 ) : (
@@ -139,7 +139,7 @@ export default function CourseActions({
                 className="text-red-600 focus:text-red-600"
               >
                 {loading === "delete" ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2" />
                 ) : (
                   <Trash2 className="h-4 w-4 mr-2" />
                 )}
@@ -200,7 +200,7 @@ export default function CourseActions({
                 )}
               >
                 {loading === "favorite" ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2" />
                 ) : (
                   <Heart className={cn("h-4 w-4 mr-2", status.isFavorite && "fill-current")} />
                 )}
@@ -219,7 +219,7 @@ export default function CourseActions({
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={handlePrivacyToggle} disabled={loading === "privacy"}>
                     {loading === "privacy" ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 mr-2" />
                     ) : status.isPublic ? (
                       <Lock className="h-4 w-4 mr-2" />
                     ) : (
@@ -234,7 +234,7 @@ export default function CourseActions({
                     className="text-red-600 focus:text-red-600"
                   >
                     {loading === "delete" ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 mr-2" />
                     ) : (
                       <Trash2 className="h-4 w-4 mr-2" />
                     )}

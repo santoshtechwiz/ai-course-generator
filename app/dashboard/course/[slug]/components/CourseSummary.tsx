@@ -39,7 +39,7 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
   const normalizedChapterId = typeof chapterId === "string" ? Number.parseInt(chapterId, 10) : chapterId
 
   // Use auth to verify admin status
-  const { isAuthenticated, isAdmin: isUserAdmin } = useAuth()
+  const { isAuthenticated } = useAuth()
 
   // Local state
   const [summary, setSummary] = useState<string>(existingSummary || "")
@@ -50,7 +50,7 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
   }, [normalizedChapterId, existingSummary])
 
   // Get authorized admin status - require both prop and user verification
-  const hasAdminAccess = useMemo(() => isAdmin && isUserAdmin, [isAdmin, isUserAdmin])
+  const hasAdminAccess = isAdmin
 
   // Use the optimized hook from useChapterSummary.ts
   const { data: summaryResponse, refetch, isLoading, isError, isRefetching } = useChapterSummary(normalizedChapterId)
@@ -96,7 +96,7 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
         </CardHeader>
         <CardContent className="flex justify-center py-8 p-6 bg-purple-50/30 dark:bg-purple-950/20 rounded-b-xl">
           <div className="flex flex-col items-center gap-2 text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader2 className="h-8 w-8 text-primary" />
             <p className="text-sm text-muted-foreground">Generating summary for this chapter...</p>
           </div>
         </CardContent>
@@ -165,7 +165,7 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
                     label: isRefetching ? "Generating..." : "Generate Summary",
                     onClick: handleGenerateSummary,
                     icon: isRefetching ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4" />
                     ) : (
                       <RefreshCcw className="mr-2 h-4 w-4" />
                     ),
@@ -190,7 +190,7 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
           >
             {isRefetching ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4" />
                 Refreshing...
               </>
             ) : (

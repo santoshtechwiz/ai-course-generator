@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react"
 import { useMutation } from "@tanstack/react-query"
 import axios from "axios"
 import { useToast } from "@/hooks"
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
+// global loader removed
 import type { Chapter } from "@prisma/client"
 
 type ProcessingStatus = "idle" | "processing" | "success" | "error"

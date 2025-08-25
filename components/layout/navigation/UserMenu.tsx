@@ -121,7 +121,7 @@ export function UserMenu({ children }: { children?: ReactNode }) {
     >      <Avatar className="h-8 w-8 ring-2 ring-transparent hover:ring-primary/20 transition-all duration-200">
         <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? "User"} />        <AvatarFallback className="bg-primary/5 text-primary">
           {isAuthLoading ? (
-            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+            <span className="sr-only">Loading</span>
           ) : user?.name?.[0] ?? "U"}
         </AvatarFallback>
       </Avatar>
@@ -130,7 +130,7 @@ export function UserMenu({ children }: { children?: ReactNode }) {
   if (isAuthLoading) {
     return (
       <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+  <span className="sr-only">Loading</span>
       </Button>
     )
   }
@@ -252,7 +252,7 @@ export function UserMenu({ children }: { children?: ReactNode }) {
             disabled={isLoggingOut}
           >            {isLoggingOut ? (
               <div className="mr-3 h-4 w-4 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                <div className="rounded-full h-3 w-3 border-b-2 border-current opacity-60"></div>
               </div>
             ) : (
               <LogOut className="mr-3 h-4 w-4" />

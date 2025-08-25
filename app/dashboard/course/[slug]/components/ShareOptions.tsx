@@ -69,7 +69,7 @@ export function ShareOptions({ slug }: ShareOptionsProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuItem onClick={handleCopyLink} disabled={copying}>
-          {copying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Copy className="mr-2 h-4 w-4" />}
+          {copying ? <Loader2 className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
           <span>Copy link</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={shareToTwitter}>

@@ -1,7 +1,6 @@
 "use client"
 
 
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import axios from "axios"
 
@@ -39,7 +38,6 @@ async function generateChapterSummary(chapterId: number): Promise<SummaryRespons
  */
 export function useChapterSummary(chapterId: number | undefined) {
   const queryClient = useQueryClient()
-  useGlobalLoader()
 
   // Query for fetching the summary
   const summaryQuery = useQuery({

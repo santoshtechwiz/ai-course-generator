@@ -293,7 +293,7 @@ export function cleanupStorage(): void {
   }
 }
 
-// Run cleanup on load
+// Run cleanup on load - deferred to avoid blocking hydration
 if (typeof window !== 'undefined') {
-  setTimeout(cleanupStorage, 5000) // Delay to not block initial load
+  setTimeout(cleanupStorage, 10000) // Increased delay to 10 seconds
 }

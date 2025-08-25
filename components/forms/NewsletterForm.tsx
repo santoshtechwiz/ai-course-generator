@@ -58,7 +58,7 @@ export function NewsletterForm() {
       <Button type="submit" className="w-full group" disabled={status === "loading" || status === "success"}>
         {status === "loading" ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4" />
             Subscribing...
           </>
         ) : status === "success" ? (

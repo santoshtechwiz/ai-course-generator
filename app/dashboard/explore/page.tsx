@@ -6,7 +6,6 @@ import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper";
 import { FAQSchema } from "@/lib/seo";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Suspense } from "react"
-import { GlobalLoader } from "@/components/loaders/UnifiedLoader"
 
 export default function ExplorePage() {
   // FAQ items for CourseAI explore page
@@ -55,7 +54,7 @@ export default function ExplorePage() {
         <Suspense 
           fallback={
             <div className="w-full flex items-center justify-center min-h-[60vh]">
-              <GlobalLoader />
+              <div className="h-8 w-8 rounded-full border-2 border-primary/30 border-t-primary" />
             </div>
           }
         >

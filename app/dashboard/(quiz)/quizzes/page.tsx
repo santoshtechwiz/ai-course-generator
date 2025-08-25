@@ -4,13 +4,13 @@ import { getAuthSession } from "@/lib/auth"
 import { getQuizzes, type QuizListItem } from "@/app/actions/getQuizes"
 
 
-import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper"
 import { JsonLD } from "@/lib/seo"
 import { generateMetadata } from "@/lib/seo"
 import QuizzesClientClient from "./components/QuizzesClientClient"
 
-export const dynamic = "force-dynamic" // Disable caching for this page
+// Remove force-dynamic to allow static generation
+// export const dynamic = "force-dynamic" // Disable caching for this page
 
 
 export const metadata: Metadata = generateMetadata({
@@ -118,7 +118,7 @@ const Page = async () => {
           }}
         />
 
-        <Suspense fallback={<SuspenseGlobalFallback message="Loading quizzes..." />}>
+  <Suspense fallback={<div className="text-sm text-muted-foreground">Loading quizzes...</div>}>
           <QuizzesClientClient initialQuizzesData={initialQuizzesData} userId={userId} />
         </Suspense>
       </div>

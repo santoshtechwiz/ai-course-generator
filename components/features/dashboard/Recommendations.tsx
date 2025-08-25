@@ -12,7 +12,6 @@ import { toast } from "@/components/ui/use-toast"
 import type { CourseUnit, Chapter, CourseProgress as AppCourseProgress } from "@/app/types/course-types"
 import type { UserQuizAttempt as AppUserQuizAttempt } from "@/app/types/quiz-types"
 import { useLocalStorage } from "@/lib/storage"
-import { useGlobalLoader } from '@/components/loaders/global-loaders'
 
 interface AIRecommendationsProps {
   courses: any[] // fallback to any for now due to type mismatch
@@ -46,7 +45,6 @@ const CACHE_TTL = 24 * 60 * 60 * 1000
 
 export default function AIRecommendations({ courses, courseProgress, quizAttempts }: AIRecommendationsProps) {
   const router = useRouter()
-  const { startLoading } = useGlobalLoader()
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

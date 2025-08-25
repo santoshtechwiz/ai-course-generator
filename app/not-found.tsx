@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/animations/animation-presets"
 
 import { notFoundStructuredData } from "@/app/utils/not-found-utils"
-import AsyncNavLink from "@/components/loaders/AsyncNavLink"
+import Link from "next/link"
 import { JsonLD } from "@/lib/seo"
 
 export default function NotFound() {
@@ -74,7 +74,7 @@ export default function NotFound() {
         animate="visible"
       >
         <motion.div variants={getStaggeredAnimation()}>
-          <AsyncNavLink href="/" passHref>
+          <Link href="/">
             <Button
               size="lg"
               className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
@@ -82,7 +82,7 @@ export default function NotFound() {
               <Home className="mr-2 h-5 w-5" />
               {"Go to Homepage"}
             </Button>
-          </AsyncNavLink>
+          </Link>
         </motion.div>
         <motion.div variants={getStaggeredAnimation()}>
           <Button

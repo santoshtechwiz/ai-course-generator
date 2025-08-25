@@ -36,14 +36,13 @@ const CountUp: React.FC<{ end: number; separator?: string; prefix?: string }> = 
 }
 import CTASVG from "../svg/CTASVG"
 import { FeedbackButton } from "@/components/ui/feedback-button"
-import { useGlobalLoader } from '@/components/loaders/global-loaders'
 
 const CTASection = () => {
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: true, amount: 0.3 })
   const [isMounted, setIsMounted] = useState(false)
   const router = useRouter()
-  const { startLoading } = useGlobalLoader()
+  const startLoading = () => {}
 
   useEffect(() => {
     setIsMounted(true)
@@ -100,7 +99,7 @@ const CTASection = () => {
                   successText="Redirected!"
                   errorText="Please try again"
                   onClickAsync={async () => {
-                    startLoading({ message: "Redirecting..." });
+                    startLoading();
                     await new Promise((resolve) => setTimeout(resolve, 800))
                     router.push("/dashboard/create")
                     return true

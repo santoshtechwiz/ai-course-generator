@@ -32,7 +32,8 @@ const throttledSync = (dispatch: AppDispatch, forceRefresh = false) => {
   isCurrentlySyncing = true
   lastSyncTime = now
   
-  dispatch(fetchSubscription({ forceRefresh }))
+  // Use background fetch to avoid blocking UI
+  dispatch(fetchSubscription({ forceRefresh, isBackground: true }))
     .finally(() => {
       isCurrentlySyncing = false
     })

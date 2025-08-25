@@ -2,7 +2,6 @@
 
 import { cn } from "@/lib/utils"
 import { Suspense } from "react"
-import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 
 interface ModuleLayoutProps {
   children: React.ReactNode
@@ -45,7 +44,7 @@ export function ModuleLayout({
   )
   
   return suspense ? (
-    <Suspense fallback={<SuspenseGlobalFallback />}>
+    <Suspense fallback={<div className="text-sm text-muted-foreground p-6 text-center">Loading...</div>}>
       {content}
     </Suspense>
   ) : content

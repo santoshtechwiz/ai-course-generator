@@ -321,7 +321,7 @@ const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
   if (!documentReady) {
     return (
       <div className="flex items-center justify-center p-6 space-y-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  <Loader2 className="h-8 w-8 text-primary" />
       </div>
     )
   }

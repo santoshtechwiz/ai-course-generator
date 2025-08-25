@@ -4,7 +4,6 @@ import CreateQuizForm from "./components/CreateQuizForm";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { GlobalLoader } from "@/components/loaders";
 
 const McqPage = () => {
   const quizPlan = useQuizPlan(1);

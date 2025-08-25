@@ -120,15 +120,15 @@ export default function VideoProcessingDebugger() {
         <h2 className="text-2xl font-bold">Video Processing Debugger</h2>
         <div className="space-x-2">
           <Button onClick={fetchOverview} disabled={loading} variant="outline">
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
           </Button>
           <Button onClick={() => runDiagnostics(false)} disabled={loading}>
-            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {loading && <Loader2 className="w-4 h-4 mr-2" />}
             Run Diagnostics
           </Button>
           <Button onClick={() => runDiagnostics(true)} disabled={fixing} variant="destructive">
-            {fixing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {fixing && <Loader2 className="w-4 h-4 mr-2" />}
             Auto Fix Issues
           </Button>
         </div>

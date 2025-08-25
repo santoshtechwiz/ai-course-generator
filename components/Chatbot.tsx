@@ -452,7 +452,7 @@ export function Chatbot({ userId }: ChatbotProps) {
                     className="shrink-0 h-9 w-9 rounded-full transition-all"
                   >
                     {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-4 w-4" />
                     ) : (
                       <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                         <Send className="h-4 w-4" />

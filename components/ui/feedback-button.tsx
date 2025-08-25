@@ -6,7 +6,6 @@ import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 
 import { CheckCircle, XCircle, MessageSquarePlus } from "lucide-react"
-import { InlineSpinner } from "@/components/ui/loader"
 import { cn } from "@/lib/utils"
 
 export type FeedbackState = "idle" | "loading" | "success" | "error"
@@ -124,7 +123,7 @@ export function FeedbackButton({
 
     switch (feedbackState) {
       case "loading":
-        return <InlineSpinner size={14} className="h-4 w-4" />
+  return null
       case "success":
         return <CheckCircle className="h-4 w-4" />
       case "error":

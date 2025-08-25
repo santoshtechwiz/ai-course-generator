@@ -576,7 +576,7 @@ const UnifiedPdfGenerator: React.FC<UnifiedPdfGeneratorProps> = ({
 
   const buttonContent = isDownloading ? (
     <>
-      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+  <Loader2 className="mr-2 h-4 w-4" />
       Preparing PDF...
     </>
   ) : canDownload ? (
@@ -615,7 +615,7 @@ const UnifiedPdfGenerator: React.FC<UnifiedPdfGeneratorProps> = ({
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4" />
                       Preparing PDF...
                     </>
                   ) : (

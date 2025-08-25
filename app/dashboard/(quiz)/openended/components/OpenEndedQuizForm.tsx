@@ -30,7 +30,6 @@ import PlanAwareButton from "../../components/PlanAwareButton"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import FormContainer from "@/app/dashboard/FormContainer"
 import { useToast } from "@/components/ui/use-toast"
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 
 const openEndedQuizSchema = z.object({
@@ -151,7 +150,6 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
   const { toast } = useToast()
-  const { withLoading } = useGlobalLoader()
 
   const {
     control,
@@ -220,13 +218,8 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
       topic: watch("topic"),
       amount: watch("amount"),
     }
-    await withLoading(generateQuiz(data), {
-      message: "Generating your quiz...",
-      isBlocking: true,
-      minVisibleMs: 400,
-      autoProgress: true,
-    })
-  }, [generateQuiz, watch, withLoading])
+    await generateQuiz(data)
+  }, [generateQuiz, watch])
 
   const onSubmit = useCallback(() => {
     if (isLoading) return

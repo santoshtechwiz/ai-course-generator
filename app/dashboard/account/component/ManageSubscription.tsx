@@ -51,11 +51,11 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
   
   // Extract token usage information from subscription
   const tokenUsage = {
-    tokensUsed: subscription?.tokensUsed || 0,
-    total: subscription?.credits || 0,
-    remaining: Math.max((subscription?.credits || 0) - (subscription?.tokensUsed || 0), 0),
-    percentage: subscription?.credits ? Math.min((subscription.tokensUsed || 0) / subscription.credits * 100, 100) : 0,
-    hasExceededLimit: (subscription?.tokensUsed || 0) > (subscription?.credits || 0)
+  tokensUsed: subscription?.subscription?.tokensUsed || 0,
+  total: subscription?.subscription?.credits || 0,
+  remaining: Math.max((subscription?.subscription?.credits || 0) - (subscription?.subscription?.tokensUsed || 0), 0),
+  percentage: subscription?.subscription?.credits ? Math.min((subscription.subscription.tokensUsed || 0) / subscription.subscription.credits * 100, 100) : 0,
+  hasExceededLimit: (subscription?.subscription?.tokensUsed || 0) > (subscription?.subscription?.credits || 0)
   }
 
   // Memoize plan details to avoid recalculation on every render
@@ -270,7 +270,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
                   >
                     {isLoading ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 h-4 w-4" />
                         Processing...
                       </>
                     ) : (

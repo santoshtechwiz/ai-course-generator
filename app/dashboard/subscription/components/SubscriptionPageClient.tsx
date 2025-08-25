@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, Suspense, lazy } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2, AlertTriangle, Info, ArrowRight } from "lucide-react"
+import { AlertTriangle, Info, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ReferralBanner } from "@/components/ReferralBanner"
 import { useSubscription } from "@/modules/auth"
@@ -17,7 +17,6 @@ import { useMediaQuery } from "@/hooks"
 import TrialModal from "@/components/features/subscription/TrialModal"
 import { SubscriptionPlanType } from "@/app/types/subscription"
 import SubscriptionSkeleton from "./SubscriptionSkeleton"
-import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 
 
 // Lazy load components
@@ -37,7 +36,12 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   const [timedOut, setTimedOut] = useState(false)
 
   // Use the unified subscription hook
-  const { subscription, isLoading, error, isAuthenticated, user } = useSubscription()
+  const subscriptionState: any = useSubscription() // legacy shape casting
+  const subscription = subscriptionState?.subscription || subscriptionState
+  const isAuthenticated = !!subscriptionState?.isAuthenticated || !!subscriptionState?.user
+  const user = subscriptionState?.user || null
+  const isLoading = false // hook no longer provides explicit loading flag
+  const error = undefined
 
   // Log subscription errors for debugging
   useEffect(() => {
@@ -211,7 +215,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
           </Alert>
         )}
 
-        <Suspense fallback={<SuspenseGlobalFallback message="Loading subscription plans..." />}>
+  <Suspense fallback={<div className="text-sm text-muted-foreground">Loading subscription plans...</div>}>
           <PricingPage
             userId={userId}
             isProd={isProd}
@@ -222,7 +226,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         </Suspense>
 
         <div className="max-w-md mx-auto">
-          <Suspense fallback={<div className="h-20 w-full animate-pulse bg-muted rounded-md" />}>
+          <Suspense fallback={<div className="text-sm text-muted-foreground">Preparing checkout...</div>}>
             <StripeSecureCheckout />
           </Suspense>
         </div>
@@ -244,12 +248,12 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         </div>
       )}
 
-      {!isLoading && subscription && (
+  {subscription && (
         <Suspense fallback={null}>
           <TrialModal />
         </Suspense>
       )}      {/* Only show login modal if user is definitely unauthenticated */}
-      {!isAuthenticated && !isLoading && (
+  {!isAuthenticated && (
         <LoginModal
           isOpen={showLoginModal}
           onClose={() => setShowLoginModal(false)}
@@ -260,10 +264,9 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
 
       {renderContent()}
 
-      {isLoading && isAuthenticated && userId && (
-        <div className="fixed bottom-4 right-4 bg-background border rounded-full shadow-lg p-2 flex items-center animate-in fade-in slide-in-from-bottom-5 duration-300">
-          <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
-          <span className="text-sm">Loading your data...</span>
+  {!subscription && isAuthenticated && userId && (
+        <div className="fixed bottom-4 right-4 bg-background border rounded-full shadow-lg px-3 py-2 text-xs text-muted-foreground">
+          Loading your data...
         </div>
       )}
 

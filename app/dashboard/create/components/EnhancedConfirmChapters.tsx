@@ -140,7 +140,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
         {/* Show queue status when videos are being generated */}
         {isGeneratingVideos && (
           <Alert className="mt-4 bg-primary/10 border-primary/20">
-            <div className="animate-spin h-4 w-4 text-primary mr-2" />
+            <div className="h-4 w-4 text-primary mr-2" />
             <AlertTitle>Generating Videos</AlertTitle>
             <AlertDescription>
               <div className="space-y-2">
@@ -268,7 +268,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
               >
                 {isSaving || isGeneratingVideos ? (
                   <span className="flex items-center">
-                    <div className="animate-spin h-4 w-4 text-primary mr-2" />
+                    <div className="h-4 w-4 text-primary mr-2" />
                     {isSaving ? "Saving..." : "Generating Videos..."}
                   </span>
                 ) : (

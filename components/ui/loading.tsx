@@ -32,7 +32,7 @@ export function Loading({
 
   const renderSpinner = () => (
     <div className={cn(
-      "animate-spin rounded-full border-2 border-muted border-t-primary",
+  "rounded-full border-2 border-muted border-t-primary",
       sizeClasses[size]
     )} />
   )

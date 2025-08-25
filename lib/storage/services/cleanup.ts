@@ -189,9 +189,9 @@ export function generateStorageReport() {
   return report
 }
 
-// Auto-run cleanup when imported in browser
+// Auto-run cleanup when imported in browser - but defer to avoid blocking initial render
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  // Run cleanup in development mode
+  // Run cleanup after initial render to avoid blocking hydration
   setTimeout(() => {
     const results = performStorageCleanup()
     console.log('🧹 Storage cleanup completed:', results)
@@ -203,7 +203,7 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     } else {
       console.log('✅ Storage validation passed')
     }
-  }, 2000)
+  }, 5000) // Increased delay to 5 seconds
 }
 
 export default {

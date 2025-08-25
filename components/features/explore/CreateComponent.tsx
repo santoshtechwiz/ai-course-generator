@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { CreateTileGrid } from "./CreateTitleGrid";
 import { WavyBackground } from "./WavyBackground";
 import { FloatingShapes } from "./FloatingShapes";
-import { GlobalLoader } from "@/components/loaders/UnifiedLoader";
 
 export function CreateComponent() {
   return (
@@ -19,7 +18,7 @@ export function CreateComponent() {
         {/* Tile Grid Section */}
         <Suspense fallback={
           <div className="w-full flex items-center justify-center min-h-[60vh]">
-            <GlobalLoader />
+            <span className="text-xs">...</span>
           </div>
         }>
           <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">

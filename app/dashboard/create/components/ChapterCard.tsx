@@ -149,7 +149,7 @@ const ActionButton: React.FC<ActionButtonProps> = React.memo(
     if ((status === "processing" || isGenerating) && !isTimeout) {
       return (
         <Button disabled variant="secondary" className="w-full sm:w-auto">
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Loader2 className="mr-2 h-4 w-4" />
           Generating Video...
         </Button>
       )
@@ -454,7 +454,7 @@ const ChapterCard = React.memo(
                     autoFocus
                   />
                   <Button size="sm" onClick={handleVideoChange} disabled={isValidatingVideo}>
-                    {isValidatingVideo ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                    {isValidatingVideo ? <Loader2 className="h-4 w-4" /> : "Save"}
                   </Button>
                   <Button
                     size="sm"

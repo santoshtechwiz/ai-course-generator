@@ -28,7 +28,6 @@ import OpenEndedQuiz from "./OpenEndedQuiz"
 
 
 import { QuizActions } from "../../components/QuizActions"
-import { useGlobalLoader } from '@/components/loaders/global-loaders'
 import { Skeleton } from "@/components/ui/skeleton"
 import { OpenEndedQuestion } from "@/app/types/quiz-types"
 

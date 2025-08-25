@@ -181,7 +181,7 @@ export default function TrialModal() {
               </Button>
               <Button onClick={handleStartTrial} disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700">
                 {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4" />
                 ) : (
                   <>
                     <Zap className="h-4 w-4 mr-2" />

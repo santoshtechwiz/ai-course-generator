@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from "@/components/ui/skeleton"
 import { SUBSCRIPTION_PLANS } from "../subscription/components/subscription-plans"
 import { SubscriptionService } from "../subscription/services/subscription-service"
-import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 
 export const dynamic = "force-dynamic"
 
@@ -43,7 +42,7 @@ export default async function PaymentSuccessPage({
         </p>
       </div>
 
-      <Suspense fallback={<SuspenseGlobalFallback message="Loading success page..." />}>
+  <Suspense fallback={<div className="text-sm text-muted-foreground">Loading success page...</div>}>
         <SuccessPageContent userId={userId} sessionId={stripeSessionId} />
       </Suspense>
     </div>
@@ -78,7 +77,7 @@ async function SuccessPageContent({ userId, sessionId }: { userId?: string; sess
   }
 
   // Verify the payment and subscription status
-  const subscriptionDetails = await SubscriptionService.verifyPaymentSuccess(userId, sessionId)
+  const subscriptionDetails: any = await SubscriptionService.verifyPaymentSuccess(userId, sessionId)
   const plan = SUBSCRIPTION_PLANS.find((p) => p.id === subscriptionDetails?.planId)
 
   return (
@@ -95,7 +94,7 @@ async function SuccessPageContent({ userId, sessionId }: { userId?: string; sess
             <span className="text-muted-foreground">Plan</span>
             <span className="font-medium">{plan?.name || "Premium Plan"}</span>
           </div>
-          {subscriptionDetails?.credits && (
+          {subscriptionDetails?.credits && typeof subscriptionDetails.credits === 'number' && (
             <div className="flex justify-between py-2 border-b">
               <span className="text-muted-foreground">Credits Added</span>
               <span className="font-medium">{subscriptionDetails.credits} tokens</span>
@@ -109,7 +108,7 @@ async function SuccessPageContent({ userId, sessionId }: { userId?: string; sess
             <div className="flex justify-between py-2 border-b">
               <span className="text-muted-foreground">Next Billing Date</span>
               <span className="font-medium">
-                {new Date(subscriptionDetails.currentPeriodEnd).toLocaleDateString()}
+                {new Date(subscriptionDetails.currentPeriodEnd as any).toLocaleDateString()}
               </span>
             </div>
           )}

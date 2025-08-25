@@ -70,7 +70,7 @@ export default function EmailTemplateSystem() {
     if (isLoading || !sampleData) {
       return (
         <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 text-primary" />
         </div>
       )
     }
@@ -183,7 +183,7 @@ export default function EmailTemplateSystem() {
                 <Button onClick={handleSendTest} disabled={isSending}>
                   {isSending ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4" />
                       Sending...
                     </>
                   ) : (

@@ -31,7 +31,6 @@ import { ConfirmDialog } from "../../components/ConfirmDialog"
 import PlanAwareButton from "../../components/PlanAwareButton"
 import FormContainer from "@/app/dashboard/FormContainer"
 import { useToast } from "@/components/ui/use-toast"
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 
 type BlankQuizFormData = z.infer<typeof blanksQuizSchema> & {}
@@ -49,7 +48,6 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
   const [isLoading, setIsLoading] = React.useState(false)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
   const { toast } = useToast()
-  const { withLoading } = useGlobalLoader()
 
   const [formData, setFormData] = usePersistentState<BlankQuizFormData>("blankQuizFormData", {
     title: params?.title || "",
@@ -128,18 +126,13 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
 
     try {
       const formValues = watch()
-      const response = await withLoading(createBlankQuizMutation({
+  const response = await createBlankQuizMutation({
         title: formValues.title,
         amount: formValues.amount,
         difficulty: formValues.difficulty,
         topic: formValues.topic,
         type: "blanks",
-      }), {
-        message: "Generating your blanks quiz...",
-        isBlocking: true,
-        minVisibleMs: 400,
-        autoProgress: true,
-      })
+  })
       const userQuizId = response?.quizId || response?.userQuizId
 
       if (!userQuizId) throw new Error("Blanks Quiz ID not found")
@@ -154,7 +147,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
     } finally {
       setIsLoading(false)
     }
-  }, [createBlankQuizMutation, watch, router, withLoading, toast])
+  }, [createBlankQuizMutation, watch, router, toast])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")

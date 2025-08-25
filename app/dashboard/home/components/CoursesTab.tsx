@@ -29,7 +29,6 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import type { DashboardUser, Course } from "@/app/types/types"
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
 import { cn } from "@/lib/utils"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
@@ -60,7 +59,6 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
   const [activeTab, setActiveTab] = useState<FilterTab>("all")
   const [viewMode, setViewMode] = useState<ViewMode>("grid")
   const router = useRouter()
-  const { startLoading } = useGlobalLoader()
 
   // Memoized course data processing
   const courseData = useMemo(() => {
@@ -328,7 +326,7 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
           {/* Loading Overlay */}
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="h-8 w-8 text-primary" />
             </div>
           )}
 
@@ -467,7 +465,7 @@ function CourseListItem({ course, progress, isLoading, onClick }: CourseCardProp
             />
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/80">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <Loader2 className="h-6 w-6 text-primary" />
               </div>
             )}
           </div>

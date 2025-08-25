@@ -114,7 +114,7 @@ export const AdminSummaryPanel: React.FC<AdminSummaryPanelProps> = ({
           <Button onClick={handleSaveEdit} disabled={isSaving}>
             {isSaving ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4" />
                 Saving...
               </>
             ) : (
@@ -188,7 +188,7 @@ export const AdminSummaryPanel: React.FC<AdminSummaryPanelProps> = ({
               >
                 {isRefetching ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4" />
                     Generating...
                   </>
                 ) : (
@@ -214,7 +214,7 @@ export const AdminSummaryPanel: React.FC<AdminSummaryPanelProps> = ({
             >
               {isRefetching ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4" />
                   Refreshing...
                 </>
               ) : (
@@ -252,7 +252,7 @@ export const AdminSummaryPanel: React.FC<AdminSummaryPanelProps> = ({
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4" />
                   Deleting...
                 </>
               ) : (

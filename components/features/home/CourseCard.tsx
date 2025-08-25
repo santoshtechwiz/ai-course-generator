@@ -33,7 +33,6 @@ import {
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 // Enhanced course images with better variety
 const COURSE_IMAGES = ["/course.png", "/course_2.png", "/course_3.png", "/course_4.png"]
@@ -140,7 +139,6 @@ export const CourseCard = React.memo(
     const [isFavorite, setIsFavorite] = useState(false)
     const [isBookmarked, setIsBookmarked] = useState(false)
     const router = useRouter()
-    const { startLoading, stopLoading } = useGlobalLoader()
 
     // Memoized random selections for consistent rendering
     const { selectedImage, gradientBg, categoryConfig } = useMemo(() => {
@@ -174,13 +172,9 @@ export const CourseCard = React.memo(
     }, [duration, lessonCount])
 
     const handleCardClick = (e: React.MouseEvent) => {
-      e.preventDefault();
-      setIsNavigating(true);
-  // Rely on central RouteLoaderBridge; start a lightweight data loader that will merge into route loader if navigation already in progress
-  startLoading({ message: "Opening course...", subMessage: "Preparing content", isBlocking: false, type: 'data', priority: 'high', combineWithRoute: true });
-      setTimeout(() => {
-        router.push(`/dashboard/course/${slug}`);
-      }, 100);
+      e.preventDefault()
+      setIsNavigating(true)
+      router.push(`/dashboard/course/${slug}`)
     }
 
     const handleFavoriteClick = (e: React.MouseEvent) => {

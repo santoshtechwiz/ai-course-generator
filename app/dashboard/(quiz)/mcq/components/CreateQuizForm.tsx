@@ -29,7 +29,6 @@ import type { QueryParams } from "@/app/types/types"
 import PlanAwareButton from "../../components/PlanAwareButton"
 import { SubscriptionSlider } from "../../../subscription/components/SubscriptionSlider"
 import FormContainer from "@/app/dashboard/FormContainer"
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 
 interface Subscription {
@@ -140,7 +139,6 @@ export default function CreateQuizForm({
   const { data: session } = useSession()
   const subscription = useSubscription()
   const subscriptionData = subscription
-  const { withLoading } = useGlobalLoader()
 
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
     title: params?.title || "",
@@ -242,12 +240,7 @@ export default function CreateQuizForm({
 
     try {
       const formValues = watch()
-      const response = await withLoading(createQuizMutation({ ...formValues, type: "mcq" }), {
-        message: "Generating your quiz...",
-        isBlocking: true,
-        minVisibleMs: 400,
-        autoProgress: true,
-      })
+  const response = await createQuizMutation({ ...formValues, type: "mcq" })
       const userQuizId = response?.userQuizId || response?.quizId
       const slug = response?.slug
 
@@ -267,7 +260,7 @@ export default function CreateQuizForm({
     } finally {
       setIsLoading(false)
     }
-  }, [createQuizMutation, watch, toast, router, quizType, withLoading])
+  }, [createQuizMutation, watch, toast, router, quizType])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")

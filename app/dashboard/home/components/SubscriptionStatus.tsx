@@ -44,7 +44,7 @@ const SubscriptionStatus = memo(function SubscriptionStatus() {
               disabled={isRefreshing}
               aria-label="Refresh subscription data"
             >
-              <RefreshCcw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCcw className="h-4 w-4" />
             </Button>
           </CardTitle>
         </CardHeader>
@@ -80,7 +80,7 @@ const SubscriptionStatus = memo(function SubscriptionStatus() {
             disabled={isRefreshing}
             aria-label="Refresh subscription data"
           >
-            <RefreshCcw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCcw className="h-4 w-4" />
           </Button>
         </CardTitle>
       </CardHeader>

@@ -20,7 +20,6 @@ import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { FeedbackButton } from "@/components/ui/feedback-button"
 import { useMobile } from "@/hooks"
-import { useGlobalLoader } from '@/components/loaders/global-loaders'
 
 // Types based on the API response
 interface CourseQuizCard {
@@ -571,7 +570,7 @@ const DotIndicator = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <span className="text-xs">...</span>
         </motion.div>
       )}
     </motion.button>
@@ -584,12 +583,12 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
   const router = useRouter()
   const [isNavigating, setIsNavigating] = useState(false)
   const isMobile = useMobile()
-  const { startLoading } = useGlobalLoader();
+  const startLoading = () => {}
 
   const handleNavigation = async () => {
     setIsNavigating(true)
     try {
-      startLoading({ message: product.type === "course" ? "Creating course..." : "Generating quiz..." });
+  startLoading();
       await new Promise((resolve) => setTimeout(resolve, 800))      // Fix navigation to go to create pages instead
       if (product.type === "course") {
         router.push(`/dashboard/create`)

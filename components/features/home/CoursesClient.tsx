@@ -6,9 +6,7 @@ import { motion } from "framer-motion"
 import { BookOpen, LayoutGrid, List, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { GlobalLoader } from "@/components/loaders/UnifiedLoader"
 import { useDebounce } from "@/lib/utils/hooks"
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
 import { cn } from "@/lib/utils"
 import { CourseCard } from "./CourseCard"
 import type { CategoryId } from "@/config/categories"
@@ -62,7 +60,8 @@ export default function CoursesClient({
   
   // Hooks
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
-  const { startLoading, stopLoading } = useGlobalLoader()
+  const startLoading = () => {}
+  const stopLoading = () => {}
 
   // Query
   const queryResult: UseInfiniteQueryResult<any, Error> = useInfiniteQuery({
@@ -161,7 +160,10 @@ export default function CoursesClient({
         animate={{ opacity: 1 }}
         className="flex flex-col items-center justify-center min-h-[60vh] w-full"
       >
-        <GlobalLoader />
+        <div className="flex flex-col items-center gap-4">
+          <span className="text-xs">Loading...</span>
+          <p className="text-sm text-muted-foreground">Loading courses...</p>
+        </div>
       </motion.div>
     )
   }
@@ -300,7 +302,7 @@ export default function CoursesClient({
           className="flex justify-center py-8"
         >
           {isFetchingNextPage ? (
-            <GlobalLoader />
+            <span className="text-xs">...</span>
           ) : (
             <Button
               variant="outline"

@@ -3,7 +3,6 @@
 import React, { useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
-import { useGlobalLoader } from '../loaders/global-loaders'
 
 export type QuizState = 'idle' | 'submitting' | 'navigating' | 'success' | 'error'
 
@@ -37,7 +36,11 @@ export function QuizStateProvider({
   const [state, setState] = useState<QuizState>('idle')
   const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [nextState, setNextState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const { startLoading, stopLoading, setError: setGlobalError, setSuccess: setGlobalSuccess } = useGlobalLoader()
+  // global loader removed; create local no-op helpers and delegate to toast
+  const startLoading = (_opts?: any) => {}
+  const stopLoading = () => {}
+  const setGlobalError = (msg: string) => toast.error(msg)
+  const setGlobalSuccess = (msg: string) => toast.success(msg)
   
   const submitTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const nextTimeoutRef = useRef<NodeJS.Timeout | null>(null)

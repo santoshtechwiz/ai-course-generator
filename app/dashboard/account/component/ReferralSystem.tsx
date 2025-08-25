@@ -165,7 +165,7 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
               Your Referral Code
               {!referralData?.referralCode && (
                 <span className="ml-2 text-xs text-muted-foreground">
-                  <Loader2 className="h-3 w-3 inline animate-spin" />
+                  <Loader2 className="h-3 w-3 inline" />
                   Generating...
                 </span>
               )}
@@ -196,7 +196,7 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
               disabled={!referralData?.referralCode}
             >
               {!referralData?.referralCode ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-2" />
               ) : (
                 <Share2 className="h-4 w-4 mr-2" />
               )}

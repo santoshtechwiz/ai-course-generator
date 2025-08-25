@@ -207,7 +207,7 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleQuizClick(quiz.id.toString(), quiz.quizType, quiz.slug)}
+                          onClick={() => quiz.slug && handleQuizClick(quiz.id.toString(), quiz.quizType, quiz.slug)}
                         >
                           {quiz.timeEnded ? "Review" : "Continue"}
                         </Button>
@@ -270,7 +270,7 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleQuizClick(quiz.id.toString(), quiz.quizType, quiz.slug)}
+                          onClick={() => quiz.slug && handleQuizClick(quiz.id.toString(), quiz.quizType, quiz.slug)}
                         >
                           Review
                         </Button>
@@ -327,7 +327,7 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
                         </div>
                         <Button
                           size="sm"
-                          onClick={() => handleQuizClick(quiz.id.toString(), quiz.quizType, quiz.slug)}
+                          onClick={() => quiz.slug && handleQuizClick(quiz.id.toString(), quiz.quizType, quiz.slug)}
                         >
                           Continue
                         </Button>
@@ -348,7 +348,7 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" size="sm" disabled={isResetting}>
                     {isResetting ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 mr-2" />
                     ) : (
                       <RotateCcw className="h-4 w-4 mr-2" />
                     )}
@@ -380,7 +380,7 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
           {attemptsLoading ? (
             <Card>
               <CardContent className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin mr-2" />
+                <Loader2 className="h-8 w-8 mr-2" />
                 <span>Loading quiz attempts...</span>
               </CardContent>
             </Card>

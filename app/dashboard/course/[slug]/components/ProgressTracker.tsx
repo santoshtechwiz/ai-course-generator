@@ -210,7 +210,7 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
                 animate={{ scale: 1, opacity: 1 }}
                 className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center"
               >
-                <Loader2 className="h-3 w-3 text-white animate-spin" />
+                <Loader2 className="h-3 w-3 text-white" />
               </motion.div>
             )}
           </div>
@@ -289,7 +289,7 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
                 )}
               >
                 {action.status === 'pending' && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4" />
                 )}
                 {action.status === 'success' && (
                   <CheckCircle className="h-4 w-4" />

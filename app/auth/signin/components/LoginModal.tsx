@@ -7,8 +7,6 @@ import { getProviders, signIn } from "next-auth/react"
 import { Loader2 } from "lucide-react"
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useGlobalLoader } from '@/components/loaders/global-loaders'
-import { GlobalLoader } from '@/components/ui/loader'
 
 import { useToast } from "@/hooks"
 
@@ -275,7 +273,10 @@ export function LoginModal({
         <form onSubmit={handleLogin} className="space-y-5 p-6">
           {/* Auth Providers */}
           {!providers ? (
-            <GlobalLoader message="Loading authentication options..." type="card" />
+            <div className="flex flex-col items-center justify-center py-6">
+              <span className="h-6 w-6 inline-block rounded-full border-2 border-primary/30 border-t-primary animate-spin mb-2" />
+              <p className="text-sm text-muted-foreground">Loading authentication options...</p>
+            </div>
           ) : (
             <ModalAuthButtonGroup />
           )}

@@ -299,7 +299,7 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
                         >
                           {navigatingQuizId === quiz.id.toString() ? (
                             <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              <Loader2 className="h-4 w-4 mr-2" />
                               Loading...
                             </>
                           ) : (
@@ -398,7 +398,7 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
                         >
                           {navigatingQuizId === quiz.id.toString() ? (
                             <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              <Loader2 className="h-4 w-4 mr-2" />
                               Loading...
                             </>
                           ) : (
@@ -463,7 +463,7 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
                         >
                           {navigatingQuizId === quiz.id.toString() ? (
                             <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              <Loader2 className="h-4 w-4 mr-2" />
                               Loading...
                             </>
                           ) : (
@@ -487,7 +487,7 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" size="sm" disabled={isResetting}>
                     {isResetting ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 mr-2" />
                     ) : (
                       <RotateCcw className="h-4 w-4 mr-2" />
                     )}
@@ -519,7 +519,7 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
           {attemptsLoading ? (
             <Card>
               <CardContent className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin mr-2" />
+                <Loader2 className="h-8 w-8 mr-2" />
                 <span>Loading quiz attempts...</span>
               </CardContent>
             </Card>

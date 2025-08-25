@@ -304,7 +304,7 @@ const EnhancedRecommendedCourses: React.FC<EnhancedRecommendedCoursesProps> = ({
     return (
       <div className={cn("space-y-4", className)}>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span className="text-xs text-muted-foreground">Loading...</span>
           <span className="text-sm text-muted-foreground">Loading recommendations...</span>
         </div>
       </div>

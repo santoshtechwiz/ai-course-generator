@@ -46,7 +46,6 @@ import { ConfirmDialog } from "../../components/ConfirmDialog"
 import PlanAwareButton from "../../components/PlanAwareButton"
 import FormContainer from "@/app/dashboard/FormContainer"
 import { useToast } from "@/components/ui/use-toast"
-import { useGlobalLoader } from "@/components/loaders/global-loaders"
 
 type CodeQuizFormData = z.infer<typeof codeQuizSchema> & {
   userType?: string
@@ -176,7 +175,6 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
   }
 
   const { toast } = useToast()
-  const { withLoading } = useGlobalLoader()
 
   const [selectedLanguageGroup, setSelectedLanguageGroup] = React.useState<string>("Popular")
   const [showCustomLanguage, setShowCustomLanguage] = React.useState(false)
@@ -302,18 +300,13 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
         throw new Error("Please complete all required fields")
       }
 
-      const response = await withLoading(createCodeQuizMutation({
+  const response = await createCodeQuizMutation({
         title: formValues.title.trim(),
         amount: formValues.amount,
         difficulty: formValues.difficulty,
         language: formValues.language.trim(),
         userType: subscriptionData?.subscriptionPlan,
-      }), {
-        message: "Generating your code quiz...",
-        isBlocking: true,
-        minVisibleMs: 400,
-        autoProgress: true,
-      })
+  })
 
       if (!response?.userQuizId || !response?.slug) {
         throw new Error("Invalid response from server")
@@ -335,7 +328,7 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
     } finally {
       setIsLoading(false)
     }
-  }, [createCodeQuizMutation, formData, router, subscriptionData?.subscriptionPlan, withLoading, toast])
+  }, [createCodeQuizMutation, formData, router, subscriptionData?.subscriptionPlan, toast])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")

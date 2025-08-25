@@ -2,6 +2,7 @@ import React from "react"
 import type { Metadata } from "next"
 import { Inter, Poppins } from "next/font/google"
 import "../globals.css"
+import "../styles/nprogress.css"
 
 import Footer from "@/components/shared/Footer"
 import { Providers } from "@/store/provider"
@@ -9,10 +10,9 @@ import { getServerAuthSession } from "@/lib/server-auth"
 import { Suspense } from "react"
 
 import PageTransition from "@/components/shared/PageTransition"
-import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { DefaultSEO, generateMetadata as generateBaseMetadata } from "@/lib/seo"
 import GoogleAnalyticsClient from '@/components/analytics/GoogleAnalyticsClient'
-import GlobalLoaderProvider from "@/components/loaders/GlobalLoaderProvider"
+import NavigationProgress from '@/components/NavigationProgress'
 
 // Simplified fonts - only keep what's necessary
 const inter = Inter({
@@ -29,7 +29,8 @@ const poppins = Poppins({
   weight: ["400", "500", "600", "700"],
 })
 
-export const dynamic = "force-dynamic"
+// Remove force-dynamic to allow ISR
+// export const dynamic = "force-dynamic"
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
@@ -79,11 +80,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        
-        {/* Essential meta tags only */}
         <meta name="theme-color" content="#0066cc" />
         
-        {/* Search Engine Verification - only if needed */}
+        {/* Search Engine Verification */}
         {process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION && (
           <meta
             name="google-site-verification"
@@ -100,21 +99,23 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* App Icons */}
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+        {/* Styles */}
+        <link rel="stylesheet" href="/nprogress.css" />
       </head>
 
   <body className={`${inter.variable} ${poppins.variable} font-sans antialiased bg-background text-foreground`}>
-        <GlobalLoaderProvider>
-          {/* Skip Navigation for accessibility */}
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 
-            focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground 
-            focus:rounded focus:outline-none"
-          >
-            Skip to main content
-          </a>
+  <Providers session={session}>
+            {/* Skip Navigation for accessibility */}
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 
+              focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground 
+              focus:rounded focus:outline-none"
+            >
+              Skip to main content
+            </a>
 
-          <Providers session={session}>
             <div className="min-h-screen flex flex-col">
               {/* Simplified noscript message */}
               <noscript>
@@ -129,31 +130,32 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </div>
               </noscript>
 
+              <NavigationProgress />
+              
               <main id="main-content" className="flex-1 w-full" role="main">
                 <PageTransition>
-                  <Suspense fallback={<SuspenseGlobalFallback />}>
+                  <Suspense fallback={<div className="flex items-center justify-center py-10"><span className="text-xs text-muted-foreground">Loading...</span></div>}>
                     {children}
                   </Suspense>
                 </PageTransition>
               </main>
 
               <Footer />
+              
+              {/* Google Analytics - only if GA_ID exists (client only) */}
+              {process.env.NEXT_PUBLIC_GA_ID && (
+                // Client wrapper will dynamically load the GA component
+                <React.Suspense>
+                  <React.Fragment>
+                    {/* @ts-ignore */}
+                    <GoogleAnalyticsClient gaId={process.env.NEXT_PUBLIC_GA_ID} />
+                  </React.Fragment>
+                </React.Suspense>
+              )}
+
+              <DefaultSEO enableFAQ={false} />
             </div>
-          </Providers>
-
-          <DefaultSEO enableFAQ={false} />
-
-          {/* Google Analytics - only if GA_ID exists (client only) */}
-          {process.env.NEXT_PUBLIC_GA_ID && (
-            // Client wrapper will dynamically load the GA component
-            <React.Suspense>
-              <React.Fragment>
-                {/* @ts-ignore */}
-                <GoogleAnalyticsClient gaId={process.env.NEXT_PUBLIC_GA_ID} />
-              </React.Fragment>
-            </React.Suspense>
-          )}
-        </GlobalLoaderProvider>
+  </Providers>
       </body>
     </html>
   )
