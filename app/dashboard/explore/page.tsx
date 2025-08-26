@@ -119,7 +119,7 @@ export default function ExplorePage() {
           </Breadcrumb>
         </div>
 
-        <CreateComponent className="mt-4" />
+        <CreateComponent />
       </PageWrapper>
     </>
   );
