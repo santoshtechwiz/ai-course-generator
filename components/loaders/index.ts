@@ -1,5 +1,4 @@
 "use client"
-import React from "react"
 
 export function SuspenseGlobalFallback({ text = "Loading..." }: { text?: string }) {
   return (

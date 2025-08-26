@@ -2,7 +2,6 @@ import React from "react"
 import type { Metadata } from "next"
 import { Inter, Poppins } from "next/font/google"
 import "../globals.css"
-import "../styles/nprogress.css"
 
 import Footer from "@/components/shared/Footer"
 import { MainNavbar } from "@/components/layout/navigation/MainNavbar"
@@ -15,9 +14,8 @@ import { DefaultSEO, generateMetadata as generateBaseMetadata } from "@/lib/seo"
 import GoogleAnalyticsClient from '@/components/analytics/GoogleAnalyticsClient'
 
 import { RootErrorBoundary } from "@/components/layout/RootErrorBoundary"
-import { PageTransitionLoader } from "@/components/loaders/PageTransitionLoader"
-import { LoadingOverlay } from "@/components/loaders"
-import { LoadingProvider } from "@/components/loaders/LoaderContext"
+import { SuspenseGlobalFallback } from "@/components/loaders"
+import BProgressProvider from "./providers"
 
 
 // Simplified fonts - only keep what's necessary
@@ -106,13 +104,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-        {/* Styles */}
-        <link rel="stylesheet" href="/nprogress.css" />
+
       </head>
 
       <body className={`${inter.variable} ${poppins.variable} font-sans antialiased bg-background text-foreground`}>
-        <Providers session={session}>
-          <LoadingProvider>
+        <BProgressProvider>
+          <Providers session={session}>
             {/* Skip Navigation for accessibility */}
             <a
               href="#main-content"
@@ -124,7 +121,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </a>
 
             <RootErrorBoundary>
-              <PageTransitionLoader />
               {/* Simplified noscript message */}
               <noscript>
                 <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 m-4">
@@ -138,7 +134,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </div>
               </noscript>
 
-              <Suspense fallback={<LoadingOverlay />}>
+              <Suspense fallback={<SuspenseGlobalFallback />}>
                 <div className="relative min-h-screen flex flex-col">
                   <div className="h-20">
                     {/* Prevent layout shift with fixed height */}
@@ -158,7 +154,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   </div>
                   <main id="main-content" className="flex-1 w-full" role="main">
                     <PageTransition>
-                      <Suspense fallback={<LoadingOverlay />}>
+                      <Suspense fallback={<SuspenseGlobalFallback />}>
                         {children}
                       </Suspense>
                     </PageTransition>
@@ -174,8 +170,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Suspense>
 
             <DefaultSEO enableFAQ={false} />
-          </LoadingProvider>
-        </Providers>
+          </Providers>
+        </BProgressProvider>
       </body>
     </html>
   )
