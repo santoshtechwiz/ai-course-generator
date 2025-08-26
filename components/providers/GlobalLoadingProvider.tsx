@@ -30,24 +30,16 @@ function GlobalLoadingProvider({ children }: GlobalLoaderProviderProps) {
     let loadingTimeout: NodeJS.Timeout | undefined
     let completeTimeout: NodeJS.Timeout | undefined
 
-    const startLoading = () => {
-      if (completeTimeout) clearTimeout(completeTimeout)
-      loadingTimeout = setTimeout(() => {
-        setLoading(true)
-        NProgress.start()
-      }, 50)
-    }
-
-    const stopLoading = () => {
-      if (loadingTimeout) clearTimeout(loadingTimeout)
+    // Immediately trigger a brief progress pulse on route/search changes
+    if (completeTimeout) clearTimeout(completeTimeout)
+    loadingTimeout = setTimeout(() => {
+      setLoading(true)
+      NProgress.start()
       completeTimeout = setTimeout(() => {
         NProgress.done(true)
         setLoading(false)
       }, 200)
-    }
-
-    startLoading()
-    stopLoading()
+    }, 50)
 
     return () => {
       if (loadingTimeout) clearTimeout(loadingTimeout)

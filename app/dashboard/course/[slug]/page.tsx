@@ -62,12 +62,31 @@ export async function generateMetadata({ params }: CoursePageParams): Promise<Me
 }
 
 export default async function Page({ params }: CoursePageParams) {
-  const { slug } = await params
-  const course = await getCourseData(slug)
-  
-  if (!course) {
-    notFound()
-  }
+  try {
+    const { slug } = await params
 
-  return <EnhancedCourseLayout course={course as FullCourseType} />
+    if (!slug) {
+      throw new Error("Course slug is required")
+    }
+
+    const course = await getCourseData(slug)
+    
+    if (!course) {
+      notFound()
+    }
+
+    // Validate essential course data
+    if (!course.title || !course.slug) {
+      throw new Error("Invalid course data")
+    }
+
+    return (
+      <div className="min-h-screen">
+        <EnhancedCourseLayout course={course as FullCourseType} />
+      </div>
+    )
+  } catch (error) {
+    console.error("Course page error:", error)
+    throw error // This will be caught by the error boundary
+  }
 }

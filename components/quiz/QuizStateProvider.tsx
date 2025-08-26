@@ -36,9 +36,7 @@ export function QuizStateProvider({
   const [state, setState] = useState<QuizState>('idle')
   const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [nextState, setNextState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  // global loader removed; create local no-op helpers and delegate to toast
-  const startLoading = (_opts?: any) => {}
-  const stopLoading = () => {}
+  // Removed legacy global loader helpers
   const setGlobalError = (msg: string) => toast.error(msg)
   const setGlobalSuccess = (msg: string) => toast.success(msg)
   
@@ -97,13 +95,7 @@ export function QuizStateProvider({
     setState('submitting')
     setSubmitState('loading')
     
-    if (globalLoading) {
-      startLoading({ 
-        message: 'Submitting your quiz...', 
-        subMessage: 'Please wait while we process your answers',
-        isBlocking: true 
-      })
-    }
+  // globalLoading pathway removed
     
     try {
       const result = submitFn()
@@ -120,11 +112,9 @@ export function QuizStateProvider({
       const errorMessage = error instanceof Error ? error.message : 'Failed to submit quiz'
       setError(errorMessage)
     } finally {
-      if (globalLoading) {
-        stopLoading()
-      }
+      // no global stop needed
     }
-  }, [state, globalLoading, startLoading, stopLoading, setError, setSuccess])
+  }, [state, globalLoading, setError, setSuccess])
 
   const handleNext = useCallback(async (nextFn: () => Promise<void> | void) => {
     if (state === 'navigating') return

@@ -124,7 +124,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
     } finally {
   // No global loader; rely on page state
     }
-  }, [dispatch, startLoading, stopLoading, slug, router])
+  }, [dispatch, slug, router])
 
   // Loading & error states
   const isLoading = quizStatus === "loading" || quizStatus === "idle"

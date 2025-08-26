@@ -269,7 +269,7 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
     if (recommendation.type === "quiz") {
       generatePersonalizedQuiz(recommendation)
     } else {
-  startLoading({ message: "Opening course...", subMessage: "Preparing recommended content", type: 'data', priority: 'high', combineWithRoute: true });
+  
       router.push(`/dashboard/course/${recommendation.slug}?chapter=${recommendation.chapterId}`)
     }
   }
@@ -351,7 +351,7 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
       // Navigate to the course page
       const recommendation = recommendations.find((r) => r.type === "quiz")
       if (recommendation) {
-  startLoading({ message: "Opening course...", subMessage: "Preparing personalized content", type: 'data', priority: 'high', combineWithRoute: true });
+  
         router.push(`/dashboard/course/${recommendation.slug}?chapter=${recommendation.chapterId}`)
       }
     }

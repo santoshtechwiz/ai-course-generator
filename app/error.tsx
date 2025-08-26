@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle, Home, RefreshCw, ArrowLeft } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { reportError } from "@/lib/error-reporting"
 
 interface ErrorPageProps {
   error: Error & { digest?: string }
@@ -17,16 +18,7 @@ export default function Error({ error, reset }: ErrorPageProps) {
   const router = useRouter()
 
   useEffect(() => {
-    // Log error to monitoring service in production
-    if (process.env.NODE_ENV === "production") {
-      // Example: Sentry.captureException(error)
-      if (typeof window !== "undefined" && (window as any).Sentry) {
-        (window as any).Sentry.captureException?.(error);
-      }
-    } else {
-      // Always log to console for debugging in dev
-      console.error("App error boundary:", error)
-    }
+    reportError(error)
   }, [error])
 
   const handleReset = () => {

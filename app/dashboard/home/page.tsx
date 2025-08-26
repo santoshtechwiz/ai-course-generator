@@ -59,8 +59,7 @@ const LoadingState = memo(() => (
 export default function DashboardPage() {
   const { isAuthenticated, user, isLoading } = useAuth();
   const router = useRouter()
-  const startLoading = () => {}
-  const stopLoading = () => {}
+  // Removed legacy loading helpers
 
   const userId = user?.id || ""
   const [activeTab, setActiveTab] = useState("overview")

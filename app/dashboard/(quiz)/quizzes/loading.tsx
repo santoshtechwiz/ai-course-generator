@@ -1,5 +1,10 @@
-import { ModuleLoading } from "@/components/layout/ModuleLoading"
+import { PageWrapper } from "@/components/layout/PageWrapper"
+import { QuizLoading } from "./components/QuizLoading"
 
 export default function QuizzesLoading() {
-  return <ModuleLoading />
+  return (
+    <PageWrapper>
+      <QuizLoading />
+    </PageWrapper>
+  )
 }

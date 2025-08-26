@@ -60,8 +60,6 @@ export default function CoursesClient({
   
   // Hooks
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
-  const startLoading = () => {}
-  const stopLoading = () => {}
 
   // Query
   const queryResult: UseInfiniteQueryResult<any, Error> = useInfiniteQuery({
@@ -69,12 +67,7 @@ export default function CoursesClient({
     initialPageParam: 1,
     queryFn: async ({ pageParam, signal }) => {
       const currentPage = pageParam as number
-      const loaderId = startLoading({
-        message: currentPage === 1 ? 'Loading courses...' : 'Loading more courses...',
-        type: 'data',
-        showProgress: true,
-        minVisibleMs: 150
-      })
+  // Legacy loader removed; relying on built-in query states + NProgress route transitions
 
       try {
         const apiUrl = new URL("/api/course", window.location.origin)
@@ -111,7 +104,7 @@ export default function CoursesClient({
 
         return response.json()
       } finally {
-        stopLoading(loaderId)
+        // no-op: loader system removed
       }
     },
     getNextPageParam: (lastPage, allPages) => 

@@ -1,21 +1,17 @@
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+"use client"
 
-import { BillingHistory } from "./BillingHistory"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { ManageSubscription } from "./ManageSubscription"
 
-export default async function SubscriptionDetails({
-  userId,
-  getSubscriptionData,
-  activeTab = "subscription",
-}: {
+interface SubscriptionDetailsProps {
   userId: string
-  getSubscriptionData: () => Promise<any>
+  // Data is now passed in from a parent server component to avoid async client component
+  subscriptionData: any
   activeTab?: string
-}) {
-  const subscriptionData = await getSubscriptionData()
+}
 
-  if (subscriptionData.error) {
+export default function SubscriptionDetails({ userId, subscriptionData }: SubscriptionDetailsProps) {
+  if (subscriptionData?.error) {
     return (
       <Alert variant="destructive" className="animate-in fade-in-50">
         <AlertTitle>Error</AlertTitle>
@@ -23,9 +19,5 @@ export default async function SubscriptionDetails({
       </Alert>
     )
   }
-
-
-
-  // Otherwise, show the subscription management interface
   return <ManageSubscription userId={userId} subscriptionData={subscriptionData} />
 }

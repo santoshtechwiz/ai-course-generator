@@ -583,12 +583,12 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
   const router = useRouter()
   const [isNavigating, setIsNavigating] = useState(false)
   const isMobile = useMobile()
-  const startLoading = () => {}
+  
 
   const handleNavigation = async () => {
     setIsNavigating(true)
     try {
-  startLoading();
+  
       await new Promise((resolve) => setTimeout(resolve, 800))      // Fix navigation to go to create pages instead
       if (product.type === "course") {
         router.push(`/dashboard/create`)

@@ -1,4 +1,4 @@
-export * from "./navigation/MainNavbar"
+export { MainNavbar } from "./navigation/MainNavbar"
 export * from "./navigation/MobileMenu"
 export * from "./navigation/SearchModal"
 export * from "./navigation/ThemeToggle"

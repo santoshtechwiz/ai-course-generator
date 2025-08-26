@@ -14,7 +14,7 @@ interface RecommendedCardProps {
 
 export function RecommendedCard({ item, index }: RecommendedCardProps) {
   const router = useRouter()
-  const startLoading = () => {}
+  // Removed legacy loader function
   
   const getUrl = () => {
     if (item.type === "course") {
@@ -82,7 +82,7 @@ export function RecommendedCard({ item, index }: RecommendedCardProps) {
         <CardFooter className="pb-4 pt-0">
           <Button 
             onClick={() => {
-              startLoading();
+              
               router.push(getUrl());
             }} 
             variant="outline" 

@@ -4,10 +4,12 @@ import { Component, type ErrorInfo, type ReactNode } from "react"
 import { AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { reportError } from "@/lib/error-reporting"
 
 interface Props {
   children: ReactNode
   fallback?: ReactNode
+  onError?: (error: Error, errorInfo?: ErrorInfo) => void
 }
 
 interface State {
@@ -26,7 +28,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error:", error, errorInfo)
+    reportError(error, { componentStack: errorInfo.componentStack ?? undefined });
+    this.props.onError?.(error, errorInfo);
   }
 
   public render() {

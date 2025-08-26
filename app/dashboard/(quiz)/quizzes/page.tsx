@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import type { Metadata } from "next"
 import { getAuthSession } from "@/lib/auth"
 import { getQuizzes, type QuizListItem } from "@/app/actions/getQuizes"
+import { QuizLoading } from "./components/QuizLoading"
 
 
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper"
@@ -42,88 +43,116 @@ export const metadata: Metadata = generateMetadata({
 // ...existing code...
 
 const Page = async () => {
-  const session = await getAuthSession()
-  const userId = session?.user?.id
-  const quizzesData = await getQuizzes({
-    page: 1,
-    limit: 12,
-    searchTerm: "",
-    userId: userId,
-    quizTypes: [],
-  })
+  try {
+    const session = await getAuthSession()
+    const userId = session?.user?.id
+    
+    // Get initial quizzes data with error handling
+    const quizzesData = await getQuizzes({
+      page: 1,
+      limit: 12,
+      searchTerm: "",
+      userId: userId,
+      quizTypes: [],
+    }).catch((error) => {
+      console.error('Failed to fetch quizzes:', error)
+      return {
+        quizzes: [],
+        nextCursor: null,
+        totalCount: 0,
+        error: 'Failed to load quizzes'
+      }
+    })
 
-  const initialQuizzesData = {
-    quizzes: quizzesData.quizzes as QuizListItem[],
-    nextCursor: quizzesData.nextCursor,
-  }
+    const initialQuizzesData = {
+      quizzes: quizzesData.quizzes as QuizListItem[],
+      nextCursor: quizzesData.nextCursor,
+    }
 
-  return (
-    <PageWrapper>
-      <div className="relative">
-        {/* Enhanced Background Elements */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/4 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-pulse" />
-          <div
-            className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-3xl animate-pulse"
-            style={{ animationDelay: "1s" }}
+    return (
+      <PageWrapper>
+        <div className="relative">
+          {/* Enhanced Background Elements */}
+          <div className="absolute inset-0 -z-10">
+            <div className="absolute top-0 left-1/4 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-pulse" />
+            <div
+              className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-3xl animate-pulse"
+              style={{ animationDelay: "1s" }}
+            />
+            <div
+              className="absolute top-1/2 left-0 w-64 h-64 bg-accent/5 rounded-full blur-2xl animate-pulse"
+              style={{ animationDelay: "2s" }}
+            />
+          </div>
+
+          <PageHeader
+            title="Explore Quizzes"
+            description="Test your knowledge with interactive quizzes designed to boost your learning"
           />
-          <div
-            className="absolute top-1/2 left-0 w-64 h-64 bg-accent/5 rounded-full blur-2xl animate-pulse"
-            style={{ animationDelay: "2s" }}
+
+          <JsonLD
+            type="default"
+            data={{
+              "@context": "https://schema.org",
+              "@type": "WebPage",
+              name: "Interactive Quizzes",
+              description:
+                "Comprehensive collection of interactive educational quizzes including multiple choice, coding challenges, flashcards, and more.",
+              url: "https://courseai.io/dashboard/quizzes",
+              mainEntity: {
+                "@type": "ItemList",
+                name: "Educational Quiz Collection",
+                description: "Collection of interactive educational quizzes for skill development and knowledge testing",
+                numberOfItems: quizzesData.quizzes.length,
+              },
+              breadcrumb: {
+                "@type": "BreadcrumbList",
+                itemListElement: [
+                  {
+                    "@type": "ListItem",
+                    position: 1,
+                    name: "Dashboard",
+                    item: "https://courseai.io/dashboard",
+                  },
+                  {
+                    "@type": "ListItem",
+                    position: 2,
+                    name: "Quizzes",
+                    item: "https://courseai.io/dashboard/quizzes",
+                  },
+                ],
+              },
+              provider: {
+                "@type": "Organization",
+                name: "CourseAI",
+                url: "https://courseai.io",
+              },
+            }}
           />
+
+          <Suspense fallback={<QuizLoading />}>
+            <QuizzesClientClient 
+              initialQuizzesData={initialQuizzesData} 
+              userId={userId}
+              error={quizzesData.error}
+            />
+          </Suspense>
         </div>
-
-        <PageHeader
-          title="Explore Quizzes"
-          description="Test your knowledge with interactive quizzes designed to boost your learning"
-        />
-
-        <JsonLD
-          type="default"
-          data={{
-            "@context": "https://schema.org",
-            "@type": "WebPage",
-            name: "Interactive Quizzes",
-            description:
-              "Comprehensive collection of interactive educational quizzes including multiple choice, coding challenges, flashcards, and open-ended questions.",
-            url: "https://courseai.io/dashboard/quizzes",
-            mainEntity: {
-              "@type": "ItemList",
-              name: "Educational Quiz Collection",
-              description: "Collection of interactive educational quizzes for skill development and knowledge testing",
-              numberOfItems: quizzesData.quizzes.length,
-            },
-            breadcrumb: {
-              "@type": "BreadcrumbList",
-              itemListElement: [
-                {
-                  "@type": "ListItem",
-                  position: 1,
-                  name: "Dashboard",
-                  item: "https://courseai.io/dashboard",
-                },
-                {
-                  "@type": "ListItem",
-                  position: 2,
-                  name: "Quizzes",
-                  item: "https://courseai.io/dashboard/quizzes",
-                },
-              ],
-            },
-            provider: {
-              "@type": "Organization",
-              name: "CourseAI",
-              url: "https://courseai.io",
-            },
-          }}
-        />
-
-  <Suspense fallback={<div className="text-sm text-muted-foreground">Loading quizzes...</div>}>
-          <QuizzesClientClient initialQuizzesData={initialQuizzesData} userId={userId} />
-        </Suspense>
-      </div>
-    </PageWrapper>
-  )
+      </PageWrapper>
+    )
+  } catch (error) {
+    console.error('Error in quizzes page:', error)
+    return (
+      <PageWrapper>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
+          <h2 className="text-2xl font-semibold mb-4">Unable to Load Quizzes</h2>
+          <p className="text-muted-foreground mb-6">
+            We encountered an error while loading your quizzes. Please try again later.
+          </p>
+        </div>
+      </PageWrapper>
+    )
+  }
 }
 
 export default Page

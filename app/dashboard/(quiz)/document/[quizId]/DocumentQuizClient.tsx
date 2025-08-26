@@ -36,7 +36,7 @@ export default function DocumentQuizClient({ params }: DocumentQuizClientProps) 
     }
 
     loadQuiz()
-  }, [quizId, startLoading, stopLoading])
+  }, [quizId])
 
   const handleGoBack = () => {
     router.back()

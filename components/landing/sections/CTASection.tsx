@@ -42,7 +42,7 @@ const CTASection = () => {
   const isInView = useInView(containerRef, { once: true, amount: 0.3 })
   const [isMounted, setIsMounted] = useState(false)
   const router = useRouter()
-  const startLoading = () => {}
+  
 
   useEffect(() => {
     setIsMounted(true)
@@ -99,7 +99,7 @@ const CTASection = () => {
                   successText="Redirected!"
                   errorText="Please try again"
                   onClickAsync={async () => {
-                    startLoading();
+                    
                     await new Promise((resolve) => setTimeout(resolve, 800))
                     router.push("/dashboard/create")
                     return true

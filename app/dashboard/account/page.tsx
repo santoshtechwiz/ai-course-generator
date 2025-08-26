@@ -21,7 +21,7 @@ export default async function SubscriptionAccountPage() {
   if (!userId) {
     return (
       <PageWrapper>
-        <PageHeader>
+    <PageHeader title="Account" description="Manage your account access">
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Authentication Required</AlertTitle>
@@ -41,66 +41,58 @@ export default async function SubscriptionAccountPage() {
     }
   }
 
-  async function getSubscriptionData() {
-    try {
-      if (!userId) {
-        throw new Error("User ID is required but was null.")
-      }
+  // Fetch subscription data server-side (was previously inside async client component)
+  let subscriptionData: any
+  try {
+    if (!userId) throw new Error("User ID missing")
 
-      // Resolve to safe fallbacks on timeout instead of throwing
-      async function withTimeout<T>(
-        promise: Promise<T>,
-        timeoutMs = 8000,
-        fallback: T,
-      ): Promise<T> {
-        return Promise.race([
-          promise,
-          new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
-        ])
-      }
+    async function withTimeout<T>(promise: Promise<T>, timeoutMs = 8000, fallback: T): Promise<T> {
+      return Promise.race([
+        promise,
+        new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+      ])
+    }
 
-      const [subscriptionStatus, tokenData, billingHistory, paymentMethods] = await Promise.all([
-        withTimeout(SubscriptionService.getSubscriptionStatus(userId), 8000, { subscriptionPlan: "FREE", isSubscribed: false } as any),
-        withTimeout(SubscriptionService.getTokensUsed(userId), 8000, { used: 0, total: 0 } as any),
-        withTimeout(SubscriptionService.getBillingHistory(userId), 8000, [] as any),
-        withTimeout(SubscriptionService.getPaymentMethods(userId), 8000, [] as any),
-      ]).catch((error) => {
-        console.error("Error fetching subscription data:", error)
-        return [{ subscriptionPlan: "FREE", isSubscribed: false }, { used: 0, total: 0 }, [], []]
-      })
-
-      return {
-        currentPlan: subscriptionStatus.subscriptionPlan,
-        subscriptionStatus: subscriptionStatus.isSubscribed ? "ACTIVE" : "INACTIVE",
-        endDate:
-          "expirationDate" in subscriptionStatus && subscriptionStatus.expirationDate
-            ? new Date(subscriptionStatus.expirationDate)
-            : null,
-        tokensUsed: "used" in tokenData ? tokenData.used : 0,
-        tokensTotal: "total" in tokenData ? tokenData.total : 0,
-        billingHistory,
-        paymentMethods,
-      }
-    } catch (error) {
+    const [subscriptionStatus, tokenData, billingHistory, paymentMethods] = await Promise.all([
+      withTimeout(SubscriptionService.getSubscriptionStatus(userId), 8000, { subscriptionPlan: "FREE", isSubscribed: false } as any),
+      withTimeout(SubscriptionService.getTokensUsed(userId), 8000, { used: 0, total: 0 } as any),
+      withTimeout(SubscriptionService.getBillingHistory(userId), 8000, [] as any),
+      withTimeout(SubscriptionService.getPaymentMethods(userId), 8000, [] as any),
+    ]).catch((error) => {
       console.error("Error fetching subscription data:", error)
-      return {
-        currentPlan: "FREE",
-        subscriptionStatus: "INACTIVE",
-        endDate: null,
-        tokensUsed: 0,
-        tokensRemaining: 0,
-        tokensReceived: 0,
-        billingHistory: [],
-        paymentMethods: [],
-        error: error instanceof Error ? error.message : "Failed to fetch subscription data",
-      }
+      return [{ subscriptionPlan: "FREE", isSubscribed: false }, { used: 0, total: 0 }, [], []]
+    })
+
+    subscriptionData = {
+      currentPlan: subscriptionStatus.subscriptionPlan,
+      subscriptionStatus: subscriptionStatus.isSubscribed ? "ACTIVE" : "INACTIVE",
+      endDate:
+        "expirationDate" in subscriptionStatus && subscriptionStatus.expirationDate
+          ? new Date(subscriptionStatus.expirationDate)
+          : null,
+      tokensUsed: "used" in tokenData ? tokenData.used : 0,
+      tokensTotal: "total" in tokenData ? tokenData.total : 0,
+      billingHistory,
+      paymentMethods,
+    }
+  } catch (error) {
+    subscriptionData = {
+      currentPlan: "FREE",
+      subscriptionStatus: "INACTIVE",
+      endDate: null,
+      tokensUsed: 0,
+      tokensRemaining: 0,
+      tokensReceived: 0,
+      billingHistory: [],
+      paymentMethods: [],
+      error: error instanceof Error ? error.message : "Failed to fetch subscription data",
     }
   }
 
   return (
     <PageWrapper>
-      <PageHeader title="Account Management">
-        <p className="text-muted-foreground mb-8">Manage your account, subscription, and billing information</p>
+  <PageHeader title="Account Management" description="Manage your account, subscription, and billing information">
+  {/* Description now passed via PageHeader prop */}
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6 sm:mb-8">
             <TabsTrigger value="overview">Account Overview</TabsTrigger>
@@ -116,7 +108,7 @@ export default async function SubscriptionAccountPage() {
 
           <TabsContent value="subscription" className="animate-in fade-in-50 slide-in-from-left-5">
             <Suspense fallback={<SubscriptionDetailsSkeleton />}>
-              <SubscriptionDetails userId={userId} getSubscriptionData={getSubscriptionData} />
+              <SubscriptionDetails userId={userId} subscriptionData={subscriptionData} />
             </Suspense>
           </TabsContent>
 

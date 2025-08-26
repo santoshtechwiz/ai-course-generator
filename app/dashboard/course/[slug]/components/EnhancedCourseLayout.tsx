@@ -1,16 +1,24 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import { FullCourseType } from "@/app/types/types"
-import MainContent from "./MainContent"
+import dynamic from "next/dynamic"
 import { cn } from "@/lib/utils"
 import { ModuleLayout } from "@/components/layout/ModuleLayout"
 import { motion, AnimatePresence } from "framer-motion"
 import { Badge } from "@/components/ui/badge"
 import { JsonLD } from "@/lib/seo"
+import { ErrorBoundary } from "react-error-boundary"
+import { ModuleLoadingSkeleton } from "@/components/shared/ModuleLoadingSkeleton"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { ChevronLeft } from "lucide-react"
+
+// Dynamically import MainContent with suspense
+const MainContent = dynamic(() => import("./MainContent"), {
+  loading: () => <ModuleLoadingSkeleton variant="detailed" itemCount={1} />,
+  ssr: false
+})
 
 interface EnhancedCourseLayoutProps {
   course: FullCourseType
@@ -107,11 +115,27 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
             ? "px-0 py-0 max-w-none" 
             : "max-w-screen-2xl px-4 md:px-6 py-4 gap-4"
         )}>
-          <MainContent 
-            course={course} 
-            initialChapterId={initialChapterId}
-            isFullscreen={isFullscreen}
-          />
+          <ErrorBoundary
+            fallback={
+              <div className="flex flex-col items-center justify-center min-h-[50vh] p-4">
+                <div className="text-center space-y-4">
+                  <h2 className="text-xl font-semibold">Error Loading Course Content</h2>
+                  <p className="text-muted-foreground">There was a problem loading the course content. Please try refreshing the page.</p>
+                  <Button onClick={() => window.location.reload()}>
+                    Reload Page
+                  </Button>
+                </div>
+              </div>
+            }
+          >
+            <Suspense fallback={<ModuleLoadingSkeleton variant="detailed" itemCount={1} />}>
+              <MainContent 
+                course={course} 
+                initialChapterId={initialChapterId}
+                isFullscreen={isFullscreen}
+              />
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </div>
       

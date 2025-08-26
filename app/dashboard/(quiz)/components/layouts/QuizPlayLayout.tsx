@@ -41,7 +41,7 @@ import { Sparkles, Wand2 } from "lucide-react"
 import RecommendedSection from "@/components/shared/RecommendedSection"
 import { cn } from "@/lib/utils"
 
-export const dynamic = "force-dynamic"
+// Removed force-dynamic; let Next.js infer rendering strategy
 
 interface QuizPlayLayoutProps {
   children: React.ReactNode
@@ -527,7 +527,7 @@ export default function QuizPlayLayout({
                         <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                           <BookOpen className="w-5 h-5" />
                         </div>
-                        {rq.isFavorite && <Award className="w-5 h-5 text-yellow-500" />}
+                        {/* isFavorite removed (not on RelatedQuizItem) */}
                       </div>
                       
                       <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors mb-2">
@@ -539,7 +539,7 @@ export default function QuizPlayLayout({
                           {rq.quizType?.toUpperCase()}
                         </Badge>
                         <span>{rq.questionCount} questions</span>
-                        {rq.estimatedTime && <span>{rq.estimatedTime}min</span>}
+                        {/* estimatedTime removed (not on RelatedQuizItem) */}
                       </div>
                       
                       <div className="flex items-center justify-between">

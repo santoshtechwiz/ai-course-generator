@@ -14,7 +14,7 @@ import { JsonLD } from "@/lib/seo";
 import { generateMetadata } from "@/lib/seo";
 
 
-export const dynamic = "force-dynamic";
+// Removed force-dynamic to allow static optimization / caching where possible
 
 export const metadata = generateMetadata({
   title: "Create Free Video Course Using AI",

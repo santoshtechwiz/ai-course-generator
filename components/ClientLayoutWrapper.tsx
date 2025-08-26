@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useEffect } from "react";
+import React, { useEffect, Suspense } from "react";
 import { store } from "@/store";
 import { Provider } from "react-redux";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { GlobalSubscriptionSynchronizer } from "@/components/GlobalSubscriptionSynchronizer";
+import { ModuleLoadingSkeleton } from "./shared/ModuleLoadingSkeleton";
 
 interface ClientLayoutWrapperProps {
   children: React.ReactNode
@@ -88,7 +89,9 @@ export function ClientLayoutWrapper({
     >
       <Provider store={store}>
         {withSubscriptionSync && <GlobalSubscriptionSynchronizer />}
-        {children}
+        <Suspense fallback={<ModuleLoadingSkeleton />}>
+          {children}
+        </Suspense>
       </Provider>
     </SessionProvider>
   );

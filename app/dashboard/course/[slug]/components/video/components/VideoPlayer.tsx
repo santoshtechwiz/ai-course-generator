@@ -537,7 +537,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
       playerReady: true, 
       isLoadingDuration: false 
     }))
-    stopLoading()
+  // Removed legacy global loader stop call (no-op after loader system removal)
 
     if (playerRef.current) {
       try {
@@ -597,7 +597,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
         }
       }, 200)
     }
-  }, [handlers, onVideoLoad, courseName, youtubeVideoId, onPlayerReady, stopLoading, playerState.videoDuration, state.duration, state.muted, initialSeekSeconds, shouldAutoPlay])
+  }, [handlers, onVideoLoad, courseName, youtubeVideoId, onPlayerReady, playerState.videoDuration, state.duration, state.muted, initialSeekSeconds, shouldAutoPlay])
 
   // Enhanced play handler
   const handlePlayClick = useCallback(() => {

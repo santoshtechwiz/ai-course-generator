@@ -22,12 +22,12 @@ import Link from "next/link"
 import { motion, AnimatePresence, MotionConfig, useReducedMotion } from "framer-motion"
 import Logo from "@/components/shared/Logo"
 
-export default function MainNavbar() {
+export function MainNavbar() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const subscription = useSubscription()
-  const startLoading = () => {}
+  // Route transitions handled by NProgress (legacy startLoading removed)
 
   // Extract subscription details
   const totalTokens = user?.credits || 0
@@ -171,17 +171,17 @@ export default function MainNavbar() {
   const handleSearchClose = useCallback(() => setIsSearchModalOpen(false), [])
   const handleMobileMenuToggle = useCallback(() => setIsMobileMenuOpen((prev) => !prev), [])
   const handleSignIn = useCallback(() => {
-    startLoading({ message: "Loading...", minVisibleMs: 200 })
+  
     router.push("/api/auth/signin")
-  }, [router, startLoading])
+  }, [router])
 
   const handleSearchResult = useCallback(
     (url: string) => {
-      startLoading({ message: "Loading...", minVisibleMs: 200 })
+  
       router.push(url)
       handleSearchClose()
     },
-    [router, handleSearchClose, startLoading],
+  [router, handleSearchClose],
   )
 
   const navigationItems = useMemo(

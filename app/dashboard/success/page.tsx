@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { SUBSCRIPTION_PLANS } from "../subscription/components/subscription-plans"
 import { SubscriptionService } from "../subscription/services/subscription-service"
 
-export const dynamic = "force-dynamic"
+// Removed force-dynamic; only dynamic where necessary by detected APIs
 
 export const metadata = {
   title: "Success",
