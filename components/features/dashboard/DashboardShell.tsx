@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
+import { LoadingProvider } from "@/components/loaders"
 
 interface DashboardShellProps {
   children: React.ReactNode
@@ -9,11 +10,13 @@ interface DashboardShellProps {
 
 export function DashboardShell({ children }: DashboardShellProps) {
   return (
-    <ClientLayoutWrapper 
-      withTheme={true}
-      withSubscriptionSync={true}
-    >
-      {children}
-    </ClientLayoutWrapper>
+    <LoadingProvider>
+      <ClientLayoutWrapper
+        withTheme={true}
+        withSubscriptionSync={true}
+      >
+        {children}
+      </ClientLayoutWrapper>
+    </LoadingProvider>
   )
 }

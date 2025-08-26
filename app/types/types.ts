@@ -201,3 +201,55 @@ export interface CodeChallenge {
   correctAnswer: string;
   questionType: "standard" | "fill-in-the-blank";
 }
+import type React from "react"
+export type LoadingState = "idle" | "loading" | "success" | "error"
+
+export interface LoadingConfig {
+  id: string
+  message?: string
+  timeout?: number
+  showProgress?: boolean
+  showSpinner?: boolean
+  overlay?: boolean
+  persistent?: boolean
+}
+
+export interface LoadingContextValue {
+  // Global loading state
+  globalLoading: boolean
+
+  // Individual loading states
+  loadingStates: Record<string, LoadingConfig & { state: LoadingState }>
+
+  // Actions
+  startLoading: (config: LoadingConfig) => void
+  stopLoading: (id: string) => void
+  updateLoading: (id: string, updates: Partial<LoadingConfig>) => void
+  clearAllLoading: () => void
+
+  // Utilities
+  isLoading: (id?: string) => boolean
+  getLoadingState: (id: string) => LoadingState | undefined
+  getLoadingMessage: (id: string) => string | undefined
+}
+
+export interface UnifiedLoaderProps {
+  id?: string
+  message?: string
+  variant?: "spinner" | "skeleton" | "progress" | "overlay"
+  size?: "sm" | "md" | "lg"
+  showMessage?: boolean
+  className?: string
+}
+
+export interface PageTransitionLoaderProps {
+  enabled?: boolean
+  delay?: number
+  timeout?: number
+}
+
+export interface ApiLoadingWrapperProps {
+  loadingId: string
+  children: React.ReactNode
+  fallback?: React.ReactNode
+}

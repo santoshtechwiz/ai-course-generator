@@ -9,8 +9,8 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
 }
 
 interface PageHeaderProps {
-  title: string;
-  description: string;
+  title: React.ReactNode;
+  description?: React.ReactNode;
   icon?: LucideIcon; // Lucide icon component
   children?: React.ReactNode;
 }
@@ -22,9 +22,11 @@ export function PageHeader({ title, description, icon: Icon, children }: PageHea
         {Icon && <Icon className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-purple-600 dark:text-purple-400 flex-shrink-0" />}
         <span className="ai-gradient-text leading-tight">{title}</span>
       </h1>
-      <p className="text-base sm:text-lg text-muted-foreground max-w-prose mx-auto leading-relaxed px-0">
-        {description}
-      </p>
+      {description && (
+        <p className="text-base sm:text-lg text-muted-foreground max-w-prose mx-auto leading-relaxed px-0">
+          {description}
+        </p>
+      )}
       {children && <div className="mt-4">{children}</div>}
     </div>
   );
