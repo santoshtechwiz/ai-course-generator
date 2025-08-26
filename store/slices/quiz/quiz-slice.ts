@@ -4,12 +4,7 @@ import { API_ENDPOINTS } from './quiz-helpers'
 import { QuizQuestion, QuizResults, QuizState } from './quiz-types'
 import { QuizType } from '@/app/types/quiz-types'
 import { STORAGE_KEYS } from '@/constants/global'
-// Loader system removed; progress indicators are now handled by NProgress.
 
-// Lightweight non-hook helper to interact with global loader store inside thunks
-// Removed loader helper functions (startQuizLoader / stopQuizLoader) – no longer needed.
-
-// In-memory cache for fetched quizzes (per session). Keeps last N entries with TTL.
 const QUIZ_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 const MAX_CACHE_ENTRIES = 100
 const quizCache = new Map<string, { timestamp: number; data: any }>()
@@ -45,7 +40,7 @@ function persistProgress(slug: string | null, quizType: QuizType | null, current
     const key = `${STORAGE_KEYS.QUIZ_STATE}:${quizType}:${slug}`
     const value = JSON.stringify({ slug, quizType, currentQuestionIndex, updatedAt: Date.now() })
     localStorage.setItem(key, value)
-  } catch {}
+  } catch { }
 }
 
 function readProgress(slug: string | null, quizType: QuizType | null): number | null {
@@ -77,6 +72,7 @@ const initialState: QuizState = {
   redirectAfterLogin: null,
   userId: null,
   questionStartTimes: {},
+  lastUpdated: null,
 }
 
 // Async Thunks
@@ -85,7 +81,7 @@ const initialState: QuizState = {
  * Load quiz definition based on slug/type
  */
 export const fetchQuiz = createAsyncThunk(
-  "quiz/fetch",  async (
+  "quiz/fetch", async (
     payload: {
       slug?: string
       quizType?: QuizType
@@ -93,158 +89,162 @@ export const fetchQuiz = createAsyncThunk(
     },
     { rejectWithValue }
   ) => {
-    let loaderId: string | null = null
-    try {
-      if (!payload) {
-        return rejectWithValue('No payload provided')
-     
-      }
+  let loaderId: string | null = null
+  try {
+    if (!payload) {
+      return rejectWithValue('No payload provided')
 
-      const slug = payload.slug?.trim() || ""
-      const type = payload.quizType as QuizType
+    }
 
-      // Serve from cache if available and no inline data provided
-      if (!payload.data) {
-        const cached = getCachedQuiz(type, slug)
-        if (cached) {
+    const slug = payload.slug?.trim() || ""
+    const type = payload.quizType as QuizType
+
+    // Serve from cache if available and no inline data provided
+    if (!payload.data) {
+      const cached = getCachedQuiz(type, slug)
+      if (cached) {
           return {
             ...cached,
             slug,
             quizType: type,
             id: slug,
+            __lastUpdated: Date.now(),
           }
-        }
       }
+    }
 
-      if (payload.data && Array.isArray(payload.data.questions)) {
-        return {
-          ...payload.data,
-          slug,
-          quizType: type,
-          id: slug,
-        }
-      }
-
-      if (!slug || !type) {
-        return rejectWithValue({ error: "Missing slug or quizType" })
-      }
-      
-      // Always use the unified API approach with type and slug for consistency
-      let url: string;
-      
-      // Use the unified approach with byTypeAndSlug helper
-      if (API_ENDPOINTS.byTypeAndSlug) {
-        // Use the unified API pattern
-        url = API_ENDPOINTS.byTypeAndSlug(type, slug);
-        if (process.env.NODE_ENV !== 'production') {
-          console.log(`Using unified API endpoint: ${url}`);
-        }
-      } else {
-        // Fallback to legacy approach only if unified approach isn't available
-        const endpoint = API_ENDPOINTS[type as keyof typeof API_ENDPOINTS];
-        if (!endpoint) {
-          return rejectWithValue({ error: `Invalid quiz type: ${type}` });
-        }
-        url = `${endpoint}/${slug}`;
-        if (process.env.NODE_ENV !== 'production') {
-          console.log(`Using legacy API endpoint: ${url}`);
-        }
-      }
-      
-  // Start loader (browser only)
-  // Loader removed
-
-      const response = await fetch(url)
-      if (!response.ok) {
-        const errorText = await response.text()
-        
-        // Handle 404 specifically as not found
-        if (response.status === 404) {
-          // Loader removed
-          return rejectWithValue({
-            error: `Quiz not found`,
-            status: 'not-found',
-            details: `Quiz with slug "${slug}" and type "${type}" does not exist.`,
-          })
-        }
-        stopQuizLoader(loaderId, false, String(response.status))
-        return rejectWithValue({
-          error: `Error loading quiz: ${response.status}`,
-          details: errorText,
-        })
-      }
-
-  const data = await response.json()
-  // Loader removed
-
-      if (!data || !Array.isArray(data.questions)) {
-        return rejectWithValue({ 
-          error: "Quiz not found or invalid data",
-          status: 'not-found',
-          details: "The quiz exists but contains no valid questions."
-        })
-      }
-
-      const questions = data.questions.map((q: any) => {
-        const base: QuizQuestion = {
-          id: q.id || crypto.randomUUID(),
-          question: q.question,
-          type: type,
-          answer: q.answer,
-          codeSnippet: q.codeSnippet,
-          language: q.language,
-          tags: q.tags || [],
-          hints: q.hints || [],
-          difficulty: q.difficulty,
-          keywords: q.keywords,
-        }
-
-        if (type === "mcq") {
-          return {
-            ...base,
-            options: q.options,
-            correctOptionId: q.correctOptionId,
-          }
-        }
-
-        if (type === "code") {
-          return {
-            ...base,
-             options: q.options,
-            codeSnippet: q.codeSnippet,
-            language: q.language || "javascript",
-          }
-        }
-
-        if (type === "blanks" || type === "openended") {
-          const open = q.openEndedQuestion || {}
-          return {
-            ...base,
-            tags: q.tags || open.tags || [],
-            hints: q.hints || open.hints || [],
-          }
-        }
-
-        return base
-      })
-
-      const normalized = {
-        ...data,
-        questions,
+    if (payload.data && Array.isArray(payload.data.questions)) {
+      return {
+        ...payload.data,
         slug,
         quizType: type,
         id: slug,
+        __lastUpdated: Date.now(),
+      }
+    }
+
+    if (!slug || !type) {
+      return rejectWithValue({ error: "Missing slug or quizType" })
+    }
+
+    // Always use the unified API approach with type and slug for consistency
+    let url: string;
+
+    // Use the unified approach with byTypeAndSlug helper
+    if (API_ENDPOINTS.byTypeAndSlug) {
+      // Use the unified API pattern
+      url = API_ENDPOINTS.byTypeAndSlug(type, slug);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Using unified API endpoint: ${url}`);
+      }
+    } else {
+      // Fallback to legacy approach only if unified approach isn't available
+      const endpoint = API_ENDPOINTS[type as keyof typeof API_ENDPOINTS];
+      if (!endpoint) {
+        return rejectWithValue({ error: `Invalid quiz type: ${type}` });
+      }
+      url = `${endpoint}/${slug}`;
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Using legacy API endpoint: ${url}`);
+      }
+    }
+
+    // Start loader (browser only)
+    // Loader removed
+
+    const response = await fetch(url)
+    if (!response.ok) {
+      const errorText = await response.text()
+
+      // Handle 404 specifically as not found
+      if (response.status === 404) {
+        // Loader removed
+        return rejectWithValue({
+          error: `Quiz not found`,
+          status: 'not-found',
+          details: `Quiz with slug "${slug}" and type "${type}" does not exist.`,
+        })
+      }
+      return rejectWithValue({
+        error: `Error loading quiz: ${response.status}`,
+        details: errorText,
+      })
+    }
+
+    const data = await response.json()
+    // Loader removed
+
+    if (!data || !Array.isArray(data.questions)) {
+      return rejectWithValue({
+        error: "Quiz not found or invalid data",
+        status: 'not-found',
+        details: "The quiz exists but contains no valid questions."
+      })
+    }
+
+    const questions = data.questions.map((q: any) => {
+      const base: QuizQuestion = {
+        id: q.id || crypto.randomUUID(),
+        question: q.question,
+        type: type,
+        answer: q.answer,
+        codeSnippet: q.codeSnippet,
+        language: q.language,
+        tags: q.tags || [],
+        hints: q.hints || [],
+        difficulty: q.difficulty,
+        keywords: q.keywords,
       }
 
-      // Cache normalized quiz
-      setCachedQuiz(type, slug, normalized)
+      if (type === "mcq") {
+        return {
+          ...base,
+          options: q.options,
+          correctOptionId: q.correctOptionId,
+        }
+      }
 
-      return normalized
-  } catch (err: any) {
-  // Loader removed
-      return rejectWithValue({ error: err?.message || 'Unknown error' })
+      if (type === "code") {
+        return {
+          ...base,
+          options: q.options,
+          codeSnippet: q.codeSnippet,
+          language: q.language || "javascript",
+        }
+      }
+
+      if (type === "blanks" || type === "openended") {
+        const open = q.openEndedQuestion || {}
+        return {
+          ...base,
+          tags: q.tags || open.tags || [],
+          hints: q.hints || open.hints || [],
+        }
+      }
+
+      return base
+    })
+
+    const normalized = {
+      ...data,
+      questions,
+      slug,
+      quizType: type,
+      id: slug,
     }
+
+    // Cache normalized quiz
+    setCachedQuiz(type, slug, normalized)
+
+    return {
+      ...normalized,
+      __lastUpdated: Date.now(),
+    }
+  } catch (err: any) {
+    // Loader removed
+  return rejectWithValue({ error: err?.message || 'Unknown error' })
   }
+}
 )
 
 /**
@@ -286,7 +286,7 @@ export const submitQuiz = createAsyncThunk(
             const selected = String(answer?.selectedOptionId ?? '').trim()
             userAnswer = selected || null
             isCorrect = answer?.isCorrect === true || selected === correctAnswer
-            
+
             // Format for API
             answersForAPI.push({
               questionId: String(question.id),
@@ -302,7 +302,7 @@ export const submitQuiz = createAsyncThunk(
             const filled = String(answer?.userAnswer ?? '').trim().toLowerCase()
             userAnswer = filled || null
             isCorrect = filled === correctAnswer
-            
+
             // Format for API
             answersForAPI.push({
               questionId: String(question.id),
@@ -317,7 +317,7 @@ export const submitQuiz = createAsyncThunk(
             correctAnswer = String(question.answer ?? '')
             userAnswer = answer?.userAnswer ?? null
             isCorrect = answer?.isCorrect === true
-            
+
             // Format for API
             answersForAPI.push({
               questionId: String(question.id),
@@ -332,7 +332,7 @@ export const submitQuiz = createAsyncThunk(
             // For flashcards, we track time spent and basic correctness
             isCorrect = answer?.isCorrect === true
             userAnswer = answer?.userAnswer || null
-            
+
             answersForAPI.push({
               questionId: String(question.id),
               answer: userAnswer || '',
@@ -346,7 +346,7 @@ export const submitQuiz = createAsyncThunk(
             correctAnswer = ''
             userAnswer = null
             isCorrect = false
-            
+
             answersForAPI.push({
               questionId: String(question.id),
               answer: '',
@@ -371,11 +371,11 @@ export const submitQuiz = createAsyncThunk(
       // Submit to backend API
       if (process.env.NODE_ENV !== 'production') {
         console.log('Submitting quiz to backend:', {
-        quizId: slug,
-        score,
-        totalTime: totalTimeSpent,
-        type: quizType,
-        answersCount: answersForAPI.length
+          quizId: slug,
+          score,
+          totalTime: totalTimeSpent,
+          type: quizType,
+          answersCount: answersForAPI.length
         })
       }
 
@@ -423,7 +423,10 @@ export const submitQuiz = createAsyncThunk(
         accuracy: responseData.result?.accuracy,
       }
 
-      return results
+      return {
+        ...results,
+        __lastUpdated: Date.now(),
+      }
     } catch (error: any) {
       console.error('Quiz submission error:', error)
       return rejectWithValue({
@@ -456,12 +459,12 @@ export const checkAuthAndLoadResults = createAsyncThunk(
         if (process.env.NODE_ENV !== 'production') {
           console.log('Fetching saved quiz results for:', quiz.slug, quiz.quizType)
         }
-        
+
         // First, try to get the quiz data to check if it's been completed
         const quizResponse = await fetch(`/api/quizzes/${quiz.quizType}/${quiz.slug}`)
         if (quizResponse.ok) {
           const quizData = await quizResponse.json()
-          
+
           // Check if quiz has been completed (has timeEnded)
           if (quizData.timeEnded && quizData.bestScore !== null) {
             // Create results object from saved quiz data
@@ -478,11 +481,14 @@ export const checkAuthAndLoadResults = createAsyncThunk(
               totalTime: 0, // We don't have this saved
               accuracy: 0, // We don't have this saved
             }
-            
+
             if (process.env.NODE_ENV !== 'production') {
               console.log('Found saved quiz results:', savedResults)
             }
-            return savedResults
+            return {
+              ...savedResults,
+              __lastUpdated: Date.now(),
+            }
           } else {
             if (process.env.NODE_ENV !== 'production') {
               console.log('Quiz not completed yet, no results to load')
@@ -517,6 +523,7 @@ export const hydrateQuiz = createAsyncThunk(
     return {
       ...currentQuiz,
       ...payload.quizData,
+      __lastUpdated: Date.now(),
     }
   }
 )
@@ -538,6 +545,7 @@ const quizSlice = createSlice({
       state.status = 'succeeded'
       state.error = null
       state.userId = action.payload.userId ?? null
+  state.lastUpdated = Date.now()
     },
 
     saveAnswer(state, action: PayloadAction<{
@@ -569,10 +577,13 @@ const quizSlice = createSlice({
       const startTime = state.questionStartTimes[action.payload.questionId] || currentTime
       const timeSpent = action.payload.timeSpent || Math.max(1, Math.round((currentTime - startTime) / 1000))
 
+      const computedUserAnswer = typeof action.payload.answer === 'object'
+        ? (action.payload.answer.userAnswer ?? '')
+        : (action.payload.answer as string)
+
       state.answers[action.payload.questionId] = {
         questionId: action.payload.questionId,
-        userAnswer: typeof action.payload.answer === 'object' ? '' : action.payload.answer,
-        selectedOptionId,
+        userAnswer: computedUserAnswer,
         isCorrect,
         type: question.type,
         timestamp: currentTime,
@@ -602,11 +613,13 @@ const quizSlice = createSlice({
       if (!keep) state.results = null
       state.requiresAuth = false
       state.redirectAfterLogin = null
+  state.lastUpdated = null
     },
 
     clearResults(state) {
       state.results = null
       state.isCompleted = false
+  state.lastUpdated = Date.now()
     },
 
     /**
@@ -630,6 +643,7 @@ const quizSlice = createSlice({
       state.error = null
       state.results = null
       state.isCompleted = false
+  state.lastUpdated = null
     },
 
     setQuizCompleted(state, action: PayloadAction<boolean>) {
@@ -639,6 +653,7 @@ const quizSlice = createSlice({
     setQuizResults(state, action: PayloadAction<QuizResults>) {
       state.results = action.payload
       state.isCompleted = true
+  state.lastUpdated = Date.now()
     },
 
     /**
@@ -665,9 +680,13 @@ const quizSlice = createSlice({
         state.error = null
       })
       .addCase(submitQuiz.fulfilled, (state, action) => {
-        state.status = 'succeeded'
-        state.results = action.payload
-        state.isCompleted = true
+        const incomingTs = (action.payload as any)?.__lastUpdated || Date.now()
+        if (!state.lastUpdated || incomingTs >= state.lastUpdated) {
+          state.status = 'succeeded'
+          state.results = action.payload
+          state.isCompleted = true
+          state.lastUpdated = incomingTs
+        }
       })
       .addCase(submitQuiz.rejected, (state, action) => {
         state.status = 'failed'
@@ -678,20 +697,28 @@ const quizSlice = createSlice({
         state.error = null
       })
       .addCase(fetchQuiz.fulfilled, (state, action: PayloadAction<any>) => {
-        state.status = 'succeeded'
-        state.slug = action.payload.slug
-        state.quizType = action.payload.quizType
-        state.title = action.payload.title || ''
-        state.questions = action.payload.questions || []
-        state.currentQuestionIndex = action.payload.currentQuestionIndex || 0
-        state.answers = {}
-        state.results = null
-        state.isCompleted = false
-        persistProgress(state.slug, state.quizType, state.currentQuestionIndex)
+        const incomingTs = (action.payload as any)?.__lastUpdated || Date.now()
+        if (!state.lastUpdated || incomingTs >= state.lastUpdated) {
+          state.status = 'succeeded'
+          state.slug = action.payload.slug
+          state.quizType = action.payload.quizType
+          state.title = action.payload.title || action.payload.data?.title || ''
+          state.questions = action.payload.questions || []
+          state.currentQuestionIndex = typeof action.payload.currentQuestionIndex === 'number' && action.payload.currentQuestionIndex >= 0
+            ? action.payload.currentQuestionIndex
+            : 0
+          state.answers = {}
+          if (!state.results) {
+            state.results = null
+            state.isCompleted = false
+          }
+          state.lastUpdated = incomingTs
+          persistProgress(state.slug, state.quizType, state.currentQuestionIndex)
+        }
       })
       .addCase(fetchQuiz.rejected, (state, action) => {
         const payload = action.payload as any
-        
+
         // Check if this is a "not found" error
         if (payload?.status === 'not-found') {
           state.status = 'not-found'
@@ -700,7 +727,7 @@ const quizSlice = createSlice({
           state.status = 'failed'
           state.error = payload?.error || action.error.message || 'Quiz loading failed'
         }
-        
+
         // Clear quiz data when fetch fails
         state.questions = []
         state.answers = {}
@@ -714,10 +741,14 @@ const quizSlice = createSlice({
         state.error = null
       })
       .addCase(checkAuthAndLoadResults.fulfilled, (state, action) => {
-        state.status = 'succeeded'
-        state.results = action.payload
-        state.isCompleted = true
-        state.error = null
+        const incomingTs = (action.payload as any)?.__lastUpdated || Date.now()
+        if (!state.lastUpdated || incomingTs >= state.lastUpdated) {
+          state.status = 'succeeded'
+          state.results = action.payload
+          state.isCompleted = true
+          state.error = null
+          state.lastUpdated = incomingTs
+        }
       })
       .addCase(checkAuthAndLoadResults.rejected, (state, action) => {
         const payload = action.payload as any
@@ -731,22 +762,26 @@ const quizSlice = createSlice({
       })
   },
 })
-
-// Action Creators
 export const {
+  // Quiz setup and reset
   setQuiz,
-  saveAnswer,
   resetQuiz,
   resetSubmissionState,
   clearResults,
+
+  // Question navigation and answers
+  saveAnswer,
   setCurrentQuestionIndex,
+  startQuestionTimer,
+  resetQuestionTimers,
+
+  // Auth and completion
   markRequiresAuth,
   clearRequiresAuth,
   setQuizCompleted,
   setQuizResults,
-  startQuestionTimer,
-  resetQuestionTimers
 } = quizSlice.actions
+
 
 // Selectors
 export const selectQuiz = (state: RootState) => state.quiz as unknown as QuizState
