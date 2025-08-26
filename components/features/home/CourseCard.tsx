@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
@@ -71,6 +71,7 @@ export interface CourseCardProps {
   completionRate?: number
   enrolledCount?: number
   ratingLoading?: boolean
+  tags?: string[] // optional additional tags shown as mini cloud beneath description
 }
 
 const LEVEL_CONFIG = {
@@ -132,6 +133,7 @@ export const CourseCard = React.memo(
     completionRate = 85,
     enrolledCount = 1234,
     ratingLoading = false,
+  tags = [],
   }: CourseCardProps) => {
     const [isNavigating, setIsNavigating] = useState(false)
     const [imageError, setImageError] = useState(false)
@@ -171,23 +173,23 @@ export const CourseCard = React.memo(
       return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
     }, [duration, lessonCount])
 
-    const handleCardClick = (e: React.MouseEvent) => {
+  const handleCardClick = useCallback((e: React.MouseEvent) => {
       e.preventDefault()
       setIsNavigating(true)
       router.push(`/dashboard/course/${slug}`)
-    }
+  }, [router, slug])
 
-    const handleFavoriteClick = (e: React.MouseEvent) => {
+  const handleFavoriteClick = useCallback((e: React.MouseEvent) => {
       e.stopPropagation()
       setIsFavorite(!isFavorite)
-    }
+  }, [isFavorite])
 
-    const handleBookmarkClick = (e: React.MouseEvent) => {
+  const handleBookmarkClick = useCallback((e: React.MouseEvent) => {
       e.stopPropagation()
       setIsBookmarked(!isBookmarked)
-    }
+  }, [isBookmarked])
 
-    const handleShareClick = (e: React.MouseEvent) => {
+  const handleShareClick = useCallback((e: React.MouseEvent) => {
       e.stopPropagation()
       // Share functionality would be implemented here
       navigator.share?.({
@@ -198,7 +200,7 @@ export const CourseCard = React.memo(
         // Fallback to clipboard
         navigator.clipboard?.writeText(window.location.origin + `/dashboard/course/${slug}`)
       })
-    }
+  }, [title, description, slug])
 
     if (loading) {
       return (
@@ -301,12 +303,12 @@ export const CourseCard = React.memo(
                   src={selectedImage || "/placeholder.svg"}
                   alt={`${title} course thumbnail`}
                   fill
+                  loading="lazy"
                   className={cn(
-                    "object-cover transition-all duration-700",
+                    "object-cover transition-all duration-700 motion-reduce:transition-none",
                     isHovered ? "scale-110 brightness-110" : "scale-100",
                   )}
                   sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                  priority
                   onError={() => setImageError(true)}
                 />
               ) : (
@@ -511,7 +513,16 @@ export const CourseCard = React.memo(
                   </div>
 
                   {/* Description */}
-                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">{description}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">{description}</p>
+                    {tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1" aria-label="Course tags">
+                        {tags.slice(0,6).map((t) => (
+                          <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors border border-border/50">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {/* Ratings Row */}
                     {ratingLoading ? (
                       <div className="mt-2 flex items-center gap-2">

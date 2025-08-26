@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useDebounce } from "@/lib/utils/hooks"
 import { cn } from "@/lib/utils"
 import { CourseCard } from "./CourseCard"
+import { CategoryTagCloud } from "./CategoryTagCloud"
 import type { CategoryId } from "@/config/categories"
 
 // Types
@@ -145,6 +146,18 @@ export default function CoursesClient({
   const hasNoData = !isInitialLoading && (!coursesData?.pages?.length || !coursesData.pages[0]?.courses?.length)
   const hasFilters = Boolean(searchQuery || selectedCategory || ratingFilter > 0)
 
+  // Aggregate category counts early (must be before any conditional returns to preserve hook order)
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    coursesData?.pages?.forEach((page: CoursesResponse) => {
+      page.courses?.forEach((c: Course) => {
+        const id = typeof c.category === "object" ? c.category?.id : c.category
+        if (id) counts[id] = (counts[id] ?? 0) + 1
+      })
+    })
+    return counts
+  }, [coursesData])
+
   // Loading state
   if (isInitialLoading) {
     return (
@@ -226,8 +239,9 @@ export default function CoursesClient({
   // Main content
   return (
     <div className="w-full space-y-6">
-      {/* Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+      {/* Controls & Category Tag Cloud */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-2">
           <Tabs value={activeTab} onValueChange={setActiveTab as any} className="w-auto">
             <TabsList>
@@ -257,7 +271,15 @@ export default function CoursesClient({
           </Button>
         </div>
       </div>
-
+        {/* Horizontal Tag Cloud */}
+        <div className="relative">
+          <div className="flex items-start gap-3 overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent py-1 px-1 -mx-1" role="navigation" aria-label="Categories tag cloud">
+            <CategoryTagCloud selectedCategory={selectedCategory} counts={categoryCounts} enableClear />
+          </div>
+          <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-background to-transparent" />
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-background to-transparent" />
+        </div>
+      </div>
       {/* Course grid */}
       <div className={cn(
         "grid gap-6",

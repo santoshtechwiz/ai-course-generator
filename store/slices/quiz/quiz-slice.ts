@@ -73,6 +73,8 @@ const initialState: QuizState = {
   userId: null,
   questionStartTimes: {},
   lastUpdated: null,
+  isInitialized: false,
+  pendingRedirect: false,
 }
 
 // Async Thunks
@@ -695,6 +697,8 @@ const quizSlice = createSlice({
       .addCase(fetchQuiz.pending, (state) => {
         state.status = 'loading'
         state.error = null
+        state.isInitialized = false
+        state.pendingRedirect = false
       })
       .addCase(fetchQuiz.fulfilled, (state, action: PayloadAction<any>) => {
         const incomingTs = (action.payload as any)?.__lastUpdated || Date.now()
