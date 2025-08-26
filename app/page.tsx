@@ -48,8 +48,7 @@ export default function HomePage() {
             "price": "0",
             "priceCurrency": "USD"
           }
-        }}
-      />
+        }} type={""}      />
     </ModuleLayout>
   )
 }
