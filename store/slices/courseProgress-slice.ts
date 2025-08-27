@@ -1,5 +1,9 @@
 import { createSlice, type PayloadAction, createSelector, createAsyncThunk } from "@reduxjs/toolkit"
 import type { RootState } from "@/store"
+import { 
+  RequestManager,
+  getErrorMessage
+} from '../utils/async-state'
 
 export interface VideoProgress {
   currentChapterId: number | null
@@ -55,9 +59,29 @@ export const persistVideoProgress = createAsyncThunk(
       completed: boolean
       userId: string
     },
-    { rejectWithValue }
+    { rejectWithValue, signal }
   ) => {
+    const requestKey = `progress-${courseId}-${chapterId}`
+    
     try {
+      // Check if request was already cancelled
+      if (signal?.aborted) {
+        return rejectWithValue('Request was cancelled')
+      }
+
+      // Set up abort controller for this specific request
+      const abortController = RequestManager.create(requestKey)
+      
+      // Combine signals
+      if (signal?.aborted) {
+        RequestManager.cancel(requestKey)
+        return rejectWithValue('Request was cancelled')
+      }
+      
+      signal?.addEventListener('abort', () => {
+        RequestManager.cancel(requestKey)
+      })
+
       const response = await fetch(`/api/progress/${courseId}`, {
         method: 'POST',
         headers: {
@@ -70,15 +94,26 @@ export const persistVideoProgress = createAsyncThunk(
           isCompleted: completed,
           completedChapters: completed ? [Number(chapterId)] : [],
         }),
+        signal: abortController.signal,
       })
 
       if (!response.ok) {
+        RequestManager.cancel(requestKey)
         throw new Error(`Failed to save progress: ${response.statusText}`)
       }
 
-      return await response.json()
+      const result = await response.json()
+      RequestManager.cancel(requestKey)
+      return result
     } catch (err) {
-      return rejectWithValue(err instanceof Error ? err.message : 'Failed to save progress')
+      RequestManager.cancel(requestKey)
+      
+      // Handle abort errors gracefully
+      if (err instanceof Error && err.name === 'AbortError') {
+        return rejectWithValue('Request was cancelled')
+      }
+      
+      return rejectWithValue(getErrorMessage(err))
     }
   }
 )
