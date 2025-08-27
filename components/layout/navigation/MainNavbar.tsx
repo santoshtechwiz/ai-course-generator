@@ -42,7 +42,10 @@ export function MainNavbar() {
       try {
         if (!progressApi.isStarted()) progressApi.start()
         await dispatch(forceSyncSubscription()).unwrap()
-      } catch {/* ignore */} finally {
+      } catch (error) {
+        // Log the error for debugging but don't crash the app
+        console.warn('Subscription sync failed in MainNavbar, continuing with cached data:', error)
+      } finally {
         if (active) progressApi.done()
       }
     }

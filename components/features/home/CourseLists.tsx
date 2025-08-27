@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState, useEffect, useCallback, useMemo } from "react"
-import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-query"
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import { useInfiniteQuery, type UseInfiniteQueryResult, type InfiniteData } from "@tanstack/react-query"
 import { motion } from "framer-motion"
 import { BookOpen, LayoutGrid, List, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -9,32 +9,32 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useDebounce } from "@/lib/utils/hooks"
 import { cn } from "@/lib/utils"
 import { CourseCard } from "./CourseCard"
-import { CategoryTagCloud } from "./CategoryTagCloud"
+// import { CategoryTagCloud } from "./CategoryTagCloud" // REMOVED: Now used in sidebar
 import type { CategoryId } from "@/config/categories"
 
 // Types
 interface Course {
   id: string
+  name: string
   title: string
-  name?: string
   description: string
-  image?: string
-  rating?: number
+  image: string | null
+  rating: number
   slug: string
-  unitCount?: number
-  lessonCount?: number
-  quizCount?: number
-  viewCount?: number
-  category?: CategoryId | { id: string; name: string } | null
-  duration?: string
+  viewCount: number
+  categoryId?: string
+  difficulty: string
+  estimatedHours: number
   createdAt: string
-  difficulty?: string
-  price?: number
-  originalPrice?: number
-  instructor?: string
-  enrolledCount?: number
-  updatedAt?: string
-  tags?: string[]
+  updatedAt: string
+  category?: {
+    id: string
+    name: string
+  } | null
+  unitCount: number
+  lessonCount: number
+  quizCount: number
+  userId: string
 }
 
 interface CoursesResponse {
@@ -67,8 +67,11 @@ export default function CoursesClient({
   // Hooks
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
+  // Load more ref for infinite scroll
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+
   // Query
-  const queryResult: UseInfiniteQueryResult<CoursesResponse, Error> = useInfiniteQuery({
+  const queryResult: UseInfiniteQueryResult<InfiniteData<CoursesResponse>, Error> = useInfiniteQuery({
     queryKey: ["courses", debouncedSearchQuery || "", selectedCategory || "", userId || "", ratingFilter, activeTab],
     initialPageParam: 1,
     queryFn: async ({ pageParam, signal }) => {
@@ -109,11 +112,11 @@ export default function CoursesClient({
 
         const data = await response.json()
         
-        // Ensure the response matches expected structure
+        // Transform API response to match expected structure
         return {
           courses: data.courses || [],
-          total: data.total || 0,
-          hasMore: data.hasMore !== undefined ? data.hasMore : (data.courses?.length === ITEMS_PER_PAGE)
+          total: data.totalCount || 0,
+          hasMore: data.page < data.totalPages
         }
       } catch (error) {
         console.error('Fetch error:', error)
@@ -137,40 +140,11 @@ export default function CoursesClient({
     isError,
   } = queryResult
 
-  // Infinite scroll
-  const loadMoreRef = useCallback((node: HTMLDivElement | null) => {
-    if (!node || !hasNextPage || isFetchingNextPage) return
-    
-    const observer = new IntersectionObserver(
-      entries => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage()
-        }
-      },
-      { rootMargin: "200px" }
-    )
-
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
-
   // Data processing
-  const coursesData = data
+  const coursesData: InfiniteData<CoursesResponse> | undefined = data
   const isInitialLoading = status === "pending" && (!coursesData?.pages?.length)
   const hasNoData = !isInitialLoading && (!coursesData?.pages?.length || !coursesData.pages[0]?.courses?.length)
   const hasFilters = Boolean(searchQuery || selectedCategory || ratingFilter > 0)
-
-  // Aggregate category counts (must be before conditional returns)
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {}
-    coursesData?.pages?.forEach((page: CoursesResponse) => {
-      page.courses?.forEach((c: Course) => {
-        const id = typeof c.category === "object" ? c.category?.id : c.category
-        if (id) counts[id] = (counts[id] ?? 0) + 1
-      })
-    })
-    return counts
-  }, [coursesData])
 
   // Loading state
   if (isInitialLoading) {
@@ -253,7 +227,7 @@ export default function CoursesClient({
   // Main content
   return (
     <div className="w-full space-y-6">
-      {/* Controls & Category Tag Cloud */}
+      {/* Controls */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
@@ -287,19 +261,6 @@ export default function CoursesClient({
             </Button>
           </div>
         </div>
-
-        {/* Category Tag Cloud */}
-        <div className="relative">
-          <div 
-            className="flex items-start gap-3 overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent py-1 px-1 -mx-1" 
-            role="navigation" 
-            aria-label="Categories"
-          >
-            <CategoryTagCloud selectedCategory={selectedCategory} counts={categoryCounts} enableClear />
-          </div>
-          <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-background to-transparent" />
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-background to-transparent" />
-        </div>
       </div>
 
       {/* Results count */}
@@ -330,16 +291,16 @@ export default function CoursesClient({
                 lessonCount={course.lessonCount || 0}
                 quizCount={course.quizCount || 0}
                 viewCount={course.viewCount || 0}
-                category={(typeof course.category === 'object' && course.category?.name ? course.category.name : (typeof course.category === 'string' ? course.category : "")) || "General"}
-                duration={course.duration}
+                category={course.category?.name || "General"}
+                duration={`${course.estimatedHours || 4} hours`}
                 image={course.image}
                 difficulty={course.difficulty as "Beginner" | "Intermediate" | "Advanced"}
-                price={course.price}
-                originalPrice={course.originalPrice}
-                instructor={course.instructor || "Course Instructor"}
-                enrolledCount={course.enrolledCount || Math.floor(Math.random() * 5000) + 500}
-                updatedAt={course.updatedAt || course.createdAt}
-                tags={course.tags || []}
+                price={undefined}
+                originalPrice={undefined}
+                instructor="Course Instructor"
+                enrolledCount={Math.floor(Math.random() * 5000) + 500}
+                updatedAt={course.updatedAt ? new Date(course.updatedAt).toISOString() : course.createdAt ? new Date(course.createdAt).toISOString() : new Date().toISOString()}
+                tags={[]}
                 className={viewMode === "list" ? "w-full" : undefined}
               />
             ))}
@@ -371,7 +332,7 @@ export default function CoursesClient({
       )}
 
       {/* No more results */}
-      {!hasNextPage && coursesData?.pages?.length && coursesData.pages.some(p => p.courses.length > 0) && (
+      {!hasNextPage && coursesData?.pages?.length && coursesData.pages.some((p: CoursesResponse) => p.courses.length > 0) && (
         <div className="text-center py-8">
           <p className="text-sm text-muted-foreground">
             You've reached the end of the results

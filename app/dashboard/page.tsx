@@ -2,9 +2,9 @@ import { Suspense } from "react"
 import dynamic from "next/dynamic"
 import { PageWrapper, PageHeader } from "@/components/layout/PageWrapper"
 import { getAuthSession } from "@/lib/auth"
-import { Loader } from "@/components/loaders/Loader"
+import { Loader } from "@/components/loaders/loader"
 import ClientOnly from "@/components/ClientOnly"
-import CourseList  from "@/components/features/home/CourseLists"
+import CourseListWithFilters from "@/components/features/home/CourseListWithFilters"
 
 
 const url = process.env.NEXT_PUBLIC_WEBSITE_URL
@@ -22,10 +22,7 @@ export default async function CoursesPage() {
           Discover interactive quizzes designed to enhance your learning experience and test your knowledge
         </p>
         <ClientOnly>
-  <Suspense fallback={<div className="py-12"><Loader isLoading autoIncrement>{<span className="text-xs text-muted-foreground">Loading courses...</span>}</Loader></div>}>
-          {/* CourseList remains a client component; userId passed as prop */}
-          <CourseList url={url} userId={userId} />
-        </Suspense>
+          <CourseListWithFilters url={url} userId={userId} />
         </ClientOnly>
       </PageHeader>
     </PageWrapper>

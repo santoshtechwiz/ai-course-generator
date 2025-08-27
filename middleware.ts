@@ -21,8 +21,8 @@ export const config = {
 
 // Handle site-wide redirect to courseai.io
 function handleSiteWideRedirect(req: NextRequest) {
-  // Check if we're already on courseai.io to prevent redirect loops
-  if (!req.nextUrl.host.includes("courseai.io")) {
+  // Only redirect in production environment
+  if (process.env.NODE_ENV === 'production' && !req.nextUrl.host.includes("courseai.io")) {
     const url = new URL(req.url)
     const redirectUrl = new URL(`https://courseai.io${url.pathname}${url.search}`)
     return NextResponse.redirect(redirectUrl, {

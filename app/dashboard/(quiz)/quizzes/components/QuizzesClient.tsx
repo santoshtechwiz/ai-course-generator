@@ -101,7 +101,12 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
 
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useInfiniteQuery({
     queryKey,
-    queryFn: async ({ pageParam = 1 }) => {
+    queryFn: async ({ pageParam = 1, signal }) => {
+      // Handle abort signal properly
+      if (signal?.aborted) {
+        throw new Error('Query was cancelled')
+      }
+
       const result = await getQuizzes({
         page: pageParam as number,
         limit: 12,
@@ -113,6 +118,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
         publicOnly: showPublicOnly,
         tab: activeTab,
       })
+
       if (result.error) throw new Error(result.error)
       return {
         quizzes: result?.quizzes || [],
@@ -121,24 +127,19 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     },
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialPageParam: 1,
-    initialData: () => {
-      if (
-        search === "" &&
-        selectedTypes.length === 0 &&
-        questionCountRange[0] === 0 &&
-        questionCountRange[1] === 50 &&
-        activeTab === "all"
-      ) {
-        return { pages: [initialQuizzesData], pageParams: [1] }
-      }
-      return undefined
-    },
+    initialData: initialQuizzesData ? { pages: [initialQuizzesData], pageParams: [1] } : undefined,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchOnMount: false,
-    retry: 1,
+    retry: (failureCount, error) => {
+      // Don't retry on AbortError or cancellation errors
+      if (error?.name === 'AbortError' || error?.message?.includes('cancelled') || error?.message?.includes('Query was cancelled')) {
+        return false
+      }
+      return failureCount < 1
+    },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   })
 
@@ -364,9 +365,9 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   }
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl">
+    <div className="space-y-6">
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-        <ErrorBoundary fallbackRender={ErrorFallback} onReset={handleRetry} resetKeys={[debouncedSearch]}>
+        <ErrorBoundary fallbackRender={ErrorFallback} onReset={handleRetry} resetKeys={[queryKey.join("")]}>
           <div className="lg:w-80 lg:flex-shrink-0">
             <QuizSidebar
               search={search}

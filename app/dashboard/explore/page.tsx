@@ -2,7 +2,6 @@
 
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper";
 import { DashboardWrapper } from "@/components/dashboard/DashboardWrapper";
-import { useLoading } from "@/hooks/useLoading";
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { FAQSchema } from "@/lib/seo";

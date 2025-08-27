@@ -1,6 +1,6 @@
 import type React from "react"
 import { Toaster } from "@/components/ui/toaster"
-import { DashboardShell } from "@/components/features/dashboard/DashboardShell"
+import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
 import CourseAIState from "@/components/development/CourseAIState"
 import { getAuthSession } from "@/lib/auth"
 import Chatbot from "@/components/features/chat/Chatbot"
@@ -19,21 +19,44 @@ export const viewport = {
   maximumScale: 1,
 }
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+/**
+ * Unified Dashboard Layout
+ *
+ * Follows Next.js App Router best practices:
+ * - Single layout per route segment
+ * - Proper composition with ClientLayoutWrapper
+ * - Consistent structure across all dashboard pages
+ * - Optimized for performance and maintainability
+ */
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const session = await getAuthSession()
 
   if (!session) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Redirecting to login...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="flex flex-col font-body flex-1">
-      <DashboardShell>
-        <main className="flex-1 pt-16">{children}</main>
+    <ClientLayoutWrapper withTheme={true} withSubscriptionSync={true}>
+      <div className="flex flex-col min-h-screen bg-background">
+        {/* Main Content Area */}
+        <main className="flex-1">{children}</main>
+
+        {/* Global Components */}
         <Toaster />
         <Chatbot userId={session?.user?.id} />
         {process.env.NODE_ENV !== "production" && <CourseAIState />}
-      </DashboardShell>
-    </div>
+      </div>
+    </ClientLayoutWrapper>
   )
 }

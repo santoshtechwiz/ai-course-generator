@@ -3,7 +3,7 @@
 import { ErrorBoundary } from "@/components/common/ErrorBoundary"
 import { PageWrapper } from "@/components/layout/PageWrapper"
 import { Suspense } from "react"
-import { PageLoading } from "@/components/ui/loading"
+import { SuspenseGlobalFallback } from "@/components/loaders"
 import { reportError } from "@/lib/error-reporting"
 
 interface PageContainerProps {
@@ -20,7 +20,7 @@ export function PageContainer({
   withSuspense = true
 }: PageContainerProps) {
   const content = withSuspense ? (
-    <Suspense fallback={<PageLoading text={loadingText} />}>
+    <Suspense fallback={<SuspenseGlobalFallback text={loadingText} />}>
       {children}
     </Suspense>
   ) : children

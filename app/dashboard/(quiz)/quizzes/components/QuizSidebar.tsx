@@ -1,5 +1,5 @@
 import type React from "react"
-import { useEffect, useState, memo, useCallback } from "react"
+import { useEffect, useState, memo, useCallback, useRef } from "react"
 import { FileQuestion, AlignJustify, PenTool, Code, Filter, X, ChevronDown, Flashlight, Search } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -54,6 +54,7 @@ function QuizSidebarComponent({
   const [showMobileFilters, setShowMobileFilters] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
   const [localQuestionCount, setLocalQuestionCount] = useState<[number, number]>(questionCountRange)
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     const handleResize = () => {
@@ -72,14 +73,27 @@ function QuizSidebarComponent({
     (value: number[]) => {
       if (value.length >= 2) {
         setLocalQuestionCount([value[0], value[1]])
-        const timer = setTimeout(() => {
+        // Clear previous timer
+        if (debounceTimer.current) {
+          clearTimeout(debounceTimer.current)
+        }
+        // Set new timer
+        debounceTimer.current = setTimeout(() => {
           onQuestionCountChange?.([value[0], value[1]])
         }, 300)
-        return () => clearTimeout(timer)
       }
     },
     [onQuestionCountChange],
   )
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current)
+      }
+    }
+  }, [])
 
   const hasActiveFilters = selectedTypes.length > 0 || search.length > 0 || showPublicOnly
 

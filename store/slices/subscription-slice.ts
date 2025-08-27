@@ -261,8 +261,28 @@ export const forceSyncSubscription = createAsyncThunk<
   { state: RootState; rejectValue: string }
 >("subscription/forceSync", async (_, { rejectWithValue }) => {
   try {
+    // Check if we're in development and server might not be running
+    const isDevelopment = process.env.NODE_ENV === 'development'
+
+    // Quick server availability check for development
+    if (isDevelopment) {
+      try {
+        const healthCheck = await fetch('/api/health', {
+          method: 'GET',
+          signal: AbortSignal.timeout(2000) // 2 second timeout
+        })
+        if (!healthCheck.ok) {
+          logger.warn("Server health check failed, skipping subscription sync")
+          return DEFAULT_FREE_SUBSCRIPTION
+        }
+      } catch (healthError) {
+        logger.warn("Server not available for subscription sync, continuing with cached data")
+        return DEFAULT_FREE_SUBSCRIPTION
+      }
+    }
+
     logger.info("Force syncing subscription with Stripe...")
-    
+
     const res = await fetchWithTimeout("/api/subscriptions/sync", {
       method: "POST",
       headers: {
@@ -271,26 +291,42 @@ export const forceSyncSubscription = createAsyncThunk<
       },
       credentials: "include",
     }, 15000)
- 
-    if (res?.status === 401) {
+
+    if (!res) {
+      // Request was aborted due to timeout
+      const timeoutError = new Error('Request timed out. Please try again.')
+      logger.warn("Subscription sync timed out", timeoutError)
+      return rejectWithValue(timeoutError.message)
+    }
+
+    if (res.status === 401) {
       logger.warn("User not authenticated for force sync")
       return DEFAULT_FREE_SUBSCRIPTION
     }
- 
-    if (!res?.ok) {
-  const status = res?.status ?? "unknown"
-  const statusText = (res && (res as any).statusText) || "Unknown"
-  logger.warn(`Force sync warning: ${status} - ${statusText}`)
-  return DEFAULT_FREE_SUBSCRIPTION
+
+    if (!res.ok) {
+      const status = res.status
+      const statusText = res.statusText || "Unknown"
+      logger.warn(`Force sync warning: ${status} - ${statusText}`)
+      return DEFAULT_FREE_SUBSCRIPTION
     }
- 
+
     const syncResult = await res.json()
     logger.info("Force sync completed", syncResult)
-    
+
     return syncResult.subscription
   } catch (error) {
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const errorMessage = error instanceof Error ? error.message : 'Force sync failed'
+
+    // In development, network errors are expected if server isn't running
+    if (isDevelopment && errorMessage.includes('Failed to fetch')) {
+      logger.warn("Network error during development (server may not be running)", errorMessage)
+      return DEFAULT_FREE_SUBSCRIPTION
+    }
+
     logger.error("Force sync failed", error)
-    return rejectWithValue(error instanceof Error ? error.message : 'Force sync failed')
+    return rejectWithValue(errorMessage)
   }
 })
 

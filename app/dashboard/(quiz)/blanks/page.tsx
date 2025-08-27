@@ -3,7 +3,7 @@
 import BlankQuizForm from "./components/BlankQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
 import { useQuizPlan } from "../../../../hooks/useQuizPlan"
-import { PageLoading } from "@/components/ui/loading"
+import { SuspenseGlobalFallback } from "@/components/loaders"
 
 const BlankPage = () => {
   // Use our standardized hook for all quiz pages
@@ -18,7 +18,7 @@ const BlankPage = () => {
       isLoggedIn={quizPlan.isLoggedIn}
     >
       {quizPlan.isLoading ? (
-        <PageLoading text="Loading quiz..." />
+        <SuspenseGlobalFallback text="Loading quiz..." />
       ) : (
         <BlankQuizForm 
           credits={quizPlan.credits} 
