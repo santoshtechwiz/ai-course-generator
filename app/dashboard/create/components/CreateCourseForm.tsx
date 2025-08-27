@@ -24,6 +24,8 @@ import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
 import type { QueryParams } from "@/app/types/types"
 import { useEffect } from "react"
 import { useAuth } from "@/modules/auth"
+import { useAppDispatch } from "@/store"
+import { forceSyncSubscription } from "@/store/slices/subscription-slice"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
@@ -39,6 +41,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
   const { toast } = useToast()
   
   const isSubscribed = subscription?.isActive || false
+  const dispatch = useAppDispatch()
   const availableCredits = user?.credits || 0
 
   const {
@@ -68,11 +71,12 @@ export default function CourseCreationForm({ maxQuestions, params }: {
       const response = await axios.post("/api/course", data)
       return response.data
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       toast({
         title: "Success",
         description: "Course created successfully",
       })
+      try { await dispatch(forceSyncSubscription()).unwrap() } catch {/* ignore */}
       refreshSubscription()
       router.push(`/dashboard/create/${data.slug}`)
     },
@@ -234,16 +238,13 @@ export default function CourseCreationForm({ maxQuestions, params }: {
                     isEnabled={step === 3 && !showConfirmDialog}
                     creditsRequired={1}
                     requiredPlan="FREE"
-                    className="w-full sm:w-auto px-6 py-3 shadow-lg transition-transform hover:scale-[1.02]"
+                    className="w-full sm:w-auto px-6 py-3 shadow-lg transition-transform hover:scale-[1.02] bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
                     loadingLabel="Creating Course..."
                     customStates={{
                       noCredits: {
                         label: "Need 1 Credit",
                         tooltip: "You need 1 credit to create a course"
                       }
-                    }}
-                    buttonProps={{
-                      className: "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
                     }}
                   />
                 )}

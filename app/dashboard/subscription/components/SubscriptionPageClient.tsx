@@ -7,6 +7,9 @@ import { AlertTriangle, Info, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ReferralBanner } from "@/components/ReferralBanner"
 import { useSubscription } from "@/modules/auth"
+import { useAppDispatch, useAppSelector } from "@/store"
+import { forceSyncSubscription, selectIsSubscriptionLoading } from "@/store/slices/subscription-slice"
+import { progressApi } from "@/components/loaders/progress-api"
 import { migratedStorage } from "@/lib/storage"
 
 
@@ -40,7 +43,22 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   const subscription = subscriptionState?.subscription || subscriptionState
   const isAuthenticated = !!subscriptionState?.isAuthenticated || !!subscriptionState?.user
   const user = subscriptionState?.user || null
-  const isLoading = false // hook no longer provides explicit loading flag
+  const dispatch = useAppDispatch()
+  const isLoading = useAppSelector(selectIsSubscriptionLoading as any) as boolean
+  // Force fresh sync on mount for subscription page
+  useEffect(() => {
+    let active = true
+    const sync = async () => {
+      try {
+        if (!progressApi.isStarted()) progressApi.start()
+        await dispatch(forceSyncSubscription()).unwrap()
+      } catch {/* ignore */} finally {
+        if (active) progressApi.done()
+      }
+    }
+    sync()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const error = undefined
 
   // Log subscription errors for debugging

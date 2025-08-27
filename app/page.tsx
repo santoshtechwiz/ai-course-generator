@@ -1,4 +1,6 @@
 import CourseAILandingPage from "@/components/landing/CourseAILandingPage"
+import { Suspense } from "react"
+import { SuspenseGlobalFallback } from "@/components/loaders"
 import { ModuleLayout } from "@/components/layout/ModuleLayout"
 import { PageHeader } from "@/components/layout/PageWrapper"
 import { generateMetadata } from "@/lib/seo"
@@ -31,7 +33,9 @@ export default function HomePage() {
   return (
     <ModuleLayout>
       <PageHeader title={""} description={""}>
-        <CourseAILandingPage />
+        <Suspense fallback={<SuspenseGlobalFallback text="Loading home…" />}>
+          <CourseAILandingPage />
+        </Suspense>
       </PageHeader>
       
       {/* Add structured data for better SEO */}
@@ -48,8 +52,7 @@ export default function HomePage() {
             "price": "0",
             "priceCurrency": "USD"
           }
-        }}
-      />
+        }} type={""}      />
     </ModuleLayout>
   )
 }

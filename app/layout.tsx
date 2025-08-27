@@ -2,7 +2,6 @@ import React from "react"
 import type { Metadata } from "next"
 import { Inter, Poppins } from "next/font/google"
 import "../globals.css"
-import "../styles/nprogress.css"
 
 import Footer from "@/components/shared/Footer"
 import { MainNavbar } from "@/components/layout/navigation/MainNavbar"
@@ -13,9 +12,11 @@ import { Suspense } from "react"
 import PageTransition from "@/components/shared/PageTransition"
 import { DefaultSEO, generateMetadata as generateBaseMetadata } from "@/lib/seo"
 import GoogleAnalyticsClient from '@/components/analytics/GoogleAnalyticsClient'
-import NavigationProgress from '@/components/NavigationProgress'
+
 import { RootErrorBoundary } from "@/components/layout/RootErrorBoundary"
-import { FullScreenLoading } from "@/components/ui/loading"
+import { SuspenseGlobalFallback } from "@/components/loaders"
+import BProgressProvider from "./providers"
+
 
 // Simplified fonts - only keep what's necessary
 const inter = Inter({
@@ -27,7 +28,7 @@ const inter = Inter({
 
 const poppins = Poppins({
   subsets: ["latin"],
-  variable: "--font-poppins", 
+  variable: "--font-poppins",
   display: "swap",
   weight: ["400", "500", "600", "700"],
 })
@@ -56,7 +57,7 @@ export async function generateMetadata(): Promise<Metadata> {
       canonical: siteUrl,
       keywords: [
         "AI education",
-        "course creator", 
+        "course creator",
         "quiz maker",
         "educational content",
         "e-learning platform",
@@ -84,7 +85,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#0066cc" />
-        
+
         {/* Search Engine Verification */}
         {process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION && (
           <meta
@@ -98,79 +99,79 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://www.youtube.com" />
         <link rel="preconnect" href="https://i.ytimg.com" />
-
+<script src="http://localhost:8097"></script>
         {/* App Icons */}
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-        {/* Styles */}
-        <link rel="stylesheet" href="/nprogress.css" />
+
       </head>
 
-  <body className={`${inter.variable} ${poppins.variable} font-sans antialiased bg-background text-foreground`}>
-    <Providers session={session}>
-      {/* Skip Navigation for accessibility */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 
+      <body className={`${inter.variable} ${poppins.variable} font-sans antialiased bg-background text-foreground`}>
+        <BProgressProvider>
+          <Providers session={session}>
+            {/* Skip Navigation for accessibility */}
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 
         focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground 
         focus:rounded focus:outline-none"
-      >
-        Skip to main content
-      </a>
+            >
+              Skip to main content
+            </a>
 
-      <RootErrorBoundary>
-        <NavigationProgress />
-        {/* Simplified noscript message */}
-        <noscript>
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 m-4">
-            <div className="flex">
-              <div className="ml-3">
-                <p className="text-sm text-yellow-700">
-                  JavaScript is required for CourseAI to work properly. Please enable JavaScript and refresh the page.
-                </p>
-              </div>
-            </div>
-          </div>
-        </noscript>
-
-        <Suspense fallback={<FullScreenLoading text="Loading..." />}>
-          <div className="relative min-h-screen flex flex-col">
-            <div className="h-20">
-              {/* Prevent layout shift with fixed height */}
-              <Suspense fallback={
-                <div className="fixed top-0 left-0 right-0 h-20 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-                  <div className="container h-full flex items-center justify-between">
-                    <div className="w-24 h-8 bg-muted/20 rounded-md animate-pulse" />
-                    <div className="flex gap-4">
-                      <div className="w-20 h-8 bg-muted/20 rounded-md animate-pulse" />
-                      <div className="w-8 h-8 bg-muted/20 rounded-full animate-pulse" />
+            <RootErrorBoundary>
+              {/* Simplified noscript message */}
+              <noscript>
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 m-4">
+                  <div className="flex">
+                    <div className="ml-3">
+                      <p className="text-sm text-yellow-700">
+                        JavaScript is required for CourseAI to work properly. Please enable JavaScript and refresh the page.
+                      </p>
                     </div>
                   </div>
                 </div>
-              }>
-                <MainNavbar />
-              </Suspense>
-            </div>
-            <main id="main-content" className="flex-1 w-full" role="main">
-              <PageTransition>
-                <Suspense fallback={<FullScreenLoading text="Loading..." />}>
-                  {children}
-                </Suspense>
-              </PageTransition>
-            </main>
-            <Footer />
-          </div>
-        </Suspense>
-      </RootErrorBoundary>
+              </noscript>
 
-      {/* Analytics */}
-      <Suspense>
-        <GoogleAnalyticsClient />
-      </Suspense>
-      
-      <DefaultSEO enableFAQ={false} />
-  </Providers>
+              <Suspense fallback={<SuspenseGlobalFallback />}>
+                <div className="relative min-h-screen flex flex-col">
+                  <div className="h-20">
+                    {/* Prevent layout shift with fixed height */}
+                    <Suspense fallback={
+                      <div className="fixed top-0 left-0 right-0 h-20 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+                        <div className="container h-full flex items-center justify-between">
+                          <div className="w-24 h-8 bg-muted/20 rounded-md animate-pulse" />
+                          <div className="flex gap-4">
+                            <div className="w-20 h-8 bg-muted/20 rounded-md animate-pulse" />
+                            <div className="w-8 h-8 bg-muted/20 rounded-full animate-pulse" />
+                          </div>
+                        </div>
+                      </div>
+                    }>
+                      <MainNavbar />
+                    </Suspense>
+                  </div>
+                  <main id="main-content" className="flex-1 w-full" role="main">
+                    <PageTransition>
+                      <Suspense fallback={<SuspenseGlobalFallback />}>
+                        {children}
+                      </Suspense>
+                    </PageTransition>
+                  </main>
+                  <Footer />
+                </div>
+              </Suspense>
+            </RootErrorBoundary>
+
+            {/* Analytics */}
+            <Suspense>
+              <GoogleAnalyticsClient />
+            </Suspense>
+
+            <DefaultSEO enableFAQ={false} />
+          </Providers>
+        </BProgressProvider>
       </body>
     </html>
   )

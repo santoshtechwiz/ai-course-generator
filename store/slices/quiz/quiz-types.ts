@@ -62,6 +62,9 @@ export interface QuizState {
   redirectAfterLogin: string | null
   userId: string | null
   questionStartTimes: Record<string, number>
+  // Timestamp (ms) of the last applied update to the quiz state. Used to avoid
+  // race conditions where older async responses overwrite newer state.
+  lastUpdated?: number | null
 }
 
 // Type aliases for better readability

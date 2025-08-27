@@ -116,23 +116,25 @@ export function useSessionSubscriptionSync(options: SessionSyncOptions = {}) {
       const sessionChanged = sessionIdRef.current !== currentSessionId
       
       if (sessionChanged) {
+        // Session changed: lightweight status fetch (no /sync force)
         sessionIdRef.current = currentSessionId
-        hasSubscriptionDataRef.current = false // Reset subscription data flag
-        syncSubscription(true, 'session_change')
+        hasSubscriptionDataRef.current = false
+  dispatch(fetchSubscription({ forceRefresh: true }))
       } else if (!hasSubscriptionDataRef.current) {
-        syncSubscription(false, 'initial_load')
+        // Initial load: soft fetch respecting cache
+  dispatch(fetchSubscription({ forceRefresh: false }))
       }
     }
   }, [session, status, dispatch, syncSubscription, config.enableAutoSync])
   
   // Separate effect to track subscription data changes
   useEffect(() => {
-    if (subscription.data && subscription.data.subscriptionPlan !== 'FREE') {
+    if (subscription.currentSubscription && subscription.currentSubscription.subscriptionPlan !== 'FREE') {
       hasSubscriptionDataRef.current = true
-    } else if (!subscription.data || subscription.data.subscriptionPlan === 'FREE') {
+    } else if (!subscription.currentSubscription || subscription.currentSubscription.subscriptionPlan === 'FREE') {
       hasSubscriptionDataRef.current = false
     }
-  }, [subscription.data])
+  }, [subscription.currentSubscription])
   
   // Secondary sync: Window focus (to catch external changes)
   useEffect(() => {
@@ -170,10 +172,10 @@ export function useSessionSubscriptionSync(options: SessionSyncOptions = {}) {
   return {
     // State
     isAuthenticated: status === 'authenticated',
-    isLoading: status === 'loading' || subscription.isLoading,
-    user: session?.user || null,
-    subscription: subscription.data,
-    subscriptionError: subscription.error,
+  isLoading: status === 'loading' || subscription.isLoading,
+  user: session?.user || null,
+  subscription: subscription.currentSubscription,
+  subscriptionError: subscription.error,
     
     // Actions
     syncSubscription: manualSync,

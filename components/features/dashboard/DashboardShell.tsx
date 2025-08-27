@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
+// No loading provider needed - using next-nprogress-bar
 
 interface DashboardShellProps {
   children: React.ReactNode
@@ -9,7 +10,7 @@ interface DashboardShellProps {
 
 export function DashboardShell({ children }: DashboardShellProps) {
   return (
-    <ClientLayoutWrapper 
+    <ClientLayoutWrapper
       withTheme={true}
       withSubscriptionSync={true}
     >

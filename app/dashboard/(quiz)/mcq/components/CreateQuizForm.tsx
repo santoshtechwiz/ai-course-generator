@@ -10,6 +10,8 @@ import axios from "axios"
 import { signIn, useSession } from "next-auth/react"
 import { HelpCircle, Timer, Sparkles, Check, Brain, BookOpen, GraduationCap, Target, Lightbulb } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useAppDispatch } from "@/store"
+import { forceSyncSubscription } from "@/store/slices/subscription-slice"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -177,6 +179,7 @@ export default function CreateQuizForm({
     return () => subscription.unsubscribe()
   }, [watch, setFormData])
 
+  const dispatch = useAppDispatch()
   const { mutateAsync: createQuizMutation } = useMutation({
     mutationFn: async (data: QuizFormData) => {
       const response = await axios.post(`/api/quizzes`, { ...data, type: "mcq" })
@@ -246,12 +249,12 @@ export default function CreateQuizForm({
 
       if (!userQuizId || !slug) throw new Error("Quiz creation failed: missing identifiers")
 
-      toast({
+  toast({
         title: "Success!",
         description: "Your quiz has been created.",
       })
-
-      router.push(`/dashboard/mcq/${slug}`)
+  try { await dispatch(forceSyncSubscription()).unwrap() } catch {/* ignore */}
+  router.push(`/dashboard/mcq/${slug}`)
     } catch (error: any) {
       const message = error?.response?.data?.message || error?.message || "Failed to create quiz. Please try again."
       setSubmissionError(message)
