@@ -13,7 +13,7 @@
     "test:specific": "jest --config jest.config.ts --testPathPattern",
     "test:consistency": "jest --config jest.config.ts --testPathPattern=subscription-consistency",
     "validate-styles": "node scripts/validate-styles.js",
-    "dev": "npm run validate-styles && next dev ",
+     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

@@ -104,22 +104,30 @@ const rootReducer = combineReducers({
 })
 
 // ✅ Clean store setup without auth middleware (session-based auth)
+const isProd = process.env.NODE_ENV === 'production'
+// Allow opting back into safety checks if desired: NEXT_PUBLIC_REDUX_SAFETY_CHECKS=true
+const safetyChecksEnabled = process.env.NEXT_PUBLIC_REDUX_SAFETY_CHECKS === 'true'
 export const store = configureStore({
   reducer: rootReducer,
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: {
+  middleware: (getDefaultMiddleware) => {
+    return getDefaultMiddleware({
+      // Disable costly dev-only invariant/serializable checks unless explicitly re-enabled
+      immutableCheck: safetyChecksEnabled ? { warnAfter: 128 } : false,
+      serializableCheck: safetyChecksEnabled ? {
         ignoredActions: [
-          "persist/PERSIST", 
+          "persist/PERSIST",
           "persist/REHYDRATE",
         ],
-      },
-    }),
+        warnAfter: 128,
+      } : false,
+    })
+    // .concat(performanceMiddleware) // (optional) re-enable if you want custom perf telemetry
+  },
   // Enable Redux DevTools with useful tracing during development
-  devTools: process.env.NODE_ENV !== 'production' ? {
+  devTools: !isProd ? {
     name: 'ai-learning',
-    trace: true,
-    traceLimit: 25,
+    trace: false, // trace off to further reduce overhead; set true if debugging actions timing
+    traceLimit: 15,
   } : false,
 })
 

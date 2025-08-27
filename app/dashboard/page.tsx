@@ -1,23 +1,19 @@
-"use client"
-
-import { useEffect, useState } from "react"
+import { Suspense } from "react"
 import dynamic from "next/dynamic"
-import { useAuth } from "@/modules/auth"
 import { PageWrapper, PageHeader } from "@/components/layout/PageWrapper"
+import { getAuthSession } from "@/lib/auth"
+import { Loader } from "@/components/loaders/Loader"
+import ClientOnly from "@/components/ClientOnly"
+import CourseList  from "@/components/features/home/CourseLists"
 
-// Dynamically import the CourseList component to avoid hydration issues
-const CourseList = dynamic(() => import("@/components/features/home/CourseLists"), {
-  ssr: false,
-  loading: () => <div className="flex justify-center py-8"><span className="text-xs text-muted-foreground">Loading...</span></div>,
-})
 
 const url = process.env.NEXT_PUBLIC_WEBSITE_URL
   ? `${process.env.NEXT_PUBLIC_WEBSITE_URL}/dashboard/explore`
   : "http://localhost:3000/dashboard/explore"
 
-export default function CoursesPage() {
-  const { user } = useAuth()
-  const userId = user?.id || undefined
+export default async function CoursesPage() {
+  const session = await getAuthSession()
+  const userId = session?.user?.id
 
   return (
     <PageWrapper>
@@ -25,7 +21,12 @@ export default function CoursesPage() {
         <p className="text-muted-foreground max-w-2xl mx-auto mb-8 text-center">
           Discover interactive quizzes designed to enhance your learning experience and test your knowledge
         </p>
-        <CourseList url={url} userId={userId} />
+        <ClientOnly>
+  <Suspense fallback={<div className="py-12"><Loader isLoading autoIncrement>{<span className="text-xs text-muted-foreground">Loading courses...</span>}</Loader></div>}>
+          {/* CourseList remains a client component; userId passed as prop */}
+          <CourseList url={url} userId={userId} />
+        </Suspense>
+        </ClientOnly>
       </PageHeader>
     </PageWrapper>
   )

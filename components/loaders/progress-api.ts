@@ -1,6 +1,7 @@
 "use client"
 
-import NProgress from 'nprogress'
+
+import { BProgress } from '@bprogress/core'
 import Router from 'next/router'
 
 export interface ProgressOptions {
@@ -24,7 +25,7 @@ const debounce = (fn: Function, ms = 300) => {
 }
 
 /**
- * Default configuration for NProgress
+ * Default configuration for BProgress
  */
 const defaultOptions: ProgressOptions = {
   minimum: 0.3,
@@ -65,7 +66,7 @@ class ProgressAPI {
     if (this.initialized) return
 
     // Configure NProgress
-    NProgress.configure(this.options)
+    BProgress.configure(this.options)
 
     // Setup route change handlers
     Router.events.on('routeChangeStart', 
@@ -83,9 +84,9 @@ class ProgressAPI {
    */
   public start(initialValue?: number): void {
     if (typeof initialValue === 'number') {
-      NProgress.set(Math.min(1, Math.max(0, initialValue)))
+      BProgress.set(Math.min(1, Math.max(0, initialValue)))
     } else {
-      NProgress.start()
+      BProgress.start()
     }
   }
 
@@ -94,35 +95,35 @@ class ProgressAPI {
    * @param value - Progress value (0-1)
    */
   public set(value: number): void {
-    NProgress.set(Math.min(1, Math.max(0, value)))
+    BProgress.set(Math.min(1, Math.max(0, value)))
   }
 
   /**
    * Increment the progress by a small random amount
    */
   public increment(): void {
-    NProgress.inc()
+    BProgress.inc()
   }
 
   /**
    * Complete the progress bar
    */
   public done(): void {
-    NProgress.done()
+    BProgress.done()
   }
 
   /**
    * Remove the progress bar
    */
   public remove(): void {
-    NProgress.remove()
+    BProgress.remove()
   }
 
   /**
    * Check if the progress bar is currently active
    */
   public isStarted(): boolean {
-    return typeof NProgress.status === 'number'
+    return typeof BProgress.status === 'number'
   }
 }
 
