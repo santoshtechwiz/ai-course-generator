@@ -1,5 +1,10 @@
 import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@reduxjs/toolkit'
 import type { RootState } from '@/store'
+import { 
+  shouldUpdateState, 
+  RequestManager,
+  getErrorMessage
+} from '../utils/async-state'
 
 
 export const ANSWER_TYPES = {
@@ -79,6 +84,7 @@ interface FlashcardQuizState {
   requiresAuth: boolean
   pendingAuthRequired: boolean
   isLoading: boolean
+  lastUpdated: number | null
 }
 
 const initialState: FlashcardQuizState = {
@@ -96,18 +102,49 @@ const initialState: FlashcardQuizState = {
   requiresAuth: false,
   pendingAuthRequired: false,
   isLoading: false,
+  lastUpdated: null,
 }
 
 export const fetchFlashCardQuiz = createAsyncThunk(
   "flashcard/fetchQuiz",
-  async (slug: string, { rejectWithValue }) => {
+  async (slug: string, { rejectWithValue, signal }) => {
+    const requestKey = `flashcard-${slug}`
+    
     try {
-      const response = await fetch(`/api/quizzes/flashcard/${slug}`)
+      // Check if request was already cancelled
+      if (signal?.aborted) {
+        return rejectWithValue('Request was cancelled')
+      }
+
+      // Set up abort controller for this specific request
+      const abortController = RequestManager.create(requestKey)
+      
+      // Combine signals
+      if (signal?.aborted) {
+        RequestManager.cancel(requestKey)
+        return rejectWithValue('Request was cancelled')
+      }
+      
+      signal?.addEventListener('abort', () => {
+        RequestManager.cancel(requestKey)
+      })
+
+      const response = await fetch(`/api/quizzes/flashcard/${slug}`, {
+        signal: abortController.signal,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
+        RequestManager.cancel(requestKey)
         return rejectWithValue(errorData.message || `Failed to fetch flashcard quiz: ${response.status}`)
       }
+      
       const data = await response.json()
+      RequestManager.cancel(requestKey)
+      
       const result = {
         slug,
         id: data.id || slug,
@@ -115,7 +152,7 @@ export const fetchFlashCardQuiz = createAsyncThunk(
         userId: data.userId || null,
         questions: data.flashCards || [],
         quizType: "flashcard",
-        // Ensure we have a consistent structure
+        __lastUpdated: Date.now(),
       }
 
       if (process.env.NODE_ENV !== 'production') {
@@ -123,7 +160,14 @@ export const fetchFlashCardQuiz = createAsyncThunk(
       }
       return result;
     } catch (error: any) {
-      return rejectWithValue(error.message || "Network error")
+      RequestManager.cancel(requestKey)
+      
+      // Handle abort errors gracefully
+      if (error?.name === 'AbortError') {
+        return rejectWithValue('Request was cancelled')
+      }
+      
+      return rejectWithValue(getErrorMessage(error))
     }
   }
 )
@@ -406,23 +450,39 @@ clearQuizState: (state) => {
  extraReducers: (builder) => {
   builder
     .addCase(fetchFlashCardQuiz.pending, (state) => {
-  state.status = "loading"
-  state.error = null
-  state.questions = []
-  state.results = null
-  state.isCompleted = false
-  state.shouldRedirectToResults = false
+      state.status = "loading"
+      state.error = null
+      // Don't clear existing data during loading to prevent blank screens
     })
     .addCase(fetchFlashCardQuiz.fulfilled, (state, action) => {
-      state.status = "succeeded"
-      state.quizId = action.payload.id
-      state.slug = action.payload.slug
-      state.title = action.payload.title
-      state.questions = action.payload.questions
+      const incomingTs = (action.payload as any)?.__lastUpdated || Date.now()
+      if (shouldUpdateState(state, incomingTs)) {
+        state.status = "succeeded"
+        state.quizId = action.payload.id
+        state.slug = action.payload.slug
+        state.title = action.payload.title
+        state.questions = action.payload.questions
+        state.lastUpdated = incomingTs
+      }
     })
     .addCase(fetchFlashCardQuiz.rejected, (state, action) => {
+      const payload = action.payload as string
+      
+      // Don't change status or clear data for cancelled requests
+      if (payload === 'Request was cancelled') {
+        return
+      }
+      
       state.status = "failed"
-      state.error = (action.payload as string) || action.error.message || "An unknown error occurred."
+      state.error = payload || action.error.message || "An unknown error occurred."
+      
+      // Only clear data if no existing data or this was an initial load
+      if (!state.questions.length || !state.slug) {
+        state.questions = []
+        state.results = null
+        state.isCompleted = false
+        state.shouldRedirectToResults = false
+      }
     })
     .addCase(saveFlashCard.fulfilled, (state, action) => {
       // Update the saved status of the flashcard in the questions array

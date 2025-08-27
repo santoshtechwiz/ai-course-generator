@@ -4,6 +4,14 @@ import { API_ENDPOINTS } from './quiz-helpers'
 import { QuizQuestion, QuizResults, QuizState } from './quiz-types'
 import { QuizType } from '@/app/types/quiz-types'
 import { STORAGE_KEYS } from '@/constants/global'
+import { 
+  shouldUpdateState, 
+  createPendingUpdate, 
+  createFulfilledUpdate, 
+  createRejectedUpdate,
+  RequestManager,
+  getErrorMessage
+} from '../../utils/async-state'
 
 const QUIZ_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 const MAX_CACHE_ENTRIES = 100
@@ -89,33 +97,52 @@ export const fetchQuiz = createAsyncThunk(
       quizType?: QuizType
       data?: any
     },
-    { rejectWithValue }
+    { rejectWithValue, signal }
   ) => {
-  let loaderId: string | null = null
   try {
     if (!payload) {
       return rejectWithValue('No payload provided')
-
     }
 
     const slug = payload.slug?.trim() || ""
     const type = payload.quizType as QuizType
+    const requestKey = `quiz-${type}-${slug}`
+
+    // Check if request was already cancelled
+    if (signal?.aborted) {
+      return rejectWithValue('Request was cancelled')
+    }
+
+    // Set up abort controller for this specific request
+    const abortController = RequestManager.create(requestKey)
+    
+    // Combine signals
+    if (signal?.aborted) {
+      RequestManager.cancel(requestKey)
+      return rejectWithValue('Request was cancelled')
+    }
+    
+    signal?.addEventListener('abort', () => {
+      RequestManager.cancel(requestKey)
+    })
 
     // Serve from cache if available and no inline data provided
     if (!payload.data) {
       const cached = getCachedQuiz(type, slug)
       if (cached) {
-          return {
-            ...cached,
-            slug,
-            quizType: type,
-            id: slug,
-            __lastUpdated: Date.now(),
-          }
+        RequestManager.cancel(requestKey)
+        return {
+          ...cached,
+          slug,
+          quizType: type,
+          id: slug,
+          __lastUpdated: Date.now(),
+        }
       }
     }
 
     if (payload.data && Array.isArray(payload.data.questions)) {
+      RequestManager.cancel(requestKey)
       return {
         ...payload.data,
         slug,
@@ -126,6 +153,7 @@ export const fetchQuiz = createAsyncThunk(
     }
 
     if (!slug || !type) {
+      RequestManager.cancel(requestKey)
       return rejectWithValue({ error: "Missing slug or quizType" })
     }
 
@@ -143,6 +171,7 @@ export const fetchQuiz = createAsyncThunk(
       // Fallback to legacy approach only if unified approach isn't available
       const endpoint = API_ENDPOINTS[type as keyof typeof API_ENDPOINTS];
       if (!endpoint) {
+        RequestManager.cancel(requestKey)
         return rejectWithValue({ error: `Invalid quiz type: ${type}` });
       }
       url = `${endpoint}/${slug}`;
@@ -151,16 +180,24 @@ export const fetchQuiz = createAsyncThunk(
       }
     }
 
-    // Start loader (browser only)
-    // Loader removed
+    // Check if still not aborted before making request
+    if (abortController.signal.aborted) {
+      return rejectWithValue('Request was cancelled')
+    }
 
-    const response = await fetch(url)
+    const response = await fetch(url, {
+      signal: abortController.signal,
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    
     if (!response.ok) {
       const errorText = await response.text()
+      RequestManager.cancel(requestKey)
 
       // Handle 404 specifically as not found
       if (response.status === 404) {
-        // Loader removed
         return rejectWithValue({
           error: `Quiz not found`,
           status: 'not-found',
@@ -174,7 +211,7 @@ export const fetchQuiz = createAsyncThunk(
     }
 
     const data = await response.json()
-    // Loader removed
+    RequestManager.cancel(requestKey)
 
     if (!data || !Array.isArray(data.questions)) {
       return rejectWithValue({
@@ -243,8 +280,14 @@ export const fetchQuiz = createAsyncThunk(
       __lastUpdated: Date.now(),
     }
   } catch (err: any) {
-    // Loader removed
-  return rejectWithValue({ error: err?.message || 'Unknown error' })
+    RequestManager.cancel(requestKey)
+    
+    // Handle abort errors gracefully
+    if (err?.name === 'AbortError') {
+      return rejectWithValue('Request was cancelled')
+    }
+    
+    return rejectWithValue({ error: getErrorMessage(err) })
   }
 }
 )
@@ -697,8 +740,9 @@ const quizSlice = createSlice({
       .addCase(fetchQuiz.pending, (state) => {
         state.status = 'loading'
         state.error = null
-        state.isInitialized = false
-        state.pendingRedirect = false
+        // Don't clear existing data during loading to prevent blank screens
+        // state.isInitialized = false
+        // state.pendingRedirect = false
       })
       .addCase(fetchQuiz.fulfilled, (state, action: PayloadAction<any>) => {
         const incomingTs = (action.payload as any)?.__lastUpdated || Date.now()
@@ -727,18 +771,25 @@ const quizSlice = createSlice({
         if (payload?.status === 'not-found') {
           state.status = 'not-found'
           state.error = payload.error || 'Quiz not found'
+        } else if (payload === 'Request was cancelled') {
+          // Don't change status or clear data for cancelled requests
+          return
         } else {
           state.status = 'failed'
           state.error = payload?.error || action.error.message || 'Quiz loading failed'
         }
 
-        // Clear quiz data when fetch fails
-        state.questions = []
-        state.answers = {}
-        state.results = null
-        state.slug = null
-        state.quizType = null
-        state.title = ''
+        // Only clear quiz data for non-cancelled errors and if no data exists yet
+        // This prevents clearing valid data when a subsequent request fails
+        if (payload !== 'Request was cancelled' && (!state.questions.length || !state.slug)) {
+          state.questions = []
+          state.answers = {}
+          state.results = null
+          state.slug = null
+          state.quizType = null
+          state.title = ''
+          state.lastUpdated = null
+        }
       })
       .addCase(checkAuthAndLoadResults.pending, (state) => {
         state.status = 'loading'
