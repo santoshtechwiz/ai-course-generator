@@ -1,291 +1,383 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { CourseSidebar } from "./CourseSidebar";
-import CoursesClient from "./CoursesClient";
-import type { CategoryId } from "@/config/categories";
-import { useCategories } from "@/hooks/useCategories";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, Filter, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useEffect, useCallback, useMemo } from "react"
+import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-query"
+import { motion } from "framer-motion"
+import { BookOpen, LayoutGrid, List, Search } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useDebounce } from "@/lib/utils/hooks"
+import { cn } from "@/lib/utils"
+import { CourseCard } from "./CourseCard"
+import { CategoryTagCloud } from "./CategoryTagCloud"
+import type { CategoryId } from "@/config/categories"
 
-interface CourseListProps {
+// Types
+interface Course {
+  id: string
+  title: string
+  name?: string
+  description: string
+  image?: string
+  rating?: number
+  slug: string
+  unitCount?: number
+  lessonCount?: number
+  quizCount?: number
+  viewCount?: number
+  category?: CategoryId | { id: string; name: string } | null
+  duration?: string
+  createdAt: string
+  difficulty?: string
+  price?: number
+  originalPrice?: number
+  instructor?: string
+  enrolledCount?: number
+  updatedAt?: string
+  tags?: string[]
+}
+
+interface CoursesResponse {
+  courses: Course[]
+  total: number
+  hasMore: boolean
+}
+
+interface CoursesClientProps {
   url: string
   userId?: string
+  searchQuery: string
+  selectedCategory: CategoryId | null
+  ratingFilter?: number
 }
 
-interface Category {
-  id: string
-  name: string
-  courseCount?: number
-}
+const ITEMS_PER_PAGE = 12
 
-export default function CourseList({ url, userId }: CourseListProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const { data: categories = [] } = useCategories();
-  const [ratingFilter, setRatingFilter] = useState(0);
+export default function CoursesClient({
+  url,
+  userId,
+  searchQuery,
+  selectedCategory,
+  ratingFilter = 0,
+}: CoursesClientProps) {
+  // State
+  const [activeTab, setActiveTab] = useState<"all" | "popular" | "newest">("all")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list") // Default to list for Udemy-style
+  
+  // Hooks
+  const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
-  const handleCategoryChange = (categoryId: CategoryId | null) => {
-    setSelectedCategory(categoryId === selectedCategory ? null : categoryId);
-    setMobileSidebarOpen(false);
-  };
+  // Query
+  const queryResult: UseInfiniteQueryResult<CoursesResponse, Error> = useInfiniteQuery({
+    queryKey: ["courses", debouncedSearchQuery || "", selectedCategory || "", userId || "", ratingFilter, activeTab],
+    initialPageParam: 1,
+    queryFn: async ({ pageParam, signal }) => {
+      const currentPage = pageParam as number
 
-  const resetFilters = () => {
-    setSearchQuery("");
-    setSelectedCategory(null);
-    setRatingFilter(0);
-  };
+      try {
+        const apiUrl = new URL("/api/course", window.location.origin)
+        apiUrl.searchParams.set("page", currentPage.toString())
+        apiUrl.searchParams.set("limit", ITEMS_PER_PAGE.toString())
+        
+        if (debouncedSearchQuery) {
+          apiUrl.searchParams.set("search", debouncedSearchQuery)
+        }
+        if (selectedCategory) {
+          apiUrl.searchParams.set("category", selectedCategory)
+        }
+        if (userId) {
+          apiUrl.searchParams.set("userId", userId)
+        }
+        if (ratingFilter > 0) {
+          apiUrl.searchParams.set("minRating", ratingFilter.toString())
+        }
+        
+        apiUrl.searchParams.set(
+          "sortBy",
+          activeTab === "popular" ? "viewCount" : activeTab === "newest" ? "createdAt" : "viewCount"
+        )
+        apiUrl.searchParams.set("sortOrder", "desc")
 
-  const activeFiltersCount = [
-    searchQuery.trim() !== "",
-    selectedCategory !== null,
-    ratingFilter > 0,
-  ].filter(Boolean).length;
+        const response = await fetch(apiUrl.toString(), {
+          headers: { "Cache-Control": "no-cache" },
+          signal
+        })
 
-  const selectedCategoryName = selectedCategory
-    ? categories.find((cat) => cat.id === selectedCategory)?.name
-    : null;
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status} ${response.statusText}`)
+        }
 
+        const data = await response.json()
+        
+        // Ensure the response matches expected structure
+        return {
+          courses: data.courses || [],
+          total: data.total || 0,
+          hasMore: data.hasMore !== undefined ? data.hasMore : (data.courses?.length === ITEMS_PER_PAGE)
+        }
+      } catch (error) {
+        console.error('Fetch error:', error)
+        throw error
+      }
+    },
+    getNextPageParam: (lastPage, allPages) => 
+      lastPage.hasMore ? allPages.length + 1 : undefined,
+    refetchOnWindowFocus: false,
+    staleTime: 60000,
+    retry: 2,
+  })
+
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    status,
+    error,
+    isError,
+  } = queryResult
+
+  // Infinite scroll
+  const loadMoreRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node || !hasNextPage || isFetchingNextPage) return
+    
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
+        }
+      },
+      { rootMargin: "200px" }
+    )
+
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  // Data processing
+  const coursesData = data
+  const isInitialLoading = status === "pending" && (!coursesData?.pages?.length)
+  const hasNoData = !isInitialLoading && (!coursesData?.pages?.length || !coursesData.pages[0]?.courses?.length)
+  const hasFilters = Boolean(searchQuery || selectedCategory || ratingFilter > 0)
+
+  // Aggregate category counts (must be before conditional returns)
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    coursesData?.pages?.forEach((page: CoursesResponse) => {
+      page.courses?.forEach((c: Course) => {
+        const id = typeof c.category === "object" ? c.category?.id : c.category
+        if (id) counts[id] = (counts[id] ?? 0) + 1
+      })
+    })
+    return counts
+  }, [coursesData])
+
+  // Loading state
+  if (isInitialLoading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col items-center justify-center min-h-[60vh] w-full"
+      >
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">Loading courses...</p>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Error state
+  if (isError) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center"
+      >
+        <div className="bg-destructive/10 rounded-full p-6 mb-6">
+          <Search className="w-12 h-12 text-destructive" />
+        </div>
+        <h3 className="text-xl font-semibold mb-2">Something went wrong</h3>
+        <p className="text-muted-foreground max-w-md mb-6">
+          {error instanceof Error ? error.message : "An error occurred while loading courses"}
+        </p>
+        <Button
+          variant="outline"
+          onClick={() => window.location.reload()}
+        >
+          Try again
+        </Button>
+      </motion.div>
+    )
+  }
+
+  // Empty state
+  if (hasNoData) {
+    return (
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center"
+      >
+        <div className="bg-primary/10 rounded-full p-6 mb-6">
+          {hasFilters ? (
+            <Search className="w-12 h-12 text-primary" />
+          ) : (
+            <BookOpen className="w-12 h-12 text-primary" />
+          )}
+        </div>
+        <h3 className="text-xl font-semibold mb-2">
+          {hasFilters ? "No courses match your filters" : "No courses available yet"}
+        </h3>
+        <p className="text-muted-foreground max-w-md mb-6">
+          {hasFilters 
+            ? "Try adjusting your search terms or removing some filters"
+            : "Check back soon - new courses are added regularly"}
+        </p>
+        {hasFilters && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              window.location.href = '/courses'
+            }}
+          >
+            Clear all filters
+          </Button>
+        )}
+      </motion.div>
+    )
+  }
+
+  // Main content
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-background">
-      {/* Mobile Filter Bar */}
-      <div className="lg:hidden sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="relative"
-                  aria-label="Open filters"
-                >
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filters
-                  {activeFiltersCount > 0 && (
-                    <Badge 
-                      variant="destructive" 
-                      className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs"
-                    >
-                      {activeFiltersCount}
-                    </Badge>
-                  )}
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[320px] p-0 sm:max-w-none">
-                <div className="flex items-center justify-between p-4 border-b">
-                  <h2 className="text-lg font-semibold">Filters</h2>
-                  {activeFiltersCount > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={resetFilters}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      Clear All
-                    </Button>
-                  )}
-                </div>
-                <CourseSidebar
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  selectedCategory={selectedCategory}
-                  handleCategoryChange={handleCategoryChange}
-                  resetFilters={resetFilters}
-                  courseTypes={categories}
-                  ratingFilter={ratingFilter}
-                  setRatingFilter={setRatingFilter}
-                />
-              </SheetContent>
-            </Sheet>
+    <div className="w-full space-y-6">
+      {/* Controls & Category Tag Cloud */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="w-auto">
+              <TabsList>
+                <TabsTrigger value="all">All Courses</TabsTrigger>
+                <TabsTrigger value="popular">Most Popular</TabsTrigger>
+                <TabsTrigger value="newest">Recently Added</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
 
-          {/* Active Filters Display */}
-          <div className="flex items-center gap-2 flex-1 ml-4">
-            <AnimatePresence>
-              {searchQuery && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="flex items-center"
-                >
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    Search: "{searchQuery.slice(0, 15)}{searchQuery.length > 15 ? '...' : ''}"
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-transparent"
-                      onClick={() => setSearchQuery("")}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                </motion.div>
-              )}
-              
-              {selectedCategoryName && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="flex items-center"
-                >
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    {selectedCategoryName}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-transparent"
-                      onClick={() => setSelectedCategory(null)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                </motion.div>
-              )}
-
-              {ratingFilter > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="flex items-center"
-                >
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    {ratingFilter}+ ⭐
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-transparent"
-                      onClick={() => setRatingFilter(0)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn("px-3", viewMode === "grid" && "bg-muted")}
+              onClick={() => setViewMode("grid")}
+              aria-label="Grid view"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn("px-3", viewMode === "list" && "bg-muted")}
+              onClick={() => setViewMode("list")}
+              aria-label="List view"
+            >
+              <List className="h-4 w-4" />
+            </Button>
           </div>
+        </div>
+
+        {/* Category Tag Cloud */}
+        <div className="relative">
+          <div 
+            className="flex items-start gap-3 overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent py-1 px-1 -mx-1" 
+            role="navigation" 
+            aria-label="Categories"
+          >
+            <CategoryTagCloud selectedCategory={selectedCategory} counts={categoryCounts} enableClear />
+          </div>
+          <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-background to-transparent" />
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-background to-transparent" />
         </div>
       </div>
 
-      {/* Desktop Active Filters chips (simplified) */}
-      {activeFiltersCount > 0 && (
-        <div className="hidden lg:block fixed top-[64px] left-0 right-0 z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border-b">
-          <div className="max-w-[1600px] mx-auto px-6 py-2 flex items-center gap-2">
-            {searchQuery && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                Search: "{searchQuery.slice(0, 20)}{searchQuery.length > 20 ? '...' : ''}"
-                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-transparent" onClick={() => setSearchQuery("")}>
-                  <X className="h-3 w-3" />
-                </Button>
-              </Badge>
-            )}
-            {selectedCategoryName && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                {selectedCategoryName}
-                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-transparent" onClick={() => setSelectedCategory(null)}>
-                  <X className="h-3 w-3" />
-                </Button>
-              </Badge>
-            )}
-            {ratingFilter > 0 && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                {ratingFilter}+ ⭐
-                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-transparent" onClick={() => setRatingFilter(0)}>
-                  <X className="h-3 w-3" />
-                </Button>
-              </Badge>
-            )}
-            <Button variant="ghost" size="sm" className="ml-2" onClick={resetFilters}>Clear all</Button>
-          </div>
+      {/* Results count */}
+      {coursesData?.pages?.[0]?.total !== undefined && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            {coursesData.pages[0].total} course{coursesData.pages[0].total !== 1 ? 's' : ''} found
+          </p>
         </div>
       )}
 
-      {/* Desktop sidebar with enhanced toggle */}
-      <div
-        className={`hidden lg:block relative transition-all duration-300 ease-in-out ${
-          sidebarOpen ? "w-[320px] shrink-0" : "w-[60px] shrink-0"
-        } h-full border-r bg-card/50`}
-      >
-        <motion.div
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        >
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="absolute right-[-12px] top-4 h-6 w-6 rounded-full border bg-background z-10 shadow-md hover:shadow-lg transition-shadow"
-            aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-          >
-            <motion.div animate={{ rotate: sidebarOpen ? 0 : 180 }} transition={{ duration: 0.2 }}>
-              <ChevronLeft className="h-3 w-3" />
-            </motion.div>
-          </Button>
-        </motion.div>
-
-        <CourseSidebar
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          selectedCategory={selectedCategory}
-          handleCategoryChange={handleCategoryChange}
-          resetFilters={resetFilters}
-          courseTypes={categories}
-          isCollapsed={!sidebarOpen}
-          ratingFilter={ratingFilter}
-          setRatingFilter={setRatingFilter}
-        />
-
-        {/* Collapsed state indicator */}
-        {!sidebarOpen && (
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-              <div className="w-8 h-0.5 bg-muted rounded-full" />
-              <div className="w-6 h-0.5 bg-muted rounded-full" />
-              <div className="w-4 h-0.5 bg-muted rounded-full" />
-            </div>
-          </div>
-        )}
+      {/* Course grid/list */}
+      <div className={cn(
+        viewMode === "grid" 
+          ? "grid gap-6 grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3" 
+          : "flex flex-col space-y-6"
+      )}>
+        {coursesData?.pages?.map((page: CoursesResponse, pageIndex: number) => (
+          <React.Fragment key={pageIndex}>
+            {page.courses?.map((course: Course) => (
+              <CourseCard
+                key={course.id}
+                title={course.title || course.name || "Untitled Course"}
+                description={course.description || "No description available"}
+                rating={course.rating || 0}
+                slug={course.slug || `course-${course.id}`}
+                unitCount={course.unitCount || 0}
+                lessonCount={course.lessonCount || 0}
+                quizCount={course.quizCount || 0}
+                viewCount={course.viewCount || 0}
+                category={(typeof course.category === 'object' && course.category?.name ? course.category.name : (typeof course.category === 'string' ? course.category : "")) || "General"}
+                duration={course.duration}
+                image={course.image}
+                difficulty={course.difficulty as "Beginner" | "Intermediate" | "Advanced"}
+                price={course.price}
+                originalPrice={course.originalPrice}
+                instructor={course.instructor || "Course Instructor"}
+                enrolledCount={course.enrolledCount || Math.floor(Math.random() * 5000) + 500}
+                updatedAt={course.updatedAt || course.createdAt}
+                tags={course.tags || []}
+                className={viewMode === "list" ? "w-full" : undefined}
+              />
+            ))}
+          </React.Fragment>
+        ))}
       </div>
 
-      {/* Main content area with enhanced layout */}
-      <main className="flex-1 min-w-0">
-        <div className="h-full overflow-y-auto">
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3 }}
-            className="h-full"
-          >
-            <CoursesClient
-              url={url}
-              userId={userId || "static-user-id"}
-              searchQuery={searchQuery}
-              selectedCategory={selectedCategory}
-              ratingFilter={ratingFilter}
-            />
-          </motion.div>
-        </div>
-      </main>
-
-      {/* Floating action button for quick access (mobile) */}
-      <AnimatePresence>
-        {!mobileSidebarOpen && activeFiltersCount > 0 && (
-          <motion.div initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0 }} className="lg:hidden fixed bottom-6 right-6 z-20">
-            <Button onClick={resetFilters} size="sm" variant="outline" className="rounded-full shadow-lg bg-background/95 backdrop-blur-sm border-2">
-              Clear Filters ({activeFiltersCount})
+      {/* Load more */}
+      {hasNextPage && (
+        <div 
+          ref={loadMoreRef}
+          className="flex justify-center py-8"
+        >
+          {isFetchingNextPage ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-muted-foreground">Loading more courses...</span>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => fetchNextPage()}
+              disabled={!hasNextPage || isFetchingNextPage}
+            >
+              Load more courses
             </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </div>
+      )}
+
+      {/* No more results */}
+      {!hasNextPage && coursesData?.pages?.length && coursesData.pages.some(p => p.courses.length > 0) && (
+        <div className="text-center py-8">
+          <p className="text-sm text-muted-foreground">
+            You've reached the end of the results
+          </p>
+        </div>
+      )}
     </div>
   )
 }
-

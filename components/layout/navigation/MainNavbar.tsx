@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { Search, Menu, X, CreditCard, Sparkles, Bell } from "lucide-react"
 import { navItems } from "@/constants/navItems"
@@ -14,6 +14,9 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 
 import { useAuth, useSubscription } from "@/modules/auth"
+import { useAppDispatch, useAppSelector } from "@/store"
+import { forceSyncSubscription, selectIsSubscriptionFetching } from "@/store/slices/subscription-slice"
+import { progressApi } from "@/components/loaders/progress-api"
 import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
 import CourseNotificationsMenu from "@/components/Navbar/CourseNotificationsMenu"
 import { cn } from "@/lib/utils"
@@ -27,6 +30,25 @@ export function MainNavbar() {
   const router = useRouter()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const subscription = useSubscription()
+  const dispatch = useAppDispatch()
+  const subFetching = useAppSelector(selectIsSubscriptionFetching as any) as boolean
+  const syncedOnceRef = useRef(false)
+  // Force fresh subscription sync (Navbar always fresh) once per mount
+  useEffect(() => {
+    if (syncedOnceRef.current) return
+    syncedOnceRef.current = true
+    let active = true
+    const run = async () => {
+      try {
+        if (!progressApi.isStarted()) progressApi.start()
+        await dispatch(forceSyncSubscription()).unwrap()
+      } catch {/* ignore */} finally {
+        if (active) progressApi.done()
+      }
+    }
+    run()
+    return () => { active = false }
+  }, [dispatch])
   const prefersReducedMotion = useReducedMotion()
 
   // Extract subscription details

@@ -107,6 +107,8 @@ const rootReducer = combineReducers({
 const isProd = process.env.NODE_ENV === 'production'
 // Allow opting back into safety checks if desired: NEXT_PUBLIC_REDUX_SAFETY_CHECKS=true
 const safetyChecksEnabled = process.env.NEXT_PUBLIC_REDUX_SAFETY_CHECKS === 'true'
+// Allow forcing Redux DevTools in non-dev environments
+const forceDevtools = process.env.NEXT_PUBLIC_FORCE_REDUX_DEVTOOLS === 'true'
 export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) => {
@@ -124,10 +126,10 @@ export const store = configureStore({
     // .concat(performanceMiddleware) // (optional) re-enable if you want custom perf telemetry
   },
   // Enable Redux DevTools with useful tracing during development
-  devTools: !isProd ? {
+  devTools: !isProd || forceDevtools ? {
     name: 'ai-learning',
-    trace: false, // trace off to further reduce overhead; set true if debugging actions timing
-    traceLimit: 15,
+    trace: true, // enable stack trace of actions for easier debugging
+    traceLimit: 25,
   } : false,
 })
 
