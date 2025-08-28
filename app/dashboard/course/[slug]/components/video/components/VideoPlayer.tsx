@@ -92,10 +92,16 @@ const TheaterModeButton = React.memo(({
   onToggle: () => void 
 }) => (
   <button
-    className="absolute top-2 left-2 sm:top-4 sm:left-4 z-30 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-lg p-2 text-white/80 hover:text-white transition-all duration-200"
+    className={cn(
+      "absolute z-30 backdrop-blur-sm rounded-lg p-2 text-white/90 hover:text-white transition-all duration-300 transform hover:scale-105",
+      "shadow-lg border border-white/10 hover:border-white/20",
+      isTheater 
+        ? "top-4 right-4 bg-red-500/80 hover:bg-red-600/90" 
+        : "top-4 left-4 bg-black/60 hover:bg-black/80"
+    )}
     onClick={onToggle}
     aria-label={isTheater ? "Exit theater mode" : "Enter theater mode"}
-    title={isTheater ? "Exit theater mode" : "Enter theater mode"}
+    title={isTheater ? "Exit theater mode (ESC or T)" : "Enter theater mode (T)"}
   >
     <Maximize className="h-4 w-4" />
   </button>
@@ -808,6 +814,9 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
           if (state.isFullscreen) {
             event.preventDefault()
             handlers.onToggleFullscreen()
+          } else if (isTheaterMode) {
+            event.preventDefault()
+            handleTheaterModeToggle()
           }
           break
       }
@@ -1032,10 +1041,11 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
 
   return (
     <div
-      ref={containerRef}
+      ref={containerRef as any}
       className={cn(
         "relative object-contain w-full h-full bg-black overflow-hidden group video-player-container",
         isTheaterMode && "theater-mode",
+        playerState.isNativePiPActive && "pip-active",
         className,
       )}
       onMouseEnter={() => setPlayerState(prev => ({ ...prev, isHovering: true }))}
@@ -1046,7 +1056,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
     >
       {/* Main YouTube Player - completely hidden when in PiP modes */}
       {!shouldHideMainPlayer && (
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 video-player">
           <ReactPlayer
             ref={playerRef}
             url={youtubeUrl}
@@ -1153,26 +1163,32 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
 
       {/* Native PiP Placeholder */}
       {playerState.isNativePiPActive && (
-        <div className="absolute inset-0 z-20 bg-black/90 flex items-center justify-center">
-          <div className="text-center text-white">
-            <div className="mb-4">
-              <div className="w-16 h-16 mx-auto rounded-full bg-white/10 flex items-center justify-center mb-4">
-                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+        <div className="absolute inset-0 z-20 bg-black/95 backdrop-blur-sm flex items-center justify-center">
+          <div className="text-center text-white max-w-md mx-auto p-6">
+            <div className="mb-6">
+              <div className="w-20 h-20 mx-auto rounded-full bg-primary/20 flex items-center justify-center mb-6">
+                <svg className="w-10 h-10 text-primary" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553-.894l2-1A1 1 0 0018 9V7a1 1 0 00-1.447-.894l-2 1z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium mb-2">Playing in Picture-in-Picture</h3>
-              <p className="text-sm text-white/70 mb-4">
-                The video is currently playing in a separate window
+              <h3 className="text-xl font-semibold mb-3">Video Playing in Picture-in-Picture</h3>
+              <p className="text-sm text-white/80 mb-6 leading-relaxed">
+                Your video is now playing in a separate window. You can continue browsing while watching.
               </p>
             </div>
-            <Button
-              onClick={handlePictureInPicture}
-              variant="outline"
-              className="bg-white/10 border-white/20 hover:bg-white/20"
-            >
-              Return to Main Player
-            </Button>
+            <div className="space-y-3">
+              <Button
+                onClick={handlePictureInPicture}
+                variant="default"
+                size="lg"
+                className="w-full bg-primary hover:bg-primary/90"
+              >
+                Return to Main Player
+              </Button>
+              <p className="text-xs text-white/60">
+                Press 'P' or click the PiP button to toggle
+              </p>
+            </div>
           </div>
         </div>
       )}

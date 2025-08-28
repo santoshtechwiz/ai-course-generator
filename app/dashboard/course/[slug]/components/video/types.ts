@@ -94,6 +94,8 @@ export interface VideoPlayerProps {
   isFullscreen?: boolean
   onFullscreenToggle?: () => void
   onPictureInPictureToggle?: (iPiPActive: boolean) => void
+  onTheaterModeToggle?: (isTheater: boolean) => void
+  isTheaterMode?: boolean
 
   initialSeekSeconds?: number
   relatedCourses?: Array<{ id?: string | number; slug?: string; title?: string; description?: string; image?: string }>

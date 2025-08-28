@@ -89,6 +89,10 @@ const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ onClose
                 <p className="text-xs text-muted-foreground">Theater Mode</p>
               </div>
               <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">ESC</p>
+                <p className="text-xs text-muted-foreground">Exit Theater / Fullscreen</p>
+              </div>
+              <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">B</p>
                 <p className="text-xs text-muted-foreground">Add Bookmark</p>
               </div>

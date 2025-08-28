@@ -371,6 +371,33 @@
   .sidebar-scroll::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground));
   }
+
+  /* Theater Mode Styles */
+  .theater-mode-active {
+    @apply bg-black;
+  }
+
+  .theater-mode-active .video-player-container {
+    @apply max-w-6xl mx-auto;
+  }
+
+  .theater-mode-active .video-player-container .video-player {
+    @apply rounded-none;
+  }
+
+  .theater-mode-active .sidebar,
+  .theater-mode-active .course-navigation,
+  .theater-mode-active .mobile-playlist-toggle {
+    @apply hidden;
+  }
+
+  .theater-mode-active .main-content {
+    @apply max-w-none px-0 py-0;
+  }
+
+  .theater-mode-active .video-player-section {
+    @apply mb-0;
+  }
 }
 
 /****************************************
@@ -480,7 +507,7 @@
   }
 
   .theater-mode-active .video-player-container {
-    @apply max-w-4xl mx-auto;
+    @apply max-w-6xl mx-auto;
   }
 
   .theater-mode-active .video-player-container .video-player {
@@ -488,12 +515,17 @@
   }
 
   .theater-mode-active .sidebar,
-  .theater-mode-active .course-navigation {
+  .theater-mode-active .course-navigation,
+  .theater-mode-active .mobile-playlist-toggle {
     @apply hidden;
   }
 
   .theater-mode-active .main-content {
-    @apply max-w-none px-0;
+    @apply max-w-none px-0 py-0;
+  }
+
+  .theater-mode-active .video-player-section {
+    @apply mb-0;
   }
 
   /* Picture-in-Picture Styles */
@@ -502,7 +534,7 @@
   }
 
   .pip-active .video-player {
-    @apply w-80 h-45 rounded-lg shadow-2xl border-2 border-white/20;
+    @apply w-80 h-48 rounded-lg shadow-2xl border-2 border-white/20;
   }
 
   .pip-active .video-controls {
@@ -699,5 +731,32 @@
 
   .sidebar-scroll::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground));
+  }
+
+  /* Theater Mode Styles */
+  .theater-mode-active {
+    @apply bg-black;
+  }
+
+  .theater-mode-active .video-player-container {
+    @apply max-w-6xl mx-auto;
+  }
+
+  .theater-mode-active .video-player-container .video-player {
+    @apply rounded-none;
+  }
+
+  .theater-mode-active .sidebar,
+  .theater-mode-active .course-navigation,
+  .theater-mode-active .mobile-playlist-toggle {
+    @apply hidden;
+  }
+
+  .theater-mode-active .main-content {
+    @apply max-w-none px-0 py-0;
+  }
+
+  .theater-mode-active .video-player-section {
+    @apply mb-0;
   }
 }

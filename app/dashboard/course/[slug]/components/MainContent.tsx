@@ -409,6 +409,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     setIsPiPActive(isPiPActive)
   }, [])
 
+  // Theater mode toggle handler
+  const handleTheaterModeToggle = useCallback((newTheaterMode: boolean) => {
+    setIsTheaterMode(newTheaterMode)
+  }, [])
+
   // Autoplay toggle handler
   const handleAutoplayToggle = useCallback(() => {
     const next = !autoplayMode
@@ -797,43 +802,44 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       </AnimatePresence>
 
       {/* Mobile playlist toggle - Enhanced design */}
-      <div className="xl:hidden bg-muted/20 border-b border-border/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <Button
-            variant="outline"
-            onClick={handleMobilePlaylistToggle}
-            className="w-full bg-background/60 backdrop-blur-sm border-primary/20 hover:bg-background/80 transition-all duration-200 group"
-          >
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center">
-                <BookOpen className="h-4 w-4 mr-2 text-primary" />
-                <span className="font-medium">Course Content</span>
+      {!isTheaterMode && (
+        <div className="xl:hidden bg-muted/20 border-b border-border/20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <Button
+              variant="outline"
+              onClick={handleMobilePlaylistToggle}
+              className="w-full bg-background/60 backdrop-blur-sm border-primary/20 hover:bg-background/80 transition-all duration-200 group"
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center">
+                  <BookOpen className="h-4 w-4 mr-2 text-primary" />
+                  <span className="font-medium">Course Content</span>
+                </div>
+                <MobilePlaylistCount
+                  currentIndex={currentIndex}
+                  hasCurrentChapter={Boolean(currentChapter)}
+                  total={videoPlaylist.length}
+                />
               </div>
-              <MobilePlaylistCount
-                currentIndex={currentIndex}
-                hasCurrentChapter={Boolean(currentChapter)}
-                total={videoPlaylist.length}
-              />
-            </div>
-          </Button>
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main content area */}
       <main className={cn(
-        "flex-1 transition-all duration-300",
-        isTheaterMode && "main-content"
+        "flex-1 transition-all duration-500",
+        isTheaterMode && "main-content theater-mode-active bg-black"
       )}>
         <div className={cn(
-          "mx-auto px-4 sm:px-6 lg:px-8 py-6 transition-all duration-300",
-          isTheaterMode ? "max-w-none" : "max-w-7xl"
+          "mx-auto px-4 sm:px-6 lg:px-8 py-6 transition-all duration-500",
+          isTheaterMode ? "max-w-none px-2 py-2" : "max-w-7xl"
         )}>
           <div className={cn(
-            "grid gap-6 transition-all duration-300",
-            isTheaterMode && "theater-mode-active",
+            "grid gap-6 transition-all duration-500",
             sidebarCollapsed || isPiPActive || isTheaterMode
               ? "grid-cols-1" 
-              : "grid-cols-1 xl:grid-cols-[1fr_400px]"
+              : "grid-cols-1 lg:grid-cols-[1fr_350px] xl:grid-cols-[1fr_400px]"
           )}>
             {/* Left column: Video and content */}
             <motion.div 
@@ -846,10 +852,19 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
-                className="relative"
+                className={cn(
+                  "relative video-player-section",
+                  isTheaterMode && "mb-0"
+                )}
               >
-                <Card className="overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-background to-muted/20">
-                  <div className="aspect-video bg-black relative overflow-hidden">
+                <Card className={cn(
+                  "overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-background to-muted/20",
+                  isTheaterMode && "shadow-none border-none bg-transparent"
+                )}>
+                  <div className={cn(
+                    "bg-black relative overflow-hidden transition-all duration-500",
+                    isTheaterMode ? "aspect-[21/9] rounded-none" : "aspect-[18/9] rounded-lg"
+                  )}>
                     {isVideoLoading && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-10">
                         <motion.div
@@ -869,6 +884,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                       onVideoLoad={handleVideoLoad}
                       onPlayerReady={handlePlayerReady}
                       onPictureInPictureToggle={handlePIPToggle}
+                      onTheaterModeToggle={handleTheaterModeToggle}
+                      isTheaterMode={isTheaterMode}
                       initialSeekSeconds={(function(){
                         try {
                           if (courseProgress?.videoProgress?.playedSeconds && 
@@ -928,13 +945,13 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
             {/* Right column: Playlist sidebar (desktop) */}
             <AnimatePresence mode="wait">
-              {!sidebarCollapsed && !isPiPActive && (
+              {!sidebarCollapsed && !isPiPActive && !isTheaterMode && (
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.3 }}
-                  className="hidden xl:block space-y-4"
+                  className="hidden xl:block space-y-4 sidebar"
                 >
                   {/* Sidebar header */}
                   <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20">
@@ -990,20 +1007,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       </main>
 
       {/* Mobile playlist overlay */}
-      <MobilePlaylistOverlay
-        isOpen={mobilePlaylistOpen}
-        onClose={() => setMobilePlaylistOpen(false)}
-        course={sidebarCourse}
-        currentChapter={sidebarCurrentChapter}
-        courseId={course.id.toString()}
-        currentVideoId={currentVideoId || ''}
-        isAuthenticated={!!user}
-        completedChapters={completedChapters.map(String)}
-        formatDuration={formatDuration}
-        videoDurations={videoDurations}
-        courseStats={courseStats}
-        onChapterSelect={handleChapterSelect}
-      />
+      {!isTheaterMode && (
+        <MobilePlaylistOverlay
+          isOpen={mobilePlaylistOpen}
+          onClose={() => setMobilePlaylistOpen(false)}
+          course={sidebarCourse}
+          currentChapter={sidebarCurrentChapter}
+          courseId={course.id.toString()}
+          currentVideoId={currentVideoId || ''}
+          isAuthenticated={!!user}
+          completedChapters={completedChapters.map(String)}
+          formatDuration={formatDuration}
+          videoDurations={videoDurations}
+          courseStats={courseStats}
+          onChapterSelect={handleChapterSelect}
+        />
+      )}
 
       {/* Enhanced floating subscribe CTA */}
       <AnimatePresence>
