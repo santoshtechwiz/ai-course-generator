@@ -1,9 +1,8 @@
 const nextConfig = {
   reactStrictMode: false,
   distDir: ".next",
-  poweredByHeader: false, // Remove X-Powered-By header for security
+  poweredByHeader: false,
 
-  // Modularize imports for smaller bundles (example for lodash)
   modularizeImports: {
     lodash: {
       transform: "lodash/{{member}}",
@@ -18,33 +17,27 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "img.clerk.com",
-        pathname: "/**",
       },
       {
         protocol: "https",
         hostname: "placehold.co",
-        pathname: "/**",
       },
       {
         protocol: "https",
         hostname: "avatars.githubusercontent.com",
-        pathname: "/**",
       },
       {
         protocol: "https",
         hostname: "images.unsplash.com",
-        pathname: "/**",
       },
       {
         protocol: "https",
         hostname: "img.youtube.com",
-        pathname: "/**",
       },
     ],
-    minimumCacheTTL: 600, // Cache images for at least 10 minutes
-    dangerouslyAllowSVG: false,
+    minimumCacheTTL: 600,
   },
-  // Rewrites
+
   async rewrites() {
     return [
       {
@@ -57,67 +50,58 @@ const nextConfig = {
       },
     ];
   },
-  
-  
 
-  // Environment variables
   env: {
     DISABLE_STATIC_SLUG: process.env.DISABLE_STATIC_SLUG || "no-static",
   },
 
-  // Build optimizations
   eslint: {
     ignoreDuringBuilds: true,
   },
+  
   typescript: {
     ignoreBuildErrors: true,
   },
 
-  // Performance optimizations
   compress: true,
 
-  // Webpack optimizations for faster builds
   webpack: (config, { dev, isServer }) => {
-    // Optimize build performance
     if (dev) {
       config.optimization = {
         ...config.optimization,
         removeAvailableModules: false,
         removeEmptyChunks: false,
         splitChunks: false,
-      }
+      };
     }
 
-    // Reduce bundle size in production
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
-        chunks: 'all',
+        chunks: "all",
         cacheGroups: {
           vendor: {
             test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            chunks: 'all',
+            name: "vendors",
+            chunks: "all",
           },
           common: {
-            name: 'common',
+            name: "common",
             minChunks: 2,
-            chunks: 'all',
+            chunks: "all",
             enforce: true,
           },
         },
-      }
+      };
     }
 
-    return config
+    return config;
   },
 
-  // Experimental features
   experimental: {
-    optimizeCss: true, // Optimize CSS
-    // Faster development builds
+    optimizeCss: false,
     serverSourceMaps: true,
-    optimizePackageImports: ['lucide-react', 'recharts', '@radix-ui/react-icons'],
+    optimizePackageImports: ["lucide-react", "recharts", "@radix-ui/react-icons"],
   },
-}
+};
 
-export default nextConfig
+export default nextConfig;

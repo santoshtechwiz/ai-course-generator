@@ -14,7 +14,7 @@
     "test:consistency": "jest --config jest.config.ts --testPathPattern=subscription-consistency",
     "validate-styles": "node scripts/validate-styles.js",
     "dev": "next dev ",
-  "dev:with-devtools": "npx react-devtools ",
+    "dev:with-devtools": "npx react-devtools ",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
