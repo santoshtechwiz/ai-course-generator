@@ -1,6 +1,6 @@
 import React from "react"
 import type { Metadata } from "next"
-import { Inter, Poppins } from "next/font/google"
+import { Inter, Poppins, JetBrains_Mono } from "next/font/google"
 import "../globals.css"
 
 import Footer from "@/components/shared/Footer"
@@ -18,12 +18,13 @@ import { SuspenseGlobalFallback } from "@/components/loaders"
 import BProgressProvider from "./providers"
 
 
-// Simplified fonts - only keep what's necessary
+// Optimized fonts for AI learning platform
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
   weight: ["400", "500", "600", "700"],
+  preload: true,
 })
 
 const poppins = Poppins({
@@ -31,6 +32,15 @@ const poppins = Poppins({
   variable: "--font-poppins",
   display: "swap",
   weight: ["400", "500", "600", "700"],
+  preload: true,
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+  weight: ["400", "500", "600"],
+  preload: true,
 })
 
 // Remove force-dynamic to allow ISR
@@ -107,7 +117,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
       </head>
 
-      <body className={`${inter.variable} ${poppins.variable} font-sans antialiased bg-background text-foreground`}>
+      <body className={`${inter.variable} ${poppins.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground`}>
         <BProgressProvider>
           <Providers session={session}>
             {/* Skip Navigation for accessibility */}

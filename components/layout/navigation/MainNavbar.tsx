@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Search, Menu, X, CreditCard, Sparkles, Bell } from "lucide-react"
+import { Search, Menu, X, CreditCard, Sparkles, Bell, Zap, Brain, Cpu } from "lucide-react"
 import { navItems } from "@/constants/navItems"
 import { ThemeToggle } from "@/components/layout/navigation/ThemeToggle"
 import { UserMenu } from "@/components/layout/navigation/UserMenu"
@@ -22,7 +22,7 @@ import CourseNotificationsMenu from "@/components/Navbar/CourseNotificationsMenu
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
+import { motion, AnimatePresence, useReducedMotion, useAnimation } from "framer-motion"
 import Logo from "@/components/shared/Logo"
 
 export function MainNavbar() {
@@ -33,6 +33,8 @@ export function MainNavbar() {
   const dispatch = useAppDispatch()
   const subFetching = useAppSelector(selectIsSubscriptionFetching as any) as boolean
   const syncedOnceRef = useRef(false)
+  const controls = useAnimation()
+
   // Force fresh subscription sync (Navbar always fresh) once per mount
   useEffect(() => {
     if (syncedOnceRef.current) return
@@ -52,6 +54,7 @@ export function MainNavbar() {
     run()
     return () => { active = false }
   }, [dispatch])
+
   const prefersReducedMotion = useReducedMotion()
 
   // Extract subscription details
@@ -62,8 +65,18 @@ export function MainNavbar() {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
 
-  // Scroll effect
+  // Mouse tracking for AI glow effect
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY })
+    }
+    window.addEventListener("mousemove", handleMouseMove, { passive: true })
+    return () => window.removeEventListener("mousemove", handleMouseMove)
+  }, [])
+
+  // Scroll effect with AI-themed transitions
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20)
@@ -140,77 +153,170 @@ export function MainNavbar() {
 
   const isPremium = useMemo(() => subscriptionPlan && subscriptionPlan !== "FREE", [subscriptionPlan])
 
-  // Animation variants (simplified)
+  // Enhanced AI-themed animation variants
   const navbarVariants = {
+    hidden: {
+      opacity: 0,
+      y: -20,
+      scale: 0.95
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.4,
+        ease: [0.25, 0.46, 0.45, 0.94],
+        staggerChildren: 0.1
+      },
+    },
+  }
+
+  const itemVariants = {
     hidden: { opacity: 0, y: -10 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.3, ease: "easeOut" },
+      transition: { duration: 0.3, ease: "easeOut" }
+    }
+  }
+
+  const aiGlowVariants = {
+    idle: {
+      opacity: 0.6,
+      scale: 1,
     },
+    hover: {
+      opacity: 1,
+      scale: 1.05,
+      transition: {
+        duration: 0.3,
+        ease: "easeOut"
+      }
+    }
   }
 
   const mobileMenuVariants = {
-    hidden: { opacity: 0, x: "100%" },
+    hidden: {
+      opacity: 0,
+      x: "100%",
+      scale: 0.95
+    },
     visible: {
       opacity: 1,
       x: 0,
-      transition: { type: "spring", stiffness: 300, damping: 30 },
+      scale: 1,
+      transition: {
+        type: "spring",
+        stiffness: 300,
+        damping: 30,
+        staggerChildren: 0.1
+      },
     },
     exit: {
       opacity: 0,
       x: "100%",
-      transition: { duration: 0.2, ease: "easeIn" },
+      scale: 0.95,
+      transition: { duration: 0.3, ease: "easeIn" },
     },
   }
 
-  // Credits Display Component
+  // Enhanced Credits Display Component with AI theme
   const CreditsDisplay = useMemo(() => {
     if (!isAuthenticated) return null
 
     if (availableCredits === null) {
       return (
-        <div className="hidden lg:flex items-center space-x-2">
-          <Skeleton className="h-8 w-24 rounded-lg" />
-        </div>
+        <motion.div
+          className="hidden lg:flex items-center space-x-2"
+          variants={itemVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <Skeleton className="h-8 w-24 rounded-lg bg-gradient-to-r from-primary/20 to-secondary/20" />
+        </motion.div>
       )
     }
 
     const isLowCredits = availableCredits < 100
 
     return (
-      <div
-        className="hidden lg:flex items-center space-x-2 px-3 py-1.5 bg-muted/50 rounded-lg border transition-colors hover:bg-muted/70"
+      <motion.div
+        className={cn(
+          "hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded-xl border transition-all duration-300",
+          "bg-gradient-to-r from-primary/10 via-secondary/5 to-accent/10",
+          "border-primary/20 hover:border-primary/40",
+          "hover:shadow-lg hover:shadow-primary/10",
+          "backdrop-blur-sm"
+        )}
         data-testid="credits-display"
+        variants={itemVariants}
+        initial="hidden"
+        animate="visible"
+        whileHover="hover"
       >
-        <CreditCard className="h-4 w-4 text-muted-foreground" />
+        <motion.div
+          variants={aiGlowVariants}
+          initial="idle"
+          whileHover="hover"
+          className="relative"
+        >
+          <Zap className="h-4 w-4 text-primary" />
+          <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm" />
+        </motion.div>
         <span
           className={cn(
-            "text-sm font-medium tabular-nums",
-            isLowCredits ? "text-destructive" : "text-foreground",
+            "text-sm font-medium tabular-nums bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
+            isLowCredits ? "from-destructive to-destructive" : ""
           )}
         >
           {availableCredits.toLocaleString()}
         </span>
         {isPremium && (
-          <Badge variant="secondary" className="text-xs font-medium ml-2 px-2 py-0.5">
-            <Sparkles className="h-3 w-3 mr-1" />
-            {subscriptionPlan}
-          </Badge>
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 500 }}
+          >
+            <Badge
+              variant="secondary"
+              className={cn(
+                "text-xs font-medium ml-2 px-2 py-0.5",
+                "bg-gradient-to-r from-secondary to-accent text-secondary-foreground",
+                "border border-secondary/20 shadow-sm"
+              )}
+            >
+              <Brain className="h-3 w-3 mr-1" />
+              {subscriptionPlan}
+            </Badge>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
     )
   }, [isAuthenticated, availableCredits, subscriptionPlan, isPremium])
 
-  // User Avatar Component
+  // Enhanced User Avatar Component
   const UserAvatar = useMemo(
     () => (
-      <Avatar className="h-8 w-8 border border-border transition-all duration-200 hover:border-primary/50">
-        <AvatarImage src={(user as any)?.image || ""} alt={user?.name || "User"} />
-        <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-          {userInitials}
-        </AvatarFallback>
-      </Avatar>
+      <motion.div
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+      >
+        <Avatar className={cn(
+          "h-8 w-8 border-2 transition-all duration-300",
+          "border-primary/50 hover:border-primary hover:shadow-lg hover:shadow-primary/20",
+          "bg-gradient-to-br from-background to-muted/50"
+        )}>
+          <AvatarImage src={(user as any)?.image || ""} alt={user?.name || "User"} />
+          <AvatarFallback className={cn(
+            "bg-gradient-to-br from-primary/20 to-secondary/20 text-primary font-semibold",
+            "hover:from-primary/30 hover:to-secondary/30 transition-all duration-300"
+          )}>
+            {userInitials}
+          </AvatarFallback>
+        </Avatar>
+      </motion.div>
     ),
     [user, userInitials],
   )
@@ -227,10 +333,11 @@ export function MainNavbar() {
 
       <motion.header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b",
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b",
+          "relative overflow-hidden",
           isScrolled
-            ? "bg-background/95 backdrop-blur-md shadow-lg border-border/60"
-            : "bg-background/80 backdrop-blur-sm border-border/40",
+            ? "bg-background/95 backdrop-blur-xl shadow-2xl border-primary/20 shadow-primary/5"
+            : "bg-background/80 backdrop-blur-lg border-border/40",
         )}
         data-testid="main-navbar"
         role="navigation"
@@ -238,8 +345,22 @@ export function MainNavbar() {
         initial="hidden"
         animate="visible"
         variants={!prefersReducedMotion ? navbarVariants : {}}
+        style={{
+          background: isScrolled
+            ? 'linear-gradient(135deg, hsl(var(--background)/0.95) 0%, hsl(var(--background)/0.98) 100%)'
+            : 'linear-gradient(135deg, hsl(var(--background)/0.8) 0%, hsl(var(--background)/0.9) 100%)'
+        }}
       >
-        <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        {/* AI Glow Effect */}
+        <div
+          className="absolute inset-0 opacity-30 pointer-events-none"
+          style={{
+            background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, hsl(var(--primary)/0.1) 0%, transparent 50%)`,
+            transition: 'opacity 0.3s ease'
+          }}
+        />
+
+        <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative z-10">
           
           {/* Logo */}
           <Link
@@ -256,50 +377,96 @@ export function MainNavbar() {
             data-testid="nav-items"
             aria-label="Primary navigation"
           >
-            {navItems.map((item) => {
+            {navItems.map((item, index) => {
               const isActive = pathname === item.href
 
               return (
-                <Link
+                <motion.div
                   key={item.name}
-                  href={item.href}
-                  className={cn(
-                    "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1",
-                    isActive
-                      ? "bg-muted text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                  )}
-                  data-testid={`nav-item-${item.name.toLowerCase()}`}
-                  aria-current={isActive ? "page" : undefined}
+                  variants={itemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  transition={{ delay: index * 0.1 }}
                 >
-                  {item.name}
-                </Link>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "relative px-4 py-2 text-sm font-medium rounded-xl transition-all duration-300",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1",
+                      "group overflow-hidden",
+                      isActive
+                        ? "bg-gradient-to-r from-primary/10 to-secondary/10 text-primary shadow-lg shadow-primary/10 border border-primary/20"
+                        : "text-muted-foreground hover:text-foreground hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5",
+                    )}
+                    data-testid={`nav-item-${item.name.toLowerCase()}`}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    {/* AI Glow Effect */}
+                    <div className={cn(
+                      "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+                      "bg-gradient-to-r from-primary/5 via-secondary/5 to-accent/5 rounded-xl"
+                    )} />
+
+                    {/* Active Indicator */}
+                    {isActive && (
+                      <motion.div
+                        className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-gradient-to-r from-primary to-secondary rounded-full"
+                        layoutId="activeTab"
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      />
+                    )}
+
+                    <span className="relative z-10">{item.name}</span>
+                  </Link>
+                </motion.div>
               )
             })}
           </nav>
 
           {/* Right side actions */}
           <div className="flex items-center space-x-3">
-            
+
             {/* Credits Display */}
             {CreditsDisplay}
 
             {/* Search Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Open search (Press / or Ctrl/Cmd+K)"
-              title="Search — press / or Ctrl/Cmd+K"
-              aria-expanded={isSearchModalOpen}
-              onClick={handleSearchOpen}
-              className="h-9 w-9 rounded-lg hover:bg-muted transition-colors"
+            <motion.div
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              transition={{ delay: 0.3 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <Search className="h-4 w-4" />
-            </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Open search (Press / or Ctrl/Cmd+K)"
+                title="Search — press / or Ctrl/Cmd+K"
+                aria-expanded={isSearchModalOpen}
+                onClick={handleSearchOpen}
+                className={cn(
+                  "h-9 w-9 rounded-xl transition-all duration-300",
+                  "hover:bg-gradient-to-r hover:from-primary/10 hover:to-secondary/10",
+                  "hover:shadow-lg hover:shadow-primary/10",
+                  "border border-transparent hover:border-primary/20",
+                  "group relative overflow-hidden"
+                )}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <Search className="h-4 w-4 relative z-10 group-hover:text-primary transition-colors" />
+              </Button>
+            </motion.div>
 
             {/* Theme Toggle */}
-            <ThemeToggle />
+            <motion.div
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              transition={{ delay: 0.4 }}
+            >
+              <ThemeToggle />
+            </motion.div>
 
             {/* Authentication Section */}
             {isAuthenticated ? (
@@ -321,25 +488,42 @@ export function MainNavbar() {
             {/* Mobile Menu Button */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="md:hidden h-9 w-9 rounded-lg hover:bg-muted transition-colors"
-                  aria-label="Open menu"
-                  aria-controls="main-mobile-menu"
+                <motion.div
+                  variants={itemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  transition={{ delay: 0.5 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={isMobileMenuOpen ? "close" : "open"}
-                      initial={!prefersReducedMotion ? { rotate: -90, opacity: 0 } : {}}
-                      animate={{ rotate: 0, opacity: 1 }}
-                      exit={!prefersReducedMotion ? { rotate: 90, opacity: 0 } : {}}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                    </motion.div>
-                  </AnimatePresence>
-                </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "md:hidden h-9 w-9 rounded-xl transition-all duration-300",
+                      "hover:bg-gradient-to-r hover:from-primary/10 hover:to-secondary/10",
+                      "hover:shadow-lg hover:shadow-primary/10",
+                      "border border-transparent hover:border-primary/20",
+                      "group relative overflow-hidden"
+                    )}
+                    aria-label="Open menu"
+                    aria-controls="main-mobile-menu"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={isMobileMenuOpen ? "close" : "open"}
+                        initial={!prefersReducedMotion ? { rotate: -90, opacity: 0 } : {}}
+                        animate={{ rotate: 0, opacity: 1 }}
+                        exit={!prefersReducedMotion ? { rotate: 90, opacity: 0 } : {}}
+                        transition={{ duration: 0.2 }}
+                        className="relative z-10"
+                      >
+                        {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                      </motion.div>
+                    </AnimatePresence>
+                  </Button>
+                </motion.div>
               </SheetTrigger>
 
               <AnimatePresence>

@@ -76,6 +76,7 @@ export function CategoryTagCloud({
         {categories.map((c) => {
           const active = internalSelected === c.id
           const weight = weights[c.id] ?? 1
+          const colors = CATEGORY_COLORS[c.id] || CATEGORY_COLORS.programming // fallback
           return (
             <motion.button
               key={c.id}
@@ -86,10 +87,10 @@ export function CategoryTagCloud({
               style={{ fontSize: `${Math.min(1.6, Math.max(0.75, weight))}rem` }}
               className={cn(
                 "relative px-2.5 py-1 rounded-full border flex items-center gap-1.5",
-                "transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                "transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 active
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-background/60 hover:bg-muted border-border/50 text-foreground/80",
+                  ? `${colors.activeBg} ${colors.activeText} ${colors.activeBorder} ${colors.glow} shadow-lg`
+                  : `${colors.bg} ${colors.hoverBg} ${colors.border} ${colors.text} hover:shadow-md`,
               )}
               aria-pressed={active}
             >
@@ -100,8 +101,8 @@ export function CategoryTagCloud({
                   className={cn(
                     "text-[10px] font-medium px-1.5 py-0.5 rounded-md border",
                     active
-                      ? "bg-primary-foreground/15 border-primary-foreground/20 text-primary-foreground"
-                      : "bg-muted/60 border-border/40 text-muted-foreground",
+                      ? "bg-white/20 border-white/30 text-white"
+                      : "bg-black/10 border-black/20 text-black/70 dark:bg-white/10 dark:border-white/20 dark:text-white/70",
                   )}
                 >
                   {counts[c.id]}
@@ -113,6 +114,159 @@ export function CategoryTagCloud({
       </div>
     </aside>
   )
+}
+
+// Enhanced color configurations for each category
+const CATEGORY_COLORS: Record<string, {
+  bg: string
+  hoverBg: string
+  border: string
+  text: string
+  activeBg: string
+  activeText: string
+  activeBorder: string
+  glow: string
+}> = {
+  programming: {
+    bg: "bg-blue-500/10",
+    hoverBg: "hover:bg-blue-500/20",
+    border: "border-blue-500/20",
+    text: "text-blue-600 dark:text-blue-400",
+    activeBg: "bg-blue-500",
+    activeText: "text-white",
+    activeBorder: "border-blue-500",
+    glow: "shadow-blue-500/25"
+  },
+  "web-development": {
+    bg: "bg-cyan-500/10",
+    hoverBg: "hover:bg-cyan-500/20",
+    border: "border-cyan-500/20",
+    text: "text-cyan-600 dark:text-cyan-400",
+    activeBg: "bg-cyan-500",
+    activeText: "text-white",
+    activeBorder: "border-cyan-500",
+    glow: "shadow-cyan-500/25"
+  },
+  "data-science": {
+    bg: "bg-yellow-500/10",
+    hoverBg: "hover:bg-yellow-500/20",
+    border: "border-yellow-500/20",
+    text: "text-yellow-600 dark:text-yellow-400",
+    activeBg: "bg-yellow-500",
+    activeText: "text-white",
+    activeBorder: "border-yellow-500",
+    glow: "shadow-yellow-500/25"
+  },
+  devops: {
+    bg: "bg-gray-500/10",
+    hoverBg: "hover:bg-gray-500/20",
+    border: "border-gray-500/20",
+    text: "text-gray-600 dark:text-gray-400",
+    activeBg: "bg-gray-500",
+    activeText: "text-white",
+    activeBorder: "border-gray-500",
+    glow: "shadow-gray-500/25"
+  },
+  "cloud-computing": {
+    bg: "bg-sky-500/10",
+    hoverBg: "hover:bg-sky-500/20",
+    border: "border-sky-500/20",
+    text: "text-sky-600 dark:text-sky-400",
+    activeBg: "bg-sky-500",
+    activeText: "text-white",
+    activeBorder: "border-sky-500",
+    glow: "shadow-sky-500/25"
+  },
+  "version-control": {
+    bg: "bg-orange-500/10",
+    hoverBg: "hover:bg-orange-500/20",
+    border: "border-orange-500/20",
+    text: "text-orange-600 dark:text-orange-400",
+    activeBg: "bg-orange-500",
+    activeText: "text-white",
+    activeBorder: "border-orange-500",
+    glow: "shadow-orange-500/25"
+  },
+  "software-architecture": {
+    bg: "bg-violet-500/10",
+    hoverBg: "hover:bg-violet-500/20",
+    border: "border-violet-500/20",
+    text: "text-violet-600 dark:text-violet-400",
+    activeBg: "bg-violet-500",
+    activeText: "text-white",
+    activeBorder: "border-violet-500",
+    glow: "shadow-violet-500/25"
+  },
+  design: {
+    bg: "bg-purple-500/10",
+    hoverBg: "hover:bg-purple-500/20",
+    border: "border-purple-500/20",
+    text: "text-purple-600 dark:text-purple-400",
+    activeBg: "bg-purple-500",
+    activeText: "text-white",
+    activeBorder: "border-purple-500",
+    glow: "shadow-purple-500/25"
+  },
+  business: {
+    bg: "bg-amber-500/10",
+    hoverBg: "hover:bg-amber-500/20",
+    border: "border-amber-500/20",
+    text: "text-amber-600 dark:text-amber-400",
+    activeBg: "bg-amber-500",
+    activeText: "text-white",
+    activeBorder: "border-amber-500",
+    glow: "shadow-amber-500/25"
+  },
+  marketing: {
+    bg: "bg-green-500/10",
+    hoverBg: "hover:bg-green-500/20",
+    border: "border-green-500/20",
+    text: "text-green-600 dark:text-green-400",
+    activeBg: "bg-green-500",
+    activeText: "text-white",
+    activeBorder: "border-green-500",
+    glow: "shadow-green-500/25"
+  },
+  education: {
+    bg: "bg-accent/10",
+    hoverBg: "hover:bg-accent/20",
+    border: "border-accent/20",
+    text: "text-accent-foreground",
+    activeBg: "bg-accent",
+    activeText: "text-accent-foreground",
+    activeBorder: "border-accent",
+    glow: "shadow-accent/25"
+  },
+  photography: {
+    bg: "bg-indigo-500/10",
+    hoverBg: "hover:bg-indigo-500/20",
+    border: "border-indigo-500/20",
+    text: "text-indigo-600 dark:text-indigo-400",
+    activeBg: "bg-indigo-500",
+    activeText: "text-white",
+    activeBorder: "border-indigo-500",
+    glow: "shadow-indigo-500/25"
+  },
+  music: {
+    bg: "bg-pink-500/10",
+    hoverBg: "hover:bg-pink-500/20",
+    border: "border-pink-500/20",
+    text: "text-pink-600 dark:text-pink-400",
+    activeBg: "bg-pink-500",
+    activeText: "text-white",
+    activeBorder: "border-pink-500",
+    glow: "shadow-pink-500/25"
+  },
+  health: {
+    bg: "bg-teal-500/10",
+    hoverBg: "hover:bg-teal-500/20",
+    border: "border-teal-500/20",
+    text: "text-teal-600 dark:text-teal-400",
+    activeBg: "bg-teal-500",
+    activeText: "text-white",
+    activeBorder: "border-teal-500",
+    glow: "shadow-teal-500/25"
+  },
 }
 
 export default CategoryTagCloud

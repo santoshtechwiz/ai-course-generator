@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useInfiniteQuery, type UseInfiniteQueryResult, type InfiniteData } from "@tanstack/react-query"
 import { motion } from "framer-motion"
-import { BookOpen, LayoutGrid, List, Search } from "lucide-react"
+import { BookOpen, LayoutGrid, List, Search, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useDebounce } from "@/lib/utils/hooks"
 import { cn } from "@/lib/utils"
 import { CourseCard } from "./CourseCard"
@@ -149,16 +150,43 @@ export default function CoursesClient({
   // Loading state
   if (isInitialLoading) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="flex flex-col items-center justify-center min-h-[60vh] w-full"
-      >
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Loading courses...</p>
+      <div className="w-full space-y-6">
+        {/* Controls skeleton */}
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-10 w-32 rounded-lg" />
+              <Skeleton className="h-10 w-32 rounded-lg" />
+              <Skeleton className="h-10 w-32 rounded-lg" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-9 w-9 rounded-lg" />
+              <Skeleton className="h-9 w-9 rounded-lg" />
+            </div>
+          </div>
         </div>
-      </motion.div>
+
+        {/* Course grid skeleton */}
+        <div className={cn(
+          "grid gap-6",
+          "grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+        )}>
+          {[...Array(8)].map((_, i) => (
+            <CourseCard
+              key={i}
+              title=""
+              description=""
+              rating={0}
+              slug=""
+              unitCount={0}
+              lessonCount={0}
+              quizCount={0}
+              viewCount={0}
+              loading={true}
+            />
+          ))}
+        </div>
+      </div>
     )
   }
 
@@ -187,7 +215,7 @@ export default function CoursesClient({
     )
   }
 
-  // Empty state
+  // Empty state with reset filter CTA
   if (hasNoData) {
     return (
       <motion.div
@@ -206,17 +234,20 @@ export default function CoursesClient({
           {hasFilters ? "No courses match your filters" : "No courses available yet"}
         </h3>
         <p className="text-muted-foreground max-w-md mb-6">
-          {hasFilters 
-            ? "Try adjusting your search terms or removing some filters"
+          {hasFilters
+            ? "Try adjusting your search terms or removing some filters to see more results"
             : "Check back soon - new courses are added regularly"}
         </p>
         {hasFilters && (
           <Button
             variant="outline"
             onClick={() => {
-              window.location.href = '/courses'
+              // Reset filters by navigating to clean URL
+              window.location.href = '/dashboard'
             }}
+            className="flex items-center gap-2"
           >
+            <X className="w-4 h-4" />
             Clear all filters
           </Button>
         )}
