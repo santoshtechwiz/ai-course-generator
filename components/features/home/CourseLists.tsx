@@ -63,72 +63,99 @@ export default function CoursesClient({
 }: CoursesClientProps) {
   // State
   const [activeTab, setActiveTab] = useState<"all" | "popular" | "newest">("all")
-  const [viewMode, setViewMode] = useState<"grid" | "list">("list") // Default to list for Udemy-style
-  
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list") // Default to list for better course information display
+  const [isThrottling, setIsThrottling] = useState(false)
+
   // Hooks
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
+
+  // Optimize search queries to prevent unnecessary API calls
+  const effectiveSearchQuery = debouncedSearchQuery.trim()
+  const shouldSearch = effectiveSearchQuery.length === 0 || effectiveSearchQuery.length >= 2
 
   // Load more ref for infinite scroll
   const loadMoreRef = useRef<HTMLDivElement>(null)
 
+  // Memoize query function to prevent unnecessary re-renders
+  const queryFn = useCallback(async ({ pageParam, signal }: { pageParam: number; signal?: AbortSignal }) => {
+    const currentPage = pageParam
+
+    try {
+      const apiUrl = new URL("/api/course", window.location.origin)
+      apiUrl.searchParams.set("page", currentPage.toString())
+      apiUrl.searchParams.set("limit", ITEMS_PER_PAGE.toString())
+      
+      if (shouldSearch && effectiveSearchQuery) {
+        apiUrl.searchParams.set("search", effectiveSearchQuery)
+      }
+      if (selectedCategory) {
+        apiUrl.searchParams.set("category", selectedCategory)
+      }
+      if (userId) {
+        apiUrl.searchParams.set("userId", userId)
+      }
+      if (ratingFilter > 0) {
+        apiUrl.searchParams.set("minRating", ratingFilter.toString())
+      }
+      
+      apiUrl.searchParams.set(
+        "sortBy",
+        activeTab === "popular" ? "viewCount" : activeTab === "newest" ? "createdAt" : "viewCount"
+      )
+      apiUrl.searchParams.set("sortOrder", "desc")
+
+      const response = await fetch(apiUrl.toString(), {
+        headers: { "Cache-Control": "no-cache" },
+        signal
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      
+      // Transform API response to match expected structure
+      return {
+        courses: data.courses || [],
+        total: data.totalCount || 0,
+        hasMore: data.page < data.totalPages
+      }
+    } catch (error) {
+      console.error('Fetch error:', error)
+      throw error
+    }
+  }, [shouldSearch, effectiveSearchQuery, selectedCategory, userId, ratingFilter, activeTab])
+
   // Query
   const queryResult: UseInfiniteQueryResult<InfiniteData<CoursesResponse>, Error> = useInfiniteQuery({
-    queryKey: ["courses", debouncedSearchQuery || "", selectedCategory || "", userId || "", ratingFilter, activeTab],
+    queryKey: ["courses", shouldSearch ? effectiveSearchQuery : "", selectedCategory || "", userId || "", ratingFilter, activeTab],
     initialPageParam: 1,
-    queryFn: async ({ pageParam, signal }) => {
-      const currentPage = pageParam as number
-
-      try {
-        const apiUrl = new URL("/api/course", window.location.origin)
-        apiUrl.searchParams.set("page", currentPage.toString())
-        apiUrl.searchParams.set("limit", ITEMS_PER_PAGE.toString())
-        
-        if (debouncedSearchQuery) {
-          apiUrl.searchParams.set("search", debouncedSearchQuery)
-        }
-        if (selectedCategory) {
-          apiUrl.searchParams.set("category", selectedCategory)
-        }
-        if (userId) {
-          apiUrl.searchParams.set("userId", userId)
-        }
-        if (ratingFilter > 0) {
-          apiUrl.searchParams.set("minRating", ratingFilter.toString())
-        }
-        
-        apiUrl.searchParams.set(
-          "sortBy",
-          activeTab === "popular" ? "viewCount" : activeTab === "newest" ? "createdAt" : "viewCount"
-        )
-        apiUrl.searchParams.set("sortOrder", "desc")
-
-        const response = await fetch(apiUrl.toString(), {
-          headers: { "Cache-Control": "no-cache" },
-          signal
-        })
-
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status} ${response.statusText}`)
-        }
-
-        const data = await response.json()
-        
-        // Transform API response to match expected structure
-        return {
-          courses: data.courses || [],
-          total: data.totalCount || 0,
-          hasMore: data.page < data.totalPages
-        }
-      } catch (error) {
-        console.error('Fetch error:', error)
-        throw error
-      }
-    },
-    getNextPageParam: (lastPage, allPages) => 
+    queryFn,
+    getNextPageParam: (lastPage: CoursesResponse, allPages) => 
       lastPage.hasMore ? allPages.length + 1 : undefined,
+    // Optimized query options to prevent UI freezing
     refetchOnWindowFocus: false,
-    staleTime: 60000,
-    retry: 2,
+    refetchOnReconnect: false,
+    staleTime: 30000, // Reduced from 60000 to be more responsive
+    gcTime: 300000, // 5 minutes cache time
+    retry: (failureCount, error) => {
+      // Only retry on network errors, not on API errors
+      if (error instanceof Error && error.message.includes('API error')) {
+        return false
+      }
+      return failureCount < 2
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    // Prevent excessive concurrent requests
+    maxPages: 10,
+    // Add request deduplication
+    refetchInterval: false,
+    refetchIntervalInBackground: false,
+    // Enable background refetching for better UX
+    refetchOnMount: 'always',
+    // Network mode to prevent requests when offline
+    networkMode: 'online',
   })
 
   const {
@@ -139,6 +166,8 @@ export default function CoursesClient({
     status,
     error,
     isError,
+    isFetching,
+    isLoading,
   } = queryResult
 
   // Data processing
@@ -147,8 +176,43 @@ export default function CoursesClient({
   const hasNoData = !isInitialLoading && (!coursesData?.pages?.length || !coursesData.pages[0]?.courses?.length)
   const hasFilters = Boolean(searchQuery || selectedCategory || ratingFilter > 0)
 
-  // Loading state
-  if (isInitialLoading) {
+  // Prevent UI freezing by showing loading state only when necessary
+  const showLoading = isInitialLoading || (isFetching && !coursesData?.pages?.length)
+
+  // Throttled intersection observer for infinite scroll
+  useEffect(() => {
+    if (!loadMoreRef.current || !hasNextPage || isFetchingNextPage || isThrottling) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage && !isThrottling) {
+          setIsThrottling(true)
+          fetchNextPage()
+          
+          // Throttle next request to prevent excessive API calls
+          setTimeout(() => {
+            setIsThrottling(false)
+          }, 100) // 100ms throttle
+        }
+      },
+      {
+        rootMargin: '100px', // Start loading 100px before the element is visible
+        threshold: 0.1
+      }
+    )
+
+    observer.observe(loadMoreRef.current)
+
+    return () => {
+      if (loadMoreRef.current) {
+        observer.unobserve(loadMoreRef.current)
+      }
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, isThrottling])
+
+  // Loading state - Optimized to prevent UI freezing
+  if (showLoading) {
     return (
       <div className="w-full space-y-6">
         {/* Controls skeleton */}
@@ -166,10 +230,11 @@ export default function CoursesClient({
           </div>
         </div>
 
-        {/* Course grid skeleton */}
+        {/* Course grid skeleton with improved responsive layout */}
         <div className={cn(
-          "grid gap-6",
-          "grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+          "grid gap-10",
+          // Improved responsive breakpoints for larger cards
+          "grid-cols-1 lg:grid-cols-2"
         )}>
           {[...Array(8)].map((_, i) => (
             <CourseCard
@@ -190,7 +255,7 @@ export default function CoursesClient({
     )
   }
 
-  // Error state
+  // Error state - Enhanced error handling to prevent UI freezing
   if (isError) {
     return (
       <motion.div
@@ -205,12 +270,23 @@ export default function CoursesClient({
         <p className="text-muted-foreground max-w-md mb-6">
           {error instanceof Error ? error.message : "An error occurred while loading courses"}
         </p>
-        <Button
-          variant="outline"
-          onClick={() => window.location.reload()}
-        >
-          Try again
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => window.location.reload()}
+          >
+            Reload Page
+          </Button>
+          <Button
+            variant="default"
+            onClick={() => {
+              // Reset all filters and retry
+              window.location.href = '/dashboard'
+            }}
+          >
+            Reset Filters
+          </Button>
+        </div>
       </motion.div>
     )
   }
@@ -294,20 +370,33 @@ export default function CoursesClient({
         </div>
       </div>
 
+      {/* Background loading indicator */}
+      {isFetching && coursesData?.pages?.length && (
+        <div className="fixed top-4 right-4 z-50 bg-background/80 backdrop-blur-sm border rounded-lg px-3 py-2 shadow-lg">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            Updating...
+          </div>
+        </div>
+      )}
+
       {/* Results count */}
       {coursesData?.pages?.[0]?.total !== undefined && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
             {coursesData.pages[0].total} course{coursesData.pages[0].total !== 1 ? 's' : ''} found
+            {isFetching && coursesData.pages.length > 1 && (
+              <span className="ml-2 text-primary">(updating...)</span>
+            )}
           </p>
         </div>
       )}
 
-      {/* Course grid/list */}
+      {/* Course grid/list with improved responsive layout */}
       <div className={cn(
         viewMode === "grid" 
-          ? "grid gap-6 grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3" 
-          : "flex flex-col space-y-6"
+          ? "grid gap-10 grid-cols-1 lg:grid-cols-2" 
+          : "flex flex-col space-y-10"
       )}>
         {coursesData?.pages?.map((page: CoursesResponse, pageIndex: number) => (
           <React.Fragment key={pageIndex}>
@@ -324,13 +413,19 @@ export default function CoursesClient({
                 viewCount={course.viewCount || 0}
                 category={course.category?.name || "General"}
                 duration={`${course.estimatedHours || 4} hours`}
-                image={course.image}
+                image={course.image || undefined}
                 difficulty={course.difficulty as "Beginner" | "Intermediate" | "Advanced"}
                 price={undefined}
                 originalPrice={undefined}
                 instructor="Course Instructor"
                 enrolledCount={Math.floor(Math.random() * 5000) + 500}
-                updatedAt={course.updatedAt ? new Date(course.updatedAt).toISOString() : course.createdAt ? new Date(course.createdAt).toISOString() : new Date().toISOString()}
+                updatedAt={
+                  course.updatedAt 
+                    ? new Date(course.updatedAt).toISOString() 
+                    : course.createdAt 
+                      ? new Date(course.createdAt).toISOString() 
+                      : new Date().toISOString()
+                }
                 tags={[]}
                 className={viewMode === "list" ? "w-full" : undefined}
               />
@@ -355,6 +450,7 @@ export default function CoursesClient({
               variant="outline"
               onClick={() => fetchNextPage()}
               disabled={!hasNextPage || isFetchingNextPage}
+              className="min-w-[160px]"
             >
               Load more courses
             </Button>

@@ -65,6 +65,8 @@ export interface QuizState {
   // Timestamp (ms) of the last applied update to the quiz state. Used to avoid
   // race conditions where older async responses overwrite newer state.
   lastUpdated?: number | null
+  isInitialized: boolean
+  pendingRedirect: boolean
 }
 
 // Type aliases for better readability

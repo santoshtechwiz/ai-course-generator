@@ -291,32 +291,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     </Card>
   )
 
-  // Quick filter chips
-  const QuickFilters = () => (
-    <div className="flex items-center flex-wrap gap-2">
-      {[
-        { key: "all", label: "All" },
-        { key: "mcq", label: "MCQ" },
-        { key: "code", label: "Code" },
-        { key: "openended", label: "Open Ended" },
-        { key: "blanks", label: "Blanks" },
-        { key: "flashcard", label: "Flashcards" },
-      ].map(({ key, label }) => (
-        <Button
-          key={key}
-          variant={activeTab === key ? "default" : "secondary"}
-          size="sm"
-          className={cn("h-8 px-3", activeTab === key ? "" : "bg-muted")}
-          onClick={() => handleTabChange(key)}
-        >
-          {label}
-          {key !== "all" && quizCounts[key as keyof typeof quizCounts] !== undefined && (
-            <span className="ml-2 text-xs opacity-80">{quizCounts[key as keyof typeof quizCounts]}</span>
-          )}
-        </Button>
-      ))}
-    </div>
-  )
+
 
   // Recommended row (horizontal scroll)
   const recommended = useMemo(() => {
@@ -392,17 +367,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
               <>
                 <FeaturedBanner />
 
-                <div className="flex items-center justify-between flex-wrap gap-3">
-                  <QuickFilters />
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={handleCreateQuiz} className="gap-2 hover:bg-primary/10">
-                      <Sparkles className="h-4 w-4" /> Create Quiz
-                    </Button>
-                    <Button asChild size="sm" className="btn-gradient">
-                      <a href="/dashboard/openended" className="gap-2"><Sparkles className="h-4 w-4" /> Open-Ended</a>
-                    </Button>
-                  </div>
-                </div>
+              
 
                 {/* Empty state when no results */}
                 {noResults ? (

@@ -99,15 +99,15 @@ export const fetchQuiz = createAsyncThunk(
     },
     { rejectWithValue, signal }
   ) => {
+  if (!payload) {
+    return rejectWithValue('No payload provided')
+  }
+
+  const slug = payload.slug?.trim() || ""
+  const type = payload.quizType as QuizType
+  const requestKey = `quiz-${type}-${slug}`
+
   try {
-    if (!payload) {
-      return rejectWithValue('No payload provided')
-    }
-
-    const slug = payload.slug?.trim() || ""
-    const type = payload.quizType as QuizType
-    const requestKey = `quiz-${type}-${slug}`
-
     // Check if request was already cancelled
     if (signal?.aborted) {
       return rejectWithValue('Request was cancelled')

@@ -103,6 +103,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const [headerCompact, setHeaderCompact] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [isTheaterMode, setIsTheaterMode] = useState(false)
 
   // Mark when client is mounted to safely render client-only derived data
   useEffect(() => {
@@ -819,11 +820,18 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       </div>
 
       {/* Main content area */}
-      <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className={cn(
+        "flex-1 transition-all duration-300",
+        isTheaterMode && "main-content"
+      )}>
+        <div className={cn(
+          "mx-auto px-4 sm:px-6 lg:px-8 py-6 transition-all duration-300",
+          isTheaterMode ? "max-w-none" : "max-w-7xl"
+        )}>
           <div className={cn(
             "grid gap-6 transition-all duration-300",
-            sidebarCollapsed || isPiPActive 
+            isTheaterMode && "theater-mode-active",
+            sidebarCollapsed || isPiPActive || isTheaterMode
               ? "grid-cols-1" 
               : "grid-cols-1 xl:grid-cols-[1fr_400px]"
           )}>

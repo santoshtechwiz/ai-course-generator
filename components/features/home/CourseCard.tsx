@@ -286,13 +286,13 @@ export const CourseCard = React.memo(
     if (loading) {
       return (
         <Card className={cn(
-          "w-full h-80 overflow-hidden border border-border/50 bg-card/50",
+          "w-full min-h-96 overflow-hidden border border-border/50 bg-card/50",
           "animate-pulse",
           className
         )}>
           <div className="flex flex-col h-full">
             {/* Image skeleton with shimmer */}
-            <div className="relative w-full h-48 bg-gradient-to-br from-muted/60 to-muted/30 overflow-hidden">
+            <div className="relative w-full h-64 bg-gradient-to-br from-muted/60 to-muted/30 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-shimmer" />
               <div className="absolute top-4 left-4">
                 <Skeleton className="h-6 w-20 rounded-full" />
@@ -300,22 +300,42 @@ export const CourseCard = React.memo(
             </div>
 
             {/* Content skeleton */}
-            <div className="flex-1 p-6 space-y-4">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-16 rounded-full" />
-                <Skeleton className="h-6 w-3/4 rounded-lg" />
+            <div className="flex-1 p-8 space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                  <Skeleton className="h-8 w-4/5 rounded-lg" />
+                </div>
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-full rounded" />
+                  <Skeleton className="h-4 w-full rounded" />
+                  <Skeleton className="h-4 w-3/4 rounded" />
+                </div>
+                <Skeleton className="h-4 w-48 rounded" />
+                <div className="flex items-center gap-3 p-3 bg-muted/60 rounded-lg">
+                  <Skeleton className="h-5 w-16 rounded" />
+                  <div className="flex gap-1">
+                    {[1,2,3,4,5].map((i) => (
+                      <Skeleton key={i} className="h-4 w-4 rounded" />
+                    ))}
+                  </div>
+                  <Skeleton className="h-4 w-24 rounded" />
+                </div>
+                <div className="grid grid-cols-2 gap-4 p-4 bg-muted/60 rounded-lg">
+                  {[...Array(4)].map((_, j) => (
+                    <div key={j} className="flex items-center gap-3">
+                      <Skeleton className="w-10 h-10 rounded-full" />
+                      <div className="space-y-1">
+                        <Skeleton className="h-3 w-16 rounded" />
+                        <Skeleton className="h-4 w-20 rounded" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-full rounded" />
-                <Skeleton className="h-4 w-2/3 rounded" />
-              </div>
-              <div className="flex gap-4">
-                <Skeleton className="h-4 w-24 rounded" />
-                <Skeleton className="h-4 w-20 rounded" />
-              </div>
-              <div className="flex justify-between items-center pt-4">
+              <div className="flex justify-between items-center pt-6 border-t border-border/50">
                 <Skeleton className="h-6 w-20 rounded-full" />
-                <Skeleton className="h-9 w-24 rounded-md" />
+                <Skeleton className="h-12 w-32 rounded-md" />
               </div>
             </div>
           </div>
@@ -352,7 +372,7 @@ export const CourseCard = React.memo(
           whileHover="hover"
           onHoverStart={() => setIsHovered(true)}
           onHoverEnd={() => setIsHovered(false)}
-          className={cn("w-full h-80 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", className)}
+          className={cn("w-full h-auto min-h-96 overflow-hidden border border-border/50 bg-card course-card-enhanced", className)}
         >
           <Card
             onClick={handleCardClick}
@@ -365,7 +385,7 @@ export const CourseCard = React.memo(
             )}
             role="button"
             tabIndex={0}
-            aria-label={`View course: ${title}`}
+            aria-label={`View course: ${title} - ${description}. ${lessonCount} lessons, ${computedDuration} duration, rated ${rating} stars by ${enrolledCount} students.`}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
@@ -373,8 +393,8 @@ export const CourseCard = React.memo(
               }
             }}
           >
-            {/* Image Section - Fixed height */}
-            <div className="relative w-full h-48 overflow-hidden flex-shrink-0">
+            {/* Image Section - Larger for better visibility */}
+            <div className="relative w-full h-64 overflow-hidden flex-shrink-0">
               {/* Background Pattern */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
 
@@ -490,85 +510,119 @@ export const CourseCard = React.memo(
               </AnimatePresence>
             </div>
 
-            {/* Content Section - Standardized height */}
-            <div className="flex-1 p-6 flex flex-col justify-between">
-              <div className="space-y-3">
-                {/* Category and title - Typography hierarchy */}
-                <div className="space-y-2">
+            {/* Content Section - Standardized height with better typography hierarchy */}
+            <div className="flex-1 p-8 flex flex-col justify-between min-h-0">
+              <div className="space-y-3 flex-1 min-h-0">
+                {/* Category and title - Enhanced typography hierarchy */}
+                <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className={cn("p-1.5 rounded-md", categoryConfig.bg)}>
-                      <categoryConfig.icon className={cn("w-4 h-4", categoryConfig.color)} />
+                    <div className={cn("p-2 rounded-lg", categoryConfig.bg)}>
+                      <categoryConfig.icon className={cn("w-5 h-5", categoryConfig.color)} />
                     </div>
-                    <Badge className={cn("text-xs px-3 py-1 font-medium", categoryConfig.badge)}>
+                    <Badge className={cn("text-sm px-4 py-1.5 font-semibold", categoryConfig.badge)}>
                       {category}
                     </Badge>
                   </div>
 
-                  <h3 className="text-lg font-bold leading-tight group-hover:text-primary transition-colors duration-300 line-clamp-2">
+                  <h3 className="text-xl font-bold leading-tight group-hover:text-primary transition-colors duration-300 line-clamp-2 text-foreground font-heading">
                     {title}
                   </h3>
                 </div>
 
-                {/* Description - Secondary typography */}
-                <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                {/* Description - Enhanced typography */}
+                <p className="text-base text-muted-foreground line-clamp-3 leading-relaxed font-medium course-description">
                   {description}
                 </p>
 
-                {/* Instructor and updated date - Metadata typography */}
-                <div className="text-xs text-muted-foreground">
-                  By {instructor}
-                  {updatedAt && ` • Updated ${new Date(updatedAt).toLocaleDateString()}`}
+                {/* Instructor and updated date - Enhanced metadata typography */}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">By {instructor}</span>
+                  {updatedAt && (
+                    <>
+                      <span className="text-muted-foreground/60">•</span>
+                      <span className="font-medium">Updated {new Date(updatedAt).toLocaleDateString()}</span>
+                    </>
+                  )}
                 </div>
 
-                {/* Rating - Prominent display */}
+                {/* Rating - Enhanced prominent display */}
                 {ratingLoading ? (
-                  <div className="h-4 w-24 bg-muted/60 rounded animate-pulse" />
+                  <div className="h-5 w-32 bg-muted/60 rounded animate-pulse" />
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-orange-500">
-                      {typeof rating === 'number' ? rating.toFixed(1) : rating}
-                    </span>
-                    <div className="flex">
-                      {[1,2,3,4,5].map((i) => (
-                        <Star
-                          key={i}
-                          className={cn(
-                            "h-3 w-3",
-                            rating >= i ? "fill-orange-400 text-orange-400" : "text-muted-foreground/50"
-                          )}
-                        />
-                      ))}
+                  <div className="flex items-center gap-3 p-3 course-rating rounded-lg border border-yellow-200/50 dark:border-yellow-800/50">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                        {typeof rating === 'number' ? rating.toFixed(1) : rating}
+                      </span>
+                      <div className="flex" role="img" aria-label={`Rating: ${rating} out of 5 stars`}>
+                        {[1,2,3,4,5].map((i) => (
+                          <Star
+                            key={i}
+                            className={cn(
+                              "h-4 w-4",
+                              rating >= i ? "fill-orange-400 text-orange-400" : "text-muted-foreground/50"
+                            )}
+                          />
+                        ))}
+                      </div>
                     </div>
-                    <span className="text-xs text-muted-foreground ml-1">
-                      ({enrolledCount.toLocaleString()})
-                    </span>
+                    <div className="text-sm text-muted-foreground font-medium">
+                      ({enrolledCount.toLocaleString()} students)
+                    </div>
                   </div>
                 )}
 
-                {/* Stats - Metadata typography */}
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    <span>{computedDuration}</span>
+                {/* Stats - Enhanced display with better typography */}
+                <div className="grid grid-cols-2 gap-4 p-4 course-stats-grid rounded-lg border border-border/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                      <Clock className="h-4 w-4 text-primary" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Duration</p>
+                      <p className="text-sm font-bold text-foreground course-stat">{computedDuration}</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <BookOpen className="h-3 w-3" />
-                    <span>{lessonCount} lessons</span>
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
+                      <BookOpen className="h-4 w-4 text-blue-500" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Lessons</p>
+                      <p className="text-sm font-bold text-foreground course-stat">{lessonCount} lessons</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    <span>{courseLevel}</span>
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-500/10 rounded-full flex items-center justify-center">
+                      <Users className="h-4 w-4 text-green-500" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Level</p>
+                      <p className="text-sm font-bold text-foreground">{courseLevel}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-purple-500/10 rounded-full flex items-center justify-center">
+                      <FileQuestion className="h-4 w-4 text-purple-500" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Quizzes</p>
+                      <p className="text-sm font-bold text-foreground course-stat">{quizCount} quizzes</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Footer - Consistent button alignment */}
-              <div className="flex items-center justify-between pt-4 border-t border-border/50">
+              {/* Footer - Consistent button alignment and sizing */}
+              <div className="flex items-center justify-between pt-4 border-t border-border/50 mt-auto">
                 <div className="flex items-center gap-2">
                   {price !== undefined ? (
                     <div className="flex items-center gap-2">
                       <span className="text-xl font-bold text-primary">${price}</span>
-                      {originalPrice && originalPrice > price && (
+                      {originalPrice && price && originalPrice > price && (
                         <span className="text-sm text-muted-foreground line-through">${originalPrice}</span>
                       )}
                     </div>
@@ -580,21 +634,23 @@ export const CourseCard = React.memo(
                 </div>
 
                 <Button
-                  size="sm"
+                  size="lg"
                   className={cn(
-                    "group/btn relative overflow-hidden transition-all duration-300",
+                    "group/btn relative overflow-hidden transition-all duration-300 enroll-button-enhanced",
                     "bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary",
-                    "shadow-md hover:shadow-lg hover:shadow-primary/25 border-0 px-6 py-2 h-9",
-                    "text-sm font-semibold"
+                    "shadow-lg hover:shadow-xl hover:shadow-primary/25 border-0 px-8 py-3 h-12",
+                    "text-base font-bold text-primary-foreground",
+                    "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    "hover:scale-105 active:scale-95"
                   )}
                   onClick={handleEnrollClick}
                   disabled={isNavigating}
-                  aria-label={`Enroll in ${title}`}
+                  aria-label={`Enroll in ${title} course`}
                 >
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-3">
                     {isNavigating ? "Loading..." : "Enroll Now"}
                     {!isNavigating && (
-                      <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" />
+                      <ChevronRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform duration-300" aria-hidden="true" />
                     )}
                   </span>
                 </Button>
