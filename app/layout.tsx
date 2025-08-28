@@ -18,33 +18,33 @@ import { SuspenseGlobalFallback } from "@/components/loaders"
 import BProgressProvider from "./providers"
 
 
-// Optimized fonts for AI learning platform
-const inter = Inter({
+
+export const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
   weight: ["400", "500", "600", "700"],
   preload: true,
-})
+});
 
-const poppins = Poppins({
+export const poppins = Poppins({
   subsets: ["latin"],
   variable: "--font-poppins",
   display: "swap",
   weight: ["400", "500", "600", "700"],
   preload: true,
-})
+});
 
-const jetbrainsMono = JetBrains_Mono({
+export const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
   weight: ["400", "500", "600"],
   preload: true,
-})
+});
 
-// Remove force-dynamic to allow ISR
-// export const dynamic = "force-dynamic"
+
+
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
@@ -105,11 +105,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         )}
 
         {/* Preconnect for performance */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://www.youtube.com" />
         <link rel="preconnect" href="https://i.ytimg.com" />
-<script src="http://localhost:8097"></script>
+
         {/* App Icons */}
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

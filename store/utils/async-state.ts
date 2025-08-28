@@ -111,6 +111,7 @@ export function createRejectedUpdate(
 // Abort controller utilities
 export class RequestManager {
   private static requests = new Map<string, AbortController>()
+  private static navigationListeners = new Set<() => void>()
   
   static create(key: string): AbortController {
     // Cancel existing request if any
@@ -130,17 +131,38 @@ export class RequestManager {
   }
   
   static cancelAll(): void {
-    this.requests.forEach((controller) => {
+    this.requests.forEach((controller, key) => {
       if (!controller.signal.aborted) {
         controller.abort()
       }
     })
     this.requests.clear()
+    this.notifyNavigationListeners()
   }
   
   static isAborted(key: string): boolean {
     const controller = this.requests.get(key)
     return controller?.signal.aborted ?? true
+  }
+  
+  static cleanup(key: string): void {
+    this.requests.delete(key)
+  }
+  
+  static getActiveRequests(): string[] {
+    return Array.from(this.requests.keys())
+  }
+  
+  static addNavigationListener(callback: () => void): void {
+    this.navigationListeners.add(callback)
+  }
+  
+  static removeNavigationListener(callback: () => void): void {
+    this.navigationListeners.delete(callback)
+  }
+  
+  static notifyNavigationListeners(): void {
+    this.navigationListeners.forEach(callback => callback())
   }
 }
 

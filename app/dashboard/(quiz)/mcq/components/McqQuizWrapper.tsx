@@ -49,7 +49,9 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   useEffect(() => {
     const loadQuiz = async () => {
       try {
+        // Reset loading state and clear any previous errors
         dispatch(resetQuiz())
+        hasShownLoaderRef.current = false
 
         await dispatch(fetchQuiz({ slug, quizType: "mcq" })).unwrap()
       } catch (err) {
@@ -63,8 +65,11 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     return () => {
       if (submissionTimeoutRef.current) clearTimeout(submissionTimeoutRef.current)
     }
-  }, [slug, dispatch])  // Navigate to result
-  useEffect(() => {    // To prevent infinite loop, we track if we've already shown the loader for this completion    
+  }, [slug, dispatch])
+  
+  // Navigate to result
+  useEffect(() => {    
+    // To prevent infinite loop, we track if we've already shown the loader for this completion    
     if (isCompleted && quizStatus === "succeeded" && !hasShownLoaderRef.current) {
       hasShownLoaderRef.current = true;
       

@@ -69,6 +69,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     const loadQuiz = async () => {
       try {
         dispatch(resetQuiz())
+        hasShownLoaderRef.current = false
         await dispatch(fetchQuiz({ slug, quizType: "openended" })).unwrap()
         setError(null)
       } catch (err) {

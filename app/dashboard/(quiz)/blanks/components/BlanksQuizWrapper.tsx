@@ -51,6 +51,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
     const loadQuiz = async () => {
       try {
         dispatch(resetQuiz())
+        hasShownLoaderRef.current = false
         await dispatch(fetchQuiz({ slug, quizType: "blanks" })).unwrap()
         setError(null)
       } catch (err) {

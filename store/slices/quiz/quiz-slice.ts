@@ -211,7 +211,7 @@ export const fetchQuiz = createAsyncThunk(
     }
 
     const data = await response.json()
-    RequestManager.cancel(requestKey)
+    RequestManager.cleanup(requestKey)
 
     if (!data || !Array.isArray(data.questions)) {
       return rejectWithValue({
@@ -644,21 +644,58 @@ const quizSlice = createSlice({
       }
     },
 
+    // Handle navigation between quiz pages
+    handleNavigation(state, action: PayloadAction<{ keepData?: boolean }>) {
+      const keepData = action.payload?.keepData ?? false
+      
+      // Cancel all pending requests during navigation
+      RequestManager.cancelAll()
+      
+      if (!keepData) {
+        // Clear quiz data on navigation unless explicitly told to keep it
+        state.questions = []
+        state.answers = {}
+        state.results = null
+        state.slug = null
+        state.quizType = null
+        state.title = ''
+        state.currentQuestionIndex = 0
+        state.isCompleted = false
+        state.lastUpdated = null
+        state.isInitialized = false
+        state.pendingRedirect = false
+      }
+      
+      // Always reset status and error on navigation
+      state.status = 'idle'
+      state.error = null
+    },
+
     resetQuiz(state, action: PayloadAction<{ keepResults?: boolean } | undefined>) {
       const keep = action.payload?.keepResults ?? false
+      
+      // Cancel all pending requests when resetting quiz
+      RequestManager.cancelAll()
+      
       state.questions = []
       state.answers = {}
-      state.title = ''
-      state.status = 'idle'
       state.currentQuestionIndex = 0
-      state.isCompleted = keep
-      state.slug = null
-      state.quizType = null
-      state.questionStartTimes = {}
-      if (!keep) state.results = null
+      state.isCompleted = false
+      state.status = 'idle'
+      state.error = null
       state.requiresAuth = false
       state.redirectAfterLogin = null
-  state.lastUpdated = null
+      state.questionStartTimes = {}
+      state.isInitialized = false
+      state.pendingRedirect = false
+      
+      if (!keep) {
+        state.results = null
+        state.slug = null
+        state.quizType = null
+        state.title = ''
+        state.lastUpdated = null
+      }
     },
 
     clearResults(state) {
@@ -771,8 +808,12 @@ const quizSlice = createSlice({
         if (payload?.status === 'not-found') {
           state.status = 'not-found'
           state.error = payload.error || 'Quiz not found'
-        } else if (payload === 'Request was cancelled') {
-          // Don't change status or clear data for cancelled requests
+        } else if (payload === 'Request was cancelled' || 
+                   action.error?.message?.includes('aborted') ||
+                   action.error?.name === 'AbortError') {
+          // Don't change status or show error for cancelled requests
+          // Keep existing data and status to prevent blank screens
+          console.log('Quiz request was cancelled, preserving current state')
           return
         } else {
           state.status = 'failed'
@@ -781,7 +822,10 @@ const quizSlice = createSlice({
 
         // Only clear quiz data for non-cancelled errors and if no data exists yet
         // This prevents clearing valid data when a subsequent request fails
-        if (payload !== 'Request was cancelled' && (!state.questions.length || !state.slug)) {
+        if ((payload !== 'Request was cancelled' && 
+             !action.error?.message?.includes('aborted') && 
+             action.error?.name !== 'AbortError') && 
+            (!state.questions.length || !state.slug)) {
           state.questions = []
           state.answers = {}
           state.results = null
@@ -821,6 +865,7 @@ export const {
   // Quiz setup and reset
   setQuiz,
   resetQuiz,
+  handleNavigation,
   resetSubmissionState,
   clearResults,
 
