@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation"
 import { PlanBadge } from "../../subscription/components/subscription-status/plan-badge"
 import { useSubscription, useAuth } from "@/modules/auth"
 import { PageWrapper } from "@/components/layout/PageWrapper"
-import { Section } from "@/components/layout/Section"
+
 
 export function AccountOverview({ userId }: { userId: string }) {
   const { data: session, status } = useSession()
