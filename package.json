@@ -26,11 +26,8 @@
     "export": "next export",
     "prod:build": "npm run prod:migrate && npm run build",
     "knip": "knip",
-    "prod": "set NODE_ENV=production && npm run prod:migrate && npm run build && npm run start",
-    "check-consistency": "tsx scripts/check-subscription-consistency.ts",
-    "fix-consistency": "tsx scripts/check-subscription-consistency.ts --fix",
-    "setup-consistency": "npx prisma db execute --file prisma/migrations/fix_subscription_consistency.sql",
-    "video-fix": "node scripts/video-health-check.js"
+    "prod": "set NODE_ENV=production && npm run prod:migrate && npm run build && npm run start"
+ 
   },
   "dependencies": {
     "@ai-sdk/google": "^1.1.14",

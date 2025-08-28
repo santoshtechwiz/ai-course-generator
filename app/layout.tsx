@@ -19,29 +19,7 @@ import BProgressProvider from "./providers"
 
 
 
-export const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
-  preload: true,
-});
 
-export const poppins = Poppins({
-  subsets: ["latin"],
-  variable: "--font-poppins",
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
-  preload: true,
-});
-
-export const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  display: "swap",
-  weight: ["400", "500", "600"],
-  preload: true,
-});
 
 
 
@@ -115,7 +93,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
       </head>
 
-      <body className={`${inter.variable} ${poppins.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground`}>
+      <body className={`font-sans antialiased bg-background text-foreground`}>
         <BProgressProvider>
           <Providers session={session}>
             {/* Skip Navigation for accessibility */}
