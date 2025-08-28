@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/modules/auth"
 import { useAppSelector } from "@/store/hooks"
 import { cn } from "@/lib/utils"
+import { useQuery } from "@tanstack/react-query"
 
 interface CourseNotification {
   id: string
@@ -43,15 +44,13 @@ interface CourseNotificationsMenuProps {
   className?: string
 }
 
-// Hook to fetch course data
+// Hook to fetch course data using TanStack Query
 const useCourseData = (courseIds: string[], shouldFetch: boolean) => {
-  const [courseData, setCourseData] = useState<Record<string, CourseData>>({})
-  const [loading, setLoading] = useState(false)
-
-  const fetchCourseData = useCallback(async () => {
-    if (courseIds.length === 0) return
-    setLoading(true)
-    try {
+  const query = useQuery({
+    queryKey: ['courseData', courseIds],
+    queryFn: async () => {
+      if (courseIds.length === 0) return {}
+      
       const response = await fetch('/api/courses/data', {
         method: 'POST',
         headers: {
@@ -59,30 +58,36 @@ const useCourseData = (courseIds: string[], shouldFetch: boolean) => {
         },
         body: JSON.stringify({ courseIds }),
       })
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
+      
       const result = await response.json()
       if (result.success && result.data) {
-        setCourseData(result.data)
+        return result.data
       } else {
         console.warn('Invalid course data response:', result)
+        return {}
       }
-    } catch (error) {
-      console.error('Failed to fetch course data:', error)
-      setCourseData({})
-    } finally {
-      setLoading(false)
+    },
+    enabled: shouldFetch && courseIds.length > 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: (failureCount, error) => {
+      // Don't retry on 4xx errors
+      if (error instanceof Error && error.message.includes('4')) {
+        return false
+      }
+      return failureCount < 3
     }
-  }, [courseIds])
+  })
 
-  useEffect(() => {
-    if (shouldFetch) {
-      fetchCourseData()
-    }
-  }, [shouldFetch, fetchCourseData])
-
-  return { courseData, loading, fetchCourseData }
+  return { 
+    courseData: query.data || {}, 
+    loading: query.isLoading, 
+    error: query.error,
+    refetch: query.refetch
+  }
 }
 
 export default function CourseNotificationsMenu({ className }: CourseNotificationsMenuProps) {
@@ -93,36 +98,46 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
   const router = useRouter()
   const { user } = useAuth()
 
-  // Get all course progress from Redux
+  // Get all course progress from Redux - memoized to prevent infinite re-renders
   const courseProgress = useAppSelector((state) => state.courseProgress.byCourseId)
 
-  // Get course IDs for fetching course data
+  // Memoize course progress to prevent unnecessary re-renders
+  const memoizedCourseProgress = useMemo(() => courseProgress, [courseProgress])
+
+  // Get course IDs for fetching course data - memoized
   const courseIds = useMemo(() => {
-    if (!courseProgress) return []
-    return Object.keys(courseProgress).filter(courseId => {
-      const progress = courseProgress[courseId]
+    if (!memoizedCourseProgress) return []
+    return Object.keys(memoizedCourseProgress).filter(courseId => {
+      const progress = memoizedCourseProgress[courseId]
       return progress && progress.videoProgress && !progress.videoProgress.isCompleted
     })
-  }, [courseProgress])
+  }, [memoizedCourseProgress])
+
+  // Memoize user to prevent unnecessary re-renders
+  const memoizedUser = useMemo(() => user, [user?.id, user?.email])
 
   // Fetch course data only when dropdown is opened
-  const { courseData, loading: courseDataLoading, fetchCourseData } = useCourseData(courseIds, false)
+  const { courseData, loading: courseDataLoading, refetch: fetchCourseData } = useCourseData(courseIds, false)
 
-  // Generate notifications from course progress
+  // Memoize course data to prevent unnecessary re-renders - use deep comparison
+  const memoizedCourseData = useMemo(() => courseData, [JSON.stringify(courseData)])
+  const memoizedCourseDataLoading = useMemo(() => courseDataLoading, [courseDataLoading])
+
+  // Generate notifications from course progress - with stable dependencies
   const generateNotifications = useCallback(() => {
-    if (!user || !courseProgress) return []
+    if (!memoizedUser || !memoizedCourseProgress) return []
 
     const notifications: CourseNotification[] = []
     const now = Date.now()
     const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000
 
-    Object.entries(courseProgress).forEach(([courseId, progress]) => {
+    Object.entries(memoizedCourseProgress).forEach(([courseId, progress]) => {
       // Skip if no video progress or course is completed
       if (!progress.videoProgress || progress.videoProgress.isCompleted) return
 
       // Calculate progress percentage based on completed chapters
       const completedChapters = progress.videoProgress.completedChapters || []
-      const progressPercentage = completedChapters.length > 0 ? 
+      const progressPercentage = completedChapters.length > 0 ?
         (completedChapters.length / 10) * 100 : 0 // Assuming 10 chapters per course
 
       // Check if course was accessed recently
@@ -131,10 +146,10 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
 
       if (progressPercentage < 100) {
         // Get course data from the fetched course data
-        const courseInfo = courseData[courseId]
-        
+        const courseInfo = memoizedCourseData[courseId]
+
         // Only create notification if we have course data or if it's still loading
-        if (courseInfo || courseDataLoading) {
+        if (courseInfo || memoizedCourseDataLoading) {
           const courseSlug = courseInfo?.slug || `course-${courseId}`
           const courseTitle = courseInfo?.title || `Course ${courseId}`
           
@@ -156,7 +171,7 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
       // Add quiz notifications (this would come from quiz progress data)
       // For now, we'll add a placeholder
       if (progressPercentage > 50 && progressPercentage < 100) {
-        const courseInfo = courseData[courseId]
+        const courseInfo = memoizedCourseData[courseId]
         
         // Only create quiz notification if we have course data
         if (courseInfo) {
@@ -186,14 +201,14 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
       if (priorityDiff !== 0) return priorityDiff
       return b.lastAccessed.getTime() - a.lastAccessed.getTime()
     })
-  }, [user, courseProgress, courseData, courseDataLoading])
+  }, [memoizedUser, memoizedCourseProgress, memoizedCourseData, memoizedCourseDataLoading])
 
-  // Update notifications when course progress changes
+  // Update notifications when dependencies change - use stable dependencies instead of generateNotifications
   useEffect(() => {
     const newNotifications = generateNotifications()
     setNotifications(newNotifications)
     setUnreadCount(newNotifications.filter(n => n.priority === 'high').length)
-  }, [generateNotifications])
+  }, [memoizedUser?.id, memoizedCourseProgress, memoizedCourseData, memoizedCourseDataLoading])
 
   // Handle notification click
   const handleNotificationClick = useCallback((notification: CourseNotification) => {

@@ -17,13 +17,6 @@ import { RootErrorBoundary } from "@/components/layout/RootErrorBoundary"
 import { SuspenseGlobalFallback } from "@/components/loaders"
 import BProgressProvider from "./providers"
 
-
-
-
-
-
-
-
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
@@ -89,8 +82,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* App Icons */}
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-
-
       </head>
 
       <body className={`font-sans antialiased bg-background text-foreground`}>
@@ -122,29 +113,31 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
               <Suspense fallback={<SuspenseGlobalFallback />}>
                 <div className="relative min-h-screen flex flex-col">
-                  <div className="h-20">
-                    {/* Prevent layout shift with fixed height */}
-                    <Suspense fallback={
-                      <div className="fixed top-0 left-0 right-0 h-20 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-                        <div className="container h-full flex items-center justify-between">
-                          <div className="w-24 h-8 bg-muted/20 rounded-md animate-pulse" />
-                          <div className="flex gap-4">
-                            <div className="w-20 h-8 bg-muted/20 rounded-md animate-pulse" />
-                            <div className="w-8 h-8 bg-muted/20 rounded-full animate-pulse" />
-                          </div>
+                  {/* Navigation */}
+                  <Suspense fallback={
+                    <div className="fixed top-0 left-0 right-0 h-20 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+                      <div className="container h-full flex items-center justify-between">
+                        <div className="w-24 h-8 bg-muted/20 rounded-md animate-pulse" />
+                        <div className="flex gap-4">
+                          <div className="w-20 h-8 bg-muted/20 rounded-md animate-pulse" />
+                          <div className="w-8 h-8 bg-muted/20 rounded-full animate-pulse" />
                         </div>
                       </div>
-                    }>
-                      <MainNavbar />
-                    </Suspense>
-                  </div>
-                  <main id="main-content" className="flex-1 w-full" role="main">
+                    </div>
+                  }>
+                    <MainNavbar />
+                  </Suspense>
+
+                  {/* Main Content */}
+                  <main id="main-content" className="flex-1 w-full">
                     <PageTransition>
                       <Suspense fallback={<SuspenseGlobalFallback />}>
                         {children}
                       </Suspense>
                     </PageTransition>
                   </main>
+
+                  {/* Footer */}
                   <Footer />
                 </div>
               </Suspense>

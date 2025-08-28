@@ -1,11 +1,9 @@
 import type React from "react"
-import { Toaster } from "@/components/ui/toaster"
-import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
-import CourseAIState from "@/components/development/CourseAIState"
 import { getAuthSession } from "@/lib/auth"
-import Chatbot from "@/components/features/chat/Chatbot"
 import type { Metadata } from "next"
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
+import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
+import { DashboardLayout } from "@/components/dashboard/layout"
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "Dashboard | CourseAI",
@@ -20,15 +18,15 @@ export const viewport = {
 }
 
 /**
- * Unified Dashboard Layout
+ * Dashboard Layout
  *
- * Follows Next.js App Router best practices:
- * - Single layout per route segment
- * - Proper composition with ClientLayoutWrapper
- * - Consistent structure across all dashboard pages
- * - Optimized for performance and maintainability
+ * Simplified layout that wraps dashboard pages with:
+ * - Authentication check
+ * - Client-side providers
+ * - Dashboard-specific UI components
+ * - Error boundaries
  */
-export default async function DashboardLayout({
+export default async function DashboardLayoutPage({
   children,
 }: {
   children: React.ReactNode
@@ -78,15 +76,9 @@ export default async function DashboardLayout({
 
   return (
     <ClientLayoutWrapper withTheme={true} withSubscriptionSync={true}>
-      <div className="flex flex-col min-h-screen bg-background">
-        {/* Main Content Area */}
-        <main className="flex-1">{children}</main>
-
-        {/* Global Components */}
-        <Toaster />
-        <Chatbot userId={session?.user?.id} />
-        {process.env.NODE_ENV !== "production" && <CourseAIState />}
-      </div>
+      <DashboardLayout userId={session?.user?.id}>
+        {children}
+      </DashboardLayout>
     </ClientLayoutWrapper>
   )
 }
