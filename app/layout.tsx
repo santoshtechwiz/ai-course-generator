@@ -4,7 +4,6 @@ import { Inter, Poppins, JetBrains_Mono } from "next/font/google"
 import "../globals.css"
 
 import Footer from "@/components/shared/Footer"
-import { MainNavbar } from "@/components/layout/navigation/MainNavbar"
 import { Providers } from "@/store/provider"
 import { getServerAuthSession } from "@/lib/server-auth"
 import { Suspense } from "react"
@@ -113,21 +112,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
               <Suspense fallback={<SuspenseGlobalFallback />}>
                 <div className="relative min-h-screen flex flex-col">
-                  {/* Navigation */}
-                  <Suspense fallback={
-                    <div className="fixed top-0 left-0 right-0 h-20 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-                      <div className="container h-full flex items-center justify-between">
-                        <div className="w-24 h-8 bg-muted/20 rounded-md animate-pulse" />
-                        <div className="flex gap-4">
-                          <div className="w-20 h-8 bg-muted/20 rounded-md animate-pulse" />
-                          <div className="w-8 h-8 bg-muted/20 rounded-full animate-pulse" />
-                        </div>
-                      </div>
-                    </div>
-                  }>
-                    <MainNavbar />
-                  </Suspense>
-
                   {/* Main Content */}
                   <main id="main-content" className="flex-1 w-full">
                     <PageTransition>

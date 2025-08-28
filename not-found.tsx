@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { getRecommendedItems } from "@/app/utils/get-recommended-items"
 import { RecommendedCard } from "@/components/shared/RecommendedCard"
 import { motion } from "framer-motion"
-import MainNavbar from "@/components/layout/navigation/MainNavbar"
 import ClientOnly from "@/components/ClientOnly"
 import { notFoundStructuredData, setNotFoundHeaders } from "@/app/utils/not-found-utils"
 // duplicate import removed
@@ -117,7 +116,6 @@ export default function NotFound() {
         <meta name="robots" content="noindex, nofollow" />
       </head>
       
-      <MainNavbar />
       <main className="flex-grow flex items-center justify-center px-4 py-12 md:py-16">
         <motion.div
           className="max-w-5xl w-full space-y-12 md:space-y-16"
