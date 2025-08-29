@@ -7,7 +7,7 @@ import type { QueryParams } from "@/app/types/types"
 import CreateQuizForm from "../mcq/components/CreateQuizForm"
 
 import { Loader2 } from "lucide-react"
-import ConsistentCard from "../../../../components/ConsistentCard"
+import ConsistentCard from "../../../../components/common/ConsistentCard"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
 import FlashCardCreate from "@/app/dashboard/(quiz)/flashcard/components/FlashCardCreate"
 import FillInTheBlankQuizForm from "@/app/dashboard/(quiz)/blanks/components/BlankQuizForm"

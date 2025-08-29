@@ -31,7 +31,7 @@ export function MainNavbar() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const subscription = useSubscription()
   const dispatch = useAppDispatch()
-  const subFetching = useAppSelector(selectIsSubscriptionFetching as any) as boolean
+  const subFetching = useAppSelector(selectIsSubscriptionFetching) as boolean
   const syncedOnceRef = useRef(false)
   const controls = useAnimation()
 
@@ -42,118 +42,193 @@ export function MainNavbar() {
     let active = true
     const run = async () => {
       try {
-        if (!progressApi.isStarted()) progressApi.start()
+        if (!progressApi?.isStarted?.()) progressApi?.start?.()
         await dispatch(forceSyncSubscription()).unwrap()
       } catch (error) {
         // Log the error for debugging but don't crash the app
         console.warn('Subscription sync failed in MainNavbar, continuing with cached data:', error)
       } finally {
-        if (active) progressApi.done()
+        if (active && progressApi?.done) progressApi.done()
       }
     }
     run()
     return () => { active = false }
   }, [dispatch])
 
-  const prefersReducedMotion = useReducedMotion()
+  // Safe reduced motion check
+  const prefersReducedMotion = (() => {
+    try {
+      return useReducedMotion()
+    } catch (error) {
+      console.warn('useReducedMotion hook failed:', error)
+      return false
+    }
+  })()
 
-  // Extract subscription details
+  // Extract subscription details with null checks
   const totalTokens = user?.credits || 0
   const tokenUsage = 0 // TODO: Track token usage
-  const subscriptionPlan = subscription?.subscription.plan || "FREE"
+  const subscriptionPlan = subscription?.subscription?.plan || "FREE"
 
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
 
-  // Mouse tracking for AI glow effect
+  // Mouse tracking for AI glow effect - with error boundary
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY })
+      try {
+        setMousePosition({ x: e.clientX, y: e.clientY })
+      } catch (error) {
+        console.warn('Mouse position update failed:', error)
+      }
     }
-    window.addEventListener("mousemove", handleMouseMove, { passive: true })
-    return () => window.removeEventListener("mousemove", handleMouseMove)
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener("mousemove", handleMouseMove, { passive: true })
+      return () => window.removeEventListener("mousemove", handleMouseMove)
+    }
   }, [])
 
-  // Scroll effect with AI-themed transitions
+  // Scroll effect with AI-themed transitions - with error boundary
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20)
+      try {
+        setIsScrolled(window.scrollY > 20)
+      } catch (error) {
+        console.warn('Scroll handler failed:', error)
+      }
     }
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener("scroll", handleScroll, { passive: true })
+      return () => window.removeEventListener("scroll", handleScroll)
+    }
   }, [])
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts - with error boundary
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase()
-      const isTyping = tag === "input" || tag === "textarea" || (e.target as HTMLElement)?.isContentEditable
+      try {
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase()
+        const isTyping = tag === "input" || tag === "textarea" || (e.target as HTMLElement)?.isContentEditable
 
-      // Cmd/Ctrl+K opens search
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault()
-        setIsSearchModalOpen(true)
-        return
-      }
+        // Cmd/Ctrl+K opens search
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+          e.preventDefault()
+          setIsSearchModalOpen(true)
+          return
+        }
 
-      // / quick search if not typing
-      if (!isTyping && e.key === "/") {
-        e.preventDefault()
-        setIsSearchModalOpen(true)
-      }
+        // / quick search if not typing
+        if (!isTyping && e.key === "/") {
+          e.preventDefault()
+          setIsSearchModalOpen(true)
+        }
 
-      // Escape closes modals
-      if (e.key === "Escape") {
-        setIsSearchModalOpen(false)
-        setIsMobileMenuOpen(false)
+        // Escape closes modals
+        if (e.key === "Escape") {
+          setIsSearchModalOpen(false)
+          setIsMobileMenuOpen(false)
+        }
+      } catch (error) {
+        console.warn('Keyboard handler failed:', error)
       }
     }
-    window.addEventListener("keydown", onKeyDown)
-    return () => window.removeEventListener("keydown", onKeyDown)
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener("keydown", onKeyDown)
+      return () => window.removeEventListener("keydown", onKeyDown)
+    }
   }, [])
 
-  // Memoized calculations
+  // Memoized calculations with error boundaries
   const availableCredits = useMemo(() => {
-    const credits = totalTokens ?? user?.credits ?? 0
-    if (typeof credits === "number" && typeof tokenUsage === "number") {
-      return Math.max(0, credits - tokenUsage)
+    try {
+      const credits = totalTokens ?? user?.credits ?? 0
+      if (typeof credits === "number" && typeof tokenUsage === "number") {
+        return Math.max(0, credits - tokenUsage)
+      }
+      return null
+    } catch (error) {
+      console.warn('Credits calculation failed:', error)
+      return null
     }
-    return null
   }, [totalTokens, user?.credits, tokenUsage])
 
   const userInitials = useMemo(() => {
-    const name = user?.name || ""
-    return (
-      name
-        .split(" ")
-        .map((n: string) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2) || "U"
-    )
+    try {
+      const name = user?.name || ""
+      return (
+        name
+          .split(" ")
+          .map((n: string) => n[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2) || "U"
+      )
+    } catch (error) {
+      console.warn('User initials calculation failed:', error)
+      return "U"
+    }
   }, [user])
 
-  // Handlers
-  const handleSearchOpen = useCallback(() => setIsSearchModalOpen(true), [])
-  const handleSearchClose = useCallback(() => setIsSearchModalOpen(false), [])
-  const handleMobileMenuToggle = useCallback(() => setIsMobileMenuOpen((prev) => !prev), [])
+  // Handlers with error boundaries
+  const handleSearchOpen = useCallback(() => {
+    try {
+      setIsSearchModalOpen(true)
+    } catch (error) {
+      console.warn('Search open handler failed:', error)
+    }
+  }, [])
+
+  const handleSearchClose = useCallback(() => {
+    try {
+      setIsSearchModalOpen(false)
+    } catch (error) {
+      console.warn('Search close handler failed:', error)
+    }
+  }, [])
+
+  const handleMobileMenuToggle = useCallback(() => {
+    try {
+      setIsMobileMenuOpen((prev) => !prev)
+    } catch (error) {
+      console.warn('Mobile menu toggle failed:', error)
+    }
+  }, [])
+
   const handleSignIn = useCallback(() => {
-    router.push("/api/auth/signin")
+    try {
+      router.push("/api/auth/signin")
+    } catch (error) {
+      console.warn('Sign in navigation failed:', error)
+    }
   }, [router])
 
   const handleSearchResult = useCallback(
     (url: string) => {
-      router.push(url)
-      handleSearchClose()
+      try {
+        router.push(url)
+        handleSearchClose()
+      } catch (error) {
+        console.warn('Search result navigation failed:', error)
+      }
     },
     [router, handleSearchClose],
   )
 
-  const isPremium = useMemo(() => subscriptionPlan && subscriptionPlan !== "FREE", [subscriptionPlan])
+  const isPremium = useMemo(() => {
+    try {
+      return subscriptionPlan && subscriptionPlan !== "FREE"
+    } catch (error) {
+      console.warn('Premium check failed:', error)
+      return false
+    }
+  }, [subscriptionPlan])
 
-  // Enhanced AI-themed animation variants
+  // Enhanced AI-themed animation variants with fallbacks
   const navbarVariants = {
     hidden: {
       opacity: 0,
@@ -221,105 +296,127 @@ export function MainNavbar() {
     },
   }
 
-  // Enhanced Credits Display Component with AI theme
+  // Enhanced Credits Display Component with AI theme and error boundary
   const CreditsDisplay = useMemo(() => {
-    if (!isAuthenticated) return null
+    try {
+      if (!isAuthenticated) return null
 
-    if (availableCredits === null) {
+      if (availableCredits === null) {
+        return (
+          <motion.div
+            className="hidden lg:flex items-center space-x-2"
+            variants={prefersReducedMotion ? {} : itemVariants}
+            initial={prefersReducedMotion ? {} : "hidden"}
+            animate={prefersReducedMotion ? {} : "visible"}
+          >
+            <Skeleton className="h-8 w-24 rounded-lg bg-gradient-to-r from-primary/20 to-secondary/20" />
+          </motion.div>
+        )
+      }
+
+      const isLowCredits = availableCredits < 100
+
       return (
         <motion.div
-          className="hidden lg:flex items-center space-x-2"
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
+          className={cn(
+            "hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded-xl border transition-all duration-300",
+            "bg-gradient-to-r from-primary/10 via-secondary/5 to-accent/10",
+            "border-primary/20 hover:border-primary/40",
+            "hover:shadow-lg hover:shadow-primary/10",
+            "backdrop-blur-sm"
+          )}
+          data-testid="credits-display"
+          variants={prefersReducedMotion ? {} : itemVariants}
+          initial={prefersReducedMotion ? {} : "hidden"}
+          animate={prefersReducedMotion ? {} : "visible"}
+          whileHover={prefersReducedMotion ? {} : "hover"}
         >
-          <Skeleton className="h-8 w-24 rounded-lg bg-gradient-to-r from-primary/20 to-secondary/20" />
+          <motion.div
+            variants={prefersReducedMotion ? {} : aiGlowVariants}
+            initial={prefersReducedMotion ? {} : "idle"}
+            whileHover={prefersReducedMotion ? {} : "hover"}
+            className="relative"
+          >
+            <Zap className="h-4 w-4 text-primary" />
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm" />
+          </motion.div>
+          <span
+            className={cn(
+              "text-sm font-medium tabular-nums bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
+              isLowCredits ? "from-destructive to-destructive" : ""
+            )}
+          >
+            {availableCredits.toLocaleString()}
+          </span>
+          {isPremium && (
+            <motion.div
+              initial={prefersReducedMotion ? {} : { scale: 0 }}
+              animate={prefersReducedMotion ? {} : { scale: 1 }}
+              transition={prefersReducedMotion ? {} : { delay: 0.2, type: "spring", stiffness: 500 }}
+            >
+              <Badge
+                variant="secondary"
+                className={cn(
+                  "text-xs font-medium ml-2 px-2 py-0.5",
+                  "bg-gradient-to-r from-secondary to-accent text-secondary-foreground",
+                  "border border-secondary/20 shadow-sm"
+                )}
+              >
+                <Brain className="h-3 w-3 mr-1" />
+                {subscriptionPlan}
+              </Badge>
+            </motion.div>
+          )}
         </motion.div>
       )
+    } catch (error) {
+      console.warn('Credits display render failed:', error)
+      return null
     }
+  }, [isAuthenticated, availableCredits, subscriptionPlan, isPremium, prefersReducedMotion])
 
-    const isLowCredits = availableCredits < 100
-
-    return (
-      <motion.div
-        className={cn(
-          "hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded-xl border transition-all duration-300",
-          "bg-gradient-to-r from-primary/10 via-secondary/5 to-accent/10",
-          "border-primary/20 hover:border-primary/40",
-          "hover:shadow-lg hover:shadow-primary/10",
-          "backdrop-blur-sm"
-        )}
-        data-testid="credits-display"
-        variants={itemVariants}
-        initial="hidden"
-        animate="visible"
-        whileHover="hover"
-      >
-        <motion.div
-          variants={aiGlowVariants}
-          initial="idle"
-          whileHover="hover"
-          className="relative"
-        >
-          <Zap className="h-4 w-4 text-primary" />
-          <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm" />
-        </motion.div>
-        <span
-          className={cn(
-            "text-sm font-medium tabular-nums bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
-            isLowCredits ? "from-destructive to-destructive" : ""
-          )}
-        >
-          {availableCredits.toLocaleString()}
-        </span>
-        {isPremium && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 500 }}
-          >
-            <Badge
-              variant="secondary"
-              className={cn(
-                "text-xs font-medium ml-2 px-2 py-0.5",
-                "bg-gradient-to-r from-secondary to-accent text-secondary-foreground",
-                "border border-secondary/20 shadow-sm"
-              )}
-            >
-              <Brain className="h-3 w-3 mr-1" />
-              {subscriptionPlan}
-            </Badge>
-          </motion.div>
-        )}
-      </motion.div>
-    )
-  }, [isAuthenticated, availableCredits, subscriptionPlan, isPremium])
-
-  // Enhanced User Avatar Component
+  // Enhanced User Avatar Component with error boundary
   const UserAvatar = useMemo(
-    () => (
-      <motion.div
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        transition={{ type: "spring", stiffness: 400, damping: 17 }}
-      >
-        <Avatar className={cn(
-          "h-8 w-8 border-2 transition-all duration-300",
-          "border-primary/50 hover:border-primary hover:shadow-lg hover:shadow-primary/20",
-          "bg-gradient-to-br from-background to-muted/50"
-        )}>
-          <AvatarImage src={(user as any)?.image || ""} alt={user?.name || "User"} />
-          <AvatarFallback className={cn(
-            "bg-gradient-to-br from-primary/20 to-secondary/20 text-primary font-semibold",
-            "hover:from-primary/30 hover:to-secondary/30 transition-all duration-300"
-          )}>
-            {userInitials}
-          </AvatarFallback>
-        </Avatar>
-      </motion.div>
-    ),
-    [user, userInitials],
+    () => {
+      try {
+        return (
+          <motion.div
+            whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+            whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+            transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
+          >
+            <Avatar className={cn(
+              "h-8 w-8 border-2 transition-all duration-300",
+              "border-primary/50 hover:border-primary hover:shadow-lg hover:shadow-primary/20",
+              "bg-gradient-to-br from-background to-muted/50"
+            )}>
+              <AvatarImage src={(user as any)?.image || ""} alt={user?.name || "User"} />
+              <AvatarFallback className={cn(
+                "bg-gradient-to-br from-primary/20 to-secondary/20 text-primary font-semibold",
+                "hover:from-primary/30 hover:to-secondary/30 transition-all duration-300"
+              )}>
+                {userInitials}
+              </AvatarFallback>
+            </Avatar>
+          </motion.div>
+        )
+      } catch (error) {
+        console.warn('User avatar render failed:', error)
+        return <div className="h-8 w-8 rounded-full bg-muted" />
+      }
+    },
+    [user, userInitials, prefersReducedMotion],
   )
+
+  // Safe navItems check
+  const safeNavItems = useMemo(() => {
+    try {
+      return Array.isArray(navItems) ? navItems : []
+    } catch (error) {
+      console.warn('Navigation items check failed:', error)
+      return []
+    }
+  }, [])
 
   return (
     <>
@@ -342,9 +439,9 @@ export function MainNavbar() {
         data-testid="main-navbar"
         role="navigation"
         aria-label="Main navigation"
-        initial="hidden"
-        animate="visible"
-        variants={!prefersReducedMotion ? navbarVariants : {}}
+        initial={prefersReducedMotion ? {} : "hidden"}
+        animate={prefersReducedMotion ? {} : "visible"}
+        variants={prefersReducedMotion ? {} : navbarVariants}
         style={{
           background: isScrolled
             ? 'linear-gradient(135deg, hsl(var(--background)/0.95) 0%, hsl(var(--background)/0.98) 100%)'
@@ -377,16 +474,16 @@ export function MainNavbar() {
             data-testid="nav-items"
             aria-label="Primary navigation"
           >
-            {navItems.map((item, index) => {
+            {safeNavItems.map((item, index) => {
               const isActive = pathname === item.href
 
               return (
                 <motion.div
                   key={item.name}
-                  variants={itemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  transition={{ delay: index * 0.1 }}
+                  variants={prefersReducedMotion ? {} : itemVariants}
+                  initial={prefersReducedMotion ? {} : "hidden"}
+                  animate={prefersReducedMotion ? {} : "visible"}
+                  transition={prefersReducedMotion ? {} : { delay: index * 0.1 }}
                 >
                   <Link
                     href={item.href}
@@ -408,7 +505,7 @@ export function MainNavbar() {
                     )} />
 
                     {/* Active Indicator */}
-                    {isActive && (
+                    {isActive && !prefersReducedMotion && (
                       <motion.div
                         className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-gradient-to-r from-primary to-secondary rounded-full"
                         layoutId="activeTab"
@@ -431,12 +528,12 @@ export function MainNavbar() {
 
             {/* Search Button */}
             <motion.div
-              variants={itemVariants}
-              initial="hidden"
-              animate="visible"
-              transition={{ delay: 0.3 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              variants={prefersReducedMotion ? {} : itemVariants}
+              initial={prefersReducedMotion ? {} : "hidden"}
+              animate={prefersReducedMotion ? {} : "visible"}
+              transition={prefersReducedMotion ? {} : { delay: 0.3 }}
+              whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+              whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
             >
               <Button
                 variant="ghost"
@@ -460,10 +557,10 @@ export function MainNavbar() {
 
             {/* Theme Toggle */}
             <motion.div
-              variants={itemVariants}
-              initial="hidden"
-              animate="visible"
-              transition={{ delay: 0.4 }}
+              variants={prefersReducedMotion ? {} : itemVariants}
+              initial={prefersReducedMotion ? {} : "hidden"}
+              animate={prefersReducedMotion ? {} : "visible"}
+              transition={prefersReducedMotion ? {} : { delay: 0.4 }}
             >
               <ThemeToggle />
             </motion.div>
@@ -489,12 +586,12 @@ export function MainNavbar() {
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
                 <motion.div
-                  variants={itemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  transition={{ delay: 0.5 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  variants={prefersReducedMotion ? {} : itemVariants}
+                  initial={prefersReducedMotion ? {} : "hidden"}
+                  animate={prefersReducedMotion ? {} : "visible"}
+                  transition={prefersReducedMotion ? {} : { delay: 0.5 }}
+                  whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                  whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                 >
                   <Button
                     variant="ghost"
@@ -513,10 +610,10 @@ export function MainNavbar() {
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={isMobileMenuOpen ? "close" : "open"}
-                        initial={!prefersReducedMotion ? { rotate: -90, opacity: 0 } : {}}
+                        initial={prefersReducedMotion ? {} : { rotate: -90, opacity: 0 }}
                         animate={{ rotate: 0, opacity: 1 }}
-                        exit={!prefersReducedMotion ? { rotate: 90, opacity: 0 } : {}}
-                        transition={{ duration: 0.2 }}
+                        exit={prefersReducedMotion ? {} : { rotate: 90, opacity: 0 }}
+                        transition={prefersReducedMotion ? {} : { duration: 0.2 }}
                         className="relative z-10"
                       >
                         {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -534,10 +631,10 @@ export function MainNavbar() {
                     className="w-72 sm:w-80 p-0 bg-background border-l"
                   >
                     <motion.div
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                      variants={!prefersReducedMotion ? mobileMenuVariants : {}}
+                      initial={prefersReducedMotion ? {} : "hidden"}
+                      animate={prefersReducedMotion ? {} : "visible"}
+                      exit={prefersReducedMotion ? {} : "exit"}
+                      variants={prefersReducedMotion ? {} : mobileMenuVariants}
                       className="h-full flex flex-col"
                     >
                       {/* Mobile Header */}
@@ -550,7 +647,7 @@ export function MainNavbar() {
 
                       {/* Mobile Navigation */}
                       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-                        {navItems.map((item) => {
+                        {safeNavItems.map((item) => {
                           const isActive = pathname === item.href
 
                           return (
@@ -594,12 +691,7 @@ export function MainNavbar() {
                                 </div>
                               </div>
                             )}
-                            <UserMenu>
-                              <Button variant="outline" className="w-full justify-start">
-                                {UserAvatar}
-                                <span className="ml-2">Account</span>
-                              </Button>
-                            </UserMenu>
+                           
                           </>
                         ) : (
                           <Button className="w-full" onClick={handleSignIn}>
@@ -617,7 +709,11 @@ export function MainNavbar() {
       </motion.header>
 
       {/* Search Modal */}
-      <SearchModal isOpen={isSearchModalOpen} setIsOpen={setIsSearchModalOpen} onResultClick={handleSearchResult} />
+      <SearchModal 
+        isOpen={isSearchModalOpen} 
+        setIsOpen={setIsSearchModalOpen} 
+        onResultClick={handleSearchResult} 
+      />
     </>
   )
 }

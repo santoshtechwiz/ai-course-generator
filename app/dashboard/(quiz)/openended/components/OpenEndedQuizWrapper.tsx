@@ -28,7 +28,7 @@ import OpenEndedQuiz from "./OpenEndedQuiz"
 
 
 import { QuizActions } from "../../components/QuizActions"
-import { Skeleton } from "@/components/ui/skeleton"
+import { UnifiedLoader } from "@/components/loaders"
 import { OpenEndedQuestion } from "@/app/types/quiz-types"
 
 
@@ -45,6 +45,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   const { user } = useAuth()
 
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const hasShownLoaderRef = useRef(false)
   const [error, setError] = useState<string | null>(null)
   // Redux selectors
   const questions = useSelector(selectQuizQuestions) as unknown as OpenEndedQuestion[];
@@ -182,10 +183,12 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        <Skeleton className="h-6 w-36" />
-        <Skeleton className="h-48 w-full" />
-      </div>
+      <UnifiedLoader
+        state="loading"
+        variant="skeleton"
+        message="Loading quiz questions..."
+        size="md"
+      />
     )
   }
 

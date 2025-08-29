@@ -48,21 +48,237 @@ function persistProgress(slug: string | null, quizType: QuizType | null, current
     const key = `${STORAGE_KEYS.QUIZ_STATE}:${quizType}:${slug}`
     const value = JSON.stringify({ slug, quizType, currentQuestionIndex, updatedAt: Date.now() })
     localStorage.setItem(key, value)
-  } catch { }
+  } catch (error) {
+    console.warn('Failed to persist quiz progress:', error)
+  }
 }
 
-function readProgress(slug: string | null, quizType: QuizType | null): number | null {
+function loadPersistedProgress(slug: string | null, quizType: QuizType | null): number | null {
   if (typeof window === 'undefined' || !slug || !quizType) return null
   try {
     const key = `${STORAGE_KEYS.QUIZ_STATE}:${quizType}:${slug}`
-    const raw = localStorage.getItem(key)
-    if (!raw) return null
-    const parsed = JSON.parse(raw)
-    return typeof parsed.currentQuestionIndex === 'number' ? parsed.currentQuestionIndex : null
-  } catch {
+    const stored = localStorage.getItem(key)
+    if (!stored) return null
+    const parsed = JSON.parse(stored)
+    // Check if data is recent (within 24 hours)
+    if (Date.now() - parsed.updatedAt > 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(key)
+      return null
+    }
+    return parsed.currentQuestionIndex || 0
+  } catch (error) {
+    console.warn('Failed to load persisted quiz progress:', error)
     return null
   }
 }
+
+/**
+ * Enhanced fetchQuiz with better error handling and cancellation
+ */
+export const fetchQuiz = createAsyncThunk(
+  "quiz/fetch",
+  async (
+    payload: {
+      slug?: string
+      quizType?: QuizType
+      data?: any
+    },
+    { rejectWithValue, signal, getState }
+  ) => {
+    if (!payload) {
+      return rejectWithValue({ error: 'No payload provided', code: 'INVALID_PAYLOAD' })
+    }
+
+    const slug = payload.slug?.trim() || ""
+    const type = payload.quizType as QuizType
+    const requestKey = `quiz-${type}-${slug}`
+
+    try {
+      // Check if request was already cancelled
+      if (signal?.aborted) {
+        return rejectWithValue({ error: 'Request was cancelled', code: 'CANCELLED' })
+      }
+
+      // Cancel any existing request for this quiz
+      RequestManager.cancel(requestKey)
+
+      // Create new abort controller
+      const abortController = RequestManager.create(requestKey)
+
+      // Combine signals
+      const combinedSignal = abortController.signal
+      if (signal) {
+        signal.addEventListener('abort', () => {
+          RequestManager.cancel(requestKey)
+        })
+      }
+
+      // Check for cached data first (unless inline data is provided)
+      if (!payload.data) {
+        const cached = getCachedQuiz(type, slug)
+        if (cached) {
+          RequestManager.cancel(requestKey)
+          return {
+            ...cached,
+            slug,
+            quizType: type,
+            id: slug,
+            __lastUpdated: Date.now(),
+            __fromCache: true
+          }
+        }
+      }
+
+      // Handle inline data
+      if (payload.data && Array.isArray(payload.data.questions)) {
+        RequestManager.cancel(requestKey)
+        const processedData = {
+          ...payload.data,
+          slug,
+          quizType: type,
+          id: slug,
+          __lastUpdated: Date.now(),
+          __fromCache: false
+        }
+        setCachedQuiz(type, slug, processedData)
+        return processedData
+      }
+
+      // Validate required parameters
+      if (!slug || !type) {
+        RequestManager.cancel(requestKey)
+        return rejectWithValue({
+          error: "Missing required parameters: slug and quizType are required",
+          code: 'MISSING_PARAMS'
+        })
+      }
+
+      // Determine API endpoint
+      let url: string
+      if (API_ENDPOINTS.byTypeAndSlug) {
+        url = API_ENDPOINTS.byTypeAndSlug(type, slug)
+      } else {
+        const endpoint = API_ENDPOINTS[type as keyof typeof API_ENDPOINTS]
+        if (!endpoint) {
+          RequestManager.cancel(requestKey)
+          return rejectWithValue({
+            error: `Invalid quiz type: ${type}`,
+            code: 'INVALID_QUIZ_TYPE'
+          })
+        }
+        url = `${endpoint}/${slug}`
+      }
+
+      // Check if request is still valid before making API call
+      if (combinedSignal.aborted) {
+        return rejectWithValue({ error: 'Request was cancelled', code: 'CANCELLED' })
+      }
+
+      // Make API request with timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        RequestManager.cancel(requestKey)
+
+        // Handle specific HTTP status codes
+        if (response.status === 404) {
+          return rejectWithValue({
+            error: 'Quiz not found',
+            code: 'NOT_FOUND',
+            status: response.status
+          })
+        }
+
+        if (response.status === 403) {
+          return rejectWithValue({
+            error: 'Access denied to this quiz',
+            code: 'FORBIDDEN',
+            status: response.status
+          })
+        }
+
+        if (response.status >= 500) {
+          return rejectWithValue({
+            error: 'Server error. Please try again later.',
+            code: 'SERVER_ERROR',
+            status: response.status
+          })
+        }
+
+        return rejectWithValue({
+          error: errorText || `HTTP ${response.status}: ${response.statusText}`,
+          code: 'HTTP_ERROR',
+          status: response.status
+        })
+      }
+
+      const data = await response.json()
+
+      // Validate response data
+      if (!data || typeof data !== 'object') {
+        RequestManager.cancel(requestKey)
+        return rejectWithValue({
+          error: 'Invalid response format',
+          code: 'INVALID_RESPONSE'
+        })
+      }
+
+      if (!Array.isArray(data.questions)) {
+        RequestManager.cancel(requestKey)
+        return rejectWithValue({
+          error: 'Invalid quiz data: questions array is required',
+          code: 'INVALID_QUIZ_DATA'
+        })
+      }
+
+      // Process and cache the data
+      const processedData = {
+        ...data,
+        slug,
+        quizType: type,
+        id: slug,
+        __lastUpdated: Date.now(),
+        __fromCache: false
+      }
+
+      setCachedQuiz(type, slug, processedData)
+      RequestManager.cancel(requestKey)
+
+      return processedData
+
+    } catch (error: any) {
+      RequestManager.cancel(requestKey)
+
+      // Handle different types of errors
+      if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+        return rejectWithValue({ error: 'Request was cancelled', code: 'CANCELLED' })
+      }
+
+      if (error.message?.includes('fetch')) {
+        return rejectWithValue({
+          error: 'Network error. Please check your connection.',
+          code: 'NETWORK_ERROR'
+        })
+      }
+
+      return rejectWithValue({
+        error: error.message || 'An unexpected error occurred',
+        code: 'UNKNOWN_ERROR'
+      })
+    }
+  }
+)
 
 // Initial State
 const initialState: QuizState = {
@@ -86,211 +302,6 @@ const initialState: QuizState = {
 }
 
 // Async Thunks
-
-/**
- * Load quiz definition based on slug/type
- */
-export const fetchQuiz = createAsyncThunk(
-  "quiz/fetch", async (
-    payload: {
-      slug?: string
-      quizType?: QuizType
-      data?: any
-    },
-    { rejectWithValue, signal }
-  ) => {
-  if (!payload) {
-    return rejectWithValue('No payload provided')
-  }
-
-  const slug = payload.slug?.trim() || ""
-  const type = payload.quizType as QuizType
-  const requestKey = `quiz-${type}-${slug}`
-
-  try {
-    // Check if request was already cancelled
-    if (signal?.aborted) {
-      return rejectWithValue('Request was cancelled')
-    }
-
-    // Set up abort controller for this specific request
-    const abortController = RequestManager.create(requestKey)
-    
-    // Combine signals
-    if (signal?.aborted) {
-      RequestManager.cancel(requestKey)
-      return rejectWithValue('Request was cancelled')
-    }
-    
-    signal?.addEventListener('abort', () => {
-      RequestManager.cancel(requestKey)
-    })
-
-    // Serve from cache if available and no inline data provided
-    if (!payload.data) {
-      const cached = getCachedQuiz(type, slug)
-      if (cached) {
-        RequestManager.cancel(requestKey)
-        return {
-          ...cached,
-          slug,
-          quizType: type,
-          id: slug,
-          __lastUpdated: Date.now(),
-        }
-      }
-    }
-
-    if (payload.data && Array.isArray(payload.data.questions)) {
-      RequestManager.cancel(requestKey)
-      return {
-        ...payload.data,
-        slug,
-        quizType: type,
-        id: slug,
-        __lastUpdated: Date.now(),
-      }
-    }
-
-    if (!slug || !type) {
-      RequestManager.cancel(requestKey)
-      return rejectWithValue({ error: "Missing slug or quizType" })
-    }
-
-    // Always use the unified API approach with type and slug for consistency
-    let url: string;
-
-    // Use the unified approach with byTypeAndSlug helper
-    if (API_ENDPOINTS.byTypeAndSlug) {
-      // Use the unified API pattern
-      url = API_ENDPOINTS.byTypeAndSlug(type, slug);
-      if (process.env.NODE_ENV !== 'production') {
-        console.log(`Using unified API endpoint: ${url}`);
-      }
-    } else {
-      // Fallback to legacy approach only if unified approach isn't available
-      const endpoint = API_ENDPOINTS[type as keyof typeof API_ENDPOINTS];
-      if (!endpoint) {
-        RequestManager.cancel(requestKey)
-        return rejectWithValue({ error: `Invalid quiz type: ${type}` });
-      }
-      url = `${endpoint}/${slug}`;
-      if (process.env.NODE_ENV !== 'production') {
-        console.log(`Using legacy API endpoint: ${url}`);
-      }
-    }
-
-    // Check if still not aborted before making request
-    if (abortController.signal.aborted) {
-      return rejectWithValue('Request was cancelled')
-    }
-
-    const response = await fetch(url, {
-      signal: abortController.signal,
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    })
-    
-    if (!response.ok) {
-      const errorText = await response.text()
-      RequestManager.cancel(requestKey)
-
-      // Handle 404 specifically as not found
-      if (response.status === 404) {
-        return rejectWithValue({
-          error: `Quiz not found`,
-          status: 'not-found',
-          details: `Quiz with slug "${slug}" and type "${type}" does not exist.`,
-        })
-      }
-      return rejectWithValue({
-        error: `Error loading quiz: ${response.status}`,
-        details: errorText,
-      })
-    }
-
-    const data = await response.json()
-    RequestManager.cleanup(requestKey)
-
-    if (!data || !Array.isArray(data.questions)) {
-      return rejectWithValue({
-        error: "Quiz not found or invalid data",
-        status: 'not-found',
-        details: "The quiz exists but contains no valid questions."
-      })
-    }
-
-    const questions = data.questions.map((q: any) => {
-      const base: QuizQuestion = {
-        id: q.id || crypto.randomUUID(),
-        question: q.question,
-        type: type,
-        answer: q.answer,
-        codeSnippet: q.codeSnippet,
-        language: q.language,
-        tags: q.tags || [],
-        hints: q.hints || [],
-        difficulty: q.difficulty,
-        keywords: q.keywords,
-      }
-
-      if (type === "mcq") {
-        return {
-          ...base,
-          options: q.options,
-          correctOptionId: q.correctOptionId,
-        }
-      }
-
-      if (type === "code") {
-        return {
-          ...base,
-          options: q.options,
-          codeSnippet: q.codeSnippet,
-          language: q.language || "javascript",
-        }
-      }
-
-      if (type === "blanks" || type === "openended") {
-        const open = q.openEndedQuestion || {}
-        return {
-          ...base,
-          tags: q.tags || open.tags || [],
-          hints: q.hints || open.hints || [],
-        }
-      }
-
-      return base
-    })
-
-    const normalized = {
-      ...data,
-      questions,
-      slug,
-      quizType: type,
-      id: slug,
-    }
-
-    // Cache normalized quiz
-    setCachedQuiz(type, slug, normalized)
-
-    return {
-      ...normalized,
-      __lastUpdated: Date.now(),
-    }
-  } catch (err: any) {
-    RequestManager.cancel(requestKey)
-    
-    // Handle abort errors gracefully
-    if (err?.name === 'AbortError') {
-      return rejectWithValue('Request was cancelled')
-    }
-    
-    return rejectWithValue({ error: getErrorMessage(err) })
-  }
-}
-)
 
 /**
  * Submit quiz to backend and save results
@@ -775,65 +786,86 @@ const quizSlice = createSlice({
         state.error = action.error.message || 'Quiz submission failed'
       })
       .addCase(fetchQuiz.pending, (state) => {
-        state.status = 'loading'
-        state.error = null
-        // Don't clear existing data during loading to prevent blank screens
-        // state.isInitialized = false
-        // state.pendingRedirect = false
+        // Only update status if not already loading (prevents flickering)
+        if (state.status !== 'loading') {
+          state.status = 'loading'
+          state.error = null
+          state.isInitialized = false
+        }
+        // Don't clear existing data to prevent blank screens during refetch
       })
       .addCase(fetchQuiz.fulfilled, (state, action: PayloadAction<any>) => {
-        const incomingTs = (action.payload as any)?.__lastUpdated || Date.now()
-        if (!state.lastUpdated || incomingTs >= state.lastUpdated) {
+        const incomingTs = action.payload.__lastUpdated || Date.now()
+
+        // Only update if this is newer data or we're in a fresh state
+        if (!state.lastUpdated || incomingTs >= state.lastUpdated || state.status !== 'succeeded') {
           state.status = 'succeeded'
+          state.error = null
           state.slug = action.payload.slug
           state.quizType = action.payload.quizType
           state.title = action.payload.title || action.payload.data?.title || ''
           state.questions = action.payload.questions || []
-          state.currentQuestionIndex = typeof action.payload.currentQuestionIndex === 'number' && action.payload.currentQuestionIndex >= 0
-            ? action.payload.currentQuestionIndex
-            : 0
+          state.isInitialized = true
+
+          // Load persisted progress if available
+          const persistedIndex = loadPersistedProgress(state.slug, state.quizType)
+          state.currentQuestionIndex = persistedIndex !== null ? persistedIndex :
+            (typeof action.payload.currentQuestionIndex === 'number' && action.payload.currentQuestionIndex >= 0
+              ? action.payload.currentQuestionIndex
+              : 0)
+
+          // Reset answers for fresh quiz attempt
           state.answers = {}
-          if (!state.results) {
+
+          // Clear results if this is a fresh load
+          if (!action.payload.__fromCache) {
             state.results = null
             state.isCompleted = false
           }
+
           state.lastUpdated = incomingTs
           persistProgress(state.slug, state.quizType, state.currentQuestionIndex)
         }
       })
       .addCase(fetchQuiz.rejected, (state, action) => {
         const payload = action.payload as any
+        const errorCode = payload?.code
 
-        // Check if this is a "not found" error
-        if (payload?.status === 'not-found') {
-          state.status = 'not-found'
-          state.error = payload.error || 'Quiz not found'
-        } else if (payload === 'Request was cancelled' || 
-                   action.error?.message?.includes('aborted') ||
-                   action.error?.name === 'AbortError') {
-          // Don't change status or show error for cancelled requests
-          // Keep existing data and status to prevent blank screens
-          console.log('Quiz request was cancelled, preserving current state')
-          return
-        } else {
-          state.status = 'failed'
-          state.error = payload?.error || action.error.message || 'Quiz loading failed'
+        // Handle different error types appropriately
+        switch (errorCode) {
+          case 'CANCELLED':
+            // Don't change status or show error for cancelled requests
+            // This prevents blank screens when navigating quickly
+            console.log('Quiz request was cancelled, preserving current state')
+            return
+
+          case 'NOT_FOUND':
+            state.status = 'not-found'
+            state.error = payload?.error || 'Quiz not found'
+            state.isInitialized = true
+            break
+
+          case 'FORBIDDEN':
+            state.status = 'failed'
+            state.error = payload?.error || 'Access denied'
+            state.isInitialized = true
+            break
+
+          case 'NETWORK_ERROR':
+          case 'SERVER_ERROR':
+            state.status = 'failed'
+            state.error = payload?.error || 'Network error. Please check your connection.'
+            state.isInitialized = true
+            break
+
+          default:
+            state.status = 'failed'
+            state.error = payload?.error || action.error.message || 'Failed to load quiz'
+            state.isInitialized = true
         }
 
-        // Only clear quiz data for non-cancelled errors and if no data exists yet
-        // This prevents clearing valid data when a subsequent request fails
-        if ((payload !== 'Request was cancelled' && 
-             !action.error?.message?.includes('aborted') && 
-             action.error?.name !== 'AbortError') && 
-            (!state.questions.length || !state.slug)) {
-          state.questions = []
-          state.answers = {}
-          state.results = null
-          state.slug = null
-          state.quizType = null
-          state.title = ''
-          state.lastUpdated = null
-        }
+        // Clear any pending operations
+        state.pendingRedirect = false
       })
       .addCase(checkAuthAndLoadResults.pending, (state) => {
         state.status = 'loading'

@@ -40,6 +40,7 @@ interface AIQuizNoticeModalProps {
   onStartQuiz: () => void
   onCreateQuiz: () => void
   quizType?: string
+  onDismissWithPreference?: (preference: 'never' | 'less' | 'normal') => void
 }
 
 const AIQuizNoticeModal = ({
@@ -47,7 +48,8 @@ const AIQuizNoticeModal = ({
   onClose,
   onStartQuiz,
   onCreateQuiz,
-  quizType = "quiz"
+  quizType = "quiz",
+  onDismissWithPreference
 }: AIQuizNoticeModalProps) => {
   const [dontShowAgain, setDontShowAgain] = useState(false)
 
@@ -72,7 +74,24 @@ const AIQuizNoticeModal = ({
 
   const handleClose = () => {
     if (dontShowAgain) {
-      localStorage.setItem("ai-quiz-notice-dismissed", "true")
+      // Use new preference system if available
+      if (onDismissWithPreference) {
+        onDismissWithPreference('never')
+      } else {
+        localStorage.setItem("ai-quiz-notice-dismissed", "true")
+      }
+    }
+    onClose()
+  }
+
+  const handleCloseWithPreference = (preference: 'never' | 'less' | 'normal') => {
+    if (onDismissWithPreference) {
+      onDismissWithPreference(preference)
+    } else {
+      // Fallback to old system
+      if (preference === 'never') {
+        localStorage.setItem("ai-quiz-notice-dismissed", "true")
+      }
     }
     onClose()
   }
@@ -358,25 +377,42 @@ const AIQuizNoticeModal = ({
                 </Button>
               </motion.div>
 
-              {/* Don't show again checkbox */}
+              {/* Don't show again preference buttons */}
               <motion.div
-                className="flex items-center justify-center space-x-2"
+                className="flex flex-col gap-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                <Checkbox
-                  id="dont-show-again"
-                  checked={dontShowAgain}
-                  onCheckedChange={(checked) => setDontShowAgain(checked as boolean)}
-                  className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
-                />
-                <label
-                  htmlFor="dont-show-again"
-                  className="text-sm text-gray-500 dark:text-gray-400 cursor-pointer select-none"
-                >
-                  Don't show this again
-                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-2">
+                  How often would you like to see this?
+                </p>
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    onClick={() => handleCloseWithPreference('never')}
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs px-3 py-1 h-auto"
+                  >
+                    Never
+                  </Button>
+                  <Button
+                    onClick={() => handleCloseWithPreference('less')}
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs px-3 py-1 h-auto"
+                  >
+                    Less often
+                  </Button>
+                  <Button
+                    onClick={() => handleCloseWithPreference('normal')}
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs px-3 py-1 h-auto"
+                  >
+                    Keep showing
+                  </Button>
+                </div>
               </motion.div>
             </div>
           </motion.div>

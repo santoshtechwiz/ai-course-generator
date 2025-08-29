@@ -22,9 +22,9 @@ import {
 import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import BlanksQuiz from "./BlanksQuiz"
+import { UnifiedLoader } from "@/components/loaders"
 
 import { BlankQuizQuestion } from "@/app/types/quiz-types"
-import { Skeleton } from "@/components/ui/skeleton"
 
 
 interface BlanksQuizWrapperProps {
@@ -37,6 +37,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   const dispatch = useDispatch<AppDispatch>()
   const { user } = useAuth()
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const hasShownLoaderRef = useRef(false)
   const [error, setError] = useState<string | null>(null)
   // Redux selectors
   const questions = useSelector(selectQuizQuestions) as BlankQuizQuestion[]
@@ -157,12 +158,12 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   
   if (isLoading) {
     return (
-      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="space-y-3">
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="h-48 w-full" />
-        </div>
-      </div>
+      <UnifiedLoader
+        state="loading"
+        variant="skeleton"
+        message="Loading fill-in-the-blanks quiz..."
+        size="md"
+      />
     )
   }
 

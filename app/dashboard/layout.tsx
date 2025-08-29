@@ -4,6 +4,8 @@ import type { Metadata } from "next"
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
 import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
 import { DashboardLayout } from "@/components/dashboard/layout"
+import { MonitoredErrorBoundary, DebugToggle, ComponentMonitor } from "../debug/ComponentMonitor"
+import MainContent from "./course/[slug]/components/MainContent"
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "Dashboard | CourseAI",
@@ -75,10 +77,15 @@ export default async function DashboardLayoutPage({
   }
 
   return (
-    <ClientLayoutWrapper withTheme={true} withSubscriptionSync={true}>
-      <DashboardLayout userId={session?.user?.id}>
-        {children}
-      </DashboardLayout>
-    </ClientLayoutWrapper>
+    // Debug components - only show in development
+    <MonitoredErrorBoundary componentName="App">
+      <ClientLayoutWrapper withTheme={true} withSubscriptionSync={true}>
+        <DashboardLayout userId={session?.user?.id}>
+          {children}
+        </DashboardLayout>
+        <DebugToggle />
+        <ComponentMonitor />
+      </ClientLayoutWrapper>
+    </MonitoredErrorBoundary>
   )
 }

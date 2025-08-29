@@ -34,7 +34,7 @@ import { NoResults } from "@/components/ui/no-results";
 import { useAuth } from "@/modules/auth";
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { UnifiedLoader } from "@/components/loaders";
 
 interface FlashcardQuizWrapperProps {
   slug: string;
@@ -177,12 +177,12 @@ export default function FlashcardQuizWrapper({
   // Loading skeleton
   if (quizStatus === "loading" || quizStatus === "idle") {
     return (
-      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="space-y-3">
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="h-48 w-full" />
-        </div>
-      </div>
+      <UnifiedLoader
+        state="loading"
+        variant="skeleton"
+        message="Loading flashcards..."
+        size="md"
+      />
     )
   }
 

@@ -1,13 +1,20 @@
 "use client"
-import React from "react"
 
-export function SuspenseGlobalFallback({ text = "Loading..." }: { text?: string }) {
-  return (
-    <div className="flex min-h-[40vh] items-center justify-center p-6">
-      <div className="flex items-center gap-3">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-r-transparent" />
-        <span className="text-muted-foreground">{text}</span>
-      </div>
-    </div>
-  )
-}
+// Unified Loader (Recommended)
+export {
+  UnifiedLoader,
+  PageLoader,
+  InlineLoader,
+  ButtonLoader,
+  SkeletonLoader
+} from './UnifiedLoader'
+
+// Legacy Loaders (Deprecated - use UnifiedLoader instead)
+export { SuspenseGlobalFallback } from './SuspenseGlobalFallback'
+export { Loader } from './Loader'
+export type { LoaderProps } from './Loader'
+
+// Progress API
+export { progressApi } from './progress-api'
+export type { ProgressAPI, ProgressOptions } from './progress-api'
+export { useProgress } from './use-progress'

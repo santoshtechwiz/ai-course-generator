@@ -20,6 +20,8 @@ import { Badge } from "@/components/ui/badge"
 import { QuizCard } from "./QuizCard"
 import { cn } from "@/lib/utils"
 import RecommendedSection from "@/components/shared/RecommendedSection"
+import AIQuizNoticeModal from "../../components/AIQuizNoticeModal"
+import { useAIModal } from "@/hooks/useAIModal"
 
 interface QuizzesClientProps {
   initialQuizzesData: {
@@ -44,6 +46,20 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   const [showPublicOnly, setShowPublicOnly] = useState(false)
   const [activeTab, setActiveTab] = useState("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+
+  // AI Modal state with adaptive logic
+  const {
+    shouldShow: showAIModal,
+    showModal: triggerAIModal,
+    hideModal: hideAIModal,
+    dismissModal: dismissAIModal,
+    trackEngagement
+  } = useAIModal({
+    minTimeBetweenShows: 4 * 60 * 60 * 1000, // 4 hours
+    maxShowsPerSession: 1,
+    maxShowsPerDay: 2,
+    triggerEvents: ['search', 'filter', 'browse']
+  })
 
   // Restore persisted preferences
   useEffect(() => {
@@ -85,6 +101,34 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
 
   const debouncedSearch = useDebounce(search, 300)
   const { ref, inView } = useInView({ threshold: 0.1 })
+
+  // AI Modal trigger logic - only show when user is actively engaging
+  useEffect(() => {
+    // Trigger modal when user starts searching
+    if (debouncedSearch.trim().length > 2) {
+      trackEngagement('search')
+      triggerAIModal('search')
+    }
+  }, [debouncedSearch, triggerAIModal, trackEngagement])
+
+  useEffect(() => {
+    // Trigger modal when user applies filters
+    if (selectedTypes.length > 0 || questionCountRange[0] > 0 || questionCountRange[1] < 50 || showPublicOnly) {
+      trackEngagement('filter')
+      triggerAIModal('filter')
+    }
+  }, [selectedTypes, questionCountRange, showPublicOnly, triggerAIModal, trackEngagement])
+
+  useEffect(() => {
+    // Trigger modal when user browses different tabs (but not immediately)
+    if (activeTab !== "all") {
+      trackEngagement('browse')
+      const timer = setTimeout(() => {
+        triggerAIModal('browse')
+      }, 3000) // Wait 3 seconds to avoid showing immediately on page load
+      return () => clearTimeout(timer)
+    }
+  }, [activeTab, triggerAIModal, trackEngagement])
 
   const queryKey = useMemo(
     () => [
@@ -211,8 +255,22 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   }, [])
 
   const handleCreateQuiz = useCallback(() => {
+    trackEngagement('create')
     router.push("/dashboard/mcq")
-  }, [router])
+  }, [router, trackEngagement])
+
+  const handleStartQuiz = useCallback(() => {
+    trackEngagement('search') // Starting a quiz shows search/browse interest
+    hideAIModal()
+    // Could navigate to a random quiz or featured quiz
+    router.push("/dashboard/quizzes")
+  }, [router, hideAIModal, trackEngagement])
+
+  const handleCreateQuizFromModal = useCallback(() => {
+    trackEngagement('create')
+    hideAIModal()
+    router.push("/dashboard/mcq")
+  }, [router, hideAIModal, trackEngagement])
 
   const handleRetry = useCallback(() => {
     refetch()
@@ -341,6 +399,16 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
 
   return (
     <div className="space-y-6">
+      {/* AI Learning Modal with adaptive display */}
+      <AIQuizNoticeModal
+        isOpen={showAIModal}
+        onClose={() => dismissAIModal('less')}
+        onStartQuiz={handleStartQuiz}
+        onCreateQuiz={handleCreateQuizFromModal}
+        onDismissWithPreference={dismissAIModal}
+        quizType="quiz"
+      />
+
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
         <ErrorBoundary fallbackRender={ErrorFallback} onReset={handleRetry} resetKeys={[queryKey.join("")]}>
           <div className="lg:w-80 lg:flex-shrink-0">

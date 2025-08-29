@@ -25,7 +25,7 @@ import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
-import { Skeleton } from "@/components/ui/skeleton"
+import { UnifiedLoader } from "@/components/loaders"
 
 
 interface CodeQuizWrapperProps {
@@ -209,12 +209,12 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const isLastQuestion = currentQuestionIndex === questions.length - 1
   if (isLoading) {
     return (
-      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="space-y-3">
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="h-48 w-full" />
-        </div>
-      </div>
+      <UnifiedLoader
+        state="loading"
+        variant="skeleton"
+        message="Loading code quiz..."
+        size="md"
+      />
     )
   }
   if (hasError) {
@@ -232,12 +232,12 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   }
   if (!formattedQuestion) {
     return (
-      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="space-y-3">
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="h-48 w-full" />
-        </div>
-      </div>
+      <UnifiedLoader
+        state="loading"
+        variant="skeleton"
+        message="Preparing quiz..."
+        size="md"
+      />
     )
   } 
   
