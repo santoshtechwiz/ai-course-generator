@@ -467,7 +467,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
     }
   }, [playerState.isMounted, containerRef])
 
-  // Enhanced PIP handling - FIXED to properly hide main player
+  // Enhanced PIP handling - FIXED to properly show video in PIP
   const handlePictureInPicture = useCallback(async () => {
     try {
       const videoEl = getVideoElement()
@@ -487,7 +487,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
           if (playerState.isMiniPlayerActive && handlers.handlePictureInPictureToggle) {
             handlers.handlePictureInPictureToggle()
           }
-          
+
           // Try to get the video element again if not found initially
           let targetVideo = videoEl
           if (!targetVideo) {
@@ -495,7 +495,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
             await new Promise(resolve => setTimeout(resolve, 100))
             targetVideo = getVideoElement()
           }
-          
+
           if (targetVideo) {
             await (targetVideo as any).requestPictureInPicture()
           } else {
@@ -505,7 +505,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
         return
       }
 
-      // Fallback to custom mini player
+      // Fallback to custom mini player - Enhanced to show video properly
       if (handlers.handlePictureInPictureToggle) {
         const nextMiniState = !playerState.isMiniPlayerActive
 
@@ -526,15 +526,37 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
           description: "This video provider does not support Picture-in-Picture.",
           variant: "destructive",
         })
+        onPictureInPictureToggle?.(false)
       }
     } catch (error) {
       console.warn('Picture-in-Picture failed:', error)
-      toast({
-        title: "PiP Error", 
-        description: "Could not toggle Picture-in-Picture. Please try again.",
-        variant: "destructive",
-      })
-      onPictureInPictureToggle?.(false)
+
+      // If native PIP fails, try fallback mini player
+      if (!playerState.isMiniPlayerActive && handlers.handlePictureInPictureToggle) {
+        try {
+          handlers.handlePictureInPictureToggle()
+          onPictureInPictureToggle?.(true)
+          toast({
+            title: "Using Mini Player",
+            description: "Native PiP not available, using mini player instead.",
+          })
+        } catch (fallbackError) {
+          console.warn('Fallback mini player also failed:', fallbackError)
+          toast({
+            title: "PiP Error",
+            description: "Could not toggle Picture-in-Picture. Please try again.",
+            variant: "destructive",
+          })
+          onPictureInPictureToggle?.(false)
+        }
+      } else {
+        toast({
+          title: "PiP Error",
+          description: "Could not toggle Picture-in-Picture. Please try again.",
+          variant: "destructive",
+        })
+        onPictureInPictureToggle?.(false)
+      }
     }
   }, [getVideoElement, handlers.handlePictureInPictureToggle, onPictureInPictureToggle, toast, playerState.isNativePiPActive, playerState.isMiniPlayerActive])
 

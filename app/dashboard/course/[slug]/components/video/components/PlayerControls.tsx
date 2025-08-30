@@ -771,6 +771,42 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               )}
             </Button>
           </motion.div>
+
+          {/* Theater Mode Button */}
+          {onToggleTheaterMode && (
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8 text-white touch-manipulation transition-all duration-300 relative overflow-hidden",
+                  isTheaterMode
+                    ? "bg-gradient-to-br from-orange-500/30 to-red-600/30 text-orange-300 shadow-lg shadow-orange-500/20"
+                    : "hover:bg-white/20 hover:shadow-lg",
+                )}
+                onClick={onToggleTheaterMode}
+                title={isTheaterMode ? "Exit theater mode (T)" : "Enter theater mode (T)"}
+                aria-label={isTheaterMode ? "Exit theater mode" : "Enter theater mode"}
+              >
+                <motion.div
+                  animate={{
+                    rotate: isTheaterMode ? 180 : 0,
+                    scale: isTheaterMode ? 1.1 : 1,
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />
+                </motion.div>
+                {isTheaterMode && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 w-2 h-2 bg-orange-400 rounded-full"
+                  />
+                )}
+              </Button>
+            </motion.div>
+          )}
         </div>
       </div>
     </div>

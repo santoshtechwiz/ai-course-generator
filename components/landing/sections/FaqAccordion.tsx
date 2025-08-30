@@ -76,7 +76,7 @@ const faqs = [
 	},
 ]
 
-// Apple-style easing function
+// Apple-style easing
 const APPLE_EASING = [0.25, 0.1, 0.25, 1]
 
 const FaqAccordion = () => {

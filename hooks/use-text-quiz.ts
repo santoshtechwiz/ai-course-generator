@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect } from 'react'
-import { useAuth } from './use-auth'
+import { useAuth } from '@/modules/auth'
 
 export interface TextQuizQuestion {
   id: string
@@ -118,10 +118,8 @@ export function useTextQuiz(): TextQuizHook {
           : q
       ))
       
-      // Auto advance if there are more questions
-      if (currentQuestionIndex < totalQuestions - 1) {
-        setTimeout(() => setCurrentQuestionIndex(prev => prev + 1), 1500)
-      }
+      // Don't auto-advance - let user click Next button
+      // Removed auto-advance functionality
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error submitting answer')
     }

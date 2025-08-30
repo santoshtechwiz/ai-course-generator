@@ -687,100 +687,116 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Regular content with improved layout and visual hierarchy
   const regularContent = (
      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
-      {/* Enhanced sticky header with better visual hierarchy */}
-      <motion.header 
+      {/* Enhanced sticky header - Redesigned for better alignment and colors */}
+      <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
         className={cn(
-          "sticky top-0 z-50 transition-all duration-300 border-b backdrop-blur-md", 
-          headerCompact 
-            ? "bg-background/90 py-2 shadow-lg border-border/40" 
-            : "bg-background/80 py-4 shadow-sm border-border/20"
+          "sticky top-0 z-50 transition-all duration-300 border-b backdrop-blur-xl",
+          headerCompact
+            ? "bg-gradient-to-r from-background/95 via-primary/5 to-background/95 py-3 shadow-xl border-primary/20"
+            : "bg-gradient-to-r from-background/90 via-primary/10 to-background/90 py-6 shadow-lg border-primary/30"
         )}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-4">
-            {/* Course info section */}
-            <div className="flex items-center gap-4 min-w-0 flex-1">
+        <div className="max-w-screen-2xl mx-auto px-4 lg:px-6">
+          <div className="flex items-center justify-between gap-6">
+            {/* Course info section with enhanced alignment */}
+            <div className="flex items-center gap-6 min-w-0 flex-1">
               <div className="min-w-0 flex-shrink">
-                <motion.h1 
+                <motion.h1
                   layout
                   className={cn(
-                    "font-bold truncate transition-all duration-300",
-                    headerCompact ? "text-lg" : "text-xl"
+                    "font-bold truncate transition-all duration-300 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent",
+                    headerCompact ? "text-xl lg:text-2xl" : "text-2xl lg:text-3xl xl:text-4xl"
                   )}
                   suppressHydrationWarning
                 >
                   {course.title}
                 </motion.h1>
-                <motion.div 
+                <motion.div
                   layout
-                  className="text-sm text-muted-foreground hidden sm:block truncate" 
+                  className={cn(
+                    "text-muted-foreground hidden sm:block truncate transition-all duration-300",
+                    headerCompact ? "text-xs lg:text-sm" : "text-sm lg:text-base xl:text-lg"
+                  )}
                   suppressHydrationWarning
                 >
                   {mounted && currentChapter?.title ? currentChapter.title : 'Select a chapter to begin'}
                 </motion.div>
               </div>
 
-              {/* Progress section - enhanced with better colors */}
+              {/* Enhanced progress section with better alignment and colors */}
               <div className="hidden lg:flex items-center gap-4 ml-6">
-                <div className="bg-muted/30 rounded-full px-3 py-1 border border-border/20">
-                  <div className="text-xs font-medium text-foreground">
-                    {mounted ? `${courseStats.completedCount}/${courseStats.totalChapters}` : `0/${courseStats.totalChapters}`} completed
+                <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-full px-4 py-2 border border-emerald-500/20 shadow-sm">
+                  <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    {mounted ? `${courseStats.completedCount}/${courseStats.totalChapters}` : `0/${courseStats.totalChapters}`}
                   </div>
                 </div>
-                <div className="w-32 sm:w-48">
-                  <Progress 
-                    value={mounted ? courseStats.progressPercentage : 0} 
-                    className="h-2 bg-muted/30" 
+                <div className="w-48">
+                  <Progress
+                    value={mounted ? courseStats.progressPercentage : 0}
+                    className="h-3 bg-muted/30 shadow-inner"
                   />
                 </div>
-                <Badge 
-                  variant="secondary" 
-                  className="bg-primary/10 text-primary border-primary/20 font-medium"
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "font-bold text-sm px-3 py-1 shadow-sm transition-all duration-200",
+                    courseStats.progressPercentage === 100
+                      ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-emerald-500"
+                      : "bg-gradient-to-r from-primary to-primary/80 text-white border-primary/50"
+                  )}
                   suppressHydrationWarning
                 >
-                  <BarChart3 className="h-3 w-3 mr-1" />
+                  <BarChart3 className="h-4 w-4 mr-2" />
                   {mounted ? courseStats.progressPercentage : 0}%
                 </Badge>
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Action buttons with better alignment and enhanced styling */}
+            <div className="flex items-center gap-3 flex-shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="hidden xl:flex text-muted-foreground hover:text-foreground"
+                className="hidden xl:flex text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-full w-10 h-10 p-0 border border-transparent hover:border-primary/20"
               >
-                {sidebarCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                {sidebarCollapsed ? <Menu className="h-5 w-5" /> : <X className="h-5 w-5" />}
               </Button>
-              <ActionButtons 
-                slug={course.slug} 
-                isOwner={isOwner} 
-                variant="compact" 
-                title={course.title} 
-              />
+              <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-full p-1 border border-primary/20">
+                <ActionButtons
+                  slug={course.slug}
+                  isOwner={isOwner}
+                  variant="compact"
+                  title={course.title}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Mobile progress bar */}
-          <motion.div 
+          {/* Enhanced mobile progress bar with better alignment and colors */}
+          <motion.div
             layout
-            className="lg:hidden mt-3 flex items-center gap-3"
+            className="lg:hidden mt-4 flex items-center gap-4"
             suppressHydrationWarning
           >
             <div className="flex-1">
-              <Progress 
-                value={mounted ? courseStats.progressPercentage : 0} 
-                className="h-2 bg-muted/30" 
+              <Progress
+                value={mounted ? courseStats.progressPercentage : 0}
+                className="h-3 bg-muted/30 shadow-inner"
               />
             </div>
-            <Badge 
-              variant="secondary" 
-              className="bg-primary/10 text-primary border-primary/20 text-xs"
+            <Badge
+              variant="secondary"
+              className={cn(
+                "font-bold px-3 py-1 shadow-sm",
+                courseStats.progressPercentage === 100
+                  ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-emerald-500"
+                  : "bg-gradient-to-r from-primary to-primary/80 text-white border-primary/50"
+              )}
             >
               {mounted ? courseStats.progressPercentage : 0}%
             </Badge>
@@ -788,7 +804,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         </div>
       </motion.header>
 
-      {/* Video Generation Section - Enhanced styling */}
+      {/* Video Generation Section - Enhanced styling with better spacing */}
       <AnimatePresence>
         {(isOwner || user?.isAdmin) && (
           <motion.div
@@ -797,7 +813,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             exit={{ opacity: 0, height: 0 }}
             className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-b border-blue-200/50 dark:border-blue-800/50"
           >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-8 py-6">
               <VideoGenerationSection 
                 course={course}
                 onVideoGenerated={(chapterId, videoId) => {
@@ -812,19 +828,26 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Mobile playlist toggle - Enhanced design */}
+      {/* Enhanced mobile playlist toggle - Redesigned for better alignment and colors */}
       {!isTheaterMode && (
-        <div className="lg:hidden bg-muted/20 border-b border-border/20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div className="lg:hidden bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 border-b border-primary/20">
+          <div className="max-w-screen-2xl mx-auto px-4 lg:px-6 py-4">
             <Button
               variant="outline"
               onClick={handleMobilePlaylistToggle}
-              className="w-full bg-background/60 backdrop-blur-sm border-primary/20 hover:bg-background/80 transition-all duration-200 group"
+              className="w-full bg-background/90 backdrop-blur-sm border-primary/20 hover:bg-background/95 hover:border-primary/30 transition-all duration-300 group shadow-sm rounded-xl"
             >
               <div className="flex items-center justify-between w-full">
-                <div className="flex items-center">
-                  <BookOpen className="h-4 w-4 mr-2 text-primary" />
-                  <span className="font-medium">Course Content</span>
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-xl group-hover:from-primary/30 group-hover:to-secondary/30 transition-colors duration-200 border border-primary/20">
+                    <BookOpen className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <span className="font-semibold text-foreground text-lg">Course Content</span>
+                    <div className="text-sm text-muted-foreground">
+                      {currentChapter?.title || 'Select a chapter'}
+                    </div>
+                  </div>
                 </div>
                 <MobilePlaylistCount
                   currentIndex={currentIndex}
@@ -837,34 +860,31 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         </div>
       )}
 
-      {/* Main content area */}
+      {/* Main content area - Complete redesign with wider video and better layout */}
       <main className={cn(
         "flex-1 transition-all duration-500",
         isTheaterMode && "main-content theater-mode-active bg-black"
       )}>
         <div className={cn(
-          "mx-auto px-4 sm:px-6 lg:px-8 py-6 transition-all duration-500",
-          isTheaterMode ? "max-w-none px-2 py-2" : "max-w-7xl"
+          "mx-auto transition-all duration-500",
+          isTheaterMode ? "max-w-none px-0 py-0" : "max-w-screen-2xl px-4 lg:px-6 py-6"
         )}>
+          {/* Redesigned layout with wider video and improved grid */}
           <div className={cn(
-            "grid gap-6 transition-all duration-500",
+            "transition-all duration-500",
             sidebarCollapsed || isTheaterMode
-              ? "grid-cols-1" 
-              : "grid-cols-1 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_320px]"
+              ? "flex flex-col gap-0"
+              : "grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-8"
           )}>
-            {/* Left column: Video and content */}
-            <motion.div 
-              layout
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="space-y-6"
-            >
-              {/* Video player section with enhanced styling */}
+            {/* Main content area - Video and details with enhanced spacing */}
+            <div className="flex flex-col gap-8">
+              {/* Wide video player section */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
                 className={cn(
-                  "relative video-player-section",
+                  "relative video-player-section w-full",
                   isTheaterMode && "mb-0"
                 )}
               >
@@ -875,18 +895,18 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   )}>
                     <div className={cn(
                       "bg-muted relative overflow-hidden transition-all duration-500 flex items-center justify-center",
-                      isTheaterMode ? "aspect-[21/9] rounded-none" : "aspect-[18/9] rounded-lg"
+                      isTheaterMode ? "aspect-[21/9] rounded-none" : "aspect-[18/10] rounded-2xl"
                     )}>
-                      <div className="text-center p-8">
+                      <div className="text-center p-16">
                         <motion.div
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center"
+                          className="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-full flex items-center justify-center"
                         >
-                          <Play className="h-8 w-8 text-primary" />
+                          <Play className="h-12 w-12 text-primary" />
                         </motion.div>
-                        <h3 className="text-lg font-semibold mb-2">Picture-in-Picture Active</h3>
-                        <p className="text-muted-foreground text-sm">
+                        <h3 className="text-2xl font-semibold mb-3 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">Picture-in-Picture Active</h3>
+                        <p className="text-muted-foreground text-lg">
                           Video is playing in a separate window. Click the PIP button again to return.
                         </p>
                       </div>
@@ -899,18 +919,18 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   )}>
                     <div className={cn(
                       "bg-black relative overflow-hidden transition-all duration-500",
-                      isTheaterMode ? "aspect-[21/9] rounded-none" : "aspect-[18/9] rounded-lg"
+                      isTheaterMode ? "aspect-[21/9] rounded-none" : "aspect-[18/10] rounded-2xl"
                     )}>
                       {isVideoLoading && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-10">
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/95 backdrop-blur-sm z-10">
                           <motion.div
                             animate={{ rotate: 360 }}
                             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full"
+                            className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full"
                           />
                         </div>
                       )}
-                      <VideoPlayer 
+                      <VideoPlayer
                         youtubeVideoId={currentVideoId || ''}
                         chapterId={currentChapter?.id?.toString()}
                         chapterTitle={currentChapter?.title || ''}
@@ -924,7 +944,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                         isTheaterMode={isTheaterMode}
                         initialSeekSeconds={(function(){
                           try {
-                            if (courseProgress?.videoProgress?.playedSeconds && 
+                            if (courseProgress?.videoProgress?.playedSeconds &&
                                 String(courseProgress.videoProgress.currentChapterId) === String(currentChapter?.id)) {
                               const ts = Number(courseProgress.videoProgress.playedSeconds)
                               if (!isNaN(ts) && ts > 0) return ts
@@ -947,15 +967,16 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                 )}
               </motion.div>
 
-              {/* Course details tabs - Enhanced with section styling */}
+              {/* Course details tabs - Redesigned with better alignment and colors */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
+                className="w-full"
               >
-                <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/50 backdrop-blur-sm">
-                  <div className="bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border/20 px-1 py-1">
-                    <div className="bg-background/80 backdrop-blur-sm rounded-lg p-1">
+                <Card className="border-0 shadow-xl bg-gradient-to-br from-card via-card/95 to-card/50 backdrop-blur-sm overflow-hidden">
+                  <div className="bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 border-b border-primary/20 px-3 py-3">
+                    <div className="bg-background/95 backdrop-blur-sm rounded-xl p-2 border border-primary/10">
                       <MemoizedCourseDetailsTabs
                         course={course}
                         currentChapter={currentChapter}
@@ -967,20 +988,24 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                 </Card>
               </motion.div>
 
-              {/* Reviews Section - Enhanced styling */}
+              {/* Reviews Section - Better aligned with enhanced colors */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
-                className="bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/50 p-1"
+                className="w-full"
               >
-                <div className="bg-background/80 backdrop-blur-sm rounded-lg">
-                  <ReviewsSection slug={course.slug} />
-                </div>
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-emerald-50/30 to-card/50 backdrop-blur-sm overflow-hidden dark:from-card dark:via-emerald-950/20 dark:to-card/50">
+                  <div className="bg-gradient-to-r from-emerald-50/50 via-teal-50/30 to-emerald-50/50 dark:from-emerald-950/20 dark:via-teal-950/10 dark:to-emerald-950/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/50 p-2">
+                    <div className="bg-background/95 backdrop-blur-sm rounded-lg border border-emerald-100/50 dark:border-emerald-900/50">
+                      <ReviewsSection slug={course.slug} />
+                    </div>
+                  </div>
+                </Card>
               </motion.div>
-            </motion.div>
+            </div>
 
-            {/* Right column: Playlist sidebar (desktop) */}
+            {/* Right column: Playlist sidebar (desktop) with enhanced design and colors */}
             <AnimatePresence mode="wait">
               {!sidebarCollapsed && !isTheaterMode && (
                 <motion.div
@@ -988,64 +1013,70 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.3 }}
-                  className="hidden xl:block space-y-4 sidebar"
+                  className="hidden xl:block space-y-6 sticky top-6 h-fit"
                 >
-                  {/* Sidebar header */}
-                  <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20">
-                    <CardHeader className="pb-3">
+                  {/* Enhanced sidebar header with better alignment and colors */}
+                  <Card className="border-0 shadow-xl bg-gradient-to-br from-background via-primary/5 to-background overflow-hidden">
+                    <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <BookOpen className="h-5 w-5 text-primary" />
-                          Course Content
+                        <CardTitle className="text-xl flex items-center gap-3">
+                          <div className="p-2 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-full border border-primary/20">
+                            <BookOpen className="h-6 w-6 text-primary" />
+                          </div>
+                          <span className="bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">Course Content</span>
                         </CardTitle>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setSidebarCollapsed(true)}
-                          className="text-muted-foreground hover:text-foreground"
+                          className="text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-full w-8 h-8 p-0 border border-transparent hover:border-primary/20"
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-5 w-5" />
                         </Button>
                       </div>
-                      <CardDescription className="flex items-center gap-2">
-                        <div className="flex items-center gap-1 text-xs">
-                          <CheckCircle className="h-3 w-3 text-emerald-500" />
-                          {courseStats.completedCount} completed
+                      <CardDescription className="flex items-center gap-3 mt-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <CheckCircle className="h-4 w-4 text-emerald-500" />
+                          <span className="font-medium text-emerald-700 dark:text-emerald-300">{courseStats.completedCount} completed</span>
                         </div>
                         <div className="text-muted-foreground">•</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-sm text-muted-foreground">
                           {courseStats.totalChapters} total
                         </div>
                       </CardDescription>
                     </CardHeader>
                   </Card>
 
-                  {/* Playlist content */}
-                  <div className="bg-gradient-to-br from-background to-muted/10 rounded-xl border border-border/20 shadow-lg">
-                    {sidebarCourse.chapters.length === 0 ? (
-                      <div className="p-6 text-center">
-                        <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                        <h3 className="text-lg font-semibold mb-2">No Videos Available</h3>
-                        <p className="text-muted-foreground text-sm">
-                          This course doesn't have any video content yet. Please check back later or contact support.
-                        </p>
-                      </div>
-                    ) : (
-                      <PlaylistSidebar
-                        course={sidebarCourse}
-                        currentChapter={sidebarCurrentChapter}
-                        courseId={course.id.toString()}
-                        currentVideoId={currentVideoId || ''}
-                        isAuthenticated={!!user}
-                        completedChapters={completedChapters.map(String)}
-                        formatDuration={formatDuration}
-                        videoDurations={videoDurations}
-                        courseStats={courseStats}
-                        onChapterSelect={handleChapterSelect}
-                        isPiPActive={isPiPActive}
-                      />
-                    )}
-                  </div>
+                  {/* Enhanced playlist content with better alignment and colors */}
+                  <Card className="border-0 shadow-xl bg-gradient-to-br from-background via-muted/10 to-background overflow-hidden">
+                    <div className="p-4">
+                      {sidebarCourse.chapters.length === 0 ? (
+                        <div className="p-8 text-center">
+                          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-muted/20 to-muted/10 rounded-full flex items-center justify-center border border-muted/20">
+                            <BookOpen className="h-8 w-8 text-muted-foreground" />
+                          </div>
+                          <h3 className="text-lg font-semibold mb-2 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">No Videos Available</h3>
+                          <p className="text-muted-foreground text-sm">
+                            This course doesn't have any video content yet. Please check back later or contact support.
+                          </p>
+                        </div>
+                      ) : (
+                        <PlaylistSidebar
+                          course={sidebarCourse}
+                          currentChapter={sidebarCurrentChapter}
+                          courseId={course.id.toString()}
+                          currentVideoId={currentVideoId || ''}
+                          isAuthenticated={!!user}
+                          completedChapters={completedChapters.map(String)}
+                          formatDuration={formatDuration}
+                          videoDurations={videoDurations}
+                          courseStats={courseStats}
+                          onChapterSelect={handleChapterSelect}
+                          isPiPActive={isPiPActive}
+                        />
+                      )}
+                    </div>
+                  </Card>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -1071,27 +1102,27 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         />
       )}
 
-      {/* Enhanced floating subscribe CTA */}
+      {/* Enhanced floating subscribe CTA with better animations */}
       <AnimatePresence>
         {!userSubscription && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            className="fixed bottom-6 right-6 z-40"
+            className="fixed bottom-8 right-8 z-40"
           >
             <Button
               size="lg"
               onClick={() => (window.location.href = "/dashboard/subscription")}
-              className="shadow-2xl bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground hover:shadow-3xl transition-all duration-300 hover:scale-105 rounded-full group relative overflow-hidden"
+              className="shadow-2xl bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground hover:shadow-3xl transition-all duration-300 hover:scale-105 rounded-full group relative overflow-hidden px-6 py-3"
             >
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
               />
-              <Zap className="h-4 w-4 mr-2 group-hover:animate-pulse" />
-              Subscribe to Unlock
+              <Zap className="h-5 w-5 mr-3 group-hover:animate-pulse" />
+              <span className="font-semibold">Subscribe to Unlock</span>
             </Button>
           </motion.div>
         )}

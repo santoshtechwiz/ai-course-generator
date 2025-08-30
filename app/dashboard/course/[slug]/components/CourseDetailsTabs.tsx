@@ -103,7 +103,7 @@ export default function CourseDetailsTabs({
 
     const totalDuration = course.courseUnits?.reduce((acc, unit) => {
       return acc + unit.chapters.reduce((chapterAcc, chapter) => {
-        return chapterAcc + (chapter.duration || 15)
+        return chapterAcc + (typeof chapter.duration === 'number' ? chapter.duration : 15)
       }, 0)
     }, 0) || totalChapters * 15
 
@@ -428,35 +428,35 @@ export default function CourseDetailsTabs({
   return (
     <div className="h-full w-full flex flex-col">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full flex flex-col">
-        {/* Enhanced tab navigation */}
-        <TabsList className="grid w-full grid-cols-4 h-auto bg-muted/30 rounded-none border-b border-border/30 p-2 gap-2">
+        {/* Enhanced tab navigation with better styling */}
+        <TabsList className="grid w-full grid-cols-4 h-auto bg-gradient-to-r from-muted/20 via-muted/30 to-muted/20 rounded-none border-b border-border/30 p-3 gap-3">
           <TabsTrigger
             value="summary"
-            className="flex items-center gap-3 text-sm font-medium h-14 data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:border data-[state=active]:border-border/40 transition-all rounded-xl"
+            className="flex items-center gap-3 text-sm font-medium h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group"
           >
-            <FileText className="h-5 w-5" />
-            <span className="hidden sm:inline">Summary</span>
+            <FileText className="h-5 w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
+            <span className="hidden sm:inline font-semibold">Summary</span>
           </TabsTrigger>
           <TabsTrigger
             value="quiz"
-            className="flex items-center gap-3 text-sm font-medium h-14 data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:border data-[state=active]:border-border/40 transition-all rounded-xl"
+            className="flex items-center gap-3 text-sm font-medium h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group"
           >
-            <MessageSquare className="h-5 w-5" />
-            <span className="hidden sm:inline">Quiz</span>
+            <MessageSquare className="h-5 w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
+            <span className="hidden sm:inline font-semibold">Quiz</span>
           </TabsTrigger>
           <TabsTrigger
             value="progress"
-            className="flex items-center gap-3 text-sm font-medium h-14 data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:border data-[state=active]:border-border/40 transition-all rounded-xl"
+            className="flex items-center gap-3 text-sm font-medium h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group"
           >
-            <BarChart3 className="h-5 w-5" />
-            <span className="hidden sm:inline">Progress</span>
+            <BarChart3 className="h-5 w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
+            <span className="hidden sm:inline font-semibold">Progress</span>
           </TabsTrigger>
           <TabsTrigger
             value="bookmarks"
-            className="flex items-center gap-3 text-sm font-medium h-14 data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:border data-[state=active]:border-border/40 transition-all rounded-xl"
+            className="flex items-center gap-3 text-sm font-medium h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group"
           >
-            <BookmarkIcon className="h-5 w-5" />
-            <span className="hidden sm:inline">Bookmarks</span>
+            <BookmarkIcon className="h-5 w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
+            <span className="hidden sm:inline font-semibold">Bookmarks</span>
           </TabsTrigger>
         </TabsList>
 

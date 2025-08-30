@@ -382,15 +382,15 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                     onMouseEnter={() => setHoveredChapter(safeChapter.id)}
                                     onMouseLeave={() => setHoveredChapter(null)}
                                     className={cn(
-                                      "w-full text-left px-4 py-4 rounded-lg text-sm transition-all duration-300",
-                                      "flex items-start gap-4 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                                      "border border-transparent hover:border-border/50",
+                                      "w-full text-left px-5 py-5 rounded-xl text-sm transition-all duration-300 group",
+                                      "flex items-start gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                                      "border border-transparent hover:border-border/60 hover:shadow-md",
                                       isActive ? 
-                                        "bg-primary/10 text-primary font-medium border-primary/20 shadow-sm" : 
-                                        "hover:bg-muted/50",
+                                        "bg-gradient-to-r from-primary/15 to-primary/10 text-primary font-semibold border-primary/30 shadow-lg shadow-primary/10" : 
+                                        "hover:bg-gradient-to-r hover:from-muted/60 hover:to-muted/30",
                                       !hasVideo && "opacity-70 cursor-not-allowed",
                                       isLocked && "opacity-60 cursor-not-allowed",
-                                      isCompleted && !isActive && "bg-green-50 dark:bg-green-950/20 border-green-200/50 dark:border-green-800/50"
+                                      isCompleted && !isActive && "bg-gradient-to-r from-green-50/80 to-emerald-50/60 dark:from-green-950/30 dark:to-emerald-950/20 border-green-200/60 dark:border-green-800/40"
                                     )}
                                     aria-current={isActive ? "true" : "false"}
                                     disabled={!hasVideo || isLocked}
@@ -400,11 +400,11 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                     {/* Enhanced Thumbnail or Status Icon */}
                                     <div className="flex-shrink-0 relative">
                                       {safeChapter.thumbnail && hasVideo ? (
-                                        <div className="w-28 h-16 rounded-lg overflow-hidden border border-border/50 relative group">
+                                        <div className="w-36 h-24 rounded-xl overflow-hidden border border-border/50 relative group shadow-sm">
                                           <img 
                                             src={safeChapter.thumbnail} 
                                             alt={safeChapter.title}
-                                            className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                                            className="w-full h-full object-cover transition-all duration-300 group-hover:scale-110"
                                             loading="lazy"
                                             onError={(e) => {
                                               // Fallback to default thumbnail on error
@@ -414,33 +414,47 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                           />
                                           {/* Duration overlay */}
                                           {duration && (
-                                            <div className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 py-0.5 rounded">
+                                            <div className="absolute bottom-2 right-2 bg-black/90 text-white text-xs px-2 py-1 rounded-lg font-medium backdrop-blur-sm">
                                               {formatDuration(duration)}
                                             </div>
                                           )}
                                           {/* Play overlay on hover */}
-                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center transition-all duration-200">
-                                            <Play className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-all duration-300 rounded-xl">
+                                            <motion.div
+                                              initial={{ scale: 0.8, opacity: 0 }}
+                                              whileHover={{ scale: 1, opacity: 1 }}
+                                              className="bg-white/20 backdrop-blur-sm rounded-full p-3"
+                                            >
+                                              <Play className="h-6 w-6 text-white" />
+                                            </motion.div>
                                           </div>
                                           {/* Lock overlay for locked content */}
                                           {isLocked && (
-                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                              <Lock className="h-4 w-4 text-white" />
+                                            <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-xl">
+                                              <Lock className="h-6 w-6 text-white" />
                                             </div>
                                           )}
                                           {/* Progress bar */}
                                           {chapterProgress > 0 && !isCompleted && (
-                                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
-                                              <div 
-                                                className="h-full bg-primary transition-all duration-500"
-                                                style={{ width: `${chapterProgress}%` }}
+                                            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/30">
+                                              <motion.div 
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${chapterProgress}%` }}
+                                                transition={{ duration: 0.8, ease: "easeOut" }}
+                                                className="bg-gradient-to-r from-primary to-primary/80 h-full rounded-r-full"
                                               />
                                             </div>
                                           )}
                                           {/* Completion badge */}
                                           {isCompleted && (
-                                            <div className="absolute top-1 left-1">
-                                              <CheckCircle className="h-4 w-4 text-green-500 bg-white rounded-full" />
+                                            <div className="absolute top-2 left-2">
+                                              <motion.div
+                                                initial={{ scale: 0 }}
+                                                animate={{ scale: 1 }}
+                                                transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                                              >
+                                                <CheckCircle className="h-5 w-5 text-green-500 bg-white rounded-full shadow-lg" />
+                                              </motion.div>
                                             </div>
                                           )}
                                         </div>
@@ -522,55 +536,61 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                       )}
                                     </div>
                                     
-                                    {/* Chapter Content */}
+                                    {/* Chapter Content with better alignment */}
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-start justify-between gap-3">
                                         <p className={cn(
-                                          "line-clamp-2 leading-relaxed text-sm font-medium",
+                                          "line-clamp-2 leading-relaxed text-sm font-medium transition-colors duration-200",
                                           isActive ? "text-primary" : 
                                           isCompleted ? "text-foreground" : "text-muted-foreground",
                                           !hasVideo && "italic",
-                                          isLocked && "text-muted-foreground/70"
+                                          isLocked && "text-muted-foreground/70",
+                                          isHovered && !isActive && "text-foreground"
                                         )}>
                                           {safeChapter.title}
                                           {!hasVideo && " (No Video)"}
                                           {isLocked && " (Locked)"}
                                         </p>
                                         
-                                        {/* Chapter Number Badge */}
-                                        <Badge variant="outline" className="text-xs shrink-0 min-w-6 text-center">
+                                        {/* Chapter Number Badge with better alignment */}
+                                        <Badge variant="outline" className={cn(
+                                          "text-xs shrink-0 min-w-7 h-6 text-center font-semibold transition-all duration-200",
+                                          isActive ? "bg-primary text-primary-foreground border-primary" :
+                                          isCompleted ? "bg-green-100 text-green-700 border-green-200" :
+                                          "hover:bg-muted"
+                                        )}>
                                           {chapterIndex + 1}
                                         </Badge>
                                       </div>
                                       
-                                        {/* Duration and Progress Info */}
+                                      {/* Duration and Progress Info with better spacing */}
                                       <div className="flex items-center justify-between mt-3">
                                         {duration && hasVideo && !isLocked && (
-                                          <div className="flex items-center text-xs text-muted-foreground">
-                                            <Clock className="h-3 w-3 mr-1" />
+                                          <div className="flex items-center text-xs text-muted-foreground bg-muted/30 px-2 py-1 rounded-full">
+                                            <Clock className="h-3 w-3 mr-1.5" />
                                             {formatDuration(duration)}
                                           </div>
                                         )}
                                         
                                         {chapterProgress > 0 && chapterProgress < 100 && hasVideo && !isLocked && (
-                                          <div className="text-xs text-primary font-medium">
+                                          <div className="text-xs text-primary font-semibold bg-primary/10 px-2 py-1 rounded-full">
                                             {Math.round(chapterProgress)}% watched
                                           </div>
                                         )}
                                       </div>
                                       
-                                      {/* Enhanced Progress Bar */}
+                                      {/* Enhanced Progress Bar with better styling */}
                                       {chapterProgress > 0 && chapterProgress < 100 && hasVideo && !isLocked && (
                                         <motion.div 
                                           initial={{ scaleX: 0 }}
                                           animate={{ scaleX: 1 }}
-                                          className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden"
+                                          className="mt-3 h-2 bg-muted/50 rounded-full overflow-hidden shadow-inner"
                                         >
                                           <motion.div 
                                             initial={{ width: 0 }}
                                             animate={{ width: `${chapterProgress}%` }}
                                             transition={{ duration: 0.8, ease: "easeOut" }}
-                                            className="bg-gradient-to-r from-primary to-primary/80 h-full rounded-full"
+                                            className="bg-gradient-to-r from-primary via-primary to-primary/80 h-full rounded-full shadow-sm"
                                           />
                                         </motion.div>
                                       )}
@@ -620,37 +640,68 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-4 border-t border-border/50 bg-gradient-to-r from-primary/5 to-primary/10"
+            className="p-5 border-t border-border/50 bg-gradient-to-r from-primary/8 via-primary/5 to-primary/8"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <div className="flex-shrink-0">
                 {overallProgress === 100 ? (
+                  <motion.div
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
+                    className="relative"
+                  >
+                    <Trophy className="h-10 w-10 text-yellow-500 drop-shadow-lg" />
+                    <motion.div
+                      animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                      className="absolute inset-0 bg-yellow-400/20 rounded-full"
+                    />
+                  </motion.div>
+                ) : overallProgress >= 75 ? (
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 200, damping: 15 }}
                   >
-                    <Trophy className="h-8 w-8 text-yellow-500" />
+                    <Star className="h-10 w-10 text-primary drop-shadow-lg" />
                   </motion.div>
-                ) : overallProgress >= 75 ? (
-                  <Star className="h-8 w-8 text-primary" />
                 ) : (
-                  <Target className="h-8 w-8 text-blue-500" />
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                  >
+                    <Target className="h-10 w-10 text-blue-500 drop-shadow-lg" />
+                  </motion.div>
                 )}
               </div>
               <div className="flex-1">
-                <p className="font-medium text-sm">
+                <p className="font-semibold text-base mb-1">
                   {overallProgress === 100 
                     ? "🎉 Course Completed!" 
                     : overallProgress >= 75 
                     ? "Almost there!" 
                     : "Keep going!"}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   {overallProgress === 100 
                     ? "Congratulations on completing this course!"
                     : `${courseStatistics.remainingChapters} chapters left to complete`}
                 </p>
+                {overallProgress === 100 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="mt-3"
+                  >
+                    <Badge className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 font-semibold px-3 py-1">
+                      <Trophy className="h-3 w-3 mr-1" />
+                      Achievement Unlocked
+                    </Badge>
+                  </motion.div>
+                )}
               </div>
             </div>
           </motion.div>
