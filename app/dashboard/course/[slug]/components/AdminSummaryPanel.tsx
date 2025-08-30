@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import axios from "axios"
+import { api } from "@/lib/api-helper"
 import Markdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeHighlight from "rehype-highlight"
@@ -57,7 +57,7 @@ export const AdminSummaryPanel: React.FC<AdminSummaryPanelProps> = ({
   const handleSaveEdit = useCallback(async () => {
     setIsSaving(true)
     try {
-      await axios.put(`/api/chapter/${chapterId}/summary`, {
+      await api.put(`/chapter/${chapterId}/summary`, {
         summary: editContent,
       })
       
@@ -76,7 +76,7 @@ export const AdminSummaryPanel: React.FC<AdminSummaryPanelProps> = ({
   const handleDeleteSummary = useCallback(async () => {
     setIsSaving(true)
     try {
-      await axios.delete(`/api/chapter/${chapterId}/summary`)
+      await api.delete(`/chapter/${chapterId}/summary`)
       setSummary("")
       setShowDeleteDialog(false)
       toast.success("Summary deleted successfully!")

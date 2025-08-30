@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, CheckCircle, AlertCircle, XCircle, RefreshCw } from 'lucide-react'
-import axios from 'axios'
+import { api } from '@/lib/api-helper'
 
 interface VideoProcessingOverview {
   processing: number
@@ -58,7 +58,7 @@ export default function VideoProcessingDebugger() {
     try {
       setLoading(true)
       setError(null)
-      const response = await axios.get('/api/video/fix')
+      const response = await api.get('/video/fix')
       setOverview(response.data.overview)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch overview')
@@ -73,7 +73,7 @@ export default function VideoProcessingDebugger() {
       setLoading(!autoFix)
       setError(null)
 
-      const response = await axios.post('/api/video/fix', {
+      const response = await api.post('/video/fix', {
         action: 'diagnose',
         autoFix
       })

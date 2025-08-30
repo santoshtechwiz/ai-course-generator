@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react"
 import { useMutation } from "@tanstack/react-query"
-import axios from "axios"
+import { api } from "@/lib/api-helper"
 import { useToast } from "@/hooks"
 // global loader removed
 import type { Chapter } from "@prisma/client"
@@ -52,7 +52,7 @@ export const useChapterProcessing = (chapter: Chapter) => {
   // Add a function to check video status
   const checkVideoStatus = useCallback(async (chapterId: number) => {
     try {
-      const response = await axios.get(`/api/video/status/${chapterId}`)
+      const response = await api.get(`/video/status/${chapterId}`)
       const data = response.data
 
       console.log(`Video status check for chapter ${chapterId}:`, data)
@@ -115,7 +115,7 @@ export const useChapterProcessing = (chapter: Chapter) => {
     mutationFn: async () => {
       try {
         console.log("Generating video for chapter:", chapter.id)
-        const response = await axios.post("/api/video", { chapterId: chapter.id })
+        const response = await api.post("/video", { chapterId: chapter.id })
         return response.data
       } catch (error) {
         console.error("Error in video generation API call:", error)

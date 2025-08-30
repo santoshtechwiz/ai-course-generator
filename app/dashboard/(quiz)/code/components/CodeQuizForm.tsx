@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useMutation } from "@tanstack/react-query"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import axios from "axios"
+import { api } from "@/lib/api-helper"
 import { signIn, useSession } from "next-auth/react"
 import {
   HelpCircle,
@@ -227,7 +227,7 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
   const { mutateAsync: createCodeQuizMutation } = useMutation({
     mutationFn: async (data: CodeQuizFormData) => {
       data.userType = subscriptionData?.subscriptionPlan
-      const response = await axios.post("/api/quizzes", { ...data, type: "code" })
+      const response = await api.post("/quizzes", { ...data, type: "code" })
       return response.data
     },
     onError: (error: any) => {

@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
-import axios from "axios"
+import { api } from "@/lib/api-helper"
 import { Loader2, Search, X, Book, FileQuestion } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import debounce from "lodash/debounce"
@@ -47,7 +47,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
         loaderTimeoutRef.current = setTimeout(() => setShowLoader(true), 300)
 
         try {
-          const response = await axios.get<SearchResponse>(`/api/search?query=${encodeURIComponent(query)}`)
+          const response = await api.get<SearchResponse>(`/search?query=${encodeURIComponent(query)}`)
           setSearchResults(response.data)
         } catch (error) {
           console.error("Error fetching search results:", error)

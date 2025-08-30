@@ -6,7 +6,7 @@ import { useToast } from "@/hooks"
 import { useMutation } from "@tanstack/react-query"
 import { useForm, type SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import axios from "axios"
+import { api } from "@/lib/api-helper"
 import { Pencil, FileText, Eye } from "lucide-react"
 
 import { BasicInfoStep } from "./BasicInfoStep"
@@ -68,7 +68,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
 
   const createCourseMutation = useMutation({
     mutationFn: async (data: CreateCourseInput) => {
-      const response = await axios.post("/api/course", data)
+      const response = await api.post("/course", data)
       return response.data
     },
     onSuccess: async (data) => {

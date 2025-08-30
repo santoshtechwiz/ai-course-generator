@@ -1,4 +1,4 @@
-import axios from "axios";
+import { api } from "@/lib/api-helper";
 import { createApiClient } from "@/lib/api-client";
 
 // Define strongly-typed interfaces
@@ -71,8 +71,7 @@ export const courseApiClient = createApiClient('', courseEndpoints);
 export const courseService = {
   async updateCourseChapters(data: UpdateChaptersData) {
     try {
-      const response = await axios.post("/api/course/update-chapters", data);
-      return response.data;
+      return await api.post("/api/course/update-chapters", data);
     } catch (error) {
       console.error("Error updating course chapters:", error);
       throw error;

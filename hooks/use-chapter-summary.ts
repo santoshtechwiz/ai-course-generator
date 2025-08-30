@@ -2,7 +2,7 @@
 
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import axios from "axios"
+import { apiRequest } from "@/lib/api-helper"
 
 
 interface SummaryResponse {
@@ -17,8 +17,7 @@ interface SummaryResponse {
  * @returns Summary response
  */
 async function fetchChapterSummary(chapterId: number): Promise<SummaryResponse> {
-  const response = await axios.get<SummaryResponse>(`/api/summary/status/${chapterId}`)
-  return response.data
+  return await apiRequest(`/api/summary/status/${chapterId}`)
 }
 
 /**
@@ -27,8 +26,7 @@ async function fetchChapterSummary(chapterId: number): Promise<SummaryResponse> 
  * @returns Summary response
  */
 async function generateChapterSummary(chapterId: number): Promise<SummaryResponse> {
-  const response = await axios.post<SummaryResponse>(`/api/summary`, { chapterId })
-  return response.data
+  return await apiRequest(`/api/summary`, { method: 'POST', body: JSON.stringify({ chapterId }) })
 }
 
 /**

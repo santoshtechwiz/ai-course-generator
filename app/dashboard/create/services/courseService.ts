@@ -1,4 +1,4 @@
-import axios from "axios"
+import { apiRequest } from "@/lib/api-helper"
 
 export interface UpdateChaptersData {
   courseId: number
@@ -20,8 +20,7 @@ export interface UpdateChaptersData {
 export const courseService = {
   async updateCourseChapters(data: UpdateChaptersData) {
     try {
-      const response = await axios.post("/api/course/update-chapters", data)
-      return response.data
+      return await apiRequest("/api/course/update-chapters", { method: 'POST', body: JSON.stringify(data) })
     } catch (error) {
       console.error("Error updating course chapters:", error)
       throw error

@@ -8,13 +8,13 @@ import { Providers } from "@/store/provider"
 import { getServerAuthSession } from "@/lib/server-auth"
 import { Suspense } from "react"
 
-import PageTransition from "@/components/shared/PageTransition"
 import { DefaultSEO, generateMetadata as generateBaseMetadata } from "@/lib/seo"
 import GoogleAnalyticsClient from '@/components/analytics/GoogleAnalyticsClient'
 
 import { RootErrorBoundary } from "@/components/layout/RootErrorBoundary"
 import { SuspenseGlobalFallback } from "@/components/loaders"
 import BProgressProvider from "./providers"
+import { MotionProvider } from "@/components/MotionProvider"
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
@@ -114,11 +114,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <div className="relative min-h-screen flex flex-col">
                   {/* Main Content */}
                   <main id="main-content" className="flex-1 w-full">
-                    <PageTransition>
+                    <MotionProvider>
                       <Suspense fallback={<SuspenseGlobalFallback />}>
                         {children}
                       </Suspense>
-                    </PageTransition>
+                    </MotionProvider>
                   </main>
 
                   {/* Footer */}

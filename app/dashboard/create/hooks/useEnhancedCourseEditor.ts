@@ -3,7 +3,7 @@
 import React from "react"
 import { useState, useCallback, useMemo, useRef } from "react"
 import { useToast } from "@/hooks"
-import axios from "axios"
+import { api } from "@/lib/api-helper"
 import { useRouter } from "next/navigation"
 import type { Course, CourseUnit, Chapter } from "@prisma/client"
 import type { ChapterCardHandler } from "../components/EnhancedChapterCard"
@@ -435,7 +435,7 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
       console.log("Sending update data to API:", JSON.stringify(updateData, null, 2))
 
       // Save to database using the existing course update API
-      const saveResponse = await axios.post(`/api/course/update-chapters`, updateData)
+      const saveResponse = await api.post(`/api/course/update-chapters`, updateData)
       if (!saveResponse.data.success) {
         throw new Error(saveResponse.data.error || "Failed to save course structure")
       }

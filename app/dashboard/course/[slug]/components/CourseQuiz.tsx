@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useEffect, useReducer } from "react"
 import { useQuery } from "@tanstack/react-query"
-import axios from "axios"
+import { api } from "@/lib/api-helper"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -184,7 +184,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
     queryFn: async () => {
       if (!chapter?.videoId || !effectiveChapterId) throw new Error("Missing chapter data")
 
-      const response = await axios.post("/api/coursequiz", {
+      const response = await api.post("/coursequiz", {
         videoId: chapter.videoId,
         chapterId: Number(effectiveChapterId),
         chapterName: chapter.title || chapter.name,

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
-import axios from "axios"
+import { api } from "@/lib/api-helper"
 import { useToast } from "@/hooks"
 
 export interface VideoStatus {
@@ -64,7 +64,7 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       const endpoint = "/api/video"
       console.log(`🚀 Calling API ${endpoint} for chapter ${chapterId}`)
       
-      const response = await axios.post(endpoint, { 
+      const response = await api.post(endpoint, { 
         chapterId
       })
       
@@ -120,7 +120,7 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       const endpoint = `/api/video/status/${chapterId}`
       
       console.log(`🔍 Checking status for chapter ${chapterId} at ${endpoint}`)
-      const response = await axios.get(endpoint)
+      const response = await api.get(endpoint)
       console.log(`📡 Status response for chapter ${chapterId}:`, response.data)
       
       // Successful completion - video is ready
@@ -279,7 +279,7 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
 
         // Call the video generation API directly
         const endpoint = useEnhancedService ? "/api/video/enhanced" : "/api/video"
-        const response = await axios.post(endpoint, useEnhancedService
+        const response = await api.post(endpoint, useEnhancedService
           ? { chapterId, options: { useOptimizedService: true } }
           : { chapterId })
 
@@ -350,7 +350,7 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
     }
     
     try {
-      const response = await axios.delete(`/api/video/enhanced?chapterId=${chapterId}`)
+      const response = await api.delete(`/api/video/enhanced?chapterId=${chapterId}`)
       
       if (response.data.success) {
         setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
@@ -554,7 +554,7 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
     
     const checkQueueStatus = async () => {
       try {
-        const response = await axios.get("/api/video/enhanced")
+        const response = await api.get("/api/video/enhanced")
         if (response.data.success) {
           setQueueStatus(response.data.status)
         }

@@ -4,10 +4,12 @@ import { Metadata } from "next"
 import { Compass, ArrowLeft, BookOpen, SearchX, Home, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getRecommendedItems, RecommendedItem } from "@/app/utils/get-recommended-items"
-import { motion } from "framer-motion"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { JsonLD } from "@/lib/seo"
+
+import { motion } from "framer-motion"
 
 // Export metadata for SEO optimization
 export const metadata: Metadata = {
@@ -23,8 +25,8 @@ const containerVariants = {
     opacity: 1,
     transition: {
       duration: 0.7,
-      when: "beforeChildren",
       staggerChildren: 0.2,
+      delayChildren: 0.1,
     },
   }
 }
@@ -45,13 +47,12 @@ const itemVariants = {
 // Recommended Item Card Component
 function RecommendedItemCard({ item, index }: { item: RecommendedItem; index: number }) {
   return (
-    <motion.div
-      variants={itemVariants}
-      custom={index}
-      whileHover={{ y: -5, scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+    <div
+      className="h-full hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20"
+      style={{ transform: 'translateY(0)', transition: 'transform 0.3s ease' }}
+     
     >
-      <Card className="h-full hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
+      <Card className="h-full">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <Badge
@@ -80,7 +81,7 @@ function RecommendedItemCard({ item, index }: { item: RecommendedItem; index: nu
           </Button>
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   )
 }
 
@@ -90,6 +91,11 @@ function RecommendationsFallback() {
     <div className="w-full py-12 text-center">
       <div className="flex justify-center">
         <SearchX className="h-16 w-16 text-muted-foreground animate-pulse" />
+      </div>
+      <div className="mt-4 space-y-3">
+        <div className="h-4 bg-muted rounded animate-pulse max-w-md mx-auto" />
+        <div className="h-4 bg-muted rounded animate-pulse max-w-sm mx-auto" />
+        <div className="h-4 bg-muted rounded animate-pulse max-w-lg mx-auto" />
       </div>
       <p className="mt-4 text-muted-foreground">
         Loading recommendations...
@@ -116,16 +122,13 @@ async function Recommendations() {
   }
 
   return (
-    <motion.div
+    <div
       className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
     >
       {recommendedItems.map((item, index) => (
         <RecommendedItemCard key={item.id} item={item} index={index} />
       ))}
-    </motion.div>
+    </div>
   )
 }
 
@@ -150,41 +153,32 @@ export default function NotFound() {
       <JsonLD type="WebPage" data={notFoundStructuredData} />
 
       <main className="flex-grow flex items-center justify-center px-4 py-12 md:py-16">
-        <motion.div
+        <div
           className="max-w-6xl w-full space-y-12 md:space-y-16"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
         >
           {/* 404 Header Section */}
           <div className="text-center">
-            <motion.div
-              variants={itemVariants}
+            <div
               className="relative inline-block"
             >
               <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl opacity-30" />
               <h1 className="text-7xl md:text-8xl font-bold text-primary relative z-10">404</h1>
-            </motion.div>
+            </div>
 
-            <motion.h2
+            <h2
               className="text-3xl md:text-4xl font-bold text-foreground mt-4"
-              variants={itemVariants}
             >
               Page Not Found
-            </motion.h2>
+            </h2>
 
-            <motion.p
-              className="text-xl text-muted-foreground max-w-2xl mx-auto mt-6 leading-relaxed"
-              variants={itemVariants}
-            >
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mt-6 leading-relaxed">
               Looks like you've ventured into uncharted territory! Don't worry,
               we've gathered some excellent learning opportunities below to get you back on track.
-            </motion.p>
+            </p>
           </div>
 
           {/* Recommendations Section */}
-          <motion.div
-            variants={itemVariants}
+          <div
             className="w-full"
           >
             <div className="text-center mb-8">
@@ -199,12 +193,11 @@ export default function NotFound() {
             <Suspense fallback={<RecommendationsFallback />}>
               <Recommendations />
             </Suspense>
-          </motion.div>
+          </div>
 
           {/* Navigation Buttons */}
-          <motion.div
+          <div
             className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6"
-            variants={itemVariants}
           >
             <Button
               size="lg"
@@ -238,8 +231,8 @@ export default function NotFound() {
                 <Home className="mr-2 h-5 w-5" /> Go Home
               </Link>
             </Button>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </main>
     </div>
   )

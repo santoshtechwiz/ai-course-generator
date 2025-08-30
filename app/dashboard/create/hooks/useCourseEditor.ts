@@ -3,7 +3,7 @@
 import React from "react"
 import { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import { useToast } from "@/hooks"
-import axios from "axios"
+import { api } from "@/lib/api-helper"
 import { useRouter } from "next/navigation"
 import type { Course, CourseUnit, Chapter } from "@prisma/client"
 import type { ChapterCardHandler } from "../components/ChapterCard"
@@ -320,7 +320,7 @@ export function useCourseEditor(initialCourse: CourseWithUnits) {
         }))
 
         // Call the API to generate video
-        const response = await axios.post("/api/video", { chapterId: chapter.id })
+        const response = await api.post("/video", { chapterId: chapter.id })
 
         if (response.data.success) {
           // Start polling for video status
@@ -353,7 +353,7 @@ export function useCourseEditor(initialCourse: CourseWithUnits) {
       return new Promise((resolve) => {
         const checkStatus = async () => {
           try {
-            const response = await axios.get(`/api/video/status/${chapter.id}`)
+            const response = await api.get(`/video/status/${chapter.id}`)
             const data = response.data
 
             // Update chapter in course state if video is ready
@@ -523,7 +523,7 @@ export function useCourseEditor(initialCourse: CourseWithUnits) {
       const updatedCourse = prepareUpdateData()
 
       // Save the updated course structure
-      const response = await axios.post("/api/course/update-chapters", updatedCourse)
+      const response = await api.post("/course/update-chapters", updatedCourse)
 
       toast({
         title: "Success",
@@ -536,24 +536,16 @@ export function useCourseEditor(initialCourse: CourseWithUnits) {
       console.error("Error saving course:", error)
 
       // More specific error handling
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 401) {
-          toast({
-            title: "Authorization Error",
-            description: "Your session has expired. Please log in again.",
-            variant: "destructive",
-          })
-        } else {
-          toast({
-            title: "Error",
-            description: error.response?.data?.error || "Failed to save course changes. Please try again.",
-            variant: "destructive",
-          })
-        }
+      if (error instanceof Error && error.message.includes('401')) {
+        toast({
+          title: "Authorization Error",
+          description: "Your session has expired. Please log in again.",
+          variant: "destructive",
+        })
       } else {
         toast({
           title: "Error",
-          description: "Failed to save course changes. Please try again.",
+          description: error instanceof Error ? error.message : "Failed to save course changes. Please try again.",
           variant: "destructive",
         })
       }

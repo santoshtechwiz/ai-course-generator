@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useMutation } from "@tanstack/react-query"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import axios from "axios"
+import { api } from "@/lib/api-helper"
 
 import { HelpCircle, Timer, Sparkles, Check, AlertCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -97,7 +97,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
 
   const { mutateAsync: createBlankQuizMutation } = useMutation({
     mutationFn: async (data: BlankQuizFormData) => {
-      const response = await axios.post("/api/quizzes", { ...data, type: "blanks" })
+      const response = await api.post("/quizzes", { ...data, type: "blanks" })
       return response.data
     },
     onError: (error: any) => {

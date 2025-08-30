@@ -18,7 +18,7 @@ import { useEnhancedCourseEditor } from "../hooks/useEnhancedCourseEditor"
 import EnhancedUnitCard from "./EnhancedUnitCard"
 import { useToast } from "@/hooks"
 import { useRouter } from "next/navigation"
-import axios from "axios"
+import { api } from "@/lib/api-helper"
 
 export type CourseProps = {
   course: Course & {
@@ -310,7 +310,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                     // Save course without generating videos, then redirect
                     try {
                       const updateData = courseEditor.prepareUpdateData()
-                      const saveResponse = await axios.post(`/api/course/update-chapters`, updateData)
+                      const saveResponse = await api.post(`/course/update-chapters`, updateData)
                       if (!saveResponse.data.success) {
                         throw new Error(saveResponse.data.error || "Failed to save course structure")
                       }

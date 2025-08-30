@@ -32,9 +32,9 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { motion, AnimatePresence } from "framer-motion"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Skeleton } from "@/components/ui/skeleton"
+import { AnimatedWrapper } from "@/components/AnimatedWrapper"
 
 // Enhanced course images with better variety
 const COURSE_IMAGES = ["/course.png", "/course_2.png", "/course_3.png", "/course_4.png"]
@@ -180,6 +180,13 @@ const CATEGORY_CONFIG: Record<
     badge: "bg-gradient-to-r from-slate-500 to-gray-600 text-white border-0 shadow-lg shadow-slate-500/25",
     glow: "shadow-slate-500/20"
   },
+}
+
+const determineCourseLevel = (unitCount: number, lessonCount: number, quizCount: number): "Beginner" | "Intermediate" | "Advanced" => {
+  const totalItems = unitCount + lessonCount + quizCount
+  if (totalItems < 15) return "Beginner"
+  if (totalItems < 30) return "Intermediate"
+  return "Advanced"
 }
 
 export const CourseCard = React.memo(
@@ -343,35 +350,12 @@ export const CourseCard = React.memo(
       )
     }
 
-    const cardVariants = {
-      initial: { opacity: 0, y: 20, scale: 0.95 },
-      animate: {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        transition: {
-          type: "spring",
-          stiffness: 200,
-          damping: 20,
-        },
-      },
-      hover: {
-        y: -8,
-        scale: 1.02,
-        transition: { type: "spring", stiffness: 400, damping: 25 },
-        boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04)"
-      },
-    }
-
     return (
       <TooltipProvider>
-        <motion.div
-          variants={cardVariants}
-          initial="initial"
-          animate="animate"
-          whileHover="hover"
-          onHoverStart={() => setIsHovered(true)}
-          onHoverEnd={() => setIsHovered(false)}
+        <AnimatedWrapper
+          animation="scale"
+          delay={0.1}
+          duration={0.4}
           className={cn("w-full h-auto min-h-96 overflow-hidden border border-border/50 bg-card course-card-enhanced", className)}
         >
           <Card
@@ -413,13 +397,11 @@ export const CourseCard = React.memo(
                 />
               ) : (
                 <div className={cn("absolute inset-0 flex items-center justify-center", gradientBg)}>
-                  <motion.div
-                    animate={{ rotate: isHovered ? 360 : 0 }}
-                    transition={{ duration: 0.8, ease: "easeInOut" }}
+                  <div
                     className="w-16 h-16 text-white/90"
                   >
                     <categoryConfig.icon className="w-full h-full drop-shadow-lg" />
-                  </motion.div>
+                  </div>
                 </div>
               )}
 
@@ -449,12 +431,10 @@ export const CourseCard = React.memo(
               <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                    <button
                       onClick={handleFavoriteClick}
                       className={cn(
-                        "p-2 rounded-full backdrop-blur-sm transition-all duration-300",
+                        "p-2 rounded-full backdrop-blur-sm transition-all duration-300 hover:scale-110",
                         isFavorite
                           ? "bg-red-500 text-white shadow-lg shadow-red-500/25"
                           : "bg-white/20 text-white hover:bg-white/30",
@@ -462,7 +442,7 @@ export const CourseCard = React.memo(
                       aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
                     >
                       <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
-                    </motion.button>
+                    </button>
                   </TooltipTrigger>
                   <TooltipContent>
                     {isFavorite ? "Remove from favorites" : "Add to favorites"}
@@ -471,12 +451,10 @@ export const CourseCard = React.memo(
 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                    <button
                       onClick={handleBookmarkClick}
                       className={cn(
-                        "p-2 rounded-full backdrop-blur-sm transition-all duration-300",
+                        "p-2 rounded-full backdrop-blur-sm transition-all duration-300 hover:scale-110",
                         isBookmarked
                           ? "bg-blue-500 text-white shadow-lg shadow-blue-500/25"
                           : "bg-white/20 text-white hover:bg-white/30",
@@ -484,7 +462,7 @@ export const CourseCard = React.memo(
                       aria-label={isBookmarked ? "Remove bookmark" : "Bookmark course"}
                     >
                       <Bookmark className={cn("w-4 h-4", isBookmarked && "fill-current")} />
-                    </motion.button>
+                    </button>
                   </TooltipTrigger>
                   <TooltipContent>
                     {isBookmarked ? "Remove bookmark" : "Bookmark course"}
@@ -493,21 +471,14 @@ export const CourseCard = React.memo(
               </div>
 
               {/* Play button overlay */}
-              <AnimatePresence>
-                {isHovered && (
-                  <motion.div
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    className="absolute inset-0 flex items-center justify-center"
-                  >
-                    <div className="w-12 h-12 bg-primary rounded-full shadow-lg shadow-primary/25 flex items-center justify-center">
-                      <Play className="w-5 h-5 text-primary-foreground ml-0.5" fill="currentColor" />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <AnimatedWrapper
+                animation={isHovered ? "scale" : "none"}
+                className="absolute inset-0 flex items-center justify-center"
+              >
+                <div className="w-12 h-12 bg-primary rounded-full shadow-lg shadow-primary/25 flex items-center justify-center">
+                  <Play className="w-5 h-5 text-primary-foreground ml-0.5" fill="currentColor" />
+                </div>
+              </AnimatedWrapper>
             </div>
 
             {/* Content Section - Standardized height with better typography hierarchy */}
@@ -657,17 +628,10 @@ export const CourseCard = React.memo(
               </div>
             </div>
           </Card>
-        </motion.div>
+        </AnimatedWrapper>
       </TooltipProvider>
     )
   },
 )
 
 CourseCard.displayName = "CourseCard"
-
-const determineCourseLevel = (unitCount: number, lessonCount: number, quizCount: number): keyof typeof LEVEL_CONFIG => {
-  const totalItems = unitCount + lessonCount + quizCount
-  if (totalItems < 15) return "Beginner"
-  if (totalItems < 30) return "Intermediate"
-  return "Advanced"
-}

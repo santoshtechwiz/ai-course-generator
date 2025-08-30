@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import axios from "axios"
+import { apiRequest } from "@/lib/api-helper"
 
 interface SummaryResponse {
   success: boolean
@@ -8,8 +8,7 @@ interface SummaryResponse {
 }
 
 const fetchChapterSummary = async (chapterId: number): Promise<SummaryResponse> => {
-  const response = await axios.post<SummaryResponse>(`/api/summary`, { chapterId })
-  return response.data
+  return await apiRequest(`/api/summary`, { method: 'POST', body: JSON.stringify({ chapterId }) })
 }
 
 /**

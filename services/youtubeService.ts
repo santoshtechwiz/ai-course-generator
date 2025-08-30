@@ -1,4 +1,4 @@
-import axios, { type AxiosInstance, type AxiosResponse } from "axios"
+import { apiRequest } from "@/lib/api-helper"
 import { YtTranscript } from "yt-transcript"
 import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube"
 import { Supadata, type TranscriptChunk } from "@supadata/js"
@@ -31,7 +31,7 @@ class YoutubeService {
   private static transcriptCache = new Map<string, string>()
   private static supadata: Supadata
   private static currentSupadataKey: string
-  private static youtubeClient: AxiosInstance = axios.create({
+  private static youtubeClient = apiRequest.create({
     baseURL: "https://www.googleapis.com/youtube/v3",
     params: { key: YoutubeService.YOUTUBE_API_KEY },
   })
@@ -71,7 +71,7 @@ class YoutubeService {
 
   static async searchYoutube(searchQuery: string): Promise<string | null> {
     try {
-      const response: AxiosResponse<YoutubeSearchResponse> = await pTimeout(
+      const response = await pTimeout(
         this.youtubeClient.get<YoutubeSearchResponse>("/search", {
           params: {
             q: searchQuery,

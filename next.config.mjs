@@ -97,10 +97,22 @@ const nextConfig = {
     return config;
   },
 
+  // Turbopack configuration to match Webpack settings
+  turbopack: {
+    rules: {
+      // Custom rules can be added here if needed for Turbopack
+    },
+    resolve: {
+      // Custom resolve options can be added here if needed for Turbopack
+    },
+  },
+
   experimental: {
     optimizeCss: false,
     serverSourceMaps: true,
     optimizePackageImports: ["lucide-react", "recharts", "@radix-ui/react-icons"],
+    // Enable Turbopack for faster builds
+    turbopack: true,
   },
 };
 

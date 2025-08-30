@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useInfiniteQuery, type UseInfiniteQueryResult, type InfiniteData } from "@tanstack/react-query"
-import { motion } from "framer-motion"
 import { BookOpen, LayoutGrid, List, Search, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -258,9 +257,7 @@ export default function CoursesClient({
   // Error state - Enhanced error handling to prevent UI freezing
   if (isError) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+      <div
         className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center"
       >
         <div className="bg-destructive/10 rounded-full p-6 mb-6">
@@ -287,16 +284,14 @@ export default function CoursesClient({
             Reset Filters
           </Button>
         </div>
-      </motion.div>
+      </div>
     )
   }
 
   // Empty state with reset filter CTA
   if (hasNoData) {
     return (
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
+      <div
         className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center"
       >
         <div className="bg-primary/10 rounded-full p-6 mb-6">
@@ -327,7 +322,7 @@ export default function CoursesClient({
             Clear all filters
           </Button>
         )}
-      </motion.div>
+      </div>
     )
   }
 

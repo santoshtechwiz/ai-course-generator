@@ -6,7 +6,7 @@ import { useToast } from "@/hooks"
 import { useMutation } from "@tanstack/react-query"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import axios from "axios"
+import { api } from "@/lib/api-helper"
 import { signIn } from "next-auth/react"
 import { Layers, HelpCircle, Timer, Sparkles, BookOpen, Brain, Target, AlertCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -125,7 +125,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
   const { mutateAsync: createFlashCardsMutation } = useMutation({
     mutationFn: async (data: FlashCardFormData) => {
       data.userType = subscriptionData?.plan || "FREE"
-      const response = await axios.post("/api/quizzes/flashcard/create", data)
+      const response = await api.post("/quizzes/flashcard/create", data)
       return response.data
     },
     onError: (error) => {

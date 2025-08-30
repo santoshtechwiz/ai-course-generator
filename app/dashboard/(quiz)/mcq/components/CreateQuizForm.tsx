@@ -6,7 +6,7 @@ import { useToast } from "@/hooks"
 import { useMutation } from "@tanstack/react-query"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import axios from "axios"
+import { api } from "@/lib/api-helper"
 import { signIn, useSession } from "next-auth/react"
 import { HelpCircle, Timer, Sparkles, Check, Brain, BookOpen, GraduationCap, Target, Lightbulb } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -182,7 +182,7 @@ export default function CreateQuizForm({
   const dispatch = useAppDispatch()
   const { mutateAsync: createQuizMutation } = useMutation({
     mutationFn: async (data: QuizFormData) => {
-      const response = await axios.post(`/api/quizzes`, { ...data, type: "mcq" })
+      const response = await api.post(`/quizzes`, { ...data, type: "mcq" })
       return response.data
     },
     onError: (error: any) => {
