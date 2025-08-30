@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Search, Menu, X, CreditCard, Sparkles, Bell, Zap, Brain, Cpu } from "lucide-react"
+import { Search, Menu, X, CreditCard, Zap, Brain } from "lucide-react"
 import { navItems } from "@/constants/navItems"
 import { ThemeToggle } from "@/components/layout/navigation/ThemeToggle"
 import { UserMenu } from "@/components/layout/navigation/UserMenu"
@@ -15,15 +15,19 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 import { useAuth, useSubscription } from "@/modules/auth"
 import { useAppDispatch, useAppSelector } from "@/store"
-import { forceSyncSubscription, selectIsSubscriptionFetching } from "@/store/slices/subscription-slice"
+import { forceSyncSubscription, selectIsSubscriptionFetching, selectTokenUsage } from "@/store/slices/subscription-slice"
 import { progressApi } from "@/components/loaders/progress-api"
 import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
 import CourseNotificationsMenu from "@/components/Navbar/CourseNotificationsMenu"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 
-import { motion, AnimatePresence, useReducedMotion, useAnimation } from "framer-motion"
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import Logo from "@/components/shared/Logo"
+import { throttle } from "@/utils/throttle"
+import type { User } from "@/types/auth"
+import { CreditsDisplay } from "./CreditsDisplay"
+import { UserAvatar } from "./UserAvatar"
 
 export function MainNavbar() {
   const pathname = usePathname()
@@ -32,8 +36,8 @@ export function MainNavbar() {
   const subscription = useSubscription()
   const dispatch = useAppDispatch()
   const subFetching = useAppSelector(selectIsSubscriptionFetching) as boolean
+  const tokenUsage = useAppSelector(selectTokenUsage)
   const syncedOnceRef = useRef(false)
-  const controls = useAnimation()
 
   // Force fresh subscription sync (Navbar always fresh) once per mount
   useEffect(() => {
@@ -56,35 +60,25 @@ export function MainNavbar() {
   }, [dispatch])
 
   // Safe reduced motion check
-  const prefersReducedMotion = (() => {
-    try {
-      return useReducedMotion()
-    } catch (error) {
-      console.warn('useReducedMotion hook failed:', error)
-      return false
-    }
-  })()
+  const prefersReducedMotion = useReducedMotion()
 
-  // Extract subscription details with null checks
-  const totalTokens = user?.credits || 0
-  const tokenUsage = 0 // TODO: Track token usage
-  const subscriptionPlan = subscription?.subscription?.plan || "FREE"
+  // Extract subscription details with proper null checks
+  const subscriptionData = subscription?.subscription
+  const totalTokens = subscriptionData?.credits || 0
+  const tokenUsageValue = tokenUsage?.tokensUsed || 0
+  const subscriptionPlan = subscriptionData?.plan || "FREE"
 
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
 
-  // Mouse tracking for AI glow effect - with error boundary
+  // Mouse tracking for AI glow effect - with throttling for performance
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      try {
-        setMousePosition({ x: e.clientX, y: e.clientY })
-      } catch (error) {
-        console.warn('Mouse position update failed:', error)
-      }
-    }
-    
+    const handleMouseMove = throttle((e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY })
+    }, 16) // ~60fps throttling
+
     if (typeof window !== 'undefined') {
       window.addEventListener("mousemove", handleMouseMove, { passive: true })
       return () => window.removeEventListener("mousemove", handleMouseMove)
@@ -143,89 +137,54 @@ export function MainNavbar() {
     }
   }, [])
 
-  // Memoized calculations with error boundaries
+  // Memoized calculations
   const availableCredits = useMemo(() => {
-    try {
-      const credits = totalTokens ?? user?.credits ?? 0
-      if (typeof credits === "number" && typeof tokenUsage === "number") {
-        return Math.max(0, credits - tokenUsage)
-      }
-      return null
-    } catch (error) {
-      console.warn('Credits calculation failed:', error)
-      return null
+    const credits = totalTokens ?? user?.credits ?? 0
+    if (typeof credits === "number" && typeof tokenUsageValue === "number") {
+      return Math.max(0, credits - tokenUsageValue)
     }
-  }, [totalTokens, user?.credits, tokenUsage])
+    return null
+  }, [totalTokens, user?.credits, tokenUsageValue])
 
   const userInitials = useMemo(() => {
-    try {
-      const name = user?.name || ""
-      return (
-        name
-          .split(" ")
-          .map((n: string) => n[0])
-          .join("")
-          .toUpperCase()
-          .slice(0, 2) || "U"
-      )
-    } catch (error) {
-      console.warn('User initials calculation failed:', error)
-      return "U"
-    }
-  }, [user])
+    const name = user?.name || ""
+    return (
+      name
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2) || "U"
+    )
+  }, [user?.name])
 
-  // Handlers with error boundaries
+  // Handlers
   const handleSearchOpen = useCallback(() => {
-    try {
-      setIsSearchModalOpen(true)
-    } catch (error) {
-      console.warn('Search open handler failed:', error)
-    }
+    setIsSearchModalOpen(true)
   }, [])
 
   const handleSearchClose = useCallback(() => {
-    try {
-      setIsSearchModalOpen(false)
-    } catch (error) {
-      console.warn('Search close handler failed:', error)
-    }
+    setIsSearchModalOpen(false)
   }, [])
 
   const handleMobileMenuToggle = useCallback(() => {
-    try {
-      setIsMobileMenuOpen((prev) => !prev)
-    } catch (error) {
-      console.warn('Mobile menu toggle failed:', error)
-    }
+    setIsMobileMenuOpen((prev) => !prev)
   }, [])
 
   const handleSignIn = useCallback(() => {
-    try {
-      router.push("/api/auth/signin")
-    } catch (error) {
-      console.warn('Sign in navigation failed:', error)
-    }
+    router.push("/api/auth/signin")
   }, [router])
 
   const handleSearchResult = useCallback(
     (url: string) => {
-      try {
-        router.push(url)
-        handleSearchClose()
-      } catch (error) {
-        console.warn('Search result navigation failed:', error)
-      }
+      router.push(url)
+      handleSearchClose()
     },
     [router, handleSearchClose],
   )
 
   const isPremium = useMemo(() => {
-    try {
-      return subscriptionPlan && subscriptionPlan !== "FREE"
-    } catch (error) {
-      console.warn('Premium check failed:', error)
-      return false
-    }
+    return subscriptionPlan && subscriptionPlan !== "FREE"
   }, [subscriptionPlan])
 
   // Enhanced AI-themed animation variants with fallbacks
@@ -296,128 +255,6 @@ export function MainNavbar() {
     },
   }
 
-  // Enhanced Credits Display Component with AI theme and error boundary
-  const CreditsDisplay = useMemo(() => {
-    try {
-      if (!isAuthenticated) return null
-
-      if (availableCredits === null) {
-        return (
-          <motion.div
-            className="hidden lg:flex items-center space-x-2"
-            variants={prefersReducedMotion ? {} : itemVariants}
-            initial={prefersReducedMotion ? {} : "hidden"}
-            animate={prefersReducedMotion ? {} : "visible"}
-          >
-            <Skeleton className="h-8 w-24 rounded-lg bg-gradient-to-r from-primary/20 to-secondary/20" />
-          </motion.div>
-        )
-      }
-
-      const isLowCredits = availableCredits < 100
-
-      return (
-        <motion.div
-          className={cn(
-            "hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded-xl border transition-all duration-300",
-            "bg-gradient-to-r from-primary/10 via-secondary/5 to-accent/10",
-            "border-primary/20 hover:border-primary/40",
-            "hover:shadow-lg hover:shadow-primary/10",
-            "backdrop-blur-sm"
-          )}
-          data-testid="credits-display"
-          variants={prefersReducedMotion ? {} : itemVariants}
-          initial={prefersReducedMotion ? {} : "hidden"}
-          animate={prefersReducedMotion ? {} : "visible"}
-          whileHover={prefersReducedMotion ? {} : "hover"}
-        >
-          <motion.div
-            variants={prefersReducedMotion ? {} : aiGlowVariants}
-            initial={prefersReducedMotion ? {} : "idle"}
-            whileHover={prefersReducedMotion ? {} : "hover"}
-            className="relative"
-          >
-            <Zap className="h-4 w-4 text-primary" />
-            <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm" />
-          </motion.div>
-          <span
-            className={cn(
-              "text-sm font-medium tabular-nums bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
-              isLowCredits ? "from-destructive to-destructive" : ""
-            )}
-          >
-            {availableCredits.toLocaleString()}
-          </span>
-          {isPremium && (
-            <motion.div
-              initial={prefersReducedMotion ? {} : { scale: 0 }}
-              animate={prefersReducedMotion ? {} : { scale: 1 }}
-              transition={prefersReducedMotion ? {} : { delay: 0.2, type: "spring", stiffness: 500 }}
-            >
-              <Badge
-                variant="secondary"
-                className={cn(
-                  "text-xs font-medium ml-2 px-2 py-0.5",
-                  "bg-gradient-to-r from-secondary to-accent text-secondary-foreground",
-                  "border border-secondary/20 shadow-sm"
-                )}
-              >
-                <Brain className="h-3 w-3 mr-1" />
-                {subscriptionPlan}
-              </Badge>
-            </motion.div>
-          )}
-        </motion.div>
-      )
-    } catch (error) {
-      console.warn('Credits display render failed:', error)
-      return null
-    }
-  }, [isAuthenticated, availableCredits, subscriptionPlan, isPremium, prefersReducedMotion])
-
-  // Enhanced User Avatar Component with error boundary
-  const UserAvatar = useMemo(
-    () => {
-      try {
-        return (
-          <motion.div
-            whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-            whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
-            transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
-          >
-            <Avatar className={cn(
-              "h-8 w-8 border-2 transition-all duration-300",
-              "border-primary/50 hover:border-primary hover:shadow-lg hover:shadow-primary/20",
-              "bg-gradient-to-br from-background to-muted/50"
-            )}>
-              <AvatarImage src={(user as any)?.image || ""} alt={user?.name || "User"} />
-              <AvatarFallback className={cn(
-                "bg-gradient-to-br from-primary/20 to-secondary/20 text-primary font-semibold",
-                "hover:from-primary/30 hover:to-secondary/30 transition-all duration-300"
-              )}>
-                {userInitials}
-              </AvatarFallback>
-            </Avatar>
-          </motion.div>
-        )
-      } catch (error) {
-        console.warn('User avatar render failed:', error)
-        return <div className="h-8 w-8 rounded-full bg-muted" />
-      }
-    },
-    [user, userInitials, prefersReducedMotion],
-  )
-
-  // Safe navItems check
-  const safeNavItems = useMemo(() => {
-    try {
-      return Array.isArray(navItems) ? navItems : []
-    } catch (error) {
-      console.warn('Navigation items check failed:', error)
-      return []
-    }
-  }, [])
-
   return (
     <>
       {/* Skip to content for accessibility */}
@@ -474,7 +311,7 @@ export function MainNavbar() {
             data-testid="nav-items"
             aria-label="Primary navigation"
           >
-            {safeNavItems.map((item, index) => {
+            {navItems.map((item, index) => {
               const isActive = pathname === item.href
 
               return (
@@ -524,7 +361,12 @@ export function MainNavbar() {
           <div className="flex items-center space-x-3">
 
             {/* Credits Display */}
-            {CreditsDisplay}
+            <CreditsDisplay
+              availableCredits={availableCredits}
+              subscriptionPlan={subscriptionPlan}
+              isPremium={Boolean(isPremium)}
+              prefersReducedMotion={Boolean(prefersReducedMotion)}
+            />
 
             {/* Search Button */}
             <motion.div
@@ -570,7 +412,13 @@ export function MainNavbar() {
               <div className="flex items-center space-x-2">
                 <CourseNotificationsMenu />
                 <NotificationsMenu />
-                <UserMenu>{UserAvatar}</UserMenu>
+                <UserMenu>
+                  <UserAvatar
+                    user={user}
+                    userInitials={userInitials}
+                    prefersReducedMotion={Boolean(prefersReducedMotion)}
+                  />
+                </UserMenu>
               </div>
             ) : (
               <Button
@@ -623,86 +471,82 @@ export function MainNavbar() {
                 </motion.div>
               </SheetTrigger>
 
-              <AnimatePresence>
-                {isMobileMenuOpen && (
-                  <SheetContent
-                    id="main-mobile-menu"
-                    side="right"
-                    className="w-72 sm:w-80 p-0 bg-background border-l"
-                  >
-                    <motion.div
-                      initial={prefersReducedMotion ? {} : "hidden"}
-                      animate={prefersReducedMotion ? {} : "visible"}
-                      exit={prefersReducedMotion ? {} : "exit"}
-                      variants={prefersReducedMotion ? {} : mobileMenuVariants}
-                      className="h-full flex flex-col"
-                    >
-                      {/* Mobile Header */}
-                      <div className="p-4 border-b">
-                        <div className="flex items-center justify-between">
-                          <Logo />
-                          <ThemeToggle />
-                        </div>
-                      </div>
+              <SheetContent
+                id="main-mobile-menu"
+                side="right"
+                className="w-72 sm:w-80 p-0 bg-background border-l"
+              >
+                <motion.div
+                  initial={prefersReducedMotion ? {} : "hidden"}
+                  animate={prefersReducedMotion ? {} : "visible"}
+                  exit={prefersReducedMotion ? {} : "exit"}
+                  variants={prefersReducedMotion ? {} : mobileMenuVariants}
+                  className="h-full flex flex-col"
+                >
+                  {/* Mobile Header */}
+                  <div className="p-4 border-b">
+                    <div className="flex items-center justify-between">
+                      <Logo />
+                      <ThemeToggle />
+                    </div>
+                  </div>
 
-                      {/* Mobile Navigation */}
-                      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-                        {safeNavItems.map((item) => {
-                          const isActive = pathname === item.href
+                  {/* Mobile Navigation */}
+                  <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+                    {navItems.map((item) => {
+                      const isActive = pathname === item.href
 
-                          return (
-                            <Link
-                              key={item.name}
-                              href={item.href}
-                              onClick={() => setIsMobileMenuOpen(false)}
-                              className={cn(
-                                "block px-3 py-2 text-base font-medium rounded-lg transition-colors",
-                                isActive
-                                  ? "bg-muted text-foreground"
-                                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                      return (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={cn(
+                            "block px-3 py-2 text-base font-medium rounded-lg transition-colors",
+                            isActive
+                              ? "bg-muted text-foreground"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                          )}
+                          aria-current={isActive ? "page" : undefined}
+                        >
+                          {item.name}
+                        </Link>
+                      )
+                    })}
+                  </nav>
+
+                  {/* Mobile Footer */}
+                  <div className="p-4 border-t space-y-3">
+                    {isAuthenticated ? (
+                      <>
+                        {availableCredits !== null && (
+                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                            <div className="flex items-center space-x-2">
+                              <CreditCard className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm font-medium">Credits</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-medium tabular-nums">
+                                {availableCredits.toLocaleString()}
+                              </span>
+                              {isPremium && (
+                                <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                                  {subscriptionPlan}
+                                </Badge>
                               )}
-                              aria-current={isActive ? "page" : undefined}
-                            >
-                              {item.name}
-                            </Link>
-                          )
-                        })}
-                      </nav>
-
-                      {/* Mobile Footer */}
-                      <div className="p-4 border-t space-y-3">
-                        {isAuthenticated ? (
-                          <>
-                            {availableCredits !== null && (
-                              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                                <div className="flex items-center space-x-2">
-                                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-sm font-medium">Credits</span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-sm font-medium tabular-nums">
-                                    {availableCredits.toLocaleString()}
-                                  </span>
-                                  {isPremium && (
-                                    <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
-                                      {subscriptionPlan}
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                           
-                          </>
-                        ) : (
-                          <Button className="w-full" onClick={handleSignIn}>
-                            Sign in
-                          </Button>
+                            </div>
+                          </div>
                         )}
-                      </div>
-                    </motion.div>
-                  </SheetContent>
-                )}
-              </AnimatePresence>
+                       
+                      </>
+                    ) : (
+                      <Button className="w-full" onClick={handleSignIn}>
+                        Sign in
+                      </Button>
+                    )}
+                  </div>
+                </motion.div>
+              </SheetContent>
             </Sheet>
           </div>
         </div>

@@ -13,7 +13,7 @@
     "test:specific": "jest --config jest.config.ts --testPathPattern",
     "test:consistency": "jest --config jest.config.ts --testPathPattern=subscription-consistency",
     "validate-styles": "node scripts/validate-styles.js",
-    "dev": "next dev ",
+    "dev": "set NEXT_TURBOPACK_TRACING=1 && next dev --turbopack ",
     "dev:with-devtools": "npx react-devtools ",
     "build": "next build",
     "start": "next start",
