@@ -35,7 +35,7 @@ export function DashboardLayout({
       <MainNavbar />
 
       {/* Main Content Area */}
-      <main className="min-h-[calc(100vh-12rem)]">
+      <main className="min-h-[calc(100vh-12rem)] pt-16">
         <div className="container mx-auto px-4 py-6">
           <ReduxErrorBoundary>
             {children}

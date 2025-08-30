@@ -8,25 +8,48 @@ interface PageHeaderProps {
   description?: string
   breadcrumbs?: Array<{ title: string; href: string }>
   className?: string
+  variant?: 'default' | 'hero' | 'compact'
+  icon?: ReactNode
 }
 
-export const PageHeader = ({ title, description, breadcrumbs, className }: PageHeaderProps) => {
+export const PageHeader = ({
+  title,
+  description,
+  breadcrumbs,
+  className,
+  variant = 'default',
+  icon
+}: PageHeaderProps) => {
   // Transform breadcrumbs to match Breadcrumb component's expected format
   const breadcrumbPaths = breadcrumbs?.map(item => ({
     name: item.title,
     href: item.href
   }))
 
+  const variantStyles = {
+    default: "space-y-4 pb-8",
+    hero: "space-y-6 pb-12 py-8",
+    compact: "space-y-2 pb-6"
+  }
+
   return (
-    <header className={cn("space-y-2 pb-8", className)} role="banner">
-      {breadcrumbPaths && <Breadcrumb paths={breadcrumbPaths} />}
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl" id="page-title">
-            {title}
+    <header className={cn(variantStyles[variant], className)} role="banner">
+      {breadcrumbPaths && (
+        <div className="mb-4">
+          <Breadcrumb paths={breadcrumbPaths} />
+        </div>
+      )}
+
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-3 flex-1">
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl lg:text-4xl flex items-center gap-3" id="page-title">
+            {icon && <span className="text-purple-600 dark:text-purple-400">{icon}</span>}
+            <span className="bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
+              {title}
+            </span>
           </h1>
           {description && (
-            <p className="text-muted-foreground" role="doc-subtitle" aria-describedby="page-title">
+            <p className="text-muted-foreground text-base md:text-lg leading-relaxed max-w-2xl" role="doc-subtitle" aria-describedby="page-title">
               {description}
             </p>
           )}
