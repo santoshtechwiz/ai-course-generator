@@ -18,6 +18,16 @@ export const STORAGE_KEYS = {
   GUEST_ID: "guestId",
 };
 
+// Storage prefixes for organized localStorage management
+export const STORAGE_PREFIXES = {
+  USER_PREFERENCES: 'user_prefs_',
+  QUIZ_HISTORY: 'quiz_history_',
+  QUIZ_PROGRESS: 'quiz_progress_',
+  VIDEO_SETTINGS: 'video_settings_',
+  COURSE_SETTINGS: 'course_settings_',
+  DEBUG_LOGS: 'debug_logs_',
+} as const
+
 // Status Constants
 export const STATUS = {
   // Common Status

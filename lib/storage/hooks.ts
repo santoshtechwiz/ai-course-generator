@@ -249,46 +249,218 @@ export function useQuizState<T>(
 }
 
 // ============================================================================
-// BACKWARD COMPATIBILITY HOOKS
+// SPECIALIZED QUIZ AND USER MANAGEMENT HOOKS
 // ============================================================================
 
 /**
- * Simple localStorage hook (backward compatibility)
+ * Hook for managing user preferences with smart defaults and validation
  */
-export function useLocalStorage<T>(
-  key: string,
-  initialValue: T
-): [T, (value: T | ((prev: T) => T)) => void] {
-  const [state, setState] = usePersistentState(key, initialValue, {
-    storage: 'localStorage',
-    syncAcrossTabs: false // Keep simple for compatibility
+export function useUserPreferences() {
+  const [preferences, setPreferences, isLoading, error] = usePreference('user_prefs', {
+    theme: 'system' as 'light' | 'dark' | 'system',
+    autoplay: false,
+    volume: 1,
+    playbackRate: 1,
+    theaterMode: false,
+    hasSeenChatTooltip: false,
+    lastUpdated: Date.now()
   })
 
-  return [state, setState]
+  const updatePreferences = useCallback((updates: Partial<typeof preferences>) => {
+    setPreferences(prev => ({
+      ...prev,
+      ...updates,
+      lastUpdated: Date.now()
+    }))
+  }, [setPreferences])
+
+  return {
+    preferences,
+    updatePreferences,
+    isLoading,
+    error
+  }
 }
 
 /**
- * Legacy persistent state hook (backward compatibility)
+ * Hook for managing quiz history with automatic cleanup (keeps last 2 courses)
  */
-export function usePersistentStateLegacy<T>(
-  key: string,
-  initialValue: T,
-  options: {
-    serialize?: (value: T) => string
-    deserialize?: (value: string) => T
-    storage?: Storage
-  } = {}
-): [T, (value: T | ((prev: T) => T)) => void] {
-  const storageType = options.storage === sessionStorage ? 'sessionStorage' : 'localStorage'
-  
-  const [state, setState] = usePersistentState(key, initialValue, {
-    storage: storageType,
-    serialize: options.serialize,
-    deserialize: options.deserialize,
-    syncAcrossTabs: false // Legacy behavior
+export function useQuizHistory() {
+  const [history, setHistory, isLoading, error] = usePreference('quiz_history', [] as QuizHistoryEntry[])
+
+  const addQuizEntry = useCallback((entry: QuizHistoryEntry) => {
+    setHistory(prev => {
+      const existingIndex = prev.findIndex(h => h.courseId === entry.courseId)
+      let newHistory = [...prev]
+
+      if (existingIndex >= 0) {
+        newHistory[existingIndex] = entry
+      } else {
+        newHistory.push(entry)
+      }
+
+      // Keep only the last 2 courses, sorted by completion time
+      return newHistory
+        .sort((a, b) => b.completedAt - a.completedAt)
+        .slice(0, 2)
+    })
+  }, [setHistory])
+
+  const clearHistory = useCallback(() => {
+    setHistory([])
+  }, [setHistory])
+
+  return {
+    history,
+    addQuizEntry,
+    clearHistory,
+    isLoading,
+    error
+  }
+}
+
+/**
+ * Hook for managing quiz progress with automatic expiry (30 days)
+ */
+export function useQuizProgress(courseId: string, chapterId: string) {
+  const key = `quiz_progress_${courseId}_${chapterId}`
+  const [progress, setProgress, isLoading, error] = useQuizState(key, null as QuizProgress | null)
+
+  const updateProgress = useCallback((updates: Partial<QuizProgress>) => {
+    setProgress(prev => ({
+      courseId,
+      chapterId,
+      currentQuestionIndex: 0,
+      answers: {},
+      timeSpent: 0,
+      lastUpdated: Date.now(),
+      isCompleted: false,
+      ...prev,
+      ...updates,
+      lastUpdated: Date.now()
+    }))
+  }, [courseId, chapterId, setProgress])
+
+  const markCompleted = useCallback(() => {
+    updateProgress({ isCompleted: true })
+  }, [updateProgress])
+
+  const resetProgress = useCallback(() => {
+    setProgress(null)
+  }, [setProgress])
+
+  return {
+    progress,
+    updateProgress,
+    markCompleted,
+    resetProgress,
+    isLoading,
+    error
+  }
+}
+
+/**
+ * Hook for managing video settings with smart defaults
+ */
+export function useVideoSettings() {
+  const [settings, setSettings, isLoading, error] = usePreference('video_settings', {
+    volume: 1,
+    muted: false,
+    playbackRate: 1,
+    autoplay: false,
+    theaterMode: false,
+    hasPlayedFreeVideo: false,
+    lastUpdated: Date.now()
   })
 
-  return [state, setState]
+  const updateSettings = useCallback((updates: Partial<typeof settings>) => {
+    setSettings(prev => ({
+      ...prev,
+      ...updates,
+      lastUpdated: Date.now()
+    }))
+  }, [setSettings])
+
+  return {
+    settings,
+    updateSettings,
+    isLoading,
+    error
+  }
+}
+
+/**
+ * Hook for managing course-specific settings
+ */
+export function useCourseSettings(courseId: string) {
+  const key = `course_settings_${courseId}`
+  const [settings, setSettings, isLoading, error] = usePreference(key, {
+    autoplayMode: false,
+    lastAccessedChapter: undefined as string | undefined,
+    progress: 0,
+    lastUpdated: Date.now()
+  })
+
+  const updateSettings = useCallback((updates: Partial<typeof settings>) => {
+    setSettings(prev => ({
+      ...prev,
+      ...updates,
+      lastUpdated: Date.now()
+    }))
+  }, [setSettings])
+
+  return {
+    settings,
+    updateSettings,
+    isLoading,
+    error
+  }
+}
+
+/**
+ * Hook for managing incomplete quizzes across all courses
+ */
+export function useIncompleteQuizzes() {
+  const [allProgress, setAllProgress] = useState<QuizProgress[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const keys = Object.keys(localStorage)
+      const progressKeys = keys.filter(key => key.startsWith('quiz_progress_'))
+
+      const incomplete: QuizProgress[] = []
+      progressKeys.forEach(key => {
+        try {
+          const data = localStorage.getItem(key)
+          if (data) {
+            const progress: QuizProgress = JSON.parse(data)
+            if (!progress.isCompleted && (Date.now() - progress.lastUpdated < 30 * 24 * 60 * 60 * 1000)) {
+              incomplete.push(progress)
+            }
+          }
+        } catch (error) {
+          console.warn(`Failed to load quiz progress for key "${key}":`, error)
+        }
+      })
+
+      setAllProgress(incomplete.sort((a, b) => b.lastUpdated - a.lastUpdated))
+    } catch (error) {
+      console.warn('Failed to load incomplete quizzes:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  return {
+    incompleteQuizzes: allProgress,
+    isLoading
+  }
 }
 
 // ============================================================================
@@ -328,6 +500,30 @@ export function useStorageCleaner() {
   }, [])
 
   return { clearByPattern, clearAll }
+}
+
+// ============================================================================
+// TYPES FOR SPECIALIZED HOOKS
+// ============================================================================
+
+export interface QuizHistoryEntry {
+  courseId: string
+  courseName: string
+  quizType: string
+  completedAt: number
+  score?: number
+  totalQuestions?: number
+  timeSpent?: number
+}
+
+export interface QuizProgress {
+  courseId: string
+  chapterId: string
+  currentQuestionIndex: number
+  answers: Record<string, any>
+  timeSpent: number
+  lastUpdated: number
+  isCompleted: boolean
 }
 
 // ============================================================================

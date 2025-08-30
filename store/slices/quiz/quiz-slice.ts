@@ -12,6 +12,7 @@ import {
   RequestManager,
   getErrorMessage
 } from '../../utils/async-state'
+import { storageManager } from '@/utils/storage-manager'
 
 const QUIZ_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 const MAX_CACHE_ENTRIES = 100
@@ -45,9 +46,17 @@ function setCachedQuiz(type: QuizType | null, slug: string | null, data: any): v
 function persistProgress(slug: string | null, quizType: QuizType | null, currentQuestionIndex: number) {
   if (typeof window === 'undefined' || !slug || !quizType) return
   try {
-    const key = `${STORAGE_KEYS.QUIZ_STATE}:${quizType}:${slug}`
-    const value = JSON.stringify({ slug, quizType, currentQuestionIndex, updatedAt: Date.now() })
-    localStorage.setItem(key, value)
+    // Use StorageManager for quiz progress
+    const progress: QuizProgress = {
+      courseId: slug, // Assuming slug is courseId
+      chapterId: `${quizType}_${slug}`, // Create a unique chapter identifier
+      currentQuestionIndex,
+      answers: {},
+      timeSpent: 0,
+      lastUpdated: Date.now(),
+      isCompleted: false
+    }
+    storageManager.saveQuizProgress(progress)
   } catch (error) {
     console.warn('Failed to persist quiz progress:', error)
   }
@@ -56,16 +65,15 @@ function persistProgress(slug: string | null, quizType: QuizType | null, current
 function loadPersistedProgress(slug: string | null, quizType: QuizType | null): number | null {
   if (typeof window === 'undefined' || !slug || !quizType) return null
   try {
-    const key = `${STORAGE_KEYS.QUIZ_STATE}:${quizType}:${slug}`
-    const stored = localStorage.getItem(key)
-    if (!stored) return null
-    const parsed = JSON.parse(stored)
+    // Use StorageManager for quiz progress
+    const progress = storageManager.getQuizProgress(slug, `${quizType}_${slug}`)
+    if (!progress) return null
+
     // Check if data is recent (within 24 hours)
-    if (Date.now() - parsed.updatedAt > 24 * 60 * 60 * 1000) {
-      localStorage.removeItem(key)
+    if (Date.now() - progress.lastUpdated > 24 * 60 * 60 * 1000) {
       return null
     }
-    return parsed.currentQuestionIndex || 0
+    return progress.currentQuestionIndex || 0
   } catch (error) {
     console.warn('Failed to load persisted quiz progress:', error)
     return null

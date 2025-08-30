@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Menu, X, ArrowUp, ArrowRight } from "lucide-react"
 import { FeedbackButton } from "@/components/ui/feedback-button"
 import CheckIcon from "./svg/CheckIcon"
+import { storageManager } from "@/utils/storage-manager" // Import StorageManager
 
 // Import redesigned sections
 import HeroSection from "./sections/HeroSection"
@@ -85,6 +86,16 @@ const CourseAILandingPage = () => {
 			document.body.style.overflow = ""
 		}
 	}, [isMenuOpen])
+
+	// Playback rate change handler
+	const onPlaybackRateChange = useCallback(
+		(rate: number) => {
+			setState((prev) => ({ ...prev, playbackRate: rate }))
+			// Save to StorageManager
+			storageManager.saveVideoSettings({ playbackRate: rate })
+		},
+		[],
+	)
 
 	// Loading state
 	if (!isLoaded) {

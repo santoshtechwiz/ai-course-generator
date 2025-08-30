@@ -25,14 +25,23 @@ export {
   usePreference,
   useQuizState,
   useLocalStorage,
-  usePersistentStateLegacy,
   useStorageStats,
-  useStorageCleaner
+  useStorageCleaner,
+  // New specialized hooks
+  useUserPreferences,
+  useQuizHistory,
+  useQuizProgress,
+  useVideoSettings,
+  useCourseSettings,
+  useIncompleteQuizzes
 } from './hooks'
 
 export type {
   UsePersistentStateOptions,
-  UseStorageOptions
+  UseStorageOptions,
+  // New specialized types
+  QuizHistoryEntry,
+  QuizProgress
 } from './hooks'
 
 // Migration utilities

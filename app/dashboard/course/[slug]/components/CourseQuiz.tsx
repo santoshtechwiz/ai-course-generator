@@ -14,6 +14,7 @@ import { AccessControl } from "@/components/ui/access-control"
 import { AlertCircle, CheckCircle, BookOpen, Lightbulb, XCircle, Award, BarChart3, RotateCcw, Home, Download } from "lucide-react" // Added Award
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
+import { storageManager } from "@/utils/storage-manager"
 
 import type { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
 import type { AccessLevels } from "./CourseDetailsTabs"
@@ -149,29 +150,41 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
   )
 
   useEffect(() => {
-    if (effectiveChapterId) {
+    if (effectiveChapterId && course?.id) {
       try {
-        const saved = localStorage.getItem(`quiz-progress-${effectiveChapterId}`)
-        if (saved) dispatch({ type: "LOAD_PROGRESS", progress: JSON.parse(saved) })
+        const progress = storageManager.getQuizProgress(course.id, effectiveChapterId)
+        if (progress) {
+          dispatch({ type: "LOAD_PROGRESS", progress: {
+            answers: progress.answers,
+            currentQuestionIndex: progress.currentQuestionIndex,
+            lastUpdated: new Date(progress.lastUpdated).toISOString()
+          } })
+        }
       } catch (e) {
         console.error("Failed to load quiz progress", e)
       }
     }
-  }, [effectiveChapterId])
+  }, [effectiveChapterId, course?.id])
 
   const saveProgress = useCallback(
     (data: Record<string, any>) => {
-      if (!effectiveChapterId) return
+      if (!effectiveChapterId || !course?.id) return
       try {
-        localStorage.setItem(
-          `quiz-progress-${effectiveChapterId}`,
-          JSON.stringify({ ...quizState.quizProgress, ...data, lastUpdated: new Date().toISOString() }),
-        )
+        const progress: QuizProgress = {
+          courseId: course.id,
+          chapterId: effectiveChapterId,
+          currentQuestionIndex: data.currentQuestionIndex || quizState.currentQuestionIndex,
+          answers: { ...quizState.quizProgress.answers, ...data.answers },
+          timeSpent: data.timeSpent || 0,
+          lastUpdated: Date.now(),
+          isCompleted: data.isCompleted || false
+        }
+        storageManager.saveQuizProgress(progress)
       } catch (e) {
         console.error("Failed to save quiz progress", e)
       }
     },
-    [quizState.quizProgress, effectiveChapterId],
+    [quizState.quizProgress, quizState.currentQuestionIndex, effectiveChapterId, course?.id],
   )
 
   const {

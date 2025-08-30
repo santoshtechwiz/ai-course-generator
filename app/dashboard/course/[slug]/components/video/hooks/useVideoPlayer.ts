@@ -10,6 +10,7 @@ import { addBookmark, removeBookmark } from "@/store/slices/course-slice"
 import { useVideoPreloading } from "./useVideoPreloading"
 import type { VideoPlayerState, UseVideoPlayerReturn, ProgressState, BookmarkData, YouTubePlayerConfig } from "../types"
 import { useToast } from "@/hooks"
+import { storageManager } from "@/utils/storage-manager"
 
 interface VideoPlayerHookOptions {
   youtubeVideoId: string
@@ -37,8 +38,13 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   const savedPreferences = useMemo(() => {
     if (typeof window === 'undefined') return {}
     try {
-      const storedPrefs = localStorage.getItem("playerPreferences")
-      return storedPrefs ? JSON.parse(storedPrefs) : {}
+      const videoSettings = storageManager.getVideoSettings()
+      return {
+        volume: videoSettings.volume,
+        muted: videoSettings.muted,
+        playbackRate: videoSettings.playbackRate,
+        autoPlayNext: videoSettings.autoplay
+      }
     } catch (error) {
       console.warn('Failed to load player preferences:', error)
       return {}
@@ -192,15 +198,15 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       muted: volume === 0,
     }))
 
-    // Save to localStorage
-    localStorage.setItem("playerPreferences", JSON.stringify({ ...savedPreferences, volume, muted: volume === 0 }))
+    // Save to StorageManager
+    storageManager.saveVideoSettings({ volume, muted: volume === 0 })
   }, [])
 
   const onMute = useCallback(() => {
     setState((prev) => {
       const newMuted = !prev.muted
-      // Save to localStorage
-      localStorage.setItem("playerPreferences", JSON.stringify({ ...savedPreferences, muted: newMuted }))
+      // Save to StorageManager
+      storageManager.saveVideoSettings({ muted: newMuted })
       return { ...prev, muted: newMuted }
     })
   }, [])
@@ -213,8 +219,8 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
 
   const onPlaybackRateChange = useCallback((rate: number) => {
     setState((prev) => ({ ...prev, playbackRate: rate }))
-    // Save to localStorage
-    localStorage.setItem("playerPreferences", JSON.stringify({ ...savedPreferences, playbackRate: rate }))
+    // Save to StorageManager
+    storageManager.saveVideoSettings({ playbackRate: rate })
   }, [])
 
   // Fixed fullscreen implementation
@@ -547,8 +553,8 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   const toggleAutoPlayNext = useCallback(() => {
     setState((prev) => {
       const newAutoPlayNext = !prev.autoPlayNext;
-      // Save to localStorage
-      localStorage.setItem("playerPreferences", JSON.stringify({ ...savedPreferences, autoPlayNext: newAutoPlayNext }))
+      // Save to StorageManager
+      storageManager.saveVideoSettings({ autoplay: newAutoPlayNext })
       return { ...prev, autoPlayNext: newAutoPlayNext };
     });
   }, []);
