@@ -1,124 +1,197 @@
 import { prisma } from "@/lib/db"
 import { NextResponse } from "next/server"
 
-// Trie Node Definition
-class TrieNode {
-  children: { [key: string]: TrieNode } = {}
-  ids: number[] = []
-}
+// Simple in-memory cache for search results
+const searchCache = new Map<string, any>()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
-// Trie Definition
-class Trie {
-  root = new TrieNode()
+// Fuzzy search helper function
+function fuzzyMatch(text: string, query: string): number {
+  if (!text || !query) return 0
 
-  insert(word: string, id: number) {
-    let node = this.root
-    for (const char of word?.toLowerCase()) {
-      if (!node.children[char]) {
-        node.children[char] = new TrieNode()
-      }
-      node = node.children[char]
+  const textLower = text.toLowerCase()
+  const queryLower = query.toLowerCase()
+
+  // Exact match gets highest score
+  if (textLower === queryLower) return 100
+
+  // Starts with query gets high score
+  if (textLower.startsWith(queryLower)) return 90
+
+  // Contains query gets medium score
+  if (textLower.includes(queryLower)) return 70
+
+  // Fuzzy match - check if all query characters exist in order
+  let queryIndex = 0
+  let matchCount = 0
+
+  for (const char of textLower) {
+    if (char === queryLower[queryIndex]) {
+      queryIndex++
+      matchCount++
+      if (queryIndex === queryLower.length) break
     }
-    node.ids.push(id)
   }
 
-  search(prefix: string): number[] {
-    let node = this.root
-    for (const char of prefix?.toLowerCase()) {
-      if (!node.children[char]) return []
-      node = node.children[char]
-    }
-    return node.ids
+  if (queryIndex === queryLower.length) {
+    return Math.max(30, (matchCount / textLower.length) * 50)
+  }
+
+  return 0
+}
+
+// Search result interface
+interface SearchResult {
+  id: number
+  title: string
+  description?: string
+  slug: string
+  type: 'course' | 'quiz'
+  score: number
+  metadata?: {
+    quizType?: string
+    chapterName?: string
+    courseTitle?: string
   }
 }
 
-// Initialize Trie for Courses
-const courseTrie = new Trie()
-let isTrieInitialized = false
-
-const initializeTrie = async () => {
-  if (isTrieInitialized) return // Prevent multiple initializations
-
-  try {
-    const courses = await prisma.course.findMany({
-      select: { id: true, title: true },
-    })
-
-    courses.forEach((course) => {
-      courseTrie.insert(course.title?.toLowerCase(), course.id)
-    })
-
-    isTrieInitialized = true
-  } catch (error) {
-    console.error("Failed to initialize Trie:", error)
-  }
-}
-
-// Ensure Trie is initialized before processing requests
-const ensureTrieIsReady = async () => {
-  if (!isTrieInitialized) {
-    await initializeTrie()
-  }
-}
-
-// GET handler
+// GET handler with improved search
 export async function GET(request: Request) {
-  await ensureTrieIsReady()
-
   const { searchParams } = new URL(request.url)
-  const query = searchParams.get("query")
+  const query = searchParams.get("query")?.trim()
+  const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50)
 
-  if (!query) {
-    return NextResponse.json({ error: "Search query is required" }, { status: 400 })
+  if (!query || query.length < 2) {
+    return NextResponse.json({
+      error: "Search query must be at least 2 characters long",
+      courses: [],
+      games: []
+    }, { status: 400 })
+  }
+
+  // Check cache first
+  const cacheKey = `${query.toLowerCase()}_${limit}`
+  if (searchCache.has(cacheKey)) {
+    const cached = searchCache.get(cacheKey)
+    if (Date.now() - cached.timestamp < CACHE_TTL) {
+      return NextResponse.json(cached.data)
+    }
   }
 
   try {
-    // Search for matching courses using the Trie and additional fields
-    const courseIds = courseTrie.search(query?.toLowerCase())
+    const results: SearchResult[] = []
+
+    // Search courses with better performance
     const courses = await prisma.course.findMany({
       where: {
-        OR: [
-          { id: { in: courseIds } },
-          { title: { contains: query, mode: "insensitive" } },
-          { description: { contains: query, mode: "insensitive" } },
-        ],
-        AND: [{ isPublic: true }],
+        AND: [
+          { isPublic: true },
+          {
+            OR: [
+              { title: { contains: query, mode: "insensitive" } },
+              { description: { contains: query, mode: "insensitive" } }
+            ]
+          }
+        ]
       },
       select: {
         id: true,
         title: true,
         description: true,
-        slug: true,
+        slug: true
       },
+      take: limit
     })
 
-    // Search games in the database (only in topic field)
+    // Process courses with scoring
+    courses.forEach(course => {
+      const titleScore = fuzzyMatch(course.title, query)
+      const descScore = course.description ? fuzzyMatch(course.description, query) : 0
+
+      const maxScore = Math.max(titleScore, descScore)
+
+      if (maxScore > 10) { // Only include relevant results
+        results.push({
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          slug: course.slug,
+          type: 'course',
+          score: maxScore
+        })
+      }
+    })
+
+    // Search quizzes with better performance
     const games = await prisma.userQuiz.findMany({
       where: {
-        OR: [{ title: { contains: query, mode: "insensitive" } }],
-        AND: [{ isPublic: true }],
+        AND: [
+          { isPublic: true },
+          { title: { contains: query, mode: "insensitive" } }
+        ]
       },
       select: {
         id: true,
         title: true,
         slug: true,
-        quizType: true,
+        quizType: true
       },
+      take: limit
     })
 
-    // Process game results
-    const processedGames = games.map((game) => ({
-      id: game.id,
-      title: game.title,
-      slug: game.slug,
-      quizType: game.quizType,
-      chapterName: game.chapter?.name || "",
-      courseTitle: game.chapter?.course?.title || "",
-    }))
+    // Process games with scoring
+    games.forEach(game => {
+      const titleScore = fuzzyMatch(game.title, query)
 
-    return NextResponse.json({ courses, games: processedGames })
+      if (titleScore > 10) { // Only include relevant results
+        results.push({
+          id: game.id,
+          title: game.title,
+          slug: game.slug,
+          type: 'quiz',
+          score: titleScore,
+          metadata: {
+            quizType: game.quizType
+          }
+        })
+      }
+    })
+
+    // Sort by score and limit results
+    results.sort((a, b) => b.score - a.score)
+    const limitedResults = results.slice(0, limit)
+
+    // Separate courses and games
+    const courseResults = limitedResults.filter(r => r.type === 'course')
+    const gameResults = limitedResults.filter(r => r.type === 'quiz')
+
+    const responseData = {
+      courses: courseResults,
+      games: gameResults,
+      total: limitedResults.length,
+      query: query
+    }
+
+    // Cache the results
+    searchCache.set(cacheKey, {
+      data: responseData,
+      timestamp: Date.now()
+    })
+
+    // Clean up old cache entries
+    if (searchCache.size > 100) {
+      const oldestKey = searchCache.keys().next().value
+      searchCache.delete(oldestKey)
+    }
+
+    return NextResponse.json(responseData)
+
   } catch (error) {
     console.error("Search error:", error)
-    return NextResponse.json({ error: "An error occurred while searching" }, { status: 500 })
+    return NextResponse.json({
+      error: "An error occurred while searching",
+      courses: [],
+      games: []
+    }, { status: 500 })
   }
 }

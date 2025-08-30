@@ -16,48 +16,48 @@ const AboutSection = () => {
 
   const sections = [
     {
-      title: "Effortless Course Creation",
+      title: "Effortless Creation",
       description:
-        "CourseAI empowers educators and creators to generate complete courses from a single topic. Our advanced AI organizes content into structured lessons and interactive quizzes in seconds.",
+        "Transform any topic into a comprehensive course in minutes. CourseAI's advanced AI understands context, structure, and learning objectives to create engaging content that resonates with your audience.",
       icon: MissionIcon,
-      color: "from-rose-500 to-rose-600",
+      color: "from-blue-500 to-indigo-500",
     },
     {
-      title: "Efficient, Impactful Learning",
+      title: "Beautiful Learning Experiences",
       description:
-        "We believe that learning should be both effective and accessible. CourseAI combines sophisticated AI with an intuitive design to help you build, customize, and deliver engaging courses.",
+        "We believe great design enhances learning. CourseAI combines sophisticated AI with stunning visuals and intuitive interfaces to create courses that captivate and educate.",
       icon: VisionIcon,
-      color: "from-cyan-500 to-cyan-600",
+      color: "from-purple-500 to-pink-500",
     },
     {
-      title: "Passion-Driven Innovation",
+      title: "Innovation Through Passion",
       description:
-        "Built with a deep passion for education and AI, CourseAI is designed to address real challenges in course creation with speed, focus, and quality.",
+        "Every feature is crafted with deep care for education and user experience. We're not just building tools—we're reimagining how the world creates and shares knowledge.",
       icon: TeamIcon,
-      color: "from-amber-500 to-amber-600",
+      color: "from-green-500 to-teal-500",
     },
   ]
 
   const values = [
     {
-      title: "Innovation at the Core",
+      title: "Innovation First",
       description:
-        "We continually explore new methods to enhance course creation and quiz automation using the latest in AI technology.",
+        "We push the boundaries of what's possible with AI and education. Every update brings new capabilities that make course creation more powerful and intuitive.",
       color: "from-purple-500 to-indigo-500",
       icon: "sparkles",
     },
     {
-      title: "Accessible for Everyone",
+      title: "Designed for Everyone",
       description:
-        "CourseAI is designed with creators, educators, and teams of all technical levels in mind, making course creation simple and effective.",
+        "From classroom teachers to corporate trainers, CourseAI adapts to your needs. No technical expertise required—just your knowledge and our platform.",
       color: "from-blue-500 to-sky-500",
       icon: "users",
     },
     {
-      title: "Private & Secure Courses",
+      title: "Privacy & Trust",
       description:
-        "Manage your courses with complete control over access and progress tracking, ensuring that your content remains private and secure.",
-      color: "from-orange-500 to-amber-500",
+        "Your content is yours. We provide enterprise-grade security with complete control over access, ensuring your courses remain private and protected.",
+      color: "from-green-500 to-emerald-500",
       icon: "star",
     },
   ]
@@ -80,18 +80,23 @@ const AboutSection = () => {
           transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="text-3xl md:text-5xl font-bold mb-6"
         >
-          Redefining Course Creation with AI
+          Redefining Education
+          <br />
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+            Through Innovation
+          </span>
         </motion.h2>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
+          className="text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed"
         >
-          CourseAI simplifies the process of designing comprehensive online courses by automatically generating lessons
-          and quizzes from a simple topic input. Focus on delivering quality education while our platform handles the
-          content structure.
+          CourseAI represents the future of educational content creation.
+          By combining artificial intelligence with thoughtful design, we empower
+          educators and organizations to create extraordinary learning experiences
+          that engage, inspire, and transform.
         </motion.p>
       </div>
 

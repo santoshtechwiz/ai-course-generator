@@ -13,18 +13,23 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface SearchResult {
   id: number
-  name?: string
+  title: string
   description?: string
-  slug?: string
-  title?: string
-  quizType?: "mcq" | "openended" | "blanks" | "code"
-  chapterName?: string
-  courseTitle?: string
+  slug: string
+  type?: "course" | "quiz"
+  score?: number
+  metadata?: {
+    quizType?: string
+    chapterName?: string
+    courseTitle?: string
+  }
 }
 
 interface SearchResponse {
   courses: SearchResult[]
   games: SearchResult[]
+  total?: number
+  query?: string
 }
 
 interface SearchModalProps {
@@ -41,6 +46,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
   const [showLoader, setShowLoader] = useState<boolean>(false)
   const [selectedIndex, setSelectedIndex] = useState<number>(-1)
   const [error, setError] = useState<string | null>(null)
+  const [loadingResultId, setLoadingResultId] = useState<number | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const loaderTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -52,8 +58,8 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
 
         try {
           // Use the correct API endpoint path
-          const response = await api.get<SearchResponse>(`/api/search?query=${encodeURIComponent(query)}`)
-          setSearchResults(response.data)
+          const response = await api.get(`/api/search?query=${encodeURIComponent(query)}`)
+          setSearchResults(response)
         } catch (error) {
           console.error("Error fetching search results:", error)
           setError("Failed to fetch search results. Please try again.")
@@ -77,6 +83,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
     } else {
       setSearchResults(null)
       setError(null)
+      setLoadingResultId(null)
     }
     return () => {
       if (loaderTimeoutRef.current) {
@@ -93,6 +100,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
       setSearchTerm("")
       setSearchResults(null)
       setSelectedIndex(-1)
+      setLoadingResultId(null)
     }
   }, [isOpen])
 
@@ -115,21 +123,28 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
     }
   }
 
-  const handleResultClick = (result: SearchResult) => {
+  const handleResultClick = async (result: SearchResult) => {
+    setLoadingResultId(result.id)
+    
     let url
-    if (result.title && ["mcq", "openended", "blanks", "code"].includes(result.quizType || "")) {
+    if (result.type === 'quiz' && result.metadata?.quizType) {
       // This is a game/quiz - use the correct slug
-      url = `/dashboard/${result.quizType === "blanks" ? "blanks" : result.quizType}/${result.slug}`
+      url = `/dashboard/${result.metadata.quizType === "blanks" ? "blanks" : result.metadata.quizType}/${result.slug}`
     } else if (result.slug) {
       // This is a course
       url = `/dashboard/course/${result.slug}`
     } else {
       console.warn("No valid URL could be generated for search result:", result)
+      setLoadingResultId(null)
       return
     }
 
-    onResultClick(url)
-    setIsOpen(false)
+    // Add a small delay to show the loading state
+    setTimeout(() => {
+      onResultClick(url)
+      setIsOpen(false)
+      setLoadingResultId(null)
+    }, 300)
   }
 
   const highlightMatch = (text: string, query: string) => {
@@ -146,68 +161,75 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
     )
   }
 
-  const renderSearchResult = (result: SearchResult, index: number, type: "course" | "game") => (
-    <motion.li
-      key={result.id}
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.3, delay: index * 0.05 }}
-      className={`rounded-lg p-3 transition-all ${
-        index === selectedIndex
-          ? "bg-primary/10 border border-primary/30 scale-[1.02]"
-          : "hover:bg-muted border border-transparent hover:border-muted-foreground/20 hover:scale-[1.01]"
-      }`}
-    >
-      <motion.button
-        onClick={() => handleResultClick(result)}
-        className="w-full text-left focus:outline-none focus:ring-0 flex items-start space-x-3"
-        whileHover={{ x: 2 }}
-        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+  const renderSearchResult = (result: SearchResult, index: number, type: "course" | "game") => {
+    const isLoading = loadingResultId === result.id
+    
+    return (
+      <motion.li
+        key={result.id}
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.3, delay: index * 0.05 }}
+        className={`rounded-lg p-3 transition-all ${
+          index === selectedIndex
+            ? "bg-primary/10 border border-primary/30 scale-[1.02]"
+            : "hover:bg-muted border border-transparent hover:border-muted-foreground/20 hover:scale-[1.01]"
+        } ${isLoading ? "opacity-75 pointer-events-none" : ""}`}
       >
-        {type === "course" ? (
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0.8 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.2 }}
-            className={`h-5 w-5 flex-shrink-0 mt-1 ${index === selectedIndex ? "text-primary" : ""}`}
-          >
-            <Book className="h-5 w-5" />
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0.8 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.2 }}
-            className={`h-5 w-5 flex-shrink-0 mt-1 ${index === selectedIndex ? "text-primary" : ""}`}
-          >
-            <FileQuestion className="h-5 w-5" />
-          </motion.div>
-        )}
-        <div className="flex-grow min-w-0">
-          <p className={`font-medium text-base truncate ${index === selectedIndex ? "text-primary" : ""}`}>
-            {highlightMatch(result.title || result.name || "", searchTerm)}
-          </p>
-          {type === "course" && result.description && (
-            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-              {highlightMatch(result.description.substring(0, 100), searchTerm)}
+        <motion.button
+          onClick={() => handleResultClick(result)}
+          disabled={isLoading}
+          className="w-full text-left focus:outline-none focus:ring-0 flex items-start space-x-3"
+          whileHover={{ x: 2 }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        >
+          {type === "course" ? (
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0.8 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.2 }}
+              className={`h-5 w-5 flex-shrink-0 mt-1 ${index === selectedIndex ? "text-primary" : ""}`}
+            >
+              {isLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Book className="h-5 w-5" />
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0.8 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.2 }}
+              className={`h-5 w-5 flex-shrink-0 mt-1 ${index === selectedIndex ? "text-primary" : ""}`}
+            >
+              {isLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <FileQuestion className="h-5 w-5" />
+              )}
+            </motion.div>
+          )}
+          <div className="flex-grow min-w-0">
+            <p className={`font-medium text-base truncate ${index === selectedIndex ? "text-primary" : ""} ${isLoading ? "text-muted-foreground" : ""}`}>
+              {isLoading ? "Loading..." : highlightMatch(result.title, searchTerm)}
             </p>
-          )}
-          {type === "game" && (
-            <div className="text-sm text-muted-foreground mt-1 space-y-1">
-              <p>{result.quizType?.toUpperCase()} Quiz</p>
-              {result.chapterName && (
-                <p className="text-xs">Chapter: {result.chapterName}</p>
-              )}
-              {result.courseTitle && (
-                <p className="text-xs">Course: {result.courseTitle}</p>
-              )}
-            </div>
-          )}
-        </div>
-      </motion.button>
-    </motion.li>
-  )
+            {type === "course" && result.description && !isLoading && (
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                {highlightMatch(result.description, searchTerm)}
+              </p>
+            )}
+            {type === "game" && result.metadata && !isLoading && (
+              <div className="text-sm text-muted-foreground mt-1 space-y-1">
+                <p>{result.metadata.quizType?.toUpperCase()} Quiz</p>
+              </div>
+            )}
+          </div>
+        </motion.button>
+      </motion.li>
+    )
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

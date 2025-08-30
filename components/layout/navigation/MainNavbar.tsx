@@ -71,27 +71,26 @@ export function MainNavbar() {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const mousePositionRef = useRef({ x: 0, y: 0 })
+  const tickingRef = useRef(false)
 
-  // Enhanced mouse tracking with better performance
-  useEffect(() => {
-    let ticking = false
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          setMousePosition({ x: e.clientX, y: e.clientY })
-          ticking = false
-        })
-        ticking = true
-      }
+  // Enhanced mouse tracking with better performance - using ref to prevent re-renders
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!tickingRef.current) {
+      tickingRef.current = true
+      requestAnimationFrame(() => {
+        mousePositionRef.current = { x: e.clientX, y: e.clientY }
+        tickingRef.current = false
+      })
     }
+  }, [])
 
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       window.addEventListener("mousemove", handleMouseMove, { passive: true })
       return () => window.removeEventListener("mousemove", handleMouseMove)
     }
-  }, [])
+  }, [handleMouseMove])
 
   // Enhanced scroll effect with better performance
   useEffect(() => {
@@ -280,7 +279,6 @@ export function MainNavbar() {
       <motion.header
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b",
-          "relative overflow-hidden",
           isScrolled
             ? "bg-background/95 backdrop-blur-xl shadow-2xl border-primary/20 shadow-primary/5"
             : "bg-background/80 backdrop-blur-lg border-border/40",
@@ -301,7 +299,7 @@ export function MainNavbar() {
         <div
           className="absolute inset-0 opacity-30 pointer-events-none"
           style={{
-            background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, hsl(var(--primary)/0.1) 0%, transparent 50%)`,
+            background: `radial-gradient(circle at ${mousePositionRef.current.x}px ${mousePositionRef.current.y}px, hsl(var(--primary)/0.1) 0%, transparent 50%)`,
             transition: 'opacity 0.3s ease'
           }}
         />

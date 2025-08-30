@@ -49,6 +49,22 @@ const FeatureIcon = ({ type }: { type: string }) => {
           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </>
       )}
+      {type === "integrate" && (
+        <>
+          <path d="M16 4h.01" />
+          <path d="M16 20h.01" />
+          <path d="M8 4h.01" />
+          <path d="M8 20h.01" />
+          <path d="M12 4h.01" />
+          <path d="M12 20h.01" />
+          <path d="M4 8v.01" />
+          <path d="M4 12v.01" />
+          <path d="M4 16v.01" />
+          <path d="M20 8v.01" />
+          <path d="M20 12v.01" />
+          <path d="M20 16v.01" />
+        </>
+      )}
     </svg>
   )
 }
@@ -57,33 +73,39 @@ const FeatureIcon = ({ type }: { type: string }) => {
 const features = [
   {
     icon: "create",
-    title: "Create Courses Instantly",
-    description: "Enter a topic—CourseAI auto-generates a full course with structured lessons and quizzes using AI.",
-    gradient: "from-yellow-500 to-orange-500",
+    title: "Instant Course Creation",
+    description: "Simply enter any topic and watch as CourseAI transforms it into a comprehensive, structured course with engaging lessons and interactive content.",
+    gradient: "from-blue-500 to-indigo-500",
   },
   {
     icon: "quiz",
-    title: "AI Quiz Generation",
-    description: "Automatically generate quizzes from your course content. No manual question writing needed.",
-    gradient: "from-blue-500 to-cyan-500",
+    title: "Smart Quiz Generation",
+    description: "AI-powered quiz creation that adapts to your content. Generate multiple choice, coding challenges, and open-ended questions automatically.",
+    gradient: "from-purple-500 to-pink-500",
   },
   {
     icon: "custom",
-    title: "Create Your Own Quizzes",
-    description: "Build custom quizzes with MCQs, coding tasks, fill-in-the-blanks, and open-ended questions.",
-    gradient: "from-green-500 to-emerald-500",
+    title: "Custom Learning Paths",
+    description: "Design personalized learning journeys with flexible modules, prerequisites, and branching paths that adapt to learner progress.",
+    gradient: "from-green-500 to-teal-500",
   },
   {
     icon: "track",
-    title: "Progress Tracking",
-    description: "Monitor learner activity—track quiz scores, completion status, and engagement easily.",
-    gradient: "from-indigo-500 to-blue-500",
+    title: "Advanced Analytics",
+    description: "Deep insights into learner engagement, completion rates, and knowledge retention with beautiful, actionable dashboards.",
+    gradient: "from-orange-500 to-red-500",
   },
   {
     icon: "private",
-    title: "Private Course Creation",
-    description: "Keep your courses private and secure. Only you and the people you allow can access them.",
-    gradient: "from-purple-500 to-violet-500",
+    title: "Enterprise Security",
+    description: "Bank-level security with private courses, role-based access control, and compliance features for organizations.",
+    gradient: "from-cyan-500 to-blue-500",
+  },
+  {
+    icon: "integrate",
+    title: "Seamless Integration",
+    description: "Connect with your existing tools and platforms. Import from YouTube, PDFs, websites, and integrate with LMS systems.",
+    gradient: "from-violet-500 to-purple-500",
   },
 ]
 
@@ -144,7 +166,7 @@ const FeatureShowcase = () => {
   }
 
   return (
-    <section className="container max-w-6xl mx-auto px-4 md:px-6" ref={containerRef} aria-labelledby="features-heading">
+    <section className="container max-w-6xl mx-auto px-4 md:px-6" aria-labelledby="features-heading">
       <header className="text-center mb-16">
         <motion.div
           initial="hidden"
@@ -165,8 +187,14 @@ const FeatureShowcase = () => {
           custom={0.1}
           className="text-3xl md:text-5xl font-bold mb-6"
           id="features-heading"
+          role="heading"
+          aria-level={2}
         >
-          Create Engaging Content with AI
+          Everything you need to create
+          <br />
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+            extraordinary learning experiences
+          </span>
         </motion.h2>
 
         <motion.p
@@ -174,11 +202,12 @@ const FeatureShowcase = () => {
           animate={isInView ? "visible" : "hidden"}
           variants={textVariants}
           custom={0.2}
-          className="text-xl text-muted-foreground max-w-2xl mx-auto"
+          className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
           role="doc-subtitle"
         >
-          CourseAI empowers you to create dynamic, personalized content—automatically. From interactive experiences to
-          complete learning journeys, build and share faster than ever.
+          CourseAI combines the power of artificial intelligence with intuitive design
+          to help you create engaging courses, interactive quizzes, and comprehensive
+          learning paths that captivate and educate your audience.
         </motion.p>
       </header>
 
@@ -199,7 +228,7 @@ const FeatureShowcase = () => {
             aria-labelledby={`feature-${index}-title`}
             aria-describedby={`feature-${index}-description`}
           >
-            <div className="h-full bg-card/30 backdrop-blur-sm rounded-2xl p-8 border border-border/10 transition-all duration-300 relative overflow-hidden group">
+            <div className="h-full bg-card/30 backdrop-blur-sm rounded-2xl p-8 border border-border/10 transition-all duration-300 relative overflow-hidden group hover:shadow-lg focus-within:shadow-lg focus-within:ring-2 focus-within:ring-primary/50">
               {/* Background gradient */}
               <motion.div
                 className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}
@@ -240,6 +269,7 @@ const FeatureShowcase = () => {
                 className="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 initial={{ x: -3, opacity: 0 }}
                 whileHover={{ x: 0, opacity: 1 }}
+                aria-hidden="true"
               >
                 <ArrowRight className="h-5 w-5 text-primary/70" />
               </motion.div>

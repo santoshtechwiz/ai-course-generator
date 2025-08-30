@@ -14,29 +14,29 @@ const steps = [
   {
     id: "choose",
     title: "Choose your topic",
-    description: "Select any subject you want to create content about, from programming to history to cooking.",
-    color: "from-blue-500 to-cyan-500",
+    description: "Simply enter any subject that interests you. From quantum physics to gourmet cooking, CourseAI transforms your topic into a comprehensive learning experience.",
+    color: "from-blue-500 to-indigo-500",
     icon: FileText,
   },
   {
     id: "generate",
-    title: "AI generates content",
-    description: "Our advanced AI analyzes the topic and creates comprehensive, structured materials.",
+    title: "AI creates your course",
+    description: "Our advanced AI analyzes your topic, researches relevant content, and structures it into engaging lessons with interactive quizzes and assessments.",
     color: "from-purple-500 to-pink-500",
     icon: Sparkles,
   },
   {
     id: "customize",
-    title: "Customize your content",
-    description: "Edit, rearrange, and enhance the AI-generated content to match your specific needs.",
-    color: "from-amber-500 to-orange-500",
+    title: "Personalize & enhance",
+    description: "Refine the AI-generated content with your expertise. Add your unique insights, rearrange sections, and customize the learning path for your audience.",
+    color: "from-green-500 to-teal-500",
     icon: Layers,
   },
   {
     id: "publish",
-    title: "Publish and share",
-    description: "Make your content available to others or keep it private for personal use.",
-    color: "from-green-500 to-emerald-500",
+    title: "Share & inspire",
+    description: "Publish your course instantly and share it with the world. Track engagement, gather feedback, and watch your learners succeed.",
+    color: "from-orange-500 to-red-500",
     icon: CheckCircle,
   },
 ]
@@ -287,17 +287,22 @@ const HowItWorksSection = () => {
           transition={{ duration: 0.6, delay: 0.1, ease: APPLE_EASING }}
           className="text-3xl md:text-5xl font-bold mb-6"
         >
-          Create a course or quiz in minutes
+          From idea to
+          <br />
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+            extraordinary course
+          </span>
         </motion.h2>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6, delay: 0.2, ease: APPLE_EASING }}
-          className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto"
+          className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
         >
-          Whether you're an educator, a professional, or a hobbyist, our platform empowers you to create engaging and
-          interactive content effortlessly.
+          Creating exceptional educational content has never been this simple.
+          Our intelligent platform handles the complexity while you focus on
+          what matters most—sharing your knowledge and inspiring others.
         </motion.p>
       </div>
 

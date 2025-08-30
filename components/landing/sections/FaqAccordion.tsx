@@ -16,63 +16,63 @@ import { useDebounce } from "@/hooks"
 const faqs = [
 	{
 		id: "faq-1",
-		question: "How does CourseAI generate content?",
+		question: "How does CourseAI create such amazing content?",
 		answer:
-			"CourseAI uses AI to generate comprehensive, structured content tailored to your specific needs. It leverages advanced natural language processing and machine learning algorithms to analyze topics and create high-quality educational materials. The AI ensures that the content is accurate, engaging, and relevant to your audience.",
+			"CourseAI combines advanced AI with deep educational expertise to create comprehensive, engaging courses. Our system analyzes your topic, researches relevant information, and structures it into beautiful, interactive learning experiences that captivate and educate your audience.",
 	},
 	{
 		id: "faq-2",
-		question: "Can I edit the AI-generated content?",
+		question: "Can I customize the AI-generated content?",
 		answer:
-			"No, the AI-generated content cannot be edited directly. However, you can use the generated content as a reference or starting point to create your own customized materials outside the platform.",
+			"Absolutely! CourseAI gives you complete creative control. Edit any aspect of your course—from the content and structure to the visual design and quizzes. Our platform serves as your intelligent assistant, not a replacement for your expertise.",
 	},
 	{
 		id: "faq-3",
-		question: "Can I import existing content into CourseAI?",
+		question: "Can I import my existing materials?",
 		answer:
-			"No, importing existing content is not supported at this time. CourseAI focuses on generating new content based on the topics you provide, ensuring originality and relevance.",
+			"Yes! CourseAI supports importing content from various sources including PDFs, websites, YouTube videos, and existing documents. Our AI will intelligently restructure and enhance your materials into cohesive, engaging courses.",
 	},
 	{
 		id: "faq-4",
-		question: "What happens if my course fails?",
+		question: "What if I'm not satisfied with my course?",
 		answer:
-			"If your course fails, please contact our support team. We will review your case and return your token, allowing you to create a new course or make adjustments to improve your outcomes.",
+			"Your satisfaction is our priority. If you're not completely happy with your course, simply let us know within 30 days and we'll work with you to perfect it or provide a full refund. We stand behind the quality of our AI.",
 	},
 	{
 		id: "faq-5",
-		question: "Can I delete or make my course private?",
+		question: "How do I keep my courses private?",
 		answer:
-			"Yes, you can delete your course or make it private. This ensures that you have full control over your content and can manage its visibility according to your preferences.",
+			"Privacy and control are built into CourseAI. You can set courses as private, password-protected, or share them only with specific individuals. Your content remains yours, and you have complete control over who can access it.",
 	},
 	{
 		id: "faq-6",
-		question: "Does CourseAI create videos?",
+		question: "Does CourseAI create video content?",
 		answer:
-			"No, CourseAI does not create videos. Instead, it fetches relevant videos from platforms like YouTube and other sources. This allows you to integrate high-quality video content into your courses without the need for video production.",
+			"CourseAI integrates seamlessly with video content. While we don't create videos ourselves, our platform automatically finds and incorporates relevant videos from YouTube and other sources, complete with interactive quizzes and discussion prompts.",
 	},
 	{
 		id: "faq-7",
-		question: "Can I share my course?",
+		question: "How do I share my courses with others?",
 		answer:
-			"Yes, you can share your course with others. CourseAI provides sharing options to help you distribute your content to your intended audience effectively.",
+			"Sharing is effortless with CourseAI. Generate a unique link, embed your course on websites, or share directly through email and social media. Track engagement and gather feedback from your audience with built-in analytics.",
 	},
 	{
 		id: "faq-8",
-		question: "Do videos have quizzes?",
+		question: "Do videos include interactive elements?",
 		answer:
-			"Yes, quizzes can be generated for videos if a transcript is available. If no transcript is provided, you can use our feature to create a quiz manually based on the video's topic. This ensures that your learners can test their understanding of the material.",
+			"Yes! CourseAI automatically generates quizzes, discussion questions, and interactive elements for video content. Even without transcripts, our AI creates relevant assessments that enhance learning and engagement.",
 	},
 	{
 		id: "faq-9",
-		question: "Can I see my progress?",
+		question: "Can I track learner progress and engagement?",
 		answer:
-			"Yes, you can track your progress through the platform. CourseAI provides detailed analytics and progress tracking features to help you monitor your learning journey and identify areas for improvement.",
+			"CourseAI provides comprehensive analytics and progress tracking. Monitor completion rates, quiz scores, time spent on content, and learner engagement. Use these insights to continuously improve your courses and teaching effectiveness.",
 	},
 	{
 		id: "faq-10",
-		question: "Can I see my answers?",
+		question: "Is my data and progress secure?",
 		answer:
-			"Only signed-in users can view their answers. This ensures that your data is secure and accessible only to you, providing a personalized learning experience.",
+			"Security is fundamental to CourseAI. All data is encrypted, and your personal information and course content are protected with enterprise-grade security. Only you can access your account and the courses you've created.",
 	},
 ]
 
@@ -132,16 +132,21 @@ const FaqAccordion = () => {
 					transition={{ duration: 0.6, delay: 0.1, ease: APPLE_EASING }}
 					className="text-3xl md:text-5xl font-bold mb-6"
 				>
-					Frequently asked questions
+					Everything you need
+					<br />
+					<span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+						to know
+					</span>
 				</motion.h2>
 
 				<motion.p
 					initial={{ opacity: 0, y: 20 }}
 					animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
 					transition={{ duration: 0.6, delay: 0.2, ease: APPLE_EASING }}
-					className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
+					className="text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed"
 				>
-					Find answers to common questions about CourseAI
+					Get answers to the most common questions about CourseAI.
+					We're here to help you create extraordinary learning experiences.
 				</motion.p>
 			</div>
 
@@ -151,7 +156,6 @@ const FaqAccordion = () => {
 				animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
 				transition={{ duration: 0.6, delay: 0.3, ease: APPLE_EASING }}
 				className="relative mb-10"
-				style={{ willChange: "transform, opacity" }}
 			>
 				<label htmlFor="faq-search" className="sr-only">
 					Search questions
@@ -185,7 +189,6 @@ const FaqAccordion = () => {
 				initial={{ opacity: 0 }}
 				animate={isInView ? { opacity: 1 } : { opacity: 0 }}
 				transition={{ duration: 0.6, delay: 0.4, ease: APPLE_EASING }}
-				style={{ willChange: "transform, opacity" }}
 			>
 				{filteredFaqs.length > 0 ? (
 					filteredFaqs.map((faq, index) => (
@@ -194,7 +197,6 @@ const FaqAccordion = () => {
 							initial={{ opacity: 0, y: 20 }}
 							animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
 							transition={{ duration: 0.6, delay: 0.5 + index * 0.1, ease: APPLE_EASING }}
-							style={{ willChange: "transform, opacity" }}
 						>
 							<div
 								className="bg-card/30 backdrop-blur-sm rounded-xl border border-border/10 overflow-hidden"
@@ -272,7 +274,7 @@ const FaqAccordion = () => {
 						onClickAsync={async () => {
 							await new Promise((resolve) => setTimeout(resolve, 800))
 							window.location.href = "/contactus"
-							return true
+						 return true
 						}}
 						loadingText="Contacting support..."
 						successText="Opening contact page"

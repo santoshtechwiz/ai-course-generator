@@ -7,11 +7,11 @@ import { generateMetadata } from "@/lib/seo"
 import { JsonLD } from "@/lib/seo"
 
 export const metadata = generateMetadata({
-  title: 'CourseAI - AI-Powered Course & Quiz Creator',
-  description: 'Create professional educational content with AI. Generate interactive courses, MCQ quizzes, and assessments for any topic. Perfect for educators, trainers, and lifelong learners.',
+  title: 'CourseAI - Create Extraordinary Courses with AI',
+  description: 'Transform any topic into engaging, interactive courses in minutes. CourseAI combines AI-powered content creation with beautiful design to help educators, trainers, and organizations create extraordinary learning experiences.',
   keywords: [
     'AI course creator',
-    'AI quiz generator', 
+    'AI quiz generator',
     'educational content creator',
     'interactive learning platform',
     'course builder',
@@ -23,7 +23,11 @@ export const metadata = generateMetadata({
     'training materials',
     'assessment tools',
     'courseai',
-    'automated content generation'
+    'automated content generation',
+    'learning management system',
+    'educational innovation',
+    'AI-powered education',
+    'course creation platform'
   ],
   canonical: '/',
   type: 'website',
