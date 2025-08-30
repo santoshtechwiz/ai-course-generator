@@ -639,6 +639,7 @@ const quizSlice = createSlice({
 
       state.answers[action.payload.questionId] = {
         questionId: action.payload.questionId,
+        selectedOptionId: selectedOptionId,
         userAnswer: computedUserAnswer,
         isCorrect,
         type: question.type,

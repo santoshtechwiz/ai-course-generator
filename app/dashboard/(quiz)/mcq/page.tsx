@@ -5,6 +5,8 @@ import { QuizCreateLayout } from "../components/QuizCreateLayout";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+export const dynamic = 'force-dynamic'
+
 const McqPage = () => {
   const quizPlan = useQuizPlan(1);
   const searchParams = useSearchParams();

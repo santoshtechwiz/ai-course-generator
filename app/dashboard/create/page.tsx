@@ -13,6 +13,7 @@ import NavigationDebugger from "@/components/debug/NavigationDebugger";
 import { JsonLD } from "@/lib/seo";
 import { generateMetadata } from "@/lib/seo";
 
+export const dynamic = 'force-dynamic'
 
 // Removed force-dynamic to allow static optimization / caching where possible
 

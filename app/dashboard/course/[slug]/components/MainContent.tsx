@@ -184,6 +184,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     const playlist: { videoId: string; chapter: FullChapterType }[] = []
     
     if (!course?.courseUnits) {
+      console.warn("No course units available for playlist")
       return playlist
     }
 
@@ -226,6 +227,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           globalIndex += 1
         })
     })
+
+    if (playlist.length === 0) {
+      console.warn("Video playlist is empty after processing course units")
+    }
 
     return playlist
   }, [course.courseUnits])
@@ -407,7 +412,13 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Enhanced PIP handling
   const handlePIPToggle = useCallback((isPiPActive: boolean) => {
     setIsPiPActive(isPiPActive)
-  }, [])
+    if (isPiPActive) {
+      toast({
+        title: "Picture-in-Picture Mode",
+        description: "Video is now playing in a separate window. You can continue browsing while watching."
+      })
+    }
+  }, [toast])
 
   // Theater mode toggle handler
   const handleTheaterModeToggle = useCallback((newTheaterMode: boolean) => {
@@ -803,7 +814,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
       {/* Mobile playlist toggle - Enhanced design */}
       {!isTheaterMode && (
-        <div className="xl:hidden bg-muted/20 border-b border-border/20">
+        <div className="lg:hidden bg-muted/20 border-b border-border/20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <Button
               variant="outline"
@@ -837,9 +848,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         )}>
           <div className={cn(
             "grid gap-6 transition-all duration-500",
-            sidebarCollapsed || isPiPActive || isTheaterMode
+            sidebarCollapsed || isTheaterMode
               ? "grid-cols-1" 
-              : "grid-cols-1 lg:grid-cols-[1fr_350px] xl:grid-cols-[1fr_400px]"
+              : "grid-cols-1 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_320px]"
           )}>
             {/* Left column: Video and content */}
             <motion.div 
@@ -857,57 +868,83 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   isTheaterMode && "mb-0"
                 )}
               >
-                <Card className={cn(
-                  "overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-background to-muted/20",
-                  isTheaterMode && "shadow-none border-none bg-transparent"
-                )}>
-                  <div className={cn(
-                    "bg-black relative overflow-hidden transition-all duration-500",
-                    isTheaterMode ? "aspect-[21/9] rounded-none" : "aspect-[18/9] rounded-lg"
+                {isPiPActive ? (
+                  <Card className={cn(
+                    "overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-background to-muted/20",
+                    isTheaterMode && "shadow-none border-none bg-transparent"
                   )}>
-                    {isVideoLoading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-10">
+                    <div className={cn(
+                      "bg-muted relative overflow-hidden transition-all duration-500 flex items-center justify-center",
+                      isTheaterMode ? "aspect-[21/9] rounded-none" : "aspect-[18/9] rounded-lg"
+                    )}>
+                      <div className="text-center p-8">
                         <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full"
-                        />
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center"
+                        >
+                          <Play className="h-8 w-8 text-primary" />
+                        </motion.div>
+                        <h3 className="text-lg font-semibold mb-2">Picture-in-Picture Active</h3>
+                        <p className="text-muted-foreground text-sm">
+                          Video is playing in a separate window. Click the PIP button again to return.
+                        </p>
                       </div>
-                    )}
-                    <VideoPlayer 
-                      youtubeVideoId={currentVideoId || ''}
-                      chapterId={currentChapter?.id?.toString()}
-                      chapterTitle={currentChapter?.title || ''}
-                      bookmarks={sanitizedBookmarkItems}
-                      onProgress={handleVideoProgress}
-                      onEnded={handleVideoEnded}
-                      onVideoLoad={handleVideoLoad}
-                      onPlayerReady={handlePlayerReady}
-                      onPictureInPictureToggle={handlePIPToggle}
-                      onTheaterModeToggle={handleTheaterModeToggle}
-                      isTheaterMode={isTheaterMode}
-                      initialSeekSeconds={(function(){
-                        try {
-                          if (courseProgress?.videoProgress?.playedSeconds && 
-                              String(courseProgress.videoProgress.currentChapterId) === String(currentChapter?.id)) {
-                            const ts = Number(courseProgress.videoProgress.playedSeconds)
-                            if (!isNaN(ts) && ts > 0) return ts
-                          }
-                        } catch {}
-                        return undefined
-                      })()}
-                      courseId={course.id}
-                      courseName={course.title}
-                      autoPlay={autoplayMode}
-                      onToggleAutoPlay={() => handleAutoplayToggle()}
-                      onNextVideo={handleNextVideo}
-                      nextVideoId={nextVideoId || undefined}
-                      nextVideoTitle={nextVideoTitle}
-                      hasNextVideo={hasNextVideo}
-                      autoAdvanceNext={autoplayMode}
-                    />
-                  </div>
-                </Card>
+                    </div>
+                  </Card>
+                ) : (
+                  <Card className={cn(
+                    "overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-background to-muted/20",
+                    isTheaterMode && "shadow-none border-none bg-transparent"
+                  )}>
+                    <div className={cn(
+                      "bg-black relative overflow-hidden transition-all duration-500",
+                      isTheaterMode ? "aspect-[21/9] rounded-none" : "aspect-[18/9] rounded-lg"
+                    )}>
+                      {isVideoLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-10">
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full"
+                          />
+                        </div>
+                      )}
+                      <VideoPlayer 
+                        youtubeVideoId={currentVideoId || ''}
+                        chapterId={currentChapter?.id?.toString()}
+                        chapterTitle={currentChapter?.title || ''}
+                        bookmarks={sanitizedBookmarkItems}
+                        onProgress={handleVideoProgress}
+                        onEnded={handleVideoEnded}
+                        onVideoLoad={handleVideoLoad}
+                        onPlayerReady={handlePlayerReady}
+                        onPictureInPictureToggle={handlePIPToggle}
+                        onTheaterModeToggle={handleTheaterModeToggle}
+                        isTheaterMode={isTheaterMode}
+                        initialSeekSeconds={(function(){
+                          try {
+                            if (courseProgress?.videoProgress?.playedSeconds && 
+                                String(courseProgress.videoProgress.currentChapterId) === String(currentChapter?.id)) {
+                              const ts = Number(courseProgress.videoProgress.playedSeconds)
+                              if (!isNaN(ts) && ts > 0) return ts
+                            }
+                          } catch {}
+                          return undefined
+                        })()}
+                        courseId={course.id}
+                        courseName={course.title}
+                        autoPlay={autoplayMode}
+                        onToggleAutoPlay={() => handleAutoplayToggle()}
+                        onNextVideo={handleNextVideo}
+                        nextVideoId={nextVideoId || undefined}
+                        nextVideoTitle={nextVideoTitle}
+                        hasNextVideo={hasNextVideo}
+                        autoAdvanceNext={autoplayMode}
+                      />
+                    </div>
+                  </Card>
+                )}
               </motion.div>
 
               {/* Course details tabs - Enhanced with section styling */}
@@ -945,7 +982,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
             {/* Right column: Playlist sidebar (desktop) */}
             <AnimatePresence mode="wait">
-              {!sidebarCollapsed && !isPiPActive && !isTheaterMode && (
+              {!sidebarCollapsed && !isTheaterMode && (
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -985,19 +1022,29 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
                   {/* Playlist content */}
                   <div className="bg-gradient-to-br from-background to-muted/10 rounded-xl border border-border/20 shadow-lg">
-                    <PlaylistSidebar
-                      course={sidebarCourse}
-                      currentChapter={sidebarCurrentChapter}
-                      courseId={course.id.toString()}
-                      currentVideoId={currentVideoId || ''}
-                      isAuthenticated={!!user}
-                      completedChapters={completedChapters.map(String)}
-                      formatDuration={formatDuration}
-                      videoDurations={videoDurations}
-                      courseStats={courseStats}
-                      onChapterSelect={handleChapterSelect}
-                      isPiPActive={isPiPActive}
-                    />
+                    {sidebarCourse.chapters.length === 0 ? (
+                      <div className="p-6 text-center">
+                        <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                        <h3 className="text-lg font-semibold mb-2">No Videos Available</h3>
+                        <p className="text-muted-foreground text-sm">
+                          This course doesn't have any video content yet. Please check back later or contact support.
+                        </p>
+                      </div>
+                    ) : (
+                      <PlaylistSidebar
+                        course={sidebarCourse}
+                        currentChapter={sidebarCurrentChapter}
+                        courseId={course.id.toString()}
+                        currentVideoId={currentVideoId || ''}
+                        isAuthenticated={!!user}
+                        completedChapters={completedChapters.map(String)}
+                        formatDuration={formatDuration}
+                        videoDurations={videoDurations}
+                        courseStats={courseStats}
+                        onChapterSelect={handleChapterSelect}
+                        isPiPActive={isPiPActive}
+                      />
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -1011,7 +1058,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         <MobilePlaylistOverlay
           isOpen={mobilePlaylistOpen}
           onClose={() => setMobilePlaylistOpen(false)}
-          course={sidebarCourse}
+          course={sidebarCourse.chapters.length === 0 ? { ...sidebarCourse, chapters: [] } : sidebarCourse}
           currentChapter={sidebarCurrentChapter}
           courseId={course.id.toString()}
           currentVideoId={currentVideoId || ''}

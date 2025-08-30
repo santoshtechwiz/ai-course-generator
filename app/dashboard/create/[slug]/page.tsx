@@ -6,6 +6,7 @@ import type { Course, CourseUnit, Chapter } from "@prisma/client"
 import CourseCreationVideo from "@/components/common/CourseCreationVideo"
 import EnhancedConfirmChapters from "../components/EnhancedConfirmChapters"
 
+export const dynamic = 'force-dynamic'
 
 type Props = {
   params: {

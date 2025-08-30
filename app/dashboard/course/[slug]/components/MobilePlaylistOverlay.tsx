@@ -58,7 +58,7 @@ const MobilePlaylistOverlay: React.FC<MobilePlaylistOverlayProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="md:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+          className="lg:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
           onClick={onClose}
         >
           <motion.div

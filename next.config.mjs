@@ -58,13 +58,15 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  
+
   typescript: {
     ignoreBuildErrors: true,
   },
 
   compress: true,
-
+  turbopack: {
+     resolveExtensions: ['.mdx', '.tsx', '.ts', '.jsx', '.js', '.mjs', '.json'],
+  },
   webpack: (config, { dev, isServer }) => {
     if (dev) {
       config.optimization = {

@@ -1,11 +1,12 @@
 import { Suspense } from "react"
-import dynamic from "next/dynamic"
+
 import { PageWrapper, PageHeader } from "@/components/layout/PageWrapper"
 import { getAuthSession } from "@/lib/auth"
-import { Loader } from "@/components/loaders/loader"
+
 import ClientOnly from "@/components/ClientOnly"
 import CourseListWithFilters from "@/components/features/home/CourseListWithFilters"
 
+export const dynamic = 'force-dynamic'
 
 const url = process.env.NEXT_PUBLIC_WEBSITE_URL
   ? `${process.env.NEXT_PUBLIC_WEBSITE_URL}/dashboard/explore`

@@ -3,12 +3,13 @@
 import type React from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { api } from "@/lib/api-helper"
-import { Loader2, Search, X, Book, FileQuestion } from "lucide-react"
+import { Loader2, Search, X, Book, FileQuestion, AlertCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import debounce from "lodash/debounce"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface SearchResult {
   id: number
@@ -17,6 +18,8 @@ interface SearchResult {
   slug?: string
   title?: string
   quizType?: "mcq" | "openended" | "blanks" | "code"
+  chapterName?: string
+  courseTitle?: string
 }
 
 interface SearchResponse {
@@ -37,6 +40,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [showLoader, setShowLoader] = useState<boolean>(false)
   const [selectedIndex, setSelectedIndex] = useState<number>(-1)
+  const [error, setError] = useState<string | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const loaderTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -47,10 +51,12 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
         loaderTimeoutRef.current = setTimeout(() => setShowLoader(true), 300)
 
         try {
-          const response = await api.get<SearchResponse>(`/search?query=${encodeURIComponent(query)}`)
+          // Use the correct API endpoint path
+          const response = await api.get<SearchResponse>(`/api/search?query=${encodeURIComponent(query)}`)
           setSearchResults(response.data)
         } catch (error) {
           console.error("Error fetching search results:", error)
+          setError("Failed to fetch search results. Please try again.")
           setSearchResults(null)
         } finally {
           clearTimeout(loaderTimeoutRef.current)
@@ -59,6 +65,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
         }
       } else {
         setSearchResults(null)
+        setError(null)
       }
     }, 300),
     [],
@@ -69,6 +76,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
       fetchSearchResults(searchTerm)
     } else {
       setSearchResults(null)
+      setError(null)
     }
     return () => {
       if (loaderTimeoutRef.current) {
@@ -110,11 +118,14 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
   const handleResultClick = (result: SearchResult) => {
     let url
     if (result.title && ["mcq", "openended", "blanks", "code"].includes(result.quizType || "")) {
-      // This is a game/quiz
+      // This is a game/quiz - use the correct slug
       url = `/dashboard/${result.quizType === "blanks" ? "blanks" : result.quizType}/${result.slug}`
-    } else {
+    } else if (result.slug) {
       // This is a course
       url = `/dashboard/course/${result.slug}`
+    } else {
+      console.warn("No valid URL could be generated for search result:", result)
+      return
     }
 
     onResultClick(url)
@@ -183,7 +194,15 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
             </p>
           )}
           {type === "game" && (
-            <p className="text-sm text-muted-foreground mt-1">{result.quizType?.toUpperCase()} Quiz</p>
+            <div className="text-sm text-muted-foreground mt-1 space-y-1">
+              <p>{result.quizType?.toUpperCase()} Quiz</p>
+              {result.chapterName && (
+                <p className="text-xs">Chapter: {result.chapterName}</p>
+              )}
+              {result.courseTitle && (
+                <p className="text-xs">Course: {result.courseTitle}</p>
+              )}
+            </div>
           )}
         </div>
       </motion.button>
@@ -241,76 +260,103 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
               )}
             </motion.div>
 
-            <div className="overflow-y-auto flex-1 -mr-4 pr-4 max-h-[calc(90vh-180px)]">
-              {showLoader ? (
-                <motion.div
-                  className="flex flex-col justify-center items-center py-8 space-y-2"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
+            <div className="flex-1 overflow-y-auto px-6 pb-6">
+              <AnimatePresence mode="wait">
+                {error ? (
                   <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Number.POSITIVE_INFINITY, duration: 1.5, ease: "linear" }}
+                    key="error"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="mb-4"
                   >
-                    <Loader2 className="h-8 w-8 text-primary" />
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
                   </motion.div>
-                  <motion.p
-                    className="text-sm text-muted-foreground"
-                    animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{ repeat: Number.POSITIVE_INFINITY, duration: 1.5, ease: "easeInOut" }}
+                ) : null}
+
+                {isLoading && showLoader ? (
+                  <motion.div
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center justify-center py-12"
                   >
-                    Searching...
-                  </motion.p>
-                </motion.div>
-              ) : searchResults && (searchResults?.courses?.length > 0 || searchResults?.games?.length > 0) ? (
-                <motion.div
-                  className="space-y-6"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <AnimatePresence>
-                    {searchResults.courses.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3, type: "spring" }}
-                      >
-                        <h3 className="text-lg font-semibold mb-3">Courses</h3>
+                    <div className="flex items-center space-x-3">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      <span className="text-muted-foreground">Searching...</span>
+                    </div>
+                  </motion.div>
+                ) : searchResults ? (
+                  <motion.div
+                    key="results"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="space-y-4"
+                  >
+                    {searchResults.courses && searchResults.courses.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center space-x-2">
+                          <Book className="h-4 w-4" />
+                          <span>Courses ({searchResults.courses.length})</span>
+                        </h3>
                         <ul className="space-y-2">
-                          {searchResults.courses.map((course, index) => renderSearchResult(course, index, "course"))}
-                        </ul>
-                      </motion.div>
-                    )}
-                    {searchResults.games.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3, type: "spring", delay: 0.1 }}
-                      >
-                        <h3 className="text-lg font-semibold mb-3">Quizzes</h3>
-                        <ul className="space-y-2">
-                          {searchResults.games.map((game, index) =>
-                            renderSearchResult(game, searchResults.courses.length + index, "game"),
+                          {searchResults.courses.map((course, index) =>
+                            renderSearchResult(course, index, "course"),
                           )}
                         </ul>
+                      </div>
+                    )}
+
+                    {searchResults.games && searchResults.games.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center space-x-2">
+                          <FileQuestion className="h-4 w-4" />
+                          <span>Quizzes ({searchResults.games.length})</span>
+                        </h3>
+                        <ul className="space-y-2">
+                          {searchResults.games.map((game, index) =>
+                            renderSearchResult(game, index + (searchResults.courses?.length || 0), "game"),
+                          )}
+                        </ul>
+                      </div>
+                    )}
+
+                    {(!searchResults.courses || searchResults.courses.length === 0) &&
+                      (!searchResults.games || searchResults.games.length === 0) && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-center py-12"
+                      >
+                        <div className="text-muted-foreground">
+                          <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p className="text-lg font-medium mb-2">No results found</p>
+                          <p className="text-sm">Try adjusting your search terms or check your spelling</p>
+                        </div>
                       </motion.div>
                     )}
-                  </AnimatePresence>
-                </motion.div>
-              ) : searchTerm.trim().length >= 2 ? (
-                <motion.p
-                  className="text-center text-muted-foreground text-lg py-8"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  No results found
-                </motion.p>
-              ) : null}
+                  </motion.div>
+                ) : searchTerm.length >= 2 ? (
+                  <motion.div
+                    key="no-results"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-center py-12"
+                  >
+                    <div className="text-muted-foreground">
+                      <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium mb-2">Start typing to search</p>
+                      <p className="text-sm">Search for courses, quizzes, or topics</p>
+                    </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </div>
           </div>
 

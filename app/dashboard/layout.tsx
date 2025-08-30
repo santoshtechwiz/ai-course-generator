@@ -7,6 +7,8 @@ import { DashboardLayout } from "@/components/dashboard/layout"
 import { MonitoredErrorBoundary, DebugToggle, ComponentMonitor } from "../debug/ComponentMonitor"
 import MainContent from "./course/[slug]/components/MainContent"
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = generateSEOMetadata({
   title: "Dashboard | CourseAI",
   description: "Access your courses, quizzes, and learning materials in one place. Track your progress and continue your learning journey.",

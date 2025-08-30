@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import AdminNav from "./components/admin-nav"
 
+export const dynamic = 'force-dynamic'
+
 /**
  * Admin Layout
  * 

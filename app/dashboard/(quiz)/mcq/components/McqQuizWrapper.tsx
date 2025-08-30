@@ -220,7 +220,16 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   // Success state - render quiz
   if (quizStatus === 'succeeded' && questions.length > 0) {
     const currentQ = questions[currentQuestionIndex]
-    const existingAnswer = answers[String(currentQ?.id)]?.selectedOptionId
+    
+    if (!currentQ) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">Question not found.</p>
+        </div>
+      )
+    }
+    
+    const existingAnswer = answers[String(currentQ.id)]?.selectedOptionId
 
     return (
       <McqQuiz
@@ -228,7 +237,9 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
           id: String(currentQ?.id || ''),
           text: currentQ?.question || '',
           question: currentQ?.question || '',
-          options: currentQ?.options?.map(opt => opt.text || '') || []
+          options: Array.isArray(currentQ?.options) 
+            ? currentQ.options.map(opt => typeof opt === 'string' ? opt : opt.text || '')
+            : []
         }}
         onAnswer={(answer) => {
           handleAnswer(answer)

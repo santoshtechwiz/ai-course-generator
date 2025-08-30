@@ -1,15 +1,17 @@
 import { Suspense } from "react"
 import Link from "next/link"
 import { Metadata } from "next"
-import { Compass, ArrowLeft, BookOpen, SearchX, Home, Sparkles } from "lucide-react"
+import { Compass, ArrowLeft, BookOpen, SearchX, Home, Sparkles, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getRecommendedItems, RecommendedItem } from "@/app/utils/get-recommended-items"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { JsonLD } from "@/lib/seo"
+import { Input } from "@/components/ui/input"
 
 import { motion } from "framer-motion"
+import { buildQuizUrl, QuizType } from "@/lib/utils"
 
 // Export metadata for SEO optimization
 export const metadata: Metadata = {
@@ -75,7 +77,7 @@ function RecommendedItemCard({ item, index }: { item: RecommendedItem; index: nu
             className="w-full"
             variant={item.type === "course" ? "default" : "outline"}
           >
-            <Link href={item.type === "course" ? `/dashboard/course/${item.slug}` : `/dashboard/${item.type}/${item.slug}`}>
+            <Link href={item.type === "course" ? `/dashboard/course/${item.slug}` : buildQuizUrl(item.slug, item.quizType as QuizType)}>
               {item.type === "course" ? "Start Course" : "Take Quiz"}
             </Link>
           </Button>
@@ -176,6 +178,35 @@ export default function NotFound() {
               we've gathered some excellent learning opportunities below to get you back on track.
             </p>
           </div>
+
+          {/* Search Section */}
+          <motion.div 
+            className="w-full max-w-md mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <div className="text-center mb-4">
+              <h3 className="text-xl font-semibold text-foreground mb-2">
+                Search for Content
+              </h3>
+              <p className="text-muted-foreground text-sm">
+                Can't find what you're looking for? Try searching our library.
+              </p>
+            </div>
+            <form action="/dashboard/explore" method="GET" className="flex gap-2">
+              <Input
+                type="text"
+                name="q"
+                placeholder="Search courses, quizzes..."
+                className="flex-1"
+                required
+              />
+              <Button type="submit" size="sm">
+                <Search className="h-4 w-4" />
+              </Button>
+            </form>
+          </motion.div>
 
           {/* Recommendations Section */}
           <div

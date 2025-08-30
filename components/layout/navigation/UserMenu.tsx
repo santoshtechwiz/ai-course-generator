@@ -1,6 +1,6 @@
 "use client"
 
-import { LogOut, User, Crown, CreditCard, LogIn } from "lucide-react"
+import { LogOut, User, Crown, CreditCard, LogIn, Shield } from "lucide-react"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -148,6 +148,16 @@ export function UserMenu({ children }: { children?: ReactNode }) {
       </Button>
     )
   }
+
+  // Don't render if not authenticated or no user
+  if (!isAuthenticated || !user) {
+    return null
+  }
+
+  const subscriptionData = subscription
+  const isPremium = subscriptionData?.plan && subscriptionData.plan !== "FREE"
+  const subscriptionPlan = subscriptionData?.plan || "FREE"
+  const isAdmin = user?.isAdmin || false
 
   return (
     <DropdownMenu open={isMenuOpen} onOpenChange={handleMenuOpen}>

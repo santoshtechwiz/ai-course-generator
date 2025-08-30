@@ -49,7 +49,6 @@ interface PlayerControlsProps {
   onSeekChange: (time: number) => void
   onPlaybackRateChange: (rate: number) => void
   onToggleFullscreen: () => void
-  onAddBookmark: (time: number) => void
   formatTime: (seconds: number) => string
   bookmarks: number[]
   onSeekToBookmark: (time: number) => void
@@ -93,7 +92,6 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   onSeekChange,
   onPlaybackRateChange,
   onToggleFullscreen,
-  onAddBookmark,
   formatTime,
   bookmarks = [],
   onSeekToBookmark,
@@ -279,19 +277,6 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   }, [])
 
   // Enhanced bookmark addition
-  const handleAddBookmark = useCallback(() => {
-    if (onAddBookmark) {
-      const currentTime = duration * played
-      onAddBookmark(currentTime)
-      // Optimistically add if not duplicate
-      setLocalBookmarks((prev) => {
-        if (prev.some((t) => Math.abs(t - currentTime) < 0.01)) return prev
-        return [...prev, currentTime].sort((a, b) => a - b)
-      })
-      setLastAnnouncement(`Bookmark added at ${formatTime(currentTime)}`)
-    }
-  }, [onAddBookmark, duration, played, formatTime])
-
   // Enhanced skip handlers
   const handleSkipBackward = useCallback(() => {
     const newTime = Math.max(0, duration * played - 10)
@@ -680,45 +665,23 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
           {(onToggleAutoPlayVideo || (hasNextVideo && onToggleAutoPlayNext)) &&
             (isAuthenticated || onPictureInPicture) && <div className="hidden lg:block w-px h-6 bg-white/20 mx-1" />}
 
-          {/* Bookmark buttons: add + panel toggle */}
-          {typeof onAddBookmark === "function" && (
-            <div className="flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "h-8 w-8 text-white touch-manipulation transition-colors",
-                  isAuthenticated ? "hover:bg-white/20 hover:text-blue-400" : "opacity-60 cursor-not-allowed",
-                )}
-                onClick={() => {
-                  if (!isAuthenticated) return
-                  handleAddBookmark()
-                }}
-                disabled={!isAuthenticated}
-                title={isAuthenticated ? "Add bookmark (B)" : "Sign in to add bookmarks"}
-                aria-label={isAuthenticated ? "Add bookmark at current time" : "Sign in to add bookmarks"}
-              >
-                <BookmarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-              </Button>
-              {onToggleBookmarkPanel && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "h-8 w-8 text-white touch-manipulation transition-colors",
-                    bookmarkPanelOpen && "bg-white/20 text-blue-400",
-                  )}
-                  onClick={() => {
-                    onToggleBookmarkPanel()
-                  }}
-                  title={bookmarkPanelOpen ? "Hide bookmarks (Shift+B)" : "Show bookmarks (Shift+B)"}
-                  aria-label={bookmarkPanelOpen ? "Hide bookmark panel" : "Show bookmark panel"}
-                >
-                  {/* Reuse icon; optionally could use different icon for panel */}
-                  <BookmarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                </Button>
+          {/* Single bookmark button for panel toggle */}
+          {onToggleBookmarkPanel && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-8 w-8 text-white touch-manipulation transition-colors",
+                bookmarkPanelOpen && "bg-white/20 text-blue-400",
               )}
-            </div>
+              onClick={() => {
+                onToggleBookmarkPanel()
+              }}
+              title={bookmarkPanelOpen ? "Hide bookmarks (Shift+B)" : "Show bookmarks (Shift+B)"}
+              aria-label={bookmarkPanelOpen ? "Hide bookmark panel" : "Show bookmark panel"}
+            >
+              <BookmarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
           )}
 
           {onPictureInPicture && (

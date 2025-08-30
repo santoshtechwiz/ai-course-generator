@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, Inbox } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminDashboard() {
   // Check if user is authenticated and is an admin
   const session = await getServerSession(authOptions)

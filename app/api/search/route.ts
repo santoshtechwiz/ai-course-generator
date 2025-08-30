@@ -112,6 +112,8 @@ export async function GET(request: Request) {
       title: game.title,
       slug: game.slug,
       quizType: game.quizType,
+      chapterName: game.chapter?.name || "",
+      courseTitle: game.chapter?.course?.title || "",
     }))
 
     return NextResponse.json({ courses, games: processedGames })

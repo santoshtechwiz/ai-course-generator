@@ -9,6 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
+export const dynamic = 'force-dynamic'
+
 export default async function PaymentCancelledPage() {
   const session = await getAuthSession()
   const userId = session?.user?.id

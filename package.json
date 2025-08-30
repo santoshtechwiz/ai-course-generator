@@ -27,7 +27,6 @@
     "prod:build": "npm run prod:migrate && npm run build",
     "knip": "knip",
     "prod": "set NODE_ENV=production && npm run prod:migrate && npm run build && npm run start"
- 
   },
   "dependencies": {
     "@ai-sdk/google": "^1.1.14",
@@ -210,6 +209,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@fullhuman/postcss-purgecss": "7.0.2",
     "@tailwindcss/typography": "0.5.10",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
@@ -241,6 +241,7 @@
     "jest-stare": "^2.5.2",
     "jest-summary-reporter": "0.0.2",
     "postcss": "8.5.6",
+    "postcss-cli": "11.0.1",
     "prisma": "6.10.1",
     "recoil": "^0.7.7",
     "tailwindcss": "3.4.1",

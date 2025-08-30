@@ -73,11 +73,19 @@ export function MainNavbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
 
-  // Mouse tracking for AI glow effect - with throttling for performance
+  // Enhanced mouse tracking with better performance
   useEffect(() => {
-    const handleMouseMove = throttle((e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY })
-    }, 16) // ~60fps throttling
+    let ticking = false
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setMousePosition({ x: e.clientX, y: e.clientY })
+          ticking = false
+        })
+        ticking = true
+      }
+    }
 
     if (typeof window !== 'undefined') {
       window.addEventListener("mousemove", handleMouseMove, { passive: true })
@@ -85,13 +93,17 @@ export function MainNavbar() {
     }
   }, [])
 
-  // Scroll effect with AI-themed transitions - with error boundary
+  // Enhanced scroll effect with better performance
   useEffect(() => {
+    let ticking = false
+    
     const handleScroll = () => {
-      try {
-        setIsScrolled(window.scrollY > 20)
-      } catch (error) {
-        console.warn('Scroll handler failed:', error)
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setIsScrolled(window.scrollY > 20)
+          ticking = false
+        })
+        ticking = true
       }
     }
     

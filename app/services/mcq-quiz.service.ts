@@ -45,12 +45,26 @@ export class McqQuizService extends BaseQuizService {
     }
 
     protected formatQuestions(questions: any[]): any[] {
-        return questions.map((q: any) => ({
-            id: q.id,
-            question: q.question,
-            options: JSON.parse(q.options || '[]'),
-            correctAnswer: q.answer,
-            type: 'mcq',
-        }));
+        return questions.map((q: any) => {
+            try {
+                const parsedOptions = JSON.parse(q.options || '[]')
+                return {
+                    id: q.id,
+                    question: q.question,
+                    options: Array.isArray(parsedOptions) ? parsedOptions : [],
+                    correctAnswer: q.answer,
+                    type: 'mcq',
+                }
+            } catch (error) {
+                console.error('Error parsing options for question:', q.id, error)
+                return {
+                    id: q.id,
+                    question: q.question,
+                    options: [],
+                    correctAnswer: q.answer,
+                    type: 'mcq',
+                }
+            }
+        });
     }
 }

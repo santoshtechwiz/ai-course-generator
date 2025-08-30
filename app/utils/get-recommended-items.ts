@@ -1,4 +1,5 @@
 import prisma from "@/lib/db"
+import { QuizType } from "@/lib/utils"
 
 
 export interface RecommendedItem {
@@ -8,6 +9,7 @@ export interface RecommendedItem {
   image: string
   slug: string
   description: string
+  quizType?: QuizType
 }
 
 /**
@@ -69,6 +71,7 @@ export async function getRecommendedItems(limit: number = 3): Promise<Recommende
       image: "/images/quiz-placeholder.jpg", // Default image for quizzes
       slug: quiz.slug,
       description: `${quiz.title} - ${quiz.quizType || "Interactive"} Quiz`,
+      quizType: quiz.quizType as QuizType,
     }));
 
     // Shuffle and return the combined results

@@ -5,8 +5,8 @@ import { twMerge } from "tailwind-merge"
 import { migratedStorage } from "@/lib/storage"
 import { fetchWithTimeout } from "@/lib/http"
 
-// Define a local QuizType for this file
-type QuizType = 'blanks' | 'openended' | 'mcq' | 'code' | 'flashcard';
+// Exporting QuizType so it can be imported in other files
+export type QuizType = 'blanks' | 'openended' | 'mcq' | 'code' | 'flashcard';
 
 
 export function copyToClipboard(text: string): Promise<void> {
@@ -18,7 +18,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const buildQuizUrl = (slug: string, type: QuizType) => {
-  return `/dashboard/(quiz)/${type}/quizzes/${slug}`
+  return `/dashboard/(quiz)/${type}/${slug}`
 }
 
 export function generateSlug(title: string): string {

@@ -13,7 +13,7 @@ import BookmarkManager from "./BookmarkManager"
 import KeyboardShortcutsModal from "../../KeyboardShortcutsModal"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Play, Lock, User, Maximize } from "lucide-react"
+import { Play, Lock, User, Maximize, HelpCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "@/components/ui/use-toast"
 import type { VideoPlayerProps } from "../types"
@@ -487,7 +487,20 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
           if (playerState.isMiniPlayerActive && handlers.handlePictureInPictureToggle) {
             handlers.handlePictureInPictureToggle()
           }
-          await (videoEl as any).requestPictureInPicture()
+          
+          // Try to get the video element again if not found initially
+          let targetVideo = videoEl
+          if (!targetVideo) {
+            // Wait a bit and try again
+            await new Promise(resolve => setTimeout(resolve, 100))
+            targetVideo = getVideoElement()
+          }
+          
+          if (targetVideo) {
+            await (targetVideo as any).requestPictureInPicture()
+          } else {
+            throw new Error('Video element not found')
+          }
         }
         return
       }
@@ -518,7 +531,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
       console.warn('Picture-in-Picture failed:', error)
       toast({
         title: "PiP Error", 
-        description: "Could not toggle Picture-in-Picture.",
+        description: "Could not toggle Picture-in-Picture. Please try again.",
         variant: "destructive",
       })
       onPictureInPictureToggle?.(false)
@@ -810,6 +823,16 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
           event.preventDefault()
           handlePictureInPicture()
           break
+        case "?":
+        case "/":
+          if (event.shiftKey && event.key === "/") {
+            event.preventDefault()
+            handlers.handleShowKeyboardShortcuts()
+          } else if (event.key === "?") {
+            event.preventDefault()
+            handlers.handleShowKeyboardShortcuts()
+          }
+          break
         case "Escape":
           if (state.isFullscreen) {
             event.preventDefault()
@@ -817,6 +840,9 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
           } else if (isTheaterMode) {
             event.preventDefault()
             handleTheaterModeToggle()
+          } else if (playerState.isNativePiPActive) {
+            event.preventDefault()
+            handlePictureInPicture() // Exit PIP
           }
           break
       }
@@ -1048,8 +1074,10 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
         playerState.isNativePiPActive && "pip-active",
         className,
       )}
-      onMouseEnter={() => setPlayerState(prev => ({ ...prev, isHovering: true }))}
-      onMouseLeave={() => setPlayerState(prev => ({ ...prev, isHovering: false }))}
+      onMouseEnter={() => setPlayerState(prev => ({ ...prev, isHovering: true }))
+      }
+      onMouseLeave={() => setPlayerState(prev => ({ ...prev, isHovering: false }))
+      }
       role="application"
       aria-label="Video player"
       tabIndex={0}
@@ -1303,7 +1331,6 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
             onSeekChange={handlers.onSeek}
             onPlaybackRateChange={handlers.onPlaybackRateChange}
             onToggleFullscreen={handlers.onToggleFullscreen}
-            onAddBookmark={handleAddBookmark}
             formatTime={formatTime}
             bookmarks={bookmarks.map((b) => b.time)}
             onSeekToBookmark={handleSeekToBookmark}
@@ -1354,4 +1381,4 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
   )
 }
 
-export default React.memo(VideoPlayer)
+export default VideoPlayer

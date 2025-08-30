@@ -4,7 +4,7 @@ export interface QuizQuestion {
   id: string | number
   question: string
   type: string
-  options?: { id: string | number; text: string }[]
+  options?: { id: string | number; text: string }[] | string[]
   correctOptionId?: string,
   codeSnippet?: string
   language?: string

@@ -89,10 +89,6 @@ const McqQuiz = ({
   category = "General Knowledge",
   timeLimit,
 }: McqQuizProps) => {
-  const [selectedOption, setSelectedOption] = useState<string | null>(existingAnswer || null)
-  const [isAnswering, setIsAnswering] = useState(false)
-  const [hoveredOption, setHoveredOption] = useState<string | null>(null)
-
   const options = useMemo(() => {
     return (question?.options || []).map((option, index) => ({
       id: `${option}-${index}`,
@@ -100,6 +96,17 @@ const McqQuiz = ({
       letter: String.fromCharCode(65 + index),
     }))
   }, [question?.options])
+
+  // Find the option ID that matches the existing answer text
+  const existingOptionId = useMemo(() => {
+    if (!existingAnswer) return null
+    const matchingOption = options.find((option) => option.text === existingAnswer)
+    return matchingOption?.id || null
+  }, [existingAnswer, options])
+
+  const [selectedOption, setSelectedOption] = useState<string | null>(existingOptionId)
+  const [isAnswering, setIsAnswering] = useState(false)
+  const [hoveredOption, setHoveredOption] = useState<string | null>(null)
 
   const handleOptionSelect = useCallback(
     async (optionId: string) => {
@@ -175,49 +182,54 @@ const McqQuiz = ({
 
             {/* Options - Simplified Layout */}
             <div className="w-full space-y-3 max-w-2xl mx-auto">
-              <AnimatePresence>
-                {options.map((option, index) => {
-                  const isSelected = selectedOption === option.id
-                  const isHovered = hoveredOption === option.id
-                  const isDisabled = isAnswering || isSubmitting || stateManager.isSubmitting
+              {options.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No options available for this question.</p>
+                </div>
+              ) : (
+                <AnimatePresence>
+                  {options.map((option, index) => {
+                    const isSelected = selectedOption === option.id
+                    const isHovered = hoveredOption === option.id
+                    const isDisabled = isAnswering || isSubmitting || stateManager.isSubmitting
 
-                  return (
-                    <motion.div
-                      key={option.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1, duration: 0.3 }}
-                      whileHover={!isDisabled ? { scale: 1.01 } : {}}
-                      whileTap={!isDisabled ? { scale: 0.99 } : {}}
-                      onHoverStart={() => !isDisabled && setHoveredOption(option.id)}
-                      onHoverEnd={() => setHoveredOption(null)}
-                    >
-                      <label
-                        htmlFor={`option-${option.id}`}
-                        className={cn(
-                          "flex items-center gap-3 p-3 sm:p-4 w-full rounded-xl border cursor-pointer transition-colors duration-200 shadow-sm",
-                          "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background",
-                          "bg-card hover:bg-muted",
-                          isSelected
-                            ? "border-primary/50"
-                            : isHovered
-                              ? "border-primary/30"
-                              : "border-border",
-                          isDisabled && "opacity-60 cursor-not-allowed",
-                        )}
-                        onClick={() => !isDisabled && handleOptionSelect(option.id)}
+                    return (
+                      <motion.div
+                        key={option.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1, duration: 0.3 }}
+                        whileHover={!isDisabled ? { scale: 1.01 } : {}}
+                        whileTap={!isDisabled ? { scale: 0.99 } : {}}
+                        onHoverStart={() => !isDisabled && setHoveredOption(option.id)}
+                        onHoverEnd={() => setHoveredOption(null)}
                       >
-                        {/* Radio Input */}
-                        <input
-                          type="radio"
-                          name="mcq-option"
-                          id={`option-${option.id}`}
-                          value={option.id}
-                          checked={isSelected}
-                          disabled={isDisabled}
-                          onChange={() => !isDisabled && handleOptionSelect(option.id)}
-                          className="sr-only"
-                        />
+                        <label
+                          htmlFor={`option-${option.id}`}
+                          className={cn(
+                            "flex items-center gap-3 p-3 sm:p-4 w-full rounded-xl border cursor-pointer transition-colors duration-200 shadow-sm",
+                            "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background",
+                            "bg-card hover:bg-muted",
+                            isSelected
+                              ? "border-primary/50"
+                              : isHovered
+                                ? "border-primary/30"
+                                : "border-border",
+                            isDisabled && "opacity-60 cursor-not-allowed",
+                          )}
+                          onClick={() => !isDisabled && handleOptionSelect(option.id)}
+                        >
+                          {/* Radio Input */}
+                          <input
+                            type="radio"
+                            name="mcq-option"
+                            id={`option-${option.id}`}
+                            value={option.id}
+                            checked={isSelected}
+                            disabled={isDisabled}
+                            onChange={() => !isDisabled && handleOptionSelect(option.id)}
+                            className="sr-only"
+                          />
  
                          {/* Letter Badge */}
                          <div
@@ -248,7 +260,8 @@ const McqQuiz = ({
                      </motion.div>
                   )
                 })}
-              </AnimatePresence>
+                </AnimatePresence>
+              )}
             </div>
 
             {/* Footer */}

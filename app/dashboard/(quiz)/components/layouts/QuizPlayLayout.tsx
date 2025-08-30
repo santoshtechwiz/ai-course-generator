@@ -256,7 +256,12 @@ export default function QuizPlayLayout({
         animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
-        <div className="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-3">
+        <div className={cn(
+          "mx-auto w-full py-3 transition-all duration-300",
+          isFullscreen 
+            ? "max-w-none px-2 sm:px-4" 
+            : "max-w-screen-2xl px-4 sm:px-6 lg:px-8"
+        )}>
           <div className="flex items-center justify-between gap-4">
             <motion.div 
               className="min-w-0 flex-1"
@@ -387,20 +392,16 @@ export default function QuizPlayLayout({
 
   return (
     <div className={cn("min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative", isFullscreen && "overflow-hidden")}>
-      {showConfetti && typeof window !== 'undefined' && (
-        <Confetti 
-          width={window.innerWidth} 
-          height={window.innerHeight} 
-          recycle={false} 
-          numberOfPieces={300} 
-          gravity={0.3}
-          colors={['#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B']}
-        />
-      )}
+     
       
       {header}
       
-      <main className="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-6">
+      <main className={cn(
+        "mx-auto w-full py-6 transition-all duration-300",
+        isFullscreen 
+          ? "px-2 sm:px-4 max-w-none" 
+          : "max-w-screen-2xl px-4 sm:px-6 lg:px-8"
+      )}>
         {/* Resume CTA */}
         <AnimatePresence>
           {canResume && !isFullscreen && (
@@ -432,13 +433,15 @@ export default function QuizPlayLayout({
           )}
         </AnimatePresence>
 
-        <div className="flex gap-6">
+        <div className="flex gap-4 lg:gap-6">
           {/* Main Content */}
           <motion.section 
             ref={mainRef}
             className={cn(
               "flex-1 rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl shadow-xl transition-all duration-300",
-              isFullscreen ? "p-6 sm:p-8" : "p-6"
+              isFullscreen 
+                ? "p-2 sm:p-4 lg:p-6 min-h-[calc(100vh-8rem)]" 
+                : "p-4 sm:p-6"
             )}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -452,16 +455,16 @@ export default function QuizPlayLayout({
               />
             )}
 
-            <div className="w-full">{children}</div>
+            <div className="w-full h-full">{children}</div>
           </motion.section>
 
           {/* Enhanced Sidebar */}
           <AnimatePresence>
             {sidebarOpen && !isFullscreen && (
               <motion.aside 
-                className="hidden lg:block w-96 shrink-0"
+                className="hidden lg:block w-80 xl:w-96 shrink-0"
                 initial={{ opacity: 0, x: 20, width: 0 }}
-                animate={{ opacity: 1, x: 0, width: 384 }}
+                animate={{ opacity: 1, x: 0, width: isFullscreen ? 0 : 320 }}
                 exit={{ opacity: 0, x: 20, width: 0 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
               >
@@ -576,7 +579,7 @@ export default function QuizPlayLayout({
               exit={{ opacity: 0 }}
             />
             <motion.div 
-              className="absolute right-0 top-0 h-full w-5/6 max-w-sm bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-2xl"
+              className="absolute right-0 top-0 h-full w-full sm:w-5/6 max-w-sm bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-2xl"
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
@@ -616,93 +619,7 @@ export default function QuizPlayLayout({
         )}
       </AnimatePresence>
 
-      {/* Enhanced Engagement Modal */}
-      <Dialog open={showEngage} onOpenChange={(open) => {
-        setShowEngage(open)
-        if (!open && quizSlug) localStorage.setItem(`ai_quiz_engagement_${quizSlug}`, "1")
-      }}>
-        <DialogContent className="max-w-2xl">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-3 text-xl">
-                <motion.div
-                  className="p-3 rounded-2xl bg-gradient-to-br from-purple-500 to-blue-600 text-white"
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                >
-                  <Sparkles className="h-6 w-6" />
-                </motion.div>
-                Level up your learning with AI
-              </DialogTitle>
-              <DialogDescription className="text-base">
-                This AI-powered quiz adapts to your learning style with smart hints, instant feedback, and a personalized path to mastery.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="mt-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="p-6 rounded-2xl bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200/50 dark:border-purple-700/50"
-              >
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white">
-                    <Wand2 className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 dark:text-white">Create custom quizzes instantly</h3>
-                    <p className="text-gray-600 dark:text-gray-400">AI-powered quiz generation tailored to your needs</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {[
-                    { icon: Target, label: "Adaptive Learning" },
-                    { icon: TrendingUp, label: "Progress Tracking" },
-                    { icon: Users, label: "Collaborative" }
-                  ].map((feature, i) => (
-                    <motion.div
-                      key={feature.label}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 + i * 0.1 }}
-                      className="flex items-center gap-2 p-3 rounded-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50"
-                    >
-                      <feature.icon className="h-4 w-4 text-purple-600" />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {feature.label}
-                      </span>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            </div>
-            
-            <DialogFooter className="gap-3 mt-6">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowEngage(false)}
-                className="hover:bg-gray-50 dark:hover:bg-gray-800"
-              >
-                Maybe later
-              </Button>
-              <Button 
-                asChild 
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                <a href="/dashboard/mcq" className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4" /> 
-                  Create AI Quiz
-                </a>
-              </Button>
-            </DialogFooter>
-          </motion.div>
-        </DialogContent>
-      </Dialog>
+ 
     </div>
   )
 }

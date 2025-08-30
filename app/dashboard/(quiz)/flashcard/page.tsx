@@ -2,6 +2,8 @@ import { generateQuizMetadata } from "@/lib/quiz-metadata"
 import type { Metadata } from "next"
 import QuizCreationPage from "../components/QuizCreationPage"
 
+export const dynamic = 'force-dynamic'
+
 // Generate dynamic SEO metadata for flashcard page
 export const metadata: Metadata = generateQuizMetadata({
   quizType: "flashcard",
