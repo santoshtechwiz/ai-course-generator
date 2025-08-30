@@ -49,6 +49,7 @@ interface CoursesClientProps {
   searchQuery: string
   selectedCategory: CategoryId | null
   ratingFilter?: number
+  sortBy?: "popular" | "rating" | "newest" | "price-low" | "price-high"
 }
 
 const ITEMS_PER_PAGE = 12
@@ -58,7 +59,7 @@ export default function CoursesClient({
   userId,
   searchQuery,
   selectedCategory,
-  ratingFilter = 0,
+  sortBy = "popular",
 }: CoursesClientProps) {
   // State
   const [activeTab, setActiveTab] = useState<"all" | "popular" | "newest">("all")
@@ -93,15 +94,17 @@ export default function CoursesClient({
       if (userId) {
         apiUrl.searchParams.set("userId", userId)
       }
-      if (ratingFilter > 0) {
-        apiUrl.searchParams.set("minRating", ratingFilter.toString())
-      }
       
-      apiUrl.searchParams.set(
-        "sortBy",
-        activeTab === "popular" ? "viewCount" : activeTab === "newest" ? "createdAt" : "viewCount"
-      )
-      apiUrl.searchParams.set("sortOrder", "desc")
+      // Add sorting parameter
+      const sortMapping = {
+        popular: "viewCount",
+        rating: "rating",
+        newest: "createdAt",
+        "price-low": "price",
+        "price-high": "price"
+      }
+      apiUrl.searchParams.set("sortBy", sortMapping[sortBy] || "viewCount")
+      apiUrl.searchParams.set("sortOrder", sortBy === "price-low" ? "asc" : "desc")
 
       const response = await fetch(apiUrl.toString(), {
         headers: { "Cache-Control": "no-cache" },
@@ -124,11 +127,11 @@ export default function CoursesClient({
       console.error('Fetch error:', error)
       throw error
     }
-  }, [shouldSearch, effectiveSearchQuery, selectedCategory, userId, ratingFilter, activeTab])
+  }, [shouldSearch, effectiveSearchQuery, selectedCategory, userId, sortBy])
 
   // Query
   const queryResult: UseInfiniteQueryResult<InfiniteData<CoursesResponse>, Error> = useInfiniteQuery({
-    queryKey: ["courses", shouldSearch ? effectiveSearchQuery : "", selectedCategory || "", userId || "", ratingFilter, activeTab],
+    queryKey: ["courses", shouldSearch ? effectiveSearchQuery : "", selectedCategory || "", userId || "", sortBy],
     initialPageParam: 1,
     queryFn,
     getNextPageParam: (lastPage: CoursesResponse, allPages) => 
@@ -173,7 +176,7 @@ export default function CoursesClient({
   const coursesData: InfiniteData<CoursesResponse> | undefined = data
   const isInitialLoading = status === "pending" && (!coursesData?.pages?.length)
   const hasNoData = !isInitialLoading && (!coursesData?.pages?.length || !coursesData.pages[0]?.courses?.length)
-  const hasFilters = Boolean(searchQuery || selectedCategory || ratingFilter > 0)
+  const hasFilters = Boolean(searchQuery || selectedCategory)
 
   // Prevent UI freezing by showing loading state only when necessary
   const showLoading = isInitialLoading || (isFetching && !coursesData?.pages?.length)
@@ -229,12 +232,8 @@ export default function CoursesClient({
           </div>
         </div>
 
-        {/* Course grid skeleton with improved responsive layout */}
-        <div className={cn(
-          "grid gap-10",
-          // Improved responsive breakpoints for larger cards
-          "grid-cols-1 lg:grid-cols-2"
-        )}>
+        {/* Course grid skeleton with Udemy-style responsive layout */}
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {[...Array(8)].map((_, i) => (
             <CourseCard
               key={i}
@@ -387,12 +386,8 @@ export default function CoursesClient({
         </div>
       )}
 
-      {/* Course grid/list with improved responsive layout */}
-      <div className={cn(
-        viewMode === "grid" 
-          ? "grid gap-10 grid-cols-1 lg:grid-cols-2" 
-          : "flex flex-col space-y-10"
-      )}>
+      {/* Course grid with Udemy-style responsive layout */}
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {coursesData?.pages?.map((page: CoursesResponse, pageIndex: number) => (
           <React.Fragment key={pageIndex}>
             {page.courses?.map((course: Course) => (

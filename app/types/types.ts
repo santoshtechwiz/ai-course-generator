@@ -80,6 +80,31 @@ export interface Course {
   estimatedHours?: number;
   progress?: number;
   isCompleted?: boolean;
+  courseUnits?: Array<{
+    id: number;
+    title: string;
+    chapters: Array<{
+      id: number;
+      title: string;
+      questions: Array<{
+        id: number | string;
+        question: string;
+        answer: string;
+        options: string[] | string;
+        explanation?: string;
+      }>;
+    }>;
+  }>;
+
+  // Additional course details
+  instructor?: string;
+  rating?: number;
+  students?: number;
+  level?: string;
+  viewCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  difficulty?: string;
 }
 
 // Course progress interface
