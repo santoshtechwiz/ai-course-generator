@@ -4,15 +4,18 @@ import { Redis } from '@upstash/redis'
 // Initialize Redis client if available, otherwise use in-memory fallback
 let redis: Redis | null = null
 
-if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-  try {
-    const { Redis } = require('@upstash/redis')
-    redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
-    })
-  } catch (e) {
-    console.warn('Failed to initialize Redis client, using in-memory fallback')
+if (typeof window === "undefined") {
+  // server-only Redis init
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    try {
+      const { Redis } = require('@upstash/redis')
+      redis = new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      })
+    } catch (e) {
+      console.warn('Failed to initialize Redis client, using in-memory fallback')
+    }
   }
 }
 

@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api-helper"
+import { api } from "@/lib/api-helper"
 import { YtTranscript } from "yt-transcript"
 import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube"
 import { Supadata, type TranscriptChunk } from "@supadata/js"
@@ -31,8 +31,7 @@ class YoutubeService {
   private static transcriptCache = new Map<string, string>()
   private static supadata: Supadata
   private static currentSupadataKey: string
-  private static youtubeClient = apiRequest.create({
-    baseURL: "https://www.googleapis.com/youtube/v3",
+  private static youtubeClient = api.post("https://www.googleapis.com/youtube/v3", {
     params: { key: YoutubeService.YOUTUBE_API_KEY },
   })
 

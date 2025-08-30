@@ -1,4 +1,5 @@
 import { getSession } from 'next-auth/react';
+import { getServerAuthSession } from './server-auth';
 
 interface ApiOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined | null>;
@@ -64,7 +65,7 @@ export const apiClient = {
     }
     
     const headers: Record<string, string> = {
-      ...options.headers,
+      ...((options.headers as Record<string, string>) || {}),
     };
     
     let body: any;
@@ -105,7 +106,7 @@ export const apiClient = {
   async put<T = any>(url: string, data?: any, options: ApiOptions = {}): Promise<T> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...((options.headers as Record<string, string>) || {}),
     };
     
     if (!options.skipCsrfProtection) {
@@ -136,7 +137,7 @@ export const apiClient = {
   async delete<T = any>(url: string, options: ApiOptions = {}): Promise<T> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...((options.headers as Record<string, string>) || {}),
     };
     
     if (!options.skipCsrfProtection) {
@@ -174,7 +175,7 @@ export const apiClient = {
       });
     }
     
-    return this.post<T>(url, formData, { ...options, useFormData: true });
+    return this.post<T>(url, formData, { ...options, useFormData: true }) as Promise<T>;
   }
 };
 
@@ -196,11 +197,11 @@ export function createApiClient<T extends Record<string, Function>>(baseUrl: str
       const options = typeof result === 'string' ? {} : result.options || {};
       
       switch (method.toUpperCase()) {
-        case 'GET': return apiClient.get(url, options);
-        case 'POST': return apiClient.post(url, data, options);
-        case 'PUT': return apiClient.put(url, data, options);
-        case 'DELETE': return apiClient.delete(url, options);
-        default: return apiClient.get(url, options);
+        case 'GET': return serverApiClient.get(url, options);
+        case 'POST': return serverApiClient.post(url, data, options);
+        case 'PUT': return serverApiClient.put(url, data, options);
+        case 'DELETE': return serverApiClient.delete(url, options);
+        default: return serverApiClient.get(url, options);
       }
     };
   });
@@ -210,3 +211,154 @@ export function createApiClient<T extends Record<string, Function>>(baseUrl: str
 
 // For backward compatibility, also provide a default export
 export default apiClient;
+
+/**
+ * Server-side API client that handles authentication checks before making requests
+ */
+export const serverApiClient = {
+  /**
+   * Make a GET request if authenticated, otherwise return null without error
+   */
+  async get<T = any>(url: string, options: ApiOptions = {}): Promise<T | null> {
+    const session = await getServerAuthSession();
+
+    if (!session?.user) {
+      console.log(`User not authenticated, skipping API call to: ${url}`);
+      return null;
+    }
+
+    // Add query parameters if provided
+    if (options.params) {
+      const urlObj = new URL(url, process.env.NEXTAUTH_URL || 'http://localhost:3000');
+      Object.entries(options.params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          urlObj.searchParams.append(key, String(value));
+        }
+      });
+      url = urlObj.toString();
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      cache: options.cache || 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: `HTTP error ${response.status}` }));
+      throw new Error(errorData.message || errorData.error || `API error: ${response.status}`);
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Make a POST request if authenticated, otherwise return null without error
+   */
+  async post<T = any>(url: string, data?: any, options: ApiOptions = {}): Promise<T | null> {
+    const session = await getServerAuthSession();
+
+    if (!session?.user) {
+      console.log(`User not authenticated, skipping API call to: ${url}`);
+      return null;
+    }
+
+    const headers: Record<string, string> = {
+      ...((options.headers as Record<string, string>) || {}),
+    };
+
+    let body: any;
+
+    if (options.useFormData && data instanceof FormData) {
+      // Don't set Content-Type for FormData (browser will set it with boundary)
+      body = data;
+    } else {
+      headers['Content-Type'] = 'application/json';
+      body = data ? JSON.stringify(data) : undefined;
+    }
+
+    // Add CSRF protection for authenticated requests
+    if (!options.skipCsrfProtection) {
+      if (session?.user) {
+        headers['x-csrf-token'] = `${session.user.id?.substring(0, 8)}-${Math.floor(Date.now() / 1000)}`;
+      }
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      method: 'POST',
+      headers,
+      body,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: `HTTP error ${response.status}` }));
+      throw new Error(errorData.message || errorData.error || `API error: ${response.status}`);
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Make a PUT request to the specified URL with CSRF protection
+   */
+  async put<T = any>(url: string, data?: any, options: ApiOptions = {}): Promise<T | null> {
+    const session = await getServerAuthSession();
+
+    if (!session?.user) {
+      console.log(`User not authenticated, skipping API call to: ${url}`);
+      return null;
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...((options.headers as Record<string, string>) || {}),
+    };
+
+    const response = await fetch(url, {
+      ...options,
+      method: 'PUT',
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: `HTTP error ${response.status}` }));
+      throw new Error(errorData.message || errorData.error || `API error: ${response.status}`);
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Make a DELETE request to the specified URL with CSRF protection
+   */
+  async delete<T = any>(url: string, options: ApiOptions = {}): Promise<T | null> {
+    const session = await getServerAuthSession();
+
+    if (!session?.user) {
+      console.log(`User not authenticated, skipping API call to: ${url}`);
+      return null;
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...((options.headers as Record<string, string>) || {}),
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: `HTTP error ${response.status}` }));
+      throw new Error(errorData.message || errorData.error || `API error: ${response.status}`);
+    }
+
+    return response.json();
+  },
+};

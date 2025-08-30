@@ -16,7 +16,6 @@ const agent = new https.Agent({
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   httpAgent: agent,
-  dangerouslyAllowBrowser: true,
 })
 
 /**

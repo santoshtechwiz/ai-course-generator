@@ -24,7 +24,7 @@ export class OpenAIProvider implements AIProvider {
     this.client = new OpenAI({
       apiKey: apiKey,
       httpAgent: agent,
-      dangerouslyAllowBrowser: true,
+      // dangerouslyAllowBrowser: true, // Removed for server-side use
     });
   }
 
