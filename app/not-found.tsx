@@ -7,10 +7,10 @@ import { getRecommendedItems, RecommendedItem } from "@/app/utils/get-recommende
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { JsonLD } from "@/lib/seo"
+import { JsonLD } from "@/lib/seo/components"
 import { Input } from "@/components/ui/input"
 
-import { motion } from "framer-motion"
+
 import { buildQuizUrl, QuizType } from "@/lib/utils"
 
 // Export metadata for SEO optimization
@@ -180,11 +180,8 @@ export default function NotFound() {
           </div>
 
           {/* Search Section */}
-          <motion.div 
+          <div
             className="w-full max-w-md mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
           >
             <div className="text-center mb-4">
               <h3 className="text-xl font-semibold text-foreground mb-2">
@@ -206,7 +203,7 @@ export default function NotFound() {
                 <Search className="h-4 w-4" />
               </Button>
             </form>
-          </motion.div>
+          </div>
 
           {/* Recommendations Section */}
           <div

@@ -18,7 +18,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const buildQuizUrl = (slug: string, type: QuizType) => {
-  return `/dashboard/(quiz)/${type}/${slug}`
+  return `/dashboard/${type}/${slug}`
 }
 
 export function generateSlug(title: string): string {
