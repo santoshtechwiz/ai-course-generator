@@ -2,9 +2,11 @@
 
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper";
 import { DashboardWrapper } from "@/components/dashboard/DashboardWrapper";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { FAQSchema } from "@/lib/seo";
+import { motion, AnimatePresence } from "framer-motion";
+import { UnifiedLoader } from "@/components/loaders/UnifiedLoader";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,112 +16,240 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-// Reusable skeleton (can be extracted globally if reused elsewhere)
-function ExploreSkeleton(){
+// Simple, clean loading component using UnifiedLoader
+function ExploreLoadingState() {
   return (
-    <div className="min-h-[70vh] flex items-center justify-center w-full animate-in fade-in" aria-busy="true" aria-live="polite" role="status">
-      <div className="relative w-full max-w-4xl flex flex-col items-center px-4">
-        <div className="relative w-56 h-56 mb-10">
-          <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/30 via-primary/10 to-purple-400/20 blur-2xl animate-pulse" />
-          <div className="absolute inset-0 rounded-full border border-primary/30 backdrop-blur-sm" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-semibold tracking-wide shadow-lg shadow-primary/30">
-            AI
-          </div>
-          <div className="absolute w-10 h-10 rounded-full bg-gradient-to-br from-primary/80 to-purple-500/80 shadow-sm shadow-primary/40 orbit-slow" />
-          <div className="absolute w-6 h-6 rounded-full bg-gradient-to-br from-fuchsia-400 to-purple-600 shadow-sm shadow-fuchsia-500/40 orbit-med" />
-          <div className="absolute w-4 h-4 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 shadow-sm shadow-emerald-500/40 orbit-fast" />
-          <div className="absolute inset-0 rounded-full border border-primary/20 animate-spin-slow pointer-events-none" />
-        </div>
-        <p className="text-sm text-muted-foreground mb-6 font-medium tracking-wide">
-          Generating intelligent creation tools…
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="relative h-48 rounded-xl border border-border/40 bg-gradient-to-br from-muted/70 via-muted/40 to-muted/20 overflow-hidden">
-              <div className="absolute inset-0 animate-pulse bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.08),transparent_60%)]" />
-              <div className="relative h-full flex flex-col p-4 gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-primary/25 animate-[pulse_2.2s_ease-in-out_infinite]" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3.5 w-2/3 rounded bg-primary/20 animate-[pulse_2.1s_ease-in-out_infinite]" />
-                    <div className="h-2.5 w-1/2 rounded bg-primary/15 animate-[pulse_2.4s_ease-in-out_infinite]" />
-                  </div>
-                </div>
-                <div className="space-y-2 mt-1">
-                  <div className="h-2.5 w-full rounded bg-primary/10 animate-[pulse_2.3s_ease-in-out_infinite]" />
-                  <div className="h-2.5 w-11/12 rounded bg-primary/10 animate-[pulse_2.5s_ease-in-out_infinite]" />
-                  <div className="h-2.5 w-4/5 rounded bg-primary/10 animate-[pulse_2.7s_ease-in-out_infinite]" />
-                </div>
-                <div className="mt-auto h-8 w-full rounded-md bg-primary/15 animate-[pulse_2.6s_ease-in-out_infinite]" />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent" />
-            </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+      className="min-h-[60vh] flex flex-col items-center justify-center w-full"
+      aria-busy="true"
+      aria-live="polite"
+      role="status"
+    >
+      <div className="text-center space-y-6">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{
+            duration: 0.5,
+            delay: 0.1,
+            type: "spring",
+            stiffness: 200,
+            damping: 20,
+          }}
+          className="relative"
+        >
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/20 to-purple-600/20 blur-xl animate-pulse" />
+          <UnifiedLoader
+            variant="spinner"
+            size="lg"
+            message="Loading explore tools..."
+            className="relative z-10"
+          />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+          className="text-center space-y-2 max-w-md"
+        >
+          <motion.h3
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.5 }}
+            className="text-lg font-semibold text-foreground"
+          >
+            Preparing AI Tools
+          </motion.h3>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.7 }}
+            className="text-sm text-muted-foreground"
+          >
+            Setting up intelligent content creation tools for your learning journey
+          </motion.p>
+        </motion.div>
+
+        {/* Animated progress dots */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.9 }}
+          className="flex space-x-2"
+        >
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="w-2 h-2 bg-primary rounded-full"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.5, 1, 0.5],
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                delay: i * 0.2,
+              }}
+            />
           ))}
-        </div>
+        </motion.div>
       </div>
-      <style jsx>{`
-        .orbit-slow { top: 0; left: 50%; transform: translate(-50%, -50%); animation: orbit 9s linear infinite; }
-        .orbit-med { top: 50%; left: 100%; transform: translate(-50%, -50%); animation: orbit 6s linear infinite reverse; }
-        .orbit-fast { top: 100%; left: 50%; transform: translate(-50%, -50%); animation: orbit 4s linear infinite; }
-        @keyframes orbit {
-          0% { transform: translate(-50%, -50%) rotate(0deg) translateX(90px) rotate(0deg); }
-          50% { transform: translate(-50%, -50%) rotate(180deg) translateX(90px) rotate(-180deg); }
-          100% { transform: translate(-50%, -50%) rotate(360deg) translateX(90px) rotate(-360deg); }
-        }
-        .animate-spin-slow { animation: spin 18s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
-    </div>
-  )
+    </motion.div>
+  );
 }
 
-// Dynamically load heavy explore UI client-side only
+// Dynamically load the explore component with clean loading
 const CreateComponent = dynamic(
-  () => import("@/components/features/explore/CreateComponent").then(m => m.CreateComponent),
-  { ssr: false, loading: () => <ExploreSkeleton /> }
-)
+  () =>
+    import("@/components/features/explore/CreateComponent").then((m) => m.CreateComponent),
+  {
+    ssr: false,
+    loading: () => <ExploreLoadingState />,
+  }
+);
 
 export default function ExplorePage() {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    // Simulate page load completion
+    const timer = setTimeout(() => setIsLoaded(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
   // FAQ items for CourseAI explore page
   const faqItems = [
     {
       question: "How does CourseAI generate educational content?",
-      answer: "CourseAI uses advanced artificial intelligence to analyze your topic and generate high-quality educational content including multiple-choice questions, open-ended questions, fill-in-the-blank exercises, and complete courses."
+      answer:
+        "CourseAI uses advanced artificial intelligence to analyze your topic and generate high-quality educational content including multiple-choice questions, open-ended questions, fill-in-the-blank exercises, and complete courses.",
     },
     {
       question: "Can I create programming quizzes with CourseAI?",
-      answer: "Yes! CourseAI specializes in creating programming-related educational content. You can generate coding MCQs, algorithm challenges, code completion exercises, and debugging questions for languages including JavaScript, Python, Java, C++, and many others."
+      answer:
+        "Yes! CourseAI specializes in creating programming-related educational content. You can generate coding MCQs, algorithm challenges, code completion exercises, and debugging questions for languages including JavaScript, Python, Java, C++, and many others.",
     },
     {
       question: "How accurate is the AI-generated content?",
-      answer: "CourseAI's content generation is highly accurate, especially for technical and programming topics. However, we always recommend reviewing AI-generated content before publishing. Our tools allow you to easily edit and refine the generated content to ensure it meets your specific requirements."
+      answer:
+        "CourseAI's content generation is highly accurate, especially for technical and programming topics. However, we always recommend reviewing AI-generated content before publishing. Our tools allow you to easily edit and refine the generated content to ensure it meets your specific requirements.",
     },
     {
       question: "Can I customize the difficulty level of generated questions?",
-      answer: "CourseAI allows you to specify the difficulty level (beginner, intermediate, advanced) for all generated content. This ensures the questions and exercises match your audience's knowledge level and learning objectives."
+      answer:
+        "CourseAI allows you to specify the difficulty level (beginner, intermediate, advanced) for all generated content. This ensures the questions and exercises match your audience's knowledge level and learning objectives.",
     },
   ];
+
+  const pageVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: [0.25, 0.46, 0.45, 0.94],
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.4, ease: "easeOut" },
+    },
+  };
+
+  const breadcrumbVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: { duration: 0.4, ease: "easeOut" },
+    },
+  };
+
+  const contentVariants = {
+    hidden: { opacity: 0, y: 40 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.7,
+        ease: [0.25, 0.46, 0.45, 0.94],
+        delay: 0.2,
+      },
+    },
+  };
 
   return (
     <>
       <FAQSchema items={faqItems} />
-      <PageWrapper>
-        <div className="mb-4">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Explore</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={pageVariants}
+        className="min-h-screen relative"
+      >
+        {/* Subtle background animation */}
+        <motion.div
+          className="absolute inset-0 -z-10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 0.5 }}
+        >
+          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-600/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-600/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        </motion.div>
 
-        <CreateComponent />
-      </PageWrapper>
+        <PageWrapper>
+          <motion.div
+            variants={breadcrumbVariants}
+            className="mb-6"
+          >
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Explore</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </motion.div>
+
+          <motion.div
+            variants={contentVariants}
+            className="space-y-6"
+          >
+            <AnimatePresence mode="wait">
+              <motion.div
+                key="explore-content"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{
+                  duration: 0.5,
+                  ease: [0.25, 0.46, 0.45, 0.94]
+                }}
+              >
+                <CreateComponent />
+              </motion.div>
+            </AnimatePresence>
+          </motion.div>
+        </PageWrapper>
+      </motion.div>
     </>
   );
 }

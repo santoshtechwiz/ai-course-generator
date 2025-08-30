@@ -3,7 +3,6 @@ import type { Metadata } from "next"
 import { Inter, Poppins, JetBrains_Mono } from "next/font/google"
 import "../globals.css"
 
-import Footer from "@/components/shared/Footer"
 import { Providers } from "@/store/provider"
 import { getServerAuthSession } from "@/lib/server-auth"
 import { Suspense } from "react"
@@ -15,6 +14,7 @@ import { RootErrorBoundary } from "@/components/layout/RootErrorBoundary"
 import { SuspenseGlobalFallback } from "@/components/loaders"
 import BProgressProvider from "./providers"
 import { MotionProvider } from "@/components/MotionProvider"
+import Footer from "@/components/shared/Footer"
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
@@ -120,9 +120,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                       </Suspense>
                     </MotionProvider>
                   </main>
-
-                  {/* Footer */}
-                  <Footer />
+                  <Footer/>
+                  {/* Footer removed - using page-specific footers instead */}
                 </div>
               </Suspense>
             </RootErrorBoundary>
