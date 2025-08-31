@@ -14,12 +14,6 @@ export interface AsyncState<T = any> {
   isStale: boolean
 }
 
-// Enhanced async state with abort controller support
-export interface EnhancedAsyncState<T = any> extends AsyncState<T> {
-  requestId: string | null
-  abortController: AbortController | null
-}
-
 // Create initial async state
 export function createInitialAsyncState<T = any>(data: T | null = null): AsyncState<T> {
   return {
@@ -31,20 +25,10 @@ export function createInitialAsyncState<T = any>(data: T | null = null): AsyncSt
   }
 }
 
-// Create enhanced async state with abort controller
-export function createEnhancedAsyncState<T = any>(data: T | null = null): EnhancedAsyncState<T> {
-  return {
-    ...createInitialAsyncState(data),
-    requestId: null,
-    abortController: null,
-  }
-}
-
 // Check if state should update (prevent stale overwrites)
 export function shouldUpdateState(
   currentState: AsyncState<any>,
-  incomingTimestamp: number,
-  requestId?: string
+  incomingTimestamp: number
 ): boolean {
   // Always allow if no timestamp exists
   if (!currentState.lastUpdated) return true
@@ -55,17 +39,12 @@ export function shouldUpdateState(
 
 // Create pending state update
 export function createPendingUpdate(
-  state: AsyncState<any> | EnhancedAsyncState<any>,
-  requestId?: string
-): Partial<AsyncState<any> | EnhancedAsyncState<any>> {
+  state: AsyncState<any>,
+): Partial<AsyncState<any>> {
   const update: any = {
     status: 'loading' as const,
     error: null,
     isStale: false,
-  }
-  
-  if ('requestId' in state && requestId) {
-    update.requestId = requestId
   }
   
   return update
@@ -106,64 +85,6 @@ export function createRejectedUpdate(
   }
   
   return update
-}
-
-// Abort controller utilities
-export class RequestManager {
-  private static requests = new Map<string, AbortController>()
-  private static navigationListeners = new Set<() => void>()
-  
-  static create(key: string): AbortController {
-    // Cancel existing request if any
-    this.cancel(key)
-    
-    const controller = new AbortController()
-    this.requests.set(key, controller)
-    return controller
-  }
-  
-  static cancel(key: string): void {
-    const controller = this.requests.get(key)
-    if (controller && !controller.signal.aborted) {
-      controller.abort()
-    }
-    this.requests.delete(key)
-  }
-  
-  static cancelAll(): void {
-    this.requests.forEach((controller, key) => {
-      if (!controller.signal.aborted) {
-        controller.abort()
-      }
-    })
-    this.requests.clear()
-    this.notifyNavigationListeners()
-  }
-  
-  static isAborted(key: string): boolean {
-    const controller = this.requests.get(key)
-    return controller?.signal.aborted ?? true
-  }
-  
-  static cleanup(key: string): void {
-    this.requests.delete(key)
-  }
-  
-  static getActiveRequests(): string[] {
-    return Array.from(this.requests.keys())
-  }
-  
-  static addNavigationListener(callback: () => void): void {
-    this.navigationListeners.add(callback)
-  }
-  
-  static removeNavigationListener(callback: () => void): void {
-    this.navigationListeners.delete(callback)
-  }
-  
-  static notifyNavigationListeners(): void {
-    this.navigationListeners.forEach(callback => callback())
-  }
 }
 
 // Error utilities

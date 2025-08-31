@@ -11,7 +11,6 @@ import type {
   SubscriptionStatusResponse,
   SubscriptionStatusType,
   TokenUsage,
-  EnhancedSubscriptionData,
 } from "@/app/types/subscription"
 import { logger } from "@/lib/logger"
 import { fetchWithTimeout } from "@/lib/http"
@@ -140,7 +139,7 @@ export const fetchSubscription = createAsyncThunk<
       isSubscribed: false, // will be updated next
     }
 
-    // Enhanced expiration logic
+    // Expiration logic
     const isExpired = transformed.expirationDate && new Date(transformed.expirationDate) < new Date()
     if (transformed.status === "INACTIVE" || isExpired) {
       transformed.status = "EXPIRED"
@@ -423,7 +422,7 @@ export const {
   markSubscriptionStale,
 } = subscriptionSlice.actions
 
-// Enhanced selectors with memoization
+// Selectors with memoization
 export const selectSubscription = (state: RootState): NormalizedSubscriptionState =>
   state.subscription
 
@@ -518,28 +517,6 @@ export const selectTokenUsage = createSelector(
       remaining: Math.max(total - used, 0),
       percentage: total > 0 ? Math.min((used / total) * 100, 100) : 0,
       hasExceededLimit: used > total,
-    }
-  }
-)
-
-export const selectEnhancedSubscription = createSelector(
-  [selectSubscriptionData],
-  (data): EnhancedSubscriptionData | null => {
-    if (!data) return null
-    const now = new Date()
-    const expirationDate = data.expirationDate
-      ? new Date(data.expirationDate)
-      : null
-    const isExpired = expirationDate ? expirationDate < now : false
-    return {
-      ...data,
-      isActive:
-        data.status === "ACTIVE" &&
-        !data.cancelAtPeriodEnd &&
-        !isExpired,
-      isExpired,
-      formattedCredits: `${data.credits} credits`,
-      hasCreditsRemaining: (data.credits || 0) > (data.tokensUsed || 0),
     }
   }
 )

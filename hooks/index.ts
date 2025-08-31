@@ -43,7 +43,7 @@ export * from "./use-similarity"
 export { useAuth } from "@/modules/auth"
 export * from "./use-subscription"
 export * from "./use-notifications"
-export * from "./use-user-dashboard"
+export * from "./useUserDashboard"
 
 // ============================================================================
 // COURSE & QUIZ HOOKS

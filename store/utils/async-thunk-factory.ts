@@ -16,11 +16,10 @@ interface CreateAsyncThunkOptions<T, K> {
   requestKey?: (arg: K) => string
   cacheTTL?: number
   skipCache?: boolean
-  enableAbortController?: boolean
 }
 
 // Create an async thunk with race condition prevention and caching
-export function createEnhancedAsyncThunk<T, K = void>(
+export function createAsyncThunkWithCache<T, K = void>(
   options: CreateAsyncThunkOptions<T, K>
 ) {
   const {
@@ -29,7 +28,6 @@ export function createEnhancedAsyncThunk<T, K = void>(
     requestKey,
     cacheTTL = CACHE_TTL,
     skipCache = false,
-    enableAbortController = true,
   } = options
 
   return createAsyncThunk<T, K>(
@@ -50,25 +48,9 @@ export function createEnhancedAsyncThunk<T, K = void>(
         }
       }
 
-      // Set up abort controller if enabled
-      let abortController: AbortController | undefined
-      if (enableAbortController) {
-        abortController = RequestManager.create(key)
-        
-        // Check if request was aborted before starting
-        if (abortController.signal.aborted) {
-          return thunkAPI.rejectWithValue('Request was cancelled')
-        }
-      }
-
       try {
-        // Create the actual request promise
-        const requestPromise = payloadCreator(arg, {
-          ...thunkAPI,
-          signal: abortController?.signal || thunkAPI.signal,
-        })
-
-        // Cache the request promise if caching is enabled
+        // Execute the payload creator and cache the promise
+        const requestPromise = Promise.resolve(payloadCreator(arg, thunkAPI))
         if (!skipCache) {
           requestCache.set(key, requestPromise)
           
@@ -77,26 +59,11 @@ export function createEnhancedAsyncThunk<T, K = void>(
             requestCache.delete(key)
           }, cacheTTL)
         }
-
-        const result = await requestPromise
         
-        // Clean up abort controller
-        if (enableAbortController) {
-          RequestManager.cancel(key)
-        }
-        
-        return result
+        return await requestPromise
       } catch (error) {
         // Clean up on error
         requestCache.delete(key)
-        if (enableAbortController) {
-          RequestManager.cancel(key)
-        }
-
-        // Handle abort errors gracefully
-        if (error instanceof Error && error.name === 'AbortError') {
-          return thunkAPI.rejectWithValue('Request was cancelled')
-        }
 
         return thunkAPI.rejectWithValue(getErrorMessage(error))
       }
@@ -128,7 +95,7 @@ export function createFetchThunk<T, K = void>(
     processResponse = (response) => response.json(),
   } = options
 
-  return createEnhancedAsyncThunk<T, K>({
+  return createAsyncThunkWithCache<T, K>({
     typePrefix,
     requestKey,
     skipCache,

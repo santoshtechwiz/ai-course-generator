@@ -14,8 +14,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
     const { id } = await params
+    console.log('API userId param:', id, 'session user id:', session.user.id, 'session user:', session.user)
+
     // Fix: Allow users to access their own data OR admins to access any user data
-    if (session.user.id !== id && session.user.isAdmin !== true) {
+    const sessionUserId = typeof session.user.id === 'string' ? session.user.id : String(session.user.id || "")
+    const requestId = typeof id === 'string' ? id : String(id || "")
+    
+    console.log('Session user ID:', sessionUserId, 'Request ID:', requestId, 'Are they equal?', sessionUserId === requestId)
+    
+    if (sessionUserId !== requestId && session.user.isAdmin !== true) {
       return NextResponse.json({
         error: "Forbidden: You can only access your own dashboard data"
       }, { status: 403 })

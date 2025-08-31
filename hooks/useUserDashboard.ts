@@ -1,5 +1,3 @@
-
-
 "use client"
 
 import type { DashboardUser, UserStats } from "@/app/types/types"
@@ -23,6 +21,8 @@ const fetcher = async (url: string) => {
 }
 
 export function useUserData(userId: string) {
+  console.log('useUserData called with userId:', userId, 'type:', typeof userId)
+
   const { data, error, isLoading, mutate } = useSWR<DashboardUser>(
     userId ? `/api/dashboard/user/${userId}` : null,
     fetcher,

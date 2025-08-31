@@ -61,7 +61,9 @@ export default function DashboardPage() {
   const router = useRouter()
   // Removed legacy loading helpers
 
-  const userId = user?.id || ""
+  const userId = typeof user?.id === 'string' ? user.id : String(user?.id || "")
+  console.log('Dashboard userId:', userId, 'user.id type:', typeof user?.id, 'user.id value:', user?.id, 'user object:', user)
+
   const [activeTab, setActiveTab] = useState("overview")
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
@@ -127,7 +129,7 @@ export default function DashboardPage() {
   }
 
   const fallbackUserData: DashboardUser = {
-    id: user?.id!,
+    id: typeof user?.id === 'string' ? user.id : String(user?.id || ""),
     name: user?.name || "User",
     email: user?.email || "",
     image: user?.image || "",
@@ -141,7 +143,10 @@ export default function DashboardPage() {
     quizAttempts: [],
   }
 
-  const safeUserData: DashboardUser = userData || fallbackUserData
+  const safeUserData: DashboardUser = userData ? {
+    ...userData,
+    id: typeof userData.id === 'string' ? userData.id : String(userData.id || "")
+  } : fallbackUserData
   const safeUserStats: UserStats = userStats || {
     totalQuizzes: 0,
     averageScore: 0,

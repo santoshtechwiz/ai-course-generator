@@ -2,7 +2,6 @@ import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@r
 import type { RootState } from '@/store'
 import { 
   shouldUpdateState, 
-  RequestManager,
   getErrorMessage
 } from '../utils/async-state'
 
@@ -117,20 +116,21 @@ export const fetchFlashCardQuiz = createAsyncThunk(
       }
 
       // Set up abort controller for this specific request
-      const abortController = RequestManager.create(requestKey)
-      
+      const abortController = new AbortController();
+      const { signal: controllerSignal } = abortController;
+
       // Combine signals
       if (signal?.aborted) {
-        RequestManager.cancel(requestKey)
+        abortController.abort()
         return rejectWithValue('Request was cancelled')
       }
       
       signal?.addEventListener('abort', () => {
-        RequestManager.cancel(requestKey)
+        abortController.abort()
       })
 
       const response = await fetch(`/api/quizzes/flashcard/${slug}`, {
-        signal: abortController.signal,
+        signal: controllerSignal,
         headers: {
           'Content-Type': 'application/json',
         }
@@ -138,12 +138,12 @@ export const fetchFlashCardQuiz = createAsyncThunk(
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        RequestManager.cancel(requestKey)
+        abortController.abort()
         return rejectWithValue(errorData.message || `Failed to fetch flashcard quiz: ${response.status}`)
       }
       
       const data = await response.json()
-      RequestManager.cancel(requestKey)
+      abortController.abort()
       
       const result = {
         slug,
@@ -160,8 +160,6 @@ export const fetchFlashCardQuiz = createAsyncThunk(
       }
       return result;
     } catch (error: any) {
-      RequestManager.cancel(requestKey)
-      
       // Handle abort errors gracefully
       if (error?.name === 'AbortError') {
         return rejectWithValue('Request was cancelled')

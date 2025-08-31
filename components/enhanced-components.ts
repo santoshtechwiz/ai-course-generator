@@ -1,3 +1,3 @@
-// Enhanced UI Components for better UX and loading states
-export { EnhancedLoader, SkeletonLoader, PageLoader, FullScreenLoader, StateLoader } from './enhanced-loader'
-export { EnhancedErrorBoundary } from './enhanced-error-boundary'
+// UI Components for better UX and loading states
+export { Loader, SkeletonLoader } from './loader'
+export { EnhancedErrorBoundary, useErrorHandler, withErrorBoundary } from './enhanced-error-boundary'

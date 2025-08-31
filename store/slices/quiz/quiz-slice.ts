@@ -9,7 +9,6 @@ import {
   createPendingUpdate, 
   createFulfilledUpdate, 
   createRejectedUpdate,
-  RequestManager,
   getErrorMessage
 } from '../../utils/async-state'
 import { storageManager } from '@/utils/storage-manager'
@@ -81,7 +80,7 @@ function loadPersistedProgress(slug: string | null, quizType: QuizType | null): 
 }
 
 /**
- * Enhanced fetchQuiz with better error handling and cancellation
+ * fetchQuiz with error handling and cancellation
  */
 export const fetchQuiz = createAsyncThunk(
   "quiz/fetch",
@@ -107,17 +106,14 @@ export const fetchQuiz = createAsyncThunk(
         return rejectWithValue({ error: 'Request was cancelled', code: 'CANCELLED' })
       }
 
-      // Cancel any existing request for this quiz
-      RequestManager.cancel(requestKey)
-
       // Create new abort controller
-      const abortController = RequestManager.create(requestKey)
+      const abortController = new AbortController()
 
       // Combine signals
       const combinedSignal = abortController.signal
       if (signal) {
         signal.addEventListener('abort', () => {
-          RequestManager.cancel(requestKey)
+          abortController.abort()
         })
       }
 
@@ -125,7 +121,6 @@ export const fetchQuiz = createAsyncThunk(
       if (!payload.data) {
         const cached = getCachedQuiz(type, slug)
         if (cached) {
-          RequestManager.cancel(requestKey)
           return {
             ...cached,
             slug,
@@ -139,7 +134,6 @@ export const fetchQuiz = createAsyncThunk(
 
       // Handle inline data
       if (payload.data && Array.isArray(payload.data.questions)) {
-        RequestManager.cancel(requestKey)
         const processedData = {
           ...payload.data,
           slug,
@@ -154,7 +148,6 @@ export const fetchQuiz = createAsyncThunk(
 
       // Validate required parameters
       if (!slug || !type) {
-        RequestManager.cancel(requestKey)
         return rejectWithValue({
           error: "Missing required parameters: slug and quizType are required",
           code: 'MISSING_PARAMS'
@@ -168,7 +161,6 @@ export const fetchQuiz = createAsyncThunk(
       } else {
         const endpoint = API_ENDPOINTS[type as keyof typeof API_ENDPOINTS]
         if (!endpoint) {
-          RequestManager.cancel(requestKey)
           return rejectWithValue({
             error: `Invalid quiz type: ${type}`,
             code: 'INVALID_QUIZ_TYPE'
@@ -197,7 +189,6 @@ export const fetchQuiz = createAsyncThunk(
 
       if (!response.ok) {
         const errorText = await response.text()
-        RequestManager.cancel(requestKey)
 
         // Handle specific HTTP status codes
         if (response.status === 404) {
@@ -235,7 +226,6 @@ export const fetchQuiz = createAsyncThunk(
 
       // Validate response data
       if (!data || typeof data !== 'object') {
-        RequestManager.cancel(requestKey)
         return rejectWithValue({
           error: 'Invalid response format',
           code: 'INVALID_RESPONSE'
@@ -243,7 +233,6 @@ export const fetchQuiz = createAsyncThunk(
       }
 
       if (!Array.isArray(data.questions)) {
-        RequestManager.cancel(requestKey)
         return rejectWithValue({
           error: 'Invalid quiz data: questions array is required',
           code: 'INVALID_QUIZ_DATA'
@@ -261,13 +250,10 @@ export const fetchQuiz = createAsyncThunk(
       }
 
       setCachedQuiz(type, slug, processedData)
-      RequestManager.cancel(requestKey)
 
       return processedData
 
     } catch (error: any) {
-      RequestManager.cancel(requestKey)
-
       // Handle different types of errors
       if (error.name === 'AbortError' || error.message?.includes('aborted')) {
         return rejectWithValue({ error: 'Request was cancelled', code: 'CANCELLED' })
@@ -669,7 +655,7 @@ const quizSlice = createSlice({
       const keepData = action.payload?.keepData ?? false
       
       // Cancel all pending requests during navigation
-      RequestManager.cancelAll()
+      //RequestManager.cancelAll()
       
       if (!keepData) {
         // Clear quiz data on navigation unless explicitly told to keep it
@@ -694,9 +680,7 @@ const quizSlice = createSlice({
     resetQuiz(state, action: PayloadAction<{ keepResults?: boolean } | undefined>) {
       const keep = action.payload?.keepResults ?? false
       
-      // Cancel all pending requests when resetting quiz
-      RequestManager.cancelAll()
-      
+      // Reset quiz state
       state.questions = []
       state.answers = {}
       state.currentQuestionIndex = 0

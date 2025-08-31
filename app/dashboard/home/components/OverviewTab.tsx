@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useMemo, useCallback } from "react"
+import { memo, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,6 @@ import Link from "next/link"
 import Image from "next/image"
 import type { DashboardUser, UserStats } from "@/app/types/types"
 import RecentQuizCard from "./RecentQuizCard"
-import { useAdvancedProgress } from "@/hooks/useAdvancedProgress"
 
 interface OverviewTabProps {
   userData: DashboardUser
@@ -19,54 +18,93 @@ interface OverviewTabProps {
 
 // Memoize the component to prevent unnecessary re-renders
 const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewTabProps) {
-  const userId = typeof userData?.id === 'string' ? userData.id : String(userData?.id || "")
-  console.log('OverviewTab userId:', userId, 'userData.id type:', typeof userData?.id, 'userData.id value:', userData?.id)
-  const {
-    analytics,
-    overallProgress,
-    courseProgress,
-    quizProgress,
-    insights,
-    suggestions,
-    completionPercentage,
-    isLoading: progressLoading,
-    completeSuggestion: completeSuggestionHook
-  } = useAdvancedProgress(userId)
+  // Calculate completion rate for use in both insights and stat cards
+  const completionRate = useMemo(() => {
+    if (!userData) return 0
+    const totalCourses = userData.courses?.length || 0
+    const completedCourses = userData.courseProgress?.filter(c => c.isCompleted)?.length || 0
+    return totalCourses > 0 ? (completedCourses / totalCourses) * 100 : 0
+  }, [userData])
 
-  const completeSuggestion = useCallback(async (suggestionId: string) => {
-    try {
-      await fetch(`/api/dashboard/advanced-progress/${userId}/suggestions/${suggestionId}/complete`, {
-        method: 'POST',
-      });
-      // Refresh the advanced progress data
-      if (userId) {
-        completeSuggestionHook(userId);
-      }
-    } catch (error) {
-      console.error('Failed to complete suggestion:', error);
-    }
-  }, [userId, completeSuggestionHook]);
+  // Simple insights based on user data
+  const insights = useMemo(() => {
+    if (!userData || !userStats) return []
 
-  const recentCourses =
-    userData?.courseProgress
-      ?.sort((a, b) => new Date(b.lastAccessedAt || 0).getTime() - new Date(a.lastAccessedAt || 0).getTime())
-      .slice(0, 3) || []
+    const insights = []
+    const avgScore = userStats.averageScore || 0
 
-  const recentQuizzes =
-    userData?.userQuizzes
-      ?.sort((a, b) => {
-        const dateA = a.timeEnded || a.timeStarted || new Date()
-        const dateB = b.timeEnded || b.timeStarted || new Date()
-        return new Date(dateB).getTime() - new Date(dateA).getTime()
+    if (completionRate < 50) {
+      insights.push({
+        id: 'low-completion',
+        type: 'improvement',
+        title: 'Course Completion',
+        description: `You've completed ${userData.courseProgress?.filter(c => c.isCompleted)?.length || 0} of ${userData.courses?.length || 0} courses.`,
+        priority: 'medium',
       })
-      .slice(0, 3) || []
+    }
 
-  const recentAttempts =
-    userData?.quizAttempts
-      ?.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 3) || []
+    if (avgScore < 70) {
+      insights.push({
+        id: 'quiz-performance',
+        type: 'improvement',
+        title: 'Quiz Performance',
+        description: `Your average quiz score is ${Math.round(avgScore)}%.`,
+        priority: 'medium',
+      })
+    }
 
-  const { getLevel, getNextLevelXp, getProgressBarWidth } = useAdvancedProgress(userData)
+    return insights
+  }, [userData, userStats])
+
+  // Simple suggestions
+  const suggestions = useMemo(() => {
+    if (!userData) return []
+
+    const suggestions = []
+    const inProgressCourses = userData.courseProgress?.filter(c => !c.isCompleted) || []
+
+    if (inProgressCourses.length > 0) {
+      suggestions.push({
+        id: 'continue-course',
+        type: 'course',
+        title: 'Continue Learning',
+        description: `Resume your ${inProgressCourses.length} in-progress course(s)`,
+        priority: 'high',
+        estimatedTime: 30,
+        resourceId: inProgressCourses[0]?.course?.slug || '',
+        resourceType: 'course',
+      })
+    }
+
+    return suggestions
+  }, [userData])
+
+  // Recent courses based on course progress
+  const recentCourses = useMemo(() => {
+    if (!userData?.courseProgress) return []
+    
+    return userData.courseProgress
+      .sort((a, b) => new Date(b.lastAccessed || 0).getTime() - new Date(a.lastAccessed || 0).getTime())
+      .slice(0, 3) // Show only 3 most recent
+  }, [userData])
+
+  // Recent quizzes based on quiz attempts
+  const recentQuizzes = useMemo(() => {
+    if (!userData?.quizAttempts) return []
+    
+    return userData.quizAttempts
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+      .slice(0, 3) // Show only 3 most recent
+  }, [userData])
+
+  // Recent quiz attempts
+  const recentAttempts = useMemo(() => {
+    if (!userData?.quizAttempts) return []
+    
+    return userData.quizAttempts
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+      .slice(0, 3) // Show only 3 most recent
+  }, [userData])
 
   const statCards = [
     {
@@ -107,12 +145,12 @@ const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewT
     },
     {
       title: "Completion",
-      value: `${completionPercentage}%`,
+      value: `${Math.round(completionRate)}%`,
       subtitle: "overall progress",
       icon: <Target className="h-5 w-5" />,
       color: "bg-teal-50",
       iconColor: "text-teal-600",
-      progress: completionPercentage
+      progress: completionRate
     },
     {
       title: "Improvement",
@@ -125,9 +163,25 @@ const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewT
     },
   ]
 
+  // Early return if no data is available
+  if (!userData || !userStats) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading dashboard data...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      {/* Enhanced Stats Grid */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {statCards.map((stat, index) => (
           <Card key={index} className="overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group">
@@ -363,8 +417,7 @@ const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewT
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => completeSuggestion(suggestion.id)}
-                      className="h-6 w-6 p-0"
+                      className="h-6 w-6 p-0 opacity-50 cursor-not-allowed"
                     >
                       <X className="h-3 w-3" />
                     </Button>

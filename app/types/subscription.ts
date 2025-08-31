@@ -83,13 +83,6 @@ export interface SubscriptionData {
   currentPeriodEnd?: string | null
 }
 
-export interface EnhancedSubscriptionData extends SubscriptionData {
-  isActive: boolean
-  isExpired: boolean
-  formattedCredits: string
-  hasCreditsRemaining: boolean
-}
-
 export interface SubscriptionStatusResponse {
   credits: number
   tokensUsed: number
