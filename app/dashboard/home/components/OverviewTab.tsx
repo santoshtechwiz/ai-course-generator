@@ -1,14 +1,16 @@
 "use client"
 
-import { memo } from "react"
+import { memo, useMemo, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { BookOpen, GraduationCap, BarChart3, Clock, Award, TrendingUp, ArrowRight, CheckCircle2 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { BookOpen, GraduationCap, BarChart3, Clock, Award, TrendingUp, ArrowRight, CheckCircle2, Target, Lightbulb, Star, X } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import type { DashboardUser, UserStats } from "@/app/types/types"
 import RecentQuizCard from "./RecentQuizCard"
+import { useAdvancedProgress } from "@/hooks/useAdvancedProgress"
 
 interface OverviewTabProps {
   userData: DashboardUser
@@ -17,6 +19,34 @@ interface OverviewTabProps {
 
 // Memoize the component to prevent unnecessary re-renders
 const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewTabProps) {
+  const userId = typeof userData?.id === 'string' ? userData.id : String(userData?.id || "")
+  console.log('OverviewTab userId:', userId, 'userData.id type:', typeof userData?.id, 'userData.id value:', userData?.id)
+  const {
+    analytics,
+    overallProgress,
+    courseProgress,
+    quizProgress,
+    insights,
+    suggestions,
+    completionPercentage,
+    isLoading: progressLoading,
+    completeSuggestion: completeSuggestionHook
+  } = useAdvancedProgress(userId)
+
+  const completeSuggestion = useCallback(async (suggestionId: string) => {
+    try {
+      await fetch(`/api/dashboard/advanced-progress/${userId}/suggestions/${suggestionId}/complete`, {
+        method: 'POST',
+      });
+      // Refresh the advanced progress data
+      if (userId) {
+        completeSuggestionHook(userId);
+      }
+    } catch (error) {
+      console.error('Failed to complete suggestion:', error);
+    }
+  }, [userId, completeSuggestionHook]);
+
   const recentCourses =
     userData?.courseProgress
       ?.sort((a, b) => new Date(b.lastAccessedAt || 0).getTime() - new Date(a.lastAccessedAt || 0).getTime())
@@ -36,54 +66,62 @@ const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewT
       ?.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 3) || []
 
+  const { getLevel, getNextLevelXp, getProgressBarWidth } = useAdvancedProgress(userData)
+
   const statCards = [
     {
       title: "Courses",
       value: userData?.courses?.length || 0,
+      subtitle: `${userData?.courseProgress?.filter(c => c.isCompleted)?.length || 0} completed`,
       icon: <BookOpen className="h-5 w-5" />,
-      color: "bg-primary/10",
-      iconColor: "text-primary",
-      gradient: "from-primary/5 to-primary/10"
+      color: "bg-blue-50",
+      iconColor: "text-blue-600",
+      progress: userData?.courses?.length ? ((userData?.courseProgress?.filter(c => c.isCompleted)?.length || 0) / userData.courses.length) * 100 : 0
     },
     {
-      title: "Quizzes", 
+      title: "Quizzes",
       value: userData?.userQuizzes?.length || 0,
+      subtitle: `${userData?.quizAttempts?.length || 0} attempts`,
       icon: <GraduationCap className="h-5 w-5" />,
-      color: "bg-secondary/10",
-      iconColor: "text-secondary-foreground",
-      gradient: "from-secondary/5 to-secondary/10"
+      color: "bg-green-50",
+      iconColor: "text-green-600",
+      progress: userData?.userQuizzes?.length ? ((userData?.quizAttempts?.length || 0) / userData.userQuizzes.length) * 100 : 0
     },
     {
       title: "Avg. Score",
       value: `${Math.round(userStats?.averageScore || 0)}%`,
+      subtitle: `${userStats?.highestScore || 0}% highest`,
       icon: <BarChart3 className="h-5 w-5" />,
-      color: "bg-accent/10",
-      iconColor: "text-accent-foreground",
-      gradient: "from-accent/5 to-accent/10"
+      color: "bg-purple-50",
+      iconColor: "text-purple-600",
+      progress: userStats?.averageScore || 0
     },
     {
-      title: "Learning Time", 
-      value: `${Math.round((userStats?.totalTimeSpent || 0) / 60)} min`,
+      title: "Study Time",
+      value: `${Math.round((userStats?.totalTimeSpent || 0) / 60)}h`,
+      subtitle: `${userData?.streakDays || 0} day streak`,
       icon: <Clock className="h-5 w-5" />,
-      color: "bg-muted/10",
-      iconColor: "text-muted-foreground",
-      gradient: "from-muted/5 to-muted/10"
+      color: "bg-orange-50",
+      iconColor: "text-orange-600",
+      progress: Math.min(((userData?.streakDays || 0) / 30) * 100, 100) // Max 30 days for progress
     },
     {
-      title: "Streak",
-      value: userData?.streakDays || 0,
-      icon: <Award className="h-5 w-5" />,
-      color: "bg-primary/10",
-      iconColor: "text-primary",
-      gradient: "from-primary/5 to-primary/10"
+      title: "Completion",
+      value: `${completionPercentage}%`,
+      subtitle: "overall progress",
+      icon: <Target className="h-5 w-5" />,
+      color: "bg-teal-50",
+      iconColor: "text-teal-600",
+      progress: completionPercentage
     },
     {
       title: "Improvement",
       value: `${Math.round(userStats?.recentImprovement || 0)}%`,
+      subtitle: "this month",
       icon: <TrendingUp className="h-5 w-5" />,
-      color: "bg-secondary/10",
-      iconColor: "text-secondary-foreground", 
-      gradient: "from-secondary/5 to-secondary/10"
+      color: "bg-indigo-50",
+      iconColor: "text-indigo-600",
+      progress: Math.min(Math.abs(userStats?.recentImprovement || 0), 100)
     },
   ]
 
@@ -100,14 +138,15 @@ const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewT
                     {stat.icon}
                   </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-muted-foreground font-medium">{stat.title}</p>
-                  <p className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
-                    {stat.value}
-                  </p>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.subtitle}</p>
+                  <div className="mt-2">
+                    <Progress value={stat.progress} className="h-1" />
+                  </div>
                 </div>
               </div>
-              <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10`} />
             </CardContent>
           </Card>
         ))}
@@ -238,7 +277,7 @@ const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewT
                       <span>{new Date(attempt.createdAt).toLocaleDateString()}</span>
                       <div className="ml-auto flex items-center">
                         <CheckCircle2 className="mr-1 h-3 w-3" />
-                        <span>{attempt.accuracy || 0}% accuracy</span>
+                        <span>{attempt.score || 0}% accuracy</span>
                       </div>
                     </div>
                   </CardContent>
@@ -257,6 +296,105 @@ const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewT
           )}
         </CardContent>
       </Card>
+
+      {/* Learning Insights */}
+      {insights && insights.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5" />
+              Learning Insights
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {insights.slice(0, 3).map((insight, index) => (
+                <div
+                  key={insight.id}
+                  className={`p-3 border rounded-lg ${
+                    insight.priority === 'high' ? 'border-red-200 bg-red-50' :
+                    insight.priority === 'medium' ? 'border-yellow-200 bg-yellow-50' :
+                    'border-green-200 bg-green-50'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <Lightbulb className={`h-4 w-4 mt-0.5 ${
+                      insight.priority === 'high' ? 'text-red-600' :
+                      insight.priority === 'medium' ? 'text-yellow-600' :
+                      'text-green-600'
+                    }`} />
+                    <div className="flex-1">
+                      <h4 className="font-medium text-sm">{insight.title}</h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {insight.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Personalized Suggestions */}
+      {suggestions && suggestions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Star className="h-5 w-5" />
+              Recommended Next Steps
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {suggestions.slice(0, 4).map((suggestion, index) => (
+                <div
+                  key={suggestion.id}
+                  className="p-4 border rounded-lg hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <Badge variant={
+                      suggestion.priority === 'high' ? 'destructive' :
+                      suggestion.priority === 'medium' ? 'default' : 'secondary'
+                    }>
+                      {suggestion.priority}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => completeSuggestion(suggestion.id)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <h4 className="font-medium text-sm mb-1">{suggestion.title}</h4>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    {suggestion.description}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      {suggestion.estimatedTime} min
+                    </span>
+                    <Button asChild size="sm">
+                      <Link href={
+                        suggestion.resourceType === 'course'
+                          ? `/dashboard/course/${suggestion.resourceId}`
+                          : `/dashboard/quiz/${suggestion.resourceId}`
+                      }>
+                        {suggestion.type === 'course' ? 'Resume' :
+                         suggestion.type === 'quiz' ? 'Take Quiz' : 'Start'}
+                        <ArrowRight className="h-3 w-3 ml-1" />
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 })
