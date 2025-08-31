@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { Bell, BookOpen, Play, Clock, CheckCircle, AlertCircle, Sparkles } from "lucide-react"
+import { Bell, BookOpen, Play, Clock, CheckCircle, AlertCircle, Sparkles, X, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -18,6 +18,8 @@ import { useAuth } from "@/modules/auth"
 import { useAppSelector } from "@/store/hooks"
 import { cn } from "@/lib/utils"
 import { useQuery } from "@tanstack/react-query"
+import { useIncompleteQuizzes } from "@/lib/storage"
+import { useToast } from "@/hooks/use-toast"
 
 interface CourseNotification {
   id: string
@@ -97,6 +99,10 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { user } = useAuth()
+  const { toast } = useToast()
+
+  // Get incomplete quizzes from our unified storage system
+  const { incompleteQuizzes, isLoading: quizzesLoading } = useIncompleteQuizzes()
 
   // Get all course progress from Redux - memoized to prevent infinite re-renders
   const courseProgress = useAppSelector((state) => state.courseProgress.byCourseId)
@@ -123,76 +129,93 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
   const memoizedCourseData = useMemo(() => courseData, [JSON.stringify(courseData)])
   const memoizedCourseDataLoading = useMemo(() => courseDataLoading, [courseDataLoading])
 
-  // Generate notifications from course progress - with stable dependencies
+  // Generate notifications from course progress and incomplete quizzes
   const generateNotifications = useCallback(() => {
-    if (!memoizedUser || !memoizedCourseProgress) return []
+    if (!memoizedUser) return []
 
     const notifications: CourseNotification[] = []
     const now = Date.now()
     const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000
 
-    Object.entries(memoizedCourseProgress).forEach(([courseId, progress]) => {
-      // Skip if no video progress or course is completed
-      if (!progress.videoProgress || progress.videoProgress.isCompleted) return
+    // Generate course notifications from Redux data
+    if (memoizedCourseProgress) {
+      Object.entries(memoizedCourseProgress).forEach(([courseId, progress]) => {
+        // Skip if no video progress or course is completed
+        if (!progress.videoProgress || progress.videoProgress.isCompleted) return
 
-      // Calculate progress percentage based on completed chapters
-      const completedChapters = progress.videoProgress.completedChapters || []
-      const progressPercentage = completedChapters.length > 0 ?
-        (completedChapters.length / 10) * 100 : 0 // Assuming 10 chapters per course
+        // Calculate progress percentage based on completed chapters
+        const completedChapters = progress.videoProgress.completedChapters || []
+        const progressPercentage = completedChapters.length > 0 ?
+          (completedChapters.length / 10) * 100 : 0 // Assuming 10 chapters per course
 
-      // Check if course was accessed recently
-      const lastAccessed = progress.lastUpdatedAt ? new Date(progress.lastUpdatedAt) : new Date(oneWeekAgo)
-      const isRecentlyAccessed = progress.lastUpdatedAt && progress.lastUpdatedAt > oneWeekAgo
+        // Check if course was accessed recently
+        const lastAccessed = progress.lastUpdatedAt ? new Date(progress.lastUpdatedAt) : new Date(oneWeekAgo)
+        const isRecentlyAccessed = progress.lastUpdatedAt && progress.lastUpdatedAt > oneWeekAgo
 
-      if (progressPercentage < 100) {
-        // Get course data from the fetched course data
-        const courseInfo = memoizedCourseData[courseId]
+        if (progressPercentage < 100) {
+          // Get course data from the fetched course data
+          const courseInfo = memoizedCourseData[courseId]
 
-        // Only create notification if we have course data or if it's still loading
+          // Only create notification if we have course data or if it's still loading
+          if (courseInfo || memoizedCourseDataLoading) {
+            const courseSlug = courseInfo?.slug || `course-${courseId}`
+            const courseTitle = courseInfo?.title || `Course ${courseId}`
+
+            notifications.push({
+              id: `course-${courseId}`,
+              type: 'incomplete_course',
+              title: `Continue Learning: ${courseTitle}`,
+              description: `You're ${Math.round(progressPercentage)}% through this course`,
+              courseId,
+              courseSlug: courseSlug,
+              chapterId: progress.videoProgress.currentChapterId?.toString() || undefined,
+              progress: progressPercentage,
+              lastAccessed,
+              priority: isRecentlyAccessed ? 'high' : 'medium'
+            })
+          }
+        }
+      })
+    }
+
+    // Generate quiz notifications from our unified storage system
+    if (incompleteQuizzes && incompleteQuizzes.length > 0) {
+      incompleteQuizzes.forEach((quizProgress) => {
+        const courseInfo = memoizedCourseData[quizProgress.courseId]
+
+        // Only create quiz notification if we have course data or if it's still loading
         if (courseInfo || memoizedCourseDataLoading) {
-          const courseSlug = courseInfo?.slug || `course-${courseId}`
-          const courseTitle = courseInfo?.title || `Course ${courseId}`
-          
-          notifications.push({
-            id: `course-${courseId}`,
-            type: 'incomplete_course',
-            title: `Continue Learning: ${courseTitle}`,
-            description: `You're ${Math.round(progressPercentage)}% through this course`,
-            courseId,
-            courseSlug: courseSlug,
-            chapterId: progress.videoProgress.currentChapterId?.toString() || undefined,
-            progress: progressPercentage,
-            lastAccessed,
-            priority: isRecentlyAccessed ? 'high' : 'medium'
-          })
-        }
-      }
+          const courseSlug = courseInfo?.slug || `course-${quizProgress.courseId}`
+          const courseTitle = courseInfo?.title || `Course ${quizProgress.courseId}`
 
-      // Add quiz notifications (this would come from quiz progress data)
-      // For now, we'll add a placeholder
-      if (progressPercentage > 50 && progressPercentage < 100) {
-        const courseInfo = memoizedCourseData[courseId]
-        
-        // Only create quiz notification if we have course data
-        if (courseInfo) {
-          const courseSlug = courseInfo.slug
-          const courseTitle = courseInfo.title
-          
+          // Calculate time since last accessed
+          const lastAccessed = new Date(quizProgress.lastUpdated)
+          const hoursSinceAccess = (now - quizProgress.lastUpdated) / (1000 * 60 * 60)
+
+          // Determine priority based on time since last access
+          let priority: 'high' | 'medium' | 'low' = 'medium'
+          if (hoursSinceAccess < 24) {
+            priority = 'high'
+          } else if (hoursSinceAccess > 7 * 24) {
+            priority = 'low'
+          }
+
           notifications.push({
-            id: `quiz-${courseId}`,
+            id: `quiz-${quizProgress.courseId}-${quizProgress.chapterId}`,
             type: 'pending_quiz',
-            title: `Take Quiz: ${courseTitle}`,
-            description: `Test your knowledge with the course quiz`,
-            courseId,
+            title: `Resume Quiz: ${courseTitle}`,
+            description: `Continue from question ${quizProgress.currentQuestionIndex + 1}`,
+            courseId: quizProgress.courseId,
             courseSlug: courseSlug,
-            quizId: `quiz-${courseId}`,
-            progress: progressPercentage,
+            chapterId: quizProgress.chapterId,
+            quizId: `${quizProgress.courseId}_${quizProgress.chapterId}`,
+            progress: (quizProgress.currentQuestionIndex / 10) * 100, // Assuming 10 questions per quiz
             lastAccessed,
-            priority: 'high'
+            priority
           })
         }
-      }
-    })
+      })
+    }
 
     // Sort by priority and last accessed
     return notifications.sort((a, b) => {
@@ -201,14 +224,48 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
       if (priorityDiff !== 0) return priorityDiff
       return b.lastAccessed.getTime() - a.lastAccessed.getTime()
     })
-  }, [memoizedUser, memoizedCourseProgress, memoizedCourseData, memoizedCourseDataLoading])
+  }, [memoizedUser, memoizedCourseProgress, memoizedCourseData, memoizedCourseDataLoading, incompleteQuizzes])
 
-  // Update notifications when dependencies change - use stable dependencies instead of generateNotifications
+  // Update notifications when dependencies change
   useEffect(() => {
     const newNotifications = generateNotifications()
     setNotifications(newNotifications)
     setUnreadCount(newNotifications.filter(n => n.priority === 'high').length)
-  }, [memoizedUser?.id, memoizedCourseProgress, memoizedCourseData, memoizedCourseDataLoading])
+  }, [memoizedUser?.id, memoizedCourseProgress, memoizedCourseData, memoizedCourseDataLoading, incompleteQuizzes])
+
+  // Show toast notification for high-priority items
+  useEffect(() => {
+    if (notifications.length > 0 && !isLoading && !courseDataLoading && !quizzesLoading) {
+      const highPriorityNotifications = notifications.filter(n => n.priority === 'high')
+      
+      if (highPriorityNotifications.length > 0) {
+        // Check if we should show a toast (don't spam the user)
+        const lastToastTime = localStorage.getItem('last_course_notification_toast')
+        const now = Date.now()
+        const oneHourAgo = now - (60 * 60 * 1000)
+        
+        if (!lastToastTime || parseInt(lastToastTime) < oneHourAgo) {
+          const firstNotification = highPriorityNotifications[0]
+          
+          toast({
+            title: "Continue Learning",
+            description: firstNotification.description,
+            action: (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleNotificationClick(firstNotification)}
+              >
+                Continue
+              </Button>
+            ),
+          })
+          
+          localStorage.setItem('last_course_notification_toast', now.toString())
+        }
+      }
+    }
+  }, [notifications, isLoading, courseDataLoading, quizzesLoading, toast])
 
   // Handle notification click
   const handleNotificationClick = useCallback((notification: CourseNotification) => {
@@ -348,7 +405,7 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
         <DropdownMenuSeparator />
         
         <AnimatePresence>
-          {courseDataLoading ? (
+          {courseDataLoading || quizzesLoading ? (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

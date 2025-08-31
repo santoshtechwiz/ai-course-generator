@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useCallback, useEffect, useMemo } from "react"
+import { useState, useCallback, useEffect, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/useDebounce"
@@ -46,6 +46,11 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   const [showPublicOnly, setShowPublicOnly] = useState(false)
   const [activeTab, setActiveTab] = useState("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+
+  // Refs to prevent infinite loops
+  const lastSearchRef = useRef("")
+  const lastFilterRef = useRef("")
+  const lastTabRef = useRef("all")
 
   // AI Modal state with adaptive logic
   const {
@@ -102,26 +107,34 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   const debouncedSearch = useDebounce(search, 300)
   const { ref, inView } = useInView({ threshold: 0.1 })
 
-  // AI Modal trigger logic - only show when user is actively engaging
+  // AI Modal trigger logic - prevent infinite loops with refs
   useEffect(() => {
-    // Trigger modal when user starts searching
-    if (debouncedSearch.trim().length > 2) {
+    const currentSearch = debouncedSearch.trim()
+    if (currentSearch.length > 2 && currentSearch !== lastSearchRef.current) {
+      lastSearchRef.current = currentSearch
       trackEngagement('search')
       triggerAIModal('search')
     }
   }, [debouncedSearch, triggerAIModal, trackEngagement])
 
+  // Filter change detection with ref to prevent loops
+  const filterKey = useMemo(() =>
+    `${selectedTypes.join(',')}-${questionCountRange.join('-')}-${showPublicOnly}`,
+    [selectedTypes, questionCountRange, showPublicOnly]
+  )
+
   useEffect(() => {
-    // Trigger modal when user applies filters
-    if (selectedTypes.length > 0 || questionCountRange[0] > 0 || questionCountRange[1] < 50 || showPublicOnly) {
+    if (filterKey !== lastFilterRef.current && filterKey !== '---false') {
+      lastFilterRef.current = filterKey
       trackEngagement('filter')
       triggerAIModal('filter')
     }
-  }, [selectedTypes, questionCountRange, showPublicOnly, triggerAIModal, trackEngagement])
+  }, [filterKey, triggerAIModal, trackEngagement])
 
+  // Tab change detection with ref to prevent loops
   useEffect(() => {
-    // Trigger modal when user browses different tabs (but not immediately)
-    if (activeTab !== "all") {
+    if (activeTab !== lastTabRef.current && activeTab !== "all") {
+      lastTabRef.current = activeTab
       trackEngagement('browse')
       const timer = setTimeout(() => {
         triggerAIModal('browse')
@@ -221,12 +234,12 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   // Load more when in view - prevent infinite loading by adding more conditions
   useEffect(() => {
     if (
-      inView && 
-      hasNextPage && 
-      !isFetchingNextPage && 
-      !isLoading && 
-      !isError && 
-      !noResults && 
+      inView &&
+      hasNextPage &&
+      !isFetchingNextPage &&
+      !isLoading &&
+      !isError &&
+      !noResults &&
       quizzes.length > 0 // Additional guard to prevent fetching when no initial data
     ) {
       fetchNextPage()
@@ -318,31 +331,33 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     </Card>
   )
 
-  // Featured banner for engagement
+  // Enhanced Featured banner for engagement
   const FeaturedBanner = () => (
-    <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-r from-violet-600/15 via-fuchsia-500/10 to-rose-500/10">
-      <CardContent className="p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="p-3 rounded-xl bg-primary text-primary-foreground shadow">
-            <Crown className="h-5 w-5" />
+    <Card className="border-0 shadow-xl overflow-hidden bg-gradient-to-r from-violet-600/15 via-fuchsia-500/10 to-rose-500/10 backdrop-blur-sm">
+      <CardContent className="p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="flex items-start gap-4">
+          <div className="p-4 rounded-2xl bg-primary text-primary-foreground shadow-lg">
+            <Crown className="h-6 w-6" />
           </div>
-          <div>
-            <h3 className="text-lg font-semibold">Unlock Premium Quizzes</h3>
-            <p className="text-sm text-muted-foreground">
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold text-foreground">Unlock Premium Quizzes</h3>
+            <p className="text-muted-foreground leading-relaxed">
               Get access to advanced question banks, code challenges, and AI insights to accelerate learning.
             </p>
-            <div className="mt-2 flex items-center gap-2">
-              <Badge variant="secondary" className="bg-primary/10 text-primary">Popular</Badge>
-              <Badge variant="outline" className="gap-1"><Flame className="h-3 w-3" /> Trending now</Badge>
+            <div className="flex items-center gap-3 pt-2">
+              <Badge variant="secondary" className="bg-primary/10 text-primary border border-primary/20 px-3 py-1">Popular</Badge>
+              <Badge variant="outline" className="gap-1.5 border-primary/30 text-primary hover:bg-primary/5">
+                <Flame className="h-3.5 w-3.5" /> Trending now
+              </Badge>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="outline" className="hover:bg-primary/10">
-            <a href="/dashboard/mcq" className="gap-2"><Sparkles className="h-4 w-4" /> Create Quiz</a>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <Button variant="outline" className="border-primary/30 text-primary hover:bg-primary/5">
+            Learn More
           </Button>
-          <Button asChild className="btn-gradient">
-            <a href="/dashboard/subscription" className="gap-2"><Rocket className="h-4 w-4" /> Upgrade</a>
+          <Button className="bg-gradient-to-r from-primary to-primary/80 hover:scale-105 transition-all duration-300 shadow-lg">
+            Upgrade Now
           </Button>
         </div>
       </CardContent>
@@ -398,7 +413,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* AI Learning Modal with adaptive display */}
       <AIQuizNoticeModal
         isOpen={showAIModal}
@@ -409,7 +424,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
         quizType="quiz"
       />
 
-      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
         <ErrorBoundary fallbackRender={ErrorFallback} onReset={handleRetry} resetKeys={[queryKey.join("")]}>
           <div className="lg:w-80 lg:flex-shrink-0">
             <QuizSidebar
@@ -427,7 +442,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
           </div>
         </ErrorBoundary>
 
-        <div className="flex-1 min-w-0 space-y-6">
+        <div className="flex-1 min-w-0 space-y-8">
           <ErrorBoundary fallbackRender={ErrorFallback} onReset={handleRetry} resetKeys={[queryKey.join("")]}>
             {isLoading ? (
               <QuizzesSkeleton />
@@ -435,56 +450,34 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
               <>
                 <FeaturedBanner />
 
-              
+                {/* Enhanced Recommended Section */}
+                <div className="bg-gradient-to-r from-accent/10 to-primary/5 rounded-xl p-6 border border-border/30">
+                  <RecommendedRow />
+                </div>
 
-                {/* Empty state when no results */}
-                {noResults ? (
-                  <div className="mt-6">
-                    <QuizList
-                      quizzes={[]}
-                      isLoading={false}
-                      isError={false}
-                      isFetchingNextPage={false}
-                      hasNextPage={false}
-                      isSearching={isSearching}
-                      onCreateQuiz={handleCreateQuiz}
-                      activeFilter={activeTab}
-                      onFilterChange={handleTabChange}
-                      onRetry={handleRetry}
-                      quizCounts={{ all: 0, mcq: 0, openended: 0, code: 0, blanks: 0, flashcard: 0 }}
-                      viewMode={viewMode}
-                      onViewModeChange={handleViewModeChange}
-                    />
-                  </div>
-                ) : (
-                  <>
-                    <RecommendedRow />
-
-                    <QuizList
-                      quizzes={filteredGridQuizzes}
-                      isLoading={false}
-                      isError={isError}
-                      isFetchingNextPage={isFetchingNextPage}
-                      hasNextPage={!!hasNextPage}
-                      isSearching={isSearching}
-                      onCreateQuiz={handleCreateQuiz}
-                      activeFilter={activeTab}
-                      onFilterChange={handleTabChange}
-                      onRetry={handleRetry}
-                      quizCounts={quizCounts}
-                      viewMode={viewMode}
-                      onViewModeChange={handleViewModeChange}
-                    />
-                    <div ref={ref} className="h-20 flex items-center justify-center">
-                      {isFetchingNextPage && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <div className="w-4 h-4 border-2 border-primary border-r-transparent rounded-full animate-spin" />
-                          Loading more quizzes...
-                        </div>
-                      )}
+                <QuizList
+                  quizzes={filteredGridQuizzes}
+                  isLoading={false}
+                  isError={isError}
+                  isFetchingNextPage={isFetchingNextPage}
+                  hasNextPage={!!hasNextPage}
+                  isSearching={isSearching}
+                  onCreateQuiz={handleCreateQuiz}
+                  activeFilter={activeTab}
+                  onFilterChange={handleTabChange}
+                  onRetry={handleRetry}
+                  quizCounts={quizCounts}
+                  viewMode={viewMode}
+                  onViewModeChange={handleViewModeChange}
+                />
+                <div ref={ref} className="h-20 flex items-center justify-center">
+                  {isFetchingNextPage && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="w-4 h-4 border-2 border-primary border-r-transparent rounded-full animate-spin" />
+                      Loading more quizzes...
                     </div>
-                  </>
-                )}
+                  )}
+                </div>
               </>
             )}
           </ErrorBoundary>

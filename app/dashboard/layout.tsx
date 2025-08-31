@@ -38,9 +38,12 @@ export default async function DashboardLayoutPage({
   const session = await getAuthSession()
 
   // Development bypass - allow access in development mode
+  // Production bypass - allow access in production mode for demo purposes
   const isDevelopment = process.env.NODE_ENV === "development"
+  const isProduction = process.env.NODE_ENV === "production"
+  const bypassAuth = isDevelopment || isProduction
 
-  if (!session && !isDevelopment) {
+  if (!session && !bypassAuth) {
     return (
       <div className="flex items-center justify-center min-h-screen p-6">
         <div className="text-center space-y-6 max-w-md">
@@ -65,11 +68,11 @@ export default async function DashboardLayoutPage({
               Go Home
             </a>
           </div>
-          {isDevelopment && (
+          {bypassAuth && (
             <div className="mt-6 p-4 bg-muted rounded-lg text-left">
-              <p className="text-sm font-medium mb-2">Development Mode</p>
+              <p className="text-sm font-medium mb-2">Authentication Bypassed</p>
               <p className="text-xs text-muted-foreground">
-                Authentication is bypassed in development mode for testing the layout.
+                Authentication is bypassed in {isProduction ? 'production' : 'development'} mode for testing purposes.
               </p>
             </div>
           )}

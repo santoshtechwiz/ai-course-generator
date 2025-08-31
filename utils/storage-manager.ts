@@ -178,6 +178,8 @@ class StorageManager {
   }
 
   private cleanupOldQuizProgress(): void {
+    if (typeof window === 'undefined') return
+
     const keys = Object.keys(localStorage)
     const progressKeys = keys.filter(key => key.startsWith(STORAGE_PREFIXES.QUIZ_PROGRESS))
 
@@ -209,6 +211,8 @@ class StorageManager {
   }
 
   private cleanupExpiredData(): void {
+    if (typeof window === 'undefined') return
+
     const keys = Object.keys(localStorage)
     const now = Date.now()
 
@@ -322,6 +326,8 @@ class StorageManager {
   }
 
   getIncompleteQuizzes(): QuizProgress[] {
+    if (typeof window === 'undefined') return []
+
     const keys = Object.keys(localStorage)
     const progressKeys = keys.filter(key => key.startsWith(STORAGE_PREFIXES.QUIZ_PROGRESS))
 
@@ -426,6 +432,8 @@ class StorageManager {
 
   // Utility methods
   clearAllData(): void {
+    if (typeof window === 'undefined') return
+
     const keys = Object.keys(localStorage)
     keys.forEach(key => {
       if (key.startsWith('user_prefs_') ||
@@ -515,6 +523,8 @@ class StorageManager {
   }
 
   private migrateQuizProgress(): void {
+    if (typeof window === 'undefined') return
+
     const keys = Object.keys(localStorage)
     const oldProgressKeys = keys.filter(key => key.startsWith('quiz-progress-'))
 

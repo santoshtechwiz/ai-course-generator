@@ -2,64 +2,14 @@
 
 import type React from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import {
-  Target, Code2, PenTool, Brain, BookOpen,
-} from 'lucide-react'
 
 interface QuizContainerProps {
   children: React.ReactNode
-  questionNumber?: number
-  totalQuestions?: number
-  quizType?: "mcq" | "code" | "blanks" | "openended" | "flashcard"
   animationKey?: string
   className?: string
-  quizTitle?: string
-  quizSubtitle?: string
-  timeSpent?: number
-  difficulty?: "easy" | "medium" | "hard"
-  showProgress?: boolean
-  fullWidth?: boolean
   variant?: "default" | "compact" | "expanded"
-}
-
-const quizTypeConfig = {
-  mcq: {
-    icon: Target,
-    label: "Multiple Choice",
-    bgColor: "",
-    borderColor: "",
-    accentColor: "",
-  },
-  code: {
-    icon: Code2,
-    label: "Code Challenge",
-    bgColor: "",
-    borderColor: "",
-    accentColor: "",
-  },
-  blanks: {
-    icon: PenTool,
-    label: "Fill Blanks",
-    bgColor: "",
-    borderColor: "",
-    accentColor: "",
-  },
-  openended: {
-    icon: Brain,
-    label: "Open Ended",
-    bgColor: "",
-    borderColor: "",
-    accentColor: "",
-  },
-  flashcard: {
-    icon: BookOpen,
-    label: "Flashcards",
-    bgColor: "",
-    borderColor: "",
-    accentColor: "",
-  },
+  fullWidth?: boolean
 }
 
 const containerVariants = {
@@ -78,7 +28,7 @@ const containerVariants = {
 
 /**
  * Unified Quiz Container Component
- * 
+ *
  * Provides consistent UX patterns across all quiz types:
  * - Clean, professional layout
  * - Consistent spacing and responsive design
@@ -87,21 +37,16 @@ const containerVariants = {
  */
 export function QuizContainer({
   children,
-  questionNumber = 1,
-  totalQuestions = 1,
-  quizType = "mcq",
   animationKey,
   className,
-  fullWidth = true,
   variant = "default",
+  fullWidth = true,
 }: QuizContainerProps) {
-  const config = quizTypeConfig[quizType] || quizTypeConfig.mcq
-
   const containerClasses = cn(
     "w-full flex flex-col",
     variant === "compact" && "max-w-3xl mx-auto",
     variant === "expanded" && "min-h-[calc(100vh-2rem)]",
-    variant === "default" && "max-w-4xl mx-auto",
+    variant === "default" && "max-w-5xl mx-auto",
     className
   )
 
@@ -116,10 +61,8 @@ export function QuizContainer({
           exit="exit"
           className="w-full flex-1 flex flex-col"
         >
-          {/* Simplified container - no unnecessary nesting */}
-          <div className="w-full space-y-6">
-            {children}
-          </div>
+          {/* Enhanced content container with better spacing */}
+          <div className="w-full space-y-8">{children}</div>
         </motion.div>
       </AnimatePresence>
     </div>

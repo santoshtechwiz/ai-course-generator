@@ -236,11 +236,7 @@ const CodeQuiz = ({
 
   return (
     <QuizContainer
-      questionNumber={questionNumber}
-      totalQuestions={totalQuestions}
-      quizType="code"
       animationKey={`code-${question.id}`}
-      difficulty={difficulty?.toLowerCase() as "easy" | "medium" | "hard"}
       fullWidth={true}
     >
       <motion.div
@@ -267,16 +263,16 @@ const CodeQuiz = ({
             transition={{ delay: 0.2 }}
             className="w-full max-w-2xl mx-auto"
           >
-            <div className="overflow-hidden rounded-xl border border-border shadow-sm bg-card">
+            <div className="overflow-hidden rounded-xl border border-border/60 shadow-lg bg-card/50 backdrop-blur-sm">
               {/* Code Header - shadcn theme */}
-              <div className="bg-muted px-4 py-3 flex items-center justify-between border-b border-border">
+              <div className="bg-muted/80 px-4 py-3 flex items-center justify-between border-b border-border/60">
                 <div className="flex items-center gap-3">
                   <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-destructive/80 shadow-sm"></div>
-                    <div className="w-3 h-3 rounded-full bg-warning/80 shadow-sm"></div>
-                    <div className="w-3 h-3 rounded-full bg-success/80 shadow-sm"></div>
+                    <div className="w-3 h-3 rounded-full bg-red-500/80 shadow-sm"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/80 shadow-sm"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-500/80 shadow-sm"></div>
                   </div>
-                  <div className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-lg border border-border shadow-sm">
+                  <div className="flex items-center gap-2 bg-background/80 px-3 py-1.5 rounded-lg border border-border/60 shadow-sm">
                     <Terminal className="w-4 h-4 text-primary" />
                     <span className="text-sm font-bold text-muted-foreground">{language || "Code"}</span>
                   </div>
@@ -285,14 +281,14 @@ const CodeQuiz = ({
                   variant="ghost"
                   size="sm"
                   onClick={handleCopyCode}
-                  className="h-9 px-4 border border-border text-primary font-semibold rounded-lg shadow-sm transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                  className="h-9 px-4 border border-border/60 text-primary font-semibold rounded-lg shadow-sm transition-all duration-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                   title="Copy code"
                   aria-label="Copy code to clipboard"
                   disabled={isSubmitting}
                 >
                   {copied ? (
                     <>
-                      <Check className="w-4 h-4 mr-2 animate-pulse text-success" />
+                      <Check className="w-4 h-4 mr-2 animate-pulse text-green-600" />
                       Copied!
                     </>
                   ) : (
@@ -305,8 +301,7 @@ const CodeQuiz = ({
               </div>
 
               {/* Code Content */}
-              <div className="relative max-h-[400px] overflow-y-auto">
-
+              <div className="relative max-h-[400px] overflow-y-auto bg-background/95">
                 <SyntaxHighlighter
                   language={syntaxLanguage}
                   style={vscDarkPlus}
@@ -315,13 +310,19 @@ const CodeQuiz = ({
                     margin: 0,
                     padding: "1rem",
                     fontSize: "0.95rem",
-                    lineHeight: "1.5",
-                   
+                    lineHeight: "1.6",
+                    backgroundColor: "transparent",
+                    borderRadius: "0",
                   }}
                   codeTagProps={{
                     style: {
                       fontSize: "0.95rem",
-                      lineHeight: "1.5",
+                      lineHeight: "1.6",
+                      fontFamily: "'JetBrains Mono', 'Fira Code', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      overflowWrap: "break-word",
+                      tabSize: 2,
                     },
                   }}
                   lineNumberStyle={{
@@ -330,13 +331,36 @@ const CodeQuiz = ({
                     minWidth: "2.5em",
                     userSelect: "none",
                     fontSize: "0.8rem",
+                    borderRight: "1px solid hsl(var(--border))",
+                    marginRight: "1rem",
+                    backgroundColor: "hsl(var(--muted) / 0.3)",
+                    textAlign: "right",
                   }}
                   wrapLines
                   wrapLongLines
+                  lineProps={(lineNumber) => ({
+                    style: {
+                      display: "block",
+                      width: "100%",
+                      paddingLeft: "0.5rem",
+                      borderLeft: "2px solid transparent",
+                      transition: "all 0.2s ease",
+                      position: "relative",
+                    },
+                  })}
                 >
                   {question.codeSnippet}
                 </SyntaxHighlighter>
 
+                {/* Add visual wrap indicator overlay */}
+                <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
+                  <div className="absolute top-2 right-2 text-xs text-muted-foreground bg-background/90 px-2 py-1 rounded-md border border-border/50 shadow-sm backdrop-blur-sm">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                      Code wraps for readability
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
