@@ -115,7 +115,8 @@ export class CourseRepository extends BaseRepository<any> {
     } else if (sortBy === "updatedAt") {
       orderBy.updatedAt = sortOrder;
     } else {
-      orderBy.viewCount = sortOrder;
+      // Default to createdAt if viewCount doesn't exist
+      orderBy.createdAt = sortOrder;
     }
 
     const [courses, totalCount] = await Promise.all([
@@ -128,7 +129,7 @@ export class CourseRepository extends BaseRepository<any> {
           image: true,
           slug: true,
           userId: true,
-          viewCount: true,
+       
           difficulty: true,
           estimatedHours: true,
           createdAt: true,

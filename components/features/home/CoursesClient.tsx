@@ -90,7 +90,7 @@ export default function CoursesClient({
         
         apiUrl.searchParams.set(
           "sortBy",
-          activeTab === "popular" ? "viewCount" : activeTab === "newest" ? "createdAt" : "viewCount"
+          activeTab === "popular" ? "createdAt" : activeTab === "newest" ? "createdAt" : "createdAt"
         )
         apiUrl.searchParams.set("sortOrder", "desc")
 

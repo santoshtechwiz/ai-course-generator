@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
         slug: true,
         description: true,
         image: true,
-        viewCount: true,
+  
         category: {
           select: {
             name: true
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
         }
       },
       orderBy: [
-        { viewCount: "desc" },
+    
         { createdAt: "desc" }
       ],
       take: limit,
@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
           slug: true,
           description: true,
           image: true,
-          viewCount: true,
+      
           category: {
             select: {
               name: true
@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        orderBy: { viewCount: "desc" },
+    
         take: limit - transformedCourses.length,
       })
 

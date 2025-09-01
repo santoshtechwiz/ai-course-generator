@@ -126,7 +126,7 @@ export class CourseService {
       userId,
       page = 1,
       limit = 20,
-      sortBy = "viewCount",
+      sortBy = "createdAt",
       sortOrder = "desc",
     } = options;    const result = await courseRepository.findCourses({
       search,
@@ -169,7 +169,7 @@ export class CourseService {
         image: course.image,
         rating: avgRating,
         slug: course.slug || "",
-        viewCount: course.viewCount,
+        viewCount: 0,
         categoryId: course.category?.name,
         difficulty: course.difficulty || this.determineDifficulty(lessonCount, quizCount),
         estimatedHours,

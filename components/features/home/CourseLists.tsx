@@ -97,7 +97,7 @@ export default function CoursesClient({
       
       // Add sorting parameter
       const sortMapping = {
-        popular: "viewCount",
+        popular: "createdAt",
         rating: "rating",
         newest: "createdAt",
         "price-low": "price",

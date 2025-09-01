@@ -201,23 +201,7 @@ export class QuizRepository extends BaseRepository<any> {
     return null;
   }
 
-  /**
-   * Update topic count
-   */
-  async updateTopicCount(topic: string) {
-    return prisma.topicCount.upsert({
-      where: { topic },
-      update: {
-        count: {
-          increment: 1,
-        },
-      },
-      create: {
-        topic,
-        count: 1,
-      },
-    });
-  }
+
 
   /**
    * Add quiz to favorites

@@ -4,57 +4,55 @@ generator client {
 
 datasource db {
   provider          = "postgresql"
-  url               = env("DATABASE_URL")
-  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  url               = env("DATABASE_URL_LOCAL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL_LOCAL")
 }
 
 model User {
-  id                    String                 @id @default(cuid())
-  name                  String?
-  email                 String?                @unique
-  emailVerified         DateTime?
-  image                 String?
-  credits               Int                    @default(0)
-  creditsUsed           Int                    @default(0)
-  isAdmin               Boolean                @default(false)
-  userType              String                 @default("FREE")
-  totalCoursesWatched   Int                    @default(0)
-  totalQuizzesAttempted Int                    @default(0)
-  totalTimeSpent        Int                    @default(0)
-  engagementScore       Float                  @default(0)
-  streakDays            Int                    @default(0)
-  lastStreakDate        DateTime?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  lastLogin             DateTime               @default(now())
-  lastActiveAt          DateTime               @default(now())
-  language              String?
-  metadata              Json?
-  accounts              Account[]
-  courses               Course[]
-  courseProgress        CourseProgress[]
-  courseQuizAttempts    CourseQuizAttempt[]
-  ratings               CourseRating[]
-  favorites             Favorite[]
-  flashCards            FlashCard[]
-  sessions              Session[]
-  engagementMetrics     UserEngagementMetrics?
-  userQuizzes           UserQuiz[]
-  userQuizAttempts      UserQuizAttempt[]
-  userQuizRatings       UserQuizRating[]
-  subscription          UserSubscription?
-  TokenTransaction      TokenTransaction[]
-  UserReferral          UserReferral?
-  referralsGiven        UserReferralUse[]      @relation("Referrer")
-  referralsReceived     UserReferralUse[]      @relation("Referred")
-  PendingSubscription   PendingSubscription[]
+  id                  String                @id @default(cuid())
+  name                String?
+  email               String?               @unique
+  emailVerified       DateTime?
+  image               String?
+  isAdmin             Boolean               @default(false)
+  userType            String                @default("FREE")
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  language            String?
+  isActive            Boolean               @default(true)
+  credits             Int                   @default(0)
+  creditsUsed         Int                   @default(0)
+  currentPlanId       String?
+  metadata            Json?
+  accounts            Account[]
+  bookmarks           Bookmark[]
+  Certificate         Certificate[]
+  courses             Course[]
+  courseProgress      CourseProgress[]
+  courseQuizAttempts  CourseQuizAttempt[]
+  ratings             CourseRating[]
+  favorites           Favorite[]
+  flashCards          FlashCard[]
+  flashCardReviews    FlashCardReview[]
+  PendingSubscription PendingSubscription[]
+  quizProgress        QuizProgress[]
+  sessions            Session[]
+  TokenTransaction    TokenTransaction[]
+  achievements        UserAchievement[]
+  notifications       UserNotification[]
+  userQuizzes         UserQuiz[]
+  userQuizAttempts    UserQuizAttempt[]
+  userQuizRatings     UserQuizRating[]
+  UserReferral        UserReferral?
+  referralsReceived   UserReferralUse[]     @relation("Referred")
+  referralsGiven      UserReferralUse[]     @relation("Referrer")
+  settings            UserSettings?
+  subscription        UserSubscription?
 
   @@index([email])
   @@index([userType])
-  @@index([engagementScore])
-  @@index([lastActiveAt]) // Added for user activity queries
-  @@index([createdAt]) // Added for user registration analytics
-  @@index([isAdmin]) // Added for admin filtering
+  @@index([createdAt])
+  @@index([isAdmin])
 }
 
 model Account {
@@ -74,7 +72,7 @@ model Account {
 
   @@unique([provider, providerAccountId])
   @@index([userId])
-  @@index([provider]) // Added for provider-based queries
+  @@index([provider])
 }
 
 model Session {
@@ -85,41 +83,52 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([expires]) // Added for session cleanup queries
+  @@index([expires])
 }
 
 model Course {
-  id             Int              @id @default(autoincrement())
-  title          String
-  description    String?
-  image          String
-  viewCount      Int              @default(1000)
-  userId         String           @map("user_id")
-  categoryId     Int?
-  isCompleted    Boolean?         @default(false)
-  isPublic       Boolean          @default(false)
-  slug           String?          @unique
-  difficulty     String?
-  estimatedHours Float?
-  language       String?
-  metadata       Json?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  category       Category?        @relation(fields: [categoryId], references: [id])
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseProgress CourseProgress[]
-  ratings        CourseRating[]
-  courseUnits    CourseUnit[]
-  favorites      Favorite[]
+  id               Int              @id @default(autoincrement())
+  title            String
+  description      String?
+  image            String
+  userId           String           @map("user_id")
+  categoryId       Int?
+  isCompleted      Boolean?         @default(false)
+  isPublic         Boolean          @default(false)
+  isFeatured       Boolean          @default(false)
+  slug             String?          @unique
+  difficulty       String?
+  estimatedHours   Float?
+  language         String?
+  metadata         Json?
+  status           String           @default("DRAFT")
+  pricing          Json?
+  prerequisitesIds Int[]
+  lastPublishedAt  DateTime?
+  startDate        DateTime?
+  endDate          DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  bookmarks        Bookmark[]
+  Certificate      Certificate[]
+  category         Category?        @relation(fields: [categoryId], references: [id])
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseProgress   CourseProgress[]
+  ratings          CourseRating[]
+  courseUnits      CourseUnit[]
+  favorites        Favorite[]
 
   @@index([title])
   @@index([categoryId])
   @@index([userId])
   @@index([isPublic])
+  @@index([isFeatured])
   @@index([difficulty])
-  @@index([createdAt]) // Added for sorting by newest
-  @@index([viewCount]) // Added for popularity sorting
-  @@index([slug]) // Added for slug lookups
+  @@index([status])
+  @@index([startDate])
+  @@index([createdAt])
+  @@index([lastPublishedAt])
+  @@index([slug])
 }
 
 model CourseUnit {
@@ -135,7 +144,7 @@ model CourseUnit {
   course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@index([courseId])
-  @@index([order]) // Added for ordering queries
+  @@index([order])
   @@index([isCompleted])
   @@map("CourseUnit")
 }
@@ -144,130 +153,26 @@ model Chapter {
   id                 Int          @id @default(autoincrement())
   unitId             Int
   title              String
-  youtubeSearchQuery String
+  youtubeSearchQuery String?
   videoId            String?
   summary            String?
+  videoDuration      Float?
+  isFreePreview      Boolean      @default(true)
   isCompleted        Boolean      @default(false)
   summaryStatus      String       @default("PENDING")
   videoStatus        String       @default("PENDING")
   order              Int          @default(0)
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
+  bookmarks          Bookmark[]
   unit               CourseUnit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
   courseQuizzes      CourseQuiz[]
 
   @@index([unitId])
   @@index([isCompleted])
-  @@index([order]) // Added for ordering queries
-  @@index([videoStatus, summaryStatus]) // Added for status filtering
+  @@index([order])
+  @@index([videoStatus, summaryStatus])
   @@map("Chapter")
-}
-
-model CourseRating {
-  id         Int      @id @default(autoincrement())
-  courseId   Int
-  userId     String   @map("user_id")
-  rating     Int
-  reviewText String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [userId], references: [id])
-
-  @@unique([userId, courseId])
-  @@index([courseId])
-  @@index([rating])
-  @@index([createdAt]) // Added for recent reviews
-}
-
-model Category {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  courses   Course[]
-
-  @@index([name])
-}
-
-model CourseProgress {
-  id                  Int       @id @default(autoincrement())
-  userId              String    @map("user_id")
-  courseId            Int
-  currentChapterId    Int
-  currentUnitId       Int?
-  completedChapters   String
-  progress            Float     @default(0)
-  timeSpent           Int       @default(0)
-  isCompleted         Boolean   @default(false)
-  completionDate      DateTime?
-  quizProgress        Json?
-  notes               String?
-  bookmarks           String?
-  lastInteractionType String?
-  interactionCount    Int       @default(0)
-  engagementScore     Float     @default(0)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  lastAccessedAt      DateTime  @default(now())
-  course              Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, courseId], name: "unique_user_course_progress")
-  @@index([userId, lastAccessedAt])
-  @@index([courseId])
-  @@index([progress])
-  @@index([isCompleted])
-  @@index([engagementScore]) // Added for engagement analytics
-  @@index([timeSpent]) // Added for time analytics
-  @@index([currentChapterId]) // Added for current chapter lookups
-}
-
-model UserSubscription {
-  id                   String   @id @default(cuid())
-  userId               String   @unique
-  planId               String
-  status               String
-  currentPeriodStart   DateTime
-  currentPeriodEnd     DateTime
-  cancelAtPeriodEnd    Boolean  @default(false)
-  stripeSubscriptionId String?  @unique
-  stripeCustomerId     String?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-  user                 User     @relation(fields: [userId], references: [id])
-
-  @@index([status])
-  @@index([currentPeriodEnd])
-  @@index([planId]) // Added for plan-based queries
-  @@index([stripeCustomerId]) // Added for Stripe customer lookups
-}
-
-model Favorite {
-  id        Int      @id @default(autoincrement())
-  userId    String   @map("user_id")
-  courseId  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, courseId], name: "unique_user_course")
-  @@index([userId])
-  @@index([courseId])
-  @@index([createdAt]) // Added for recent favorites
-}
-
-model TopicCount {
-  id        Int      @id @default(autoincrement())
-  topic     String   @unique
-  count     Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([topic])
-  @@index([count]) // Added for popularity sorting
-  @@map("TopicCount")
 }
 
 model CourseQuiz {
@@ -302,7 +207,108 @@ model CourseQuizAttempt {
   @@index([courseQuizId])
   @@index([score])
   @@index([accuracy])
-  @@index([createdAt]) // Added for recent attempts
+  @@index([createdAt])
+}
+
+model CourseRating {
+  id         Int      @id @default(autoincrement())
+  courseId   Int
+  userId     String   @map("user_id")
+  rating     Int
+  reviewText String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+  @@index([rating])
+  @@index([createdAt])
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  courses   Course[]
+
+  @@index([name])
+}
+
+model CourseProgress {
+  id                  Int       @id @default(autoincrement())
+  userId              String    @map("user_id")
+  courseId            Int
+  currentChapterId    Int
+  currentUnitId       Int?
+  progress            Float     @default(0)
+  timeSpent           Int       @default(0)
+  isCompleted         Boolean   @default(false)
+  completionDate      DateTime?
+  quizProgress        Json?
+  notes               String?
+  chapterProgress     Json?
+  lastInteractionType String?
+  interactionCount    Int       @default(0)
+  engagementScore     Float     @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  lastAccessedAt      DateTime  @default(now())
+  course              Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId], name: "unique_user_course_progress")
+  @@index([userId, lastAccessedAt])
+  @@index([courseId])
+  @@index([progress])
+  @@index([isCompleted])
+  @@index([engagementScore])
+  @@index([timeSpent])
+  @@index([currentChapterId])
+}
+
+model UserSubscription {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  planId               String
+  status               String
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean   @default(false)
+  stripeSubscriptionId String?   @unique
+  stripeCustomerId     String?
+  stripePriceId        String?
+  stripeStatus         String?
+  lastStripeEvent      String?
+  trialEnd             DateTime?
+  canceledAt           DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  user                 User      @relation(fields: [userId], references: [id])
+
+  @@index([status])
+  @@index([currentPeriodEnd])
+  @@index([planId])
+  @@index([stripeCustomerId])
+  @@index([stripeStatus])
+  @@index([canceledAt])
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  courseId  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId], name: "unique_user_course")
+  @@index([userId])
+  @@index([courseId])
+  @@index([createdAt])
 }
 
 model UserQuiz {
@@ -313,6 +319,9 @@ model UserQuiz {
   isPublic           Boolean             @default(false)
   slug               String              @unique
   isFavorite         Boolean             @default(false)
+  points             Float               @default(0)
+  tags               String?
+  description        String?
   lastAttempted      DateTime?
   bestScore          Int?
   difficulty         String?
@@ -321,24 +330,25 @@ model UserQuiz {
   language           String?
   metadata           Json?
   createdAt          DateTime            @default(now())
+  passingScore       Int                 @default(70)
   updatedAt          DateTime            @updatedAt
   flashCards         FlashCard[]
+  openEndedQuestions OpenEndedQuestion[]
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   attempts           UserQuizAttempt[]
   questions          UserQuizQuestion[]
   userQuizRating     UserQuizRating[]
-  openEndedQuestions OpenEndedQuestion[]
 
   @@index([userId])
   @@index([title])
   @@index([quizType])
   @@index([isPublic])
   @@index([difficulty])
-  @@index([createdAt]) // Added for recent quizzes
-  @@index([bestScore]) // Added for leaderboard queries
-  @@index([lastAttempted]) // Added for recently attempted
-  @@index([slug]) // Added for slug lookups
-  @@index([isFavorite]) // Added for favorite filtering
+  @@index([createdAt])
+  @@index([bestScore])
+  @@index([lastAttempted])
+  @@index([slug])
+  @@index([isFavorite])
 }
 
 model UserQuizAttempt {
@@ -364,27 +374,8 @@ model UserQuizAttempt {
   @@index([userQuizId])
   @@index([score])
   @@index([accuracy])
-  @@index([createdAt]) // Added for recent attempts
-  @@index([completionSpeed]) // Added for speed analytics
-}
-
-model UserEngagementMetrics {
-  id                   Int      @id @default(autoincrement())
-  userId               String   @unique
-  totalLoginTime       Int      @default(0)
-  averageSessionLength Float    @default(0)
-  weeklyActiveMinutes  Int      @default(0)
-  monthlyActiveMinutes Int      @default(0)
-  completionRate       Float    @default(0)
-  lastCalculated       DateTime @default(now())
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([completionRate])
-  @@index([weeklyActiveMinutes, monthlyActiveMinutes]) // Added for activity analytics
-  @@index([lastCalculated]) // Added for recalculation queries
+  @@index([createdAt])
+  @@index([completionSpeed])
 }
 
 model UserQuizQuestion {
@@ -392,7 +383,7 @@ model UserQuizQuestion {
   userQuizId        Int
   question          String
   answer            String
-  options           String?
+  options           Json?
   questionType      String
   codeSnippet       String?
   createdAt         DateTime                  @default(now())
@@ -406,19 +397,22 @@ model UserQuizQuestion {
 }
 
 model OpenEndedQuestion {
-  id         Int              @id @default(autoincrement())
-  questionId Int              @unique
-  userQuizId Int?
-  hints      String
-  difficulty String
-  tags       String
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
-  question   UserQuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  userQuiz   UserQuiz?        @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
+  id                 Int              @id @default(autoincrement())
+  questionId         Int              @unique
+  userQuizId         Int?
+  hints              String
+  difficulty         String
+  tags               String
+  sampleAnswer       String?
+  evaluationCriteria String?
+  maxScore           Int?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  question           UserQuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  userQuiz           UserQuiz?        @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
 
   @@index([difficulty])
-  @@index([tags]) // Added for tag-based filtering
+  @@index([tags])
 }
 
 model UserQuizAttemptQuestion {
@@ -437,7 +431,7 @@ model UserQuizAttemptQuestion {
   @@index([attemptId])
   @@index([questionId])
   @@index([isCorrect])
-  @@index([timeSpent]) // Added for time analytics
+  @@index([timeSpent])
 }
 
 model UserQuizRating {
@@ -453,33 +447,75 @@ model UserQuizRating {
   @@unique([userId, userQuizId])
   @@index([userQuizId])
   @@index([rating])
-  @@index([createdAt]) // Added for recent ratings
+  @@index([createdAt])
 }
 
 model FlashCard {
-  id         Int       @id @default(autoincrement())
+  id         Int               @id @default(autoincrement())
   question   String
   answer     String
   userId     String
   slug       String?
   userQuizId Int?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
   difficulty String?
-  saved      Boolean   @default(false)
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userQuiz   UserQuiz? @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
+  saved      Boolean           @default(false)
+  tags       String?
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userQuiz   UserQuiz?         @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
+  reviews    FlashCardReview[]
 
   @@index([question])
   @@index([userId])
   @@index([userQuizId])
   @@index([difficulty])
-  @@index([saved]) // Added for saved flashcards filtering
-  @@index([createdAt]) // Added for recent flashcards
-  @@index([slug]) // Added for slug lookups
+  @@index([saved])
+  @@index([createdAt])
+  @@index([slug])
+  @@index([tags])
 }
 
-// Extension tables for future features (without modifying existing tables)
+model FlashCardReview {
+  id             Int       @id @default(autoincrement())
+  flashCardId    Int
+  userId         String
+  rating         String
+  reviewDate     DateTime  @default(now())
+  timeSpent      Int?
+  notes          String?
+  reviewCount    Int       @default(1)
+  nextReviewDate DateTime?
+  flashCard      FlashCard @relation(fields: [flashCardId], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([flashCardId])
+  @@index([userId])
+  @@index([rating])
+  @@index([reviewDate])
+  @@index([nextReviewDate])
+}
+
+model QuizProgress {
+  id                   Int      @id @default(autoincrement())
+  userId               String
+  courseId             Int
+  chapterId            Int
+  currentQuestionIndex Int      @default(0)
+  answers              Json?
+  timeSpent            Int      @default(0)
+  isCompleted          Boolean  @default(false)
+  lastUpdated          DateTime @default(now())
+  score                Int?
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId, chapterId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([isCompleted])
+  @@index([lastUpdated])
+}
+
 model UserAchievement {
   id              String   @id @default(cuid())
   userId          String
@@ -487,9 +523,10 @@ model UserAchievement {
   title           String
   description     String?
   earnedAt        DateTime @default(now())
-  metadata        Json? // Flexible field for achievement-specific data
+  metadata        Json?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([achievementType])
@@ -503,37 +540,15 @@ model UserNotification {
   title     String
   message   String
   isRead    Boolean  @default(false)
-  metadata  Json? // Flexible field for notification-specific data
+  metadata  Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([isRead])
   @@index([type])
   @@index([createdAt])
-}
-
-model CourseTag {
-  id        Int           @id @default(autoincrement())
-  name      String        @unique
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  courses   CourseToTag[]
-
-  @@index([name])
-}
-
-model CourseToTag {
-  id        Int       @id @default(autoincrement())
-  courseId  Int
-  tagId     Int
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  tag       CourseTag @relation(fields: [tagId], references: [id])
-
-  @@unique([courseId, tagId])
-  @@index([courseId])
-  @@index([tagId])
 }
 
 model UserSettings {
@@ -544,9 +559,10 @@ model UserSettings {
   darkMode           Boolean  @default(false)
   language           String   @default("en")
   timezone           String?
-  preferences        Json? // Flexible field for user preferences
+  preferences        Json?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -559,8 +575,7 @@ model TokenTransaction {
   type        String
   description String?
   createdAt   DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([type])
@@ -568,12 +583,11 @@ model TokenTransaction {
 }
 
 model UserReferral {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  referralCode String   @unique
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
+  id           String            @id @default(cuid())
+  userId       String            @unique
+  referralCode String            @unique
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   referralUses UserReferralUse[]
 
@@ -581,18 +595,17 @@ model UserReferral {
 }
 
 model UserReferralUse {
-  id          String    @id @default(cuid())
+  id          String       @id @default(cuid())
   referrerId  String
   referredId  String
   referralId  String
-  status      String // PENDING, COMPLETED, CANCELLED
+  status      String
   planId      String?
   completedAt DateTime?
-  createdAt   DateTime  @default(now())
-
-  referrer User         @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
-  referred User         @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
-  referral UserReferral @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  referral    UserReferral @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  referred    User         @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
+  referrer    User         @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
 
   @@index([referralId])
   @@index([referrerId])
@@ -605,10 +618,10 @@ model ContactSubmission {
   id              Int      @id @default(autoincrement())
   name            String
   email           String
-  message         String   @db.Text
-  status          String   @default("NEW") // NEW, RESPONDED, ARCHIVED
-  adminNotes      String?  @db.Text
-  responseMessage String?  @db.Text
+  message         String
+  status          String   @default("NEW")
+  adminNotes      String?
+  responseMessage String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -621,12 +634,43 @@ model PendingSubscription {
   referralCode  String?
   promoCode     String?
   promoDiscount Float?
-  status        String   @default("PENDING") // PENDING, COMPLETED, CANCELLED
+  status        String   @default("PENDING")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
+}
+
+model Bookmark {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  courseId  Int?
+  chapterId Int?
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  chapter   Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  course    Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([chapterId])
+  @@index([createdAt])
+}
+
+model Certificate {
+  id             Int      @id @default(autoincrement())
+  userId         String
+  courseId       Int
+  issuedAt       DateTime @default(now())
+  certificateUrl String?
+  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([issuedAt])
 }

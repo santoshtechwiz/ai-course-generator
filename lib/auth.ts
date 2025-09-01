@@ -119,6 +119,7 @@ export const authOptions: NextAuthOptions = {
               credits: true,
               creditsUsed: true,
               isAdmin: true,
+              isActive: true,
               userType: true,
               subscription: {
                 select: {

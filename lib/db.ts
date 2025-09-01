@@ -5,7 +5,7 @@ import { type Prisma, PrismaClient } from "@prisma/client"
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
 
 // Use Neon serverless driver instead of the default Node.js driver
-const databaseUrl = process.env.DATABASE_URL!
+const databaseUrl = process.env.DATABASE_URL_LOCAL!
 
 export const prisma =
   globalForPrisma.prisma ??

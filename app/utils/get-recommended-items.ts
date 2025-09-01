@@ -24,9 +24,7 @@ export async function getRecommendedItems(limit: number = 3): Promise<Recommende
       where: {
         isPublic: true,
       },
-      orderBy: {
-        viewCount: "desc",
-      },
+     
       take: Math.ceil(limit / 2),
       select: {
         id: true,
