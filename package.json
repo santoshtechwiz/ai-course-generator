@@ -18,6 +18,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "seed": "ts-node prisma/seed.ts",
     "server": "node server",
     "postinstall": "prisma generate",
     "dev:migrate": "npx prisma migrate dev",
@@ -99,6 +100,7 @@
     "autoprefixer": "10.4.21",
     "axios": "^1.7.7",
     "babel-plugin-react-compiler": "19.1.0-rc.2",
+    "bcryptjs": "3.0.2",
     "canvas": "3.1.1",
     "canvas-confetti": "^1.9.3",
     "chalk": "5.6.0",
@@ -233,6 +235,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "eslint": "^8.57.0",
     "eslint-config-next": "^15.4.5",
+    "eslint-plugin-prettier": "5.5.4",
     "eslint-plugin-unused-imports": "4.2.0",
     "identity-obj-proxy": "3.0.0",
     "jest": "^29.7.0",
@@ -246,7 +249,7 @@
     "recoil": "^0.7.7",
     "tailwindcss": "3.4.1",
     "ts-jest": "^29.1.1",
-    "ts-node": "^10.9.2"
+    "ts-node": "10.9.2"
   },
   "overrides": {
     "prettier": "3.5.3"

@@ -2,16 +2,37 @@ version: "3.9"
 
 services:
   postgres:
-    image: postgres
+    image: postgres:15-alpine
     restart: always
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=admin
-      - POSTGRES_DB=prisma
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: courseai
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./docker/seeds:/docker-entrypoint-initdb.d/seeds:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d courseai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - node-postgres
+
+  postgres-shadow:
+    image: postgres:15-alpine
+    restart: always
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: prisma_shadow
+    volumes:
+      - pgdata_shadow:/var/lib/postgresql/data
     networks:
       - node-postgres
 
@@ -20,3 +41,4 @@ networks:
 
 volumes:
   pgdata:
+  pgdata_shadow:

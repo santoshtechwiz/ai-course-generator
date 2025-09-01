@@ -48,3 +48,29 @@ test-report.html
 test-report.html
 test-report.html
 test-report.html
+
+# ----------------------------------------------------------------------------
+# Docker (local development artifacts)
+# ----------------------------------------------------------------------------
+# Persistent Postgres volumes / runtime data
+docker/pgdata/
+docker/pgdata_shadow/
+
+# Optional local logs or generated data folders if created
+docker/logs/
+docker/data/
+
+# Local docker env overrides
+docker/*.env
+
+# Misc docker helper directories
+.docker/
+docker-volumes/
+
+# Compose override files generated locally
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Avoid committing any container inspection outputs
+*.container-inspect.json
+
