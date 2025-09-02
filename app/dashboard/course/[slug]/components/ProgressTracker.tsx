@@ -23,6 +23,8 @@ import {
   TrendingUp
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import useProgressTracker from "@/hooks/use-progress-tracker"
+import { useSession } from "next-auth/react"
 
 interface ProgressTrackerProps {
   courseId: string | number
@@ -53,8 +55,24 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
 }) => {
   const dispatch = useAppDispatch()
   const { toast } = useToast()
+  const { data: session } = useSession()
   const [pendingActions, setPendingActions] = useState<ProgressAction[]>([])
   const [isSaving, setIsSaving] = useState(false)
+
+  // Initialize the new progress tracker
+  const { updateProgress } = useProgressTracker({
+    userId: session?.user?.id || '',
+    courseId: typeof courseId === 'string' ? parseInt(courseId) : courseId,
+    chapterId: currentChapterId ? parseInt(currentChapterId) : 0,
+    onError: (error) => {
+      console.error('Progress tracking error:', error)
+      toast({
+        title: "Progress Save Failed",
+        description: "Your progress couldn't be saved. We'll retry automatically.",
+        variant: "destructive",
+      })
+    },
+  })
 
   // Get course progress from Redux
   const courseProgress = useAppSelector((state) => state.course.courseProgress[courseId])
@@ -92,24 +110,40 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
       switch (action.type) {
         case 'chapter_complete':
           if (action.chapterId) {
-            dispatch(markLectureCompleted({ 
-              courseId, 
-              lectureId: action.chapterId 
+            // Use the new queue-based progress tracking
+            updateProgress(100, 'chapter', {
+              chapterId: action.chapterId,
+              completed: true,
+              timestamp: Date.now()
+            })
+
+            // Update Redux for UI state
+            dispatch(markLectureCompleted({
+              courseId,
+              lectureId: action.chapterId
             }))
-            
+
             // Check if course is now completed
             const newCompletedCount = completedChapters.length + 1
             if (newCompletedCount >= totalChapters) {
               dispatch(setIsCourseCompleted({ courseId, isCourseCompleted: true }))
               onCourseComplete?.()
             }
-            
+
             onChapterComplete?.(action.chapterId)
           }
           break
 
         case 'position_update':
           if (action.chapterId && action.timestamp !== undefined) {
+            // Use the new queue-based progress tracking
+            updateProgress(0, 'video', {
+              chapterId: action.chapterId,
+              timestamp: action.timestamp,
+              positionUpdate: true
+            })
+
+            // Update Redux for UI state
             dispatch(setLastPosition({
               courseId,
               lectureId: action.chapterId,
@@ -126,11 +160,11 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
 
       updateActionStatus(actionIndex, 'success')
       onProgressUpdate?.(progressPercentage)
-      
+
       return true
     } catch (error) {
       console.error('Progress save error:', error)
-      
+
       if (retryCount < maxRetries) {
         // Retry after exponential backoff
         const delay = Math.pow(2, retryCount) * 1000
@@ -141,18 +175,18 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
       }
 
       updateActionStatus(actionIndex, 'error', error instanceof Error ? error.message : 'Unknown error')
-      
+
       toast({
         title: "Progress Save Failed",
         description: "Your progress couldn't be saved. Don't worry, we'll retry automatically.",
         variant: "destructive",
       })
-      
+
       return false
     } finally {
       setIsSaving(false)
     }
-  }, [courseId, completedChapters.length, totalChapters, pendingActions.length, dispatch, toast, onProgressUpdate, onChapterComplete, onCourseComplete, addPendingAction, updateActionStatus])
+  }, [courseId, completedChapters.length, totalChapters, pendingActions.length, dispatch, toast, onProgressUpdate, onChapterComplete, onCourseComplete, addPendingAction, updateActionStatus, updateProgress, progressPercentage])
 
   // Mark chapter as completed
   const markChapterComplete = useCallback(async (chapterId: string) => {

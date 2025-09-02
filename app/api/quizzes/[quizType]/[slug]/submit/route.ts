@@ -353,10 +353,11 @@ async function updateCourseProgress(userId: string, quiz: any, totalTime: number
           // Add this chapter to completed chapters if not already there
           let completedChapterIds = [];
           try {
-            completedChapterIds = courseProgress.completedChapters ? 
-              JSON.parse(courseProgress.completedChapters) : [];
+            const chapterProgressData = courseProgress.chapterProgress as any;
+            completedChapterIds = chapterProgressData?.completedChapters ? 
+              chapterProgressData.completedChapters : [];
           } catch (e) {
-            console.warn("Invalid JSON in completedChapters:", courseProgress.completedChapters);
+            console.warn("Invalid JSON in chapterProgress:", courseProgress.chapterProgress);
             console.error("JSON parse error:", e);
             completedChapterIds = [];
           }
@@ -383,7 +384,11 @@ async function updateCourseProgress(userId: string, quiz: any, totalTime: number
               id: courseProgress.id
             },
             data: {
-              completedChapters: JSON.stringify(completedChapterIds),
+              chapterProgress: JSON.stringify({
+                completedChapters: completedChapterIds,
+                lastQuizCompleted: chapter.id,
+                quizScore: submission.score
+              }),
               progress: progress,
               isCompleted: progress === 100, // Mark as completed if 100%
               completionDate: progress === 100 ? new Date() : courseProgress.completionDate
@@ -484,14 +489,6 @@ async function processQuizSubmission(
     // Continue with core quiz submission transaction (optimized for speed)
     const result = await prisma.$transaction(
       async (tx) => {
-        await tx.user.update({
-          where: { id: userId },
-          data: {
-            totalQuizzesAttempted: { increment: 1 },
-            totalTimeSpent: { increment: Math.round(submission.totalTime) },
-          },
-        })
-
         // Find the quiz by slug to get its numeric ID
         const quizRecord = await tx.userQuiz.findUnique({
           where: { slug: submission.quizId },

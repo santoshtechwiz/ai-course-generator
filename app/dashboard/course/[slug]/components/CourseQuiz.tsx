@@ -15,6 +15,7 @@ import { AlertCircle, CheckCircle, BookOpen, Lightbulb, XCircle, Award, BarChart
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { storageManager } from "@/utils/storage-manager"
+import useProgressTracker from "@/hooks/use-progress-tracker"
 
 import type { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
 import type { AccessLevels } from "./CourseDetailsTabs"
@@ -119,6 +120,21 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
   const isUserAuthenticated = accessLevels.isAuthenticated || !!session
   const effectiveChapterId = chapterId || chapter?.id?.toString()
   const canFetchQuestions = hasQuizAccess
+
+  // Initialize progress tracker
+  const { updateProgress } = useProgressTracker({
+    userId: session?.user?.id || '',
+    courseId: course?.id || 0,
+    chapterId: parseInt(effectiveChapterId || '0'),
+    onError: (error) => {
+      console.error('Quiz progress tracking error:', error)
+      toast({
+        title: "Progress Save Failed",
+        description: "Your quiz progress couldn't be saved. We'll retry automatically.",
+        variant: "destructive",
+      })
+    },
+  })
 
   const initialQuizState: QuizState = {
     answers: {},
@@ -282,6 +298,19 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
         score: newScore,
         answers: { ...quizState.answers, [currentQuestion.id]: userAnswer }
       })
+
+      // Update progress with the new queue system
+      const accuracy = (newScore / effectiveQuestions.length) * 100
+      updateProgress(newScore, 'quiz', {
+        quizId: chapter?.courseQuizzes?.[0]?.id || 0,
+        courseQuizId: chapter?.courseQuizzes?.[0]?.id || 0,
+        score: newScore,
+        accuracy,
+        timeSpent: 0, // You might want to track actual time spent
+        completed: true,
+        passed: newScore >= Math.ceil(effectiveQuestions.length * 0.7) // 70% passing score
+      })
+
       toast({
         title: "Quiz Complete",
         description: `You scored ${newScore}/${effectiveQuestions.length}`

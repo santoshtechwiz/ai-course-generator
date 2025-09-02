@@ -52,6 +52,7 @@ import { migratedStorage } from "@/lib/storage"
 import VideoGenerationSection from "./VideoGenerationSection"
 import { useVideoProgressTracker } from "@/hooks/useVideoProgressTracker"
 import MobilePlaylistCount from "@/components/course/MobilePlaylistCount"
+import useProgressTracker from "@/hooks/use-progress-tracker"
 
 // Import components
 import CertificateModal from "./CertificateModal"
@@ -489,7 +490,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     })
   }, [course.id, toast, state.autoplayMode])
 
-  // Progress tracking
+  // Progress tracking with new queue system
+  const { updateProgress } = useProgressTracker({
+    userId: user?.id || '',
+    courseId: course.id,
+    chapterId: currentChapter?.id || 0,
+    onError: (error: Error) => {
+      console.error('Video progress tracking error:', error)
+      toast({
+        title: "Progress Save Failed",
+        description: "Your video progress couldn't be saved. We'll retry automatically.",
+        variant: "destructive",
+      })
+    },
+  })
+
+  // Legacy progress tracking for backward compatibility
   const {
     handleVideoProgress: trackedHandleVideoProgress,
     handleVideoEnd: trackedHandleVideoEnd,
@@ -504,15 +520,31 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   })
 
   const handleVideoProgress = useCallback((progressState: { played: number, playedSeconds: number }) => {
-    trackedHandleVideoProgress(progressState)
-  }, [trackedHandleVideoProgress])
+    // Use new queue-based progress tracking
+    updateProgress(progressState.played * 100, 'video', {
+      videoId: currentVideoId,
+      playedSeconds: progressState.playedSeconds,
+      timestamp: Date.now()
+    })
+
+    // TODO: Remove legacy tracker after confirming new system works
+    // trackedHandleVideoProgress(progressState)
+  }, [updateProgress, currentVideoId])
 
   const handleVideoEnded = useCallback(() => {
-    trackedHandleVideoEnd()
+    // Use new queue-based progress tracking for completion
+    updateProgress(100, 'video', {
+      videoId: currentVideoId,
+      completed: true,
+      timestamp: Date.now()
+    })
+
+    // TODO: Remove legacy tracker after confirming new system works
+    // trackedHandleVideoEnd()
     if (isLastVideo) {
       handleCertificateClick()
     }
-  }, [trackedHandleVideoEnd, isLastVideo, handleCertificateClick])
+  }, [updateProgress, currentVideoId, isLastVideo, handleCertificateClick])
 
   // Initialize video selection
   useEffect(() => {
