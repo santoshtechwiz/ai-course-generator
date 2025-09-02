@@ -5,7 +5,7 @@ global.TextEncoder = TextEncoder
 global.TextDecoder = TextDecoder as any
 
 // Mock logger for tests
-jest.mock('../lib/logger', () => ({
+jest.mock('./lib/logger', () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn(),
