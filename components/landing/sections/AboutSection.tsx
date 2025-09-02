@@ -10,6 +10,9 @@ import VisionIcon from "../svg/VisionIcon"
 import TeamIcon from "../svg/TeamIcon"
 import RevealAnimation from "@/components/shared/RevealAnimation"
 
+// Apple-style easing
+const APPLE_EASING = [0.25, 0.1, 0.25, 1]
+
 const AboutSection = () => {
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: true, amount: 0.2 })
@@ -109,7 +112,7 @@ const AboutSection = () => {
             transition={{
               duration: 0.7,
               delay: 0.3 + index * 0.1,
-              ease: [0.25, 0.1, 0.25, 1],
+              ease: APPLE_EASING,
             }}
           >
             <div className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-2 h-full rounded-2xl border border-border/10 bg-card/30 backdrop-blur-sm">
@@ -131,7 +134,7 @@ const AboutSection = () => {
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-        transition={{ duration: 0.7, delay: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+        transition={{ duration: 0.7, delay: 0.8, ease: APPLE_EASING }}
         className="mt-24 text-center"
       >
         <h3 className="text-2xl md:text-3xl font-bold mb-12">Our Values</h3>
@@ -179,7 +182,7 @@ const AboutSection = () => {
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-        transition={{ duration: 0.7, delay: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
+        transition={{ duration: 0.7, delay: 1.2, ease: APPLE_EASING }}
         className="text-center mt-24"
       >
         <Button

@@ -11,8 +11,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks"
 import { useSession } from "next-auth/react"
 import { AccessControl } from "@/components/ui/access-control"
-import { AlertCircle, CheckCircle, BookOpen, Lightbulb, XCircle, Award } from "lucide-react" // Added Award
+import { AlertCircle, CheckCircle, BookOpen, Lightbulb, XCircle, Award, BarChart3, RotateCcw, Home, Download } from "lucide-react" // Added Award
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
+import { storageManager } from "@/utils/storage-manager"
 
 import type { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
 import type { AccessLevels } from "./CourseDetailsTabs"
@@ -111,7 +113,7 @@ const QuizSkeleton = () => (
 )
 
 export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, chapterId, accessLevels }: QuizProps) {
-  const hasQuizAccess = accessLevels.isSubscribed || accessLevels.isPublic || chapter?.isFree === true || (chapter as any)?.isFreeQuiz === true
+  const hasQuizAccess = accessLevels.isSubscribed || accessLevels.isAuthenticated || chapter?.isFree === true || (chapter as any)?.isFreeQuiz === true
   const { toast } = useToast()
   const { data: session } = useSession()
   const isUserAuthenticated = accessLevels.isAuthenticated || !!session
@@ -148,29 +150,41 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
   )
 
   useEffect(() => {
-    if (effectiveChapterId) {
+    if (effectiveChapterId && course?.id) {
       try {
-        const saved = localStorage.getItem(`quiz-progress-${effectiveChapterId}`)
-        if (saved) dispatch({ type: "LOAD_PROGRESS", progress: JSON.parse(saved) })
+        const progress = storageManager.getQuizProgress(course.id, effectiveChapterId)
+        if (progress) {
+          dispatch({ type: "LOAD_PROGRESS", progress: {
+            answers: progress.answers,
+            currentQuestionIndex: progress.currentQuestionIndex,
+            lastUpdated: new Date(progress.lastUpdated).toISOString()
+          } })
+        }
       } catch (e) {
         console.error("Failed to load quiz progress", e)
       }
     }
-  }, [effectiveChapterId])
+  }, [effectiveChapterId, course?.id])
 
   const saveProgress = useCallback(
     (data: Record<string, any>) => {
-      if (!effectiveChapterId) return
+      if (!effectiveChapterId || !course?.id) return
       try {
-        localStorage.setItem(
-          `quiz-progress-${effectiveChapterId}`,
-          JSON.stringify({ ...quizState.quizProgress, ...data, lastUpdated: new Date().toISOString() }),
-        )
+        const progress: QuizProgress = {
+          courseId: course.id,
+          chapterId: effectiveChapterId,
+          currentQuestionIndex: data.currentQuestionIndex || quizState.currentQuestionIndex,
+          answers: { ...quizState.quizProgress.answers, ...data.answers },
+          timeSpent: data.timeSpent || 0,
+          lastUpdated: Date.now(),
+          isCompleted: data.isCompleted || false
+        }
+        storageManager.saveQuizProgress(progress)
       } catch (e) {
         console.error("Failed to save quiz progress", e)
       }
     },
-    [quizState.quizProgress, effectiveChapterId],
+    [quizState.quizProgress, quizState.currentQuestionIndex, effectiveChapterId, course?.id],
   )
 
   const {
@@ -210,18 +224,22 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
     },
     enabled: !!effectiveChapterId && quizState.quizStarted && canFetchQuestions,
     retry: 2,
-    onError: () => {
+  })
+
+  // Handle query errors with toast
+  useEffect(() => {
+    if (isError && error) {
       toast({
         title: "Failed to load quiz",
         description: "Please try again later.",
         variant: "destructive",
       })
-    },
-  })
+    }
+  }, [isError, error, toast])
 
-  const effectiveQuestions = useMemo(() => {
+  const effectiveQuestions: CourseQuestion[] = useMemo(() => {
     if (!isUserAuthenticated) return demoQuestions
-    return questions && questions.length > 0 ? questions : []
+    return questions && Array.isArray(questions) && questions.length > 0 ? questions : []
   }, [isUserAuthenticated, questions, demoQuestions])
 
   const currentQuestion = effectiveQuestions[quizState.currentQuestionIndex] || null
@@ -234,8 +252,15 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
 
   const handleAnswer = (value: string) => {
     if (!currentQuestion) return
-    dispatch({ type: "SET_ANSWER", questionId: currentQuestion.id, answer: value })
-    saveProgress({ answers: { ...quizState.answers, [currentQuestion.id]: value } })
+    dispatch({ type: "SET_ANSWER", questionId: String(currentQuestion.id), answer: value })
+    saveProgress({ answers: { ...quizState.answers, [String(currentQuestion.id)]: value } })
+  }
+
+  const handleNextQuestion = () => {
+    if (quizState.currentQuestionIndex < effectiveQuestions.length - 1) {
+      dispatch({ type: "NEXT_QUESTION" })
+      saveProgress({ currentIndex: quizState.currentQuestionIndex + 1 })
+    }
   }
 
   const submitAnswer = () => {
@@ -244,12 +269,23 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
     const newScore = isCorrect ? quizState.score + 1 : quizState.score
 
     if (quizState.currentQuestionIndex < effectiveQuestions.length - 1) {
-      dispatch({ type: "NEXT_QUESTION" })
-      saveProgress({ currentIndex: quizState.currentQuestionIndex + 1 })
+      // Don't auto-advance, just mark as answered
+      saveProgress({
+        answers: { ...quizState.answers, [currentQuestion.id]: userAnswer },
+        currentIndex: quizState.currentQuestionIndex
+      })
     } else {
+      // Last question - complete the quiz
       dispatch({ type: "COMPLETE_QUIZ", score: newScore })
-      saveProgress({ completed: true, score: newScore })
-      toast({ title: "Quiz Complete", description: `You scored ${newScore}/${effectiveQuestions.length}` })
+      saveProgress({
+        completed: true,
+        score: newScore,
+        answers: { ...quizState.answers, [currentQuestion.id]: userAnswer }
+      })
+      toast({
+        title: "Quiz Complete",
+        description: `You scored ${newScore}/${effectiveQuestions.length}`
+      })
     }
   }
 
@@ -287,8 +323,8 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
         <p className="text-lg font-medium mt-4 text-foreground">{currentQuestion.question}</p>
       </CardHeader>
       <CardContent className="space-y-4 p-6 bg-purple-50/30 dark:bg-purple-950/20 rounded-b-xl">
-        <RadioGroup value={quizState.answers[currentQuestion.id] || ""} onValueChange={handleAnswer}>
-          {currentQuestion.options.map((opt: string, idx: number) => (
+        <RadioGroup value={quizState.answers[String(currentQuestion.id)] || ""} onValueChange={handleAnswer}>
+          {Array.isArray(currentQuestion.options) && currentQuestion.options.map((opt: string, idx: number) => (
             <div
               key={idx}
               className="flex items-center space-x-3 p-4 border border-purple-200 dark:border-purple-800 rounded-lg bg-white dark:bg-purple-950 hover:bg-purple-100 dark:hover:bg-purple-800 transition-all duration-200 cursor-pointer"
@@ -300,73 +336,190 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
             </div>
           ))}
         </RadioGroup>
-        <Button
-          onClick={submitAnswer}
-          className="w-full bg-purple-600 hover:bg-purple-700 text-white mt-4"
-          disabled={!quizState.answers[currentQuestion.id]}
-        >
-          {quizState.currentQuestionIndex < effectiveQuestions.length - 1 ? "Submit & Continue" : "Submit & Finish"}
-        </Button>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 mt-6">
+          <Button
+            onClick={submitAnswer}
+            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+            disabled={!quizState.answers[String(currentQuestion.id)]}
+          >
+            Submit Answer
+          </Button>
+
+          {quizState.currentQuestionIndex < effectiveQuestions.length - 1 && quizState.answers[currentQuestion.id] && (
+            <Button
+              onClick={handleNextQuestion}
+              variant="outline"
+              className="px-6 border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-950"
+            >
+              Next Question
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
 
   const resultsContent = (
-    <Card className="w-full max-w-4xl mx-auto rounded-xl shadow-lg border border-purple-200 dark:border-purple-900">
-      <CardHeader className="p-6 pb-4">
-        <CardTitle className="flex items-center gap-3 text-2xl font-semibold text-purple-800 dark:text-purple-200">
-          <Award className="h-6 w-6 text-purple-500 dark:text-purple-300" />
-          <span>Quiz Completed!</span>
-        </CardTitle>
-        <p className="text-lg text-muted-foreground mt-2">
-          You scored{" "}
-          <span className="font-bold text-purple-700 dark:text-purple-300">
-            {quizState.score} out of {effectiveQuestions.length}
-          </span>
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-6 p-6 bg-purple-50/30 dark:bg-purple-950/20 rounded-b-xl">
-        {effectiveQuestions.map((q, index) => {
-          const userAnswer = quizState.answers[q.id]
-          const isCorrect = userAnswer?.trim() === q.answer?.trim()
-          return (
-            <div
-              key={q.id}
-              className={cn(
-                "p-4 rounded-lg border-2",
-                isCorrect
-                  ? "border-green-400 bg-green-50 dark:bg-green-900/20"
-                  : "border-red-400 bg-red-50 dark:bg-red-900/20",
-              )}
-            >
-              <h4 className="font-medium text-lg flex items-center gap-2">
-                {isCorrect ? (
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                ) : (
-                  <XCircle className="h-5 w-5 text-red-600" />
-                )}
-                {index + 1}. {q.question}
-              </h4>
-              <p className="mt-2 text-base">
-                <span className="font-semibold">Your answer: </span>
-                <span className={isCorrect ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"}>
-                  {userAnswer || "No answer"}
-                </span>
-              </p>
-              {!isCorrect && (
-                <p className="mt-1 text-base">
-                  <span className="font-semibold">Correct answer: </span>
-                  <span className="text-green-700 dark:text-green-300">{q.answer}</span>
-                </p>
+    <Card className="w-full max-w-4xl mx-auto rounded-xl shadow-xl border border-purple-200 dark:border-purple-900 overflow-hidden">
+      <CardHeader className="p-8 pb-6 bg-gradient-to-r from-purple-50/50 via-purple-25/30 to-purple-50/50 dark:from-purple-950/30 dark:via-purple-900/20 dark:to-purple-950/30">
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="p-3 bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-800 dark:to-purple-900 rounded-full">
+              <Award className="h-8 w-8 text-purple-600 dark:text-purple-300" />
+            </div>
+            <CardTitle className="text-3xl font-bold text-purple-800 dark:text-purple-200">
+              Quiz Completed!
+            </CardTitle>
+          </div>
+
+          {/* Score Display */}
+          <div className="bg-white/80 dark:bg-purple-950/50 rounded-xl p-6 border border-purple-200/50 dark:border-purple-700/50 shadow-sm">
+            <div className="text-2xl font-bold text-purple-700 dark:text-purple-300 mb-2">
+              {quizState.score} out of {effectiveQuestions.length}
+            </div>
+            <div className="text-lg text-muted-foreground mb-3">
+              {Math.round((quizState.score / effectiveQuestions.length) * 100)}% Correct
+            </div>
+
+            {/* Progress Bar */}
+            <div className="w-full bg-purple-100 dark:bg-purple-900 rounded-full h-3 mb-4">
+              <div
+                className="bg-gradient-to-r from-purple-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out"
+                style={{ width: `${(quizState.score / effectiveQuestions.length) * 100}%` }}
+              />
+            </div>
+
+            {/* Performance Message */}
+            <div className="text-sm font-medium">
+              {quizState.score === effectiveQuestions.length ? (
+                <span className="text-green-600 dark:text-green-400">🎉 Perfect! Excellent work!</span>
+              ) : quizState.score >= effectiveQuestions.length * 0.8 ? (
+                <span className="text-blue-600 dark:text-blue-400">👏 Great job! Well done!</span>
+              ) : quizState.score >= effectiveQuestions.length * 0.6 ? (
+                <span className="text-yellow-600 dark:text-yellow-400">👍 Good effort! Keep learning!</span>
+              ) : (
+                <span className="text-orange-600 dark:text-orange-400">📚 Keep practicing! You've got this!</span>
               )}
             </div>
-          )
-        })}
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-8 bg-purple-50/30 dark:bg-purple-950/20">
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold text-purple-800 dark:text-purple-200 mb-6 flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Review Your Answers
+          </h3>
+
+          {effectiveQuestions.map((q: CourseQuestion, index: number) => {
+            const userAnswer = quizState.answers[q.id]
+            const isCorrect = userAnswer?.trim() === q.answer?.trim()
+            return (
+              <motion.div
+                key={q.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className={cn(
+                  "p-6 rounded-xl border-2 shadow-sm transition-all duration-200",
+                  isCorrect
+                    ? "border-green-300 bg-green-50/80 dark:bg-green-900/20 dark:border-green-700"
+                    : "border-red-300 bg-red-50/80 dark:bg-red-900/20 dark:border-red-700",
+                )}
+              >
+                <h4 className="font-semibold text-lg flex items-start gap-3 mb-4">
+                  <div className={cn(
+                    "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+                    isCorrect ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                  )}>
+                    {isCorrect ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                  </div>
+                  <span className="text-purple-800 dark:text-purple-200 leading-relaxed">
+                    {index + 1}. {q.question}
+                  </span>
+                </h4>
+
+                <div className="ml-11 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <span className="font-medium text-sm text-muted-foreground min-w-[100px]">Your answer:</span>
+                    <span className={cn(
+                      "text-sm font-medium",
+                      isCorrect ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"
+                    )}>
+                      {userAnswer || "No answer selected"}
+                    </span>
+                  </div>
+
+                  {!isCorrect && (
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium text-sm text-muted-foreground min-w-[100px]">Correct answer:</span>
+                      <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                        {q.answer}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
       </CardContent>
-      <CardContent className="text-center p-6 bg-purple-50/30 dark:bg-purple-950/20 rounded-b-xl">
-        <Button onClick={retakeQuiz} className="bg-purple-600 hover:bg-purple-700 text-white">
-          Retake Quiz
-        </Button>
+
+      {/* Action Buttons - Redesigned with better alignment */}
+      <CardContent className="p-8 bg-gradient-to-r from-purple-100/50 via-purple-50/30 to-purple-100/50 dark:from-purple-900/30 dark:via-purple-950/20 dark:to-purple-900/30 border-t border-purple-200/50 dark:border-purple-700/50">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <Button
+            onClick={retakeQuiz}
+            size="lg"
+            className="flex-1 sm:flex-none min-w-[200px] bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+          >
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Retake Quiz
+          </Button>
+
+          <Button
+            onClick={() => window.location.reload()}
+            variant="outline"
+            size="lg"
+            className="flex-1 sm:flex-none min-w-[200px] border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-600 dark:text-purple-300 dark:hover:bg-purple-950/50 shadow-sm hover:shadow-md transition-all duration-200"
+          >
+            <Home className="h-4 w-4 mr-2" />
+            Back to Course
+          </Button>
+
+          <Button
+            onClick={() => window.print()}
+            variant="outline"
+            size="lg"
+            className="flex-1 sm:flex-none min-w-[200px] border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-600 dark:text-purple-300 dark:hover:bg-purple-950/50 shadow-sm hover:shadow-md transition-all duration-200"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Print Results
+          </Button>
+        </div>
+
+        {/* Additional Stats */}
+        <div className="mt-6 pt-6 border-t border-purple-200/50 dark:border-purple-700/50">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+            <div className="bg-white/60 dark:bg-purple-950/40 rounded-lg p-4 border border-purple-200/30 dark:border-purple-700/30">
+              <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">{effectiveQuestions.length}</div>
+              <div className="text-sm text-muted-foreground">Total Questions</div>
+            </div>
+            <div className="bg-white/60 dark:bg-purple-950/40 rounded-lg p-4 border border-purple-200/30 dark:border-purple-700/30">
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">{quizState.score}</div>
+              <div className="text-sm text-muted-foreground">Correct Answers</div>
+            </div>
+            <div className="bg-white/60 dark:bg-purple-950/40 rounded-lg p-4 border border-purple-200/30 dark:border-purple-700/30">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {Math.round((quizState.score / effectiveQuestions.length) * 100)}%
+              </div>
+              <div className="text-sm text-muted-foreground">Score</div>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )
@@ -376,7 +529,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
       <CardContent className="text-red-500 flex flex-col items-center gap-3 p-8 bg-red-50/30 dark:bg-red-950/20 rounded-b-xl">
         <AlertCircle className="w-10 h-10 text-red-600" />
         <p className="text-lg font-medium">Error loading quiz: {(error as Error)?.message}</p>
-        <Button onClick={refetch} variant="outline" className="mt-4 bg-transparent">
+        <Button onClick={() => refetch()} variant="outline" className="mt-4 bg-transparent">
           Try Again
         </Button>
       </CardContent>

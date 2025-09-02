@@ -1,0 +1,80 @@
+<svg width="400" height="225" viewBox="0 0 400 225" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bookGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f8fafc;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="225" fill="url(#bgGradient)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="60" cy="60" r="25" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="340" cy="165" r="35" fill="rgba(255,255,255,0.05)"/>
+  <circle cx="320" cy="50" r="15" fill="rgba(255,255,255,0.08)"/>
+
+  <!-- Main book -->
+  <g transform="translate(150, 70)">
+    <!-- Book cover -->
+    <rect x="0" y="0" width="100" height="130" rx="8" fill="url(#bookGradient)" stroke="#e2e8f0" stroke-width="2"/>
+
+    <!-- Book spine -->
+    <rect x="-8" y="0" width="16" height="130" rx="8" fill="#64748b"/>
+
+    <!-- Book pages -->
+    <rect x="8" y="8" width="84" height="114" rx="4" fill="#ffffff"/>
+    <line x1="15" y1="20" x2="85" y2="20" stroke="#e2e8f0" stroke-width="1"/>
+    <line x1="15" y1="35" x2="75" y2="35" stroke="#e2e8f0" stroke-width="1"/>
+    <line x1="15" y1="50" x2="80" y2="50" stroke="#e2e8f0" stroke-width="1"/>
+    <line x1="15" y1="65" x2="70" y2="65" stroke="#e2e8f0" stroke-width="1"/>
+    <line x1="15" y1="80" x2="78" y2="80" stroke="#e2e8f0" stroke-width="1"/>
+    <line x1="15" y1="95" x2="82" y2="95" stroke="#e2e8f0" stroke-width="1"/>
+    <line x1="15" y1="110" x2="65" y2="110" stroke="#e2e8f0" stroke-width="1"/>
+  </g>
+
+  <!-- Graduation cap -->
+  <g transform="translate(280, 80)">
+    <!-- Cap base -->
+    <rect x="0" y="20" width="40" height="6" rx="20" fill="#ffffff"/>
+    <!-- Cap top -->
+    <polygon points="0,20 40,20 36,12 4,12" fill="#ffffff"/>
+    <!-- Tassel -->
+    <circle cx="32" cy="16" r="6" fill="#fbbf24"/>
+    <rect x="31" y="16" width="2" height="12" fill="#fbbf24"/>
+    <circle cx="32" cy="28" r="2" fill="#fbbf24"/>
+  </g>
+
+  <!-- Lightbulb -->
+  <g transform="translate(80, 140)">
+    <circle cx="12" cy="12" r="10" fill="#fbbf24"/>
+    <rect x="10" y="22" width="4" height="6" fill="#fbbf24"/>
+    <circle cx="12" cy="28" r="3" fill="#fbbf24"/>
+    <!-- Light rays -->
+    <line x1="12" y1="2" x2="12" y2="0" stroke="#fbbf24" stroke-width="2"/>
+    <line x1="22" y1="12" x2="24" y2="12" stroke="#fbbf24" stroke-width="2"/>
+    <line x1="2" y1="12" x2="0" y2="12" stroke="#fbbf24" stroke-width="2"/>
+  </g>
+
+  <!-- Certificate -->
+  <g transform="translate(280, 150)">
+    <rect x="0" y="0" width="50" height="35" rx="3" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+    <rect x="5" y="8" width="40" height="2" fill="#6b7280"/>
+    <rect x="5" y="13" width="32" height="2" fill="#9ca3af"/>
+    <rect x="5" y="18" width="38" height="2" fill="#9ca3af"/>
+    <rect x="5" y="23" width="28" height="2" fill="#9ca3af"/>
+    <rect x="5" y="28" width="35" height="2" fill="#9ca3af"/>
+    <!-- Seal -->
+    <circle cx="38" cy="25" r="6" fill="#10b981"/>
+    <text x="38" y="27" text-anchor="middle" fill="white" font-size="5" font-weight="bold">✓</text>
+  </g>
+
+  <!-- Decorative elements -->
+  <line x1="0" y1="200" x2="400" y2="200" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <line x1="0" y1="210" x2="400" y2="210" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+</svg>

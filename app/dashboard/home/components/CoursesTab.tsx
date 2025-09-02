@@ -289,6 +289,21 @@ interface CourseCardProps {
 }
 
 function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
+  // Calculate course statistics with fallback values
+  const chapterCount = course.courseUnits?.reduce((total, unit) => total + (unit.chapters?.length || 0), 0) || 0;
+  const quizCount = course.courseUnits?.reduce((total, unit) => 
+    total + (unit.chapters?.reduce((chapterTotal, chapter) => chapterTotal + (chapter.questions?.length || 0), 0) || 0), 0) || 0;
+  
+  // Calculate total duration from chapters if available
+  const totalDuration = course.courseUnits?.reduce((total, unit) => 
+    total + (unit.chapters?.reduce((chapterTotal, chapter) => chapterTotal + (typeof chapter.duration === 'number' ? chapter.duration : 0), 0) || 0), 0) || course.estimatedHours;
+  
+  // Format creation date
+  const createdDate = course.createdAt ? new Date(course.createdAt).toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'short' 
+  }) : null;
+  
   return (
     <motion.div 
       whileHover={{ y: -8, scale: 1.02 }} 
@@ -305,7 +320,7 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
           "shadow-lg hover:shadow-2xl transition-all duration-500",
           "ring-1 ring-border/50 hover:ring-primary/30",
           "bg-gradient-to-br from-card/98 via-card/95 to-card/90 backdrop-blur-sm",
-          "rounded-xl",
+          "rounded-xl h-full",
           isLoading && "opacity-70 scale-[0.98]",
         )}
         onClick={onClick}
@@ -320,8 +335,7 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
             className={cn(
               "object-cover transition-all duration-700 will-change-transform",
               "group-hover:scale-110 group-hover:brightness-105 group-hover:saturate-110"
-            )}
-          />
+            )} />
 
           {/* Enhanced Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -336,17 +350,23 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
             </Badge>
           )}
 
+          {/* Difficulty Level Badge */}
+          {course.level && (
+            <Badge className="absolute right-3 top-3 bg-secondary/90 text-secondary-foreground shadow-lg backdrop-blur-sm border-0 font-medium">
+              {course.level}
+            </Badge>
+          )}
+
           {/* Loading Overlay */}
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-              <Loader2 className="h-8 w-8 text-primary" />
+              <Loader2 className="h-8 w-8 text-primary animate-spin" />
             </div>
           )}
 
           {/* Enhanced Play Button Overlay */}
-          {/* Enhanced Overlay with Play Button and Metadata */}
           <div className="absolute inset-0 flex flex-col justify-between p-4 opacity-0 transition-all duration-300 group-hover:opacity-100">
-            <div className="flex justify-between">
+            <div className="flex justify-between items-start">
               {course.category && (
                 <Badge className="bg-primary/90 text-primary-foreground shadow-lg backdrop-blur-sm border-0 font-medium">
                   {typeof course.category === 'object' ? course.category.name : course.category}
@@ -376,7 +396,7 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
           </div>
         </div>
 
-        <CardContent className="p-6 space-y-5">
+        <CardContent className="p-6 space-y-5 flex-1 flex flex-col">
           {/* Title and Description with Enhanced Typography */}
           <div className="space-y-3">
             <h3 className="line-clamp-2 text-lg font-semibold leading-tight group-hover:text-primary transition-colors duration-300">
@@ -385,6 +405,22 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
             <p className="line-clamp-2 text-sm text-muted-foreground leading-relaxed tracking-wide">
               {course.description}
             </p>
+            
+            {/* Instructor and Creation Date */}
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              {course.instructor && (
+                <span className="flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  {course.instructor}
+                </span>
+              )}
+              {createdDate && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {createdDate}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Progress Section with Enhanced Visualization */}
@@ -416,70 +452,133 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
             </div>
           )}
 
-          {/* Enhanced Course Stats */}
-          <div className="flex items-center justify-between pt-3 border-t border-border/50">
-            <div className="grid grid-cols-3 gap-4">
-              <motion.div 
-                whileHover={{ y: -2 }}
-                className="group/stat flex items-center gap-2 text-sm text-muted-foreground"
+          {/* Enhanced Course Stats Grid - 2x3 Layout */}
+          <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border/50">
+            {/* Chapters */}
+            <motion.div 
+              whileHover={{ y: -2 }}
+              className="group/stat flex items-center gap-3 text-sm"
+            >
+              <div className="p-2.5 rounded-xl bg-accent/50 shadow-sm ring-1 ring-border/5 group-hover/stat:ring-primary/20 group-hover/stat:bg-accent transition-all duration-300">
+                <BookOpen className="h-4 w-4 text-primary/80" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground font-medium">Chapters</span>
+                <span className="font-semibold text-foreground">{chapterCount || 'N/A'}</span>
+              </div>
+            </motion.div>
+
+            {/* Quizzes */}
+            <motion.div 
+              whileHover={{ y: -2 }}
+              className="group/stat flex items-center gap-3 text-sm"
+            >
+              <div className="p-2.5 rounded-xl bg-accent/50 shadow-sm ring-1 ring-border/5 group-hover/stat:ring-primary/20 group-hover/stat:bg-accent transition-all duration-300">
+                <CheckCircle className="h-4 w-4 text-primary/80" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground font-medium">Quizzes</span>
+                <span className="font-semibold text-foreground">{quizCount || 'N/A'}</span>
+              </div>
+            </motion.div>
+
+            {/* Duration */}
+            <motion.div 
+              whileHover={{ y: -2 }}
+              className="group/stat flex items-center gap-3 text-sm"
+            >
+              <div className="p-2.5 rounded-xl bg-accent/50 shadow-sm ring-1 ring-border/5 group-hover/stat:ring-primary/20 group-hover/stat:bg-accent transition-all duration-300">
+                <Clock className="h-4 w-4 text-primary/80" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground font-medium">Duration</span>
+                <span className="font-semibold text-foreground">{totalDuration ? `${totalDuration}h` : (course.estimatedHours ? `${course.estimatedHours}h` : 'N/A')}</span>
+              </div>
+            </motion.div>
+
+            {/* Students */}
+            <motion.div 
+              whileHover={{ y: -2 }}
+              className="group/stat flex items-center gap-3 text-sm"
+            >
+              <div className="p-2.5 rounded-xl bg-accent/50 shadow-sm ring-1 ring-border/5 group-hover/stat:ring-primary/20 group-hover/stat:bg-accent transition-all duration-300">
+                <Users className="h-4 w-4 text-primary/80" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground font-medium">Students</span>
+                <span className="font-semibold text-foreground">{course.students ? `${course.students.toLocaleString()}` : 'N/A'}</span>
+              </div>
+            </motion.div>
+
+            {/* Rating */}
+            <motion.div 
+              whileHover={{ y: -2 }}
+              className="group/stat flex items-center gap-3 text-sm"
+            >
+              <div className="p-2.5 rounded-xl bg-accent/50 shadow-sm ring-1 ring-border/5 group-hover/stat:ring-primary/20 group-hover/stat:bg-accent transition-all duration-300">
+                <Star className="h-4 w-4 text-yellow-500" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground font-medium">Rating</span>
+                <span className="font-semibold text-foreground">{course.rating ? `${course.rating}/5` : '4.8/5'}</span>
+              </div>
+            </motion.div>
+
+            {/* Views */}
+            <motion.div 
+              whileHover={{ y: -2 }}
+              className="group/stat flex items-center gap-3 text-sm"
+            >
+              <div className="p-2.5 rounded-xl bg-accent/50 shadow-sm ring-1 ring-border/5 group-hover/stat:ring-primary/20 group-hover/stat:bg-accent transition-all duration-300">
+                <Play className="h-4 w-4 text-primary/80" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground font-medium">Views</span>
+                <span className="font-semibold text-foreground">{course.viewCount ? `${course.viewCount.toLocaleString()}` : 'N/A'}</span>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between pt-2 mt-auto">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-3 text-xs bg-accent/50 hover:bg-accent/80"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Handle favorite action
+                }}
               >
-                <div className="p-2 rounded-xl bg-accent/50 shadow-sm ring-1 ring-border/5 group-hover/stat:ring-primary/20 group-hover/stat:bg-accent transition-all duration-300">
-                  <Clock className="h-4 w-4 text-primary/80" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-muted-foreground">Duration</span>
-                  <span className="font-medium text-foreground">{course.estimatedHours || "N/A"}h</span>
-                </div>
-              </motion.div>
-              <motion.div 
-                whileHover={{ y: -2 }}
-                className="group/stat flex items-center gap-2 text-sm text-muted-foreground"
-              >
-                <div className="p-2 rounded-xl bg-accent/50 shadow-sm ring-1 ring-border/5 group-hover/stat:ring-primary/20 group-hover/stat:bg-accent transition-all duration-300">
-                  <Users className="h-4 w-4 text-primary/80" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-muted-foreground">Enrolled</span>
-                  <span className="font-medium text-foreground">1.2k Students</span>
-                </div>
-              </motion.div>
-              <motion.div 
-                whileHover={{ y: -2 }}
-                className="group/stat flex items-center gap-2 text-sm text-muted-foreground"
-              >
-                <div className="p-2 rounded-xl bg-accent/50 shadow-sm ring-1 ring-border/5 group-hover/stat:ring-primary/20 group-hover/stat:bg-accent transition-all duration-300">
-                  <Star className="h-4 w-4 text-yellow-500" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-muted-foreground">Rating</span>
-                  <span className="font-medium text-foreground">4.8/5</span>
-                </div>
-              </motion.div>
+                <Heart className="h-3.5 w-3.5 mr-1" />
+                Favorite
+              </Button>
             </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 w-9 rounded-full bg-accent/50 hover:bg-accent/80 opacity-0 group-hover:opacity-100 transition-all duration-300"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem className="cursor-pointer flex items-center gap-2">
-                    <Heart className="h-4 w-4" /> Add to Favorites
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer flex items-center gap-2">
-                    <Share2 className="h-4 w-4" /> Share Course
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer flex items-center gap-2">
-                    <BookOpen className="h-4 w-4" /> View Details
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 rounded-full bg-accent/50 hover:bg-accent/80 opacity-0 group-hover:opacity-100 transition-all duration-300"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem className="cursor-pointer flex items-center gap-2">
+                  <Heart className="h-4 w-4" /> Add to Favorites
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer flex items-center gap-2">
+                  <Share2 className="h-4 w-4" /> Share Course
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" /> View Details
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Enhanced Completion Badge */}

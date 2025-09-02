@@ -8,12 +8,12 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  BookOpen,
-  Users,
-  FileQuestion,
   Star,
-  Eye,
-  Clock,
+  Users,
+  Play,
+  Heart,
+  Bookmark,
+  Share2,
   Code,
   Globe,
   Database,
@@ -22,33 +22,32 @@ import {
   Smartphone,
   Shield,
   BrainCircuit,
-  Play,
-  ArrowRight,
-  TrendingUp,
-  Heart,
-  Bookmark,
-  Share2,
-  ChevronRight,
+  BookOpen,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AnimatedWrapper } from "@/components/AnimatedWrapper"
 
-// Enhanced course images with better variety
-const COURSE_IMAGES = ["/course.png", "/course_2.png", "/course_3.png", "/course_4.png"]
+// Udemy-style course images - generic SVGs for different categories
+const COURSE_IMAGES = {
+  default: "/generic-course.svg",
+  tech: "/generic-course-tech.svg",
+  programming: "/generic-course-tech.svg",
+  "web-development": "/generic-course-tech.svg",
+  "data-science": "/generic-course-tech.svg",
+  business: "/generic-course-business.svg",
+  marketing: "/generic-course-business.svg",
+  design: "/generic-course-creative.svg",
+  creative: "/generic-course-creative.svg"
+}
 
-// Enhanced gradient backgrounds for when images fail
+// Professional gradient backgrounds for when images fail
 const GRADIENT_BACKGROUNDS = [
-  "bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500",
-  "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500",
-  "bg-gradient-to-br from-orange-500 via-red-500 to-pink-500",
-  "bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500",
-  "bg-gradient-to-br from-amber-500 via-orange-500 to-red-500",
-  "bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500",
-  "bg-gradient-to-br from-rose-500 via-pink-500 to-purple-500",
-  "bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-500",
+  "bg-gradient-to-br from-slate-100 to-slate-200",
+  "bg-gradient-to-br from-gray-100 to-gray-200",
+  "bg-gradient-to-br from-zinc-100 to-zinc-200",
+  "bg-gradient-to-br from-neutral-100 to-neutral-200",
 ]
 
 export interface CourseCardProps {
@@ -224,38 +223,18 @@ export const CourseCard = React.memo(
     const router = useRouter()
 
     // Memoized random selections for consistent rendering
-    const { selectedImage, gradientBg, categoryConfig } = useMemo(() => {
-      const imageIndex = Math.abs(title?.split("")?.reduce((a, b) => a + b.charCodeAt(0), 0) || 0) % COURSE_IMAGES.length
+    const { selectedImage, gradientBg } = useMemo(() => {
+      // Choose generic SVG based on category
+      const normalizedCategory = (typeof category === 'string' ? category : '')?.toLowerCase().replace(/\s+/g, '-')
+      const categoryImage = COURSE_IMAGES[normalizedCategory as keyof typeof COURSE_IMAGES] || COURSE_IMAGES.default
+
       const gradientIndex =
         Math.abs(slug?.split("")?.reduce((a, b) => a + b.charCodeAt(0), 0) || 0) % GRADIENT_BACKGROUNDS.length
-      const normalizedCategory = (typeof category === 'string' ? category : '')?.toLowerCase()
-      const config =
-        CATEGORY_CONFIG[normalizedCategory] ||
-        Object.entries(CATEGORY_CONFIG).find(([key]) => normalizedCategory.includes(key))?.[1] ||
-        CATEGORY_CONFIG.default
-
       return {
-        selectedImage: image || COURSE_IMAGES[imageIndex],
+        selectedImage: categoryImage,
         gradientBg: GRADIENT_BACKGROUNDS[gradientIndex],
-        categoryConfig: config,
       }
-    }, [title, slug, category, image])
-
-    const courseLevel = difficulty || determineCourseLevel(unitCount, lessonCount, quizCount)
-    const levelConfig = LEVEL_CONFIG[courseLevel] || LEVEL_CONFIG.Intermediate
-
-    // Use category-specific glow effect
-    const categoryGlow = categoryConfig.glow
-
-    // Compute duration from number of lessons if explicit duration is not provided
-    const computedDuration = useMemo(() => {
-      if (duration) return duration
-      const minutesPerLesson = 6 // heuristic average per lesson
-      const totalMinutes = Math.max(lessonCount * minutesPerLesson, 10)
-      const hours = Math.floor(totalMinutes / 60)
-      const minutes = totalMinutes % 60
-      return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
-    }, [duration, lessonCount])
+    }, [category, slug])
 
     const handleCardClick = useCallback((e: React.MouseEvent) => {
       e.preventDefault()
@@ -273,362 +252,326 @@ export const CourseCard = React.memo(
       setIsBookmarked(!isBookmarked)
     }, [isBookmarked])
 
-    const handleShareClick = useCallback((e: React.MouseEvent) => {
-      e.stopPropagation()
-      navigator.share?.({
-        title: title,
-        text: description,
-        url: window.location.origin + `/dashboard/course/${slug}`,
-      }).catch(() => {
-        navigator.clipboard?.writeText(window.location.origin + `/dashboard/course/${slug}`)
-      })
-    }, [title, description, slug])
-
-    const handleEnrollClick = useCallback((e: React.MouseEvent) => {
-      e.stopPropagation()
-      setIsNavigating(true)
-      router.push(`/dashboard/course/${slug}`)
-    }, [router, slug])
-
     if (loading) {
       return (
-        <Card className={cn(
-          "w-full min-h-96 overflow-hidden border border-border/50 bg-card/50",
-          "animate-pulse",
-          className
-        )}>
-          <div className="flex flex-col h-full">
-            {/* Image skeleton with shimmer */}
-            <div className="relative w-full h-64 bg-gradient-to-br from-muted/60 to-muted/30 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-shimmer" />
-              <div className="absolute top-4 left-4">
-                <Skeleton className="h-6 w-20 rounded-full" />
-              </div>
+        <Card className="w-full overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div className="aspect-video bg-gray-200 animate-pulse" />
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-5 w-20" />
             </div>
-
-            {/* Content skeleton */}
-            <div className="flex-1 p-8 space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <Skeleton className="h-5 w-20 rounded-full" />
-                  <Skeleton className="h-8 w-4/5 rounded-lg" />
-                </div>
-                <div className="space-y-3">
-                  <Skeleton className="h-4 w-full rounded" />
-                  <Skeleton className="h-4 w-full rounded" />
-                  <Skeleton className="h-4 w-3/4 rounded" />
-                </div>
-                <Skeleton className="h-4 w-48 rounded" />
-                <div className="flex items-center gap-3 p-3 bg-muted/60 rounded-lg">
-                  <Skeleton className="h-5 w-16 rounded" />
-                  <div className="flex gap-1">
-                    {[1,2,3,4,5].map((i) => (
-                      <Skeleton key={i} className="h-4 w-4 rounded" />
-                    ))}
+            <Skeleton className="h-5 w-3/4 mb-2" />
+            <Skeleton className="h-4 w-1/2 mb-3" />
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-2/3 mb-4" />
+            <div className="flex items-center gap-2 mb-3">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {[1,2,3,4].map((i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <div>
+                    <Skeleton className="h-4 w-8 mb-1" />
+                    <Skeleton className="h-3 w-12" />
                   </div>
-                  <Skeleton className="h-4 w-24 rounded" />
                 </div>
-                <div className="grid grid-cols-2 gap-4 p-4 bg-muted/60 rounded-lg">
-                  {[...Array(4)].map((_, j) => (
-                    <div key={j} className="flex items-center gap-3">
-                      <Skeleton className="w-10 h-10 rounded-full" />
-                      <div className="space-y-1">
-                        <Skeleton className="h-3 w-16 rounded" />
-                        <Skeleton className="h-4 w-20 rounded" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="flex justify-between items-center pt-6 border-t border-border/50">
-                <Skeleton className="h-6 w-20 rounded-full" />
-                <Skeleton className="h-12 w-32 rounded-md" />
-              </div>
+              ))}
             </div>
-          </div>
+            <div className="flex items-center justify-between mb-3">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <Skeleton className="h-6 w-20" />
+          </CardContent>
         </Card>
       )
     }
 
     return (
       <TooltipProvider>
-        <AnimatedWrapper
-          animation="scale"
-          delay={0.1}
-          duration={0.4}
-          className={cn("w-full h-auto min-h-96 overflow-hidden border border-border/50 bg-card course-card-enhanced", className)}
+        <Card
+          onClick={handleCardClick}
+          className={cn(
+            "w-full overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group",
+            "hover:border-gray-300 hover:-translate-y-1",
+            isNavigating && "opacity-75 scale-95",
+            className
+          )}
+          role="button"
+          tabIndex={0}
+          aria-label={`View course: ${title} - ${description}. Rated ${rating} stars by ${enrolledCount} students.`}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleCardClick(e as any);
+            }
+          }}
         >
-          <Card
-            onClick={handleCardClick}
-            className={cn(
-              "w-full h-full overflow-hidden border border-border/50 bg-card",
-              "shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer",
-              "flex flex-col group relative",
-              isHovered && "border-primary/20",
-              isNavigating && "opacity-75 scale-95",
+          {/* Course Thumbnail */}
+          <div className="relative aspect-video overflow-hidden bg-gray-100">
+            {!imageError ? (
+              <Image
+                src={selectedImage || "/generic-course-fallback.svg"}
+                alt={`${title} course thumbnail`}
+                fill
+                loading="lazy"
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className={cn("w-full h-full flex items-center justify-center", gradientBg)}>
+                <div className="text-gray-400 text-sm font-medium">Course Image</div>
+              </div>
             )}
-            role="button"
-            tabIndex={0}
-            aria-label={`View course: ${title} - ${description}. ${lessonCount} lessons, ${computedDuration} duration, rated ${rating} stars by ${enrolledCount} students.`}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleCardClick(e as any);
-              }
-            }}
-          >
-            {/* Image Section - Larger for better visibility */}
-            <div className="relative w-full h-64 overflow-hidden flex-shrink-0">
-              {/* Background Pattern */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
 
-              {!imageError ? (
-                <Image
-                  src={selectedImage || "/placeholder.svg"}
-                  alt={`${title} course thumbnail`}
-                  fill
-                  loading="lazy"
-                  className={cn(
-                    "object-cover transition-all duration-500",
-                    isHovered ? "scale-110 brightness-105" : "scale-100",
-                  )}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  onError={() => setImageError(true)}
-                />
-              ) : (
-                <div className={cn("absolute inset-0 flex items-center justify-center", gradientBg)}>
-                  <div
-                    className="w-16 h-16 text-white/90"
-                  >
-                    <categoryConfig.icon className="w-full h-full drop-shadow-lg" />
-                  </div>
-                </div>
-              )}
+            {/* Play button overlay */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center">
+              <div className="w-12 h-12 bg-white/90 rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <Play className="w-5 h-5 text-gray-800 ml-0.5" fill="currentColor" />
+              </div>
+            </div>
 
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            {/* Best Seller Badge */}
+            {isPopular && (
+              <Badge className="absolute top-3 left-3 bg-yellow-400 text-yellow-900 hover:bg-yellow-400 border-0 font-semibold text-xs px-2 py-1">
+                Bestseller
+              </Badge>
+            )}
+          </div>
 
-              {/* Top left badges */}
-              <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                <Badge className={cn("px-3 py-1 text-xs font-semibold", levelConfig.badge)}>
-                  {courseLevel}
-                </Badge>
-                {isPopular && (
-                  <Badge className="px-3 py-1 text-xs bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">
-                    <Star className="w-3 h-3 mr-1 fill-current" />
-                    Popular
+          {/* Course Content */}
+          <CardContent className="p-4 flex flex-col h-full">
+            {/* Header with Category and Badges */}
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-2">
+                {category && (
+                  <Badge className={cn("text-xs font-medium px-2 py-1", CATEGORY_CONFIG[category.toLowerCase()]?.badge || CATEGORY_CONFIG.default.badge)}>
+                    {React.createElement(CATEGORY_CONFIG[category.toLowerCase()]?.icon || CATEGORY_CONFIG.default.icon, { className: "w-3 h-3 mr-1" })}
+                    {category}
                   </Badge>
                 )}
-                {isTrending && (
-                  <Badge className="px-3 py-1 text-xs bg-gradient-to-r from-green-400 to-emerald-500 text-white border-0">
-                    <TrendingUp className="w-3 h-3 mr-1" />
-                    Trending
+                {difficulty && (
+                  <Badge className={cn("text-xs font-medium px-2 py-1", LEVEL_CONFIG[difficulty].badge)}>
+                    {difficulty}
                   </Badge>
                 )}
               </div>
-
-              {/* Top right actions */}
-              <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              
+              {/* Action buttons */}
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 hover:bg-gray-100"
                       onClick={handleFavoriteClick}
-                      className={cn(
-                        "p-2 rounded-full backdrop-blur-sm transition-all duration-300 hover:scale-110",
-                        isFavorite
-                          ? "bg-red-500 text-white shadow-lg shadow-red-500/25"
-                          : "bg-white/20 text-white hover:bg-white/30",
-                      )}
-                      aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
                     >
-                      <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
-                    </button>
+                      <Heart className={cn("h-4 w-4", isFavorite ? "fill-red-500 text-red-500" : "text-gray-400")} />
+                    </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {isFavorite ? "Remove from favorites" : "Add to favorites"}
+                    <p>{isFavorite ? "Remove from favorites" : "Add to favorites"}</p>
                   </TooltipContent>
                 </Tooltip>
-
+                
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 hover:bg-gray-100"
                       onClick={handleBookmarkClick}
-                      className={cn(
-                        "p-2 rounded-full backdrop-blur-sm transition-all duration-300 hover:scale-110",
-                        isBookmarked
-                          ? "bg-blue-500 text-white shadow-lg shadow-blue-500/25"
-                          : "bg-white/20 text-white hover:bg-white/30",
-                      )}
-                      aria-label={isBookmarked ? "Remove bookmark" : "Bookmark course"}
                     >
-                      <Bookmark className={cn("w-4 h-4", isBookmarked && "fill-current")} />
-                    </button>
+                      <Bookmark className={cn("h-4 w-4", isBookmarked ? "fill-blue-500 text-blue-500" : "text-gray-400")} />
+                    </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {isBookmarked ? "Remove bookmark" : "Bookmark course"}
+                    <p>{isBookmarked ? "Remove bookmark" : "Bookmark course"}</p>
+                  </TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 hover:bg-gray-100"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Share2 className="h-4 w-4 text-gray-400" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Share course</p>
                   </TooltipContent>
                 </Tooltip>
               </div>
-
-              {/* Play button overlay */}
-              <AnimatedWrapper
-                animation={isHovered ? "scale" : "none"}
-                className="absolute inset-0 flex items-center justify-center"
-              >
-                <div className="w-12 h-12 bg-primary rounded-full shadow-lg shadow-primary/25 flex items-center justify-center">
-                  <Play className="w-5 h-5 text-primary-foreground ml-0.5" fill="currentColor" />
-                </div>
-              </AnimatedWrapper>
             </div>
 
-            {/* Content Section - Standardized height with better typography hierarchy */}
-            <div className="flex-1 p-8 flex flex-col justify-between min-h-0">
-              <div className="space-y-3 flex-1 min-h-0">
-                {/* Category and title - Enhanced typography hierarchy */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className={cn("p-2 rounded-lg", categoryConfig.bg)}>
-                      <categoryConfig.icon className={cn("w-5 h-5", categoryConfig.color)} />
-                    </div>
-                    <Badge className={cn("text-sm px-4 py-1.5 font-semibold", categoryConfig.badge)}>
-                      {category}
-                    </Badge>
+            {/* Title */}
+            <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 leading-tight group-hover:text-purple-600 transition-colors duration-200">
+              {title}
+            </h3>
+
+            {/* Instructor */}
+            <p className="text-sm text-gray-600 mb-2 font-medium">
+              {instructor}
+            </p>
+
+            {/* Rating and Enrollment */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-bold text-gray-900">{rating.toFixed(1)}</span>
+                  <div className="flex" role="img" aria-label={`Rating: ${rating} out of 5 stars`}>
+                    {[1,2,3,4,5].map((i) => (
+                      <Star
+                        key={i}
+                        className={cn(
+                          "h-4 w-4",
+                          rating >= i ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                        )}
+                      />
+                    ))}
                   </div>
-
-                  <h3 className="text-xl font-bold leading-tight group-hover:text-primary transition-colors duration-300 line-clamp-2 text-foreground font-heading">
-                    {title}
-                  </h3>
                 </div>
-
-                {/* Description - Enhanced typography */}
-                <p className="text-base text-muted-foreground line-clamp-3 leading-relaxed font-medium course-description">
-                  {description}
-                </p>
-
-                {/* Instructor and updated date - Enhanced metadata typography */}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="font-semibold text-foreground">By {instructor}</span>
-                  {updatedAt && (
-                    <>
-                      <span className="text-muted-foreground/60">•</span>
-                      <span className="font-medium">Updated {new Date(updatedAt).toLocaleDateString()}</span>
-                    </>
-                  )}
+                <span className="text-sm text-gray-500">
+                  ({enrolledCount.toLocaleString()})
+                </span>
+              </div>
+              
+              {/* Completion Rate */}
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 rounded-full transition-all duration-300"
+                    style={{ width: `${completionRate}%` }}
+                  />
                 </div>
+                <span className="font-medium">{completionRate}%</span>
+              </div>
+            </div>
 
-                {/* Rating - Enhanced prominent display */}
-                {ratingLoading ? (
-                  <div className="h-5 w-32 bg-muted/60 rounded animate-pulse" />
-                ) : (
-                  <div className="flex items-center gap-3 p-3 course-rating rounded-lg border border-yellow-200/50 dark:border-yellow-800/50">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                        {typeof rating === 'number' ? rating.toFixed(1) : rating}
-                      </span>
-                      <div className="flex" role="img" aria-label={`Rating: ${rating} out of 5 stars`}>
-                        {[1,2,3,4,5].map((i) => (
-                          <Star
-                            key={i}
-                            className={cn(
-                              "h-4 w-4",
-                              rating >= i ? "fill-orange-400 text-orange-400" : "text-muted-foreground/50"
-                            )}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    <div className="text-sm text-muted-foreground font-medium">
-                      ({enrolledCount.toLocaleString()} students)
-                    </div>
-                  </div>
+            {/* Trending/Popular Indicators */}
+            <div className="flex items-center gap-2 mb-3">
+              {isTrending && (
+                <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100 border-0 font-semibold text-xs px-2 py-0.5">
+                  🔥 Trending
+                </Badge>
+              )}
+              {isPopular && (
+                <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-0 font-semibold text-xs px-2 py-0.5">
+                  ⭐ Popular
+                </Badge>
+              )}
+              {completionRate >= 90 && (
+                <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-0 font-semibold text-xs px-2 py-0.5">
+                  🏆 High Completion
+                </Badge>
+              )}
+            </div>
+
+            {/* Course Description Preview */}
+            <p className="text-sm text-gray-600 mb-3 line-clamp-2 leading-relaxed">
+              {description}
+            </p>
+
+            {/* Course Stats Grid */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <BookOpen className="h-4 w-4 text-blue-500" />
+                <div>
+                  <div className="font-medium text-gray-900">{unitCount}</div>
+                  <div className="text-xs">Units</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Play className="h-4 w-4 text-green-500" />
+                <div>
+                  <div className="font-medium text-gray-900">{lessonCount}</div>
+                  <div className="text-xs">Lessons</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Code className="h-4 w-4 text-purple-500" />
+                <div>
+                  <div className="font-medium text-gray-900">{quizCount}</div>
+                  <div className="text-xs">Quizzes</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Users className="h-4 w-4 text-orange-500" />
+                <div>
+                  <div className="font-medium text-gray-900">{viewCount.toLocaleString()}</div>
+                  <div className="text-xs">Views</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tags */}
+            {tags && tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-3">
+                {tags.slice(0, 3).map((tag, index) => (
+                  <Badge key={index} variant="outline" className="text-xs px-2 py-0.5 text-gray-500 border-gray-300">
+                    {tag}
+                  </Badge>
+                ))}
+                {tags.length > 3 && (
+                  <Badge variant="outline" className="text-xs px-2 py-0.5 text-gray-500 border-gray-300">
+                    +{tags.length - 3}
+                  </Badge>
                 )}
-
-                {/* Stats - Enhanced display with better typography */}
-                <div className="grid grid-cols-2 gap-4 p-4 course-stats-grid rounded-lg border border-border/50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <Clock className="h-4 w-4 text-primary" aria-hidden="true" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Duration</p>
-                      <p className="text-sm font-bold text-foreground course-stat">{computedDuration}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
-                      <BookOpen className="h-4 w-4 text-blue-500" aria-hidden="true" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Lessons</p>
-                      <p className="text-sm font-bold text-foreground course-stat">{lessonCount} lessons</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-green-500/10 rounded-full flex items-center justify-center">
-                      <Users className="h-4 w-4 text-green-500" aria-hidden="true" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Level</p>
-                      <p className="text-sm font-bold text-foreground">{courseLevel}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-purple-500/10 rounded-full flex items-center justify-center">
-                      <FileQuestion className="h-4 w-4 text-purple-500" aria-hidden="true" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Quizzes</p>
-                      <p className="text-sm font-bold text-foreground course-stat">{quizCount} quizzes</p>
-                    </div>
-                  </div>
-                </div>
               </div>
+            )}
 
-              {/* Footer - Consistent button alignment and sizing */}
-              <div className="flex items-center justify-between pt-4 border-t border-border/50 mt-auto">
+            {/* Duration and Updated Date */}
+            <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+              <span className="flex items-center gap-1">
+                <Play className="h-3 w-3" />
+                {duration}
+              </span>
+              {updatedAt && (
+                <span>
+                  Updated {new Date(updatedAt).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    year: 'numeric' 
+                  })}
+                </span>
+              )}
+            </div>
+
+            {/* Price */}
+            <div className="mt-auto">
+              {price !== undefined ? (
                 <div className="flex items-center gap-2">
-                  {price !== undefined ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl font-bold text-primary">${price}</span>
-                      {originalPrice && price && originalPrice > price && (
-                        <span className="text-sm text-muted-foreground line-through">${originalPrice}</span>
-                      )}
-                    </div>
-                  ) : (
-                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 px-3 py-1">
-                      Free
+                  <span className="text-xl font-bold text-gray-900">${price}</span>
+                  {originalPrice && price && originalPrice > price && (
+                    <span className="text-sm text-gray-500 line-through">${originalPrice}</span>
+                  )}
+                  {originalPrice && price && originalPrice > price && (
+                    <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-0 font-semibold text-xs px-2 py-0.5 ml-2">
+                      {Math.round(((originalPrice - price) / originalPrice) * 100)}% OFF
                     </Badge>
                   )}
                 </div>
-
-                <Button
-                  size="lg"
-                  className={cn(
-                    "group/btn relative overflow-hidden transition-all duration-300 enroll-button-enhanced",
-                    "bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary",
-                    "shadow-lg hover:shadow-xl hover:shadow-primary/25 border-0 px-8 py-3 h-12",
-                    "text-base font-bold text-primary-foreground",
-                    "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    "hover:scale-105 active:scale-95"
-                  )}
-                  onClick={handleEnrollClick}
-                  disabled={isNavigating}
-                  aria-label={`Enroll in ${title} course`}
-                >
-                  <span className="flex items-center gap-3">
-                    {isNavigating ? "Loading..." : "Enroll Now"}
-                    {!isNavigating && (
-                      <ChevronRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform duration-300" aria-hidden="true" />
-                    )}
-                  </span>
-                </Button>
-              </div>
+              ) : (
+                <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-0 font-semibold px-3 py-1">
+                  Free
+                </Badge>
+              )}
             </div>
-          </Card>
-        </AnimatedWrapper>
+          </CardContent>
+        </Card>
       </TooltipProvider>
     )
   },

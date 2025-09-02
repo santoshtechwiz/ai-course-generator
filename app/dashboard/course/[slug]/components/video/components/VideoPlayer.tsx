@@ -21,6 +21,7 @@ import ChapterStartOverlay from "./ChapterStartOverlay"
 import ChapterEndOverlay from "./ChapterEndOverlay"
 import AutoPlayNotification from "./AutoPlayNotification"
 import EnhancedMiniPlayer from "./EnhancedMiniPlayer"
+import { storageManager } from "@/utils/storage-manager"
 
 // Memoized authentication prompt to prevent unnecessary re-renders
 const AuthPrompt = React.memo(
@@ -235,7 +236,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
     // Mark free video as played if not authenticated
     if (!isAuthenticated && !playerState.hasPlayedFreeVideo) {
       try {
-        localStorage.setItem("hasPlayedFreeVideo", "true")
+        storageManager.saveVideoSettings({ hasPlayedFreeVideo: true })
         setPlayerState(prev => ({ ...prev, hasPlayedFreeVideo: true }))
       } catch (error) {
         console.warn('Failed to save free video state:', error)
@@ -312,7 +313,8 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
       }
     }
 
-    const freeVideoPlayed = localStorage.getItem("hasPlayedFreeVideo") === "true"
+    const videoSettings = storageManager.getVideoSettings()
+    const freeVideoPlayed = videoSettings.hasPlayedFreeVideo || false
     return {
       hasPlayedFreeVideo: freeVideoPlayed,
       canPlayVideo: isAuthenticated || !freeVideoPlayed,
@@ -331,14 +333,12 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
     let initial = { x: w - width - 16, y: h - height - 16 }
 
     try {
-      const saved = localStorage.getItem("mini-player-pos")
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (typeof parsed?.x === 'number' && typeof parsed?.y === 'number') {
-          initial = {
-            x: clamp(parsed.x, 8, Math.max(8, w - width - 8)),
-            y: clamp(parsed.y, 8, Math.max(8, h - height - 8)),
-          }
+      const videoSettings = storageManager.getVideoSettings()
+      const saved = videoSettings.miniPlayerPos
+      if (saved && typeof saved?.x === 'number' && typeof saved?.y === 'number') {
+        initial = {
+          x: clamp(saved.x, 8, Math.max(8, w - width - 8)),
+          y: clamp(saved.y, 8, Math.max(8, h - height - 8)),
         }
       }
     } catch (error) {
@@ -373,12 +373,9 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
 
     // Load autoplay preference
     try {
-      const saved = localStorage.getItem('video-autoplay')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (typeof parsed === 'boolean') {
-          setPlayerState(prev => ({ ...prev, autoPlayVideo: parsed }))
-        }
+      const videoSettings = storageManager.getVideoSettings()
+      if (typeof videoSettings.autoplay === 'boolean') {
+        setPlayerState(prev => ({ ...prev, autoPlayVideo: videoSettings.autoplay }))
       }
     } catch (error) {
       console.warn('Failed to load auto-play video preference:', error)
@@ -467,7 +464,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
     }
   }, [playerState.isMounted, containerRef])
 
-  // Enhanced PIP handling - FIXED to properly hide main player
+  // Enhanced PIP handling - FIXED to properly show video in PIP
   const handlePictureInPicture = useCallback(async () => {
     try {
       const videoEl = getVideoElement()
@@ -487,7 +484,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
           if (playerState.isMiniPlayerActive && handlers.handlePictureInPictureToggle) {
             handlers.handlePictureInPictureToggle()
           }
-          
+
           // Try to get the video element again if not found initially
           let targetVideo = videoEl
           if (!targetVideo) {
@@ -495,7 +492,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
             await new Promise(resolve => setTimeout(resolve, 100))
             targetVideo = getVideoElement()
           }
-          
+
           if (targetVideo) {
             await (targetVideo as any).requestPictureInPicture()
           } else {
@@ -505,7 +502,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
         return
       }
 
-      // Fallback to custom mini player
+      // Fallback to custom mini player - Enhanced to show video properly
       if (handlers.handlePictureInPictureToggle) {
         const nextMiniState = !playerState.isMiniPlayerActive
 
@@ -526,15 +523,37 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
           description: "This video provider does not support Picture-in-Picture.",
           variant: "destructive",
         })
+        onPictureInPictureToggle?.(false)
       }
     } catch (error) {
       console.warn('Picture-in-Picture failed:', error)
-      toast({
-        title: "PiP Error", 
-        description: "Could not toggle Picture-in-Picture. Please try again.",
-        variant: "destructive",
-      })
-      onPictureInPictureToggle?.(false)
+
+      // If native PIP fails, try fallback mini player
+      if (!playerState.isMiniPlayerActive && handlers.handlePictureInPictureToggle) {
+        try {
+          handlers.handlePictureInPictureToggle()
+          onPictureInPictureToggle?.(true)
+          toast({
+            title: "Using Mini Player",
+            description: "Native PiP not available, using mini player instead.",
+          })
+        } catch (fallbackError) {
+          console.warn('Fallback mini player also failed:', fallbackError)
+          toast({
+            title: "PiP Error",
+            description: "Could not toggle Picture-in-Picture. Please try again.",
+            variant: "destructive",
+          })
+          onPictureInPictureToggle?.(false)
+        }
+      } else {
+        toast({
+          title: "PiP Error",
+          description: "Could not toggle Picture-in-Picture. Please try again.",
+          variant: "destructive",
+        })
+        onPictureInPictureToggle?.(false)
+      }
     }
   }, [getVideoElement, handlers.handlePictureInPictureToggle, onPictureInPictureToggle, toast, playerState.isNativePiPActive, playerState.isMiniPlayerActive])
 
@@ -589,8 +608,10 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
 
       // Initialize volume
       try {
-        const savedVolume = localStorage.getItem('VIDEO_PLAYER_VOLUME') || localStorage.getItem('video-player-volume')
-        if (!savedVolume) {
+        const videoSettings = storageManager.getVideoSettings()
+        if (typeof videoSettings.volume === 'number') {
+          handlers.onVolumeChange(videoSettings.volume)
+        } else {
           handlers.onVolumeChange(0.5)
         }
       } catch (error) {
@@ -646,9 +667,9 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
   const handleTheaterModeToggle = useCallback(() => {
     const newTheaterMode = !isTheaterMode
     onTheaterModeToggle?.(newTheaterMode)
-    
+
     try {
-      localStorage.setItem('video-theater-mode', JSON.stringify(newTheaterMode))
+      storageManager.saveVideoSettings({ theaterMode: newTheaterMode })
     } catch (error) {
       console.warn('Failed to save theater mode preference:', error)
     }
@@ -666,7 +687,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
       if (state.playing && 
           !playerState.isHovering && 
           !overlayState.showChapterStart && 
-          !overlayState.showChapterEnd &&
+          !overlayState.showChapterEnd && 
           !playerState.isMiniPlayerActive) {
         controlsTimeoutRef.current = setTimeout(() => {
           setPlayerState(prev => ({ ...prev, showControlsState: false }))
@@ -901,7 +922,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
     setPlayerState(prev => ({ ...prev, autoPlayVideo: newValue }))
 
     try {
-      localStorage.setItem('video-autoplay', JSON.stringify(newValue))
+      storageManager.saveVideoSettings({ autoplay: newValue })
     } catch (error) {
       console.warn('Could not save auto-play preference:', error)
     }
@@ -1026,7 +1047,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
   // Save mini player position
   const saveMiniPos = useCallback((pos: { x: number; y: number }) => {
     try {
-      localStorage.setItem('mini-player-pos', JSON.stringify(pos))
+      storageManager.saveVideoSettings({ miniPlayerPos: pos })
     } catch {
       console.warn('Failed to save mini player position')
     }

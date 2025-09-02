@@ -442,6 +442,166 @@
   .sidebar-scroll::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground));
   }
+
+  /* Udemy-style course card enhancements */
+  .udemy-course-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #e5e7eb;
+  }
+
+  .udemy-course-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    border-color: #d1d5db;
+  }
+
+  /* Udemy-style search and filter enhancements */
+  .udemy-search-input {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .udemy-search-input:focus {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
+
+  .udemy-filter-button {
+    border-radius: 9999px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .udemy-filter-button:hover {
+    background-color: #f3f4f6;
+  }
+
+  .udemy-filter-button.active {
+    background-color: #8b5cf6;
+    color: white;
+  }
+
+  /* Udemy-style typography */
+  .udemy-heading {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+
+  .udemy-subheading {
+    color: #6b7280;
+    font-weight: 400;
+  }
+
+  /* Udemy-style grid layout */
+  .udemy-course-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+
+  @media (min-width: 640px) {
+    .udemy-course-grid {
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .udemy-course-grid {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .udemy-course-grid {
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+  }
+
+  /* Enhanced Quiz Page Styles */
+  .quiz-card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .quiz-card-hover:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(59, 130, 246, 0.1);
+  }
+
+  .quiz-progress-ring {
+    filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.2));
+  }
+
+  .quiz-filter-animation {
+    animation: slideInFromLeft 0.5s ease-out;
+  }
+
+  @keyframes slideInFromLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .quiz-grid-stagger {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  .quiz-grid-stagger:nth-child(1) { animation-delay: 0.1s; }
+  .quiz-grid-stagger:nth-child(2) { animation-delay: 0.2s; }
+  .quiz-grid-stagger:nth-child(3) { animation-delay: 0.3s; }
+  .quiz-grid-stagger:nth-child(4) { animation-delay: 0.4s; }
+  .quiz-grid-stagger:nth-child(5) { animation-delay: 0.5s; }
+  .quiz-grid-stagger:nth-child(6) { animation-delay: 0.6s; }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .quiz-button-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  .quiz-card-glow {
+    position: relative;
+  }
+
+  .quiz-card-glow::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(147, 51, 234, 0.3), rgba(236, 72, 153, 0.3));
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .quiz-card-glow:hover::before {
+    opacity: 1;
+  }
 }
 
 /****************************************

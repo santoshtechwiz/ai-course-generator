@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import useSubscription from "@/hooks/use-subscription"
+import { storageManager } from "@/utils/storage-manager"
 
 
 
@@ -155,12 +156,12 @@ export function Chatbot({ userId }: ChatbotProps) {
 
   // Show tooltip for new users
   useEffect(() => {
-    const hasSeenTooltip = localStorage.getItem("hasSeenChatTooltip")
-    if (!hasSeenTooltip) {
+    const userPrefs = storageManager.getUserPreferences()
+    if (!userPrefs.hasSeenChatTooltip) {
       setShowTooltip(true)
       setTimeout(() => {
         setShowTooltip(false)
-        localStorage.setItem("hasSeenChatTooltip", "true")
+        storageManager.saveUserPreferences({ hasSeenChatTooltip: true })
       }, 5000)
     }
   }, [])

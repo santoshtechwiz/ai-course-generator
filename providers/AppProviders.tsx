@@ -1,12 +1,13 @@
 "use client"
 
-import { ReactNode, useState } from 'react'
+import { ReactNode, useState, useEffect } from 'react'
 import { SessionProvider } from 'next-auth/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/modules/auth'
 import { AnimationProvider } from './animation-provider'
+import { StorageMigrator } from '@/utils/storage-migrator'
 
 interface AppProvidersProps {
   children: ReactNode
@@ -29,6 +30,11 @@ export function AppProviders({ children, session }: AppProvidersProps) {
       },
     })
   )
+
+  // Run storage migration on app initialization
+  useEffect(() => {
+    StorageMigrator.migrateAllData()
+  }, [])
 
   return (
     <SessionProvider 

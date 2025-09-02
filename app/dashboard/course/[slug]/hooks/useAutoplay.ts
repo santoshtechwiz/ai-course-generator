@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import type { FullChapterType } from '@/app/types/types'
+import { storageManager } from "@/utils/storage-manager"
 
 interface NextChapterInfo {
   title: string
@@ -19,12 +20,12 @@ export function useAutoplay() {
   const [showChapterTransition, setShowChapterTransition] = useState(false)
   const [showAutoplayOverlay, setShowAutoplayOverlay] = useState(false)
 
-  // Load autoplay mode preference from localStorage
+  // Load autoplay mode preference from StorageManager
   useEffect(() => {
     try {
-      const savedAutoplayMode = localStorage.getItem('autoplay_mode')
-      if (savedAutoplayMode !== null) {
-        setAutoplayMode(savedAutoplayMode === 'true')
+      const userPrefs = storageManager.getUserPreferences()
+      if (typeof userPrefs.autoplay === 'boolean') {
+        setAutoplayMode(userPrefs.autoplay)
       }
     } catch {}
   }, [])
@@ -34,9 +35,9 @@ export function useAutoplay() {
     const newMode = !autoplayMode
     setAutoplayMode(newMode)
     
-    // Save preference to localStorage
+    // Save preference to StorageManager
     try {
-      localStorage.setItem('autoplay_mode', String(newMode))
+      storageManager.saveUserPreferences({ autoplay: newMode })
     } catch {}
     
     toast({

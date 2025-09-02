@@ -18,10 +18,18 @@ import {
   Lock,
   Trash2,
   Loader2,
+  Star,
+  Users,
+  Eye,
+  EyeOff,
+  Download,
+  Copy,
+  ExternalLink,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCourseActions } from "@/hooks/useCourseActions"
 import { useAuth } from "@/modules/auth"
+import { toast } from "@/components/ui/use-toast"
 
 interface ActionButtonsProps {
   slug: string
@@ -37,50 +45,87 @@ export default function ActionButtons({ slug, title, isOwner, className = "", va
 
   const handleShare = async () => {
     try {
+      const url = window.location.href
       if (navigator.share) {
         await navigator.share({
           title: title,
-          url: window.location.href,
+          text: `Check out this course: ${title}`,
+          url: url,
+        })
+        toast({
+          title: "Shared successfully",
+          description: "Course link shared via device sharing",
         })
       } else {
-        await navigator.clipboard.writeText(window.location.href)
+        await navigator.clipboard.writeText(url)
+        toast({
+          title: "Link copied",
+          description: "Course link copied to clipboard",
+        })
       }
     } catch (error) {
       console.error("Error sharing:", error)
+      toast({
+        title: "Share failed",
+        description: "Could not share the course link",
+        variant: "destructive",
+      })
     }
   }
 
   const handleFavoriteToggle = () => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to favorite courses",
+        variant: "destructive",
+      })
+      return
+    }
     handleAction("favorite")
+    toast({
+      title: status.isFavorite ? "Removed from favorites" : "Added to favorites",
+      description: status.isFavorite ? "Course removed from your favorites" : "Course added to your favorites",
+    })
   }
 
   const handlePrivacyToggle = () => {
     if (!isOwner) return
     handleAction("privacy")
+    toast({
+      title: status.isPublic ? "Made private" : "Made public",
+      description: status.isPublic ? "Course is now private" : "Course is now public",
+    })
   }
 
   const handleDelete = () => {
     if (!isOwner) return
     if (window.confirm("Are you sure you want to delete this course? This action cannot be undone.")) {
       handleAction("delete")
+      toast({
+        title: "Course deleted",
+        description: "The course has been permanently deleted",
+      })
     }
   }
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {/* Share Button */}
+      {/* Enhanced Share Button */}
       <Button
         variant="outline"
         size="sm"
         onClick={handleShare}
-        className="flex items-center gap-1"
+        className={cn(
+          "flex items-center gap-2 transition-all duration-200 hover:shadow-md",
+          variant === "compact" && "px-3"
+        )}
       >
         <Share2 className="h-4 w-4" />
-        <span className="hidden sm:inline">Share</span>
+        {variant === "default" && <span>Share</span>}
       </Button>
 
-      {/* Favorite Button (for authenticated users) */}
+      {/* Enhanced Favorite Button */}
       {isAuthenticated && (
         <Button
           variant="outline"
@@ -88,54 +133,72 @@ export default function ActionButtons({ slug, title, isOwner, className = "", va
           onClick={handleFavoriteToggle}
           disabled={loading === "favorite"}
           className={cn(
-            "flex items-center gap-1",
-            status.isFavorite && "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+            "flex items-center gap-2 transition-all duration-200 hover:shadow-md",
+            status.isFavorite && "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 dark:bg-red-950 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900",
+            variant === "compact" && "px-3"
           )}
         >
           {loading === "favorite" ? (
-            <Loader2 className="h-4 w-4" />
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Heart className={cn("h-4 w-4", status.isFavorite && "fill-current")} />
           )}
-          <span className="hidden sm:inline">
-            {status.isFavorite ? "Favorited" : "Favorite"}
-          </span>
+          {variant === "default" && (
+            <span>{status.isFavorite ? "Favorited" : "Favorite"}</span>
+          )}
         </Button>
       )}
 
-      {/* Privacy Status Badge */}
+      {/* Enhanced Privacy Status Badge */}
       {isOwner && (
-        <Badge variant={status.isPublic ? "default" : "secondary"} className="hidden md:inline-flex">
+        <Badge
+          variant={status.isPublic ? "default" : "secondary"}
+          className={cn(
+            "hidden md:inline-flex items-center gap-1 transition-all duration-200",
+            status.isPublic
+              ? "bg-green-100 text-green-700 border-green-200 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-700"
+              : "bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
+          )}
+        >
           {status.isPublic ? (
             <>
-              <Globe className="h-3 w-3 mr-1" />
+              <Eye className="h-3 w-3" />
               Public
             </>
           ) : (
             <>
-              <Lock className="h-3 w-3 mr-1" />
+              <Lock className="h-3 w-3" />
               Private
             </>
           )}
         </Badge>
       )}
 
-      {/* Owner Actions */}
+      {/* Enhanced Owner Actions Dropdown */}
       {isOwner && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              className="transition-all duration-200 hover:shadow-md"
+            >
               <MoreVertical className="h-4 w-4" />
+              {variant === "default" && <span className="ml-2">Actions</span>}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handlePrivacyToggle} disabled={loading === "privacy"}>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem
+              onClick={handlePrivacyToggle}
+              disabled={loading === "privacy"}
+              className="cursor-pointer"
+            >
               {loading === "privacy" ? (
-                <Loader2 className="h-4 w-4 mr-2" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : status.isPublic ? (
-                <Lock className="h-4 w-4 mr-2" />
+                <EyeOff className="h-4 w-4 mr-2" />
               ) : (
-                <Globe className="h-4 w-4 mr-2" />
+                <Eye className="h-4 w-4 mr-2" />
               )}
               Make {status.isPublic ? "Private" : "Public"}
             </DropdownMenuItem>
@@ -143,10 +206,10 @@ export default function ActionButtons({ slug, title, isOwner, className = "", va
             <DropdownMenuItem
               onClick={handleDelete}
               disabled={loading === "delete"}
-              className="text-red-600 focus:text-red-600"
+              className="text-red-600 focus:text-red-600 cursor-pointer"
             >
               {loading === "delete" ? (
-                <Loader2 className="h-4 w-4 mr-2" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Trash2 className="h-4 w-4 mr-2" />
               )}

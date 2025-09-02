@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react'
+import { storageManager } from "@/utils/storage-manager"
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug'
 
@@ -89,15 +90,15 @@ export function useDebugLogger(componentName: string) {
         }
       }
       
-      // Store critical errors in localStorage for debugging
+      // Store critical errors in StorageManager for debugging
       if (level === 'error') {
         try {
-          const errorLogs = JSON.parse(localStorage.getItem('quiz_error_logs') || '[]')
+          const errorLogs = storageManager.getDebugLogs()
           errorLogs.push(logEntry)
-          
+
           // Keep only last 10 errors
           const recentErrors = errorLogs.slice(-10)
-          localStorage.setItem('quiz_error_logs', JSON.stringify(recentErrors))
+          storageManager.saveDebugLogs(recentErrors)
         } catch (storageError) {
           // Ignore storage errors
         }

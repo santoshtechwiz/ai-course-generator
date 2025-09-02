@@ -43,9 +43,7 @@ export function DashboardLayout({
         </div>
       </main>
 
-      {/* Dashboard Footer */}
-      <DashboardFooter />
-
+    
       {/* Global Dashboard Components */}
       <Toaster />
       {userId && <Chatbot userId={userId} />}
@@ -58,42 +56,6 @@ export function DashboardLayout({
   )
 }
 
-/**
- * Dashboard Footer Component (Integrated)
- */
-function DashboardFooter({ className }: { className?: string }) {
-  const currentYear = new Date().getFullYear()
 
-  return (
-    <footer className={cn("border-t bg-background/95 backdrop-blur", className)}>
-      <div className="container flex h-14 items-center justify-between px-4">
-        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-          <span>© {currentYear} CourseAI. All rights reserved.</span>
-        </div>
-
-        <div className="flex items-center space-x-4 text-sm">
-          <a
-            href="/support"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Support
-          </a>
-          <a
-            href="/privacy"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Privacy
-          </a>
-          <a
-            href="/terms"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Terms
-          </a>
-        </div>
-      </div>
-    </footer>
-  )
-}
 
 export default DashboardLayout

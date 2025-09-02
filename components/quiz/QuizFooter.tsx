@@ -60,12 +60,12 @@ export function QuizFooter({
 
   return (
     <motion.div
-      className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 mt-8 border-t border-border/50"
+      className="w-full flex flex-col sm:flex-row items-center justify-between gap-6 pt-10 mt-10 border-t border-border/30"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.3 }}
     >
-      {/* Previous Button */}
+      {/* Enhanced Previous Button */}
       <motion.div
         variants={buttonVariants}
         initial="hidden"
@@ -78,32 +78,32 @@ export function QuizFooter({
             onClick={onPrevious}
             variant="outline"
             size="lg"
-            className="min-w-[140px] h-12 transition-all duration-200"
+            className="min-w-[160px] h-14 px-6 text-base font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg border-2 hover:border-primary/50"
             disabled={isLoading}
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-5 h-5 mr-2" />
             Previous
           </Button>
         ) : (
-          <div className="w-[140px]" /> // Placeholder for consistent spacing
+          <div className="w-[160px]" /> // Placeholder for consistent spacing
         )}
       </motion.div>
 
-      {/* Center Status/Info */}
-      <div className="order-3 sm:order-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+      {/* Enhanced Center Status/Info */}
+      <div className="order-3 sm:order-2 flex items-center justify-center gap-3 text-sm text-muted-foreground">
         {hasAnswer && !isLoading && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-full"
           >
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>Answer recorded</span>
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <span className="font-medium text-emerald-700 dark:text-emerald-300">Answer recorded</span>
           </motion.div>
         )}
       </div>
 
-      {/* Main Action Button */}
+      {/* Enhanced Main Action Button */}
       <motion.div
         variants={buttonVariants}
         initial="hidden"
@@ -116,32 +116,35 @@ export function QuizFooter({
             onClick={onRetake}
             variant="outline"
             size="lg"
-            className="min-w-[140px] h-12 transition-all duration-200"
+            className="min-w-[160px] h-14 px-6 text-base font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg border-2 hover:border-primary/50"
             disabled={isLoading}
           >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Retake
+            <RotateCcw className="w-5 h-5 mr-2" />
+            Retake Quiz
           </Button>
         ) : isLastQuestion ? (
           <Button
             onClick={onSubmit}
             size="lg"
-            className={cn("min-w-[140px] h-12 transition-all duration-200")}
+            className={cn(
+              "min-w-[160px] h-14 px-6 text-base font-bold transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg",
+              "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground border-0"
+            )}
             disabled={!hasAnswer || isLoading}
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2" />
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                 Submitting...
               </>
             ) : isSuccess ? (
               <>
-                <Check className="w-4 h-4 mr-2" />
+                <Check className="w-5 h-5 mr-2" />
                 Submitted!
               </>
             ) : (
               <>
-                <Flag className="w-4 h-4 mr-2" />
+                <Flag className="w-5 h-5 mr-2" />
                 {submitLabel}
               </>
             )}
@@ -150,23 +153,26 @@ export function QuizFooter({
           <Button
             onClick={onNext}
             size="lg"
-            className={cn("min-w-[140px] h-12 transition-all duration-200")}
+            className={cn(
+              "min-w-[160px] h-14 px-6 text-base font-bold transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg",
+              "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground border-0"
+            )}
             disabled={!canGoNext || isLoading}
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2" />
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                 Loading...
               </>
             ) : isSuccess ? (
               <>
-                <Check className="w-4 h-4 mr-2" />
+                <Check className="w-5 h-5 mr-2" />
                 Success!
               </>
             ) : (
               <>
                 {nextLabel}
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <ArrowRight className="w-5 h-5 ml-2" />
               </>
             )}
           </Button>
