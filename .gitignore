@@ -75,3 +75,6 @@ docker-compose.local.yml
 *.container-inspect.json
 
 .env
+
+# Prisma data files
+prisma/all-data.json
