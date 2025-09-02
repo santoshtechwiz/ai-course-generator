@@ -27,7 +27,8 @@
     "export": "next export",
     "prod:build": "npm run prod:migrate && npm run build",
     "knip": "knip",
-    "prod": "set NODE_ENV=production && npm run prod:migrate && npm run build && npm run start"
+    "prod": "set NODE_ENV=production && npm run prod:migrate && npm run build && npm run start",
+    "db:seed": "npx tsx prisma/seed-new.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.1.14",

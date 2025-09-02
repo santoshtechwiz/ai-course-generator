@@ -16,10 +16,20 @@ async function main() {
   console.log('🌱 Starting database seeding...')
 
   try {
+    // Check if data already exists
+    const existingUsers = await prisma.user.count()
+    if (existingUsers > 0) {
+      console.log('📊 Database already contains data. Skipping seeding to prevent data loss.')
+      console.log(`Found ${existingUsers} existing users.`)
+      return
+    }
+
+    console.log('📊 Database is empty. Proceeding with seeding...')
+
     // Disable foreign key checks for seeding
     await prisma.$executeRaw`SET session_replication_role = replica;`
     
-    // Clear existing data
+    // Clear existing data (should be empty anyway, but just in case)
     console.log('🧹 Clearing existing data...')
     await clearExistingData()
 
