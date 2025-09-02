@@ -24,6 +24,7 @@ model User {
   creditsUsed         Int                   @default(0)
   currentPlanId       String?
   metadata            Json?
+  lastActiveAt        DateTime              @default(now())
   accounts            Account[]
   bookmarks           Bookmark[]
   Certificate         Certificate[]
@@ -48,6 +49,8 @@ model User {
   referralsGiven      UserReferralUse[]     @relation("Referrer")
   settings            UserSettings?
   subscription        UserSubscription?
+  recommendations     Recommendation[]
+  learningEvents      LearningEvent[]
 
   @@index([email])
   @@index([userType])
@@ -109,6 +112,9 @@ model Course {
   endDate          DateTime?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
+  generatedBy      String           @default("USER") // AI | USER | ADMIN
+  version          Int              @default(1)
+  parentId         Int?
   bookmarks        Bookmark[]
   Certificate      Certificate[]
   category         Category?        @relation(fields: [categoryId], references: [id])
@@ -117,6 +123,7 @@ model Course {
   ratings          CourseRating[]
   courseUnits      CourseUnit[]
   favorites        Favorite[]
+  tags             Tag[]            @relation("CourseTags")
 
   @@index([title])
   @@index([categoryId])
@@ -140,6 +147,9 @@ model CourseUnit {
   order       Int?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  version     Int       @default(1)
+  parentId    Int?
+  generatedBy String     @default("USER") // AI | USER | ADMIN
   chapters    Chapter[]
   course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
@@ -164,6 +174,9 @@ model Chapter {
   order              Int          @default(0)
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
+  version            Int          @default(1)
+  parentId           Int?
+  generatedBy        String       @default("USER") // AI | USER | ADMIN
   bookmarks          Bookmark[]
   unit               CourseUnit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
   courseQuizzes      CourseQuiz[]
@@ -183,6 +196,9 @@ model CourseQuiz {
   options   String
   createdAt DateTime            @default(now())
   updatedAt DateTime            @updatedAt
+  generatedBy String            @default("USER") // AI | USER | ADMIN
+  version   Int                 @default(1)
+  parentId  Int?
   chapter   Chapter             @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   attempts  CourseQuizAttempt[]
 
@@ -267,6 +283,18 @@ model CourseProgress {
   @@index([engagementScore])
   @@index([timeSpent])
   @@index([currentChapterId])
+  @@index([lastAccessedAt])
+}
+
+model Plan {
+  id          String   @id
+  name        String
+  price       Int
+  duration    Int      // in days
+  features    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  subscriptions UserSubscription[]
 }
 
 model UserSubscription {
@@ -287,6 +315,7 @@ model UserSubscription {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   user                 User      @relation(fields: [userId], references: [id])
+  plan                 Plan      @relation(fields: [planId], references: [id])
 
   @@index([status])
   @@index([currentPeriodEnd])
@@ -301,7 +330,7 @@ model Favorite {
   userId    String   @map("user_id")
   courseId  Int
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -320,7 +349,6 @@ model UserQuiz {
   slug               String              @unique
   isFavorite         Boolean             @default(false)
   points             Float               @default(0)
-  tags               String?
   description        String?
   lastAttempted      DateTime?
   bestScore          Int?
@@ -332,12 +360,16 @@ model UserQuiz {
   createdAt          DateTime            @default(now())
   passingScore       Int                 @default(70)
   updatedAt          DateTime            @updatedAt
+  generatedBy        String              @default("USER") // AI | USER | ADMIN
+  version            Int                 @default(1)
+  parentId           Int?
   flashCards         FlashCard[]
   openEndedQuestions OpenEndedQuestion[]
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   attempts           UserQuizAttempt[]
   questions          UserQuizQuestion[]
   userQuizRating     UserQuizRating[]
+  tags               Tag[]               @relation("QuizTags")
 
   @@index([userId])
   @@index([title])
@@ -388,6 +420,9 @@ model UserQuizQuestion {
   codeSnippet       String?
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
+  generatedBy       String                    @default("USER") // AI | USER | ADMIN
+  version           Int                       @default(1)
+  parentId          Int?
   openEndedQuestion OpenEndedQuestion?
   attemptQuestions  UserQuizAttemptQuestion[]
   userQuiz          UserQuiz                  @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
@@ -402,7 +437,6 @@ model OpenEndedQuestion {
   userQuizId         Int?
   hints              String
   difficulty         String
-  tags               String
   sampleAnswer       String?
   evaluationCriteria String?
   maxScore           Int?
@@ -412,7 +446,6 @@ model OpenEndedQuestion {
   userQuiz           UserQuiz?        @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
 
   @@index([difficulty])
-  @@index([tags])
 }
 
 model UserQuizAttemptQuestion {
@@ -461,10 +494,13 @@ model FlashCard {
   updatedAt  DateTime          @updatedAt
   difficulty String?
   saved      Boolean           @default(false)
-  tags       String?
+  generatedBy String           @default("USER") // AI | USER | ADMIN
+  version     Int              @default(1)
+  parentId    Int?
   user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   userQuiz   UserQuiz?         @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
   reviews    FlashCardReview[]
+  tags       Tag[]             @relation("FlashCardTags")
 
   @@index([question])
   @@index([userId])
@@ -473,7 +509,6 @@ model FlashCard {
   @@index([saved])
   @@index([createdAt])
   @@index([slug])
-  @@index([tags])
 }
 
 model FlashCardReview {
@@ -494,6 +529,7 @@ model FlashCardReview {
   @@index([rating])
   @@index([reviewDate])
   @@index([nextReviewDate])
+  @@index([userId, flashCardId, nextReviewDate])
 }
 
 model QuizProgress {
@@ -587,7 +623,7 @@ model UserReferral {
   userId       String            @unique
   referralCode String            @unique
   createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  updatedAt    DateTime          @default(now())
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   referralUses UserReferralUse[]
 
@@ -623,7 +659,7 @@ model ContactSubmission {
   adminNotes      String?
   responseMessage String?
   createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  updatedAt       DateTime @default(now())
 }
 
 model PendingSubscription {
@@ -636,7 +672,7 @@ model PendingSubscription {
   promoDiscount Float?
   status        String   @default("PENDING")
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime @default(now())
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -650,7 +686,7 @@ model Bookmark {
   chapterId Int?
   note      String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
   chapter   Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   course    Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -673,4 +709,43 @@ model Certificate {
   @@index([userId])
   @@index([courseId])
   @@index([issuedAt])
+}
+
+model Tag {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @default(now())
+  courses   Course[]   @relation("CourseTags")
+  quizzes   UserQuiz[] @relation("QuizTags")
+  flashcards FlashCard[] @relation("FlashCardTags")
+}
+
+model Recommendation {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  type      String   // COURSE | QUIZ | FLASHCARD | CHAPTER
+  targetId  String
+  reason    String?
+  score     Float
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([score])
+}
+
+model LearningEvent {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  type      String   // VIDEO_PLAY | QUIZ_START | FLASHCARD_REVIEW
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
 }

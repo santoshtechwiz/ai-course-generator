@@ -23,7 +23,11 @@ async function main() {
     console.log('🧹 Clearing existing data...')
     await clearExistingData()
 
-    // Seed categories first
+    // Seed plans first
+    console.log('💰 Seeding plans...')
+    await seedPlans()
+
+    // Seed categories next
     console.log('📂 Seeding categories...')
     await seedCategories()
 
@@ -81,7 +85,8 @@ async function clearExistingData() {
     'userReferral',
     'session',
     'account',
-    'user'
+    'user',
+    'plan'
   ]
 
   for (const tableName of deleteOrder) {
@@ -90,6 +95,60 @@ async function clearExistingData() {
     } catch (error) {
       console.warn(`Warning: Could not clear table ${tableName}:`, error)
     }
+  }
+}
+
+async function seedPlans() {
+  const plans = [
+    {
+      id: 'free',
+      name: 'Free Plan',
+      price: 0,
+      duration: 30, // 30 days free trial
+      features: {
+        list: ['Access to free courses', 'Basic quizzes', 'Community support'],
+        maxCredits: 10
+      }
+    },
+    {
+      id: 'pro',
+      name: 'Pro Plan',
+      price: 999, // $9.99 in cents
+      duration: 30, // monthly subscription
+      features: {
+        list: ['All free features', 'Unlimited quizzes', 'Priority support', 'Certificate generation'],
+        maxCredits: 100
+      }
+    },
+    {
+      id: 'enterprise',
+      name: 'Enterprise Plan',
+      price: 2999, // $29.99 in cents
+      duration: 30, // monthly subscription
+      features: {
+        list: ['All pro features', 'Custom learning paths', 'Team management', 'API access'],
+        maxCredits: -1 // unlimited
+      }
+    }
+  ]
+
+  for (const plan of plans) {
+    await prisma.plan.upsert({
+      where: { id: plan.id },
+      update: {
+        name: plan.name,
+        price: plan.price,
+        duration: plan.duration,
+        features: plan.features
+      },
+      create: {
+        id: plan.id,
+        name: plan.name,
+        price: plan.price,
+        duration: plan.duration,
+        features: plan.features
+      }
+    })
   }
 }
 
@@ -150,7 +209,8 @@ async function seedUsers() {
             createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
             updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
             credits: userData.credits || 0,
-            creditsUsed: userData.creditsUsed || 0
+            creditsUsed: userData.creditsUsed || 0,
+            lastActiveAt: userData.lastActiveAt ? new Date(userData.lastActiveAt) : undefined,
           }
         })
       }
@@ -510,7 +570,7 @@ async function seedUserQuizzes(userIdMap: Map<string, string>) {
                     userQuizId: quiz.id,
                     hints: questionData.openEndedQuestion.hints,
                     difficulty: questionData.openEndedQuestion.difficulty,
-                    tags: questionData.openEndedQuestion.tags,
+
                     sampleAnswer: questionData.openEndedQuestion.sampleAnswer,
                     evaluationCriteria: questionData.openEndedQuestion.evaluationCriteria,
                     maxScore: questionData.openEndedQuestion.maxScore,

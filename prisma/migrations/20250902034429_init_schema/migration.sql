@@ -15,6 +15,7 @@ CREATE TABLE "User" (
     "creditsUsed" INTEGER NOT NULL DEFAULT 0,
     "currentPlanId" TEXT,
     "metadata" JSONB,
+    "lastActiveAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -71,6 +72,9 @@ CREATE TABLE "Course" (
     "endDate" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "generatedBy" TEXT NOT NULL DEFAULT 'USER',
+    "version" INTEGER NOT NULL DEFAULT 1,
+    "parentId" INTEGER,
 
     CONSTRAINT "Course_pkey" PRIMARY KEY ("id")
 );
@@ -85,6 +89,9 @@ CREATE TABLE "CourseUnit" (
     "order" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "version" INTEGER NOT NULL DEFAULT 1,
+    "parentId" INTEGER,
+    "generatedBy" TEXT NOT NULL DEFAULT 'USER',
 
     CONSTRAINT "CourseUnit_pkey" PRIMARY KEY ("id")
 );
@@ -105,6 +112,9 @@ CREATE TABLE "Chapter" (
     "order" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "version" INTEGER NOT NULL DEFAULT 1,
+    "parentId" INTEGER,
+    "generatedBy" TEXT NOT NULL DEFAULT 'USER',
 
     CONSTRAINT "Chapter_pkey" PRIMARY KEY ("id")
 );
@@ -118,6 +128,9 @@ CREATE TABLE "CourseQuiz" (
     "options" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "generatedBy" TEXT NOT NULL DEFAULT 'USER',
+    "version" INTEGER NOT NULL DEFAULT 1,
+    "parentId" INTEGER,
 
     CONSTRAINT "CourseQuiz_pkey" PRIMARY KEY ("id")
 );
@@ -185,6 +198,19 @@ CREATE TABLE "CourseProgress" (
 );
 
 -- CreateTable
+CREATE TABLE "Plan" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "price" INTEGER NOT NULL,
+    "duration" INTEGER NOT NULL,
+    "features" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Plan_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "UserSubscription" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -212,7 +238,7 @@ CREATE TABLE "Favorite" (
     "user_id" TEXT NOT NULL,
     "courseId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Favorite_pkey" PRIMARY KEY ("id")
 );
@@ -227,7 +253,6 @@ CREATE TABLE "UserQuiz" (
     "slug" TEXT NOT NULL,
     "isFavorite" BOOLEAN NOT NULL DEFAULT false,
     "points" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "tags" TEXT,
     "description" TEXT,
     "lastAttempted" TIMESTAMP(3),
     "bestScore" INTEGER,
@@ -239,6 +264,9 @@ CREATE TABLE "UserQuiz" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "passingScore" INTEGER NOT NULL DEFAULT 70,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "generatedBy" TEXT NOT NULL DEFAULT 'USER',
+    "version" INTEGER NOT NULL DEFAULT 1,
+    "parentId" INTEGER,
 
     CONSTRAINT "UserQuiz_pkey" PRIMARY KEY ("id")
 );
@@ -273,6 +301,9 @@ CREATE TABLE "UserQuizQuestion" (
     "codeSnippet" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "generatedBy" TEXT NOT NULL DEFAULT 'USER',
+    "version" INTEGER NOT NULL DEFAULT 1,
+    "parentId" INTEGER,
 
     CONSTRAINT "UserQuizQuestion_pkey" PRIMARY KEY ("id")
 );
@@ -284,7 +315,6 @@ CREATE TABLE "OpenEndedQuestion" (
     "userQuizId" INTEGER,
     "hints" TEXT NOT NULL,
     "difficulty" TEXT NOT NULL,
-    "tags" TEXT NOT NULL,
     "sampleAnswer" TEXT,
     "evaluationCriteria" TEXT,
     "maxScore" INTEGER,
@@ -332,7 +362,9 @@ CREATE TABLE "FlashCard" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "difficulty" TEXT,
     "saved" BOOLEAN NOT NULL DEFAULT false,
-    "tags" TEXT,
+    "generatedBy" TEXT NOT NULL DEFAULT 'USER',
+    "version" INTEGER NOT NULL DEFAULT 1,
+    "parentId" INTEGER,
 
     CONSTRAINT "FlashCard_pkey" PRIMARY KEY ("id")
 );
@@ -433,7 +465,7 @@ CREATE TABLE "UserReferral" (
     "userId" TEXT NOT NULL,
     "referralCode" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "UserReferral_pkey" PRIMARY KEY ("id")
 );
@@ -462,7 +494,7 @@ CREATE TABLE "ContactSubmission" (
     "adminNotes" TEXT,
     "responseMessage" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "ContactSubmission_pkey" PRIMARY KEY ("id")
 );
@@ -478,7 +510,7 @@ CREATE TABLE "PendingSubscription" (
     "promoDiscount" DOUBLE PRECISION,
     "status" TEXT NOT NULL DEFAULT 'PENDING',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "PendingSubscription_pkey" PRIMARY KEY ("id")
 );
@@ -491,7 +523,7 @@ CREATE TABLE "Bookmark" (
     "chapterId" INTEGER,
     "note" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Bookmark_pkey" PRIMARY KEY ("id")
 );
@@ -505,6 +537,65 @@ CREATE TABLE "Certificate" (
     "certificateUrl" TEXT,
 
     CONSTRAINT "Certificate_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Tag" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Tag_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Recommendation" (
+    "id" SERIAL NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "targetId" TEXT NOT NULL,
+    "reason" TEXT,
+    "score" DOUBLE PRECISION NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Recommendation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LearningEvent" (
+    "id" SERIAL NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "entityId" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "LearningEvent_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "_CourseTags" (
+    "A" INTEGER NOT NULL,
+    "B" INTEGER NOT NULL,
+
+    CONSTRAINT "_CourseTags_AB_pkey" PRIMARY KEY ("A","B")
+);
+
+-- CreateTable
+CREATE TABLE "_FlashCardTags" (
+    "A" INTEGER NOT NULL,
+    "B" INTEGER NOT NULL,
+
+    CONSTRAINT "_FlashCardTags_AB_pkey" PRIMARY KEY ("A","B")
+);
+
+-- CreateTable
+CREATE TABLE "_QuizTags" (
+    "A" INTEGER NOT NULL,
+    "B" INTEGER NOT NULL,
+
+    CONSTRAINT "_QuizTags_AB_pkey" PRIMARY KEY ("A","B")
 );
 
 -- CreateIndex
@@ -658,6 +749,9 @@ CREATE INDEX "CourseProgress_timeSpent_idx" ON "CourseProgress"("timeSpent");
 CREATE INDEX "CourseProgress_currentChapterId_idx" ON "CourseProgress"("currentChapterId");
 
 -- CreateIndex
+CREATE INDEX "CourseProgress_lastAccessedAt_idx" ON "CourseProgress"("lastAccessedAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "CourseProgress_user_id_courseId_key" ON "CourseProgress"("user_id", "courseId");
 
 -- CreateIndex
@@ -763,9 +857,6 @@ CREATE UNIQUE INDEX "OpenEndedQuestion_questionId_key" ON "OpenEndedQuestion"("q
 CREATE INDEX "OpenEndedQuestion_difficulty_idx" ON "OpenEndedQuestion"("difficulty");
 
 -- CreateIndex
-CREATE INDEX "OpenEndedQuestion_tags_idx" ON "OpenEndedQuestion"("tags");
-
--- CreateIndex
 CREATE INDEX "UserQuizAttemptQuestion_attemptId_idx" ON "UserQuizAttemptQuestion"("attemptId");
 
 -- CreateIndex
@@ -814,9 +905,6 @@ CREATE INDEX "FlashCard_createdAt_idx" ON "FlashCard"("createdAt");
 CREATE INDEX "FlashCard_slug_idx" ON "FlashCard"("slug");
 
 -- CreateIndex
-CREATE INDEX "FlashCard_tags_idx" ON "FlashCard"("tags");
-
--- CreateIndex
 CREATE INDEX "FlashCardReview_flashCardId_idx" ON "FlashCardReview"("flashCardId");
 
 -- CreateIndex
@@ -830,6 +918,9 @@ CREATE INDEX "FlashCardReview_reviewDate_idx" ON "FlashCardReview"("reviewDate")
 
 -- CreateIndex
 CREATE INDEX "FlashCardReview_nextReviewDate_idx" ON "FlashCardReview"("nextReviewDate");
+
+-- CreateIndex
+CREATE INDEX "FlashCardReview_userId_flashCardId_nextReviewDate_idx" ON "FlashCardReview"("userId", "flashCardId", "nextReviewDate");
 
 -- CreateIndex
 CREATE INDEX "QuizProgress_userId_idx" ON "QuizProgress"("userId");
@@ -933,6 +1024,36 @@ CREATE INDEX "Certificate_courseId_idx" ON "Certificate"("courseId");
 -- CreateIndex
 CREATE INDEX "Certificate_issuedAt_idx" ON "Certificate"("issuedAt");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "Tag_name_key" ON "Tag"("name");
+
+-- CreateIndex
+CREATE INDEX "Recommendation_userId_idx" ON "Recommendation"("userId");
+
+-- CreateIndex
+CREATE INDEX "Recommendation_type_idx" ON "Recommendation"("type");
+
+-- CreateIndex
+CREATE INDEX "Recommendation_score_idx" ON "Recommendation"("score");
+
+-- CreateIndex
+CREATE INDEX "LearningEvent_userId_idx" ON "LearningEvent"("userId");
+
+-- CreateIndex
+CREATE INDEX "LearningEvent_type_idx" ON "LearningEvent"("type");
+
+-- CreateIndex
+CREATE INDEX "LearningEvent_createdAt_idx" ON "LearningEvent"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "_CourseTags_B_index" ON "_CourseTags"("B");
+
+-- CreateIndex
+CREATE INDEX "_FlashCardTags_B_index" ON "_FlashCardTags"("B");
+
+-- CreateIndex
+CREATE INDEX "_QuizTags_B_index" ON "_QuizTags"("B");
+
 -- AddForeignKey
 ALTER TABLE "Account" ADD CONSTRAINT "Account_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -974,6 +1095,9 @@ ALTER TABLE "CourseProgress" ADD CONSTRAINT "CourseProgress_user_id_fkey" FOREIG
 
 -- AddForeignKey
 ALTER TABLE "UserSubscription" ADD CONSTRAINT "UserSubscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserSubscription" ADD CONSTRAINT "UserSubscription_planId_fkey" FOREIGN KEY ("planId") REFERENCES "Plan"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Favorite" ADD CONSTRAINT "Favorite_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1042,28 +1166,52 @@ ALTER TABLE "TokenTransaction" ADD CONSTRAINT "TokenTransaction_userId_fkey" FOR
 ALTER TABLE "UserReferral" ADD CONSTRAINT "UserReferral_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UserReferralUse" ADD CONSTRAINT "UserReferralUse_referrerId_fkey" FOREIGN KEY ("referrerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "UserReferralUse" ADD CONSTRAINT "UserReferralUse_referralId_fkey" FOREIGN KEY ("referralId") REFERENCES "UserReferral"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "UserReferralUse" ADD CONSTRAINT "UserReferralUse_referredId_fkey" FOREIGN KEY ("referredId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UserReferralUse" ADD CONSTRAINT "UserReferralUse_referralId_fkey" FOREIGN KEY ("referralId") REFERENCES "UserReferral"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "UserReferralUse" ADD CONSTRAINT "UserReferralUse_referrerId_fkey" FOREIGN KEY ("referrerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "PendingSubscription" ADD CONSTRAINT "PendingSubscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Bookmark" ADD CONSTRAINT "Bookmark_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Bookmark" ADD CONSTRAINT "Bookmark_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Bookmark" ADD CONSTRAINT "Bookmark_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Bookmark" ADD CONSTRAINT "Bookmark_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Bookmark" ADD CONSTRAINT "Bookmark_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Certificate" ADD CONSTRAINT "Certificate_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Certificate" ADD CONSTRAINT "Certificate_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Certificate" ADD CONSTRAINT "Certificate_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Recommendation" ADD CONSTRAINT "Recommendation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LearningEvent" ADD CONSTRAINT "LearningEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_CourseTags" ADD CONSTRAINT "_CourseTags_A_fkey" FOREIGN KEY ("A") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_CourseTags" ADD CONSTRAINT "_CourseTags_B_fkey" FOREIGN KEY ("B") REFERENCES "Tag"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_FlashCardTags" ADD CONSTRAINT "_FlashCardTags_A_fkey" FOREIGN KEY ("A") REFERENCES "FlashCard"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_FlashCardTags" ADD CONSTRAINT "_FlashCardTags_B_fkey" FOREIGN KEY ("B") REFERENCES "Tag"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_QuizTags" ADD CONSTRAINT "_QuizTags_A_fkey" FOREIGN KEY ("A") REFERENCES "Tag"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_QuizTags" ADD CONSTRAINT "_QuizTags_B_fkey" FOREIGN KEY ("B") REFERENCES "UserQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;

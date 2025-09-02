@@ -1,6 +1,6 @@
 const nextConfig = {
   reactStrictMode: false,
-  distDir: ".next1",
+  distDir: ".next",
   poweredByHeader: false,
 
   modularizeImports: {
