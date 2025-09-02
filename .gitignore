@@ -74,3 +74,4 @@ docker-compose.local.yml
 # Avoid committing any container inspection outputs
 *.container-inspect.json
 
+.env
