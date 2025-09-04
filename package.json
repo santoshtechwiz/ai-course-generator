@@ -28,7 +28,12 @@
     "prod:build": "npm run prod:migrate && npm run build",
     "knip": "knip",
     "prod": "set NODE_ENV=production && npm run prod:migrate && npm run build && npm run start",
-    "db:seed": "npx tsx prisma/seed-new.ts"
+    "db:seed": "npx tsx prisma/seed-new.ts",
+    "test:integration": "jest --config jest.config.integration.ts --no-stack-trace --colors",
+    "test:integration:watch": "jest --config jest.config.integration.ts --watch --no-stack-trace",
+    "test:integration:coverage": "jest --config jest.config.integration.ts --coverage --no-stack-trace",
+    "test:unit": "jest --config jest.config.ts --testPathPattern=__tests__/unit --no-stack-trace --colors",
+    "test:unit:watch": "jest --config jest.config.ts --testPathPattern=__tests__/unit --watch --no-stack-trace"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.1.14",
@@ -246,6 +251,7 @@
     "jest-silent-reporter": "0.5.0",
     "jest-stare": "^2.5.2",
     "jest-summary-reporter": "0.0.2",
+    "msw": "2.11.1",
     "postcss": "8.5.6",
     "postcss-cli": "11.0.1",
     "prisma": "6.10.1",

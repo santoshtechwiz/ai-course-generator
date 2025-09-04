@@ -224,6 +224,16 @@ export const fetchQuiz = createAsyncThunk(
 
       const data = await response.json()
 
+      // Debug: Log the API response
+      console.log('Quiz API Response received:', {
+        url,
+        status: response.status,
+        ok: response.ok,
+        dataKeys: data ? Object.keys(data) : 'No data',
+        hasQuestions: data?.questions ? Array.isArray(data.questions) : false,
+        questionsLength: data?.questions?.length || 0
+      })
+
       // Validate response data
       if (!data || typeof data !== 'object') {
         return rejectWithValue({
@@ -914,6 +924,34 @@ const quizSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(fetchQuiz.pending, (state) => {
+        state.status = 'loading'
+        state.error = null
+      })
+      .addCase(fetchQuiz.fulfilled, (state, action) => {
+        console.log('fetchQuiz.fulfilled - updating state with:', {
+          title: action.payload.title,
+          questionsCount: action.payload.questions?.length || 0,
+          slug: action.payload.slug,
+          quizType: action.payload.quizType
+        })
+
+        state.slug = action.payload.slug
+        state.quizType = action.payload.quizType
+        state.title = action.payload.title
+        state.questions = action.payload.questions
+        state.status = 'succeeded'
+        state.error = null
+        state.isInitialized = true
+        state.lastUpdated = Date.now()
+      })
+      .addCase(fetchQuiz.rejected, (state, action) => {
+        console.log('fetchQuiz.rejected - error:', action.payload || action.error.message)
+
+        state.status = 'failed'
+        state.error = (action.payload as any)?.error || action.error.message || 'Failed to load quiz'
+        state.isInitialized = true
+      })
       .addCase(submitQuiz.pending, (state) => {
         state.status = 'submitting'
         state.error = null
