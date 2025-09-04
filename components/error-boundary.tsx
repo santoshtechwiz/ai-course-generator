@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, RefreshCw, Bug, Home } from 'lucide-react'
-import { EnhancedLoader } from './enhanced-loader'
+import { Loader2 } from 'lucide-react'
 
 interface ErrorFallbackProps {
   error: Error
@@ -62,7 +62,7 @@ function ErrorFallback({ error, resetError, retryCount = 0 }: ErrorFallbackProps
             >
               {isRetrying ? (
                 <>
-                  <EnhancedLoader size="small" className="mr-2" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Retrying...
                 </>
               ) : (

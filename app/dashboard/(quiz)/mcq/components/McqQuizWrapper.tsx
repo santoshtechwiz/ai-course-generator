@@ -12,6 +12,8 @@ import {
   selectQuizStatus,
   selectQuizTitle,
   selectIsQuizComplete,
+  selectRequiresAuth,
+  selectRedirectAfterLogin,
   setCurrentQuestionIndex,
   saveAnswer,
   resetQuiz,
@@ -45,6 +47,8 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const quizStatus = useSelector(selectQuizStatus)
   const quizTitle = useSelector(selectQuizTitle)
   const isCompleted = useSelector(selectIsQuizComplete)
+  const requiresAuth = useSelector(selectRequiresAuth)
+  const redirectAfterLogin = useSelector(selectRedirectAfterLogin)
 
   // Load the quiz with improved error handling
   useEffect(() => {
@@ -139,10 +143,22 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
       setTimeout(() => {
         router.push(`/dashboard/mcq/${slug}/results`)
       }, 500)
-    } catch (err) {
+    } catch (err: any) {
+      // Check if it's an authentication error
+      if (err?.requiresAuth) {
+        // Authentication required, redirect will be handled by useEffect
+        return
+      }
       console.error("Error submitting quiz:", err)
     }
   }, [dispatch, router, slug])
+
+  // Handle authentication redirect
+  useEffect(() => {
+    if (requiresAuth && redirectAfterLogin) {
+      router.push(redirectAfterLogin)
+    }
+  }, [requiresAuth, redirectAfterLogin, router])
 
   // Loading state with improved handling
   if (quizStatus === 'loading' && !questions.length) {
@@ -152,6 +168,35 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
         variant="spinner"
         size="lg"
       />
+    )
+  }
+
+  // Requires authentication state
+  if (quizStatus === 'requires-auth') {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-6">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+              <AlertCircle className="h-6 w-6 text-blue-600" />
+            </div>
+            <CardTitle className="text-blue-600">Sign In Required</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <p className="text-muted-foreground">
+              You need to sign in to submit quiz results and save your progress.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={() => router.push(redirectAfterLogin || '/auth/signin')} className="flex items-center gap-2">
+                Sign In
+              </Button>
+              <Button onClick={() => router.back()} variant="ghost">
+                Go Back
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 

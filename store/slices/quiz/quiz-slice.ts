@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@reduxjs/toolkit'
 import type { RootState } from '@/store'
 import { API_ENDPOINTS } from './quiz-helpers'
-import { QuizQuestion, QuizResults, QuizState } from './quiz-types'
+import { QuizQuestion, QuizResults, QuizState, QuestionResult } from './quiz-types'
 import { QuizType } from '@/app/types/quiz-types'
 import { STORAGE_KEYS } from '@/constants/global'
 import { 
@@ -314,7 +314,7 @@ export const submitQuiz = createAsyncThunk(
 
       // Calculate client-side results first
       let score = 0
-      const tempResults: QuizResults['results'] = []
+      const tempResults: QuestionResult[] = []
       const totalTimeSpent = Object.values(answers).reduce((total, answer) => {
         return total + (answer?.timeSpent || 0)
       }, 0)
@@ -418,6 +418,21 @@ export const submitQuiz = createAsyncThunk(
 
       const total = questions.length
 
+      // Create the results object
+      const quizResults: QuizResults = {
+        slug: slug!,
+        quizType: quizType!,
+        score,
+        maxScore: total,
+        percentage: (total > 0 ? Math.round((score / total) * 100) : 0),
+        submittedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        answers: Object.values(answers),
+        results: tempResults,
+        totalTime: totalTimeSpent,
+        accuracy: 0,
+      }
+
       // Submit to backend API
       if (process.env.NODE_ENV !== 'production') {
         console.log('Submitting quiz to backend:', {
@@ -447,9 +462,27 @@ export const submitQuiz = createAsyncThunk(
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        let errorData: any = {}
+        try {
+          errorData = await response.json()
+        } catch (parseError) {
+          console.warn('Failed to parse error response:', parseError)
+        }
         console.error('Quiz submission failed:', errorData)
-        throw new Error(errorData.error || 'Failed to submit quiz')
+        
+        // Check for authentication errors
+        if (response.status === 401 || response.status === 403) {
+          // User not authenticated, save results temporarily and redirect
+          storageManager.saveTempQuizResults(slug!, quizType!, quizResults, answers)
+          
+          return rejectWithValue({
+            requiresAuth: true,
+            redirectUrl: `/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/quiz/${quizType}/${slug}/results`)}`,
+            tempResults: quizResults
+          })
+        }
+        
+        throw new Error(errorData?.error || 'Failed to submit quiz')
       }
 
       const responseData = await response.json()
@@ -457,24 +490,11 @@ export const submitQuiz = createAsyncThunk(
         console.log('Quiz submitted successfully:', responseData)
       }
 
-      // Return client-side calculated results for immediate UI feedback
-      const results: QuizResults = {
-        slug: slug!,
-        quizType: quizType!,
-        score,
-        maxScore: total,
-        percentage: responseData.result?.percentageScore || (total > 0 ? Math.round((score / total) * 100) : 0),
-        submittedAt: new Date().toISOString(),
-        completedAt: new Date().toISOString(),
-        answers: Object.values(answers),
-        results: tempResults,
-        // Include additional data from API response
-        totalTime: totalTimeSpent,
-        accuracy: responseData.result?.accuracy,
-      }
-
+      // Return results with additional data from API response
       return {
-        ...results,
+        ...quizResults,
+        percentage: responseData.result?.percentageScore || quizResults.percentage,
+        accuracy: responseData.result?.accuracy,
         __lastUpdated: Date.now(),
       }
     } catch (error: any) {
@@ -574,6 +594,139 @@ export const hydrateQuiz = createAsyncThunk(
       ...currentQuiz,
       ...payload.quizData,
       __lastUpdated: Date.now(),
+    }
+  }
+)
+
+/**
+ * Save quiz results to database (for authenticated users after showing results)
+ */
+export const saveQuizResultsToDB = createAsyncThunk(
+  'quiz/saveToDB',
+  async (results: QuizResults, { rejectWithValue }) => {
+    try {
+      const { slug, quizType, answers, totalTime, score, maxScore } = results
+
+      // Prepare answers for API submission
+      const answersForAPI: any[] = answers.map(answer => ({
+        questionId: answer.questionId,
+        answer: answer.selectedOptionId || answer.userAnswer || '',
+        timeSpent: answer.timeSpent || 0,
+        isCorrect: answer.isCorrect
+      }))
+
+      const response = await fetch(`/api/quizzes/${quizType}/${slug}/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          quizId: slug,
+          answers: answersForAPI,
+          totalTime: totalTime || 0,
+          score: score,
+          type: quizType,
+          totalQuestions: maxScore,
+          correctAnswers: score,
+          completedAt: new Date().toISOString(),
+        }),
+      })
+
+      if (!response.ok) {
+        let errorData: any = {}
+        try {
+          errorData = await response.json()
+        } catch (parseError) {
+          console.warn('Failed to parse error response:', parseError)
+        }
+        console.error('Failed to save quiz results to DB:', errorData)
+        throw new Error(errorData?.error || 'Failed to save results')
+      }
+
+      const responseData = await response.json()
+      return {
+        ...results,
+        percentage: responseData.result?.percentageScore || results.percentage,
+        accuracy: responseData.result?.accuracy,
+        __lastUpdated: Date.now(),
+      }
+    } catch (error: any) {
+      console.error('Save to DB error:', error)
+      return rejectWithValue({
+        error: error.message || 'Failed to save results to database',
+      })
+    }
+  }
+)
+
+/**
+ * Load temporary quiz results and save to DB after authentication
+ */
+export const loadTempResultsAndSave = createAsyncThunk(
+  'quiz/loadTempAndSave',
+  async ({ slug, quizType }: { slug: string; quizType: string }, { rejectWithValue }) => {
+    try {
+      const tempData = storageManager.getTempQuizResults(slug, quizType)
+      if (!tempData) {
+        return rejectWithValue({ error: 'No temporary results found' })
+      }
+
+      // Set results in state
+      const results = tempData.results
+
+      // Clear temp data
+      storageManager.clearTempQuizResults(slug, quizType)
+
+      // Save to DB
+      const { answers, totalTime, score, maxScore } = results
+
+      const answersForAPI: any[] = answers.map((answer: any) => ({
+        questionId: answer.questionId,
+        answer: answer.selectedOptionId || answer.userAnswer || '',
+        timeSpent: answer.timeSpent || 0,
+        isCorrect: answer.isCorrect
+      }))
+
+      const response = await fetch(`/api/quizzes/${quizType}/${slug}/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          quizId: slug,
+          answers: answersForAPI,
+          totalTime: totalTime || 0,
+          score: score,
+          type: quizType,
+          totalQuestions: maxScore,
+          correctAnswers: score,
+          completedAt: new Date().toISOString(),
+        }),
+      })
+
+      if (!response.ok) {
+        let errorData: any = {}
+        try {
+          errorData = await response.json()
+        } catch (parseError) {
+          console.warn('Failed to parse error response:', parseError)
+        }
+        console.error('Failed to save temp results to DB:', errorData)
+        throw new Error(errorData?.error || 'Failed to save results')
+      }
+
+      const responseData = await response.json()
+      return {
+        ...results,
+        percentage: responseData.result?.percentageScore || results.percentage,
+        accuracy: responseData.result?.accuracy,
+        __lastUpdated: Date.now(),
+      }
+    } catch (error: any) {
+      console.error('Load temp and save error:', error)
+      return rejectWithValue({
+        error: error.message || 'Failed to load and save results',
+      })
     }
   }
 )
@@ -775,160 +928,162 @@ const quizSlice = createSlice({
         }
       })
       .addCase(submitQuiz.rejected, (state, action) => {
-        state.status = 'failed'
-        state.error = action.error.message || 'Quiz submission failed'
-      })
-      .addCase(fetchQuiz.pending, (state) => {
-        // Only update status if not already loading (prevents flickering)
-        if (state.status !== 'loading') {
-          state.status = 'loading'
-          state.error = null
-          state.isInitialized = false
-        }
-        // Don't clear existing data to prevent blank screens during refetch
-      })
-      .addCase(fetchQuiz.fulfilled, (state, action: PayloadAction<any>) => {
-        const incomingTs = action.payload.__lastUpdated || Date.now()
-
-        // Only update if this is newer data or we're in a fresh state
-        if (!state.lastUpdated || incomingTs >= state.lastUpdated || state.status !== 'succeeded') {
-          state.status = 'succeeded'
-          state.error = null
-          state.slug = action.payload.slug
-          state.quizType = action.payload.quizType
-          state.title = action.payload.title || action.payload.data?.title || ''
-          state.questions = action.payload.questions || []
-          state.isInitialized = true
-
-          // Load persisted progress if available
-          const persistedIndex = loadPersistedProgress(state.slug, state.quizType)
-          state.currentQuestionIndex = persistedIndex !== null ? persistedIndex :
-            (typeof action.payload.currentQuestionIndex === 'number' && action.payload.currentQuestionIndex >= 0
-              ? action.payload.currentQuestionIndex
-              : 0)
-
-          // Reset answers for fresh quiz attempt
-          state.answers = {}
-
-          // Clear results if this is a fresh load
-          if (!action.payload.__fromCache) {
-            state.results = null
-            state.isCompleted = false
-          }
-
-          state.lastUpdated = incomingTs
-          persistProgress(state.slug, state.quizType, state.currentQuestionIndex)
-        }
-      })
-      .addCase(fetchQuiz.rejected, (state, action) => {
-        const payload = action.payload as any
-        const errorCode = payload?.code
-
-        // Handle different error types appropriately
-        switch (errorCode) {
-          case 'CANCELLED':
-            // Don't change status or show error for cancelled requests
-            // This prevents blank screens when navigating quickly
-            console.log('Quiz request was cancelled, preserving current state')
-            return
-
-          case 'NOT_FOUND':
-            state.status = 'not-found'
-            state.error = payload?.error || 'Quiz not found'
-            state.isInitialized = true
-            break
-
-          case 'FORBIDDEN':
-            state.status = 'failed'
-            state.error = payload?.error || 'Access denied'
-            state.isInitialized = true
-            break
-
-          case 'NETWORK_ERROR':
-          case 'SERVER_ERROR':
-            state.status = 'failed'
-            state.error = payload?.error || 'Network error. Please check your connection.'
-            state.isInitialized = true
-            break
-
-          default:
-            state.status = 'failed'
-            state.error = payload?.error || action.error.message || 'Failed to load quiz'
-            state.isInitialized = true
-        }
-
-        // Clear any pending operations
-        state.pendingRedirect = false
-      })
-      .addCase(checkAuthAndLoadResults.pending, (state) => {
-        state.status = 'loading'
-        state.error = null
-      })
-      .addCase(checkAuthAndLoadResults.fulfilled, (state, action) => {
-        const incomingTs = (action.payload as any)?.__lastUpdated || Date.now()
-        if (!state.lastUpdated || incomingTs >= state.lastUpdated) {
-          state.status = 'succeeded'
-          state.results = action.payload
-          state.isCompleted = true
-          state.error = null
-          state.lastUpdated = incomingTs
-        }
-      })
-      .addCase(checkAuthAndLoadResults.rejected, (state, action) => {
         const payload = action.payload as any
         if (payload?.requiresAuth) {
           state.requiresAuth = true
           state.redirectAfterLogin = payload.redirectUrl
+          state.results = payload.tempResults
+          state.isCompleted = true
+          state.status = 'requires-auth'
         } else {
           state.status = 'failed'
-          state.error = payload?.error || action.error.message || 'Failed to load results'
+          state.error = action.error.message || 'Quiz submission failed'
         }
       })
-  },
+      .addCase(saveQuizResultsToDB.pending, (state) => {
+        // Optional: could set a saving status
+      })
+      .addCase(saveQuizResultsToDB.fulfilled, (state, action) => {
+        // Update results with server response if needed
+        if (action.payload) {
+          state.results = action.payload
+        }
+      })
+      .addCase(saveQuizResultsToDB.rejected, (state, action) => {
+        state.status = 'failed'
+        state.error = action.error.message || 'Failed to save results'
+      })
+      .addCase(loadTempResultsAndSave.pending, (state) => {
+        state.status = 'loading'
+        state.error = null
+      })
+      .addCase(loadTempResultsAndSave.fulfilled, (state, action) => {
+        state.status = 'succeeded'
+        state.results = action.payload
+        state.isCompleted = true
+        state.error = null
+        state.requiresAuth = false
+        state.redirectAfterLogin = null
+        state.lastUpdated = Date.now()
+      })
+      .addCase(loadTempResultsAndSave.rejected, (state, action) => {
+        const payload = action.payload as any
+        state.status = 'failed'
+        state.error = payload?.error || action.error.message || 'Failed to load results'
+      })
+  }
 })
-export const {
-  // Quiz setup and reset
-  setQuiz,
-  resetQuiz,
-  handleNavigation,
-  resetSubmissionState,
-  clearResults,
 
-  // Question navigation and answers
+export const {
+  setQuiz,
   saveAnswer,
   setCurrentQuestionIndex,
-  startQuestionTimer,
-  resetQuestionTimers,
-
-  // Auth and completion
+  handleNavigation,
+  resetQuiz,
+  clearResults,
   markRequiresAuth,
   clearRequiresAuth,
+  resetSubmissionState,
   setQuizCompleted,
   setQuizResults,
+  startQuestionTimer,
+  resetQuestionTimers,
 } = quizSlice.actions
 
+export const selectQuizState = (state: RootState) => state.quiz
 
-// Selectors
-export const selectQuiz = (state: RootState) => state.quiz as unknown as QuizState
-export const selectQuizResults = (state: RootState) => (state.quiz as unknown as QuizState).results
-export const selectQuizQuestions = (state: RootState) => (state.quiz as unknown as QuizState).questions
-export const selectQuizAnswers = (state: RootState) => (state.quiz as unknown as QuizState).answers
-export const selectQuizStatus = (state: RootState) => (state.quiz as unknown as QuizState).status
-export const selectQuizError = (state: RootState) => (state.quiz as unknown as QuizState).error
-export const selectIsQuizNotFound = (state: RootState) => (state.quiz as unknown as QuizState).status === 'not-found'
-export const selectIsQuizLoading = (state: RootState) => (state.quiz as unknown as QuizState).status === 'loading'
-export const selectIsQuizComplete = (state: RootState) => (state.quiz as unknown as QuizState).isCompleted
-export const selectRequiresAuth = (state: RootState) => (state.quiz as unknown as QuizState).requiresAuth
-export const selectRedirectAfterLogin = (state: RootState) => (state.quiz as unknown as QuizState).redirectAfterLogin
-export const selectCurrentQuestionIndex = (state: RootState) => (state.quiz as unknown as QuizState).currentQuestionIndex
-export const selectQuizId = (state: RootState) => (state.quiz as unknown as QuizState).slug || null
-export const selectQuizTitle = (state: RootState) => (state.quiz as unknown as QuizState).title || ''
-export const selectQuizType = (state: RootState) => (state.quiz as unknown as QuizState).quizType || null
 export const selectCurrentQuestion = createSelector(
-  [selectQuizQuestions, selectCurrentQuestionIndex],
-  (questions, index) => questions[index]
+  (state: RootState) => state.quiz,
+  (quiz) => {
+    if (!quiz.slug || !quiz.questions.length) return null
+    return quiz.questions[quiz.currentQuestionIndex] || null
+  }
 )
-export const selectQuizUserId = (state: RootState) => (state.quiz as unknown as QuizState).userId
 
-// Default Export
+export const selectQuizProgress = createSelector(
+  (state: RootState) => state.quiz,
+  (quiz) => {
+    const totalQuestions = quiz.questions.length
+    const answeredQuestions = Object.keys(quiz.answers).length
+    const completed = quiz.isCompleted || (answeredQuestions === totalQuestions)
+    const currentQuestion = quiz.questions[quiz.currentQuestionIndex]
+
+    return {
+      totalQuestions,
+      answeredQuestions,
+      currentQuestionIndex: quiz.currentQuestionIndex,
+      currentQuestion: currentQuestion ? {
+        id: currentQuestion.id,
+        type: currentQuestion.type,
+        question: currentQuestion.question,
+        options: currentQuestion.options,
+        // Include only necessary fields for progress tracking
+      } : null,
+      completed,
+      isInitialized: quiz.isInitialized,
+      lastUpdated: quiz.lastUpdated,
+    }
+  }
+)
+
+export const selectQuizResults = createSelector(
+  (state: RootState) => state.quiz,
+  (quiz) => quiz.results
+)
+
+export const selectIsQuizCompleted = createSelector(
+  (state: RootState) => state.quiz,
+  (quiz) => quiz.isCompleted
+)
+
+export const selectQuizError = createSelector(
+  (state: RootState) => state.quiz,
+  (quiz) => quiz.error
+)
+
+export const selectQuizStatus = createSelector(
+  (state: RootState) => state.quiz,
+  (quiz) => quiz.status
+)
+
+export const selectRequiresAuth = createSelector(
+  (state: RootState) => state.quiz,
+  (quiz) => quiz.requiresAuth
+)
+
+export const selectRedirectAfterLogin = createSelector(
+  (state: RootState) => state.quiz,
+  (quiz) => quiz.redirectAfterLogin
+)
+
+export const selectQuizQuestions = createSelector(
+  (state: RootState) => state.quiz,
+  (quiz) => (quiz as unknown as QuizState).questions
+)
+
+export const selectQuizAnswers = createSelector(
+  (state: RootState) => state.quiz,
+  (quiz) => (quiz as unknown as QuizState).answers
+)
+
+export const selectCurrentQuestionIndex = createSelector(
+  (state: RootState) => state.quiz,
+  (quiz) => (quiz as unknown as QuizState).currentQuestionIndex
+)
+
+export const selectQuizTitle = createSelector(
+  (state: RootState) => state.quiz,
+  (quiz) => (quiz as unknown as QuizState).title
+)
+
+export const selectIsQuizComplete = createSelector(
+  (state: RootState) => state.quiz,
+  (quiz) => (quiz as unknown as QuizState).isCompleted
+)
+
+export const selectQuizUserId = createSelector(
+  (state: RootState) => state.quiz,
+  (quiz) => (quiz as unknown as QuizState).userId
+)
+
 export default quizSlice.reducer

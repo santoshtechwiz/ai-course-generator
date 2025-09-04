@@ -41,7 +41,7 @@ export async function getRecommendedItems(limit: number = 3): Promise<Recommende
         isPublic: true,
       },
       orderBy: {
-        lastAttemptedAt: "desc", // Order by most recently attempted
+        lastAttempted: "desc", // Order by most recently attempted
       },
       take: Math.floor(limit / 2),
       select: {

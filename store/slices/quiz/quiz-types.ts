@@ -56,7 +56,7 @@ export interface QuizState {
   answers: Record<string, QuizAnswer>
   results: QuizResults | null
   isCompleted: boolean
-  status: 'idle' | 'loading' | 'submitting' | 'succeeded' | 'failed' | 'not-found'
+  status: 'idle' | 'loading' | 'submitting' | 'succeeded' | 'failed' | 'not-found' | 'requires-auth'
   error: string | null
   requiresAuth: boolean
   redirectAfterLogin: string | null
@@ -70,6 +70,6 @@ export interface QuizState {
 }
 
 // Type aliases for better readability
-export type QuizStatus = "idle" | "loading" | "succeeded" | "failed" | "submitting" | "not-found"
+export type QuizStatus = "idle" | "loading" | "succeeded" | "failed" | "submitting" | "not-found" | "requires-auth"
 export type AuthStatus = "checking" | "authenticated" | "unauthenticated" | "idle"
 export type QuestionType = "mcq" | "code" | "blanks" | "openended"

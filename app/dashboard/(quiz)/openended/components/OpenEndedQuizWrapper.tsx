@@ -12,6 +12,8 @@ import {
   selectQuizStatus,
   selectIsQuizComplete,
   selectQuizUserId,
+  selectRequiresAuth,
+  selectRedirectAfterLogin,
   setCurrentQuestionIndex,
   saveAnswer,
   resetQuiz,
@@ -54,6 +56,8 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   const quizStatus = useSelector(selectQuizStatus)
   const isCompleted = useSelector(selectIsQuizComplete)
   const quizType = useSelector(selectQuizType)
+  const requiresAuth = useSelector(selectRequiresAuth)
+  const redirectAfterLogin = useSelector(selectRedirectAfterLogin)
   const quizId = useSelector((state: any) => state.quiz.quizId) // Assuming quizId is stored in quiz slice
   const quizOwnerId = useSelector(selectQuizUserId) // Get the actual quiz owner ID
   const userId = user?.id // Get user ID from session-based auth
@@ -87,7 +91,14 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
         clearTimeout(submissionTimeoutRef.current)
       }
     }
-  }, [slug, dispatch])
+  }, [dispatch, slug])
+
+  // Handle authentication redirect
+  useEffect(() => {
+    if (requiresAuth && redirectAfterLogin) {
+      router.push(redirectAfterLogin)
+    }
+  }, [requiresAuth, redirectAfterLogin, router])
 
   // Auto-redirect if quiz already completed
   useEffect(() => {
@@ -145,7 +156,12 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
       await dispatch(submitQuiz()).unwrap()
       toast.success("Quiz submitted successfully!")
       router.push(`/dashboard/openended/${slug}/results`)
-    } catch (err) {
+    } catch (err: any) {
+      // Check if it's an authentication error
+      if (err?.requiresAuth) {
+        // Authentication required, redirect will be handled by useEffect
+        return
+      }
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
     }

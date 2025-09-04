@@ -13,12 +13,14 @@ import SignInPrompt from '@/app/auth/signin/components/SignInPrompt'
 import { Progress } from '@/components/ui/progress'
 
 import { useAuth } from '@/modules/auth'
+import { storageManager } from '@/utils/storage-manager'
 import {
   selectQuizResults,
   selectQuizStatus,
   selectQuizQuestions,
 
   checkAuthAndLoadResults,
+  loadTempResultsAndSave,
   resetQuiz,
 } from '@/store/slices/quiz/quiz-slice'
 
@@ -153,6 +155,25 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   // Optimized effect for loading results
   useEffect(() => {
     if (!slug || isAuthLoading) return
+
+    // First, check for temporary results from unauthenticated submission
+    const tempResults = storageManager.getTempQuizResults(slug, quizType)
+    if (tempResults && isAuthenticated) {
+      console.log('Found temporary results, loading and saving to DB...')
+      dispatch(loadTempResultsAndSave({ slug, quizType }))
+        .unwrap()
+        .then(() => {
+          console.log('Successfully loaded and saved temp results')
+          send({ type: 'RESULTS_LOADED_WITH_AUTH' });
+        })
+        .catch((err: any) => {
+          console.error('Failed to load and save temp results:', err)
+          // Clear temp results on failure
+          storageManager.clearTempQuizResults(slug, quizType)
+          handleRetake();
+        });
+      return;
+    }
 
     // Check for direct URL access first
     try {

@@ -17,6 +17,7 @@ const STORAGE_PREFIXES = {
   USER_PREFERENCES: 'user_prefs_',
   QUIZ_HISTORY: 'quiz_history_',
   QUIZ_PROGRESS: 'quiz_progress_',
+  QUIZ_TEMP_RESULTS: 'quiz_temp_results_',
   VIDEO_SETTINGS: 'video_settings_',
   COURSE_SETTINGS: 'course_settings_',
   DEBUG_LOGS: 'debug_logs_',
@@ -51,6 +52,14 @@ export interface QuizProgress {
   timeSpent: number
   lastUpdated: number
   isCompleted: boolean
+}
+
+export interface QuizTempResults {
+  slug: string
+  quizType: string
+  results: any // QuizResults
+  answers: Record<string, any>
+  savedAt: number
 }
 
 export interface VideoSettings {
@@ -325,6 +334,42 @@ class StorageManager {
     }))
   }
 
+  saveTempQuizResults(slug: string, quizType: string, results: any, answers: Record<string, any>): void {
+    const key = `${STORAGE_PREFIXES.QUIZ_TEMP_RESULTS}${slug}_${quizType}`
+    const tempResults: QuizTempResults = {
+      slug,
+      quizType,
+      results,
+      answers,
+      savedAt: Date.now()
+    }
+    this.safeSetItem(key, JSON.stringify(tempResults))
+  }
+
+  getTempQuizResults(slug: string, quizType: string): QuizTempResults | null {
+    const key = `${STORAGE_PREFIXES.QUIZ_TEMP_RESULTS}${slug}_${quizType}`
+    const data = this.safeGetItem(key)
+    if (data) {
+      try {
+        const tempResults: QuizTempResults = JSON.parse(data)
+        // Check if expired (24 hours)
+        if (Date.now() - tempResults.savedAt > 24 * 60 * 60 * 1000) {
+          this.safeRemoveItem(key)
+          return null
+        }
+        return tempResults
+      } catch {
+        return null
+      }
+    }
+    return null
+  }
+
+  clearTempQuizResults(slug: string, quizType: string): void {
+    const key = `${STORAGE_PREFIXES.QUIZ_TEMP_RESULTS}${slug}_${quizType}`
+    this.safeRemoveItem(key)
+  }
+
   getIncompleteQuizzes(): QuizProgress[] {
     if (typeof window === 'undefined') return []
 
@@ -592,6 +637,3 @@ class StorageManager {
 
 // Export singleton instance
 export const storageManager = StorageManager.getInstance()
-
-// Export types
-export type { UserPreferences, QuizHistoryEntry, QuizProgress, VideoSettings, CourseSettings }
