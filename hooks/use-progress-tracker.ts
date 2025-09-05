@@ -9,6 +9,9 @@ interface UseProgressTrackerOptions {
   batchInterval?: number;
 }
 
+/**
+ * @deprecated Use the event-driven progress system instead
+ */
 export default function useProgressTracker({
   userId,
   courseId,

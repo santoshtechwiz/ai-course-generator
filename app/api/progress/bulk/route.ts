@@ -1,99 +1,53 @@
-import { NextResponse } from 'next/server';
-import { ProgressUpdate } from '@/lib/queues/ProgressQueue';
-import prisma from '@/lib/db';
+import { NextRequest, NextResponse } from "next/server";
+import { getAuthSession } from "@/lib/auth";
+import { progressService, ProgressUpdate } from "@/app/services/progress.service";
 
-
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { updates } = await req.json() as { updates: ProgressUpdate[] };
+    const session = await getAuthSession();
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
 
-    // Group updates by type for efficient batch processing
-    const videoUpdates = updates.filter(u => u.type === 'video');
-    const quizUpdates = updates.filter(u => u.type === 'quiz');
-    const chapterUpdates = updates.filter(u => u.type === 'chapter');
+    const { updates }: { updates: ProgressUpdate[] } = await req.json();
 
-    await prisma.$transaction(async (tx) => {
-      // Update video progress
-      if (videoUpdates.length > 0) {
-        await Promise.all(
-          videoUpdates.map(update =>
-            tx.courseProgress.upsert({
-              where: {
-                unique_user_course_progress: {
-                  userId: update.userId,
-                  courseId: update.courseId,
-                }
-              },
-              create: {
-                userId: update.userId,
-                courseId: update.courseId,
-                currentChapterId: update.chapterId,
-                progress: update.progress,
-                lastAccessedAt: new Date(update.timestamp),
-                timeSpent: 0,
-                interactionCount: 1,
-              },
-              update: {
-                currentChapterId: update.chapterId,
-                progress: {
-                  set: Math.max(update.progress),
-                },
-                lastAccessedAt: new Date(update.timestamp),
-                interactionCount: {
-                  increment: 1,
-                },
-              },
-            })
-          )
+    if (!Array.isArray(updates) || updates.length === 0) {
+      return NextResponse.json({ error: "No updates provided" }, { status: 400 });
+    }
+
+    // 🚨 CRITICAL SECURITY FIX: Prevent DOS attacks
+    const MAX_UPDATES = 50; // Reasonable limit to prevent abuse
+    if (updates.length > MAX_UPDATES) {
+      return NextResponse.json(
+        { error: `Too many updates. Maximum ${MAX_UPDATES} allowed per request` },
+        { status: 400 }
+      );
+    }
+
+    // Security: Ensure user can only update their own progress
+    for (let i = 0; i < updates.length; i++) {
+      const update = updates[i];
+      if (update.userId !== session.user.id) {
+        return NextResponse.json(
+          { error: `Unauthorized: Cannot update progress for different user in update ${i}` },
+          { status: 403 }
         );
       }
+    }
 
-      // Update quiz progress
-      if (quizUpdates.length > 0) {
-        await Promise.all(
-          quizUpdates.map(update =>
-            tx.courseQuizAttempt.create({
-              data: {
-                userId: update.userId,
-                courseQuizId: update.metadata?.courseQuizId || update.metadata?.quizId,
-                score: update.metadata?.score,
-                accuracy: update.metadata?.accuracy,
-                timeSpent: update.metadata?.timeSpent,
-              },
-            })
-          )
-        );
-      }
+    // Use the unified progress service for bulk updates
+    const result = await progressService.bulkUpdateProgress(updates);
 
-      // Update chapter completion
-      if (chapterUpdates.length > 0) {
-        await Promise.all(
-          chapterUpdates.map(update =>
-            tx.courseProgress.update({
-              where: {
-                unique_user_course_progress: {
-                  userId: update.userId,
-                  courseId: update.courseId,
-                }
-              },
-              data: {
-                currentChapterId: update.chapterId,
-                chapterProgress: {
-                  ...update.metadata?.chapterProgress,
-                },
-                lastAccessedAt: new Date(update.timestamp),
-              },
-            })
-          )
-        );
-      }
+    return NextResponse.json({
+      message: `Bulk progress update completed. Success: ${result.success}, Failed: ${result.failed}`,
+      success: result.success,
+      failed: result.failed,
+      errors: result.errors,
     });
-
-    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error updating progress:', error);
+    console.error("Bulk progress update error:", error);
     return NextResponse.json(
-      { error: 'Failed to update progress' },
+      { error: "Failed to update progress" },
       { status: 500 }
     );
   }

@@ -36,6 +36,7 @@ import CertificateGenerator from "./CertificateGenerator"
 import { PDFDownloadLink } from "@react-pdf/renderer"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/modules/auth"
 
 export interface AccessLevels {
   isSubscribed: boolean
@@ -60,6 +61,7 @@ export default function CourseDetailsTabs({
   const [activeTab, setActiveTab] = useState("summary")
 
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
+  const { user } = useAuth()
 
   // Memoized selectors to prevent unnecessary re-renders
   const selectBookmarks = useMemo(
@@ -82,15 +84,16 @@ export default function CourseDetailsTabs({
   const selectCourseProgress = useMemo(
     () =>
       createSelector(
-        [(state: RootState) => state.course.courseProgress, () => course.id],
+        [(state: RootState) => state.course.userProgress, () => course.id, () => user?.id || 'guest'],
         (
-          courseProgressMap: Record<string | number, CourseProgress>,
+          userProgressMap: Record<string, Record<string | number, CourseProgress>>,
           courseId: string | number,
+          userId: string,
         ): CourseProgress | undefined => {
-          return courseProgressMap[courseId]
+          return userProgressMap[userId]?.[courseId]
         },
       ),
-    [course.id],
+    [course.id, user?.id],
   )
 
   const courseProgress = useAppSelector(selectCourseProgress)

@@ -23,11 +23,14 @@ import {
   Shield,
   BrainCircuit,
   BookOpen,
+  CheckCircle,
+  Clock,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Progress } from "@/components/ui/progress"
 
 // Udemy-style course images - generic SVGs for different categories
 const COURSE_IMAGES = {
@@ -75,6 +78,14 @@ export interface CourseCardProps {
   tags?: string[]
   instructor?: string
   updatedAt?: string
+  // Progress tracking props
+  isEnrolled?: boolean
+  progressPercentage?: number
+  completedChapters?: number
+  totalChapters?: number
+  lastAccessedAt?: string
+  currentChapterTitle?: string
+  timeSpent?: number
 }
 
 const LEVEL_CONFIG = {
@@ -214,6 +225,14 @@ export const CourseCard = React.memo(
     tags = [],
     instructor = "Course Instructor",
     updatedAt,
+    // Progress tracking props
+    isEnrolled = false,
+    progressPercentage = 0,
+    completedChapters = 0,
+    totalChapters = unitCount || 0,
+    lastAccessedAt,
+    currentChapterTitle,
+    timeSpent = 0,
   }: CourseCardProps) => {
     const [isNavigating, setIsNavigating] = useState(false)
     const [imageError, setImageError] = useState(false)
@@ -549,6 +568,57 @@ export const CourseCard = React.memo(
                 </span>
               )}
             </div>
+
+            {/* Progress Section for Enrolled Courses */}
+            {isEnrolled && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-900">Your Progress</span>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    {progressPercentage}%
+                  </Badge>
+                </div>
+                
+                <Progress 
+                  value={progressPercentage} 
+                  className="h-2 mb-2" 
+                />
+                
+                <div className="flex items-center justify-between text-xs text-blue-700">
+                  <span>{completedChapters} of {totalChapters} chapters</span>
+                  {lastAccessedAt && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {new Date(lastAccessedAt).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+                
+                {currentChapterTitle && (
+                  <div className="mt-2 pt-2 border-t border-blue-200">
+                    <p className="text-xs text-blue-600 truncate">
+                      Continue: {currentChapterTitle}
+                    </p>
+                  </div>
+                )}
+                
+                {progressPercentage > 0 && (
+                  <Button 
+                    size="sm" 
+                    className="w-full mt-2 bg-blue-600 hover:bg-blue-700"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleCardClick(e)
+                    }}
+                  >
+                    {progressPercentage === 100 ? 'Review Course' : 'Continue Learning'}
+                  </Button>
+                )}
+              </div>
+            )}
 
             {/* Price */}
             <div className="mt-auto">

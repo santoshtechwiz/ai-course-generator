@@ -61,34 +61,32 @@ export const persistVideoProgress = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      // Import the progress queue dynamically to avoid circular dependencies
-      const { getProgressQueue } = await import('@/lib/progress-queue')
-
-      const queue = getProgressQueue()
-
-      // Get current progress data to include completed chapters
-      const currentData = await fetch(`/api/progress/${courseId}`)
-      const currentProgress = currentData.ok ? await currentData.json() : null
-      const completedChapters = currentProgress?.completedChapters || []
-
-      // Add to job queue for batched processing
-      queue.addCourseProgress({
-        courseId: String(courseId),
-        chapterId: Number(chapterId),
-        progress: Math.max(0, Math.min(100, progress)),
-        playedSeconds: Math.max(0, playedSeconds),
-        isCompleted: completed,
-        completedChapters: completed ? [...completedChapters, Number(chapterId)] : completedChapters,
+      // Direct API call for progress persistence
+      const response = await fetch(`/api/progress/${courseId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentChapterId: Number(chapterId),
+          progress: Math.max(0, Math.min(100, progress)),
+          playedSeconds: Math.max(0, playedSeconds),
+          isCompleted: completed
+        })
       })
 
-      // Return success immediately (actual persistence happens in background)
+      if (!response.ok) {
+        throw new Error(`Failed to save progress: ${response.statusText}`)
+      }
+
+      const result = await response.json()
+
+      // Return success data
       return {
         courseId: String(courseId),
         chapterId: Number(chapterId),
         progress: Math.max(0, Math.min(100, progress)),
         playedSeconds: Math.max(0, playedSeconds),
         isCompleted: completed,
-        completedChapters: completed ? [...completedChapters, Number(chapterId)] : completedChapters,
+        completedChapters: result.progress?.completedChapters || [],
         timestamp: Date.now()
       }
     } catch (err) {

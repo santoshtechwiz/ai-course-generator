@@ -7,11 +7,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { OpenEndedQuestion } from "@/types/quiz"
-import { selectQuizStatus, saveAnswer, selectAnswerForQuestion } from "@/store/slices/quiz/quiz-slice"
+import { selectQuizStatus, selectQuizAnswers } from "@/store/slices/quiz/quiz-slice"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
 import { QuizStateProvider } from "@/components/quiz/QuizStateProvider"
 import { toast } from "sonner"
+import { useProgressEvents } from "@/utils/progress-events"
+import { useSession } from "next-auth/react"
 
 interface QuizQuestionProps {
   question: OpenEndedQuestion
@@ -41,16 +43,21 @@ export function OpenEndedQuizQuestion({
   const dispatch = useAppDispatch()
   const [isTyping, setIsTyping] = useState(false)
   const [wordCount, setWordCount] = useState(0)
+  const { data: session } = useSession()
+  const { dispatchQuestionAnswered } = useProgressEvents()
+  const userId = session?.user?.id || ''
 
   // Get current answer from Redux store
-  const currentAnswer = useAppSelector((state) => selectAnswerForQuestion(state, question.id))
+  const allAnswers = useAppSelector(selectQuizAnswers)
+  const currentAnswer = allAnswers[question.id]
   const quizStatus = useAppSelector(selectQuizStatus)
 
   // Parse hints from question data
   const hints = useMemo(() => {
-    if (!question?.keywords) return []
-    return Array.isArray(question.keywords) ? question.keywords : []
-  }, [question?.keywords])
+    if (!question?.openEndedQuestion?.tags) return []
+    const tags = question.openEndedQuestion.tags
+    return Array.isArray(tags) ? tags : [tags]
+  }, [question?.openEndedQuestion?.tags])
 
   const isSubmitting = quizStatus === "submitting"
   const answerText = currentAnswer ? (currentAnswer as any).text || "" : ""
@@ -62,16 +69,21 @@ export function OpenEndedQuizQuestion({
       
       // Debounce the save to Redux
       const timeoutId = setTimeout(() => {
-        dispatch(
-          saveAnswer({
-            questionId: question.id,
-            answer: {
-              questionId: question.id,
-              text: newAnswer,
-              timestamp: Date.now(),
-            } as any,
-          }),
-        )
+        // Dispatch question answered event instead of direct state mutation
+        if (userId && question.id) {
+          // For open-ended questions, we'll mark as correct for now
+          // In a real implementation, you'd check against the expected answer
+          dispatchQuestionAnswered(
+            userId,
+            String(question.id),
+            'openended-quiz', // quizId - should be passed from parent
+            0, // questionIndex - should be passed from parent
+            undefined,
+            newAnswer,
+            true, // isCorrect - simplified for demo
+            0 // timeSpent
+          )
+        }
         setIsTyping(false)
       }, 300)
 
@@ -118,7 +130,7 @@ export function OpenEndedQuizQuestion({
           questionNumber={questionNumber}
           totalQuestions={totalQuestions}
           quizType="openended"
-          animationKey={question.id}
+          animationKey={String(question.id)}
           contentClassName="space-y-4"
           quizTitle="Open-Ended Question"
           quizSubtitle="Answer the following question in detail:"

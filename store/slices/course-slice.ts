@@ -23,6 +23,7 @@ export interface CourseProgress {
   studyTimeThisWeek?: number
   averageQuizScore?: number
   lastActivityDate?: string
+  userId?: string // Add userId for proper state management
 }
 
 export interface BookmarkItem {
@@ -55,7 +56,6 @@ export interface CourseState {
   videoProgress: Record<string, VideoProgress>
   autoplayEnabled: boolean
   bookmarks: Record<string, BookmarkItem[]>
-  courseProgress: Record<number | string, CourseProgress> // Legacy - keep for backward compatibility
   userProgress: Record<string, Record<number | string, CourseProgress>> // Per-user progress
   guestProgress: Record<number | string, CourseProgress> // Guest-only progress
   currentCourseId: number | null
@@ -82,7 +82,6 @@ const initialState: CourseState = {
   videoProgress: {},
   autoplayEnabled: true,
   bookmarks: {},
-  courseProgress: {},
   userProgress: {},
   guestProgress: {},
   currentCourseId: null,
@@ -192,8 +191,14 @@ const courseSlice = createSlice({
       const { courseId, progress, completedChapters, currentChapterId, isCompleted, lastPlayedAt, resumePoint } =
         action.payload;
       
-      // Legacy state update
-      state.courseProgress[courseId] = {
+      // Update user-specific progress if userId is provided, otherwise update guest progress
+      const userId = action.payload.userId || 'guest';
+      
+      if (!state.userProgress[userId]) {
+        state.userProgress[userId] = {};
+      }
+      
+      state.userProgress[userId][courseId] = {
         courseId,
         progress,
         completedChapters,
@@ -202,50 +207,54 @@ const courseSlice = createSlice({
         lastPlayedAt,
         resumePoint,
       };
+    },
+    setResumePoint(state, action: PayloadAction<{ courseId: number; resumePoint: number; userId?: string }>) {
+      const { courseId, resumePoint, userId = 'guest' } = action.payload
       
-      // If we have a current user in the session, also update user-specific state
-    },
-    setResumePoint(state, action: PayloadAction<{ courseId: number; resumePoint: number }>) {
-      const { courseId, resumePoint } = action.payload
-      if (state.courseProgress[courseId]) {
-        state.courseProgress[courseId].resumePoint = resumePoint
+      if (!state.userProgress[userId]) {
+        state.userProgress[userId] = {};
       }
-    },
-    setLastPlayedAt(state, action: PayloadAction<{ courseId: number; lastPlayedAt: string }>) {
-      const { courseId, lastPlayedAt } = action.payload
-      if (state.courseProgress[courseId]) {
-        state.courseProgress[courseId].lastPlayedAt = lastPlayedAt
-      }
-    },
-    markChapterAsStarted(state, action: PayloadAction<{ courseId: number; chapterId: number }>) {
-      const { courseId, chapterId } = action.payload
-      if (state.courseProgress[courseId]) {
-        state.courseProgress[courseId].currentChapterId = chapterId
-      }
-    },
-    markChapterAsCompleted(state, action: PayloadAction<{ courseId: number; chapterId: number }>) {
-      const { courseId, chapterId } = action.payload;
       
-      if (state.courseProgress[courseId]) {
-        const completedChapters = [...state.courseProgress[courseId].completedChapters];
+      if (state.userProgress[userId][courseId]) {
+        state.userProgress[userId][courseId].resumePoint = resumePoint
+      }
+    },
+    setLastPlayedAt(state, action: PayloadAction<{ courseId: number; lastPlayedAt: string; userId?: string }>) {
+      const { courseId, lastPlayedAt, userId = 'guest' } = action.payload
+      
+      if (!state.userProgress[userId]) {
+        state.userProgress[userId] = {};
+      }
+      
+      if (state.userProgress[userId][courseId]) {
+        state.userProgress[userId][courseId].lastPlayedAt = lastPlayedAt
+      }
+    },
+    markChapterAsStarted(state, action: PayloadAction<{ courseId: number; chapterId: number; userId?: string }>) {
+      const { courseId, chapterId, userId = 'guest' } = action.payload
+      
+      if (!state.userProgress[userId]) {
+        state.userProgress[userId] = {};
+      }
+      
+      if (state.userProgress[userId][courseId]) {
+        state.userProgress[userId][courseId].currentChapterId = chapterId
+      }
+    },
+    markChapterAsCompleted(state, action: PayloadAction<{ courseId: number; chapterId: number; userId?: string }>) {
+      const { courseId, chapterId, userId = 'guest' } = action.payload;
+      
+      if (!state.userProgress[userId]) {
+        state.userProgress[userId] = {};
+      }
+      
+      if (state.userProgress[userId][courseId]) {
+        const completedChapters = [...state.userProgress[userId][courseId].completedChapters];
         
         // Only add if not already included to prevent unnecessary updates
         if (!completedChapters.includes(chapterId)) {
           completedChapters.push(chapterId);
-          state.courseProgress[courseId].completedChapters = completedChapters;
-          
-          // Also update user-specific progress if available
-          if (state.userProgress) {
-            Object.keys(state.userProgress).forEach(userId => {
-              if (state.userProgress[userId][courseId]) {
-                const userCompletedChapters = [...state.userProgress[userId][courseId].completedChapters];
-                if (!userCompletedChapters.includes(chapterId)) {
-                  userCompletedChapters.push(chapterId);
-                  state.userProgress[userId][courseId].completedChapters = userCompletedChapters;
-                }
-              }
-            });
-          }
+          state.userProgress[userId][courseId].completedChapters = completedChapters;
         }
       }
     },
@@ -274,9 +283,10 @@ const courseSlice = createSlice({
         courseId: number
         courseSlug: string
         initialVideoId?: string
+        userId?: string
       }>,
     ) {
-      const { courseId, courseSlug, initialVideoId } = action.payload
+      const { courseId, courseSlug, initialVideoId, userId = 'guest' } = action.payload
       state.currentCourseId = courseId
       state.currentCourseSlug = courseSlug
 
@@ -285,8 +295,12 @@ const courseSlice = createSlice({
       }
 
       // Initialize course progress if not exists
-      if (!state.courseProgress[courseId]) {
-        state.courseProgress[courseId] = {
+      if (!state.userProgress[userId]) {
+        state.userProgress[userId] = {};
+      }
+      
+      if (!state.userProgress[userId][courseId]) {
+        state.userProgress[userId][courseId] = {
           courseId,
           progress: 0,
           completedChapters: [],
@@ -410,11 +424,6 @@ const courseSlice = createSlice({
     ) {
       const { courseId, progress } = action.payload;
       state.guestProgress[courseId] = progress;
-      
-      // Also update the legacy field for backward compatibility
-      if (typeof courseId === 'number') {
-        state.courseProgress[courseId] = progress;
-      }
     },
     
     setGuestPlaybackSettings(
@@ -434,7 +443,8 @@ const courseSlice = createSlice({
 })
 
 // --- Optimized action creator with proper error handling ---
-export const setCurrentVideoApi = (videoId: string, userId?: string) => (dispatch, getState) => {
+export const setCurrentVideoApi = (videoId: string, userId?: string) => 
+  (dispatch: any, getState: any) => {
   try {
     // Check if we're already on this video to prevent unnecessary updates
     const currentState = getState();

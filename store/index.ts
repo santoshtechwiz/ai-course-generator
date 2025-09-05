@@ -11,6 +11,7 @@ import courseReducer from "./slices/course-slice"
 import certificateReducer from "./slices/certificate-slice"
 import { subscriptionSlice } from "./slices/subscription-slice"
 import courseProgressReducer from "./slices/courseProgress-slice"
+import progressEventsReducer from "./slices/progress-events-slice"
 
 // Storage with fallback
 const createStorage = () => {
@@ -95,6 +96,7 @@ const rootReducer = combineReducers({
   certificate: certificateReducer,
   subscription: subscriptionSlice.reducer,
   courseProgress: courseProgressReducer,
+  progressEvents: progressEventsReducer,
 })
 
 // ✅ Clean store setup without auth middleware (session-based auth)

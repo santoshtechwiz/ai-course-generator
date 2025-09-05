@@ -1,7 +1,9 @@
 'use client';
 
-import useProgressTracker from '@/hooks/use-progress-tracker';
+import { useProgressEvents } from '@/utils/progress-events';
+import { ProgressEventType, syncEventsWithServer } from '@/store/slices/progress-events-slice';
 import { useCallback, useState } from 'react';
+import { useAppDispatch } from '@/store/hooks';
 import { toast } from 'sonner';
 
 interface QuizProgressTrackerProps {
@@ -33,16 +35,9 @@ export function QuizProgressTracker({
 }: QuizProgressTrackerProps) {
   const [currentAttempt, setCurrentAttempt] = useState<QuizAttempt | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { updateProgress } = useProgressTracker({
-    userId,
-    courseId,
-    chapterId,
-    onError: (error) => {
-      toast.error('Failed to save quiz progress. Please try again.');
-      console.error('Failed to update quiz progress:', error);
-    },
-  });
+  const dispatch = useAppDispatch();
+  
+  const { dispatchQuizCompleted, dispatchQuestionAnswered } = useProgressEvents();
 
   const startQuiz = useCallback(() => {
     setCurrentAttempt({
@@ -87,16 +82,30 @@ export function QuizProgressTracker({
         const score = (correctAnswers / totalQuestions) * 100;
         const accuracy = (correctAnswers / Object.keys(answers).length) * 100;
 
-        // Update progress
-        updateProgress(score, 'quiz', {
-          quizId,
-          score,
-          accuracy,
-          timeSpent,
-          answers,
-          completed: true,
-          passed: score >= minimumPassingScore
-        });
+        console.log(`Quiz completed: ${quizId} with score ${score}%`);
+        
+        // Dispatch quiz completion event
+        if (userId) {
+          dispatchQuizCompleted(
+            userId,
+            quizId.toString(),
+            score,
+            100,
+            score,
+            timeSpent,
+            Object.entries(answers).map(([questionId, isCorrect]) => ({
+              questionId,
+              isCorrect: Boolean(isCorrect),
+              timeSpent: 0 // We'll need to track this per question
+            }))
+          );
+          
+          // Force immediate sync with server
+          setTimeout(() => {
+            console.log(`Syncing quiz completion event to server: ${quizId}`);
+            dispatch(syncEventsWithServer());
+          }, 200);
+        }
 
         // Call completion callback
         if (score >= minimumPassingScore) {
@@ -119,7 +128,7 @@ export function QuizProgressTracker({
         setIsSubmitting(false);
       }
     },
-    [currentAttempt, isSubmitting, minimumPassingScore, onCompletion, quizId, updateProgress]
+    [currentAttempt, isSubmitting, minimumPassingScore, onCompletion, quizId, dispatchQuizCompleted, userId, dispatch]
   );
 
   return {

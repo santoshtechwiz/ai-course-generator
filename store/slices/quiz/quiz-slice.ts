@@ -11,7 +11,7 @@ import {
   createRejectedUpdate,
   getErrorMessage
 } from '../../utils/async-state'
-import { storageManager } from '@/utils/storage-manager'
+import { storageManager, QuizProgress } from '@/utils/storage-manager'
 
 const QUIZ_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 const MAX_CACHE_ENTRIES = 100
@@ -1122,6 +1122,12 @@ export const selectIsQuizComplete = createSelector(
 export const selectQuizUserId = createSelector(
   (state: RootState) => state.quiz,
   (quiz) => (quiz as unknown as QuizState).userId
+)
+
+// Added missing selector for quizType (fixes build error in OpenEndedQuizWrapper)
+export const selectQuizType = createSelector(
+  (state: RootState) => state.quiz,
+  (quiz) => (quiz as unknown as QuizState).quizType
 )
 
 export default quizSlice.reducer

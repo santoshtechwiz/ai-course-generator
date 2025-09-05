@@ -633,6 +633,43 @@ class StorageManager {
       this.saveUserPreferences(prefs)
     }
   }
+
+  // Progress Events Storage Methods
+  saveProgressEvents(userId: string, events: any[]): boolean {
+    const key = `${STORAGE_PREFIXES.QUIZ_PROGRESS}events_${userId}`
+    return this.safeSetItem(key, JSON.stringify({
+      events,
+      lastUpdated: Date.now(),
+      version: 1
+    }))
+  }
+
+  getProgressEvents(userId: string): any[] | null {
+    const key = `${STORAGE_PREFIXES.QUIZ_PROGRESS}events_${userId}`
+    const data = this.safeGetItem(key)
+
+    if (!data) return null
+
+    try {
+      const parsed = JSON.parse(data)
+
+      // Check if data is expired (30 days)
+      if (Date.now() - parsed.lastUpdated > STORAGE_CONFIG.dataExpiry) {
+        this.safeRemoveItem(key)
+        return null
+      }
+
+      return parsed.events || []
+    } catch (error) {
+      console.warn('Failed to parse progress events:', error)
+      return null
+    }
+  }
+
+  clearProgressEvents(userId: string): void {
+    const key = `${STORAGE_PREFIXES.QUIZ_PROGRESS}events_${userId}`
+    this.safeRemoveItem(key)
+  }
 }
 
 // Export singleton instance

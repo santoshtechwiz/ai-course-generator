@@ -486,18 +486,17 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
           }
 
           // Try to get the video element again if not found initially
-          let targetVideo = videoEl
+          let targetVideo: HTMLVideoElement | null = videoEl
           if (!targetVideo) {
             // Wait a bit and try again
             await new Promise(resolve => setTimeout(resolve, 100))
             targetVideo = getVideoElement()
           }
 
-          if (targetVideo) {
-            await (targetVideo as any).requestPictureInPicture()
-          } else {
+          if (!targetVideo) {
             throw new Error('Video element not found')
           }
+          await (targetVideo as any).requestPictureInPicture()
         }
         return
       }
@@ -1066,12 +1065,7 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
     )
   }, [playerState.showAuthPrompt, playerState.canPlayVideo, youtubeVideoId])
 
-  // Early return for authentication prompt
-  if (authPromptComponent) {
-    return <div className={cn("relative w-full h-full", className)}>{authPromptComponent}</div>
-  }
-
-  // Duration handler
+  // Duration handler (moved above early return to keep hook order stable)
   const onDurationHandler = useCallback((duration: number) => {
     setPlayerState(prev => ({
       ...prev,
@@ -1079,6 +1073,11 @@ const VideoPlayer: React.FC<VideoPlayerProps & {
       isLoadingDuration: false
     }))
   }, [])
+
+  // Early return for authentication prompt
+  if (authPromptComponent) {
+    return <div className={cn("relative w-full h-full", className)}>{authPromptComponent}</div>
+  }
 
   // Determine if mini player should be shown
   const shouldShowMiniPlayer = state.isMiniPlayer && !playerState.isNativePiPActive && playerState.isMounted
