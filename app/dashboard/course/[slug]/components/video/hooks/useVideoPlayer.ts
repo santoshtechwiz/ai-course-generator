@@ -353,25 +353,54 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   };
 
   const handleAddBookmark = useCallback(
-    (time: number, title?: string) => {
+    async (time: number, title?: string) => {
       if (!options.youtubeVideoId) return;
 
-      const bookmarkData: BookmarkData = {
-        id: `${options.youtubeVideoId}-${Date.now()}`,
-        videoId: options.youtubeVideoId,
-        time,
-        title: title || `Bookmark at ${formatTime(time)}`,
-        description: title ? `${title} at ${formatTime(time)}` : `Bookmark at ${formatTime(time)}`,
-        createdAt: new Date().toISOString(),
-      };
+      try {
+        // First try to save to the backend
+        const response = await fetch('/api/bookmarks', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            courseId: options.courseId,
+            chapterId: options.chapterId,
+            timestamp: time,
+            note: title || `Bookmark at ${formatTime(time)}`,
+          })
+        });
 
-      dispatch(addBookmark(bookmarkData));
-      options.onBookmark?.(time, title);
+        if (!response.ok) {
+          throw new Error('Failed to save bookmark');
+        }
 
-      toast({
-        title: "Bookmark added",
-        description: "You can access your bookmarks in the timeline.",
-      });
+        const savedBookmark = await response.json();
+
+        // Then update local state
+        dispatch(addBookmark({
+          id: savedBookmark.id.toString(),
+          videoId: options.youtubeVideoId,
+          time,
+          title: title || `Bookmark at ${formatTime(time)}`,
+          description: title ? `${title} at ${formatTime(time)}` : `Bookmark at ${formatTime(time)}`,
+          createdAt: new Date().toISOString(),
+        }));
+
+        options.onBookmark?.(time, title);
+
+        toast({
+          title: "Bookmark added",
+          description: `Bookmark saved at ${formatTime(time)}`,
+        });
+      } catch (error) {
+        console.error('Error adding bookmark:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save bookmark. Please try again.",
+          variant: "destructive",
+        });
+      }
     },
     [options.youtubeVideoId, options.onBookmark, dispatch, toast]
   );

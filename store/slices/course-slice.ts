@@ -36,11 +36,12 @@ export interface BookmarkItem {
 }
 
 export interface BookmarkData {
+  id: string
   videoId: string
   time: number
   title?: string
   description?: string
-  bookmarkId?: string
+  createdAt: string
 }
 
 export interface PlaybackSettings {
@@ -140,22 +141,20 @@ const courseSlice = createSlice({
     },
 
     addBookmark(state, action: PayloadAction<BookmarkData>) {
-      const { videoId, time, title, description } = action.payload;
+      const { videoId, time, title, description, id, createdAt } = action.payload;
       
-      if (!videoId || time === undefined) return; // Validate required fields
+      if (!videoId || time === undefined || !id) return; // Validate required fields
       
       // Initialize bookmarks array for this video if needed
       if (!state.bookmarks[videoId]) {
         state.bookmarks[videoId] = [];
       }
-      // Prevent duplicates within 0.75s tolerance
-      const DUP_TOLERANCE = 0.75
-      if (state.bookmarks[videoId].some(b => Math.abs(b.time - time) < DUP_TOLERANCE)) {
-        return
-      }
       
-      // Create a unique ID for the bookmark
-      const bookmarkId = `bookmark_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      // Prevent duplicates within 0.75s tolerance
+      const DUP_TOLERANCE = 0.75;
+      if (state.bookmarks[videoId].some(b => Math.abs(b.time - time) < DUP_TOLERANCE)) {
+        return;
+      }
       
       // Add new bookmark with properly typed fields
       state.bookmarks[videoId].push({

@@ -20,7 +20,7 @@ const MainContent = dynamic(() => import("./MainContent"), {
   ssr: false
 })
 
-interface EnhancedCourseLayoutProps {
+interface CourseLayoutProps {
   course: FullCourseType
   initialChapterId?: string
   breadcrumbs?: {
@@ -29,7 +29,7 @@ interface EnhancedCourseLayoutProps {
   }[]
 }
 
-const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
+const CourseLayout: React.FC<CourseLayoutProps> = ({
   course,
   initialChapterId,
   breadcrumbs = []
@@ -201,4 +201,4 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
   )
 }
 
-export default EnhancedCourseLayout
+export default CourseLayout
