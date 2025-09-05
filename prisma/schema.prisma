@@ -8,6 +8,32 @@ datasource db {
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL_LOCAL")
 }
 
+enum GeneratedBy {
+  USER
+  AI
+  ADMIN
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum QuizAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+/* ========== USER & AUTH ========== */
+
 model User {
   id                  String                @id @default(cuid())
   name                String?
@@ -51,6 +77,7 @@ model User {
   subscription        UserSubscription?
   recommendations     Recommendation[]
   learningEvents      LearningEvent[]
+  chapterProgresses   ChapterProgress[]
 
   @@index([email])
   @@index([userType])
@@ -72,7 +99,6 @@ model Account {
   id_token          String?
   session_state     String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   @@unique([provider, providerAccountId])
   @@index([userId])
   @@index([provider])
@@ -84,10 +110,11 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   @@index([userId])
   @@index([expires])
 }
+
+/* ========== COURSE DOMAIN ========== */
 
 model Course {
   id               Int              @id @default(autoincrement())
@@ -112,7 +139,7 @@ model Course {
   endDate          DateTime?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
-  generatedBy      String           @default("USER") // AI | USER | ADMIN
+  generatedBy      String           @default("USER") // kept for compatibility
   version          Int              @default(1)
   parentId         Int?
   bookmarks        Bookmark[]
@@ -125,6 +152,7 @@ model Course {
   favorites        Favorite[]
   tags             Tag[]            @relation("CourseTags")
   learningEvents   LearningEvent[]
+  chapterProgresses ChapterProgress[]
 
   @@index([title])
   @@index([categoryId])
@@ -150,7 +178,7 @@ model CourseUnit {
   updatedAt   DateTime  @updatedAt
   version     Int       @default(1)
   parentId    Int?
-  generatedBy String     @default("USER") // AI | USER | ADMIN
+  generatedBy String    @default("USER") // kept for compatibility
   chapters    Chapter[]
   course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
@@ -177,10 +205,12 @@ model Chapter {
   updatedAt          DateTime     @updatedAt
   version            Int          @default(1)
   parentId           Int?
-  generatedBy        String       @default("USER") // AI | USER | ADMIN
+  generatedBy        String       @default("USER")
   bookmarks          Bookmark[]
   unit               CourseUnit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
   courseQuizzes      CourseQuiz[]
+  chapterProgresses  ChapterProgress[]
+  learningEvents     LearningEvent[]
 
   @@index([unitId])
   @@index([isCompleted])
@@ -188,6 +218,27 @@ model Chapter {
   @@index([videoStatus, summaryStatus])
   @@map("Chapter")
 }
+
+model ChapterProgress {
+  id              Int      @id @default(autoincrement())
+  userId          String
+  courseId        Int
+  chapterId       Int
+  isCompleted     Boolean  @default(false)
+  timeSpent       Int      @default(0) // seconds
+  lastProgress    Float    @default(0) // 0..1 video progress fraction
+  lastAccessedAt  DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId, chapterId])
+  @@index([userId, chapterId])
+  @@index([userId, lastAccessedAt])
+}
+
+/* ========== QUIZ DOMAIN (COURSE-BOUND + USER-OWNED) ========== */
 
 model CourseQuiz {
   id        Int                 @id @default(autoincrement())
@@ -197,7 +248,7 @@ model CourseQuiz {
   options   String
   createdAt DateTime            @default(now())
   updatedAt DateTime            @updatedAt
-  generatedBy String            @default("USER") // AI | USER | ADMIN
+  generatedBy String            @default("USER")
   version   Int                 @default(1)
   parentId  Int?
   chapter   Chapter             @relation(fields: [chapterId], references: [id], onDelete: Cascade)
@@ -207,19 +258,20 @@ model CourseQuiz {
 }
 
 model CourseQuizAttempt {
-  id           Int        @id @default(autoincrement())
+  id           Int               @id @default(autoincrement())
   userId       String
   courseQuizId Int
   score        Int?
   timeSpent    Int?
   improvement  Float?
   accuracy     Float?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  courseQuiz   CourseQuiz @relation(fields: [courseQuizId], references: [id], onDelete: Cascade)
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       QuizAttemptStatus @default(IN_PROGRESS)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  courseQuiz   CourseQuiz        @relation(fields: [courseQuizId], references: [id], onDelete: Cascade)
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, courseQuizId])
+  @@unique([userId, courseQuizId]) // one active/latest attempt; lift if you need multiple
   @@index([userId])
   @@index([courseQuizId])
   @@index([score])
@@ -248,7 +300,7 @@ model Category {
   id        Int      @id @default(autoincrement())
   name      String   @unique
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
   courses   Course[]
 
   @@index([name])
@@ -260,7 +312,7 @@ model CourseProgress {
   courseId            Int
   currentChapterId    Int
   currentUnitId       Int?
-  progress            Float     @default(0)
+  progress            Float     @default(0) // 0..1
   timeSpent           Int       @default(0)
   isCompleted         Boolean   @default(false)
   completionDate      DateTime?
@@ -287,44 +339,7 @@ model CourseProgress {
   @@index([lastAccessedAt])
 }
 
-model Plan {
-  id          String   @id
-  name        String
-  price       Int
-  duration    Int      // in days
-  features    Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  subscriptions UserSubscription[]
-}
-
-model UserSubscription {
-  id                   String    @id @default(cuid())
-  userId               String    @unique
-  planId               String
-  status               String
-  currentPeriodStart   DateTime
-  currentPeriodEnd     DateTime
-  cancelAtPeriodEnd    Boolean   @default(false)
-  stripeSubscriptionId String?   @unique
-  stripeCustomerId     String?
-  stripePriceId        String?
-  stripeStatus         String?
-  lastStripeEvent      String?
-  trialEnd             DateTime?
-  canceledAt           DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  user                 User      @relation(fields: [userId], references: [id])
-  plan                 Plan      @relation(fields: [planId], references: [id])
-
-  @@index([status])
-  @@index([currentPeriodEnd])
-  @@index([planId])
-  @@index([stripeCustomerId])
-  @@index([stripeStatus])
-  @@index([canceledAt])
-}
+/* USER-OWNED QUIZ SYSTEM */
 
 model Favorite {
   id        Int      @id @default(autoincrement())
@@ -361,7 +376,7 @@ model UserQuiz {
   createdAt          DateTime            @default(now())
   passingScore       Int                 @default(70)
   updatedAt          DateTime            @updatedAt
-  generatedBy        String              @default("USER") // AI | USER | ADMIN
+  generatedBy        String              @default("USER")
   version            Int                 @default(1)
   parentId           Int?
   flashCards         FlashCard[]
@@ -421,7 +436,7 @@ model UserQuizQuestion {
   codeSnippet       String?
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
-  generatedBy       String                    @default("USER") // AI | USER | ADMIN
+  generatedBy       String                    @default("USER")
   version           Int                       @default(1)
   parentId          Int?
   openEndedQuestion OpenEndedQuestion?
@@ -468,40 +483,24 @@ model UserQuizAttemptQuestion {
   @@index([timeSpent])
 }
 
-model UserQuizRating {
-  id         Int      @id @default(autoincrement())
-  userQuizId Int
-  userId     String
-  rating     Int
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  user       User     @relation(fields: [userId], references: [id])
-  userQuiz   UserQuiz @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, userQuizId])
-  @@index([userQuizId])
-  @@index([rating])
-  @@index([createdAt])
-}
-
 model FlashCard {
-  id         Int               @id @default(autoincrement())
-  question   String
-  answer     String
-  userId     String
-  slug       String?
-  userQuizId Int?
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
-  difficulty String?
-  saved      Boolean           @default(false)
-  generatedBy String           @default("USER") // AI | USER | ADMIN
-  version     Int              @default(1)
+  id          Int       @id @default(autoincrement())
+  question    String
+  answer      String
+  userId      String
+  slug        String?
+  userQuizId  Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  difficulty  String?
+  saved       Boolean   @default(false)
+  generatedBy String    @default("USER")
+  version     Int       @default(1)
   parentId    Int?
-  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userQuiz   UserQuiz?         @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
-  reviews    FlashCardReview[]
-  tags       Tag[]             @relation("FlashCardTags")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userQuiz    UserQuiz? @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
+  reviews     FlashCardReview[]
+  tags        Tag[]     @relation("FlashCardTags")
 
   @@index([question])
   @@index([userId])
@@ -553,6 +552,174 @@ model QuizProgress {
   @@index([lastUpdated])
 }
 
+/* ========== OTHER SUPPORTING MODELS ========== */
+
+model UserQuizRating {
+  id         Int      @id @default(autoincrement())
+  userQuizId Int
+  userId     String
+  rating     Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id])
+  userQuiz   UserQuiz @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, userQuizId])
+  @@index([userQuizId])
+  @@index([rating])
+  @@index([createdAt])
+}
+
+model Tag {
+  id         Int         @id @default(autoincrement())
+  name       String      @unique
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @default(now())
+  courses    Course[]    @relation("CourseTags")
+  quizzes    UserQuiz[]  @relation("QuizTags")
+  flashcards FlashCard[] @relation("FlashCardTags")
+}
+
+model Bookmark {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  courseId  Int?
+  chapterId Int?
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  chapter   Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  course    Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([chapterId])
+  @@index([createdAt])
+}
+
+model Certificate {
+  id             Int      @id @default(autoincrement())
+  userId         String
+  courseId       Int
+  issuedAt       DateTime @default(now())
+  certificateUrl String?
+  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([issuedAt])
+}
+
+model Recommendation {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  type      String   // COURSE | QUIZ | FLASHCARD | CHAPTER
+  targetId  String
+  reason    String?
+  score     Float
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([score])
+}
+
+model LearningEvent {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  courseId  Int?
+  chapterId Int?
+  type      String   // VIDEO_PLAY | VIDEO_PAUSE | VIDEO_COMPLETE | QUIZ_START | QUIZ_SUBMIT | CHAPTER_COMPLETE
+  entityId  String?
+  progress  Float?   // For video progress or quiz completion percentage
+  timeSpent Int?     // Time spent in seconds
+  metadata  Json?    // Additional event-specific data
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  chapter   Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([userId, courseId, type])
+  @@index([userId, courseId, createdAt])
+}
+
+/* Billing / referrals / misc — unchanged except for trivial indexing */
+
+model Plan {
+  id            String   @id
+  name          String
+  price         Int
+  duration      Int
+  features      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  subscriptions UserSubscription[]
+}
+
+model UserSubscription {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  planId               String
+  status               String
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean   @default(false)
+  stripeSubscriptionId String?   @unique
+  stripeCustomerId     String?
+  stripePriceId        String?
+  stripeStatus         String?
+  lastStripeEvent      String?
+  trialEnd             DateTime?
+  canceledAt           DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  user                 User      @relation(fields: [userId], references: [id])
+  plan                 Plan      @relation(fields: [planId], references: [id])
+
+  @@index([status])
+  @@index([currentPeriodEnd])
+  @@index([planId])
+  @@index([stripeCustomerId])
+  @@index([stripeStatus])
+  @@index([canceledAt])
+}
+
+model ContactSubmission {
+  id              Int      @id @default(autoincrement())
+  name            String
+  email           String
+  message         String
+  status          String   @default("NEW")
+  adminNotes      String?
+  responseMessage String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now())
+}
+
+model PendingSubscription {
+  id            String   @id @default(cuid())
+  userId        String
+  planId        String
+  duration      Int
+  referralCode  String?
+  promoCode     String?
+  promoDiscount Float?
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
 model UserAchievement {
   id              String   @id @default(cuid())
   userId          String
@@ -579,7 +746,7 @@ model UserNotification {
   isRead    Boolean  @default(false)
   metadata  Json?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -598,7 +765,7 @@ model UserSettings {
   timezone           String?
   preferences        Json?
   createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  updatedAt          DateTime @default(now())
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -649,112 +816,4 @@ model UserReferralUse {
   @@index([referredId])
   @@index([status])
   @@index([createdAt])
-}
-
-model ContactSubmission {
-  id              Int      @id @default(autoincrement())
-  name            String
-  email           String
-  message         String
-  status          String   @default("NEW")
-  adminNotes      String?
-  responseMessage String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now())
-}
-
-model PendingSubscription {
-  id            String   @id @default(cuid())
-  userId        String
-  planId        String
-  duration      Int
-  referralCode  String?
-  promoCode     String?
-  promoDiscount Float?
-  status        String   @default("PENDING")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now())
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([status])
-}
-
-model Bookmark {
-  id        Int      @id @default(autoincrement())
-  userId    String
-  courseId  Int?
-  chapterId Int?
-  note      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
-  chapter   Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  course    Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([courseId])
-  @@index([chapterId])
-  @@index([createdAt])
-}
-
-model Certificate {
-  id             Int      @id @default(autoincrement())
-  userId         String
-  courseId       Int
-  issuedAt       DateTime @default(now())
-  certificateUrl String?
-  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([courseId])
-  @@index([issuedAt])
-}
-
-model Tag {
-  id        Int        @id @default(autoincrement())
-  name      String     @unique
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @default(now())
-  courses   Course[]   @relation("CourseTags")
-  quizzes   UserQuiz[] @relation("QuizTags")
-  flashcards FlashCard[] @relation("FlashCardTags")
-}
-
-model Recommendation {
-  id        Int      @id @default(autoincrement())
-  userId    String
-  type      String   // COURSE | QUIZ | FLASHCARD | CHAPTER
-  targetId  String
-  reason    String?
-  score     Float
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([type])
-  @@index([score])
-}
-
-model LearningEvent {
-  id        Int      @id @default(autoincrement())
-  userId    String
-  courseId  Int?
-  chapterId Int?
-  type      String   // VIDEO_PLAY | VIDEO_PAUSE | VIDEO_COMPLETE | QUIZ_START | QUIZ_SUBMIT | CHAPTER_COMPLETE
-  entityId  String?
-  progress  Float?   // For video progress or quiz completion percentage
-  timeSpent Int?     // Time spent in seconds
-  metadata  Json?    // Additional event-specific data
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course    Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([courseId])
-  @@index([type])
-  @@index([createdAt])
-  @@index([userId, courseId, type])
-  @@index([userId, courseId, createdAt])
 }
