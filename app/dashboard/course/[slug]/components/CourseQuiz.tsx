@@ -15,7 +15,6 @@ import { AlertCircle, CheckCircle, BookOpen, Lightbulb, XCircle, Award, BarChart
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { storageManager } from "@/utils/storage-manager"
-import useProgressTracker from "@/hooks/use-progress-tracker"
 import { useProgressEvents } from "@/utils/progress-events"
 import { selectQuizProgressFromEvents, selectCurrentQuizAnswers } from "@/store/slices/progress-events-slice"
 import { useAppSelector } from "@/store/hooks"

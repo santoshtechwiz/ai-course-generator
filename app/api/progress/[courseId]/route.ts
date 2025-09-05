@@ -14,17 +14,7 @@ function safeParse<T = any>(value: unknown, fallback: T): T {
 
 // Extract completed chapters from chapterProgress JSON field
 function extractCompletedChapters(chapterProgress: any): number[] {
-  if (!chapterProgress) return []
-  
-  try {
-    const data = typeof chapterProgress === "string" 
-      ? JSON.parse(chapterProgress) 
-      : chapterProgress;
-    return data?.completedChapters || []
-  } catch (error) {
-    console.error("Error parsing chapterProgress:", error)
-    return []
-  }
+  return safeParse<any>(chapterProgress, {}).completedChapters || []
 }
 
 // Validates courseId format and security
@@ -89,18 +79,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
 
       // Parse chapterProgress from JSON to extract completedChapters
       if (progress) {
-        let completedChapters: number[] = []
-        if (progress.chapterProgress) {
-          try {
-            const data = typeof progress.chapterProgress === "string" 
-              ? JSON.parse(progress.chapterProgress) 
-              : progress.chapterProgress;
-            completedChapters = data?.completedChapters || []
-          } catch (error) {
-            console.error("Error parsing chapterProgress:", error)
-            completedChapters = []
-          }
-        }
+        const completedChapters = extractCompletedChapters(progress.chapterProgress)
         // Add completedChapters as a computed field for response
         (progress as any).completedChapters = completedChapters
         // Expose last played seconds for current chapter (synthetic field) via quizProgress JSON
@@ -228,20 +207,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
         },
       })
 
-      let existingCompletedChapters: number[] = []
-      if (existingProgress && existingProgress.chapterProgress) {
-        try {
-          const data = typeof existingProgress.chapterProgress === "string" 
-            ? JSON.parse(existingProgress.chapterProgress) 
-            : existingProgress.chapterProgress;
-          existingCompletedChapters = data?.completedChapters || []
-        } catch (error) {
-          console.error("Error parsing existing chapterProgress:", error)
-          existingCompletedChapters = []
-        }
-      }
-
       // Merge and deduplicate the completed chapters
+      const existingCompletedChapters = extractCompletedChapters(existingProgress?.chapterProgress)
       const updatedCompletedChapters = [...new Set([...existingCompletedChapters, ...completedChapters])]
 
       // Prepare updated quizProgress JSON (store per-chapter last position)
@@ -322,18 +289,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
 
       // Parse chapterProgress from JSON to extract completedChapters for response
       if (updatedProgress) {
-        let responseCompletedChapters: number[] = []
-        if (updatedProgress.chapterProgress) {
-          try {
-            const data = typeof updatedProgress.chapterProgress === "string" 
-              ? JSON.parse(updatedProgress.chapterProgress) 
-              : updatedProgress.chapterProgress;
-            responseCompletedChapters = data?.completedChapters || []
-          } catch (e) {
-            console.error(`Error parsing updated chapterProgress: ${e}`)
-            responseCompletedChapters = []
-          }
-        }
+        const responseCompletedChapters = extractCompletedChapters(updatedProgress.chapterProgress)
         // Add completedChapters as a computed field for response
         (updatedProgress as any).completedChapters = responseCompletedChapters
         // Attach synthetic playedSeconds for convenience

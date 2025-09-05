@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { categories } from "@/config/categories"
 import CourseList from "./CourseLists"
-import LearningActivity from "@/components/dashboard/LearningActivity"
 import type { CategoryId } from "@/config/categories"
 
 interface CourseListWithFiltersProps {
@@ -328,27 +327,13 @@ export default function CourseListWithFilters({ url, userId }: CourseListWithFil
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-8">
-          {/* Course List */}
-          <div className="min-w-0">
-            <CourseList
-              url={url}
-              userId={userId}
-              searchQuery={searchQuery}
-              selectedCategory={selectedCategory}
-              sortBy={sortBy}
-            />
-          </div>
-          
-          {/* Learning Activity Sidebar */}
-          {userId && (
-            <div className="hidden xl:block">
-              <div className="sticky top-6">
-                <LearningActivity userId={userId} />
-              </div>
-            </div>
-          )}
-        </div>
+        <CourseList
+          url={url}
+          userId={userId}
+          searchQuery={searchQuery}
+          selectedCategory={selectedCategory}
+          sortBy={sortBy}
+        />
       </div>
     </div>
   )
