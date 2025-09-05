@@ -53,6 +53,13 @@ const nextConfig = {
 
   env: {
     DISABLE_STATIC_SLUG: process.env.DISABLE_STATIC_SLUG || "no-static",
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    // Price ID mappings for secure Stripe integration
+    STRIPE_BASIC_PRICE_ID: process.env.STRIPE_BASIC_PRICE_ID,
+    STRIPE_PREMIUM_PRICE_ID: process.env.STRIPE_PREMIUM_PRICE_ID,
+    STRIPE_ULTIMATE_PRICE_ID: process.env.STRIPE_ULTIMATE_PRICE_ID,
   },
 
   eslint: {

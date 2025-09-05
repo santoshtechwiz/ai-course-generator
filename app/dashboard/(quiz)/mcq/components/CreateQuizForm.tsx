@@ -182,8 +182,8 @@ export default function CreateQuizForm({
   const dispatch = useAppDispatch()
   const { mutateAsync: createQuizMutation } = useMutation({
     mutationFn: async (data: QuizFormData) => {
-      const response = await api.post(`/quizzes`, { ...data, type: "mcq" })
-      return response.data
+      const response = await api.post(`/api/quizzes/mcq/create`, data)
+      return response // api.post already returns the parsed JSON, not a wrapper object
     },
     onError: (error: any) => {
       console.error("Error creating quiz:", error)
@@ -233,37 +233,57 @@ export default function CreateQuizForm({
         return
       }
 
+      // Reset states when opening dialog
+      setSubmissionError(null)
+      setIsSuccess(false)
       setIsConfirmDialogOpen(true)
     },
-    [isLoading, isLoggedIn, validateQuizData, toast, quizType],
+    [isLoading, isLoggedIn, validateQuizData, toast, quizType, setSubmissionError, setIsSuccess],
   )
 
   const handleConfirm = React.useCallback(async () => {
     setIsLoading(true)
+    setSubmissionError(null) // Clear previous errors
+    setIsSuccess(false) // Reset success state
 
     try {
       const formValues = watch()
-  const response = await createQuizMutation({ ...formValues, type: "mcq" })
+      const response = await createQuizMutation({ ...formValues, type: "mcq" })
+      
+      console.log("API Response:", response)
+      
       const userQuizId = response?.userQuizId || response?.quizId
       const slug = response?.slug
 
+      console.log("Extracted values:", { userQuizId, slug })
+
       if (!userQuizId || !slug) throw new Error("Quiz creation failed: missing identifiers")
 
-  toast({
+      // Set success state
+      setIsSuccess(true)
+      
+      // Close dialog on success after a brief delay to show success state
+      setTimeout(() => {
+        setIsConfirmDialogOpen(false)
+        setIsSuccess(false) // Reset for next time
+      }, 1000)
+      
+      toast({
         title: "Success!",
         description: "Your quiz has been created.",
       })
-  try { await dispatch(forceSyncSubscription()).unwrap() } catch {/* ignore */}
-  router.push(`/dashboard/mcq/${slug}`)
+      try { await dispatch(forceSyncSubscription()).unwrap() } catch {/* ignore */}
+      router.push(`/dashboard/mcq/${slug}`)
     } catch (error: any) {
+      console.error("Quiz creation error:", error)
       const message = error?.response?.data?.message || error?.message || "Failed to create quiz. Please try again."
       setSubmissionError(message)
+      
       toast({ title: "Error", description: message, variant: "destructive" })
-      setIsLoading(false)
     } finally {
       setIsLoading(false)
     }
-  }, [createQuizMutation, watch, toast, router, quizType])
+  }, [createQuizMutation, watch, toast, router, dispatch, setIsConfirmDialogOpen, setSubmissionError, setIsSuccess])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")
@@ -540,7 +560,6 @@ export default function CreateQuizForm({
             isLoggedIn={isLoggedIn}
             isEnabled={!isDisabled}
             isLoading={isLoading}
-            hasCredits={credits > 0}
             loadingLabel="Generating Quiz..."
             className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl hover:shadow-indigo-500/25 disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed"
             customStates={{

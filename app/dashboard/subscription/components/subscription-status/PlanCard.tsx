@@ -40,6 +40,7 @@ export default function PlanCards({
   hasAllPlans = false,
   cancelAtPeriodEnd = false,
   userId = null,
+  hadPreviousPaidPlan = false,
 }: {
   plans: typeof SubscriptionPlansType
   currentPlan: SubscriptionPlanType | null
@@ -60,6 +61,7 @@ export default function PlanCards({
   hasAllPlans?: boolean
   cancelAtPeriodEnd?: boolean
   userId?: string | null
+  hadPreviousPaidPlan?: boolean
 }) {
   const bestPlan = plans.find((plan) => plan.name === "PREMIUM")
   const normalizedStatus = subscriptionStatus?.toUpperCase() || null
@@ -106,6 +108,13 @@ export default function PlanCards({
             }
             if (hasAllPlans) return "All Plans Active"
             if (plan.id === "FREE" && hasAnyPaidPlan) return "Paid Plan Active"
+            
+            // Special messaging for expired/canceled users
+            if (normalizedStatus === "EXPIRED" || normalizedStatus === "CANCELED") {
+              if (plan.id === "FREE") return "Downgraded to Free"
+              return hadPreviousPaidPlan ? "Reactivate Plan" : "Subscribe Now"
+            }
+            
             if (!isPlanAvailable(plan.id as SubscriptionPlanType)) return "Unavailable"
           }
           if (plan.id === "FREE") return "Start for Free"
@@ -309,7 +318,14 @@ export default function PlanCards({
                     ) : (
                       <>
                         <Calendar className="h-4 w-4" />
-                        <p>Available after current plan {normalizedStatus === "CANCELED" ? "expires" : "ends"}</p>
+                        <p>
+                          {normalizedStatus === "EXPIRED" 
+                            ? "Reactivate your subscription" 
+                            : normalizedStatus === "CANCELED"
+                            ? "Subscription ended - Subscribe again"
+                            : `Available after current plan ${normalizedStatus === "CANCELED" ? "expires" : "ends"}`
+                          }
+                        </p>
                       </>
                     )}
                   </div>

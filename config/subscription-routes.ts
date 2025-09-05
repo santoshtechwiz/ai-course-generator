@@ -5,7 +5,12 @@ export const PROTECTED_ROUTES = [
   '/dashboard/create/flashcards',
   '/api/ai/generate',
   '/api/courses/create',
-  '/api/quizzes/create',
+  // Quiz creation routes use type-specific endpoints now
+  '/api/quizzes/mcq/create',
+  '/api/quizzes/code/create',
+  '/api/quizzes/blanks/create',
+  '/api/quizzes/openended/create',
+  '/api/quizzes/flashcard/create',
 ] as const;
 
 // List of actions that require subscription validation

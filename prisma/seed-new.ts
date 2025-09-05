@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import * as fs from 'fs'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
+import { SUBSCRIPTION_PLANS } from '../app/dashboard/subscription/components/subscription-plans.js'
 
 const prisma = new PrismaClient()
 
@@ -109,57 +110,41 @@ async function clearExistingData() {
 }
 
 async function seedPlans() {
-  const plans = [
-    {
-      id: 'free',
-      name: 'Free Plan',
-      price: 0,
-      duration: 30, // 30 days free trial
+  console.log('💰 Creating subscription plans from configuration...')
+  
+  // Create main plans (use the 12-month option as the base plan)
+  for (const plan of SUBSCRIPTION_PLANS) {
+    const baseOption = plan.options.find(opt => opt.duration === 12) || plan.options[0];
+    
+    const planData = {
+      id: plan.id, // Use simple ID like 'FREE', 'BASIC', 'PREMIUM', 'ENTERPRISE'
+      name: plan.name,
+      price: Math.round(baseOption.price * 100), // Convert to cents
+      duration: baseOption.duration * 30, // Convert months to days
       features: {
-        list: ['Access to free courses', 'Basic quizzes', 'Community support'],
-        maxCredits: 10
-      }
-    },
-    {
-      id: 'pro',
-      name: 'Pro Plan',
-      price: 999, // $9.99 in cents
-      duration: 30, // monthly subscription
-      features: {
-        list: ['All free features', 'Unlimited quizzes', 'Priority support', 'Certificate generation'],
-        maxCredits: 100
-      }
-    },
-    {
-      id: 'enterprise',
-      name: 'Enterprise Plan',
-      price: 2999, // $29.99 in cents
-      duration: 30, // monthly subscription
-      features: {
-        list: ['All pro features', 'Custom learning paths', 'Team management', 'API access'],
-        maxCredits: -1 // unlimited
-      }
-    }
-  ]
+        tokens: plan.tokens,
+        limits: {
+          maxQuestionsPerQuiz: plan.limits.maxQuestionsPerQuiz,
+          maxCoursesPerMonth: plan.limits.maxCoursesPerMonth,
+          apiCallsPerDay: plan.limits.apiCallsPerDay
+        },
+        features: plan.features.filter(f => f.available).map(f => f.id),
+        description: plan.description,
+        popular: plan.popular || false,
+        options: plan.options // Store all pricing options
+      } as any
+    };
 
-  for (const plan of plans) {
     await prisma.plan.upsert({
       where: { id: plan.id },
-      update: {
-        name: plan.name,
-        price: plan.price,
-        duration: plan.duration,
-        features: plan.features
-      },
-      create: {
-        id: plan.id,
-        name: plan.name,
-        price: plan.price,
-        duration: plan.duration,
-        features: plan.features
-      }
-    })
+      update: planData,
+      create: planData
+    });
+
+    console.log(`✅ Plan: ${plan.id} (${plan.name}) - Base price: $${baseOption.price} for ${baseOption.duration} month${baseOption.duration > 1 ? 's' : ''}`);
   }
+  
+  console.log(`🎉 Created ${SUBSCRIPTION_PLANS.length} subscription plans successfully!`);
 }
 
 async function seedCategories() {

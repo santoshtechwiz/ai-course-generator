@@ -227,8 +227,8 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
   const { mutateAsync: createCodeQuizMutation } = useMutation({
     mutationFn: async (data: CodeQuizFormData) => {
       data.userType = subscriptionData?.subscriptionPlan
-      const response = await api.post("/quizzes", { ...data, type: "code" })
-      return response.data
+      const response = await api.post("/api/quizzes/code/create", data)
+      return response // api.post already returns the parsed JSON
     },
     onError: (error: any) => {
       console.error("Error creating code quiz:", error)
@@ -746,7 +746,6 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
             isLoggedIn={isLoggedIn}
             isEnabled={!isDisabled}
             isLoading={isLoading}
-            hasCredits={credits > 0}
             loadingLabel="Generating Code Quiz..."
             className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg hover:shadow-xl hover:shadow-blue-500/25 disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             customStates={{

@@ -33,7 +33,7 @@ import PlanCards from "./subscription-status/PlanCard"
 import TokenUsageExplanation from "./subscription-status/TokenUsageExplanation"
 import { useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "@/store"
-import { selectSubscription, fetchSubscription } from "@/store/slices/subscription-slice"
+import { selectSubscriptionData, fetchSubscription, selectHadPreviousPaidPlan } from "@/store/slices/subscription-slice"
 
 export function PricingPage({
   userId,
@@ -45,7 +45,7 @@ export function PricingPage({
   const dispatch = useAppDispatch()
   const { toast } = useToast()
   const isMobile = propIsMobile || useMediaQuery("(max-width: 768px)")
-  const subscriptionData = useAppSelector(selectSubscription)
+  const subscriptionData = useAppSelector(selectSubscriptionData)
   const isAuthenticated = !!userId
 
   const [loading, setLoading] = useState<SubscriptionPlanType | null>(null)
@@ -58,11 +58,15 @@ export function PricingPage({
   const [showPromotion, setShowPromotion] = useState(true)
   const [showCancellationDialog, setShowCancellationDialog] = useState(false)
   const router = useRouter();
-    const {
+  const {
     handleSubscribe: doSubscribe,
     canSubscribeToPlan,
     isSubscribedToAnyPaidPlan,
     isSubscribedToAllPlans,
+    canResubscribe,
+    subscriptionMessage,
+    hadPreviousPaidPlan,
+    isExpired,
   } = useSubscriptionHook({
     onSubscriptionSuccess: (result: any) => {
       if (result.redirectUrl) {
@@ -86,15 +90,15 @@ export function PricingPage({
     },
   })
 
-  const currentPlan = subscriptionData?.data?.subscriptionPlan || "FREE"
-  const normalizedStatus = subscriptionData?.data?.status?.toUpperCase() as SubscriptionStatusType || "INACTIVE"
+  const currentPlan = subscriptionData?.subscriptionPlan || "FREE"
+  const normalizedStatus = subscriptionData?.status?.toUpperCase() as SubscriptionStatusType || "INACTIVE"
   const isSubscribed = currentPlan !== "FREE" && normalizedStatus === "ACTIVE"
-  const expirationDate = subscriptionData?.data?.expirationDate
-    ? new Date(subscriptionData.data.expirationDate).toLocaleDateString()
+  const expirationDate = subscriptionData?.expirationDate
+    ? new Date(subscriptionData.expirationDate).toLocaleDateString()
     : null
-  const cancelAtPeriodEnd = subscriptionData?.data?.cancelAtPeriodEnd ?? false
-  const tokensUsed = subscriptionData?.data?.tokensUsed ?? 0
-  const credits = subscriptionData?.data?.credits ?? 0
+  const cancelAtPeriodEnd = subscriptionData?.cancelAtPeriodEnd ?? false
+  const tokensUsed = subscriptionData?.tokensUsed ?? 0
+  const credits = subscriptionData?.credits ?? 0
 
   const hasAnyPaidPlan = isSubscribedToAnyPaidPlan
   const hasAllPlans = isSubscribedToAllPlans
@@ -208,7 +212,7 @@ export function PricingPage({
   }, [isAuthenticated, subscriptionData, dispatch]);
     
   const daysUntilExpiration = expirationDate
-    ? Math.ceil((new Date(subscriptionData!.data?.expirationDate!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((new Date(subscriptionData!.expirationDate!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null
 
   return (
@@ -322,14 +326,33 @@ export function PricingPage({
           isPromoValid={isPromoValid}
           promoDiscount={promoDiscount}
           getDiscountedPrice={getDiscountedPrice}
-          isPlanAvailable={(p) => canSubscribeToPlan(currentPlan, p, normalizedStatus).canSubscribe}
-          getPlanUnavailableReason={(p) => canSubscribeToPlan(currentPlan, p, normalizedStatus).reason}
+          isPlanAvailable={(p) => {
+            // Always allow subscription for expired, canceled, or free users
+            if (isExpired || normalizedStatus === "CANCELED" || currentPlan === "FREE") {
+              return true;
+            }
+            
+            // Use the enhanced logic for other cases
+            return canSubscribeToPlan(currentPlan, p, normalizedStatus).canSubscribe;
+          }}
+          getPlanUnavailableReason={(p) => {
+            if (isExpired) {
+              return null; // No restriction for expired users
+            }
+            if (normalizedStatus === "CANCELED") {
+              return null; // No restriction for canceled users
+            }
+            
+            const { reason } = canSubscribeToPlan(currentPlan, p, normalizedStatus);
+            return reason || null;
+          }}
           expirationDate={expirationDate}
           isAuthenticated={isAuthenticated}
           hasAnyPaidPlan={hasAnyPaidPlan}
           hasAllPlans={hasAllPlans}
           cancelAtPeriodEnd={cancelAtPeriodEnd}
           userId={userId}
+          hadPreviousPaidPlan={hadPreviousPaidPlan}
         />
       )}
 
@@ -349,8 +372,8 @@ export function PricingPage({
             console.error('Failed to cancel subscription:', error)
           }
         }}
-        expirationDate={subscriptionData?.data?.currentPeriodEnd || null}
-        planName={subscriptionData?.data?.subscriptionPlan || 'FREE'}
+        expirationDate={subscriptionData?.currentPeriodEnd || null}
+        planName={subscriptionData?.subscriptionPlan || 'FREE'}
       />
     </div>
   )

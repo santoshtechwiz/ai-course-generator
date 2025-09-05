@@ -4,6 +4,7 @@ import CreateQuizForm from "./components/CreateQuizForm";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { UnifiedLoader } from "@/components/loaders";
 
 export const dynamic = 'force-dynamic'
 
@@ -38,9 +39,12 @@ const McqPage = () => {
       isLoggedIn={quizPlan.isLoggedIn}
     >
       {quizPlan.isLoading ? (
-        <div className="flex flex-col items-center justify-center py-12">
-          <GlobalLoader />
-        </div>
+        <UnifiedLoader
+          state="loading"
+          variant="spinner"
+          message="Loading quiz configuration..."
+          size="md"
+        />
       ) : (
         <CreateQuizForm
           credits={quizPlan.credits}

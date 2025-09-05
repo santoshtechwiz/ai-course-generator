@@ -3,8 +3,15 @@ import { getServerAuthSession } from '@/lib/server-auth'
 import { prisma } from '@/lib/db'
 import Stripe from 'stripe'
 import { logger } from '@/lib/logger'
+import { rateLimit } from '@/lib/rate-limit'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+// Validate Stripe API key
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY
+if (!stripeSecretKey) {
+  throw new Error("STRIPE_SECRET_KEY environment variable is required but not found")
+}
+
+const stripe = new Stripe(stripeSecretKey, {
   apiVersion: '2024-10-28.acacia',
 })
 
@@ -17,6 +24,27 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = session.user.id
+
+    // Check for valid user ID format (basic security)
+    if (!userId || userId.length < 10 || !/^[a-zA-Z0-9-_]+$/.test(userId)) {
+      logger.warn(`Invalid user ID format in sync request: ${userId}`)
+      return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 })
+    }
+
+    // Apply rate limiting per user
+    const rateLimitResult = await rateLimit(userId, {
+      limit: 5, // 5 sync requests per minute per user
+      windowInSeconds: 60,
+      identifier: 'subscription-sync'
+    })
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ 
+        error: 'Too many sync requests. Please wait before trying again.',
+        retryAfter: rateLimitResult.reset
+      }, { status: 429 })
+    }
+
     logger.info(`Manual subscription sync requested for user: ${userId}`)
 
     // Get user's subscription from database
@@ -35,15 +63,39 @@ export async function POST(req: NextRequest) {
     })
 
     if (!userSubscription) {
-      logger.warn(`No subscription found for user ${userId}`)
+      logger.info(`No subscription found for user ${userId}, checking if FREE plan needed`)
+      
+      // Check if user exists in database
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, credits: true, creditsUsed: true }
+      })
+      
+      if (!user) {
+        logger.warn(`User ${userId} not found in database`)
+        return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      }
+      
+      // Create FREE subscription for existing user
+      await prisma.userSubscription.create({
+        data: {
+          userId,
+          planId: "FREE",
+          status: "ACTIVE",
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+        },
+      })
+
       return NextResponse.json({
-        message: 'No subscription found',
-        subscription: {
+        message: 'Free subscription created and synced',
+        data: {
+          credits: user.credits || 0,
+          tokensUsed: user.creditsUsed || 0,
           isSubscribed: false,
-          subscriptionPlan: 'FREE',
-          status: 'INACTIVE',
-          credits: 0,
-          tokensUsed: 0,
+          subscriptionPlan: "FREE",
+          status: "ACTIVE",
+          synced: true
         }
       })
     }
@@ -57,25 +109,26 @@ export async function POST(req: NextRequest) {
           userSubscription.stripeSubscriptionId,
           { expand: ['customer'] }
         )
-        // Log only non-sensitive, high-level Stripe info
+        // Log only high-level, non-sensitive info
         logger.info(`Stripe subscription status fetched`, {
           status: stripeSubscription.status,
           currentPeriodEnd: stripeSubscription.current_period_end,
           hasPrice: !!stripeSubscription.items.data[0]?.price?.id,
+          userId: userId, // Keep user context for debugging
         })
       }
     } catch (stripeError: any) {
-      // Handle 'resource_missing' (subscription not found) gracefully without logging sensitive details
+      // Handle 'resource_missing' gracefully
       if (stripeError?.type === 'StripeInvalidRequestError' && stripeError?.code === 'resource_missing') {
-        logger.info('Stripe reported subscription not found for user; proceeding with DB state')
+        logger.info('Stripe reported subscription not found for user; proceeding with DB state', { userId })
       } else {
-        // Log a sanitized error message (avoid dumping raw Stripe error object)
-        logger.error('Failed to fetch subscription from Stripe (sanitized):', {
+        // Log sanitized error message (no sensitive data)
+        logger.error('Failed to fetch subscription from Stripe:', {
           message: stripeError?.message,
           code: stripeError?.code,
           type: stripeError?.type,
-          requestId: stripeError?.requestId,
           statusCode: stripeError?.statusCode,
+          userId: userId, // Safe to include for debugging
         })
       }
       // Continue with database data if Stripe is unavailable
@@ -112,30 +165,39 @@ export async function POST(req: NextRequest) {
       }
 
       currentPeriodEnd = new Date(stripeSubscription.current_period_end * 1000)
-        // Try to determine plan ID from Stripe price ID
-  const stripePriceId = stripeSubscription.items.data[0]?.price?.id
-  // Avoid logging the raw price ID; only note its presence
-  logger.info('Stripe price information present', { hasPriceId: !!stripePriceId })
+      
+      // Enhanced price ID mapping with fallback logic - avoid logging sensitive price IDs
+      const stripePriceId = stripeSubscription.items.data[0]?.price?.id
+      logger.info('Processing Stripe price information', { 
+        hasPriceId: !!stripePriceId,
+        userId: userId 
+      })
       
       if (stripePriceId) {
-        // Enhanced price ID mapping with fallback logic
+        // Secure price ID mapping - consider using environment variables for these mappings
         const priceIdToPlans: Record<string, string> = {
-          // TODO: Replace with your actual Stripe price IDs
-          'price_1234567890': 'PRO',
-          'price_0987654321': 'PREMIUM',
-          // Add your actual Stripe price IDs here
+          [process.env.STRIPE_BASIC_PRICE_ID || '']: 'BASIC',
+          [process.env.STRIPE_PREMIUM_PRICE_ID || '']: 'PREMIUM', 
+          [process.env.STRIPE_ULTIMATE_PRICE_ID || '']: 'ULTIMATE',
         }
         
         const mappedPlan = priceIdToPlans[stripePriceId]
         if (mappedPlan) {
           correctPlanId = mappedPlan
-          logger.info(`Mapped Stripe price to internal plan`, { plan: mappedPlan })
+          logger.info(`Successfully mapped Stripe price to plan`, { 
+            plan: mappedPlan,
+            userId: userId 
+          })
         } else {
-          // Fallback: Try to infer from price amount or nickname, but avoid logging raw price IDs
+          // Fallback: Try to infer from price amount without logging raw price IDs
           const priceAmount = stripeSubscription.items.data[0]?.price?.unit_amount
           const priceNickname = stripeSubscription.items.data[0]?.price?.nickname
 
-          logger.warn('Unknown Stripe price ID; using fallback plan inference', { hasAmount: !!priceAmount, hasNickname: !!priceNickname })
+          logger.warn('Unknown Stripe price ID; using fallback plan inference', { 
+            hasAmount: !!priceAmount, 
+            hasNickname: !!priceNickname,
+            userId: userId 
+          })
 
           // Intelligent fallback based on amount or keep existing plan
           if (priceAmount && priceAmount > 0) {
@@ -145,11 +207,17 @@ export async function POST(req: NextRequest) {
             correctPlanId = userSubscription.planId
           }
 
-          logger.info('Using fallback plan', { plan: correctPlanId })
+          logger.info('Applied fallback plan mapping', { 
+            plan: correctPlanId,
+            userId: userId 
+          })
         }
       } else {
         correctPlanId = userSubscription.planId
-        logger.info(`No price ID found, keeping existing plan: ${correctPlanId}`)
+        logger.info(`No price ID found, keeping existing plan`, { 
+          plan: correctPlanId,
+          userId: userId 
+        })
       }
     } else {
       // Use database data if Stripe is unavailable
@@ -171,20 +239,43 @@ export async function POST(req: NextRequest) {
         newStatus: correctStatus,
         oldPlan: userSubscription.planId,
         newPlan: correctPlanId,
+        userId: userId,
       })
 
-      await prisma.userSubscription.update({
-        where: { id: userSubscription.id },
-        data: {
-          status: correctStatus,
-          planId: correctPlanId,
-          currentPeriodEnd,
-          currentPeriodStart: stripeSubscription 
-            ? new Date(stripeSubscription.current_period_start * 1000)
-            : userSubscription.currentPeriodStart,
-        }
-      })
-    }    // Return the corrected subscription data with debug info
+      // Update subscription in a transaction to prevent race conditions
+      try {
+        await prisma.$transaction(async (tx) => {
+          await tx.userSubscription.update({
+            where: { id: userSubscription.id },
+            data: {
+              status: correctStatus,
+              planId: correctPlanId,
+              currentPeriodEnd,
+              currentPeriodStart: stripeSubscription 
+                ? new Date(stripeSubscription.current_period_start * 1000)
+                : userSubscription.currentPeriodStart,
+            }
+          })
+          
+          // Ensure user type matches subscription for consistency
+          const effectiveUserType = correctStatus === "ACTIVE" ? correctPlanId : "FREE"
+          await tx.user.update({
+            where: { id: userId },
+            data: { userType: effectiveUserType }
+          })
+        })
+        
+        logger.info(`Subscription successfully updated for user ${userId}`)
+      } catch (txError: any) {
+        logger.error(`Transaction failed for user ${userId}:`, txError)
+        return NextResponse.json({ 
+          error: 'Failed to update subscription data',
+          message: 'Database transaction failed' 
+        }, { status: 500 })
+      }
+    }
+    
+    // Return the corrected subscription data without sensitive debug info
     const result = {
       credits: userSubscription.user.credits || 0,
       tokensUsed: userSubscription.user.creditsUsed || 0,
@@ -192,17 +283,22 @@ export async function POST(req: NextRequest) {
       subscriptionPlan: correctPlanId,
       status: correctStatus,
       currentPeriodEnd: currentPeriodEnd?.toISOString(),
-      stripeStatus: stripeSubscription?.status,
       synced: needsUpdate,
-      // Keep only non-sensitive debug info in production; include minimal debug context
-      debug: {
+      // Only include safe, non-sensitive debug info
+      debug: process.env.NODE_ENV === 'development' ? {
         stripePricePresent: !!stripeSubscription?.items.data[0]?.price?.id,
         originalPlan: userSubscription.planId,
         originalStatus: userSubscription.status,
-      }
+        hasStripeData: !!stripeSubscription,
+      } : undefined
     }
 
-    logger.info(`Subscription sync completed for user ${userId}`, result)
+    logger.info(`Subscription sync completed for user ${userId}`, {
+      synced: needsUpdate,
+      plan: correctPlanId,
+      status: correctStatus,
+      userId: userId,
+    })
 
     return NextResponse.json({
       message: 'Subscription synced successfully',

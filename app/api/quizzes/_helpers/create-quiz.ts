@@ -11,7 +11,6 @@ import { QuizRepository } from "@/app/repositories/quiz.repository"
 import { UserRepository } from "@/app/repositories/user.repository"
 import { generateFlashCards } from "@/lib/chatgpt/ai-service"
 import type { QuizType } from "@/app/types/quiz-types"
-import { validateSubscriptionServer } from "@/lib/subscription-validation"
 
 const questionRepo = new QuestionRepository()
 const quizRepo = new QuizRepository()
@@ -30,17 +29,6 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
 
     if (!userId) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
-    }
-
-    // Validate subscription
-    const validation = await validateSubscriptionServer(userId, {
-      requireSubscription: true,
-      requireCredits: true,
-      requiredPlan: "FREE" // Adjust plan requirement based on quiz type if needed
-    })
-
-    if (!validation.isValid) {
-      return NextResponse.json({ error: validation.error }, { status: 403 })
     }
 
     // Parse body safely once
@@ -85,10 +73,10 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       }
 
       await Promise.all([
-        quizRepo.updateTopicCount(title),
         userRepo.updateUserCredits(userId, "mcq"),
       ])
 
+      console.log("MCQ Quiz created successfully:", { userQuizId: created.id, slug })
       return NextResponse.json({ userQuizId: created.id, slug })
     }
 
@@ -132,8 +120,7 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       }
 
       await Promise.all([
-        quizRepo.updateTopicCount(title),
-        userRepo.updateUserCredits(userId, "openended"),
+          userRepo.updateUserCredits(userId, "openended"),
       ])
 
       return NextResponse.json({ userQuizId: created.id, slug })
@@ -179,7 +166,7 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       }
 
       await Promise.all([
-        quizRepo.updateTopicCount(title),
+       
         userRepo.updateUserCredits(userId, "blanks"),
       ])
 
