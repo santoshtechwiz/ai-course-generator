@@ -190,8 +190,7 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       }
 
       await Promise.all([
-        quizRepo.updateTopicCount(title),
-        userRepo.updateUserCredits(userId, "flashcard"),
+          userRepo.updateUserCredits(userId, "flashcard"),
       ])
 
       return NextResponse.json({ userQuizId: created.id, slug })

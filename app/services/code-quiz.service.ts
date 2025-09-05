@@ -39,9 +39,7 @@ export class CodeQuizService extends BaseQuizService {
       // Create questions in the database
       await this.questionRepository.createQuestions(quizzes, userQuiz.id, "code");
 
-      // Update topic count
-      await this.quizRepository.updateTopicCount(language);
-
+    
       // Deduct user credits
       await this.userRepository.updateUserCredits(userId, "code");
 
