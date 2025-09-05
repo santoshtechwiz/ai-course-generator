@@ -246,5 +246,4 @@ export const selectIsQuizCompleted = createSelector(
         event.type === ProgressEventType.QUIZ_COMPLETED
     )
   }
-)</content>
-<parameter name="filePath">c:\Work\Projects\ai-learning\store\selectors\progress-events-selectors.ts
+)
