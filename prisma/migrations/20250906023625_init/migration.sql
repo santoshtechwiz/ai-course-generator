@@ -306,6 +306,7 @@ CREATE TABLE "OpenEndedQuestion" (
     "questionId" INTEGER NOT NULL,
     "userQuizId" INTEGER,
     "hints" TEXT NOT NULL,
+    "tags" TEXT,
     "difficulty" TEXT NOT NULL,
     "sampleAnswer" TEXT,
     "evaluationCriteria" TEXT,
@@ -603,6 +604,32 @@ CREATE TABLE "UserReferralUse" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "UserReferralUse_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Embedding" (
+    "id" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "embedding" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "metadata" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Embedding_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ChatMessage" (
+    "id" SERIAL NOT NULL,
+    "userId" TEXT NOT NULL,
+    "sessionId" TEXT NOT NULL DEFAULT 'default',
+    "role" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "metadata" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ChatMessage_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -1095,6 +1122,18 @@ CREATE INDEX "UserReferralUse_status_idx" ON "UserReferralUse"("status");
 CREATE INDEX "UserReferralUse_createdAt_idx" ON "UserReferralUse"("createdAt");
 
 -- CreateIndex
+CREATE INDEX "Embedding_type_idx" ON "Embedding"("type");
+
+-- CreateIndex
+CREATE INDEX "Embedding_createdAt_idx" ON "Embedding"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "ChatMessage_userId_sessionId_idx" ON "ChatMessage"("userId", "sessionId");
+
+-- CreateIndex
+CREATE INDEX "ChatMessage_createdAt_idx" ON "ChatMessage"("createdAt");
+
+-- CreateIndex
 CREATE INDEX "_CourseTags_B_index" ON "_CourseTags"("B");
 
 -- CreateIndex
@@ -1261,6 +1300,9 @@ ALTER TABLE "UserReferralUse" ADD CONSTRAINT "UserReferralUse_referredId_fkey" F
 
 -- AddForeignKey
 ALTER TABLE "UserReferralUse" ADD CONSTRAINT "UserReferralUse_referrerId_fkey" FOREIGN KEY ("referrerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ChatMessage" ADD CONSTRAINT "ChatMessage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_CourseTags" ADD CONSTRAINT "_CourseTags_A_fkey" FOREIGN KEY ("A") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
