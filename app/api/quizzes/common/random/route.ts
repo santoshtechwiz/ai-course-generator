@@ -37,7 +37,12 @@ export async function GET(req: NextRequest) {
         difficulty: true,
         isPublic: true,
         createdAt: true,
-        tags: true
+        tags: true,
+        _count: {
+          select: {
+            questions: true
+          }
+        }
       }
     })
 

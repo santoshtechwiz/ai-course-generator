@@ -25,7 +25,8 @@ import {
   Award,
   Sparkles,
   Eye,
-  ThumbsUp
+  ThumbsUp,
+  Pause
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -163,7 +164,9 @@ const QuizStats = memo(({
     <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
       <div className="flex items-center gap-2">
         <BookOpen className="w-4 h-4" />
-        <span className="font-medium">{questionCount} questions</span>
+        <span className="font-semibold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg">
+          {questionCount} questions
+        </span>
       </div>
       {estimatedTime && (
         <div className="flex items-center gap-2">
@@ -476,13 +479,15 @@ import { useRandomQuizzes as useSharedRandomQuizzes } from "@/hooks/useRandomQui
 export const RandomQuiz = memo(({ 
   className, 
   autoRotate = true, 
-  rotationInterval = 6000, 
+  rotationInterval = 8000, // Increased from 6000 to 8000 for slower rotation
   showControls = true, 
   maxQuizzes = 5 
 }: RandomQuizProps) => {
   const { quizzes, isLoading: loading, error, refreshQuizzes: refetch } = useSharedRandomQuizzes(maxQuizzes)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
+  const [isAutoRotating, setIsAutoRotating] = useState(autoRotate)
+  const [progress, setProgress] = useState(0)
 
   const currentQuiz = useMemo(() => quizzes[currentIndex], [quizzes, currentIndex])
 
@@ -496,11 +501,32 @@ export const RandomQuiz = memo(({
 
   // Auto-rotation with pause on hover
   useEffect(() => {
-    if (!autoRotate || isPaused || quizzes.length <= 1) return
+    if (!isAutoRotating || isPaused || quizzes.length <= 1) return
 
     const interval = setInterval(nextQuiz, rotationInterval)
     return () => clearInterval(interval)
-  }, [autoRotate, isPaused, rotationInterval, nextQuiz, quizzes.length])
+  }, [isAutoRotating, isPaused, rotationInterval, nextQuiz, quizzes.length])
+
+  // Progress indicator for auto-rotation
+  useEffect(() => {
+    if (!isAutoRotating || isPaused || quizzes.length <= 1) {
+      setProgress(0)
+      return
+    }
+
+    const startTime = Date.now()
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime
+      const newProgress = Math.min((elapsed / rotationInterval) * 100, 100)
+      setProgress(newProgress)
+    }, 100)
+
+    return () => clearInterval(interval)
+  }, [isAutoRotating, isPaused, rotationInterval, quizzes.length, currentIndex])
+
+  const toggleAutoRotate = useCallback(() => {
+    setIsAutoRotating(prev => !prev)
+  }, [])
 
   // Debounced refetch when component mounts or when user explicitly triggers refetch
   const refetchRef = useRef<number | null>(null)
@@ -526,6 +552,31 @@ export const RandomQuiz = memo(({
   useEffect(() => {
     setCurrentIndex(0)
   }, [quizzes])
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (quizzes.length <= 1) return
+      
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault()
+          prevQuiz()
+          break
+        case 'ArrowRight':
+          e.preventDefault()
+          nextQuiz()
+          break
+        case ' ':
+          e.preventDefault()
+          toggleAutoRotate()
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [quizzes.length, prevQuiz, nextQuiz, toggleAutoRotate])
 
   if (loading) {
     return (
@@ -583,6 +634,11 @@ export const RandomQuiz = memo(({
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Curated just for you
+              {currentQuiz && (
+                <span className="ml-2 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
+                  {currentQuiz.questionCount} questions
+                </span>
+              )}
             </p>
           </div>
         </motion.div>
@@ -594,6 +650,19 @@ export const RandomQuiz = memo(({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
           >
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleAutoRotate}
+              className={cn(
+                "h-9 px-3 rounded-full border-gray-300 dark:border-gray-600 transition-all duration-300",
+                isAutoRotating 
+                  ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 text-green-700 dark:text-green-300" 
+                  : "bg-gray-50 dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-300 dark:hover:border-purple-600"
+              )}
+            >
+              {isAutoRotating ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -619,7 +688,7 @@ export const RandomQuiz = memo(({
         <AnimatePresence mode="wait">
           {currentQuiz && (() => {
             // Normalize API data to the local `Quiz` shape expected by QuizCard
-            const safeQuiz = {
+            const safeQuiz: Quiz = {
               id: currentQuiz.id,
               title: currentQuiz.title || 'Untitled Quiz',
               // Ensure quizType matches expected union; fallback to 'mcq'
@@ -634,8 +703,8 @@ export const RandomQuiz = memo(({
               tags: currentQuiz.tags,
               estimatedTime: currentQuiz.estimatedTime,
               rating: typeof currentQuiz.rating === 'number' ? currentQuiz.rating : undefined,
-              viewCount: currentQuiz.viewCount,
-              likeCount: currentQuiz.likeCount,
+              viewCount: (currentQuiz as any).viewCount,
+              likeCount: (currentQuiz as any).likeCount,
             }
 
             return (
@@ -648,55 +717,91 @@ export const RandomQuiz = memo(({
       {/* Enhanced Indicators */}
       {quizzes.length > 1 && (
         <motion.div 
-          className="flex justify-center gap-2"
+          className="flex flex-col items-center gap-3"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          {quizzes.map((_, index) => (
-            <motion.button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={cn(
-                "h-2 rounded-full transition-all duration-300 hover:scale-125",
-                index === currentIndex 
-                  ? "w-8 bg-gradient-to-r from-purple-500 to-blue-500 shadow-lg" 
-                  : "w-2 bg-gray-300 dark:bg-gray-600 hover:bg-purple-300 dark:hover:bg-purple-700"
-              )}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.9 }}
-              aria-label={`Go to quiz ${index + 1}`}
-            />
-          ))}
+          {/* Quiz counter */}
+          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+            {currentIndex + 1} of {quizzes.length} quizzes
+          </div>
+          
+          {/* Dot indicators */}
+          <div className="flex justify-center gap-2">
+            {quizzes.map((_, index) => (
+              <motion.button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={cn(
+                  "h-2 rounded-full transition-all duration-300 hover:scale-125",
+                  index === currentIndex 
+                    ? "w-8 bg-gradient-to-r from-purple-500 to-blue-500 shadow-lg" 
+                    : "w-2 bg-gray-300 dark:bg-gray-600 hover:bg-purple-300 dark:hover:bg-purple-700"
+                )}
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.9 }}
+                aria-label={`Go to quiz ${index + 1} of ${quizzes.length}`}
+              />
+            ))}
+          </div>
         </motion.div>
       )}
 
       {/* Auto-rotation indicator */}
       <AnimatePresence>
-        {autoRotate && !isPaused && quizzes.length > 1 && (
+        {isAutoRotating && !isPaused && quizzes.length > 1 && (
           <motion.div
-            className="absolute top-6 right-6 flex items-center gap-2 px-3 py-1 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-full shadow-lg border border-gray-200/50 dark:border-gray-700/50"
+            className="absolute top-6 right-6 flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-full shadow-lg border border-gray-200/50 dark:border-gray-700/50"
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0 }}
           >
-            <motion.div
-              className="w-2 h-2 bg-green-500 rounded-full"
-              animate={{ 
-                scale: [1, 1.5, 1],
-                opacity: [0.5, 1, 0.5] 
-              }}
-              transition={{ 
-                duration: 1.5, 
-                repeat: Infinity 
-              }}
-            />
+            <div className="relative w-6 h-6">
+              <svg className="w-6 h-6 transform -rotate-90" viewBox="0 0 24 24">
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  fill="none"
+                  className="text-gray-300 dark:text-gray-600"
+                />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeDasharray={`${2 * Math.PI * 10}`}
+                  strokeDashoffset={`${2 * Math.PI * 10 * (1 - progress / 100)}`}
+                  className="text-green-500 transition-all duration-100"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
             <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
               Auto-rotating
             </span>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Keyboard shortcuts hint */}
+      {quizzes.length > 1 && (
+        <motion.div 
+          className="text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7 }}
+        >
+          <p className="text-xs text-gray-500 dark:text-gray-500">
+            Use ← → arrow keys to navigate • Spacebar to pause/play
+          </p>
+        </motion.div>
+      )}
     </motion.div>
   )
 })

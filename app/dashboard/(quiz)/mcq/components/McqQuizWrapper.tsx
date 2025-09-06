@@ -288,7 +288,6 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
         }}
         onAnswer={(answer) => {
           handleAnswer(answer)
-          handleNextQuestion()
         }}
         onNext={handleNextQuestion}
         onSubmit={handleSubmitQuiz}

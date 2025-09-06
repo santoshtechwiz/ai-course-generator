@@ -221,7 +221,7 @@ export const useRandomQuizzes = (maxQuizzes = 6): UseRandomQuizzesReturn => {
         title: quiz.title || "Untitled Quiz",
         quizType: quiz.quizType || quiz.type || "mcq",
         difficulty: quiz.difficulty || "medium",
-        questionCount: quiz.questionCount || quiz._count?.questions || quiz.questions?.length || 0,
+        questionCount: quiz._count?.questions || quiz.questionCount || quiz.questions?.length || 0,
         description: quiz.description || "",
         tags: Array.isArray(quiz.tags) ? quiz.tags : [],
         rating: typeof quiz.rating === "number" ? quiz.rating : Math.random() * 2 + 3,
@@ -230,7 +230,7 @@ export const useRandomQuizzes = (maxQuizzes = 6): UseRandomQuizzesReturn => {
         slug: quiz.slug || quiz.id,
         isPublic: quiz.isPublic ?? true,
         isFavorite: quiz.isFavorite || false,
-        estimatedTime: quiz.estimatedTime || Math.ceil((quiz.questionCount || 10) * 1.5),
+        estimatedTime: quiz.estimatedTime || Math.ceil((quiz._count?.questions || quiz.questionCount || 10) * 1.5),
         timeStarted: quiz.timeStarted ? new Date(quiz.timeStarted) : undefined,
       }))
         if (transformedQuizzes.length === 0) {
