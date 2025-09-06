@@ -3,7 +3,8 @@
 import type React from "react"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { useChat } from "ai/react"
+import { useChat } from "@ai-sdk/react"
+import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -112,14 +113,54 @@ export function Chatbot({ userId }: ChatbotProps) {
   const [remainingQuestions, setRemainingQuestions] = useState(5)
   const [lastQuestionTime, setLastQuestionTime] = useState(Date.now())
   const [showTooltip, setShowTooltip] = useState(false)
+  const { toast } = useToast()
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, error, setMessages } = useChat({
     api: "/api/chat",
     body: { userId },
-    onResponse: () => {
+    onFinish: (message) => {
+      // Message completed successfully
       setRemainingQuestions((prev) => Math.max(0, prev - 1))
       setLastQuestionTime(Date.now())
     },
+    onResponse: (response) => {
+      // Check if the response is valid
+      if (response.ok) {
+        // Response is good, but let's validate the content type
+        const contentType = response.headers.get('content-type')
+        if (!contentType?.includes('text/event-stream')) {
+          console.warn("Unexpected content type:", contentType)
+        }
+      } else {
+        console.error("Chat response error:", response.statusText)
+        toast({
+          title: "Error sending message",
+          description: "There was a problem processing your request. Please try again.",
+          variant: "destructive",
+          duration: 3000,
+        })
+      }
+    },
+    onError: (err) => {
+      console.error("Chat error:", err)
+      
+      // Add a fallback message when streaming fails
+      if (err.message?.includes("Failed to parse stream")) {
+        const errorMessage = {
+          id: `error-${Date.now()}`,
+          role: 'assistant',
+          content: "I apologize, but I encountered an error while processing your request. Please try asking again."
+        }
+        setMessages((prev) => [...prev, errorMessage])
+      }
+      
+      toast({
+        title: "Connection error",
+        description: "Failed to connect to the chat service. Please try again later.",
+        variant: "destructive",
+        duration: 3000,
+      })
+    }
   })
 
   // Focus input when chat opens
@@ -353,9 +394,16 @@ export function Chatbot({ userId }: ChatbotProps) {
                                 m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
                               )}
                             >
-                              <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none">
-                                {m.content}
-                              </ReactMarkdown>
+                              {m.content && (
+                                <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none">
+                                  {m.content}
+                                </ReactMarkdown>
+                              )}
+                              {!m.content && (
+                                <div className="text-red-500 italic text-xs">
+                                  Message could not be displayed. Please try again.
+                                </div>
+                              )}
                             </div>
                           </div>
                         </motion.div>

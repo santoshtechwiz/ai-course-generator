@@ -6,23 +6,25 @@ import {
   useCallback,
   Suspense,
   memo,
-  useMemo,
 } from "react"
 import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { BookOpen, BarChart3, Clock, Award } from "lucide-react"
+import { BookOpen, BarChart3, Clock, Award, Activity, TrendingUp, Target, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import UserNotFound from "@/components/common/UserNotFound"
 
 import { useUserData, useUserStats } from "@/hooks/useUserDashboard"
+import { useLearningActivity, useProgressOverview, useQuizPerformance } from "@/hooks/useDashboardData"
 import DashboardHeader from "./components/DashboardHeader"
 import DashboardSidebar from "./components/DashboardSidebar"
+import LearningActivity from "./components/LearningActivity"
+import ProgressOverview from "./components/ProgressOverview"
+import QuizPerformance from "./components/QuizPerformance"
 import dynamic from "next/dynamic"
-// Removed SuspenseGlobalFallback; using inline spinner fallbacks
-
+import RecommendationsWidget from "@/components/RecommendationsWidget"
 
 import type { DashboardUser, UserStats } from "@/app/types/types"
 import { useAuth } from "@/hooks"
@@ -47,23 +49,22 @@ const StatsTab = dynamic(() => import("./components/StatsTab"), {
 const LoadingState = memo(() => (
   <div className="p-6 space-y-6">
     <Skeleton className="h-12 w-[250px]" />
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <Skeleton className="h-[200px] rounded-lg" />
-      <Skeleton className="h-[200px] rounded-lg" />
-      <Skeleton className="h-[200px] rounded-lg" />
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <Skeleton className="h-32" />
+      <Skeleton className="h-32" />
+      <Skeleton className="h-32" />
+      <Skeleton className="h-32" />
     </div>
-    <Skeleton className="h-[400px] rounded-lg" />
+    <Skeleton className="h-[400px]" />
   </div>
 ))
 
 export default function DashboardPage() {
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth()
   const router = useRouter()
-  // Removed legacy loading helpers
-
+  
   const userId = typeof user?.id === 'string' ? user.id : String(user?.id || "")
-  console.log('Dashboard userId:', userId, 'user.id type:', typeof user?.id, 'user.id value:', user?.id, 'user object:', user)
-
+  
   const [activeTab, setActiveTab] = useState("overview")
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
@@ -82,6 +83,11 @@ export default function DashboardPage() {
     staleTime: 60_000,
   })
 
+  // Fetch dashboard data using real data hooks - moved before conditional returns
+  const { data: learningActivityData, isLoading: isLoadingActivity } = useLearningActivity(userId)
+  const { data: progressOverviewData, isLoading: isLoadingProgress } = useProgressOverview(userId)
+  const { data: quizPerformanceData, isLoading: isLoadingQuizPerformance } = useQuizPerformance(userId)
+
   const handleTabChange = useCallback((value: string) => {
     setActiveTab(value)
   }, [])
@@ -90,8 +96,62 @@ export default function DashboardPage() {
     setSidebarOpen((prev) => !prev)
   }, [])
 
+  const fallbackUserData: DashboardUser = {
+    id: typeof user?.id === 'string' ? user.id : String(user?.id || ""),
+    name: user?.name || "User",
+    email: user?.email || "",
+    image: user?.image || "",
+    credits: user?.credits || 0,
+    courses: [],
+    courseProgress: [],
+    userQuizzes: [],
+    streakDays: 0,
+    isAdmin: false,
+    favorites: [],
+    quizAttempts: [],
+  }
+
+  const safeUserData: DashboardUser = userData ? {
+    ...userData,
+    id: typeof userData.id === 'string' ? userData.id : String(userData.id || "")
+  } : fallbackUserData
+
+  const safeUserStats: UserStats = userStats || {
+    totalQuizzes: 0,
+    averageScore: 0,
+    highestScore: 0,
+    totalTimeSpent: 0,
+    quizzesPerMonth: 0,
+    recentImprovement: 0,
+    topPerformingTopics: [],
+  }
+
+  // Consolidated quick stats for header - removed since moved to OverviewTab
+  // const quickStats = useMemo(() => [
+  //   {
+  //     icon: <BookOpen className="h-5 w-5" />,
+  //     label: "Courses",
+  //     value: safeUserData.courses?.length || 0,
+  //   },
+  //   {
+  //     icon: <BarChart3 className="h-5 w-5" />,
+  //     label: "Avg. Score",
+  //     value: `${Math.round(safeUserStats.averageScore)}%`,
+  //   },
+  //   {
+  //     icon: <Clock className="h-5 w-5" />,
+  //     label: "Learning Time",
+  //     value: `${Math.round((safeUserStats.totalTimeSpent || 0) / 60)}h`,
+  //   },
+  //   {
+  //     icon: <Award className="h-5 w-5" />,
+  //     label: "Streak",
+  //     value: safeUserData.streakDays || 0,
+  //   },
+  // ], [safeUserData, safeUserStats])
+
   useEffect(() => {
-    // previously triggered global loader; now no-op
+    // No-op for now
   }, [isLoading])
 
   // Show Sign In if not authenticated
@@ -105,6 +165,11 @@ export default function DashboardPage() {
         </Button>
       </div>
     )
+  }
+
+  // Show loading state
+  if (isLoading || isLoadingUserData || isLoadingUserStats || isLoadingActivity || isLoadingProgress || isLoadingQuizPerformance) {
+    return <LoadingState />
   }
 
   // Handle critical data load error
@@ -128,58 +193,6 @@ export default function DashboardPage() {
     return <UserNotFound />
   }
 
-  const fallbackUserData: DashboardUser = {
-    id: typeof user?.id === 'string' ? user.id : String(user?.id || ""),
-    name: user?.name || "User",
-    email: user?.email || "",
-    image: user?.image || "",
-    credits: user?.credits || 0,
-    courses: [],
-    courseProgress: [],
-    userQuizzes: [],
-    streakDays: 0,
-    isAdmin: false,
-    favorites: [],
-    quizAttempts: [],
-  }
-
-  const safeUserData: DashboardUser = userData ? {
-    ...userData,
-    id: typeof userData.id === 'string' ? userData.id : String(userData.id || "")
-  } : fallbackUserData
-  const safeUserStats: UserStats = userStats || {
-    totalQuizzes: 0,
-    averageScore: 0,
-    highestScore: 0,
-    totalTimeSpent: 0,
-    quizzesPerMonth: 0,
-    recentImprovement: 0,
-    topPerformingTopics: [],
-  }
-
-  const quickStats = useMemo(() => [
-    {
-      icon: <BookOpen className="h-5 w-5" />,
-      label: "Courses",
-      value: safeUserData.courses?.length || 0,
-    },
-    {
-      icon: <BarChart3 className="h-5 w-5" />,
-      label: "Avg. Score",
-      value: `${Math.round(safeUserStats.averageScore)}%`,
-    },
-    {
-      icon: <Clock className="h-5 w-5" />,
-      label: "Learning Time",
-      value: `${Math.round((safeUserStats.totalTimeSpent || 0) / 60)} min`,
-    },
-    {
-      icon: <Award className="h-5 w-5" />,
-      label: "Streak",
-      value: safeUserData.streakDays || 0,
-    },
-  ], [safeUserData, safeUserStats])
-
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background">
       {/* Sidebar: collapses on mobile, visible on md+ */}
@@ -196,30 +209,61 @@ export default function DashboardPage() {
       <div className="flex-1 flex flex-col">
         <DashboardHeader
           userData={safeUserData}
-          quickStats={quickStats}
           toggleSidebar={handleToggleSidebar}
         />
 
         <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="mb-6 bg-muted/60 p-1 w-full md:w-auto overflow-x-auto whitespace-nowrap rounded-lg">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="courses">Courses</TabsTrigger>
-              <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
-              <TabsTrigger value="stats">Statistics</TabsTrigger>
+              <TabsTrigger value="overview" className="flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                <span className="hidden sm:inline">Overview</span>
+              </TabsTrigger>
+              <TabsTrigger value="progress" className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                <span className="hidden sm:inline">Progress</span>
+              </TabsTrigger>
+              <TabsTrigger value="performance" className="flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                <span className="hidden sm:inline">Quizzes</span>
+              </TabsTrigger>
+              <TabsTrigger value="courses" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                <span className="hidden sm:inline">Courses</span>
+              </TabsTrigger>
+              <TabsTrigger value="activity" className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:inline">Activity</span>
+              </TabsTrigger>
+              <TabsTrigger value="recommendations" className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                <span className="hidden sm:inline">For You</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="mt-0">
-              <Suspense fallback={<div className="flex justify-center py-10"><div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary" /></div>}>
+              <Suspense fallback={<div className="flex justify-center py-10"><div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" /></div>}>
                 <OverviewTab userData={safeUserData} userStats={safeUserStats} />
               </Suspense>
+            </TabsContent>
+
+            <TabsContent value="progress" className="mt-0">
+              <ProgressOverview 
+                courseProgresses={progressOverviewData?.courseProgresses || []}
+                chapterProgresses={progressOverviewData?.chapterProgresses || []}
+                overallStats={progressOverviewData?.overallStats || { totalCourses: 0, completedCourses: 0, totalChapters: 0, completedChapters: 0, totalTimeSpent: 0, averageProgress: 0, streak: 0 }}
+              />
+            </TabsContent>
+
+            <TabsContent value="performance" className="mt-0">
+              <QuizPerformance data={quizPerformanceData || { recentAttempts: [], quizProgresses: [], performanceStats: { totalQuizzes: 0, completedQuizzes: 0, averageScore: 0, averageAccuracy: 0, totalTimeSpent: 0, bestStreak: 0, currentStreak: 0, improvementRate: 0 }, weakAreas: [] }} />
             </TabsContent>
 
             <TabsContent value="courses" className="mt-0">
               <Suspense fallback={
                 <div className="min-h-[400px] flex items-center justify-center">
                   <div className="flex flex-col items-center gap-2 py-8">
-                    <div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary" />
+                    <div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
                     <p className="text-xs text-muted-foreground">Loading courses...</p>
                   </div>
                 </div>
@@ -228,15 +272,17 @@ export default function DashboardPage() {
               </Suspense>
             </TabsContent>
 
-            <TabsContent value="quizzes" className="mt-0">
-              <Suspense fallback={<div className="flex justify-center py-10"><div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary" /></div>}>
-                <QuizzesTab userData={safeUserData} />
-              </Suspense>
+            <TabsContent value="activity" className="mt-0">
+              <LearningActivity 
+                recentEvents={learningActivityData?.recentEvents || []}
+                todayStats={learningActivityData?.todayStats || { timeSpent: 0, coursesStudied: 0, chaptersCompleted: 0, quizzesCompleted: 0 }}
+                weeklyStats={learningActivityData?.weeklyStats || { timeSpent: 0, coursesStarted: 0, coursesCompleted: 0, averageScore: 0 }}
+              />
             </TabsContent>
 
-            <TabsContent value="stats" className="mt-0">
-              <Suspense fallback={<div className="flex justify-center py-10"><div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary" /></div>}>
-                <StatsTab userStats={safeUserStats} quizAttempts={safeUserData.quizAttempts} />
+            <TabsContent value="recommendations" className="mt-0">
+              <Suspense fallback={<div className="flex justify-center py-10"><div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" /></div>}>
+                <RecommendationsWidget />
               </Suspense>
             </TabsContent>
           </Tabs>

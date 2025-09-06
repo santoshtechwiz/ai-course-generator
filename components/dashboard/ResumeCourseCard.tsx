@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Play, Clock, CheckCircle, BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getImageWithFallback } from '@/utils/image-utils'
 
 interface ResumeCourseCardProps {
   courseTitle: string
@@ -58,6 +59,8 @@ export default function ResumeCourseCard({
     }
   }
 
+  const courseImageUrl = getImageWithFallback(courseImage)
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -70,11 +73,16 @@ export default function ResumeCourseCard({
             {/* Course Thumbnail */}
             <div className="flex-shrink-0">
               <div className="w-20 h-20 bg-primary/10 rounded-lg flex items-center justify-center">
-                {courseImage ? (
+                {courseImageUrl && courseImageUrl !== '/not.svg' ? (
                   <img 
-                    src={courseImage} 
+                    src={courseImageUrl} 
                     alt={courseTitle}
                     className="w-full h-full object-cover rounded-lg"
+                    onError={(e) => {
+                      // Fallback to SVG if image fails to load
+                      const target = e.target as HTMLImageElement
+                      target.src = '/not.svg'
+                    }}
                   />
                 ) : (
                   <BookOpen className="h-8 w-8 text-primary" />

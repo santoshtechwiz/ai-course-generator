@@ -15,6 +15,7 @@ import { SuspenseGlobalFallback } from "@/components/loaders"
 import BProgressProvider from "./providers"
 import { MotionProvider } from "@/components/MotionProvider"
 import Footer from "@/components/shared/Footer"
+import { Chatbot } from "@/components/Chatbot"
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
@@ -130,7 +131,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Suspense>
               <GoogleAnalyticsClient />
             </Suspense>
-
+            <Chatbot userId={session?.user?.id ?? ""}></Chatbot>
             <DefaultSEO enableFAQ={false} />
           </Providers>
         </BProgressProvider>

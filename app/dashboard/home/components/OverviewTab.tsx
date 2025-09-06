@@ -5,11 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { BookOpen, GraduationCap, BarChart3, Clock, Award, TrendingUp, ArrowRight, CheckCircle2, Target, Lightbulb, Star, X } from "lucide-react"
+import { BookOpen, GraduationCap, BarChart3, Clock, Award, TrendingUp, ArrowRight, CheckCircle2, Target, Lightbulb, Star, Play, Brain, Zap } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import type { DashboardUser, UserStats } from "@/app/types/types"
 import RecentQuizCard from "./RecentQuizCard"
+import { getImageWithFallback } from '@/utils/image-utils'
+import RecommendationsWidget from "@/components/RecommendationsWidget"
 
 interface OverviewTabProps {
   userData: DashboardUser
@@ -18,150 +20,96 @@ interface OverviewTabProps {
 
 // Memoize the component to prevent unnecessary re-renders
 const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewTabProps) {
-  // Calculate completion rate for use in both insights and stat cards
-  const completionRate = useMemo(() => {
-    if (!userData) return 0
-    const totalCourses = userData.courses?.length || 0
-    const completedCourses = userData.courseProgress?.filter(c => c.isCompleted)?.length || 0
-    return totalCourses > 0 ? (completedCourses / totalCourses) * 100 : 0
-  }, [userData])
-
-  // Simple insights based on user data
-  const insights = useMemo(() => {
-    if (!userData || !userStats) return []
-
-    const insights = []
-    const avgScore = userStats.averageScore || 0
-
-    if (completionRate < 50) {
-      insights.push({
-        id: 'low-completion',
-        type: 'improvement',
-        title: 'Course Completion',
-        description: `You've completed ${userData.courseProgress?.filter(c => c.isCompleted)?.length || 0} of ${userData.courses?.length || 0} courses.`,
-        priority: 'medium',
-      })
+  // Calculate key metrics
+  const keyMetrics = useMemo(() => {
+    if (!userData || !userStats) return {
+      coursesInProgress: 0,
+      avgScore: 0,
+      studyStreak: 0,
+      totalTime: 0
     }
 
-    if (avgScore < 70) {
-      insights.push({
-        id: 'quiz-performance',
-        type: 'improvement',
-        title: 'Quiz Performance',
-        description: `Your average quiz score is ${Math.round(avgScore)}%.`,
-        priority: 'medium',
-      })
+    return {
+      coursesInProgress: userData.courseProgress?.filter(c => !c.isCompleted)?.length || 0,
+      avgScore: Math.round(userStats.averageScore || 0),
+      studyStreak: userData.streakDays || 0,
+      totalTime: Math.round((userStats.totalTimeSpent || 0) / 60) // Convert to hours
     }
-
-    return insights
   }, [userData, userStats])
 
-  // Simple suggestions
-  const suggestions = useMemo(() => {
-    if (!userData) return []
+  // Get next action item (most important)
+  const nextAction = useMemo(() => {
+    if (!userData) return null
 
-    const suggestions = []
     const inProgressCourses = userData.courseProgress?.filter(c => !c.isCompleted) || []
 
     if (inProgressCourses.length > 0) {
-      suggestions.push({
-        id: 'continue-course',
+      const mostRecent = inProgressCourses.sort((a, b) =>
+        new Date(b.lastAccessedAt || 0).getTime() - new Date(a.lastAccessedAt || 0).getTime()
+      )[0]
+
+      return {
         type: 'course',
         title: 'Continue Learning',
-        description: `Resume your ${inProgressCourses.length} in-progress course(s)`,
-        priority: 'high',
-        estimatedTime: 30,
-        resourceId: inProgressCourses[0]?.course?.slug || '',
-        resourceType: 'course',
-      })
+        description: `Resume "${mostRecent.course?.title}" (${Math.round(mostRecent.progress || 0)}% complete)`,
+        action: 'Continue',
+        link: `/dashboard/course/${mostRecent.course?.slug}`,
+        icon: <Play className="h-5 w-5" />,
+        priority: 'high'
+      }
     }
 
-    return suggestions
-  }, [userData])
-
-  // Recent courses based on course progress
-  const recentCourses = useMemo(() => {
-    if (!userData?.courseProgress) return []
-    
-    return userData.courseProgress
-      .sort((a, b) => new Date(b.lastAccessed || 0).getTime() - new Date(a.lastAccessed || 0).getTime())
-      .slice(0, 3) // Show only 3 most recent
-  }, [userData])
-
-  // Recent quizzes based on quiz attempts
-  const recentQuizzes = useMemo(() => {
-    if (!userData?.quizAttempts) return []
-    
-    return userData.quizAttempts
-      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-      .slice(0, 3) // Show only 3 most recent
-  }, [userData])
-
-  // Recent quiz attempts
-  const recentAttempts = useMemo(() => {
-    if (!userData?.quizAttempts) return []
-    
-    return userData.quizAttempts
-      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-      .slice(0, 3) // Show only 3 most recent
-  }, [userData])
-
-  const statCards = [
-    {
-      title: "Courses",
-      value: userData?.courses?.length || 0,
-      subtitle: `${userData?.courseProgress?.filter(c => c.isCompleted)?.length || 0} completed`,
+    // If no in-progress courses, suggest starting a new one
+    return {
+      type: 'explore',
+      title: 'Start Learning',
+      description: 'Explore available courses and begin your learning journey',
+      action: 'Browse Courses',
+      link: '/dashboard/courses',
       icon: <BookOpen className="h-5 w-5" />,
-      color: "bg-blue-50",
-      iconColor: "text-blue-600",
-      progress: userData?.courses?.length ? ((userData?.courseProgress?.filter(c => c.isCompleted)?.length || 0) / userData.courses.length) * 100 : 0
-    },
-    {
-      title: "Quizzes",
-      value: userData?.userQuizzes?.length || 0,
-      subtitle: `${userData?.quizAttempts?.length || 0} attempts`,
-      icon: <GraduationCap className="h-5 w-5" />,
-      color: "bg-green-50",
-      iconColor: "text-green-600",
-      progress: userData?.userQuizzes?.length ? ((userData?.quizAttempts?.length || 0) / userData.userQuizzes.length) * 100 : 0
-    },
-    {
-      title: "Avg. Score",
-      value: `${Math.round(userStats?.averageScore || 0)}%`,
-      subtitle: `${userStats?.highestScore || 0}% highest`,
-      icon: <BarChart3 className="h-5 w-5" />,
-      color: "bg-purple-50",
-      iconColor: "text-purple-600",
-      progress: userStats?.averageScore || 0
-    },
-    {
-      title: "Study Time",
-      value: `${Math.round((userStats?.totalTimeSpent || 0) / 60)}h`,
-      subtitle: `${userData?.streakDays || 0} day streak`,
-      icon: <Clock className="h-5 w-5" />,
-      color: "bg-orange-50",
-      iconColor: "text-orange-600",
-      progress: Math.min(((userData?.streakDays || 0) / 30) * 100, 100) // Max 30 days for progress
-    },
-    {
-      title: "Completion",
-      value: `${Math.round(completionRate)}%`,
-      subtitle: "overall progress",
-      icon: <Target className="h-5 w-5" />,
-      color: "bg-teal-50",
-      iconColor: "text-teal-600",
-      progress: completionRate
-    },
-    {
-      title: "Improvement",
-      value: `${Math.round(userStats?.recentImprovement || 0)}%`,
-      subtitle: "this month",
-      icon: <TrendingUp className="h-5 w-5" />,
-      color: "bg-indigo-50",
-      iconColor: "text-indigo-600",
-      progress: Math.min(Math.abs(userStats?.recentImprovement || 0), 100)
-    },
-  ]
+      priority: 'medium'
+    }
+  }, [userData])
+
+  // Get current learning items (merged courses and quizzes)
+  const currentLearning = useMemo(() => {
+    if (!userData) return []
+
+    const items = []
+
+    // Add in-progress courses
+    const inProgressCourses = userData.courseProgress?.filter(c => !c.isCompleted) || []
+    inProgressCourses.slice(0, 2).forEach(course => {
+      items.push({
+        id: `course-${course.id}`,
+        type: 'course',
+        title: course.course?.title || 'Untitled Course',
+        progress: course.progress || 0,
+        image: getImageWithFallback(course.course?.image),
+        link: `/dashboard/course/${course.course?.slug}`,
+        lastAccessed: course.lastAccessedAt
+      })
+    })
+
+    // Add recent quiz attempts
+    const recentQuizzes = userData.quizAttempts?.slice(0, 2) || []
+    recentQuizzes.forEach(quiz => {
+      items.push({
+        id: `quiz-${quiz.id}`,
+        type: 'quiz',
+        title: quiz.userQuiz?.title || 'Untitled Quiz',
+        score: quiz.score || 0,
+        image: '/quiz-placeholder.svg', // Could be improved with actual quiz images
+        link: `/dashboard/quiz/${quiz.userQuiz?.slug}`,
+        lastAccessed: quiz.createdAt
+      })
+    })
+
+    // Sort by last accessed and limit to 4 items
+    return items
+      .sort((a, b) => new Date(b.lastAccessed || 0).getTime() - new Date(a.lastAccessed || 0).getTime())
+      .slice(0, 4)
+  }, [userData])
 
   // Early return if no data is available
   if (!userData || !userStats) {
@@ -180,114 +128,171 @@ const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewT
   }
 
   return (
-    <div className="space-y-6">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {statCards.map((stat, index) => (
-          <Card key={index} className="overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group">
-            <CardContent className="p-5">
+    <div className="space-y-8">
+      {/* TOP: Greeting + Main Progress Stats */}
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Welcome back, {userData.name?.split(' ')[0] || 'Learner'}! 👋</h1>
+          <p className="text-muted-foreground mt-1">Ready to continue your learning journey?</p>
+        </div>
+
+        {/* Key Metrics - Clean and focused */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="border-border/50">
+            <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
-                  <div className={stat.iconColor}>
-                    {stat.icon}
-                  </div>
+                <div className="p-2 rounded-lg bg-blue-50">
+                  <BookOpen className="h-4 w-4 text-blue-600" />
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.subtitle}</p>
-                  <div className="mt-2">
-                    <Progress value={stat.progress} className="h-1" />
-                  </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Courses in Progress</p>
+                  <p className="text-2xl font-bold">{keyMetrics.coursesInProgress}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-        ))}
+
+          <Card className="border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-50">
+                  <Target className="h-4 w-4 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Avg Score</p>
+                  <p className="text-2xl font-bold">{keyMetrics.avgScore}%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-orange-50">
+                  <Zap className="h-4 w-4 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Study Streak</p>
+                  <p className="text-2xl font-bold">{keyMetrics.studyStreak}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-50">
+                  <Clock className="h-4 w-4 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Hours Learned</p>
+                  <p className="text-2xl font-bold">{keyMetrics.totalTime}h</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Courses */}
-        <Card>
-          <CardHeader className="pb-2">
+      {/* MIDDLE: Current Learning + Next Action */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Next Action - Primary Focus */}
+        <Card className="lg:col-span-1 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Star className="h-5 w-5 text-primary" />
+              Next Action
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {nextAction && (
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                    {nextAction.icon}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{nextAction.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {nextAction.description}
+                    </p>
+                  </div>
+                </div>
+                <Button asChild className="w-full">
+                  <Link href={nextAction.link}>
+                    {nextAction.action}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Current Learning - Merged courses and quizzes */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Recent Courses</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Current Learning
+              </CardTitle>
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/dashboard/courses">
                   View All
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  <ArrowRight className="h-4 w-4 ml-1" />
                 </Link>
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-            {recentCourses.length > 0 ? (
-              <div className="space-y-4">
-                {recentCourses.map((course) => (
-                  <Link key={course.id} href={`/dashboard/course/${course.course?.slug}`} className="block">
-                    <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-colors">
-                        <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md">
-                          <Image
-                          src={course.course?.image || "/placeholder.svg"}
-                          alt={course.course?.title || "Course"}
+            {currentLearning.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {currentLearning.map((item) => (
+                  <Link key={item.id} href={item.link} className="block">
+                    <div className="flex items-center gap-3 p-3 rounded-lg border hover:shadow-md transition-all">
+                      <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg">
+                        <Image
+                          src={item.image}
+                          alt={item.title}
                           fill
                           className="object-cover"
                           sizes="48px"
-                          priority={false}
-                          />
-                        </div>
+                        />
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium truncate">{course.course?.title}</h3>
+                        <h4 className="font-medium truncate">{item.title}</h4>
                         <div className="flex items-center gap-2 mt-1">
-                          <Progress value={course.progress || 0} className="h-2 w-24" />
-                          <span className="text-xs text-muted-foreground">{Math.round(course.progress || 0)}% complete</span>
+                          {item.type === 'course' ? (
+                            <>
+                              <Progress value={item.progress} className="h-2 w-20" />
+                              <span className="text-xs text-muted-foreground">
+                                {Math.round(item.progress || 0)}%
+                              </span>
+                            </>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              Score: {item.score}%
+                            </Badge>
+                          )}
                         </div>
                       </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </Link>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-6">
-                <BookOpen className="mx-auto h-10 w-10 text-muted-foreground/50" />
-                <h3 className="mt-2 font-medium">No courses yet</h3>
-                <p className="text-sm text-muted-foreground mt-1">Start your learning journey by exploring courses.</p>
-                <Button asChild className="mt-4">
-                  <Link href="/dashboard/explore">Explore Courses</Link>
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Recent Quizzes */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Recent Quizzes</CardTitle>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/dashboard/quizzes">
-                  View All
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {recentQuizzes.length > 0 ? (
-              <div className="space-y-4">
-                {recentQuizzes.map((quiz) => (
-                  <RecentQuizCard key={quiz.id} quiz={quiz} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <GraduationCap className="mx-auto h-10 w-10 text-muted-foreground/50" />
-                <h3 className="mt-2 font-medium">No quizzes yet</h3>
-                <p className="text-sm text-muted-foreground mt-1">Test your knowledge by taking a quiz.</p>
-                <Button asChild className="mt-4">
-                  <Link href="/dashboard/quizzes/create">Create Quiz</Link>
+              <div className="text-center py-8">
+                <BookOpen className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                <h3 className="font-medium mb-2">Ready to start learning?</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Explore our courses and begin your journey
+                </p>
+                <Button asChild>
+                  <Link href="/dashboard/courses">Browse Courses</Link>
                 </Button>
               </div>
             )}
@@ -295,159 +300,60 @@ const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewT
         </Card>
       </div>
 
-      {/* Recent Quiz Attempts */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Recent Quiz Attempts</CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard/quizzes">
-                View All
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
+      {/* BOTTOM: AI Recommendations - Central Focus */}
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-primary" />
+            AI-Powered Recommendations
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Personalized suggestions based on your learning patterns
+          </p>
         </CardHeader>
         <CardContent>
-          {recentAttempts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {recentAttempts.map((attempt) => (
-                <Card key={attempt.id} className="overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium truncate">{attempt.userQuiz?.title || "Quiz"}</h3>
-                      <div
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          (attempt.score || 0) >= 70
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
-                        }`}
-                      >
-                        {attempt.score || 0}%
-                      </div>
-                    </div>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Clock className="mr-1 h-3 w-3" />
-                      <span>{new Date(attempt.createdAt).toLocaleDateString()}</span>
-                      <div className="ml-auto flex items-center">
-                        <CheckCircle2 className="mr-1 h-3 w-3" />
-                        <span>{attempt.score || 0}% accuracy</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-6">
-              <Award className="mx-auto h-10 w-10 text-muted-foreground/50" />
-              <h3 className="mt-2 font-medium">No quiz attempts yet</h3>
-              <p className="text-sm text-muted-foreground mt-1">Take a quiz to see your results here.</p>
-              <Button asChild className="mt-4">
-                <Link href="/dashboard/quizzes">Browse Quizzes</Link>
-              </Button>
-            </div>
-          )}
+          <RecommendationsWidget />
         </CardContent>
       </Card>
 
-      {/* Learning Insights */}
-      {insights && insights.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5" />
-              Learning Insights
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {insights.slice(0, 3).map((insight, index) => (
-                <div
-                  key={insight.id}
-                  className={`p-3 border rounded-lg ${
-                    insight.priority === 'high' ? 'border-red-200 bg-red-50' :
-                    insight.priority === 'medium' ? 'border-yellow-200 bg-yellow-50' :
-                    'border-green-200 bg-green-50'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <Lightbulb className={`h-4 w-4 mt-0.5 ${
-                      insight.priority === 'high' ? 'text-red-600' :
-                      insight.priority === 'medium' ? 'text-yellow-600' :
-                      'text-green-600'
-                    }`} />
-                    <div className="flex-1">
-                      <h4 className="font-medium text-sm">{insight.title}</h4>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {insight.description}
-                      </p>
-                    </div>
+      {/* Additional insights - Collapsed/Progressive disclosure */}
+      <details className="group">
+        <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground flex items-center gap-2">
+          <Lightbulb className="h-4 w-4" />
+          Show detailed insights
+          <ArrowRight className="h-3 w-3 transition-transform group-open:rotate-90" />
+        </summary>
+        <div className="mt-4 space-y-4">
+          {/* Learning Insights */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Learning Insights</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <span className="font-medium">Completion Rate</span>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Personalized Suggestions */}
-      {suggestions && suggestions.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Star className="h-5 w-5" />
-              Recommended Next Steps
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {suggestions.slice(0, 4).map((suggestion, index) => (
-                <div
-                  key={suggestion.id}
-                  className="p-4 border rounded-lg hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <Badge variant={
-                      suggestion.priority === 'high' ? 'destructive' :
-                      suggestion.priority === 'medium' ? 'default' : 'secondary'
-                    }>
-                      {suggestion.priority}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 opacity-50 cursor-not-allowed"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <h4 className="font-medium text-sm mb-1">{suggestion.title}</h4>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    {suggestion.description}
+                  <p className="text-sm text-muted-foreground">
+                    You've completed {userData.courseProgress?.filter(c => c.isCompleted)?.length || 0} of {userData.courses?.length || 0} courses
                   </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      {suggestion.estimatedTime} min
-                    </span>
-                    <Button asChild size="sm">
-                      <Link href={
-                        suggestion.resourceType === 'course'
-                          ? `/dashboard/course/${suggestion.resourceId}`
-                          : `/dashboard/quiz/${suggestion.resourceId}`
-                      }>
-                        {suggestion.type === 'course' ? 'Resume' :
-                         suggestion.type === 'quiz' ? 'Take Quiz' : 'Start'}
-                        <ArrowRight className="h-3 w-3 ml-1" />
-                      </Link>
-                    </Button>
-                  </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium">Quiz Performance</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Average score of {Math.round(userStats.averageScore || 0)}% across {userData.quizAttempts?.length || 0} attempts
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </details>
     </div>
   )
 })

@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 import { CourseCard } from "./CourseCard"
 import { useCoursesWithProgress } from "@/hooks/use-course-progress"
 import ResumeCourseCard from "@/components/dashboard/ResumeCourseCard"
+import { getImageWithFallback } from '@/utils/image-utils'
 // import { CategoryTagCloud } from "./CategoryTagCloud" // REMOVED: Now used in sidebar
 import type { CategoryId } from "@/config/categories"
 
@@ -417,7 +418,7 @@ export default function CoursesClient({
               totalChapters={course.totalChapters}
               lastAccessedAt={course.lastAccessedAt || new Date().toISOString()}
               timeSpent={course.timeSpent}
-              courseImage={course.image}
+              courseImage={getImageWithFallback(course.image)}
             />
           ))}
         </div>
@@ -446,7 +447,7 @@ export default function CoursesClient({
                   viewCount={course.viewCount || 0}
                   category={course.category?.name || "General"}
                   duration={`${course.estimatedHours || 4} hours`}
-                  image={course.image || undefined}
+                  image={getImageWithFallback(course.image)}
                   difficulty={course.difficulty as "Beginner" | "Intermediate" | "Advanced"}
                   price={undefined}
                   originalPrice={undefined}

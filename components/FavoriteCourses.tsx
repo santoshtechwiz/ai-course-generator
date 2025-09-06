@@ -7,6 +7,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Favorite } from "@/app/types/types"
+import { getImageWithFallback } from '@/utils/image-utils'
 
 interface FavoriteCoursesProps {
   favorites: Favorite[]
@@ -51,7 +52,7 @@ export default function FavoriteCourses({ favorites }: FavoriteCoursesProps) {
                 <div className="flex items-center space-x-4 rounded-lg border p-4 transition-colors hover:bg-muted">
                   <div className="relative h-16 w-16 overflow-hidden rounded-md">
                     <Image
-                      src={course.image || "/placeholder.svg"}
+                      src={getImageWithFallback(course.image)}
                       alt={course.title}
                       fill
                       className="object-cover transition-transform group-hover:scale-105"

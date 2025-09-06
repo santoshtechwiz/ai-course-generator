@@ -78,6 +78,7 @@ model User {
   recommendations     Recommendation[]
   learningEvents      LearningEvent[]
   chapterProgresses   ChapterProgress[]
+  chatMessages        ChatMessage[]
 
   @@index([email])
   @@index([userType])
@@ -818,3 +819,38 @@ model UserReferralUse {
   @@index([status])
   @@index([createdAt])
 }
+
+/* ========== AI SERVICES ========== */
+
+model Embedding {
+  id        String   @id @default(cuid())
+  content   String
+  embeddingJson Json   // Store as JSON string (backup, debugging, or portability)
+  embedding  Json?
+  type      String
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type])
+  @@index([createdAt])
+  @@index([embedding], type: Gin) // optional: vector index for fast search
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  sessionId String   @default("default")
+  role      String   // 'user', 'assistant', 'system'
+  content   String
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  count     Int        @default(5)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sessionId])
+  @@index([createdAt])
+  }
+
+

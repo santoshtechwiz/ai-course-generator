@@ -23,3 +23,9 @@ export * from './course.service';
 export * from './video.service';
 export * from './user.service';
 export * from './course-quiz.service';
+
+/**
+ * AI Services exports
+ */
+export { ChatService } from "./chat/ChatService"
+export { RecommendationsService } from "./recommendations/RecommendationsService"

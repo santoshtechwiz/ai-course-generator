@@ -9,6 +9,7 @@ import Image from "next/image"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { Course } from "@/app/types/types"
 import { Skeleton } from "@/components/ui/skeleton"
+import { getImageWithFallback } from '@/utils/image-utils'
 
 interface MyCoursesProps {
   courses: Course[]
@@ -47,7 +48,7 @@ export function MyCourses({ courses }: MyCoursesProps) {
                         <div className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 transition-colors hover:bg-muted">
                           <div className="relative h-12 w-12 sm:h-16 sm:w-16 flex-shrink-0 overflow-hidden rounded-md">
                             <Image
-                              src={course.image || "/placeholder.svg"}
+                              src={getImageWithFallback(course.image)}
                               alt={course.title}
                               fill
                               className="object-cover transition-transform group-hover:scale-105"

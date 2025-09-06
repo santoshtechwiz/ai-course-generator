@@ -33,6 +33,7 @@ import { useRouter } from "next/navigation"
 import type { DashboardUser, Course } from "@/app/types/types"
 import { cn } from "@/lib/utils"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { getImageWithFallback } from '@/utils/image-utils'
 
 interface CoursesTabProps {
   userData: DashboardUser
@@ -291,12 +292,9 @@ interface CourseCardProps {
 function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
   // Calculate course statistics with fallback values
   const chapterCount = course.courseUnits?.reduce((total, unit) => total + (unit.chapters?.length || 0), 0) || 0;
-  const quizCount = course.courseUnits?.reduce((total, unit) => 
-    total + (unit.chapters?.reduce((chapterTotal, chapter) => chapterTotal + (chapter.questions?.length || 0), 0) || 0), 0) || 0;
   
-  // Calculate total duration from chapters if available
-  const totalDuration = course.courseUnits?.reduce((total, unit) => 
-    total + (unit.chapters?.reduce((chapterTotal, chapter) => chapterTotal + (typeof chapter.duration === 'number' ? chapter.duration : 0), 0) || 0), 0) || course.estimatedHours;
+  // Calculate total duration from estimated hours
+  const totalDuration = course.estimatedHours;
   
   // Format creation date
   const createdDate = course.createdAt ? new Date(course.createdAt).toLocaleDateString('en-US', { 
@@ -329,13 +327,11 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
         <div className="relative aspect-[16/9] overflow-hidden rounded-t-xl">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
           <Image
-            src={course.image || "/course.png"}
+            src={getImageWithFallback(course.image)}
             alt={course.title}
             fill
-            className={cn(
-              "object-cover transition-all duration-700 will-change-transform",
-              "group-hover:scale-110 group-hover:brightness-105 group-hover:saturate-110"
-            )} />
+            className="object-cover"
+          />
 
           {/* Enhanced Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -452,7 +448,7 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
             </div>
           )}
 
-          {/* Enhanced Course Stats Grid - 2x3 Layout */}
+          {/* Enhanced Course Stats Grid - 2x2 Layout */}
           <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border/50">
             {/* Chapters */}
             <motion.div 
@@ -468,20 +464,6 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
               </div>
             </motion.div>
 
-            {/* Quizzes */}
-            <motion.div 
-              whileHover={{ y: -2 }}
-              className="group/stat flex items-center gap-3 text-sm"
-            >
-              <div className="p-2.5 rounded-xl bg-accent/50 shadow-sm ring-1 ring-border/5 group-hover/stat:ring-primary/20 group-hover/stat:bg-accent transition-all duration-300">
-                <CheckCircle className="h-4 w-4 text-primary/80" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground font-medium">Quizzes</span>
-                <span className="font-semibold text-foreground">{quizCount || 'N/A'}</span>
-              </div>
-            </motion.div>
-
             {/* Duration */}
             <motion.div 
               whileHover={{ y: -2 }}
@@ -492,7 +474,7 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
               </div>
               <div className="flex flex-col">
                 <span className="text-xs text-muted-foreground font-medium">Duration</span>
-                <span className="font-semibold text-foreground">{totalDuration ? `${totalDuration}h` : (course.estimatedHours ? `${course.estimatedHours}h` : 'N/A')}</span>
+                <span className="font-semibold text-foreground">{totalDuration ? `${totalDuration}h` : 'N/A'}</span>
               </div>
             </motion.div>
 
@@ -521,20 +503,6 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
               <div className="flex flex-col">
                 <span className="text-xs text-muted-foreground font-medium">Rating</span>
                 <span className="font-semibold text-foreground">{course.rating ? `${course.rating}/5` : '4.8/5'}</span>
-              </div>
-            </motion.div>
-
-            {/* Views */}
-            <motion.div 
-              whileHover={{ y: -2 }}
-              className="group/stat flex items-center gap-3 text-sm"
-            >
-              <div className="p-2.5 rounded-xl bg-accent/50 shadow-sm ring-1 ring-border/5 group-hover/stat:ring-primary/20 group-hover/stat:bg-accent transition-all duration-300">
-                <Play className="h-4 w-4 text-primary/80" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground font-medium">Views</span>
-                <span className="font-semibold text-foreground">{course.viewCount ? `${course.viewCount.toLocaleString()}` : 'N/A'}</span>
               </div>
             </motion.div>
           </div>

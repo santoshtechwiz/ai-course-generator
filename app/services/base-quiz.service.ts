@@ -100,7 +100,7 @@ export abstract class BaseQuizService {
       throw new Error("Unauthorized");
     }
     
-    return this.quizRepository.delete(quiz.id);
+    return this.quizRepository.deleteQuiz(quiz.id);
   }
   /**
    * Format questions based on quiz type (implemented by child classes)

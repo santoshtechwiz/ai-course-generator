@@ -243,17 +243,22 @@ export const CourseCard = React.memo(
 
     // Memoized random selections for consistent rendering
     const { selectedImage, gradientBg } = useMemo(() => {
-      // Choose generic SVG based on category
-      const normalizedCategory = (typeof category === 'string' ? category : '')?.toLowerCase().replace(/\s+/g, '-')
-      const categoryImage = COURSE_IMAGES[normalizedCategory as keyof typeof COURSE_IMAGES] || COURSE_IMAGES.default
+      // Use the actual image if provided and valid, otherwise fall back to category-based image
+      let imageToUse = image
+      
+      // If no image provided or it's the fallback SVG, use category-based image
+      if (!imageToUse || imageToUse === '/not.svg') {
+        const normalizedCategory = (typeof category === 'string' ? category : '')?.toLowerCase().replace(/\s+/g, '-')
+        imageToUse = COURSE_IMAGES[normalizedCategory as keyof typeof COURSE_IMAGES] || COURSE_IMAGES.default
+      }
 
       const gradientIndex =
         Math.abs(slug?.split("")?.reduce((a, b) => a + b.charCodeAt(0), 0) || 0) % GRADIENT_BACKGROUNDS.length
       return {
-        selectedImage: categoryImage,
+        selectedImage: imageToUse,
         gradientBg: GRADIENT_BACKGROUNDS[gradientIndex],
       }
-    }, [category, slug])
+    }, [category, slug, image])
 
     const handleCardClick = useCallback((e: React.MouseEvent) => {
       e.preventDefault()

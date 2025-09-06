@@ -68,7 +68,7 @@ export class CodeQuizService extends BaseQuizService {
     }));
   }
 
-  /**
+  /**LP
    * Get a code quiz by its slug
    */
   async getCodeQuizBySlug(slug: string, userId: string) {
@@ -94,6 +94,6 @@ export class CodeQuizService extends BaseQuizService {
     if (!quiz || quiz.userId !== userId) {
       throw new Error("Unauthorized or quiz not found");
     }
-    return this.quizRepository.delete(quiz.id);
+    return this.quizRepository.deleteQuiz(quiz.id);
   }
 }

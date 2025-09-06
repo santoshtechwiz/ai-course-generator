@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { useChat } from "ai/react"
+import { useChat } from "@ai-sdk/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -112,6 +112,11 @@ export default function Chatbot({ userId }: ChatbotProps) {
   const [remainingQuestions, setRemainingQuestions] = useState(5)
   const [lastQuestionTime, setLastQuestionTime] = useState(Date.now())
   const [showTooltip, setShowTooltip] = useState(false)
+
+  // Don't render chat if user is not authenticated
+  if (!userId) {
+    return null
+  }
 
   const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
     api: "/api/chat",

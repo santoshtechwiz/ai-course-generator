@@ -289,6 +289,11 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     refetch()
   }, [refetch])
 
+  const handleQuizDeleted = useCallback(() => {
+    // Refetch the data to update the list after deletion
+    refetch()
+  }, [refetch])
+
   const handleViewModeChange = useCallback((mode: "grid" | "list") => {
     if (mode) setViewMode(mode)
   }, [])
@@ -469,6 +474,9 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
                   quizCounts={quizCounts}
                   viewMode={viewMode}
                   onViewModeChange={handleViewModeChange}
+                  currentUserId={userId}
+                  showActions={true}
+                  onQuizDeleted={handleQuizDeleted}
                 />
                 <div ref={ref} className="h-20 flex items-center justify-center">
                   {isFetchingNextPage && (

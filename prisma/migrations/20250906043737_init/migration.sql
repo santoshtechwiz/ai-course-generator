@@ -610,7 +610,8 @@ CREATE TABLE "UserReferralUse" (
 CREATE TABLE "Embedding" (
     "id" TEXT NOT NULL,
     "content" TEXT NOT NULL,
-    "embedding" TEXT NOT NULL,
+    "embeddingJson" JSONB NOT NULL,
+    "embedding" JSONB,
     "type" TEXT NOT NULL,
     "metadata" JSONB NOT NULL DEFAULT '{}',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -628,6 +629,7 @@ CREATE TABLE "ChatMessage" (
     "content" TEXT NOT NULL,
     "metadata" JSONB NOT NULL DEFAULT '{}',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "count" INTEGER NOT NULL DEFAULT 5,
 
     CONSTRAINT "ChatMessage_pkey" PRIMARY KEY ("id")
 );
@@ -1126,6 +1128,9 @@ CREATE INDEX "Embedding_type_idx" ON "Embedding"("type");
 
 -- CreateIndex
 CREATE INDEX "Embedding_createdAt_idx" ON "Embedding"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "Embedding_embedding_idx" ON "Embedding" USING GIN ("embedding");
 
 -- CreateIndex
 CREATE INDEX "ChatMessage_userId_sessionId_idx" ON "ChatMessage"("userId", "sessionId");
