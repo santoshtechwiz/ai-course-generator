@@ -27,5 +27,3 @@ export * from './course-quiz.service';
 /**
  * AI Services exports
  */
-export { ChatService } from "./chat/ChatService"
-export { RecommendationsService } from "./recommendations/RecommendationsService"
