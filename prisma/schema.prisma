@@ -4,10 +4,12 @@ generator client {
 
 datasource db {
   provider          = "postgresql"
-  url               = env("DATABASE_URL_LOCAL")
+  url               = env("DATABASE_URL_PROD")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL_LOCAL")
 }
-
+generator seed {
+  provider = "ts-node" // or "node" if using plain JS
+}
 enum GeneratedBy {
   USER
   AI
