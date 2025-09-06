@@ -18,7 +18,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "ts-node prisma/seed-new.ts",
+    "prisma:seed": "ts-node prisma/seed-new.ts",
     "server": "node server",
     "postinstall": "prisma generate",
     "dev:migrate": "npx prisma migrate dev",
@@ -206,7 +206,6 @@
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "1.0.7",
     "ts-retry-promise": "^0.8.1",
-    "typescript": "5.9.2",
     "vaul": "1.1.2",
     "vitest": "3.1.4",
     "xstate": "5.20.0",
@@ -258,7 +257,8 @@
     "recoil": "^0.7.7",
     "tailwindcss": "3.4.1",
     "ts-jest": "^29.1.1",
-    "ts-node": "10.9.2"
+    "ts-node": "10.9.2",
+    "typescript": "5.9.2"
   },
   "overrides": {
     "prettier": "3.5.3"
