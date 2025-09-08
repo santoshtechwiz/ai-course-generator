@@ -252,8 +252,5 @@
     "ts-node": "10.9.2",
     "typescript": "5.9.2",
     "vitest": "3.1.4"
-  },
-  "overrides": {
-    "prettier": "3.5.3"
   }
 }
