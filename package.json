@@ -28,8 +28,8 @@
     "prod:build": "npm run prod:migrate && npm run build",
     "knip": "knip",
     "prod": "set NODE_ENV=production && npm run prod:migrate && npm run build && npm run start",
-    "db:seed": "npx tsx prisma/seed-new.ts",
-   },
+    "db:seed": "npx tsx prisma/seed-new.ts"
+  },
   "dependencies": {
     "@ai-sdk/google": "^1.1.14",
     "@ai-sdk/openai": "^1.1.13",
