@@ -2,8 +2,8 @@ import type { Config } from "jest";
 
 const config: Config = {
   displayName: "Integration Tests",
-  testEnvironment: "node",
-  testMatch: ["**/__tests__/integration/**/*.test.ts"],
+  testEnvironment: "jsdom",
+  testMatch: ["**/__tests__/integration/**/*.test.ts", "**/__tests__/integration/**/*.test.tsx"],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.node.ts"],
   transform: {
     "^.+\\.(t|j)sx?$": "@swc/jest",

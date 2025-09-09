@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { getCourseData } from "@/app/actions/getCourseData"
 import { notFound } from "next/navigation"
 import type { FullCourseType } from "@/app/types/types"
-import EnhancedCourseLayout from "./components/EnhancedCourseLayout"
+import CourseLayout from "./components/CourseLayout"
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
 
 type CoursePageParams = {
@@ -82,7 +82,7 @@ export default async function Page({ params }: CoursePageParams) {
 
     return (
       <div className="min-h-screen">
-        <EnhancedCourseLayout course={course as FullCourseType} />
+        <CourseLayout course={course as FullCourseType} />
       </div>
     )
   } catch (error) {

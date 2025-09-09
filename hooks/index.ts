@@ -21,6 +21,7 @@ export {
 
 // Quiz-specific hooks
 export { useQuizAttempts } from "./useQuizAttempts"
+export { useDeleteQuiz } from "./use-delete-quiz"
 
 // ============================================================================
 // TOAST UTILITIES

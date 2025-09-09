@@ -103,6 +103,21 @@ export default function PlanAwareButton({
     subscription?.tokensUsed,
   )
 
+  // Debug logging in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('PlanAwareButton Credit Info:', {
+      userCredits: user?.credits,
+      userCreditsUsed: user?.creditsUsed,
+      subscriptionCredits: subscription?.credits,
+      subscriptionTokensUsed: subscription?.tokensUsed,
+      calculatedRemainingCredits: creditInfo.remainingCredits,
+      hasCredits: creditInfo.hasCredits,
+      hasCreditsPassedProp: hasCredits,
+      creditsRequired,
+      effectiveHasCredits: hasCredits !== undefined ? hasCredits : creditInfo.hasEnoughCredits(creditsRequired)
+    })
+  }
+
   // Use provided hasCredits or calculate automatically based on credits required
   const effectiveHasCredits = hasCredits !== undefined ? hasCredits : creditInfo.hasEnoughCredits(creditsRequired)
 

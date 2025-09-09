@@ -24,6 +24,10 @@ import {
   CheckCircle,
   Calendar,
   Flame,
+  StickyNote,
+  Edit3,
+  Trash2,
+  Plus,
 } from "lucide-react"
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
@@ -36,6 +40,11 @@ import CertificateGenerator from "./CertificateGenerator"
 import { PDFDownloadLink } from "@react-pdf/renderer"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/modules/auth"
+import { NoteModal } from "./modals/NoteModal"
+import { useNotes } from "@/hooks/use-notes"
+import { useBookmarks } from "@/hooks/use-bookmarks"
+import type { Bookmark } from "@prisma/client"
 
 export interface AccessLevels {
   isSubscribed: boolean
@@ -60,6 +69,7 @@ export default function CourseDetailsTabs({
   const [activeTab, setActiveTab] = useState("summary")
 
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
+  const { user } = useAuth()
 
   // Memoized selectors to prevent unnecessary re-renders
   const selectBookmarks = useMemo(
@@ -82,18 +92,35 @@ export default function CourseDetailsTabs({
   const selectCourseProgress = useMemo(
     () =>
       createSelector(
-        [(state: RootState) => state.course.courseProgress, () => course.id],
+        [(state: RootState) => state.course.userProgress, () => course.id, () => user?.id || 'guest'],
         (
-          courseProgressMap: Record<string | number, CourseProgress>,
+          userProgressMap: Record<string, Record<string | number, CourseProgress>>,
           courseId: string | number,
+          userId: string,
         ): CourseProgress | undefined => {
-          return courseProgressMap[courseId]
+          return userProgressMap[userId]?.[courseId]
         },
       ),
-    [course.id],
+    [course.id, user?.id],
   )
 
   const courseProgress = useAppSelector(selectCourseProgress)
+
+  // Notes and bookmarks hooks
+  const { 
+    notes, 
+    deleteNote 
+  } = useNotes({ 
+    courseId: course.id, 
+    chapterId: currentChapter?.id 
+  })
+
+  const { 
+    bookmarks: courseBookmarks, 
+  } = useBookmarks({ 
+    courseId: course.id, 
+    chapterId: currentChapter?.id 
+  })
 
   // Enhanced course statistics calculation
   const courseStats = useMemo(() => {
@@ -429,7 +456,7 @@ export default function CourseDetailsTabs({
     <div className="h-full w-full flex flex-col">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full flex flex-col">
         {/* Enhanced tab navigation with better styling */}
-        <TabsList className="grid w-full grid-cols-4 h-auto bg-gradient-to-r from-muted/20 via-muted/30 to-muted/20 rounded-none border-b border-border/30 p-3 gap-3">
+        <TabsList className="grid w-full grid-cols-5 h-auto bg-gradient-to-r from-muted/20 via-muted/30 to-muted/20 rounded-none border-b border-border/30 p-3 gap-3">
           <TabsTrigger
             value="summary"
             className="flex items-center gap-3 text-sm font-medium h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group"
@@ -443,6 +470,13 @@ export default function CourseDetailsTabs({
           >
             <MessageSquare className="h-5 w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
             <span className="hidden sm:inline font-semibold">Quiz</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="notes"
+            className="flex items-center gap-3 text-sm font-medium h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group"
+          >
+            <StickyNote className="h-5 w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
+            <span className="hidden sm:inline font-semibold">Notes</span>
           </TabsTrigger>
           <TabsTrigger
             value="progress"
@@ -652,7 +686,7 @@ export default function CourseDetailsTabs({
               <CardDescription className="text-sm">
                 {bookmarks.length > 0
                   ? `${bookmarks.length} bookmark${bookmarks.length !== 1 ? "s" : ""} saved for this video`
-                  : "Save important moments while watching to review them later"}
+                  : "Press 'B' while watching to bookmark important moments"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 px-4 pb-4">
@@ -732,6 +766,144 @@ export default function CourseDetailsTabs({
                   <h3 className="text-xl font-semibold mb-3">Sign in to save bookmarks</h3>
                   <p className="text-muted-foreground mb-6 text-base leading-relaxed">
                     Create an account to bookmark important video moments and track your progress
+                  </p>
+                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" size="lg">
+                    Sign In
+                  </Button>
+                </motion.div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="notes" className="flex-1 overflow-auto w-full p-0">
+          <Card className="border border-border/40 shadow-sm bg-background">
+            <CardHeader className="pb-3 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <StickyNote className="h-6 w-6 text-primary" />
+                    Course Notes
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    {notes.length > 0
+                      ? `${notes.length} note${notes.length !== 1 ? "s" : ""} saved for this course`
+                      : "Keep track of important insights and key learnings"}
+                  </CardDescription>
+                </div>
+                {accessLevels?.isAuthenticated && (
+                  <NoteModal 
+                    courseId={course.id} 
+                    chapterId={currentChapter?.id}
+                    trigger={
+                      <Button size="sm" className="bg-primary hover:bg-primary/90">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Note
+                      </Button>
+                    }
+                  />
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4 px-4 pb-4">
+              {accessLevels?.isAuthenticated && notes.length > 0 ? (
+                <div className="space-y-4">
+                  {notes.map((note: Bookmark & {
+                    course?: { id: number; title: string; slug: string } | null;
+                    chapter?: { id: number; title: string } | null;
+                  }, index: number) => (
+                    <motion.div
+                      key={note.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="group p-6 bg-card border border-border/40 rounded-xl hover:shadow-lg transition-all duration-300 hover:border-primary/30"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                              <StickyNote className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Clock className="h-4 w-4" />
+                                <span>{new Date(note.createdAt).toLocaleDateString()}</span>
+                                {note.chapter && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="truncate">{note.chapter.title}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="bg-muted/20 rounded-lg p-4 border border-border/20">
+                            <p className="text-foreground whitespace-pre-wrap text-sm leading-relaxed">
+                              {note.note}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <NoteModal 
+                            courseId={course.id} 
+                            chapterId={currentChapter?.id}
+                            existingNote={note}
+                            trigger={
+                              <Button variant="ghost" size="sm">
+                                <Edit3 className="h-4 w-4" />
+                              </Button>
+                            }
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteNote(note.id.toString())}
+                            className="hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : accessLevels?.isAuthenticated ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-16"
+                >
+                  <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <StickyNote className="h-12 w-12 text-primary/50" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">No notes yet</h3>
+                  <p className="text-muted-foreground mb-6 max-w-sm mx-auto text-base leading-relaxed">
+                    Start taking notes to capture important insights and key learnings from this course
+                  </p>
+                  <NoteModal 
+                    courseId={course.id} 
+                    chapterId={currentChapter?.id}
+                    trigger={
+                      <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" size="lg">
+                        <StickyNote className="h-5 w-5 mr-2" />
+                        Create Your First Note
+                      </Button>
+                    }
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-16"
+                >
+                  <div className="w-24 h-24 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Lock className="h-12 w-12 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">Sign in to take notes</h3>
+                  <p className="text-muted-foreground mb-6 text-base leading-relaxed">
+                    Create an account to save notes and track your learning progress
                   </p>
                   <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" size="lg">
                     Sign In

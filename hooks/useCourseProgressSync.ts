@@ -5,11 +5,13 @@ import {
   markChapterCompleted,
   selectCourseProgressById,
 } from "@/store/slices/courseProgress-slice"
+import { useProgressEvents } from "@/utils/progress-events"
 
 // Utility to fetch course progress from API and sync to Redux
 export function useCourseProgressSync(courseId: string | number) {
   const dispatch = useAppDispatch()
   const courseProgress = useAppSelector((state) => selectCourseProgressById(state, courseId))
+  const { dispatchCourseProgressUpdated, dispatchChapterCompleted } = useProgressEvents()
 
   // Fetch progress from API on mount
   useEffect(() => {
@@ -39,7 +41,29 @@ export function useCourseProgressSync(courseId: string | number) {
                   userId: progress.userId || '',
                 })
               )
+
+              // Dispatch chapter completed event
+              if (progress.userId) {
+                dispatchChapterCompleted(
+                  progress.userId,
+                  String(chapterId),
+                  String(courseId),
+                  0 // timeSpent - not available from API
+                )
+              }
             })
+          }
+
+          // Dispatch course progress updated event
+          if (progress.userId) {
+            dispatchCourseProgressUpdated(
+              progress.userId,
+              String(courseId),
+              progress.progress || 0,
+              progress.completedChapters || [],
+              progress.currentChapterId ? Number(progress.currentChapterId) : undefined,
+              0 // timeSpent - not available from API
+            )
           }
         }
       } catch (err) {
@@ -50,8 +74,8 @@ export function useCourseProgressSync(courseId: string | number) {
   }, [courseId, dispatch])
 
   // NOTE: We intentionally do NOT auto-save here when Redux state changes.
-  // The `useVideoProgressTracker` hook is responsible for throttled API saves
-  // and will write progress to `/api/progress` (to avoid duplicate requests).
+  // Progress updates are handled by the queue-based useProgressTracker hook
+  // which writes progress to `/api/progress` (to avoid duplicate requests).
 
   // Return current progress for convenience
   return courseProgress

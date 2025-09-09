@@ -14,9 +14,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
-import { useAuth, useSubscription } from "@/modules/auth"
+import { useAuth } from "@/modules/auth"
 import { useAppDispatch, useAppSelector } from "@/store"
-import { forceSyncSubscription, selectTokenUsage } from "@/store/slices/subscription-slice"
+import { fetchSubscription, selectTokenUsage, selectSubscriptionData } from "@/store/slices/subscription-slice"
 import { progressApi } from "@/components/loaders/progress-api"
 import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
 import CourseNotificationsMenu from "@/components/Navbar/CourseNotificationsMenu"
@@ -29,9 +29,11 @@ import { UserAvatar } from "./UserAvatar"
 export function MainNavbar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, isAuthenticated } = useAuth()
-  const subscription = useSubscription()
+  const { user, isAuthenticated, refreshUserData } = useAuth()
   const dispatch = useAppDispatch()
+  
+  // Use Redux selectors directly for more reliable data
+  const subscriptionData = useAppSelector(selectSubscriptionData)
   const tokenUsage = useAppSelector(selectTokenUsage)
   const syncedOnceRef = useRef(false)
 
@@ -41,18 +43,24 @@ export function MainNavbar() {
     const run = async () => {
       try {
         if (!progressApi?.isStarted?.()) progressApi?.start?.()
-        await dispatch(forceSyncSubscription()).unwrap()
+        // Force refresh to get latest data from database
+        await dispatch(fetchSubscription({ forceRefresh: true })).unwrap()
+        
+        // Also refresh user data to ensure credits are up to date
+        if (isAuthenticated && refreshUserData) {
+          await refreshUserData()
+        }
       } finally {
         progressApi?.done?.()
       }
     }
     run()
-  }, [dispatch])
+  }, [dispatch, isAuthenticated, refreshUserData])
 
-  const subscriptionData = subscription?.subscription
-  const totalTokens = subscriptionData?.credits || 0
-  const tokenUsageValue = tokenUsage?.tokensUsed || 0
-  const subscriptionPlan = subscriptionData?.plan || "FREE"
+  // Get token data directly from Redux store - prioritize subscription data over user session
+  const totalTokens = subscriptionData?.credits || user?.credits || 0
+  const tokensUsed = subscriptionData?.tokensUsed || user?.creditsUsed || 0
+  const subscriptionPlan = subscriptionData?.subscriptionPlan || "FREE"
 
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -65,9 +73,29 @@ export function MainNavbar() {
   }, [])
 
   const availableCredits = useMemo(() => {
-    const credits = totalTokens ?? user?.credits ?? 0
-    return Math.max(0, credits - tokenUsageValue)
-  }, [totalTokens, user?.credits, tokenUsageValue])
+    const credits = totalTokens
+    const used = tokensUsed
+    const available = Math.max(0, credits - used)
+    
+    // Debug logging in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Credits calculation MainNavbar:', {
+        totalTokens,
+        userCredits: user?.credits,
+        userCreditsUsed: user?.creditsUsed,
+        subscriptionCredits: subscriptionData?.credits,
+        subscriptionTokensUsed: subscriptionData?.tokensUsed,
+        credits,
+        tokensUsed: used,
+        availableCredits: available,
+        subscriptionData,
+        tokenUsage,
+        subscriptionPlan
+      })
+    }
+    
+    return available
+  }, [totalTokens, tokensUsed, user?.credits, user?.creditsUsed, subscriptionData, tokenUsage, subscriptionPlan])
 
   const userInitials = useMemo(() => {
     const name = user?.name || ""

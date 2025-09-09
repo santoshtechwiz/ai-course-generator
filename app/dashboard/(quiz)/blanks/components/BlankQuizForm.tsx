@@ -97,8 +97,8 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
 
   const { mutateAsync: createBlankQuizMutation } = useMutation({
     mutationFn: async (data: BlankQuizFormData) => {
-      const response = await api.post("/quizzes", { ...data, type: "blanks" })
-      return response.data
+      const response = await api.post("/api/quizzes/blanks/create", data)
+      return response // api.post already returns the parsed JSON
     },
     onError: (error: any) => {
       console.error("Error creating blanks quiz:", error)
@@ -503,7 +503,6 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                 isLoggedIn={isLoggedIn}
                 isEnabled={!isDisabled}
                 isLoading={isLoading}
-                hasCredits={credits > 0}
                 loadingLabel="Generating Quiz..."
                 className="w-full h-12 lg:h-14 text-base lg:text-lg font-medium transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 customStates={{

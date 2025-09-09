@@ -3,6 +3,7 @@
 import CodeQuizForm from "./components/CodeQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
 import { useQuizPlan } from "../../../../hooks/useQuizPlan"
+import { UnifiedLoader } from "@/components/loaders"
 
 const CodePage = () => {
   // Use our standardized hook for all quiz pages
@@ -17,10 +18,12 @@ const CodePage = () => {
       isLoggedIn={quizPlan.isLoggedIn}
     >
       {quizPlan.isLoading ? (
-        <div className="flex flex-col items-center justify-center py-12">
-          <GlobalLoader />
-          <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
-        </div>
+        <UnifiedLoader
+          state="loading"
+          variant="spinner"
+          message="Loading quiz configuration..."
+          size="md"
+        />
       ) : (
         <CodeQuizForm 
           credits={quizPlan.credits} 

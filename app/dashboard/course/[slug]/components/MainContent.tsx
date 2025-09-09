@@ -50,9 +50,12 @@ import { fetchPersonalizedRecommendations } from "@/app/services/recommendations
 import { useVideoState } from "./video/hooks/useVideoState"
 import { migratedStorage } from "@/lib/storage"
 import VideoGenerationSection from "./VideoGenerationSection"
-import { useVideoProgressTracker } from "@/hooks/useVideoProgressTracker"
 import MobilePlaylistCount from "@/components/course/MobilePlaylistCount"
-import useProgressTracker from "@/hooks/use-progress-tracker"
+import { markChapterAsCompleted } from "@/store/slices/course-slice"
+import { setVideoProgress } from "@/store/slices/courseProgress-slice"
+import { progressQueue } from "@/lib/queues/ProgressQueue"
+import { useProgressEvents } from '@/utils/progress-events';
+import { syncEventsWithServer } from '@/store/slices/progress-events-slice';
 
 // Import components
 import CertificateModal from "./CertificateModal"
@@ -184,12 +187,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const [quizSuggestions, setQuizSuggestions] = useState<QuizSuggestion[]>([])
   const [videoDurations, setVideoDurations] = useState<Record<string, number>>({})
   const [playerRef, setPlayerRef] = useState<React.RefObject<any> | null>(null)
+  const [currentVideoProgress, setCurrentVideoProgress] = useState<number>(0)
 
   const isOwner = user?.id === course.userId
 
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
-  const legacyCourseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
   const courseProgress = useCourseProgressSync(course.id)
   
   // Get video state store
@@ -217,13 +220,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     }
   }, [currentVideoId, getVideoBookmarks])
 
-  // Completed chapters tracking
+  // Completed chapters tracking - get from Redux state directly
+  const reduxProgress = useAppSelector((state) => selectCourseProgressById(state, course.id))
   const completedChapters = useMemo(() => {
+    // First check Redux state for immediate updates
+    if (reduxProgress?.videoProgress?.completedChapters) {
+      return reduxProgress.videoProgress.completedChapters.map(String)
+    }
+    
+    // Fallback to sync hook data
     if (courseProgress?.videoProgress?.completedChapters) {
       return courseProgress.videoProgress.completedChapters.map(String)
     }
-    return (legacyCourseProgress?.completedChapters || []).map(String)
-  }, [courseProgress, legacyCourseProgress])
+    
+    // No legacy fallback needed
+    return []
+  }, [reduxProgress, courseProgress])
 
   // Initialize mounted state and preferences
   useEffect(() => {
@@ -345,27 +357,142 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     dispatch2({ type: 'SET_CERTIFICATE_VISIBLE', payload: true })
   }, [])
 
+  // Progress tracking with new event system
+  const { dispatchVideoWatched, dispatchChapterCompleted } = useProgressEvents();
+
   // Navigation handlers
+  // Advance to next video (chapters are only marked complete when video ends)
   const handleNextVideo = useCallback(() => {
     if (!hasNextVideo || !nextVideoEntry) {
       if (isLastVideo) {
+        console.log('Last video reached. Showing certificate.')
         handleCertificateClick()
+      } else {
+        console.log('No next video available.')
       }
       return
     }
 
     const nextVid = nextVideoEntry.videoId
-    if (!nextVid) return
+    if (!nextVid) {
+      console.error('Next video entry has no videoId')
+      return
+    }
 
+    console.log(`Advancing to next video: ${nextVid} for chapter ${nextVideoEntry.chapter?.id}`)
+    
+    // Mark current chapter as completed when manually advancing to next video
+    if (currentChapter && user?.id) {
+      const currentChapterId = Number(currentChapter.id);
+      const courseId = Number(course.id);
+      const isAlreadyCompleted = completedChapters.includes(String(currentChapter.id));
+      
+      if (!isAlreadyCompleted) {
+        console.log(`Marking current chapter ${currentChapterId} as completed before advancing`);
+        
+        // Update Redux state
+        dispatch(markChapterAsCompleted({ courseId, chapterId: currentChapterId }));
+        
+        // Mark as completed in ChapterProgress table
+        const updateCurrentChapterProgress = async () => {
+          try {
+            const response = await fetch('/api/progress/chapter', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: user.id,
+                courseId: courseId,
+                chapterId: currentChapterId,
+                progress: 100,
+                timeSpent: Math.round(currentVideoProgress * (videoDurations[currentVideoId || ''] || 0)),
+                completed: true,
+                lastWatchedAt: new Date().toISOString()
+              }),
+            });
+            
+            if (response.ok) {
+              console.log(`ChapterProgress updated for current chapter ${currentChapterId}`);
+            } else {
+              console.error('Failed to update current ChapterProgress:', await response.text());
+            }
+          } catch (error) {
+            console.error('Error updating current ChapterProgress:', error);
+          }
+        };
+        
+        updateCurrentChapterProgress();
+        
+        // Dispatch chapter completed event
+        dispatchChapterCompleted(
+          user.id,
+          String(currentChapterId),
+          String(courseId),
+          Math.round(currentVideoProgress * (videoDurations[currentVideoId || ''] || 0))
+        );
+      }
+    }
+    
     dispatch(setCurrentVideoApi(nextVid))
+    
     try {
       videoStateStore.getState().setCurrentVideo(nextVid, course.id)
+      
+      // Track transition to next video in event system
+      if (user?.id && nextVideoEntry.chapter?.id) {
+        console.log(`Recording video start event for chapter ${nextVideoEntry.chapter.id}`)
+        
+        // Mark video as started in progress events system
+        dispatchVideoWatched(
+          user.id,
+          String(nextVideoEntry.chapter.id),
+          course.id.toString(),
+          0, // initial progress
+          0, // initial played seconds
+          0  // duration will be updated when metadata loads
+        )
+        
+        // Force immediate sync with server
+        setTimeout(() => {
+          console.log(`Syncing video start event for chapter ${nextVideoEntry.chapter.id}`)
+          dispatch(syncEventsWithServer()).catch((error) => {
+            console.error('Failed to sync video start event:', error);
+          });
+        }, 200)
+        
+        // Track if this chapter was already completed
+        if (completedChapters.includes(String(nextVideoEntry.chapter.id))) {
+          console.log(`Chapter ${nextVideoEntry.chapter.id} was already completed. Re-watching.`)
+        }
+      } else {
+        console.warn('User ID or chapter ID not available. Cannot record video start event.')
+      }
     } catch (e) {
       console.error("Failed to set current video:", e)
     }
 
     dispatch2({ type: 'SET_VIDEO_LOADING', payload: true })
-  }, [hasNextVideo, nextVideoEntry, isLastVideo, handleCertificateClick, dispatch, videoStateStore, course.id])
+  }, [
+    hasNextVideo,
+    nextVideoEntry,
+    isLastVideo,
+    handleCertificateClick,
+    dispatch,
+    videoStateStore,
+    course.id,
+    user?.id,
+    dispatchVideoWatched,
+    dispatch,
+    syncEventsWithServer,
+    currentChapter,
+    completedChapters,
+    currentVideoProgress,
+    videoDurations,
+    currentVideoId,
+    dispatchChapterCompleted,
+    markChapterAsCompleted
+  ])
 
   // Chapter selection handler with improved error handling
   const handleChapterSelect = useCallback(
@@ -408,6 +535,67 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         dispatch(setCurrentVideoApi(videoId))
         videoStateStore.getState().setCurrentVideo(videoId, course.id)
 
+        // Always track chapter selection event regardless of completion status
+        if (user?.id) {
+          console.log(`Video selected: ${videoId} for chapter ${safeChapter.id}`)
+          
+          // Mark video as started in progress events system
+          // We track all video views, even for completed chapters
+          dispatchVideoWatched(
+            user.id,
+            safeChapter.id.toString(),
+            course.id.toString(),
+            0, // initial progress
+            0, // initial played seconds
+            0  // duration will be updated when metadata loads
+          )
+          
+          // Force immediate sync with server
+          setTimeout(() => {
+            console.log(`Syncing video selection event for chapter ${safeChapter.id}`)
+            dispatch(syncEventsWithServer()).catch((error) => {
+              console.error('Failed to sync video selection event:', error);
+            });
+          }, 200)
+          
+          // Create/update ChapterProgress entry for video start
+          const updateChapterProgressStart = async () => {
+            try {
+              const response = await fetch('/api/progress/chapter', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  userId: user.id,
+                  courseId: Number(course.id),
+                  chapterId: Number(safeChapter.id),
+                  progress: 0,
+                  timeSpent: 0,
+                  completed: false,
+                  lastWatchedAt: new Date().toISOString()
+                }),
+              });
+              
+              if (response.ok) {
+                console.log(`ChapterProgress started for chapter ${safeChapter.id}`);
+              } else {
+                console.error('Failed to start ChapterProgress:', await response.text());
+              }
+            } catch (error) {
+              console.error('Error starting ChapterProgress:', error);
+            }
+          };
+          
+          updateChapterProgressStart();
+          
+          // Log completion status for debugging
+          const isAlreadyCompleted = completedChapters.includes(String(safeChapter.id))
+          if (isAlreadyCompleted) {
+            console.log(`Chapter ${safeChapter.id} was already completed. Re-watching.`)
+          }
+        }
+
         dispatch2({ type: 'SET_MOBILE_PLAYLIST_OPEN', payload: false })
         dispatch2({ type: 'SET_VIDEO_LOADING', payload: true })
       } catch (error) {
@@ -419,7 +607,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         })
       }
     },
-    [dispatch, course.id, videoStateStore, toast, userSubscription]
+    [dispatch, course.id, videoStateStore, toast, userSubscription, user?.id, completedChapters, dispatchVideoWatched, syncEventsWithServer]
   )
 
   // Video event handlers
@@ -430,8 +618,23 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         [currentVideoId || ""]: metadata.duration
       }))
       dispatch2({ type: 'SET_VIDEO_LOADING', payload: false })
+      
+      // Record video load event to ensure we track that the video was accessed
+      if (user?.id && currentChapter?.id && currentVideoId) {
+        console.log(`Video loaded: ${currentVideoId} with duration ${metadata.duration}s for chapter ${currentChapter.id}`)
+        
+        // Update the initial video watched event with actual duration
+        dispatchVideoWatched(
+          user.id,
+          currentChapter.id.toString(),
+          course.id.toString(),
+          0, // Still at 0% progress
+          0, // 0 seconds played
+          metadata.duration
+        )
+      }
     },
-    [currentVideoId]
+    [currentVideoId, user?.id, currentChapter?.id, course.id, dispatchVideoWatched]
   )
 
   const handlePlayerReady = useCallback((player: React.RefObject<any>) => {
@@ -490,61 +693,186 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     })
   }, [course.id, toast, state.autoplayMode])
 
-  // Progress tracking with new queue system
-  const { updateProgress } = useProgressTracker({
-    userId: user?.id || '',
-    courseId: course.id,
-    chapterId: currentChapter?.id || 0,
-    onError: (error: Error) => {
-      console.error('Video progress tracking error:', error)
-      toast({
-        title: "Progress Save Failed",
-        description: "Your video progress couldn't be saved. We'll retry automatically.",
-        variant: "destructive",
-      })
-    },
-  })
+  // (moved) progress tracking hook is now declared earlier
 
-  // Legacy progress tracking for backward compatibility
-  const {
-    handleVideoProgress: trackedHandleVideoProgress,
-    handleVideoEnd: trackedHandleVideoEnd,
-  } = useVideoProgressTracker({
-    courseId: course.id,
-    chapterId: currentChapter?.id ?? null,
-    videoId: currentVideoId ?? null,
-    isLastVideo,
-    onCompletion: () => {
-      if (currentChapter) handleChapterComplete(String(currentChapter.id))
-    },
-  })
-
+  // Progress tracking using new event system
   const handleVideoProgress = useCallback((progressState: { played: number, playedSeconds: number }) => {
-    // Use new queue-based progress tracking
-    updateProgress(progressState.played * 100, 'video', {
-      videoId: currentVideoId,
-      playedSeconds: progressState.playedSeconds,
-      timestamp: Date.now()
-    })
+    // Update local state for current video progress
+    setCurrentVideoProgress(progressState.played)
 
-    // TODO: Remove legacy tracker after confirming new system works
-    // trackedHandleVideoProgress(progressState)
-  }, [updateProgress, currentVideoId])
+    // Only send meaningful progress updates (skip very early progress)
+    if (progressState.played > 0.05) { // Skip first 5% to reduce noise
+      if (user?.id && currentChapter?.id && currentVideoId) {
+        console.log(`Video progress: ${progressState.played * 100}% for chapter ${currentChapter.id}`)
+        dispatchVideoWatched(
+          user.id,
+          currentChapter.id.toString(),
+          course.id.toString(),
+          progressState.played * 100,
+          progressState.playedSeconds,
+          videoDurations[currentVideoId] || 0
+        )
+        
+        // Sync progress periodically (every 25% completion or major milestones)
+        const progressPercent = Math.floor(progressState.played * 100)
+        if (progressPercent % 25 === 0 && progressPercent > 0) {
+          setTimeout(() => {
+            console.log(`Syncing progress at ${progressPercent}% for chapter ${currentChapter.id}`)
+            dispatch(syncEventsWithServer()).catch((error) => {
+              console.error('Failed to sync progress events:', error);
+            });
+          }, 100)
+          
+          // Also update ChapterProgress table at milestones
+          const updateChapterProgressMilestone = async () => {
+            try {
+              const response = await fetch('/api/progress/chapter', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  userId: user.id,
+                  courseId: Number(course.id),
+                  chapterId: Number(currentChapter.id),
+                  progress: progressPercent,
+                  timeSpent: Math.round(progressState.playedSeconds),
+                  completed: false,
+                  lastWatchedAt: new Date().toISOString()
+                }),
+              });
+              
+              if (response.ok) {
+                console.log(`ChapterProgress updated to ${progressPercent}% for chapter ${currentChapter.id}`);
+              }
+            } catch (error) {
+              console.error('Error updating ChapterProgress milestone:', error);
+            }
+          };
+          
+          updateChapterProgressMilestone();
+        }
+      }
+    }
+  }, [dispatchVideoWatched, user?.id, currentChapter?.id, course.id, currentVideoId, videoDurations, setCurrentVideoProgress, dispatch, syncEventsWithServer])
 
   const handleVideoEnded = useCallback(() => {
-    // Use new queue-based progress tracking for completion
-    updateProgress(100, 'video', {
-      videoId: currentVideoId,
-      completed: true,
-      timestamp: Date.now()
-    })
+    console.log(`Video ended handler called - currentChapter: ${currentChapter?.id}, isCompleted: ${completedChapters.includes(String(currentChapter?.id))}`)
+    
+    // Immediately update Redux state for UI responsiveness
+    if (currentChapter) {
+      const chapterId = Number(currentChapter.id);
+      const courseId = Number(course.id);
+      const isAlreadyCompleted = completedChapters.includes(String(currentChapter.id));
+      
+      if (!isAlreadyCompleted) {
+        // Mark as completed in Redux state (local UI update)
+        console.log(`Marking chapter ${chapterId} as completed for course ${courseId}`);
+        dispatch(markChapterAsCompleted({ courseId, chapterId }));
+      } else {
+        console.log(`Chapter ${chapterId} was already completed. Updating progress only.`);
+      }
+      
+      // Update video progress in Redux state
+      dispatch(setVideoProgress({
+        courseId: String(courseId),
+        chapterId: chapterId,
+        progress: 100,
+        playedSeconds: Math.round(currentVideoProgress * (videoDurations[currentVideoId || ''] || 0)),
+        completed: true,
+        userId: user?.id || ''
+      }));
+      
+      // Send completion to new event system
+      if (user?.id) {
+        console.log(`Chapter ${chapterId} completed for course ${courseId} - Recording in learning events`);
+        
+        // Always dispatch chapter completed event to ensure it's recorded
+        dispatchChapterCompleted(
+          user.id,
+          String(chapterId),
+          String(courseId),
+          Math.round(currentVideoProgress * (videoDurations[currentVideoId || ''] || 0))
+        );
+        
+        // Create/update ChapterProgress entry in database
+        const updateChapterProgress = async () => {
+          try {
+            const response = await fetch('/api/progress/chapter', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: user.id,
+                courseId: courseId,
+                chapterId: chapterId,
+                progress: 100,
+                timeSpent: Math.round(currentVideoProgress * (videoDurations[currentVideoId || ''] || 0)),
+                completed: true,
+                lastWatchedAt: new Date().toISOString()
+              }),
+            });
+            
+            if (response.ok) {
+              console.log(`ChapterProgress updated for chapter ${chapterId}`);
+            } else {
+              console.error('Failed to update ChapterProgress:', await response.text());
+            }
+          } catch (error) {
+            console.error('Error updating ChapterProgress:', error);
+          }
+        };
+        
+        updateChapterProgress();
+        
+        // Force immediate sync with server to ensure events are recorded
+        setTimeout(() => {
+          console.log('Syncing chapter completion events with server');
+          dispatch(syncEventsWithServer()).catch((error) => {
+            console.error('Failed to sync events with server:', error);
+          });
+        }, 100); // Reduced delay for faster sync
+        
+        // Handle autoplay if enabled
+        if (state.autoplayMode && hasNextVideo && nextVideoEntry) {
+          console.log(`Autoplay enabled. Advancing to next video in 1 second`);
+          setTimeout(() => {
+            handleNextVideo();
+          }, 1000); // Small delay before advancing
+        } else if (!state.autoplayMode) {
+          console.log('Autoplay disabled. Not advancing to next video automatically.');
+        } else if (!hasNextVideo) {
+          console.log('No next video available. Reached end of playlist.');
+        }
+      } else {
+        console.warn('User ID not available. Cannot record learning event for chapter completion.');
+      }
+    }
 
-    // TODO: Remove legacy tracker after confirming new system works
-    // trackedHandleVideoEnd()
+    // Show certificate if last video
     if (isLastVideo) {
       handleCertificateClick()
     }
-  }, [updateProgress, currentVideoId, isLastVideo, handleCertificateClick])
+  }, [
+    currentChapter,
+    completedChapters,
+    dispatch,
+    course.id,
+    currentVideoProgress,
+    videoDurations,
+    currentVideoId,
+    dispatchChapterCompleted,
+    isLastVideo,
+    handleCertificateClick,
+    user?.id,
+    state.autoplayMode,
+    hasNextVideo,
+    nextVideoEntry,
+    handleNextVideo,
+    dispatch,
+    syncEventsWithServer
+  ])
 
   // Initialize video selection
   useEffect(() => {
@@ -573,6 +901,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       videoStateStore.getState().setCurrentVideo(targetVideo.videoId, course.id)
     }
   }, [course.id, initialChapterId, videoPlaylist, dispatch, videoStateStore, currentVideoId, courseProgress])
+
+  // Reset current video progress when video changes
+  useEffect(() => {
+    setCurrentVideoProgress(0)
+  }, [currentVideoId])
 
   // Header scroll effect
   useEffect(() => {
@@ -617,61 +950,60 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     isFree: currentChapter.isFree
   } : null
 
-  // Auth prompt UI
-  if (state.showAuthPrompt) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md"
-        >
-          <Card className="border shadow-lg">
-            <CardContent className="p-8 text-center space-y-6">
-              <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                <Lock className="h-8 w-8 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold mb-2">Unlock This Lesson</h3>
-                <p className="text-muted-foreground text-sm">
-                  Subscribe to access all course content and premium features.
-                </p>
-              </div>
-              <div className="space-y-3">
-                <Button 
-                  onClick={() => (window.location.href = "/dashboard/subscription")} 
-                  className="w-full" 
-                  size="lg"
-                >
-                  <Zap className="h-4 w-4 mr-2" />
-                  Subscribe Now
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => (window.location.href = "/api/auth/signin")} 
-                  className="w-full"
-                >
-                  <UserIcon className="h-4 w-4 mr-2" />
-                  Sign In
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  onClick={() => dispatch2({ type: 'SET_AUTH_PROMPT', payload: false })} 
-                  className="w-full"
-                >
-                  Back to Course
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-    )
-  }
+  // Instead of early return, render auth prompt overlay to preserve hook order stability
+  const authPromptOverlay = state.showAuthPrompt ? (
+    <div className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-background/95 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md"
+      >
+        <Card className="border shadow-lg">
+          <CardContent className="p-8 text-center space-y-6">
+            <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+              <Lock className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2">Unlock This Lesson</h3>
+              <p className="text-muted-foreground text-sm">
+                Subscribe to access all course content and premium features.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <Button 
+                onClick={() => (window.location.href = "/dashboard/subscription")} 
+                className="w-full" 
+                size="lg"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Subscribe Now
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => (window.location.href = "/api/auth/signin")} 
+                className="w-full"
+              >
+                <UserIcon className="h-4 w-4 mr-2" />
+                Sign In
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={() => dispatch2({ type: 'SET_AUTH_PROMPT', payload: false })} 
+                className="w-full"
+              >
+                Back to Course
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
+  ) : null
 
   // Main content
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      {authPromptOverlay}
       {/* Simplified header */}
       <motion.header
         initial={{ y: -100, opacity: 0 }}
@@ -699,30 +1031,42 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
               </div>
 
               {/* Progress indicator */}
-              <div className="hidden lg:flex items-center gap-4">
-                <div className="flex items-center gap-2 text-sm">
+              <div className="hidden lg:flex items-center gap-6">
+                <div className="flex items-center gap-2 text-sm font-medium">
                   <CheckCircle className="h-4 w-4 text-emerald-500" />
-                  <span className="font-medium">
-                    {state.mounted ? `${courseStats.completedCount}/${courseStats.totalChapters}` : `0/${courseStats.totalChapters}`}
+                  <span>
+                    {state.mounted ? `${courseStats.completedCount}/${courseStats.totalChapters}` : `0/${courseStats.totalChapters}`} chapters
                   </span>
                 </div>
-                <div className="w-32">
-                  <Progress value={state.mounted ? courseStats.progressPercentage : 0} className="h-2" />
+                <div className="flex items-center gap-3">
+                  <div className="w-24">
+                    <Progress value={state.mounted ? courseStats.progressPercentage : 0} className="h-2" />
+                  </div>
+                  <Badge variant="secondary" className="font-semibold bg-primary/10 text-primary px-3 py-1">
+                    {state.mounted ? courseStats.progressPercentage : 0}%
+                  </Badge>
                 </div>
-                <Badge variant="secondary" className="font-medium">
-                  {state.mounted ? courseStats.progressPercentage : 0}%
-                </Badge>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => dispatch2({ type: 'SET_SIDEBAR_COLLAPSED', payload: !state.sidebarCollapsed })}
                 className="hidden xl:flex"
               >
-                {state.sidebarCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                {state.sidebarCollapsed ? (
+                  <>
+                    <Menu className="h-4 w-4 mr-2" />
+                    Show Sidebar
+                  </>
+                ) : (
+                  <>
+                    <X className="h-4 w-4 mr-2" />
+                    Hide Sidebar
+                  </>
+                )}
               </Button>
               <ActionButtons
                 slug={course.slug}
@@ -734,11 +1078,17 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           </div>
 
           {/* Mobile progress */}
-          <div className="lg:hidden mt-4 flex items-center gap-4">
-            <Progress value={state.mounted ? courseStats.progressPercentage : 0} className="flex-1 h-2" />
-            <Badge variant="secondary" className="font-medium">
-              {state.mounted ? courseStats.progressPercentage : 0}%
-            </Badge>
+          <div className="lg:hidden mt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <CheckCircle className="h-4 w-4 text-emerald-500" />
+                <span>{state.mounted ? courseStats.completedCount : 0} of {courseStats.totalChapters} chapters</span>
+              </div>
+              <Badge variant="secondary" className="font-medium bg-primary/10 text-primary">
+                {state.mounted ? courseStats.progressPercentage : 0}% Complete
+              </Badge>
+            </div>
+            <Progress value={state.mounted ? courseStats.progressPercentage : 0} className="h-2" />
           </div>
         </div>
       </motion.header>
@@ -806,11 +1156,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           <div className={cn(
             "transition-all duration-300",
             state.sidebarCollapsed || state.isTheaterMode
-              ? "flex flex-col"
-              : "grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6"
+              ? "flex flex-col max-w-5xl mx-auto"
+              : "grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-8"
           )}>
             {/* Video and content area */}
-            <div className="space-y-6">
+            <div className="space-y-6 min-w-0">
               {/* Video player section */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -836,8 +1186,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   </Card>
                 ) : (
                   <Card className={cn(
-                    "overflow-hidden",
-                    state.isTheaterMode && "bg-transparent border-0"
+                    "overflow-hidden shadow-lg",
+                    state.isTheaterMode && "bg-transparent border-0 shadow-none"
                   )}>
                     <div className={cn(
                       "bg-black relative transition-all duration-300",
@@ -925,11 +1275,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className="hidden xl:block space-y-4"
+                  className="hidden xl:block space-y-4 min-w-0 max-w-md"
                 >
                   {/* Sidebar header */}
                   <Card>
-                    <CardHeader className="pb-3">
+                    <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg flex items-center gap-2">
                           <BookOpen className="h-5 w-5 text-primary" />
@@ -944,16 +1294,32 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <CheckCircle className="h-4 w-4 text-emerald-500" />
-                        <span>{courseStats.completedCount} of {courseStats.totalChapters} completed</span>
+                      
+                      {/* Progress Stats */}
+                      <div className="mt-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <CheckCircle className="h-4 w-4 text-emerald-500" />
+                            <span>{courseStats.completedCount} of {courseStats.totalChapters} chapters</span>
+                          </div>
+                          <Badge variant="secondary" className="bg-primary/10 text-primary font-semibold">
+                            {courseStats.progressPercentage}% Complete
+                          </Badge>
+                        </div>
+                        <Progress value={courseStats.progressPercentage} className="h-2" />
+                        
+                        {/* Additional stats */}
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{courseStats.totalChapters - courseStats.completedCount} remaining</span>
+                          <span>{courseStats.completedCount > 0 ? 'Keep going!' : 'Get started!'}</span>
+                        </div>
                       </div>
                     </CardHeader>
                   </Card>
 
                   {/* Playlist */}
-                  <Card>
-                    <CardContent className="p-4">
+                  <Card className="flex-1">
+                    <CardContent className="p-0">
                       {sidebarCourse.chapters.length === 0 ? (
                         <div className="p-6 text-center">
                           <BookOpen className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />

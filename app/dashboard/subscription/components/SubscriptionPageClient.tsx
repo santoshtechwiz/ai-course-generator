@@ -12,7 +12,6 @@ import { forceSyncSubscription, selectIsSubscriptionLoading } from "@/store/slic
 import { progressApi } from "@/components/loaders/progress-api"
 import { migratedStorage } from "@/lib/storage"
 
-
 import { LoginModal } from "@/app/auth/signin/components/LoginModal"
 
 import { CancellationDialog } from "./cancellation-dialog"
@@ -82,6 +81,23 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   const isSubscribed = subscription?.isSubscribed || false
   const isCancelled = subscription?.cancelAtPeriodEnd || false
   const subscriptionPlan = subscription?.plan || 'FREE'
+  
+  // Check if subscription is expired
+  const isExpired = subscription?.status === 'EXPIRED' || 
+    (subscription?.expirationDate && new Date(subscription.expirationDate) < new Date())
+  
+  // Check if user had a paid plan before
+  const hadPaidPlan = subscription?.subscriptionPlan && 
+    subscription.subscriptionPlan !== 'FREE' && 
+    (isExpired || isCancelled)
+
+  // Scroll to plans section for resubscription
+  const handleResubscribe = useCallback(() => {
+    const plansSection = document.getElementById('subscription-plans')
+    if (plansSection) {
+      plansSection.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [])
 
   // Extract referral code from URL parameters
   useEffect(() => {
@@ -237,13 +253,15 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         )}
 
   <Suspense fallback={<div className="text-sm text-muted-foreground">Loading subscription plans...</div>}>
-          <PricingPage
-            userId={userId}
-            isProd={isProd}
-            onUnauthenticatedSubscribe={handleUnauthenticatedSubscribe}
-            onManageSubscription={handleManageSubscription}
-            isMobile={isMobile}
-          />
+          <div id="subscription-plans">
+            <PricingPage
+              userId={userId}
+              isProd={isProd}
+              onUnauthenticatedSubscribe={handleUnauthenticatedSubscribe}
+              onManageSubscription={handleManageSubscription}
+              isMobile={isMobile}
+            />
+          </div>
         </Suspense>
 
         <div className="max-w-md mx-auto">

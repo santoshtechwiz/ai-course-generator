@@ -15,7 +15,10 @@ import { AlertCircle, CheckCircle, BookOpen, Lightbulb, XCircle, Award, BarChart
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { storageManager } from "@/utils/storage-manager"
-import useProgressTracker from "@/hooks/use-progress-tracker"
+import { useProgressEvents } from "@/utils/progress-events"
+import { selectQuizProgressFromEvents, selectCurrentQuizAnswers } from "@/store/slices/progress-events-slice"
+import { useAppSelector } from "@/store/hooks"
+import { QuizProgress } from "@/utils/storage-manager"
 
 import type { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
 import type { AccessLevels } from "./CourseDetailsTabs"
@@ -121,20 +124,13 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
   const effectiveChapterId = chapterId || chapter?.id?.toString()
   const canFetchQuestions = hasQuizAccess
 
-  // Initialize progress tracker
-  const { updateProgress } = useProgressTracker({
-    userId: session?.user?.id || '',
-    courseId: course?.id || 0,
-    chapterId: parseInt(effectiveChapterId || '0'),
-    onError: (error) => {
-      console.error('Quiz progress tracking error:', error)
-      toast({
-        title: "Progress Save Failed",
-        description: "Your quiz progress couldn't be saved. We'll retry automatically.",
-        variant: "destructive",
-      })
-    },
-  })
+  // Use event-driven progress system
+  const { dispatchQuizStarted, dispatchQuestionAnswered, dispatchQuizCompleted } = useProgressEvents()
+  const userId = session?.user?.id || ''
+
+  // Get quiz progress from event log
+  const quizProgress = useAppSelector((state) => selectQuizProgressFromEvents(state))
+  const currentAnswers = useAppSelector((state) => selectCurrentQuizAnswers(state, effectiveChapterId || ''))
 
   const initialQuizState: QuizState = {
     answers: {},
@@ -168,7 +164,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
   useEffect(() => {
     if (effectiveChapterId && course?.id) {
       try {
-        const progress = storageManager.getQuizProgress(course.id, effectiveChapterId)
+        const progress = storageManager.getQuizProgress(String(course.id), effectiveChapterId)
         if (progress) {
           dispatch({ type: "LOAD_PROGRESS", progress: {
             answers: progress.answers,
@@ -187,7 +183,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
       if (!effectiveChapterId || !course?.id) return
       try {
         const progress: QuizProgress = {
-          courseId: course.id,
+          courseId: String(course.id),
           chapterId: effectiveChapterId,
           currentQuestionIndex: data.currentQuestionIndex || quizState.currentQuestionIndex,
           answers: { ...quizState.quizProgress.answers, ...data.answers },
@@ -264,12 +260,40 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
     dispatch({ type: "START_QUIZ" })
     saveProgress({ started: true, startedAt: new Date().toISOString() })
     refetch()
-  }, [saveProgress, refetch])
+
+    // Dispatch quiz started event
+    if (userId && effectiveChapterId && course?.id) {
+      dispatchQuizStarted(
+        userId,
+        effectiveChapterId,
+        'mcq', // Default quiz type
+        course.slug || '',
+        effectiveQuestions.length
+      )
+    }
+  }, [saveProgress, refetch, dispatchQuizStarted, userId, effectiveChapterId, course?.id, course?.slug, effectiveQuestions.length])
 
   const handleAnswer = (value: string) => {
     if (!currentQuestion) return
     dispatch({ type: "SET_ANSWER", questionId: String(currentQuestion.id), answer: value })
     saveProgress({ answers: { ...quizState.answers, [String(currentQuestion.id)]: value } })
+
+    // Dispatch question answered event
+    if (userId && effectiveChapterId && currentQuestion) {
+      const correctAnswer = currentQuestion.answer?.trim() || ''
+      const isCorrect = value.trim().toLowerCase() === correctAnswer.toLowerCase()
+      
+      dispatchQuestionAnswered(
+        userId,
+        String(currentQuestion.id),
+        effectiveChapterId,
+        quizState.currentQuestionIndex,
+        undefined, // selectedOptionId
+        value,
+        isCorrect,
+        0 // timeSpent - could be enhanced later
+      )
+    }
   }
 
   const handleNextQuestion = () => {
@@ -301,15 +325,34 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
 
       // Update progress with the new queue system
       const accuracy = (newScore / effectiveQuestions.length) * 100
-      updateProgress(newScore, 'quiz', {
-        quizId: chapter?.courseQuizzes?.[0]?.id || 0,
-        courseQuizId: chapter?.courseQuizzes?.[0]?.id || 0,
+      dispatchQuizCompleted(userId, {
+        quizId: chapter?.id || 0,
+        courseQuizId: chapter?.id || 0,
         score: newScore,
         accuracy,
         timeSpent: 0, // You might want to track actual time spent
         completed: true,
         passed: newScore >= Math.ceil(effectiveQuestions.length * 0.7) // 70% passing score
       })
+
+      // Dispatch quiz completed event
+      if (userId && effectiveChapterId) {
+        const answers = Object.values(quizState.answers).map((answer: any) => ({
+          questionId: String(answer.questionId || ''),
+          isCorrect: answer.isCorrect || false,
+          timeSpent: answer.timeSpent || 0
+        }))
+
+        dispatchQuizCompleted(
+          userId,
+          effectiveChapterId,
+          newScore,
+          effectiveQuestions.length,
+          (newScore / effectiveQuestions.length) * 100,
+          0, // totalTimeSpent - could be enhanced later
+          answers
+        )
+      }
 
       toast({
         title: "Quiz Complete",

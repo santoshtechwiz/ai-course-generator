@@ -6,7 +6,7 @@ import { useAppDispatch } from "@/store"
 import { saveAnswer } from "@/store/slices/quiz/quiz-slice"
 import type { CodeQuestion } from "./types"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
+import { vscDarkPlus, vs } from "react-syntax-highlighter/dist/esm/styles/prism"
 
 import CodeQuizOptions from "./CodeQuizOptions"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
@@ -99,6 +99,7 @@ const CodeQuiz = ({
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(existingAnswer || null)
   const [copied, setCopied] = useState(false)
   const [isAnswering, setIsAnswering] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(true)
 
   const options = useMemo(() => {
     return (
@@ -156,6 +157,10 @@ const CodeQuiz = ({
       }
     }
   }, [question.codeSnippet])
+
+  const toggleDarkMode = useCallback(() => {
+    setIsDarkMode(prev => !prev)
+  }, [])
 
   const hasAnswer = !!selectedAnswer
 
@@ -277,46 +282,58 @@ const CodeQuiz = ({
                     <span className="text-sm font-bold text-muted-foreground">{language || "Code"}</span>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopyCode}
-                  className="h-9 px-4 border border-border/60 text-primary font-semibold rounded-lg shadow-sm transition-all duration-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-                  title="Copy code"
-                  aria-label="Copy code to clipboard"
-                  disabled={isSubmitting}
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-4 h-4 mr-2 animate-pulse text-green-600" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4 mr-2" />
-                      Copy
-                    </>
-                  )}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleDarkMode}
+                    className="h-9 px-4 border border-border/60 text-primary font-semibold rounded-lg shadow-sm transition-all duration-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                    title="Toggle theme"
+                    aria-label="Toggle code theme"
+                  >
+                    {isDarkMode ? "Light" : "Dark"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCopyCode}
+                    className="h-9 px-4 border border-border/60 text-primary font-semibold rounded-lg shadow-sm transition-all duration-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                    title="Copy code"
+                    aria-label="Copy code to clipboard"
+                    disabled={isSubmitting}
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-4 h-4 mr-2 animate-pulse text-green-600" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copy
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
 
               {/* Code Content */}
               <div className="relative max-h-[400px] overflow-y-auto bg-background/95">
                 <SyntaxHighlighter
                   language={syntaxLanguage}
-                  style={vscDarkPlus}
+                  style={isDarkMode ? vscDarkPlus : vs}
                   showLineNumbers
                   customStyle={{
                     margin: 0,
                     padding: "1rem",
-                    fontSize: "0.95rem",
+                    fontSize: "0.8rem",
                     lineHeight: "1.6",
                     backgroundColor: "transparent",
                     borderRadius: "0",
                   }}
                   codeTagProps={{
                     style: {
-                      fontSize: "0.95rem",
+                      fontSize: "0.8rem",
                       lineHeight: "1.6",
                       fontFamily: "'JetBrains Mono', 'Fira Code', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace",
                       whiteSpace: "pre-wrap",
@@ -326,11 +343,11 @@ const CodeQuiz = ({
                     },
                   }}
                   lineNumberStyle={{
-                    color: "hsl(var(--muted-foreground))",
+                    color: isDarkMode ? "#ccc" : "#666",
                     paddingRight: "1rem",
                     minWidth: "2.5em",
                     userSelect: "none",
-                    fontSize: "0.8rem",
+                    fontSize: "0.7rem",
                     borderRight: "1px solid hsl(var(--border))",
                     marginRight: "1rem",
                     backgroundColor: "hsl(var(--muted) / 0.3)",

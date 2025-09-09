@@ -19,7 +19,8 @@ export function CreditsDisplay({
   isPremium,
   prefersReducedMotion
 }: CreditsDisplayProps) {
-  if (availableCredits === null) {
+  // Show skeleton only when credits are null (loading), not when they're 0
+  if (availableCredits === null || availableCredits === undefined) {
     return (
       <motion.div
         className="hidden lg:flex items-center space-x-2"
@@ -35,7 +36,7 @@ export function CreditsDisplay({
     )
   }
 
-  const isLowCredits = availableCredits < 100
+  const isLowCredits = availableCredits < 5 // Lowered threshold for better UX
 
   return (
     <motion.div

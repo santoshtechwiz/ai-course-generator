@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useMemo } from "react"
+import { memo, useMemo, useState } from "react"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
 import { useInView } from "react-intersection-observer"
 import { AlertCircle, FileQuestion, Search, Plus, RefreshCw, Trophy, Grid3X3, List } from "lucide-react"
@@ -14,6 +14,8 @@ import type { QuizListItem } from "@/app/actions/getQuizes"
 import type { QuizType } from "@/app/types/quiz-types"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Card, CardContent } from "@/components/ui/card"
+import { useDeleteQuiz } from "@/hooks/use-delete-quiz"
+import { ConfirmDeleteDialog } from "@/components/common/ConfirmDeleteDialog"
 
 interface QuizListProps {
   quizzes: QuizListItem[]
@@ -36,6 +38,9 @@ interface QuizListProps {
   }
   viewMode?: "grid" | "list"
   onViewModeChange?: (mode: "grid" | "list") => void
+  currentUserId?: string
+  showActions?: boolean
+  onQuizDeleted?: () => void
 }
 
 const containerVariants = {
@@ -68,10 +73,28 @@ function QuizListComponent({
   quizCounts,
   viewMode = "grid",
   onViewModeChange,
+  currentUserId,
+  showActions = false,
+  onQuizDeleted,
 }: QuizListProps) {
   const [endMessageRef, endMessageInView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
+  })
+
+  // Delete quiz state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [quizToDelete, setQuizToDelete] = useState<{ slug: string; title: string; quizType: QuizType } | null>(null)
+
+  const deleteQuizMutation = useDeleteQuiz({
+    onSuccess: () => {
+      setDeleteDialogOpen(false)
+      setQuizToDelete(null)
+      onQuizDeleted?.()
+    },
+    onError: (error) => {
+      console.error("Failed to delete quiz:", error)
+    },
   })
 
   const getEstimatedTime = (questionCount: number): string => {
@@ -83,6 +106,23 @@ function QuizListComponent({
     () => (activeFilter === "all" ? quizzes : quizzes.filter((quiz) => quiz.quizType === activeFilter)),
     [quizzes, activeFilter],
   )
+
+  const handleDeleteQuiz = (slug: string, quizType: QuizType) => {
+    const quiz = quizzes.find(q => q.slug === slug)
+    if (quiz) {
+      setQuizToDelete({ slug, title: quiz.title, quizType })
+      setDeleteDialogOpen(true)
+    }
+  }
+
+  const confirmDelete = () => {
+    if (quizToDelete) {
+      deleteQuizMutation.mutate({
+        slug: quizToDelete.slug,
+        quizType: quizToDelete.quizType,
+      })
+    }
+  }
 
   if (isLoading) {
     return <QuizzesSkeleton />
@@ -240,6 +280,10 @@ function QuizListComponent({
                   estimatedTime={getEstimatedTime(quiz.questionCount || 0)}
                   completionRate={Math.min(Math.max(quiz.bestScore || 0, 0), 100)}
                   compact={viewMode === "list"}
+                  userId={quiz.userId}
+                  currentUserId={currentUserId}
+                  showActions={showActions}
+                  onDelete={handleDeleteQuiz}
                 />
               </motion.div>
             ))}
@@ -282,6 +326,25 @@ function QuizListComponent({
           </Card>
         </motion.div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        title="Delete Quiz"
+        description={
+          quizToDelete ? (
+            <>
+              Are you sure you want to delete <strong>{quizToDelete.title}</strong>? This action cannot be undone and will permanently remove all quiz data, questions, and user attempts.
+            </>
+          ) : (
+            "Are you sure you want to delete this quiz?"
+          )
+        }
+        confirmLabel="Delete Quiz"
+        isLoading={deleteQuizMutation.isPending}
+      />
     </div>
   )
 }
@@ -294,6 +357,8 @@ export const QuizList = memo(QuizListComponent, (prevProps, nextProps) => {
     prevProps.isFetchingNextPage === nextProps.isFetchingNextPage &&
     prevProps.hasNextPage === nextProps.hasNextPage &&
     prevProps.activeFilter === nextProps.activeFilter &&
-    prevProps.viewMode === nextProps.viewMode
+    prevProps.viewMode === nextProps.viewMode &&
+    prevProps.currentUserId === nextProps.currentUserId &&
+    prevProps.showActions === nextProps.showActions
   )
 })

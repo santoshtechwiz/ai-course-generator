@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useEffect } from "react"
 import { useSession } from "next-auth/react"
-import { useVideoProgressTracker } from "@/hooks/useVideoProgressTracker"
+import useProgressTracker from "@/hooks/use-progress-tracker"
 import { useAppSelector } from "@/store/hooks"
 import { selectCourseProgressById } from "@/store/slices/courseProgress-slice"
 import type { ProgressState } from "../types"
@@ -39,11 +39,13 @@ export function useVideoProgress({
   })
 
   // Use centralized tracker for persistence and completion handling
-  const tracker = useVideoProgressTracker({
-    courseId,
-    chapterId,
-    videoId,
-    throttleMs: Math.max(5000, saveInterval),
+  const { updateProgress } = useProgressTracker({
+    userId: session?.user?.id || '',
+    courseId: Number(courseId),
+    chapterId: Number(chapterId),
+    onError: (error) => {
+      console.error("Failed to save video progress:", error)
+    },
   })
 
   // Initialize completed chapters on mount
@@ -65,14 +67,18 @@ export function useVideoProgress({
       }
 
       try {
-        // Delegate persistence to the centralized tracker
-        tracker.handleVideoProgress({ played: data.progress / 100, playedSeconds: data.playedSeconds })
+        // Use new queue-based progress tracking
+        updateProgress(data.progress, 'video', {
+          videoId,
+          playedSeconds: data.playedSeconds,
+          timestamp: now
+        })
         lastSaveTimeRef.current = now
       } catch (error) {
-        console.error("Failed to save video progress via tracker:", error)
+        console.error("Failed to save video progress:", error)
       }
     },
-    [enabled, session?.user?.id, courseId, chapterId, videoId, saveInterval]
+    [enabled, session?.user?.id, updateProgress, videoId, saveInterval]
   )
 
   // Handle progress updates from video player
@@ -104,9 +110,14 @@ export function useVideoProgress({
       completed: true,
     }
 
-  // Use tracker to persist completion
-  tracker.handleVideoEnd()
-  }, [saveProgress])
+    // Use new queue-based progress tracking for completion
+    updateProgress(100, 'video', {
+      videoId,
+      playedSeconds: data.playedSeconds,
+      completed: true,
+      timestamp: Date.now()
+    })
+  }, [updateProgress, videoId])
 
   // Handle manual seek - save immediately
   const handleSeek = useCallback(
@@ -118,12 +129,17 @@ export function useVideoProgress({
 
       // Forward seek update to tracker as an immediate progress update
       try {
-        tracker.handleVideoProgress({ played: Math.min(1, (seconds / (data.duration || seconds)) || 0), playedSeconds: seconds })
-      } catch (err) {
-        // Fallback: nothing
+        // Use new queue-based progress tracking
+        updateProgress(data.progress, 'video', {
+          videoId,
+          playedSeconds: data.playedSeconds,
+          timestamp: Date.now()
+        })
+      } catch (error) {
+        console.error("Failed to save video progress:", error)
       }
     },
-    [saveProgress]
+    [updateProgress, videoId]
   )
 
   // Load saved progress position

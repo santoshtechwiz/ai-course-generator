@@ -28,12 +28,21 @@ import {
   ArrowRight,
   Eye,
   BarChart3,
+  MoreHorizontal,
+  Trash2,
+  Edit3,
 } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import type { QuizType } from "@/app/types/quiz-types"
 import { CircularProgress } from "@/components/ui/circular-progress"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface QuizCardProps {
   title: string
@@ -51,6 +60,10 @@ interface QuizCardProps {
   isTrending?: boolean
   isPremium?: boolean
   compact?: boolean
+  userId?: string // Quiz owner ID
+  currentUserId?: string // Current user ID
+  onDelete?: (slug: string, quizType: QuizType) => void
+  showActions?: boolean // Whether to show edit/delete actions
 }
 
 const quizTypeConfig = {
@@ -141,6 +154,10 @@ function QuizCardComponent({
   isPopular = false,
   isTrending = false,
   compact = false,
+  userId,
+  currentUserId,
+  onDelete,
+  showActions = false,
 }: QuizCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isFavorited, setIsFavorited] = useState(false)
@@ -198,6 +215,16 @@ function QuizCardComponent({
     setIsFavorited(!isFavorited)
     setHasInteracted(true)
   }, [isFavorited])
+
+  const handleDelete = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onDelete?.(slug, quizType)
+  }, [onDelete, slug, quizType])
+
+  // Check if current user is the owner
+  const isOwner = userId && currentUserId && userId === currentUserId
+  const canShowActions = showActions && isOwner
 
   return (
     <Link
@@ -291,6 +318,42 @@ function QuizCardComponent({
                 >
                   <Heart className={cn("h-4 w-4 transition-all duration-200", isFavorited && "fill-current text-red-500 scale-110")} />
                 </Button>
+
+                {canShowActions && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn(
+                          "h-9 w-9 p-0 transition-all duration-300 rounded-full",
+                          "md:opacity-60 md:hover:opacity-100 hover:bg-primary/10 hover:text-primary hover:scale-110",
+                          "opacity-0 md:opacity-60",
+                          (hasInteracted || isHovered) && "opacity-100"
+                        )}
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // TODO: Add edit functionality
+                      }}>
+                        <Edit3 className="mr-2 h-4 w-4" />
+                        Edit Quiz
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={handleDelete}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Quiz
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </div>
           </CardHeader>

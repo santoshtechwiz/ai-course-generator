@@ -1,1 +1,0 @@
-// This file is now obsolete. Please use Redux slice for all progress tracking.

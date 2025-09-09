@@ -12,19 +12,58 @@ function safeParse<T = any>(value: unknown, fallback: T): T {
   }
 }
 
+// Extract completed chapters from chapterProgress JSON field
+function extractCompletedChapters(chapterProgress: any): number[] {
+  return safeParse<any>(chapterProgress, {}).completedChapters || []
+}
+
+// Validates courseId format and security
+function validateCourseId(courseId: string) {
+  if (!courseId) {
+    return NextResponse.json({ error: "Course ID is required" }, { status: 400 })
+  }
+
+  const courseIdNum = Number(courseId);
+  if (isNaN(courseIdNum) || courseIdNum <= 0 || courseIdNum > 999999) {
+    return NextResponse.json(
+      { 
+        error: "Invalid Course ID format", 
+        details: { 
+          providedId: courseId, 
+          expectedFormat: "positive integer (1-999999)" 
+        } 
+      },
+      { status: 400 }
+    )
+  }
+
+  if (courseId.includes('..') || courseId.includes('/') || courseId.includes('\\')) {
+    return NextResponse.json(
+      { 
+        error: "Invalid Course ID format", 
+        details: { 
+          providedId: courseId, 
+          issue: "Path traversal attempt detected" 
+        } 
+      },
+      { status: 400 }
+    )
+  }
+
+  return null; // Valid
+}
+
 export async function GET(req: Request, { params }: { params: Promise<{ courseId: string }> }) {
   try {
     const session = await getAuthSession()
 
     if (!session?.user?.id) {
-      // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      return NextResponse.json({ data: [] }, { status: 200 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { courseId } = await params
-    if (!courseId) {
-      return NextResponse.json({ error: "Course ID is required" }, { status: 400 })
-    }
+    const validationError = validateCourseId(courseId)
+    if (validationError) return validationError
 
     const userId = session.user.id
 
@@ -38,16 +77,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
         },
       })
 
-      // Parse completedChapters from JSON string to array
+      // Parse chapterProgress from JSON to extract completedChapters
       if (progress) {
-        if (typeof progress.completedChapters === "string") {
-          try {
-            progress.completedChapters = JSON.parse(progress.completedChapters)
-          } catch (e) {
-            console.error(`Error parsing completedChapters: ${e}`)
-            progress.completedChapters = "[]"
-          }
-        }
+        const completedChapters = extractCompletedChapters(progress.chapterProgress)
+        // Add completedChapters as a computed field for response
+        (progress as any).completedChapters = completedChapters
         // Expose last played seconds for current chapter (synthetic field) via quizProgress JSON
         const qp = safeParse<any>(progress.quizProgress, {})
         const lastPositions = qp?.lastPositions || {}
@@ -103,9 +137,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
     }
 
     const { courseId } = await params
-    if (!courseId) {
-      return NextResponse.json({ error: "Course ID is required" }, { status: 400 })
-    }
+    const validationError = validateCourseId(courseId)
+    if (validationError) return validationError
 
     try {
       const userId = session.user.id
@@ -144,11 +177,25 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
       }
 
       // Validate progress value
-      const progress = typeof data.progress === 'number' ? 
+      const progress = typeof data.progress === 'number' ?
         Math.max(0, Math.min(100, data.progress)) : 0
 
-  // Validate playedSeconds (frontend still sends it) but we persist inside quizProgress JSON only
-  const playedSeconds = typeof data.playedSeconds === 'number' ? Math.max(0, data.playedSeconds) : 0
+      // Validate playedSeconds (frontend still sends it) but we persist inside quizProgress JSON only
+      const playedSeconds = typeof data.playedSeconds === 'number' ? Math.max(0, data.playedSeconds) : 0
+
+      // Validate completedChapters array
+      if (!Array.isArray(data.completedChapters) && data.completedChapters !== undefined) {
+        return NextResponse.json(
+          {
+            error: "Invalid completedChapters format",
+            details: {
+              provided: data.completedChapters,
+              expectedFormat: "array of numbers or undefined"
+            }
+          },
+          { status: 400 }
+        )
+      }
 
       // Get existing progress to merge completed chapters
       const existingProgress = await prisma.courseProgress.findUnique({
@@ -160,18 +207,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
         },
       })
 
-      let existingCompletedChapters: number[] = []
-      if (existingProgress && typeof existingProgress.completedChapters === "string") {
-        try {
-          existingCompletedChapters = JSON.parse(existingProgress.completedChapters)
-        } catch (error) {
-          console.error("Error parsing existing completedChapters:", error)
-        }
-      } else if (existingProgress && Array.isArray(existingProgress.completedChapters)) {
-        existingCompletedChapters = existingProgress.completedChapters
-      }
-
       // Merge and deduplicate the completed chapters
+      const existingCompletedChapters = extractCompletedChapters(existingProgress?.chapterProgress)
       const updatedCompletedChapters = [...new Set([...existingCompletedChapters, ...completedChapters])]
 
       // Prepare updated quizProgress JSON (store per-chapter last position)
@@ -183,12 +220,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
       existingQuizProgress.lastPositions = existingLastPositions
 
       // Derive new timeSpent using existing timeSpent (treat as cumulative minutes based on seconds / 60)
-      // If playedSeconds present, take the max of existing and current (approximation avoiding double count)
+      // Properly accumulate time spent instead of just taking maximum
       const existingTimeSpent = existingProgress?.timeSpent || 0
       const playedMinutes = Math.floor(playedSeconds / 60)
-      const newTimeSpent = Math.max(existingTimeSpent, playedMinutes)
 
-      // Update or create the progress record with enhanced data (using only existing columns)
+      // Only add time if this is a new session (simple heuristic to avoid double-counting)
+      const isNewSession = !existingProgress ||
+        (new Date().getTime() - existingProgress.lastAccessedAt.getTime()) > 5 * 60 * 1000; // 5 minutes
+
+      const newTimeSpent = isNewSession ?
+        existingTimeSpent + playedMinutes :
+        existingTimeSpent;
+
+      // Update or create the progress record with enhanced data (using chapterProgress JSON field)
+      const updatedChapterProgress = {
+        completedChapters: updatedCompletedChapters,
+        lastPositions: existingQuizProgress.lastPositions || {}
+      }
+
       const updatedProgress = await prisma.courseProgress.upsert({
         where: {
           unique_user_course_progress: {
@@ -198,7 +247,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
         },
         update: {
           currentChapterId: currentChapterId,
-          completedChapters: JSON.stringify(updatedCompletedChapters),
+          chapterProgress: updatedChapterProgress,
           progress: progress,
           lastAccessedAt: new Date(),
           isCompleted: data.isCompleted || false,
@@ -209,7 +258,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
           userId: userId,
           courseId: Number.parseInt(courseId),
           currentChapterId: currentChapterId,
-          completedChapters: JSON.stringify(updatedCompletedChapters),
+          chapterProgress: updatedChapterProgress,
           progress: progress,
           isCompleted: data.isCompleted || false,
           timeSpent: Math.max(0, playedMinutes),
@@ -217,16 +266,32 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
         },
       })
 
-      // Parse completedChapters from JSON string to array before sending the response
-      if (updatedProgress) {
-        if (typeof updatedProgress.completedChapters === "string") {
-          try {
-            updatedProgress.completedChapters = JSON.parse(updatedProgress.completedChapters)
-          } catch (e) {
-            console.error(`Error parsing updated completedChapters: ${e}`)
-            updatedProgress.completedChapters = JSON.stringify([])
+      console.log(`[Progress API] Updating progress for user ${userId}, course ${courseId}, chapter ${currentChapterId}, progress ${progress}%`)
+
+      // Create LearningEvent for progress update
+      await prisma.learningEvent.create({
+        data: {
+          userId: userId,
+          courseId: Number.parseInt(courseId),
+          chapterId: currentChapterId,
+          type: 'VIDEO_PROGRESS',
+          progress: progress,
+          timeSpent: newTimeSpent,
+          metadata: {
+            playedSeconds,
+            completedChapters: updatedCompletedChapters,
+            isCompleted: data.isCompleted || false
           }
         }
+      })
+
+      console.log(`[Progress API] Created LearningEvent and updated CourseProgress successfully`)
+
+      // Parse chapterProgress from JSON to extract completedChapters for response
+      if (updatedProgress) {
+        const responseCompletedChapters = extractCompletedChapters(updatedProgress.chapterProgress)
+        // Add completedChapters as a computed field for response
+        (updatedProgress as any).completedChapters = responseCompletedChapters
         // Attach synthetic playedSeconds for convenience
         const qp = safeParse<any>(updatedProgress.quizProgress, {})
         const lastPositions = qp?.lastPositions || {}

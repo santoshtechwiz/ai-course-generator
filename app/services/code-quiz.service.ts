@@ -39,9 +39,7 @@ export class CodeQuizService extends BaseQuizService {
       // Create questions in the database
       await this.questionRepository.createQuestions(quizzes, userQuiz.id, "code");
 
-      // Update topic count
-      await this.quizRepository.updateTopicCount(language);
-
+    
       // Deduct user credits
       await this.userRepository.updateUserCredits(userId, "code");
 
@@ -70,7 +68,7 @@ export class CodeQuizService extends BaseQuizService {
     }));
   }
 
-  /**
+  /**LP
    * Get a code quiz by its slug
    */
   async getCodeQuizBySlug(slug: string, userId: string) {
@@ -96,6 +94,6 @@ export class CodeQuizService extends BaseQuizService {
     if (!quiz || quiz.userId !== userId) {
       throw new Error("Unauthorized or quiz not found");
     }
-    return this.quizRepository.delete(quiz.id);
+    return this.quizRepository.deleteQuiz(quiz.id);
   }
 }

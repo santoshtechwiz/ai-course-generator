@@ -1,39 +1,25 @@
+import type { RootState } from "@/store"
+import type {
+  SubscriptionData,
+  SubscriptionStatusType,
+} from "@/app/types/subscription"
+import { logger } from "@/lib/logger"
+import { fetchWithTimeout } from "@/lib/http"
 import {
   createSlice,
   createAsyncThunk,
   createSelector,
   type PayloadAction,
 } from "@reduxjs/toolkit"
-import type { RootState } from "@/store"
-import type {
-  SubscriptionData,
-  SubscriptionState,
-  SubscriptionStatusResponse,
-  SubscriptionStatusType,
-  TokenUsage,
-} from "@/app/types/subscription"
-import { logger } from "@/lib/logger"
-import { fetchWithTimeout } from "@/lib/http"
 
 // Normalized subscription state structure
 interface NormalizedSubscriptionState {
-  // Core subscription data
   currentSubscription: SubscriptionData | null
-  
-  // Loading states
   isLoading: boolean
   isFetching: boolean
-  
-  // Error handling
   error: string | null
-  
-  // Cache management
   lastFetched: number | null
   lastRefreshed: number | null
-  
-  // Performance tracking
-  fetchCount: number
-  lastSuccessfulFetch: number | null
 }
 
 const DEFAULT_FREE_SUBSCRIPTION: SubscriptionData = {
@@ -42,8 +28,6 @@ const DEFAULT_FREE_SUBSCRIPTION: SubscriptionData = {
   isSubscribed: false,
   subscriptionPlan: "FREE",
   status: "INACTIVE",
-  cancelAtPeriodEnd: false,
-  subscriptionId: "",
 }
 
 const initialState: NormalizedSubscriptionState = {
@@ -53,8 +37,6 @@ const initialState: NormalizedSubscriptionState = {
   error: null,
   lastFetched: null,
   lastRefreshed: null,
-  fetchCount: 0,
-  lastSuccessfulFetch: null,
 }
 
 // Smart fetch interval based on subscription status
@@ -78,79 +60,53 @@ const MIN_FETCH_INTERVAL = 30000 // 30 seconds minimum
 
 export const fetchSubscription = createAsyncThunk<
   SubscriptionData,
-  { forceRefresh?: boolean; skipCache?: boolean } | void,
+  { forceRefresh?: boolean } | void,
   { state: RootState; rejectValue: string }
->("subscription/fetch", async (options = {}, { getState }) => {
-  const { lastFetched, isFetching, currentSubscription } = getState().subscription
-  const { forceRefresh = false, skipCache = false } = options || {}
-  const now = Date.now()
-
-  // Smart caching based on subscription status
-  const fetchInterval = getFetchInterval(currentSubscription)
-  const isRecent = typeof lastFetched === "number" && now - lastFetched < fetchInterval
-  const isTooFrequent = typeof lastFetched === "number" && now - lastFetched < MIN_FETCH_INTERVAL
-
-  if ((isFetching || isRecent) && !forceRefresh && !skipCache) {
-    logger.debug("Subscription fetch skipped (in-flight, recent, or cached)")
-    return currentSubscription ?? DEFAULT_FREE_SUBSCRIPTION
-  }
-
-  if (isTooFrequent && !forceRefresh) {
-    logger.debug("Subscription fetch skipped (too frequent)")
-    return currentSubscription ?? DEFAULT_FREE_SUBSCRIPTION
-  }
+>("subscription/fetch", async (options = {}, { getState, signal }) => {
+  const { forceRefresh = false } = options || {}
 
   try {
     const cacheBuster = `nocache=${Date.now()}`
     const res = await fetchWithTimeout(`/api/subscriptions/status?${cacheBuster}`, {
       headers: {
-        Accept: "application/json",
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
+        "Content-Type": "application/json",
       },
       credentials: "include",
+      signal, // Use AbortController signal to prevent memory leaks
     }, 12000)
 
     if (!res || res?.status === 401) {
-      logger.warn("User not authenticated for subscription")
       return DEFAULT_FREE_SUBSCRIPTION
     }
 
-    if (res && !res?.ok) {
-      logger.warn(`Subscription API error: ${res.status}`)
-      // Preserve existing data if API fails but user is authenticated
-      if (currentSubscription && currentSubscription.subscriptionPlan !== "FREE") {
-        return currentSubscription
-      }
-      return DEFAULT_FREE_SUBSCRIPTION
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`)
     }
 
-    const result: SubscriptionStatusResponse = await res.json()
-    
+    const data = await res.json()
+
+    // Transform the response to match our SubscriptionData interface
     const transformed: SubscriptionData = {
-      credits: Math.max(0, result.credits || 0),
-      tokensUsed: Math.max(0, result.tokensUsed || 0),
-      subscriptionPlan: result.subscriptionPlan || "FREE",
-      cancelAtPeriodEnd: Boolean(result.cancelAtPeriodEnd),
-      expirationDate: result.expirationDate,
-      status: (result.status as SubscriptionStatusType) || "INACTIVE",
-      subscriptionId: result.subscriptionId || "",
-      isSubscribed: false, // will be updated next
+      credits: Math.max(0, data.credits || 0), // Ensure non-negative
+      tokensUsed: Math.max(0, data.tokensUsed || 0), // Ensure non-negative
+      isSubscribed: Boolean(data.isSubscribed),
+      subscriptionPlan: data.subscriptionPlan || "FREE",
+      expirationDate: data.expirationDate,
+      trialEndsAt: data.trialEndsAt,
+      status: data.status || "INACTIVE",
     }
 
-    // Expiration logic
-    const isExpired = transformed.expirationDate && new Date(transformed.expirationDate) < new Date()
-    if (transformed.status === "INACTIVE" || isExpired) {
-      transformed.status = "EXPIRED"
+    // Additional validation
+    if ((transformed.tokensUsed || 0) > (transformed.credits || 0) && transformed.subscriptionPlan === "FREE") {
+      logger.warn(`Token usage (${transformed.tokensUsed || 0}) exceeds credits (${transformed.credits || 0}) for FREE plan`)
+      transformed.tokensUsed = transformed.credits || 0 // Cap usage at available credits
     }
-    transformed.isSubscribed = transformed.status === "ACTIVE"
 
     return transformed
   } catch (error) {
-    // Always return default, never throw
+    // Always return default, never throw to prevent crashes
     logger.warn("Subscription fetch failed or timed out", error)
-    return currentSubscription ?? DEFAULT_FREE_SUBSCRIPTION
+    return DEFAULT_FREE_SUBSCRIPTION
   }
 })
 
@@ -187,7 +143,7 @@ export const cancelSubscription = createAsyncThunk<
         isSubscribed: false,
       }
     }
-  const refreshed: SubscriptionStatusResponse = await statusRes!.json()
+  const refreshed: any = await statusRes!.json()
     return {
       credits: Math.max(0, refreshed.credits || 0),
       tokensUsed: Math.max(0, refreshed.tokensUsed || 0),
@@ -237,7 +193,7 @@ export const resumeSubscription = createAsyncThunk<
         isSubscribed: true,
       }
     }
-  const refreshed: SubscriptionStatusResponse = await statusRes!.json()
+  const refreshed: any = await statusRes!.json()
     return {
       credits: Math.max(0, refreshed.credits || 0),
       tokensUsed: Math.max(0, refreshed.tokensUsed || 0),
@@ -337,80 +293,26 @@ export const subscriptionSlice = createSlice({
     setSubscriptionData: (state, action: PayloadAction<SubscriptionData>) => {
       state.currentSubscription = action.payload
       state.lastFetched = Date.now()
-      state.lastRefreshed = Date.now()
-      state.error = null
-      state.isLoading = false
-      state.isFetching = false
-      state.fetchCount += 1
-      state.lastSuccessfulFetch = Date.now()
     },
     clearSubscriptionError: (state) => {
       state.error = null
     },
-    markSubscriptionStale: (state) => {
-      state.lastFetched = null
-      state.lastRefreshed = null
-    },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchSubscription.pending, (state, action) => {
-        const isBackground = (action.meta.arg as any)?.isBackground
-        // Only show loading state for non-background fetches
-        if (!isBackground) {
-          state.isLoading = true
-        }
+      .addCase(fetchSubscription.pending, (state) => {
         state.isFetching = true
         state.error = null
       })
       .addCase(fetchSubscription.fulfilled, (state, action) => {
         state.currentSubscription = action.payload
+        state.isFetching = false
         state.lastFetched = Date.now()
         state.lastRefreshed = Date.now()
-        state.isFetching = false
-        state.isLoading = false
-        state.error = null
-        state.fetchCount += 1
-        state.lastSuccessfulFetch = Date.now()
       })
       .addCase(fetchSubscription.rejected, (state, action) => {
         state.isFetching = false
-        state.isLoading = false
-        state.error = action.error.message || "Failed to fetch subscription"
-      })
-      .addCase(cancelSubscription.fulfilled, (state, action) => {
-        state.currentSubscription = action.payload
-        state.lastFetched = Date.now()
-        state.lastRefreshed = Date.now()
-        state.fetchCount += 1
-        state.lastSuccessfulFetch = Date.now()
-      })
-      .addCase(resumeSubscription.fulfilled, (state, action) => {
-        state.currentSubscription = action.payload
-        state.lastFetched = Date.now()
-        state.lastRefreshed = Date.now()
-        state.fetchCount += 1
-        state.lastSuccessfulFetch = Date.now()
-      })
-      .addCase(forceSyncSubscription.pending, (state) => {
-        state.isFetching = true
-        state.isLoading = true
-        state.error = null
-      })
-      .addCase(forceSyncSubscription.fulfilled, (state, action) => {
-        state.currentSubscription = action.payload
-        state.lastFetched = Date.now()
-        state.lastRefreshed = Date.now()
-        state.isFetching = false
-        state.isLoading = false
-        state.error = null
-        state.fetchCount += 1
-        state.lastSuccessfulFetch = Date.now()
-      })
-      .addCase(forceSyncSubscription.rejected, (state, action) => {
-        state.isFetching = false
-        state.isLoading = false
-        state.error = action.payload || "Force sync failed"
+        state.error = action.payload || "Failed to fetch subscription"
       })
   },
 })
@@ -419,7 +321,6 @@ export const {
   resetSubscriptionState,
   setSubscriptionData,
   clearSubscriptionError,
-  markSubscriptionStale,
 } = subscriptionSlice.actions
 
 // Selectors with memoization
@@ -446,15 +347,11 @@ export const selectSubscriptionLastFetched = (state: RootState) =>
 export const selectSubscriptionLastRefreshed = (state: RootState) =>
   state.subscription.lastRefreshed
 
-// Core business logic selectors
 export const selectHasActiveSubscription = createSelector(
   [selectSubscriptionData],
   (data): boolean => {
     if (!data) return false
-    return data.isSubscribed && 
-           data.status === "ACTIVE" && 
-           !data.cancelAtPeriodEnd &&
-           (!data.expirationDate || new Date(data.expirationDate) > new Date())
+    return data.isSubscribed && data.status === "ACTIVE"
   }
 )
 
@@ -462,15 +359,14 @@ export const selectHasCredits = createSelector(
   [selectSubscriptionData],
   (data): boolean => {
     if (!data) return false
-    return (data.credits || 0) > (data.tokensUsed || 0)
+    return (data.credits || 0) > 0
   }
 )
 
 export const selectCanCreateQuizOrCourse = createSelector(
   [selectHasActiveSubscription, selectHasCredits],
   (hasActiveSubscription, hasCredits): boolean => {
-    // User must have BOTH active subscription AND credits
-    return hasActiveSubscription && hasCredits
+    return hasActiveSubscription || hasCredits
   }
 )
 
@@ -498,26 +394,65 @@ export const selectIsExpired = createSelector(
   [selectSubscriptionData],
   (data): boolean => {
     if (!data) return false
-    return (
-      data.status === "EXPIRED" || 
-      Boolean(data.expirationDate && new Date(data.expirationDate) < new Date())
-    )
+    if (data.status === "EXPIRED") return true
+    if (data.expirationDate) {
+      return new Date(data.expirationDate) < new Date()
+    }
+    return false
   }
 )
 
 export const selectTokenUsage = createSelector(
   [selectSubscriptionData],
-  (data): TokenUsage | null => {
-    if (!data) return null
-    const used = data.tokensUsed || 0
-    const total = data.credits || 0
-    return {
-      tokensUsed: used,
-      total,
-      remaining: Math.max(total - used, 0),
-      percentage: total > 0 ? Math.min((used / total) * 100, 100) : 0,
-      hasExceededLimit: used > total,
+  (data) => ({
+    used: data?.tokensUsed || 0,
+    total: data?.credits || 0,
+    tokensUsed: data?.tokensUsed || 0, // Backward compatibility
+    remaining: Math.max((data?.credits || 0) - (data?.tokensUsed || 0), 0),
+    percentage: (data?.credits || 0) > 0 ? Math.min(((data?.tokensUsed || 0) / (data?.credits || 0)) * 100, 100) : 0,
+    hasExceededLimit: (data?.tokensUsed || 0) > (data?.credits || 0),
+  })
+)
+
+// Additional selectors for enhanced functionality
+export const selectCanResubscribe = createSelector(
+  [selectSubscriptionData],
+  (data): boolean => {
+    if (!data) return false;
+    return data.status === "EXPIRED" || data.status === "CANCELED";
+  }
+)
+
+export const selectSubscriptionMessage = createSelector(
+  [selectSubscriptionData],
+  (data): string | null => {
+    if (!data) return null;
+    
+    if (data.status === "EXPIRED") {
+      return "Your subscription has expired. Reactivate to continue using premium features.";
     }
+    
+    if (data.status === "CANCELED") {
+      return "Your subscription was canceled. Subscribe again to access premium features.";
+    }
+    
+    if (data.status === "TRIAL") {
+      const daysLeft = data.trialEndsAt 
+        ? Math.ceil((new Date(data.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        : 0;
+      return daysLeft > 0 ? `${daysLeft} days left in your trial` : "Trial has ended";
+    }
+    
+    return null;
+  }
+)
+
+export const selectHadPreviousPaidPlan = createSelector(
+  [selectSubscriptionData],
+  (data): boolean => {
+    if (!data) return false;
+    return (data.subscriptionPlan !== "FREE") && 
+           (data.status === "EXPIRED" || data.status === "CANCELED");
   }
 )
 
@@ -525,27 +460,20 @@ export const selectTokenUsage = createSelector(
 export const selectShouldRefreshSubscription = createSelector(
   [selectSubscriptionLastRefreshed, selectSubscriptionData],
   (lastRefreshed, data): boolean => {
-    if (!lastRefreshed || !data) return true
-    
-    const now = Date.now()
-    const refreshInterval = getFetchInterval(data)
-    return now - lastRefreshed > refreshInterval
+    if (!lastRefreshed) return true
+    const timeSinceRefresh = Date.now() - lastRefreshed
+    return timeSinceRefresh > 5 * 60 * 1000 // 5 minutes
   }
 )
 
 export const selectSubscriptionCacheStatus = createSelector(
   [selectSubscriptionLastFetched, selectSubscriptionData, selectSubscriptionError],
-  (lastFetched, data, error) => {
-    if (error) return "error"
-    if (!data) return "empty"
-    if (!lastFetched) return "stale"
-    
-    const now = Date.now()
-    const age = now - lastFetched
-    const isFresh = age < 300000 // 5 minutes
-    
-    return isFresh ? "fresh" : "stale"
-  }
+  (lastFetched, data, error) => ({
+    hasData: !!data,
+    isStale: !lastFetched || Date.now() - lastFetched > 5 * 60 * 1000,
+    hasError: !!error,
+    lastFetched,
+  })
 )
 
 // Legacy selectors for backward compatibility

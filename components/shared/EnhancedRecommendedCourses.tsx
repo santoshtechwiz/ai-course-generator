@@ -22,6 +22,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import type { RelatedCourse, PersonalizedRecommendation } from "@/services/recommendationsService"
+import { getImageWithFallback } from '@/utils/image-utils'
 
 interface EnhancedRecommendedCoursesProps {
   userId?: string
@@ -181,7 +182,7 @@ const EnhancedRecommendedCourses: React.FC<EnhancedRecommendedCoursesProps> = ({
           <div className="aspect-video bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
             {course.image ? (
               <Image 
-                src={course.image} 
+                src={getImageWithFallback(course.image)} 
                 alt={course.title}
                 fill
                 className="object-cover"

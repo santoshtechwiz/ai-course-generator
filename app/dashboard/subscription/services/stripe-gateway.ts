@@ -12,9 +12,15 @@ import type { PaymentGateway, PaymentOptions, CheckoutResult, PaymentStatusResul
 import { PaymentProvider, PaymentStatus } from "./payment-gateway-interface"
 import { logger } from "@/lib/logger"
 
+// Validate Stripe API key
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY
+if (!stripeSecretKey) {
+  throw new Error("STRIPE_SECRET_KEY environment variable is required but not found")
+}
+
 // Initialize Stripe with the API key and proper configuration
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2025-02-24.acacia",
+const stripe = new Stripe(stripeSecretKey, {
+  apiVersion: "2024-10-28.acacia",
   timeout: 30000, // 30 second timeout for API requests
   maxNetworkRetries: 3, // Automatically retry failed requests
 })
@@ -740,23 +746,46 @@ export class StripeGateway implements PaymentGateway {
   }
 
   private async getOrCreateCustomer(user: any, options?: PaymentOptions): Promise<string> {
-    // Check cache first
-    if (customerCache.has(user.id)) {
-      return customerCache.get(user.id)!
-    }
-
-    // Check if user already has a Stripe customer ID
-    if (user.subscription?.stripeCustomerId) {
-      // Cache the customer ID
-      customerCache.set(user.id, user.subscription.stripeCustomerId)
-      return user.subscription.stripeCustomerId
-    }
-
-    // Create a new Stripe customer
     try {
+      // Debug logging for user object
+      logger.debug('getOrCreateCustomer called with user:', { 
+        userId: user?.id, 
+        hasEmail: !!user?.email,
+        hasName: !!user?.name,
+        hasSubscription: !!user?.subscription 
+      })
+
+      // Check cache first
+      if (customerCache.has(user.id)) {
+        return customerCache.get(user.id)!
+      }
+
+      // Check if user already has a Stripe customer ID
+      if (user.subscription?.stripeCustomerId) {
+        // Cache the customer ID
+        customerCache.set(user.id, user.subscription.stripeCustomerId)
+        return user.subscription.stripeCustomerId
+      }
+
+      // Validate required user fields
+      if (!user?.id) {
+        throw new Error('User ID is required')
+      }
+      
+      if (!user.email) {
+        throw new Error(`User ${user.id} does not have an email address`)
+      }
+
+      // Validate email format for security
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(user.email)) {
+        throw new Error(`Invalid email format for user ${user.id}`)
+      }
+
+      // Create a new Stripe customer
       const customer = await stripe.customers.create({
-        email: user.email!,
-        name: user.name || options?.customerName,
+        email: user.email,
+        name: user.name || user.firstName || user.displayName || options?.customerName || 'User',
         metadata: { userId: user.id },
       })
 
@@ -774,12 +803,12 @@ export class StripeGateway implements PaymentGateway {
         },
       })
 
-  // Cache the customer ID
-  customerCache.set(user.id, customer.id)
+      // Cache the customer ID
+      customerCache.set(user.id, customer.id)
 
-  // Avoid logging the raw Stripe customer ID
-  logger.info('Created new Stripe customer for user', { userId: user.id, hasCustomerId: !!customer.id })
-  return customer.id
+      // Avoid logging the raw Stripe customer ID
+      logger.info('Created new Stripe customer for user', { userId: user.id, hasCustomerId: !!customer.id })
+      return customer.id
     } catch (stripeError: any) {
       this.handleStripeError(stripeError, "creating customer")
       throw stripeError
@@ -828,7 +857,12 @@ export class StripeGateway implements PaymentGateway {
     } else {
       // Handle other errors
       logger.error(`Unexpected payment error while ${operation}:`, error)
-      throw new Error("An unexpected error occurred. Please try again.")
+      // Provide more specific error information in development
+      const isDevelopment = process.env.NODE_ENV === 'development'
+      const errorMessage = isDevelopment && error.message 
+        ? `Payment error: ${error.message}` 
+        : "An unexpected error occurred. Please try again."
+      throw new Error(errorMessage)
     }
   }
   public async verifyPaymentSuccess(paymentIntentId: string): Promise<boolean> {

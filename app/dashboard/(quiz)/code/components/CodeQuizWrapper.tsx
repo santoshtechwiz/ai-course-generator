@@ -13,6 +13,8 @@ import {
   selectQuizTitle,
   selectIsQuizComplete,
   selectQuizUserId,
+  selectRequiresAuth,
+  selectRedirectAfterLogin,
   setCurrentQuestionIndex,
   saveAnswer,
   resetQuiz,
@@ -46,6 +48,8 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const quizStatus = useSelector(selectQuizStatus)
   const quizTitle = useSelector(selectQuizTitle)
   const isCompleted = useSelector(selectIsQuizComplete)
+  const requiresAuth = useSelector(selectRequiresAuth)
+  const redirectAfterLogin = useSelector(selectRedirectAfterLogin)
 
   const quizId = useSelector((state: any) => state.quiz.quizId) // Assuming quizId is stored in quiz slice
   const quizOwnerId = useSelector(selectQuizUserId) // Get the actual quiz owner ID
@@ -91,6 +95,14 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       if (submissionTimeoutRef.current) clearTimeout(submissionTimeoutRef.current);
     }
   }, [slug, dispatch])
+
+  // Handle authentication redirect
+  useEffect(() => {
+    if (requiresAuth && redirectAfterLogin) {
+      router.push(redirectAfterLogin)
+    }
+  }, [requiresAuth, redirectAfterLogin, router])
+
   // Navigate to result
   useEffect(() => {
     let isMounted = true;
@@ -137,13 +149,18 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
 
   const handleSubmitQuiz = useCallback(async () => {
     try {
-      toast.success("Quiz submitted successfully!")
       await dispatch(submitQuiz()).unwrap()
+      toast.success("Quiz submitted successfully!")
 
       setTimeout(() => {
         router.push(`/dashboard/code/${slug}/results`)
       }, 500)
-    } catch (err) {
+    } catch (err: any) {
+      // Check if it's an authentication error
+      if (err?.requiresAuth) {
+        // Authentication required, redirect will be handled by useEffect
+        return
+      }
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
     }

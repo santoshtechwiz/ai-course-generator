@@ -11,7 +11,6 @@ import {
   selectShouldRefreshSubscription,
   selectSubscriptionCacheStatus,
   fetchSubscription,
-  markSubscriptionStale,
   clearSubscriptionError
 } from '@/store/slices/subscription-slice'
 import { useAuth } from '../providers/AuthProvider'
@@ -47,10 +46,10 @@ export function useSubscription() {
     plan: sessionSubscription?.plan || 'FREE',
     status: sessionSubscription?.status || 'INACTIVE',
     isActive: sessionSubscription?.isActive || false,
-    credits: sessionSubscription?.credits || 0,
+    credits: sessionSubscription?.credits || user?.credits || 0,
     
-    // Enhanced data - prefer session data for tokensUsed, fallback to Redux cache
-    tokensUsed: user?.creditsUsed || subscriptionData?.tokensUsed || 0,
+    // Enhanced data - prefer Redux subscription data over user session data for accuracy
+    tokensUsed: subscriptionData?.tokensUsed || user?.creditsUsed || 0,
     subscriptionId: subscriptionData?.subscriptionId || '',
     cancelAtPeriodEnd: subscriptionData?.cancelAtPeriodEnd || false,
     currentPeriodEnd: subscriptionData?.currentPeriodEnd || null,
@@ -68,11 +67,6 @@ export function useSubscription() {
       dispatch(fetchSubscription({ forceRefresh: force }))
     }
   }, [dispatch, shouldRefresh])
-  
-  // Mark subscription as stale when user interacts with subscription features
-  const markStale = useCallback(() => {
-    dispatch(markSubscriptionStale())
-  }, [dispatch])
   
   // Clear any subscription errors
   const clearError = useCallback(() => {
@@ -112,7 +106,6 @@ export function useSubscription() {
     
     // Actions
     refreshSubscription,
-    markStale,
     clearError,
     
     // Auth state

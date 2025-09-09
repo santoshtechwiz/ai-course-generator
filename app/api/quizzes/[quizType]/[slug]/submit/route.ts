@@ -378,6 +378,27 @@ async function updateCourseProgress(userId: string, quiz: any, totalTime: number
           const progress = allChapters.length > 0 ? 
             Math.round((completedChapterIds.length / allChapters.length) * 100) : 0;
           
+          // Create LearningEvent for quiz completion
+          await tx.learningEvent.create({
+            data: {
+              userId: userId,
+              courseId: courseId,
+              chapterId: chapter.id,
+              type: 'QUIZ_COMPLETED',
+              progress: Math.round(percentageScore),
+              timeSpent: Math.round(submission.totalTime),
+              metadata: {
+                quizId: quiz.id,
+                quizType: submission.type,
+                score: Math.round(percentageScore),
+                totalQuestions: quiz.questions.length,
+                correctAnswers: Math.round((percentageScore / 100) * quiz.questions.length),
+                accuracy: accuracyScore,
+                passed: percentageScore >= 70
+              }
+            }
+          });
+          
           // Update course progress
           await tx.courseProgress.update({
             where: {
@@ -542,6 +563,32 @@ async function processQuizSubmission(
     } catch (error) {
       // Log but don't fail the quiz submission if course progress update fails
       console.error("Error updating course progress (non-blocking):", error);
+    }
+    
+    // Always create a learning event for quiz completion, even for standalone quizzes
+    try {
+      await prisma.learningEvent.create({
+        data: {
+          userId: userId,
+          type: 'QUIZ_COMPLETED',
+          entityId: quiz.id.toString(),
+          progress: Math.round(percentageScore),
+          timeSpent: Math.round(submission.totalTime),
+          metadata: {
+            quizId: quiz.id,
+            quizSlug: quiz.slug,
+            quizType: submission.type,
+            score: Math.round(percentageScore),
+            totalQuestions: quiz.questions.length,
+            correctAnswers: Math.round((percentageScore / 100) * quiz.questions.length),
+            accuracy: accuracyScore,
+            passed: percentageScore >= 70
+          }
+        }
+      });
+      console.log(`Created learning event for standalone quiz: ${quiz.slug}`);
+    } catch (error) {
+      console.error("Error creating quiz progress records (non-blocking):", error);
     }
 
     return result

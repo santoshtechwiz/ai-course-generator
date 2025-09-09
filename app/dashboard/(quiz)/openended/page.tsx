@@ -4,6 +4,7 @@ import { useQuizPlan } from "../../../../hooks/useQuizPlan";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
 import OpenEndedQuizForm from "./components/OpenEndedQuizForm";
 import { useAuth } from "@/modules/auth";
+import { UnifiedLoader } from "@/components/loaders";
 
 const OpenEndedPage = () => {
   const { isAuthenticated } = useAuth(); // Use consolidated hook
@@ -20,7 +21,12 @@ const OpenEndedPage = () => {
       isLoggedIn={isAuthenticated} // Use isAuthenticated from useAuth
     >
       {quizPlan.isLoading ? (
-        <div className="flex justify-center py-8"><span className="h-6 w-6 inline-block rounded-full border-2 border-primary/30 border-t-primary animate-spin" /></div>
+        <UnifiedLoader
+          state="loading"
+          variant="spinner"
+          message="Loading quiz configuration..."
+          size="md"
+        />
       ) : (
         <OpenEndedQuizForm
           credits={quizPlan.credits}

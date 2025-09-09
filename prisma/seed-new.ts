@@ -1,9 +1,16 @@
+import { SUBSCRIPTION_PLANS } from '../app/dashboard/subscription/services/index'
 import { PrismaClient } from '@prisma/client'
 import * as fs from 'fs'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: "postgresql://courseai_production_user:bFipOaNUG3E2XG1uT9sxuJ7UXkSnb0qT@dpg-d2q3u7l6ubrc73cubkfg-a.oregon-postgres.render.com/courseai_production",
+    },
+  },
+})
 
 // Read the exported data
 const __filename = fileURLToPath(import.meta.url)
@@ -16,10 +23,17 @@ async function main() {
   console.log('🌱 Starting database seeding...')
 
   try {
-    // Disable foreign key checks for seeding
-    await prisma.$executeRaw`SET session_replication_role = replica;`
+    // Check if data already exists
+    const existingUsers = await prisma.user.count()
+    if (existingUsers > 0) {
+      console.log('📊 Database already contains data. Skipping seeding to prevent data loss.')
+      console.log(`Found ${existingUsers} existing users.`)
+      return
+    }
+
+    console.log('📊 Database is empty. Proceeding with seeding...')
     
-    // Clear existing data
+    // Clear existing data (should be empty anyway, but just in case)
     console.log('🧹 Clearing existing data...')
     await clearExistingData()
 
@@ -43,16 +57,13 @@ async function main() {
     console.log('📖 Seeding course units...')
     await seedCourseUnits(courseIdMap)
 
-    // Seed flashcards
-    console.log('🗂️ Seeding flashcards...')
-    await seedFlashCards(userIdMap)
-
     // Seed user quizzes
     console.log('❓ Seeding user quizzes...')
-    await seedUserQuizzes(userIdMap)
+    const quizIdMap = await seedUserQuizzes(userIdMap)
 
-    // Re-enable foreign key checks
-    await prisma.$executeRaw`SET session_replication_role = DEFAULT;`
+    // Seed flashcards
+    console.log('🗂️ Seeding flashcards...')
+    await seedFlashCards(userIdMap, quizIdMap)
 
     console.log('✅ Database seeding completed successfully!')
 
@@ -99,57 +110,41 @@ async function clearExistingData() {
 }
 
 async function seedPlans() {
-  const plans = [
-    {
-      id: 'free',
-      name: 'Free Plan',
-      price: 0,
-      duration: 30, // 30 days free trial
+  console.log('💰 Creating subscription plans from configuration...')
+  
+  // Create main plans (use the 12-month option as the base plan)
+  for (const plan of SUBSCRIPTION_PLANS) {
+    const baseOption = plan.options.find(opt => opt.duration === 12) || plan.options[0];
+    
+    const planData = {
+      id: plan.id, // Use simple ID like 'FREE', 'BASIC', 'PREMIUM', 'ENTERPRISE'
+      name: plan.name,
+      price: Math.round(baseOption.price * 100), // Convert to cents
+      duration: baseOption.duration * 30, // Convert months to days
       features: {
-        list: ['Access to free courses', 'Basic quizzes', 'Community support'],
-        maxCredits: 10
-      }
-    },
-    {
-      id: 'pro',
-      name: 'Pro Plan',
-      price: 999, // $9.99 in cents
-      duration: 30, // monthly subscription
-      features: {
-        list: ['All free features', 'Unlimited quizzes', 'Priority support', 'Certificate generation'],
-        maxCredits: 100
-      }
-    },
-    {
-      id: 'enterprise',
-      name: 'Enterprise Plan',
-      price: 2999, // $29.99 in cents
-      duration: 30, // monthly subscription
-      features: {
-        list: ['All pro features', 'Custom learning paths', 'Team management', 'API access'],
-        maxCredits: -1 // unlimited
-      }
-    }
-  ]
+        tokens: plan.tokens,
+        limits: {
+          maxQuestionsPerQuiz: plan.limits.maxQuestionsPerQuiz,
+          maxCoursesPerMonth: plan.limits.maxCoursesPerMonth,
+          apiCallsPerDay: plan.limits.apiCallsPerDay
+        },
+        features: plan.features.filter(f => f.available).map(f => f.id),
+        description: plan.description,
+        popular: plan.popular || false,
+        options: plan.options // Store all pricing options
+      } as any
+    };
 
-  for (const plan of plans) {
     await prisma.plan.upsert({
       where: { id: plan.id },
-      update: {
-        name: plan.name,
-        price: plan.price,
-        duration: plan.duration,
-        features: plan.features
-      },
-      create: {
-        id: plan.id,
-        name: plan.name,
-        price: plan.price,
-        duration: plan.duration,
-        features: plan.features
-      }
-    })
+      update: planData,
+      create: planData
+    });
+
+    console.log(`✅ Plan: ${plan.id} (${plan.name}) - Base price: $${baseOption.price} for ${baseOption.duration} month${baseOption.duration > 1 ? 's' : ''}`);
   }
+  
+  console.log(`🎉 Created ${SUBSCRIPTION_PLANS.length} subscription plans successfully!`);
 }
 
 async function seedCategories() {
@@ -437,7 +432,7 @@ async function seedCourseUnits(courseIdMap: Map<number, number>) {
   console.log(`Created ${createdUnits} course units and ${createdChapters} chapters`)
 }
 
-async function seedFlashCards(userIdMap: Map<string, string>) {
+async function seedFlashCards(userIdMap: Map<string, string>, quizIdMap: Map<string, string>) {
   // First, seed flashCards that are nested within users
   const users = data.users || []
   let createdFlashCards = 0
@@ -457,7 +452,7 @@ async function seedFlashCards(userIdMap: Map<string, string>) {
               answer: flashCardData.answer,
               userId: newUserId,
               slug: flashCardData.slug,
-              userQuizId: flashCardData.userQuizId,
+              userQuizId: flashCardData.userQuizId ? parseInt(quizIdMap.get(flashCardData.userQuizId.toString()) || '0') || null : null,
               difficulty: flashCardData.difficulty || 'medium',
               saved: flashCardData.saved || false,
               createdAt: flashCardData.createdAt ? new Date(flashCardData.createdAt) : new Date(),
@@ -488,7 +483,7 @@ async function seedFlashCards(userIdMap: Map<string, string>) {
           answer: flashCardData.answer,
           userId: newUserId,
           slug: flashCardData.slug,
-          userQuizId: flashCardData.userQuizId,
+          userQuizId: flashCardData.userQuizId ? quizIdMap.get(flashCardData.userQuizId.toString()) || null : null,
           difficulty: flashCardData.difficulty || 'medium',
           saved: flashCardData.saved || false,
           createdAt: flashCardData.createdAt ? new Date(flashCardData.createdAt) : new Date(),
@@ -504,13 +499,14 @@ async function seedFlashCards(userIdMap: Map<string, string>) {
   console.log(`Created ${createdFlashCards} flashcards`)
 }
 
-async function seedUserQuizzes(userIdMap: Map<string, string>) {
+async function seedUserQuizzes(userIdMap: Map<string, string>): Promise<Map<string, string>> {
   const userQuizzes = data.userQuizzes || []
   console.log(`Processing ${userQuizzes.length} user quizzes...`)
 
   let created = 0
   let createdQuestions = 0
   let createdOpenEnded = 0
+  const quizIdMap = new Map<string, string>()
 
   for (const quizData of userQuizzes) {
     const correctUserId = userIdMap.get(quizData.userId)
@@ -541,6 +537,8 @@ async function seedUserQuizzes(userIdMap: Map<string, string>) {
           updatedAt: quizData.updatedAt ? new Date(quizData.updatedAt) : new Date()
         }
       })
+
+      quizIdMap.set(quizData.id, quiz.id.toString())
 
       // Create questions for this quiz
       if (quizData.questions && quizData.questions.length > 0) {
@@ -596,6 +594,7 @@ async function seedUserQuizzes(userIdMap: Map<string, string>) {
   }
 
   console.log(`Created ${created} quizzes, ${createdQuestions} questions, and ${createdOpenEnded} open-ended questions`)
+  return quizIdMap
 }
 
 main()

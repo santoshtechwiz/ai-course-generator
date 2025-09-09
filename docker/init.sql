@@ -19,6 +19,20 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";      -- For UUID generation
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";        -- For text search
 CREATE EXTENSION IF NOT EXISTS "fuzzystrmatch";  -- For fuzzy string matching
 CREATE EXTENSION IF NOT EXISTS "hstore";         -- For key-value data storage
+CREATE EXTENSION IF NOT EXISTS "vector";         -- For vector similarity search
+
+-- Switch to the shadow database and enable extensions there too
+\c prisma_shadow;
+
+-- Enable necessary extensions in shadow database
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";      -- For UUID generation
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";        -- For text search
+CREATE EXTENSION IF NOT EXISTS "fuzzystrmatch";  -- For fuzzy string matching
+CREATE EXTENSION IF NOT EXISTS "hstore";         -- For key-value data storage
+CREATE EXTENSION IF NOT EXISTS "vector";         -- For vector similarity search
+
+-- Switch back to the courseai database
+\c courseai;
 
 -- Set default privileges
 ALTER DEFAULT PRIVILEGES IN SCHEMA public

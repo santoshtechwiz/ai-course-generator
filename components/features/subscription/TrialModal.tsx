@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { migratedStorage } from "@/lib/storage"
+import { toast } from "@/hooks/use-toast"
 
 import { useSession } from "next-auth/react"
 import useSubscription from "@/hooks/use-subscription"
@@ -23,11 +24,11 @@ export default function TrialModal() {
   const { data: session } = useSession()
   const [isOpen, setIsOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const {
     isSubscribed,
     totalTokens,
     refreshSubscription,
-    isLoading,
   } = useSubscription()
   const router = useRouter()
   const {data:subscription} = useSubscription();
@@ -48,14 +49,74 @@ export default function TrialModal() {
     migratedStorage.setPreference("seen_trial_modal", true)
   }
 
-  const handleStartTrial = () => {
+  const handleStartTrial = async () => {
     if (!session?.user) {
       handleClose()
       router.push("/dashboard/subscription")
       return
     }
-    refreshSubscription()
-    handleClose()
+
+    try {
+      setIsLoading(true)
+      
+      // Create AbortController for request cancellation
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+      
+      // Call the API to start trial
+      const response = await fetch('/api/subscriptions/start-trial', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          planId: 'BASIC' // Start with BASIC plan trial
+        }),
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        toast({
+          title: "Trial Started!",
+          description: "Your 30-day trial has been activated with 5 free credits.",
+          variant: "default",
+        })
+        handleClose()
+        
+        // Refresh subscription state instead of page reload
+        if (refreshSubscription) {
+          await refreshSubscription()
+        } else {
+          // Fallback to page reload only if necessary
+          window.location.reload()
+        }
+      } else {
+        toast({
+          title: "Trial Failed",
+          description: result.message || result.error || "Failed to start trial. Please try again.",
+          variant: "destructive",
+        })
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        toast({
+          title: "Request Timeout",
+          description: "The request took too long. Please try again.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: "An error occurred while starting your trial.",
+          variant: "destructive",
+        })
+      }
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleCopyCode = () => {

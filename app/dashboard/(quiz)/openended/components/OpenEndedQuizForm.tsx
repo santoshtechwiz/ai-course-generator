@@ -171,7 +171,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
       setSubmitError(null)
 
       try {
-        const response = await fetch("/api/quizzes", {
+        const response = await fetch("/api/quizzes/openended/create", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -376,7 +376,6 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
               isLoggedIn={isLoggedIn}
               isLoading={isLoading}
               isEnabled={!isDisabled}
-              hasCredits={credits > 0}
               loadingLabel="Generating..."
               className="w-full h-12 lg:h-14 text-base lg:text-lg transition-all duration-300 hover:shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed"
               customStates={{

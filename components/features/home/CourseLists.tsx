@@ -2,13 +2,16 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useInfiniteQuery, type UseInfiniteQueryResult, type InfiniteData } from "@tanstack/react-query"
-import { BookOpen, LayoutGrid, List, Search, X } from "lucide-react"
+import { BookOpen, LayoutGrid, List, Search, X, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDebounce } from "@/lib/utils/hooks"
 import { cn } from "@/lib/utils"
 import { CourseCard } from "./CourseCard"
+import { useCoursesWithProgress } from "@/hooks/use-course-progress"
+import ResumeCourseCard from "@/components/dashboard/ResumeCourseCard"
+import { getImageWithFallback } from '@/utils/image-utils'
 // import { CategoryTagCloud } from "./CategoryTagCloud" // REMOVED: Now used in sidebar
 import type { CategoryId } from "@/config/categories"
 
@@ -171,6 +174,17 @@ export default function CoursesClient({
     isFetching,
     isLoading,
   } = queryResult
+
+  // Extract all courses from pages for progress integration
+  const allCourses = data?.pages?.flatMap(page => page.courses) || []
+  
+  // Get course progress data
+  const { courses: coursesWithProgress } = useCoursesWithProgress(allCourses, userId)
+  
+  // Find courses in progress for resume functionality
+  const coursesInProgress = coursesWithProgress.filter(course => 
+    course.isEnrolled && course.progressPercentage > 0 && course.progressPercentage < 100
+  ).slice(0, 3) // Show max 3 recent courses
 
   // Data processing
   const coursesData: InfiniteData<CoursesResponse> | undefined = data
@@ -386,40 +400,79 @@ export default function CoursesClient({
         </div>
       )}
 
+      {/* Resume Learning Section */}
+      {userId && coursesInProgress.length > 0 && !hasFilters && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Play className="h-5 w-5 text-primary" />
+            Continue Learning
+          </h2>
+          {coursesInProgress.map((course) => (
+            <ResumeCourseCard
+              key={course.id}
+              courseTitle={course.title || course.name}
+              courseSlug={course.slug}
+              currentChapterTitle={course.currentChapterTitle || 'Next Chapter'}
+              progressPercentage={course.progressPercentage}
+              completedChapters={course.completedChapters}
+              totalChapters={course.totalChapters}
+              lastAccessedAt={course.lastAccessedAt || new Date().toISOString()}
+              timeSpent={course.timeSpent}
+              courseImage={getImageWithFallback(course.image)}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Course grid with Udemy-style responsive layout */}
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {coursesData?.pages?.map((page: CoursesResponse, pageIndex: number) => (
           <React.Fragment key={pageIndex}>
-            {page.courses?.map((course: Course) => (
-              <CourseCard
-                key={course.id}
-                title={course.title || course.name || "Untitled Course"}
-                description={course.description || "No description available"}
-                rating={course.rating || 0}
-                slug={course.slug || `course-${course.id}`}
-                unitCount={course.unitCount || 0}
-                lessonCount={course.lessonCount || 0}
-                quizCount={course.quizCount || 0}
-                viewCount={course.viewCount || 0}
-                category={course.category?.name || "General"}
-                duration={`${course.estimatedHours || 4} hours`}
-                image={course.image || undefined}
-                difficulty={course.difficulty as "Beginner" | "Intermediate" | "Advanced"}
-                price={undefined}
-                originalPrice={undefined}
-                instructor="Course Instructor"
-                enrolledCount={Math.floor(Math.random() * 5000) + 500}
-                updatedAt={
-                  course.updatedAt 
-                    ? new Date(course.updatedAt).toISOString() 
-                    : course.createdAt 
-                      ? new Date(course.createdAt).toISOString() 
-                      : new Date().toISOString()
-                }
-                tags={[]}
-                className={viewMode === "list" ? "w-full" : undefined}
-              />
-            ))}
+            {page.courses?.map((course: Course) => {
+              // Find the course with progress data
+              const courseWithProgress = coursesWithProgress.find(cp => 
+                cp.id === course.id || cp.slug === course.slug
+              ) || course
+              
+              return (
+                <CourseCard
+                  key={course.id}
+                  title={course.title || course.name || "Untitled Course"}
+                  description={course.description || "No description available"}
+                  rating={course.rating || 0}
+                  slug={course.slug || `course-${course.id}`}
+                  unitCount={course.unitCount || 0}
+                  lessonCount={course.lessonCount || 0}
+                  quizCount={course.quizCount || 0}
+                  viewCount={course.viewCount || 0}
+                  category={course.category?.name || "General"}
+                  duration={`${course.estimatedHours || 4} hours`}
+                  image={getImageWithFallback(course.image)}
+                  difficulty={course.difficulty as "Beginner" | "Intermediate" | "Advanced"}
+                  price={undefined}
+                  originalPrice={undefined}
+                  instructor="Course Instructor"
+                  enrolledCount={Math.floor(Math.random() * 5000) + 500}
+                  updatedAt={
+                    course.updatedAt 
+                      ? new Date(course.updatedAt).toISOString() 
+                      : course.createdAt 
+                        ? new Date(course.createdAt).toISOString() 
+                        : new Date().toISOString()
+                  }
+                  tags={[]}
+                  className={viewMode === "list" ? "w-full" : undefined}
+                  // Progress tracking props
+                  isEnrolled={courseWithProgress.isEnrolled}
+                  progressPercentage={courseWithProgress.progressPercentage}
+                  completedChapters={courseWithProgress.completedChapters}
+                  totalChapters={courseWithProgress.totalChapters}
+                  lastAccessedAt={courseWithProgress.lastAccessedAt}
+                  currentChapterTitle={courseWithProgress.currentChapterTitle}
+                  timeSpent={courseWithProgress.timeSpent}
+                />
+              )
+            })}
           </React.Fragment>
         ))}
       </div>

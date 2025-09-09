@@ -321,6 +321,7 @@ export function useQuizHistory() {
 
 /**
  * Hook for managing quiz progress with automatic expiry (30 days)
+ * @deprecated Use the event-driven progress system instead
  */
 export function useQuizProgress(courseId: string, chapterId: string) {
   const key = `quiz_progress_${courseId}_${chapterId}`
@@ -336,8 +337,7 @@ export function useQuizProgress(courseId: string, chapterId: string) {
       lastUpdated: Date.now(),
       isCompleted: false,
       ...prev,
-      ...updates,
-      lastUpdated: Date.now()
+      ...updates
     }))
   }, [courseId, chapterId, setProgress])
 

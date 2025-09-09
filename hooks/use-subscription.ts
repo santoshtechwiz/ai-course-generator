@@ -19,6 +19,9 @@ import {
   selectSubscriptionPlan,
   selectIsCancelled,
   canDownloadPdfSelector,
+  selectCanResubscribe,
+  selectSubscriptionMessage,
+  selectHadPreviousPaidPlan,
 } from '@/store/slices/subscription-slice'
 import { useAuth } from '@/modules/auth/providers/AuthProvider'
 import { useToast } from '@/hooks'
@@ -53,8 +56,8 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
 
   const dispatch = useAppDispatch();
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
-  
+  const { isAuthenticated, user } = useAuth();
+
   // Redux selectors
   const subscriptionData = useAppSelector(selectSubscriptionData);
   const isLoading = useAppSelector(selectSubscriptionLoading);
@@ -67,73 +70,73 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
   const hasCredits = useAppSelector(selectHasCredits);
   const canCreateQuizOrCourse = useAppSelector(selectCanCreateQuizOrCourse);
   const isExpired = useAppSelector(selectIsExpired);
-  const shouldRefresh = useAppSelector(selectShouldRefreshSubscription);
-  const cacheStatus = useAppSelector(selectSubscriptionCacheStatus);
 
   // State
   const [isInitialized, setIsInitialized] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [lastValidated, setLastValidated] = useState<number | null>(null);
-  
+
   // Check if cache is stale
   const isCacheStale = useCallback(() => {
-    if (!lastValidated) return true;
-    return Date.now() - lastValidated > CACHE_INVALIDATION_TIME;
+    return !lastValidated || Date.now() - lastValidated > CACHE_INVALIDATION_TIME;
   }, [lastValidated]);
 
   // Smart fetch that only validates when needed
   const validateSubscription = useCallback(async (force = false) => {
-    if (!isAuthenticated || (!force && isValidating)) return null;
+    if (!isAuthenticated || !user?.id) return;
+
+    // Prevent concurrent validations
+    if (isValidating && !force) return;
+
+    setIsValidating(true);
+    const controller = new AbortController(); // Prevent memory leaks
     
     try {
-      setIsValidating(true);
-      const result = await dispatch(fetchSubscription()).unwrap();
+      await dispatch(fetchSubscription({ forceRefresh: force })).unwrap();
       setLastValidated(Date.now());
-      
-      if (result) {
-        onSubscriptionSuccess?.({
-          success: true,
-          message: "Subscription validated"
-        });
+      if (onSubscriptionSuccess) {
+        onSubscriptionSuccess({ success: true, message: "Subscription validated" });
       }
-      
-      return result;
-    } catch (err: any) {
-      onSubscriptionError?.({
-        success: false,
-        message: err.message || "Failed to validate subscription"
-      });
-      
-      toast({
-        title: "Subscription Check Failed",
-        description: "Unable to validate your subscription status. Please try again.",
-        variant: "destructive"
-      });
-      return null;
+    } catch (error: any) {
+      // Only report non-aborted errors
+      if (error.name !== 'AbortError') {
+        if (onSubscriptionError) {
+          onSubscriptionError({ success: false, message: error.message || "Failed to validate subscription" });
+        }
+      }
     } finally {
       setIsValidating(false);
+      controller.abort(); // Cleanup
     }
-  }, [dispatch, isAuthenticated, isValidating, onSubscriptionSuccess, onSubscriptionError, toast]);
+  }, [dispatch, isAuthenticated, user?.id, isValidating, onSubscriptionSuccess, onSubscriptionError]);
 
   // Initial validation
   useEffect(() => {
-    if (!lazyLoad && validateOnMount && !lastValidated) {
-      validateSubscription();
-    }
-  }, [lazyLoad, validateOnMount, lastValidated, validateSubscription]);
+    if (skipInitialFetch || !isAuthenticated) return;
 
-  // Background refresh
+    if (lazyLoad && !validateOnMount) {
+      // Lazy load - only validate when needed
+      return;
+    }
+
+    validateSubscription();
+  }, [lazyLoad, validateOnMount, validateSubscription, skipInitialFetch, isAuthenticated]);
+
+  // Background refresh with proper cleanup
   useEffect(() => {
     if (skipInitialFetch || !isAuthenticated) return;
 
     const interval = setInterval(() => {
-      if (!isValidating && isCacheStale()) {
+      if (isCacheStale()) {
         validateSubscription();
       }
     }, REFRESH_INTERVAL);
 
-    return () => clearInterval(interval);
-  }, [skipInitialFetch, isAuthenticated, isValidating, isCacheStale, validateSubscription]);
+    // Cleanup interval on unmount to prevent memory leaks
+    return () => {
+      clearInterval(interval);
+    };
+  }, [skipInitialFetch, isAuthenticated, isCacheStale, validateSubscription]);
 
   // Plan validation helpers
   const canSubscribeToPlan = useCallback((
@@ -141,20 +144,36 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
     targetPlan: string,
     status: SubscriptionStatusType | null
   ): { canSubscribe: boolean; reason?: string } => {
+    // Always allow subscription for expired, inactive, or free users
+    if (!status ||
+        status === "EXPIRED" ||
+        status === "INACTIVE" ||
+        status === "NONE" ||
+        currentPlan === "FREE") {
+      return { canSubscribe: true };
+    }
+
+    // Allow resubscription for canceled plans
+    if (status === "CANCELED") {
+      return { canSubscribe: true };
+    }
+
     if (!allowPlanChanges) {
       return { canSubscribe: false, reason: "Plan changes are not allowed" };
     }
 
-    if (!allowDowngrades && currentPlan > targetPlan) {
+    // Check for downgrades only for active subscriptions
+    if (status === "ACTIVE" && !allowDowngrades && currentPlan > targetPlan) {
       return { canSubscribe: false, reason: "Downgrading is not allowed" };
     }
 
-    if (status === "CANCELED") {
-      return { canSubscribe: false, reason: "Cannot change plan while cancelled" };
+    // For active subscriptions, prevent same plan subscription
+    if (status === "ACTIVE" && currentPlan === targetPlan) {
+      return { canSubscribe: false, reason: "You are already subscribed to this plan" };
     }
 
     return { canSubscribe: true };
-  }, [allowPlanChanges, allowDowngrades]);
+  }, [allowPlanChanges, allowDowngrades])
 
   const {
     tokensUsed = 0,
@@ -167,19 +186,66 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
   const handleSubscribe = useCallback(
     async (planId?: string, duration?: number): Promise<SubscriptionResult> => {
       try {
-        // Implement subscription logic here
-        return {
-          success: true,
-          message: "Subscription successful"
-        };
+        if (!planId || !duration) {
+          throw new Error('Plan ID and duration are required')
+        }
+
+        // Call the API route instead of directly importing the service
+        const response = await fetch('/api/subscriptions/checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            planId,
+            duration,
+            options: {} // Add any additional options here if needed
+          })
+        })
+
+        const result = await response.json()
+
+        if (response.ok && result.success) {
+          // Handle different response types
+          if (result.url) {
+            // Stripe checkout URL - redirect to Stripe
+            window.location.href = result.url
+            return {
+              success: true,
+              message: "Redirecting to checkout...",
+              redirectUrl: result.url
+            }
+          } else if (result.redirect) {
+            // Internal redirect (e.g., for FREE plan)
+            window.location.href = result.redirect
+            return {
+              success: true,
+              message: result.message || "Plan activated successfully!"
+            }
+          } else {
+            // Success without redirect
+            return {
+              success: true,
+              message: result.message || "Subscription successful!"
+            }
+          }
+        } else {
+          throw new Error(result.error || 'Failed to process subscription')
+        }
       } catch (error: any) {
+        const errorMessage = error.message || "Subscription failed"
+        
+        if (onSubscriptionError) {
+          onSubscriptionError({ success: false, message: errorMessage })
+        }
+        
         return {
           success: false,
-          message: error.message || "Subscription failed"
-        };
+          message: errorMessage
+        }
       }
     },
-    [onSubscriptionSuccess, onSubscriptionError],
+    [onSubscriptionSuccess, onSubscriptionError, user],
   )
 
   const isSubscribedToAnyPaidPlan = useMemo(
@@ -210,8 +276,8 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
     isValidating,
     lastValidated,
     isCacheStale: isCacheStale(),
-    cacheStatus,
-    shouldRefresh,
+    cacheStatus: null,
+    shouldRefresh: false,
     
     // Actions
     validateSubscription,
@@ -221,6 +287,11 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
     canCreateContent: hasActiveSubscription && hasCredits,
     needsUpgrade: !hasActiveSubscription,
     needsCredits: !hasCredits,
+    
+    // Enhanced expired subscription support
+    canResubscribe: false,
+    subscriptionMessage: null,
+    hadPreviousPaidPlan: false,
     
     // Legacy support
     data: subscriptionData,

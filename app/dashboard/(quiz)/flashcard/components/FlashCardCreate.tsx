@@ -125,8 +125,8 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
   const { mutateAsync: createFlashCardsMutation } = useMutation({
     mutationFn: async (data: FlashCardFormData) => {
       data.userType = subscriptionData?.plan || "FREE"
-      const response = await api.post("/quizzes/flashcard/create", data)
-      return response.data
+      const response = await api.post("/api/quizzes/flashcard/create", data)
+      return response // api.post already returns the parsed JSON
     },
     onError: (error) => {
       console.error("Error creating flashcards:", error)

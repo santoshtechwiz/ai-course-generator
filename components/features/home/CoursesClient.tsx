@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 import { CourseCard } from "./CourseCard"
 import { CategoryTagCloud } from "./CategoryTagCloud"
 import type { CategoryId } from "@/config/categories"
+import { getImageWithFallback } from '@/utils/image-utils'
 
 // Types
 interface Course {
@@ -302,7 +303,7 @@ export default function CoursesClient({
                 viewCount={course.viewCount || 0}
                 category={(typeof course.category === 'object' && course.category?.name ? course.category.name : (typeof course.category === 'string' ? course.category : "")) || ""}
                 duration={course.duration || "4-6 weeks"}
-                image={course.image}
+                image={getImageWithFallback(course.image)}
                 difficulty={course.difficulty as "Beginner" | "Intermediate" | "Advanced"}
               />
             ))}

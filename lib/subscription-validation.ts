@@ -32,7 +32,7 @@ export async function validateSubscriptionServer(
   } = options;
 
   try {
-    const subscriptionData = await SubscriptionService.getUserSubscriptionData(userId);
+    const subscriptionData = await SubscriptionService.getSubscriptionStatus(userId);
     
     if (!subscriptionData) {
       return {

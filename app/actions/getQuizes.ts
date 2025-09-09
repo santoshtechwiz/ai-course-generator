@@ -44,6 +44,7 @@ export interface QuizListItem {
   slug: string
   questionCount: number
   bestScore: number | null
+  userId: string
 }
 
 export interface GetQuizzesResult {
@@ -158,6 +159,7 @@ export async function getQuizzes({
         timeStarted: true,
         slug: true,
         bestScore: true,
+        userId: true,
         _count: {
           select: { questions: true },
         },
@@ -178,6 +180,7 @@ export async function getQuizzes({
       slug: quiz.slug,
       questionCount: quiz._count.questions,
       bestScore: quiz.bestScore,
+      userId: quiz.userId,
     }))
 
     // Apply question count filter in memory if needed

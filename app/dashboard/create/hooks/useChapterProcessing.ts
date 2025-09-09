@@ -15,7 +15,6 @@ interface ChapterProcessingState {
 
 export const useChapterProcessing = (chapter: Chapter) => {
   const { toast } = useToast()
-  const { withLoading } = useGlobalLoader()
   const [state, setState] = useState<ChapterProcessingState>({
     videoStatus: chapter.videoId ? "success" : "idle",
   })

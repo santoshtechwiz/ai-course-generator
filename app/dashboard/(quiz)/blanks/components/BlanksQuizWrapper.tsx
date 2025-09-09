@@ -12,6 +12,8 @@ import {
   selectQuizStatus,
   selectQuizTitle,
   selectIsQuizComplete,
+  selectRequiresAuth,
+  selectRedirectAfterLogin,
   setCurrentQuestionIndex,
   saveAnswer,
   resetQuiz,
@@ -46,6 +48,8 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   const quizStatus = useSelector(selectQuizStatus)
   const isCompleted = useSelector(selectIsQuizComplete)
   const quizTitle = useSelector(selectQuizTitle)
+  const requiresAuth = useSelector(selectRequiresAuth)
+  const redirectAfterLogin = useSelector(selectRedirectAfterLogin)
   
   // Load quiz on mount
   useEffect(() => {
@@ -70,6 +74,13 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
       }
     }
   }, [slug, dispatch])
+
+  // Handle authentication redirect
+  useEffect(() => {
+    if (requiresAuth && redirectAfterLogin) {
+      router.push(redirectAfterLogin)
+    }
+  }, [requiresAuth, redirectAfterLogin, router])
 
   // Auto-redirect if quiz already completed
   useEffect(() => {
@@ -120,7 +131,12 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
       await dispatch(submitQuiz()).unwrap()
       toast.success("Quiz submitted successfully!")
       router.push(`/dashboard/blanks/${slug}/results`)
-    } catch (err) {
+    } catch (err: any) {
+      // Check if it's an authentication error
+      if (err?.requiresAuth) {
+        // Authentication required, redirect will be handled by useEffect
+        return
+      }
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
     } finally {
