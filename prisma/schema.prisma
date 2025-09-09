@@ -7,9 +7,7 @@ datasource db {
   url               = env("DATABASE_URL_PROD")
   
 }
-generator seed {
-  provider = "ts-node" // or "node" if using plain JS
-}
+
 enum GeneratedBy {
   USER
   AI
