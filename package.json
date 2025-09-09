@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "clear": "jest --clearCache",
-    "test": "jest --config jest.config.ts --no-stack-trace --colors ",
+    "test": "jest --config jest.config.ts --no-stack-trace --colors",
     "test:watch": "jest --config jest.config.ts --watch --no-stack-trace",
     "test:ci": "jest --config jest.config.ts --ci --json --outputFile=test-results.json --no-stack-trace",
     "test:summary": "jest --config jest.config.ts --no-stack-trace --reporters=jest-summary-reporter",
@@ -13,22 +13,18 @@
     "test:specific": "jest --config jest.config.ts --testPathPattern",
     "test:consistency": "jest --config jest.config.ts --testPathPattern=subscription-consistency",
     "validate-styles": "node scripts/validate-styles.js",
-    "dev": "set NEXT_TURBOPACK_TRACING=1 && next dev --turbopack ",
-    "dev:with-devtools": "npx react-devtools ",
+    "dev": "next dev --turbopack",
+    "dev:with-devtools": "npx react-devtools",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "prisma:seed": "ts-node prisma/seed-new.ts",
-    "server": "node server",
     "postinstall": "prisma generate",
     "dev:migrate": "npx prisma migrate dev",
     "prod:migrate": "npx prisma migrate deploy",
-    "prod:start": "set NODE_ENV=production && npm run start",
     "export": "next export",
     "prod:build": "npm run prod:migrate && npm run build",
-    "knip": "knip",
-    "prod": "set NODE_ENV=production && npm run prod:migrate && npm run build && npm run start",
-    "db:seed": "npx tsx prisma/seed-new.ts"
+    "prod:start": "NODE_ENV=production npm run start",
+    "prod": "NODE_ENV=production npm run prod:migrate && npm run build && npm run start"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.1.14",
@@ -252,5 +248,8 @@
     "ts-node": "10.9.2",
     "typescript": "5.9.2",
     "vitest": "3.1.4"
+  },
+  "engines": {
+    "node": "20.x"
   }
 }
