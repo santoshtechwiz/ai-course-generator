@@ -213,7 +213,7 @@
     "@types/lodash.debounce": "4.0.9",
     "@types/lodash.throttle": "^4.1.9",
     "@types/micro": "^10.0.0",
-    "@types/node": "24.2.0",
+    "@types/node": "20.x",
     "@types/nodemailer": "^6.4.17",
     "@types/nprogress": "^0.2.3",
     "@types/postcss-load-config": "3.0.1",
@@ -222,7 +222,6 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "autoprefixer": "10.4.21",
     "babel-plugin-react-compiler": "19.1.0-rc.2",
-    "canvas": "^2.11.2",
     "chalk": "5.6.0",
     "critters": "^0.0.25",
     "depcheck": "^1.4.7",
@@ -250,7 +249,11 @@
     "typescript": "5.9.2",
     "vitest": "3.1.4"
   },
+  "optionalDependencies": {
+    "canvas": "^2.11.2"
+  },
   "engines": {
-    "node": "20.x"
+    "node": ">=18.0.0 <=20.x",
+    "npm": ">=8.0.0"
   }
 }
