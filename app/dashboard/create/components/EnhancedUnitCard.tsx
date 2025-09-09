@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Droppable, Draggable } from "react-beautiful-dnd"
 import { GripVertical, Plus, Pencil, Eye, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { Chapter, CourseUnit } from "@prisma/client"
+
 import EnhancedChapterCard from "./EnhancedChapterCard"
 import ChapterEditor from "./ChapterEditor"
 import AddChapterForm from "./AddChapterForm"
 import type { ChapterCardHandler } from "./EnhancedChapterCard"
 import type { VideoStatus } from "../hooks/useVideoProcessing"
+import { CourseUnit, Chapter } from "@/app/types/course-types"
 
 interface EnhancedUnitCardProps {
   unit: CourseUnit & { chapters: Chapter[] }

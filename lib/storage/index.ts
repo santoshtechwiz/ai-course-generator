@@ -24,7 +24,7 @@ export {
   useSecureState,
   usePreference,
   useQuizState,
-  useLocalStorage,
+
   useStorageStats,
   useStorageCleaner,
   // New specialized hooks

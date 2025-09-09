@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils"
 import React, { useEffect, useState, useMemo } from "react"
 import { Loader2, CheckCircle, PlayCircle, Video, Eye } from "lucide-react"
-import type { Chapter } from "@prisma/client"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +12,7 @@ import { useToast } from "@/hooks"
 import VideoPlayer from "../../course/[slug]/components/video/components/VideoPlayer"
 import { VideoProgressIndicator } from "./VideoProgressIndicator"
 import type { ChapterGenerationStatus } from "../hooks/useCourseEditor"
+import { Chapter } from "@/app/types/course-types"
 
 type Props = {
   chapter: Chapter

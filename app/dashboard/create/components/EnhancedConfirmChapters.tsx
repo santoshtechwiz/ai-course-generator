@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DragDropContext } from "react-beautiful-dnd"
-import type { Course, CourseUnit, Chapter } from "@prisma/client"
+
 import VideoPlayer from "../../course/[slug]/components/video/components/VideoPlayer"
 import { cn } from "@/lib/utils"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -19,6 +19,7 @@ import EnhancedUnitCard from "./EnhancedUnitCard"
 import { useToast } from "@/hooks"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api-helper"
+import { Chapter, Course, CourseUnit } from "@/app/types/types"
 
 export type CourseProps = {
   course: Course & {
