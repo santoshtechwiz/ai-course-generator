@@ -52,24 +52,45 @@ export class FlashcardRepository extends BaseRepository<any> {
    * Get flashcards by quiz slug
    */
   async getCardsByQuizSlug(slug: string, userId?: string) {
-    const quiz = await prisma.userQuiz.findUnique({
-      where: { slug },
+    console.log('Repository: fetching cards by slug:', { slug, userId });
+
+    const quiz = await prisma.userQuiz.findFirst({
+      where: { 
+        slug,
+        quizType: "flashcard"
+      },
       include: {
         flashCards: {
+          select: {
+            id: true,
+            question: true,
+            answer: true,
+            difficulty: true,
+            saved: true,
+            userId: true,
+            createdAt: true
+          },
           orderBy: { id: "asc" },
         },
       },
     });
 
     if (!quiz) {
+      console.error('Repository: quiz not found:', { slug });
       throw new Error("Quiz not found");
     }
 
-    // // Check access permission for private quizzes
-    // if (!quiz.isPublic && quiz.userId !== userId) {
-    //   throw new Error("Unauthorized");
-    // }
-    console.log(quiz);
+    // Check access permission for private quizzes
+    if (!quiz.isPublic && quiz.userId !== userId) {
+      console.error('Repository: unauthorized access attempt:', { slug, quizUserId: quiz.userId, requestUserId: userId });
+      throw new Error("Unauthorized: This quiz is private");
+    }
+
+    console.log('Repository: found quiz:', { 
+      id: quiz.id, 
+      cardCount: quiz.flashCards.length,
+      isPublic: quiz.isPublic
+    });
     return quiz.flashCards;
   }
 

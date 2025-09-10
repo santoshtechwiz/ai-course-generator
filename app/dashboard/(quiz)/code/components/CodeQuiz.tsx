@@ -328,7 +328,7 @@ const CodeQuiz = ({
                     padding: "1rem",
                     fontSize: "0.8rem",
                     lineHeight: "1.6",
-                    backgroundColor: "transparent",
+                    background: "transparent",
                     borderRadius: "0",
                   }}
                   codeTagProps={{

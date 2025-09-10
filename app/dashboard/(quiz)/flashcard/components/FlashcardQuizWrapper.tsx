@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import {
   fetchFlashCardQuiz,
-  clearQuizState,
+  forceResetFlashCards,
   completeFlashCardQuiz,
   saveFlashCardResults,
   saveFlashCard,
@@ -20,6 +20,7 @@ import {
   selectQuizError,
   selectRequiresAuth,
   setPendingFlashCardAuth,
+  clearQuizState,
 } from "@/store/slices/flashcard-slice";
 
 import {
@@ -66,6 +67,7 @@ export default function FlashcardQuizWrapper({
   const requiresAuth = useSelector(selectRequiresAuth);
   const userId = user?.id;
   const quizId = useSelector((state: RootState) => state.flashcard.quizId);
+  const currentSlug = useSelector((state: RootState) => state.flashcard.slug);
 
   // Initial load: clear state if needed and fetch quiz
   useEffect(() => {
@@ -75,30 +77,48 @@ export default function FlashcardQuizWrapper({
     if (lastSlug.current !== slug) {
       hasInitialized.current = false;
       lastSlug.current = slug;
+      dispatch(forceResetFlashCards()); // Clear state when slug changes
+    } else if (currentSlug && currentSlug !== slug) {
+      // If persisted state has different slug, clear it
+      dispatch(forceResetFlashCards());
+      hasInitialized.current = false;
     }
 
     // Prevent multiple initializations
     if (hasInitialized.current) return;
 
-    // Handle reset mode - clear state and mark as initialized
+    // Handle reset mode - clear state and immediately fetch new data
     if (isResetMode) {
-      dispatch(clearQuizState());
-      hasInitialized.current = true;
-      return;
+      dispatch(forceResetFlashCards());
+      hasInitialized.current = false; // Allow refetch after reset
     }
 
     // Handle review mode - clear only if needed
     if (isReviewMode && questions.length === 0 && quizStatus !== "idle" && quizStatus !== "loading") {
-      dispatch(clearQuizState());
+      dispatch(forceResetFlashCards());
+      hasInitialized.current = false; // Allow refetch after reset
       hasInitialized.current = true;
       return;
     }
 
     // Only fetch if we're in idle state, have no questions, and haven't initialized yet
     if (quizStatus === "idle" && questions.length === 0) {
+      console.log('Initiating flashcard quiz fetch:', {
+        slug,
+        currentStatus: quizStatus,
+        hasQuestions: questions.length > 0
+      });
+      
       hasInitialized.current = true;
       dispatch(fetchFlashCardQuiz(slug))
         .unwrap()
+        .then((result) => {
+          console.log('Flashcard quiz fetch result:', {
+            hasData: !!result,
+            questionCount: result?.questions?.length,
+            title: result?.title
+          });
+        })
         .catch((err) => {
           console.error(`Error loading flashcards for ${slug}:`, err);
           const message =
@@ -299,6 +319,9 @@ export default function FlashcardQuizWrapper({
     const timestamp = new Date().toISOString();
 
     const results: QuizResultsState = {
+      quizId: slug,
+      slug,
+      title: quizTitle || title || "Flashcard Quiz",
       score: correctCount,
       percentage,
       correctCount,
@@ -311,11 +334,14 @@ export default function FlashcardQuizWrapper({
       totalTime,
       completedAt: timestamp,
       submittedAt: timestamp,
-      reviewCards: ratingAnswers,
+      questions: currentCards,
+      answers: answers,
+      reviewCards: ratingAnswers.map(a => parseInt(a.questionId)),
+      stillLearningCards: ratingAnswers.filter(a => a.answer === ANSWER_TYPES.STILL_LEARNING).map(a => parseInt(a.questionId)),
     };
 
-    dispatch(completeFlashCardQuiz());
-    dispatch(saveFlashCardResults(results));
+    dispatch(completeFlashCardQuiz(results));
+    dispatch(saveFlashCardResults({ slug, data: results }));
     router.push(`/dashboard/flashcard/${slug}/results`);
   };
 

@@ -133,7 +133,8 @@ export const fetchFlashCardQuiz = createAsyncThunk(
         signal: controllerSignal,
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        cache: 'no-store' // Ensure we don't get cached responses
       })
       
       if (!response.ok) {
@@ -144,13 +145,34 @@ export const fetchFlashCardQuiz = createAsyncThunk(
       
       const data = await response.json()
       abortController.abort()
+      console.log('Fetched flashcard quiz data:', data);
+      
+      if (!data) {
+        console.error('Empty response data');
+        return rejectWithValue('Empty quiz response');
+      }
+      
+      if (!data.questions) {
+        console.error('No questions found in response:', data);
+        return rejectWithValue('No questions found in quiz data');
+      }
+      
+      if (!Array.isArray(data.questions)) {
+        console.error('Questions is not an array:', data.questions);
+        return rejectWithValue('Invalid questions format');
+      }
+      
+      if (data.questions.length === 0) {
+        console.warn('Quiz has no questions:', data);
+        return rejectWithValue('This quiz has no questions');
+      }
       
       const result = {
         slug,
         id: data.id || slug,
         title: data.title || "Flashcard Quiz",
         userId: data.userId || null,
-        questions: data.flashCards || [],
+        questions: data.questions || [], // Use questions instead of flashCards
         quizType: "flashcard",
         __lastUpdated: Date.now(),
       }
@@ -351,12 +373,23 @@ const flashcardSlice = createSlice({
 
     resetFlashCards: (state) => {
       if (state.status !== "submitting" && state.status !== "loading") {
-        Object.assign(state, initialState)
+        // Reset to initial state while preserving some metadata
+        const preservedData = {
+          requiresAuth: state.requiresAuth,
+          pendingAuthRequired: state.pendingAuthRequired,
+        };
+        Object.assign(state, { ...initialState, ...preservedData, status: "idle" });
       }
     },
 
     forceResetFlashCards: (state) => {
-      Object.assign(state, initialState)
+      // Force reset everything to initial state
+      const timestamp = Date.now();
+      Object.assign(state, { 
+        ...initialState,
+        status: "idle",
+        lastUpdated: timestamp, // Set new timestamp to ensure fresh fetch
+      });
     },
 
     setCurrentFlashCard: (state, action: PayloadAction<number>) => {
@@ -448,28 +481,72 @@ clearQuizState: (state) => {
  extraReducers: (builder) => {
   builder
     .addCase(fetchFlashCardQuiz.pending, (state) => {
-      state.status = "loading"
-      state.error = null
-      // Don't clear existing data during loading to prevent blank screens
+      state.status = "loading";
+      state.error = null;
+      
+      // Clear only if we don't have valid data for this quiz
+      if (!state.questions.length || state.slug !== state.quizId) {
+        state.questions = [];
+        state.answers = [];
+      }
     })
     .addCase(fetchFlashCardQuiz.fulfilled, (state, action) => {
-      const incomingTs = (action.payload as any)?.__lastUpdated || Date.now()
+      const incomingTs = (action.payload as any)?.__lastUpdated || Date.now();
+      
+      if (!action.payload.questions || !Array.isArray(action.payload.questions)) {
+        state.status = "failed";
+        state.error = "Invalid quiz data received";
+        return;
+      }
+      
       if (shouldUpdateState(state, incomingTs)) {
-        state.status = "succeeded"
-        state.quizId = action.payload.id
-        state.slug = action.payload.slug
-        state.title = action.payload.title
-        state.questions = action.payload.questions
-        state.lastUpdated = incomingTs
+        // Debug log the incoming payload
+        console.log('Processing flashcard quiz payload:', {
+          id: action.payload.id,
+          slug: action.payload.slug,
+          title: action.payload.title,
+          questionCount: action.payload.questions?.length,
+          firstQuestion: action.payload.questions?.[0],
+        });
+
+        state.status = "succeeded";
+        state.quizId = action.payload.id;
+        state.slug = action.payload.slug;
+        state.title = action.payload.title;
+        state.questions = action.payload.questions;
+        state.lastUpdated = incomingTs;
+        state.currentQuestion = 0;
+        state.error = null;
+        
+        // Log final state for debugging
+        console.log(`Loaded flashcard quiz state:`, {
+          title: state.title,
+          questionCount: state.questions.length,
+          status: state.status,
+          error: state.error
+        });
       }
     })
     .addCase(fetchFlashCardQuiz.rejected, (state, action) => {
-      const payload = action.payload as string
+      const payload = action.payload as string;
       
       // Don't change status or clear data for cancelled requests
       if (payload === 'Request was cancelled') {
-        return
+        return;
       }
+      
+      state.status = "failed";
+      state.error = payload;
+      state.lastUpdated = Date.now();
+      
+      // Clear data only if we don't have valid questions
+      if (!state.questions.length) {
+        state.questions = [];
+        state.answers = [];
+      }
+      
+      // Log error for debugging
+      console.error("Failed to load flashcard quiz:", payload);
       
       state.status = "failed"
       state.error = payload || action.error.message || "An unknown error occurred."

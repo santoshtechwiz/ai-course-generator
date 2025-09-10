@@ -44,6 +44,9 @@ export async function GET(
     // Save to memory cache
     await cache.set(cacheKey, quiz, 60) // 60s TTL for API-level cache
 
+    // Debug log the quiz data
+    console.log(`Quiz data for ${quizType}/${slug}:`, JSON.stringify(quiz, null, 2));
+    
     // Add caching headers to the response
     const response = NextResponse.json(quiz)
     response.headers.set("X-Cache", "MISS")

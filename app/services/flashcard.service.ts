@@ -16,29 +16,59 @@ export class FlashcardService extends BaseQuizService {
   /**
    * Override getQuizBySlug to handle flashcards properly
    */
-  async getQuizBySlug(slug: string, userId: string) {
-    const quiz = await prisma.userQuiz.findUnique({
+  async getQuizBySlug(
+    slug: string,
+    userId: string
+  ): Promise<{
+    isPublic: boolean;
+    isFavorite: boolean;
+    id: number;
+    title: string;
+    questions: any[];
+    userId: string;
+    language: string | null;
+  } | null> {
+    console.log("Fetching flashcard quiz by slug:", { slug, userId });
+
+    // Fetch all flashcards with the given slug
+    const quiz = await prisma.flashCard.findMany({
       where: { slug },
-      include: {
-        flashCards: {
-          orderBy: { id: "asc" },
-        },
+      select: {
+        id: true,
+        question: true,
+        answer: true,
+        difficulty: true,
+        saved: true,
+        createdAt: true,
+        userId: true,
+        slug: true,
+        updatedAt: true,
+        generatedBy: true,
+        version: true,
+        parentId: true,
+        userQuizId: true,
+        // Only fields that exist on the model
       },
+      orderBy: { id: "asc" },
     });
 
-    if (!quiz) {
+    if (!quiz || quiz.length === 0) {
+      console.error("Quiz not found:", { slug });
       return null;
     }
 
+    // Format questions for the response
+    const formattedQuestions = this.formatQuestions(quiz);
+
+    // Provide fallback values for required fields
     return {
-      isPublic: quiz.isPublic,
-      isFavorite: quiz.isFavorite,
-      id: quiz.id,
-      title: quiz.title,
-      questions: this.formatQuestions(quiz.flashCards || []),
-      flashCards: quiz.flashCards || [], // Include both for backward compatibility
-      userId: quiz.userId,
-      language: quiz.language,
+      isPublic: false,
+      isFavorite: false,
+      id: quiz[0]?.id,
+      title: quiz[0]?.slug || "Untitled",
+      questions: formattedQuestions,
+      userId: quiz[0]?.userId,
+      language: null,
     };
   }
 
@@ -64,24 +94,45 @@ export class FlashcardService extends BaseQuizService {
   }
 
   /**
-   * Update flashcard difficulty
-   */
-  async updateCardDifficulty(cardId: number, userId: string, difficulty: string) {
-    return this.flashcardRepository.updateCardDifficulty(cardId, userId, difficulty);
-  }
-
-  /**
    * Format questions for flashcards
    */
   protected formatQuestions(questions: any[]): any[] {
-    return questions.map((q: any) => ({
-      id: q.id,
-      question: q.question,
-      answer: q.answer,
-      difficulty: q.difficulty,
-      saved: q.saved || false,
-      type: 'flashcard',
-    }));
+    // Log input for debugging
+    if (!Array.isArray(questions)) {
+      console.error("Invalid questions input:", questions);
+      return [];
+    }
+
+    return questions
+      .map((q: any) => {
+        if (!q) {
+          console.warn("Null/undefined question encountered");
+          return null;
+        }
+
+        // Create formatted question with fallbacks
+        const formatted = {
+          id: q.id?.toString() || "",
+          question: q.question || "",
+          answer: q.answer || "",
+          difficulty: q.difficulty || "medium",
+          saved: !!q.saved,
+          type: "flashcard",
+          createdAt: q.createdAt || new Date(),
+        };
+
+        // Log any missing required fields
+        if (!formatted.question || !formatted.answer) {
+          console.warn("Question missing required fields:", {
+            id: formatted.id,
+            hasQuestion: !!formatted.question,
+            hasAnswer: !!formatted.answer,
+          });
+        }
+
+        return formatted;
+      })
+      .filter(Boolean); // Remove any null entries
   }
 }
 

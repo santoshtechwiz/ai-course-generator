@@ -4,8 +4,8 @@ generator client {
 
 datasource db {
   provider          = "postgresql"
-  url               = env("DATABASE_URL_PROD")
-  
+  url               = env("DATABASE_URL_LOCAL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL_LOCAL")
 }
 
 enum GeneratedBy {
@@ -460,10 +460,12 @@ model OpenEndedQuestion {
   maxScore           Int?
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
-  question           UserQuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question           UserQuizQuestion @relation(fields: [questionId], references: [id])
   userQuiz           UserQuiz?        @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
 
   @@index([difficulty])
+  @@index([questionId])
+  @@index([userQuizId])
 }
 
 model UserQuizAttemptQuestion {
