@@ -330,13 +330,7 @@ export async function createUserQuiz(userId: string, title: string, type: string
 
 
 
-export async function updateTopicCount(title: string) {
-  return prisma.topicCount.upsert({
-    where: { topic: title },
-    create: { topic: title, count: 1 },
-    update: { count: { increment: 1 } },
-  })
-}
+
 export async function updateUserCredits(userId: string, type: QuizType): Promise<void> {
   const user = await prisma.user.findUnique({
     where: { id: userId },

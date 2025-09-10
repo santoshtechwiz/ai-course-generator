@@ -9,7 +9,6 @@ import LinkedinProvider, { LinkedInProfile } from "next-auth/providers/linkedin"
 import type { DefaultJWT } from "next-auth/jwt"
 import { prisma } from "./db"
 import { sendEmail } from "@/lib/email"
-import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -175,7 +174,7 @@ export const authOptions: NextAuthOptions = {
         await prisma.user.update({
           where: { id: user.id },
           data: {
-            lastLogin: new Date(),
+            lastActiveAt: new Date(),
           },
         })
 
@@ -199,18 +198,9 @@ export const authOptions: NextAuthOptions = {
         // Record the sign-in provider for analytics
         if (account) {
           try {
-            const existingMetric = await prisma.userEngagementMetrics.findUnique({
-              where: { userId: user.id },
-            })
-
-            if (!existingMetric) {
-              await prisma.userEngagementMetrics.create({
-                data: {
-                  userId: user.id,
-                  createdAt: new Date(),
-                },
-              })
-            }
+            // TODO: Implement user engagement metrics tracking
+            // The userEngagementMetrics model needs to be defined in the schema first
+            console.log(`User ${user.id} signed in with ${account.provider}`)
           } catch (error) {
             console.error("Error recording sign-in metrics:", error)
             // Non-critical error, continue sign-in process
