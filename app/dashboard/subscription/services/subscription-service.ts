@@ -35,13 +35,20 @@ export class SubscriptionService {
       logger.info(`Activating free plan for user ${userId}`);
 
       return await prisma.$transaction(async (tx) => {
-        // Check if user already has an active free subscription
-        const existingSubscription = await tx.userSubscription.findUnique({
-          where: { userId },
+        // Check if user has ever had a free plan
+        const userSubscriptionHistory = await tx.userSubscription.findFirst({
+          where: {
+            userId,
+            planId: "FREE",
+          },
         });
 
-        if (existingSubscription?.planId === "FREE" && existingSubscription.status === "ACTIVE") {
-          return { success: true, message: "Already on free plan", alreadySubscribed: true };
+        if (userSubscriptionHistory) {
+          return { 
+            success: false, 
+            message: "You have already used the free plan. Please choose a paid plan.",
+            alreadySubscribed: true 
+          };
         }
 
         // Check if user already received free tokens
@@ -199,7 +206,7 @@ export class SubscriptionService {
   }
 
   /**
-   * Get the subscription status for a user
+   * Get the subscription status for a user with enhanced validation and status checks
    */
   static async getSubscriptionStatus(userId: string): Promise<any> {
     try {
@@ -210,19 +217,48 @@ export class SubscriptionService {
           isSubscribed: false,
           subscriptionPlan: "FREE",
           status: "INACTIVE",
+          hadPreviousPaidPlan: false,
+          lastActiveDate: null
         };
       }
 
-      // Get user subscription data and credits
-      const [userSubscription, user] = await Promise.all([
+      // First check subscription history
+      const subscriptionHistory = await prisma.userSubscription.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 5
+      });
+
+      const hadPreviousPaidPlan = subscriptionHistory.some(sub => 
+        sub.planId !== 'FREE' && sub.status === 'ACTIVE'
+      );
+
+      const lastActiveDate = subscriptionHistory.find(sub => 
+        sub.status === 'ACTIVE'
+      )?.currentPeriodEnd || null;
+
+      // Get user subscription data, credits, and usage history
+      const [userSubscription, user, freePlanUsage] = await Promise.all([
         prisma.userSubscription.findUnique({
           where: { userId }
         }),
         prisma.user.findUnique({
           where: { id: userId },
           select: { credits: true, creditsUsed: true }
+        }),
+        prisma.userSubscription.findFirst({
+          where: { 
+            userId,
+            planId: 'FREE',
+            status: { in: ['ACTIVE', 'EXPIRED', 'CANCELED'] }
+          },
+          orderBy: { createdAt: 'desc' }
         })
       ]);
+
+      // Determine if user can access free plan
+      const hasUsedFreePlan = freePlanUsage !== null;
+      const canUseFreePlan = !hasUsedFreePlan || hadPreviousPaidPlan;
 
       // Default values if no subscription exists
       if (!userSubscription) {
@@ -232,6 +268,10 @@ export class SubscriptionService {
           isSubscribed: false,
           subscriptionPlan: "FREE",
           status: "INACTIVE",
+          hadPreviousPaidPlan,
+          lastActiveDate,
+          hasUsedFreePlan,
+          canUseFreePlan
         };
       }
 
@@ -248,7 +288,18 @@ export class SubscriptionService {
         ? userSubscription.trialEnd.toISOString()
         : undefined;
 
+      // Calculate days until expiration
+      const now = new Date();
+      const daysUntilExpiration = expirationDate 
+        ? Math.ceil((new Date(expirationDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        : null;
+
+      const isGracePeriod = daysUntilExpiration !== null && 
+        daysUntilExpiration <= 7 && 
+        daysUntilExpiration > 0;
+
       return {
+        // Basic subscription info
         credits: user?.credits || 0,
         tokensUsed: user?.creditsUsed || 0,
         isSubscribed,
@@ -256,6 +307,21 @@ export class SubscriptionService {
         expirationDate,
         trialEndsAt,
         status: userSubscription.status as SubscriptionStatusType,
+        
+        // Enhanced status information
+        hadPreviousPaidPlan,
+        lastActiveDate,
+        hasUsedFreePlan,
+        canUseFreePlan,
+        daysUntilExpiration,
+        isGracePeriod,
+        
+        // Plan transition helpers
+        canReactivate: ["EXPIRED", "CANCELED"].includes(userSubscription.status),
+        canDowngrade: hadPreviousPaidPlan || userSubscription.planId !== "FREE",
+        gracePeriodMessage: isGracePeriod 
+          ? `Your subscription will expire in ${daysUntilExpiration} days` 
+          : null
       };
     } catch (error: any) {
       logger.error(`Error fetching subscription status for user ${userId}:`, error);
@@ -327,20 +393,40 @@ export class SubscriptionService {
     options?: any
   ): Promise<{ success: boolean; url?: string; message?: string }> {
     try {
+      // Input validation
+      if (!userId || !planId) {
+        throw new Error('User ID and plan ID are required');
+      }
+
+      // Check current subscription status
+      const currentStatus = await SubscriptionService.getSubscriptionStatus(userId);
+      
       // Handle FREE plan directly without Stripe
       if (planId === 'FREE') {
-        logger.info(`Activating free plan directly for user ${userId}`)
-        const result = await SubscriptionService.activateFreePlan(userId)
+        logger.info(`Activating free plan directly for user ${userId}`);
         
-        if (result.success) {
-          return {
-            success: true,
-            message: result.message || 'Free plan activated successfully!'
-          }
-        } else {
-          return {
-            success: false,
-            message: result.message || 'Failed to activate free plan'
+        // Check if user has had a paid plan before - allow downgrade
+        const hasPaidPlan = currentStatus.subscriptionPlan !== 'FREE';
+        if (!hasPaidPlan) {
+          const result = await SubscriptionService.activateFreePlan(userId);
+          
+          if (result.success) {
+            return {
+              success: true,
+              message: result.message || 'Free plan activated successfully!'
+            };
+          } else {
+            // If activation failed due to previous free plan, suggest upgrading
+            if (result.alreadySubscribed) {
+              return {
+                success: false,
+                message: 'You have already used the free plan. Please choose a paid plan.'
+              };
+            }
+            return {
+              success: false,
+              message: result.message || 'Failed to activate free plan'
+            };
           }
         }
       }
@@ -348,12 +434,37 @@ export class SubscriptionService {
       // For paid plans, use the payment gateway (Stripe)
       logger.info(`Creating Stripe checkout session for user ${userId} and plan ${planId}`)
       const paymentGateway = await getPaymentGateway()
-      const checkoutResult = await paymentGateway.createCheckoutSession(userId, planId, duration, options)
-      console.log(`Checkout URL created for user ${userId} and plan ${planId}: ${checkoutResult.url}`);
-      return { success: true, url: checkoutResult.url }
+      // Validate plan change
+      const currentPlan = currentStatus.subscriptionPlan;
+      if (currentPlan === planId && currentStatus.status === 'ACTIVE') {
+        return {
+          success: false,
+          message: 'You are already subscribed to this plan.'
+        };
+      }
+
+      // Create checkout session via payment gateway
+      const checkoutResult = await paymentGateway.createCheckoutSession(userId, planId, duration, options);
+      logger.info(`Checkout URL created for user ${userId} and plan ${planId}: ${checkoutResult.url}`);
+      
+      return { 
+        success: true, 
+        url: checkoutResult.url,
+        message: 'Redirecting to checkout...'
+      };
     } catch (error: any) {
-      logger.error(`Error creating checkout session for user ${userId} and plan ${planId}:`, error)
-      return { success: false, message: "Failed to create checkout session." }
+      logger.error(`Error creating checkout session for user ${userId} and plan ${planId}:`, error);
+      
+      // Provide user-friendly error messages
+      const errorMessage = error?.message || "Failed to create checkout session.";
+      const userMessage = errorMessage.includes('stripe') 
+        ? 'There was an issue with the payment system. Please try again.'
+        : errorMessage;
+        
+      return { 
+        success: false, 
+        message: userMessage
+      };
     }
   }
 
@@ -369,19 +480,9 @@ export class SubscriptionService {
         throw new Error("User ID is required")
       }
 
-      // Check cache first
-      const cacheKey = `billing_${userId}`
-      const cachedData = subscriptionCache.get(cacheKey)
-
-      if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
-        logger.debug(`Using cached billing data for user ${userId}`)
-        return cachedData.data
-      }      // For simplicity, assume Stripe as the payment gateway
+      // Get billing details from payment gateway
       const paymentGateway = await getPaymentGateway()
       const billingDetails = await paymentGateway.getBillingHistory(userId)
-
-      // Cache the result
-      subscriptionCache.set(cacheKey, { data: billingDetails, timestamp: Date.now() })
 
       return billingDetails
     } catch (error: any) {

@@ -90,33 +90,77 @@ export default function PlanCards({
         const discountedPrice = getDiscountedPrice(priceOption.price)
 
         // Determine if this specific plan should be disabled
-        // If not authenticated, only disable during loading
-        const isPlanDisabled =
-          loading !== null || (isAuthenticated && !isPlanAvailable(plan.id as SubscriptionPlanType))
+        const isPlanDisabled = (() => {
+          // Always disable during loading
+          if (loading !== null) return true
+          
+          // For unauthenticated users, only disable during loading
+          if (!isAuthenticated) return false
+          
+          // Disable if plan is not available
+          if (!isPlanAvailable(plan.id as SubscriptionPlanType)) return true
+          
+          // Disable current active plan (user is already subscribed to this plan)
+          if (isCurrentActivePlan) return true
+          
+          // Special case for FREE plan - disable if user is currently on free plan
+          if (plan.id === "FREE" && currentPlan === "FREE" && normalizedStatus === "ACTIVE") {
+            return true
+          }
+          
+          return false
+        })()
 
         // Get the reason why the plan is unavailable
         const unavailableReason = isAuthenticated
           ? getPlanUnavailableReason?.(plan.id as SubscriptionPlanType)
           : undefined
 
-        // Determine button text and state
+        // Determine button text and state with enhanced messaging
         const buttonText = (() => {
           if (loading === plan.id) return "Processing..."
           if (isAuthenticated) {
+            // Current active plan messaging
             if (isCurrentActivePlan) {
+              if (plan.id === "FREE") {
+                return "Current Free Plan"
+              }
               return cancelAtPeriodEnd ? "Cancels Soon" : "Current Plan"
             }
+            
             if (hasAllPlans) return "All Plans Active"
-            if (plan.id === "FREE" && hasAnyPaidPlan) return "Paid Plan Active"
+            
+            // Special handling for FREE plan
+            if (plan.id === "FREE") {
+              // If user currently has an active free plan
+              if (currentPlan === "FREE" && normalizedStatus === "ACTIVE") {
+                return "Current Free Plan"
+              }
+              // If user has any paid plan active
+              if (hasAnyPaidPlan) {
+                return "Downgrade to Free"
+              }
+              // If user has used free plan before but can't use it again
+              if (!isPlanAvailable(plan.id as SubscriptionPlanType)) {
+                return "Free Plan Used"
+              }
+            }
             
             // Special messaging for expired/canceled users
             if (normalizedStatus === "EXPIRED" || normalizedStatus === "CANCELED") {
-              if (plan.id === "FREE") return "Downgraded to Free"
+              if (plan.id === "FREE") {
+                // Check if user can downgrade to free
+                return hadPreviousPaidPlan ? "Downgrade to Free" : "Free Plan Used"
+              }
               return hadPreviousPaidPlan ? "Reactivate Plan" : "Subscribe Now"
             }
             
-            if (!isPlanAvailable(plan.id as SubscriptionPlanType)) return "Unavailable"
+            // Enhanced unavailable messaging for other plans
+            if (!isPlanAvailable(plan.id as SubscriptionPlanType)) {
+              return "Unavailable"
+            }
           }
+          // For unauthenticated users
           if (plan.id === "FREE") return "Start for Free"
           return "Subscribe Now"
         })()
@@ -245,7 +289,9 @@ export default function PlanCards({
                             variant={isCurrentActivePlan ? "outline" : "default"}
                             className={`w-full text-primary-foreground ${
                               plan.id === "FREE"
-                                ? "bg-slate-500 hover:bg-slate-600"
+                                ? isCurrentActivePlan 
+                                  ? "bg-slate-300 dark:bg-slate-600 text-slate-600 dark:text-slate-300 cursor-not-allowed"
+                                  : "bg-slate-500 hover:bg-slate-600"
                                 : plan.id === "BASIC"
                                   ? "bg-blue-500 hover:bg-blue-600"
                                   : plan.id === "PREMIUM"
@@ -253,6 +299,8 @@ export default function PlanCards({
                                     : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                             } shadow-md transition-all duration-300 ${
                               isCurrentActivePlan ? "!bg-transparent !text-foreground border-2" : ""
+                            } ${
+                              isPlanDisabled && !isCurrentActivePlan ? "opacity-50 cursor-not-allowed" : ""
                             }`}
                           >
                             {loading === plan.id ? (
@@ -266,19 +314,36 @@ export default function PlanCards({
                           </Button>
                         </div>
                       </TooltipTrigger>
-                      {isAuthenticated && !isPlanAvailable(plan.id as SubscriptionPlanType) && unavailableReason && (
+                      {isAuthenticated && (
+                        (!isPlanAvailable(plan.id as SubscriptionPlanType) && unavailableReason) ||
+                         (plan.id === "FREE" && isCurrentActivePlan)
+                      ) && (
                         <TooltipContent side="bottom" className="max-w-xs">
                           <div className="flex items-start gap-2 p-1">
-                            <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                            <div>
-                              <p className="font-medium text-sm">{unavailableReason}</p>
-                              {expirationDate && normalizedStatus !== "ACTIVE" && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Your current plan {normalizedStatus === "CANCELED" ? "expires" : "renews"} on{" "}
-                                  {expirationDate}
-                                </p>
-                              )}
-                            </div>
+                            {plan.id === "FREE" && isCurrentActivePlan ? (
+                              <>
+                                <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="font-medium text-sm">You are currently on the free plan</p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Upgrade to a paid plan for more features and higher limits
+                                  </p>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="font-medium text-sm">{unavailableReason}</p>
+                                  {expirationDate && normalizedStatus !== "ACTIVE" && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Your current plan {normalizedStatus === "CANCELED" ? "expires" : "renews"} on{" "}
+                                      {expirationDate}
+                                    </p>
+                                  )}
+                                </div>
+                              </>
+                            )}
                           </div>
                         </TooltipContent>
                       )}
@@ -287,13 +352,15 @@ export default function PlanCards({
                 </div>
               </CardFooter>
 
-              {/* Add a note for current active plan */}
+              {/* Enhanced note for current active plan */}
               {isAuthenticated && isCurrentActivePlan && (
                 <div className="px-6 pb-4 text-center">
                   <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-2">
                     <Info className="h-4 w-4" />
                     <p>
-                      {cancelAtPeriodEnd
+                      {plan.id === "FREE" 
+                        ? "You are currently on the free plan - upgrade for more features"
+                        : cancelAtPeriodEnd
                         ? "Your subscription will cancel at the end of the billing period"
                         : "You are currently subscribed to this plan"}
                     </p>
@@ -301,7 +368,7 @@ export default function PlanCards({
                 </div>
               )}
 
-              {/* Add a note for unavailable plans */}
+              {/* Enhanced note for unavailable plans */}
               {isAuthenticated && !isPlanAvailable(plan.id as SubscriptionPlanType) && !isCurrentActivePlan && (
                 <div className="px-6 pb-4 text-center">
                   <div className="flex items-center justify-center gap-2 text-sm text-amber-600 dark:text-amber-400 mt-2">
@@ -310,7 +377,12 @@ export default function PlanCards({
                         <Check className="h-4 w-4" />
                         <p>All features already available</p>
                       </>
-                    ) : plan.id === "FREE" && hasAnyPaidPlan ? (
+                    ) : plan.id === "FREE" ? (
+                      <>
+                        <AlertTriangle className="h-4 w-4" />
+                        <p>Free plan already used - choose a paid plan</p>
+                      </>
+                    ) : hasAnyPaidPlan ? (
                       <>
                         <Info className="h-4 w-4" />
                         <p>You have a paid subscription</p>

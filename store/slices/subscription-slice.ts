@@ -210,6 +210,92 @@ export const resumeSubscription = createAsyncThunk<
   }
 })
 
+export const subscribeToplan = createAsyncThunk<
+  SubscriptionData,
+  { planId: string; duration: number; userId: string },
+  { state: RootState; rejectValue: string }
+>("subscription/subscribeToPlan", async ({ planId, duration, userId }, { getState, rejectWithValue }) => {
+  try {
+    // Validate inputs
+    if (!planId || !duration || !userId) {
+      return rejectWithValue("Missing required parameters for subscription")
+    }
+
+    // Get current subscription state
+    const currentState = getState().subscription.currentSubscription
+
+    // Check if user is trying to subscribe to FREE plan
+    if (planId === 'FREE' && currentState) {
+      // Use the SubscriptionService to check free plan eligibility
+      const statusResponse = await fetchWithTimeout(`/api/subscriptions/status?userId=${userId}`, {
+        credentials: "include",
+      }, 10000)
+
+      if (statusResponse?.ok) {
+        const statusData = await statusResponse.json()
+        if (statusData.hasUsedFreePlan && !statusData.hadPreviousPaidPlan) {
+          return rejectWithValue("You have already used the free plan. Please choose a paid plan.")
+        }
+      }
+    }
+
+    // Create checkout session
+    const response = await fetchWithTimeout("/api/subscriptions/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        planId,
+        duration,
+        userId,
+      }),
+    }, 15000)
+
+    if (!response || !response.ok) {
+      const errorData = await response?.json().catch(() => ({}))
+      throw new Error(errorData.message || `HTTP ${response?.status}: ${response?.statusText}`)
+    }
+
+    const result = await response.json()
+
+    if (!result.success) {
+      throw new Error(result.message || "Subscription failed")
+    }
+
+    // If checkout URL is provided, redirect user
+    if (result.url) {
+      window.location.href = result.url
+      // Return current state while redirecting
+      return currentState || DEFAULT_FREE_SUBSCRIPTION
+    }
+
+    // For free plan or direct activation, fetch updated subscription
+    const updatedResponse = await fetchWithTimeout(`/api/subscriptions/status?nocache=${Date.now()}`, {
+      credentials: "include",
+    }, 10000)
+
+    if (updatedResponse?.ok) {
+      const updatedData = await updatedResponse.json()
+      return {
+        credits: Math.max(0, updatedData.credits || 0),
+        tokensUsed: Math.max(0, updatedData.tokensUsed || 0),
+        isSubscribed: Boolean(updatedData.isSubscribed),
+        subscriptionPlan: updatedData.subscriptionPlan || "FREE",
+        expirationDate: updatedData.expirationDate,
+        trialEndsAt: updatedData.trialEndsAt,
+        status: updatedData.status || "INACTIVE",
+      }
+    }
+
+    return currentState || DEFAULT_FREE_SUBSCRIPTION
+  } catch (error: any) {
+    logger.error("Subscription failed", error)
+    return rejectWithValue(error.message || "Subscription failed")
+  }
+})
+
 export const forceSyncSubscription = createAsyncThunk<
   SubscriptionData,
   void,
@@ -309,10 +395,29 @@ export const subscriptionSlice = createSlice({
         state.isFetching = false
         state.lastFetched = Date.now()
         state.lastRefreshed = Date.now()
+        state.error = null // Clear any existing errors on success
       })
       .addCase(fetchSubscription.rejected, (state, action) => {
         state.isFetching = false
         state.error = action.payload || "Failed to fetch subscription"
+        // Keep last known good state if available
+        if (!state.currentSubscription) {
+          state.currentSubscription = DEFAULT_FREE_SUBSCRIPTION
+        }
+      })
+      .addCase(subscribeToplan.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(subscribeToplan.fulfilled, (state, action) => {
+        state.currentSubscription = action.payload
+        state.isLoading = false
+        state.lastFetched = Date.now()
+        state.error = null
+      })
+      .addCase(subscribeToplan.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload || "Subscription failed"
       })
   },
 })
@@ -380,26 +485,55 @@ export const selectSubscriptionPlan = createSelector(
   (data) => data?.subscriptionPlan || "FREE"
 )
 
+// Enhanced subscription state selector
+export const selectSubscriptionState = createSelector(
+  [selectSubscriptionData],
+  (data): {
+    isCancelled: boolean
+    isExpired: boolean
+    isGracePeriod: boolean
+    daysUntilExpiration: number | null
+    canReactivate: boolean
+  } => {
+    if (!data) {
+      return {
+        isCancelled: false,
+        isExpired: false,
+        isGracePeriod: false,
+        daysUntilExpiration: null,
+        canReactivate: false
+      }
+    }
+
+    const now = new Date()
+    const expirationDate = data.expirationDate ? new Date(data.expirationDate) : null
+    const daysUntilExpiration = expirationDate 
+      ? Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      : null
+
+    return {
+      isCancelled: data.cancelAtPeriodEnd || false,
+      isExpired: data.status === "EXPIRED" || (expirationDate ? expirationDate < now : false),
+      isGracePeriod: daysUntilExpiration !== null && daysUntilExpiration <= 7 && daysUntilExpiration > 0,
+      daysUntilExpiration,
+      canReactivate: ["EXPIRED", "CANCELED"].includes(data.status || "")
+    }
+  }
+)
+
 export const selectIsSubscribed = createSelector(
   [selectSubscriptionData],
   (data) => data?.isSubscribed || false
 )
 
 export const selectIsCancelled = createSelector(
-  [selectSubscriptionData],
-  (data) => data?.cancelAtPeriodEnd || false
+  [selectSubscriptionState],
+  (state) => state.isCancelled
 )
 
 export const selectIsExpired = createSelector(
-  [selectSubscriptionData],
-  (data): boolean => {
-    if (!data) return false
-    if (data.status === "EXPIRED") return true
-    if (data.expirationDate) {
-      return new Date(data.expirationDate) < new Date()
-    }
-    return false
-  }
+  [selectSubscriptionState],
+  (state) => state.isExpired
 )
 
 export const selectTokenUsage = createSelector(
