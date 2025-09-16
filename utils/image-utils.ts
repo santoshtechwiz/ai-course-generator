@@ -3,8 +3,14 @@
  */
 
 export function normalizeImageUrl(imageUrl: string | null | undefined): string {
+  // Treat missing or known placeholder image names as empty so callers will use a proper fallback
   if (!imageUrl) {
-    return '/course-card.svg'
+    return ""
+  }
+
+  const lower = imageUrl.toLowerCase()
+  if (lower.includes('not.') || lower.includes('placeholder') || lower.includes('default')) {
+    return ""
   }
 
   // If it's already a full URL or starts with http/https, return as is
@@ -22,8 +28,8 @@ export function normalizeImageUrl(imageUrl: string | null | undefined): string {
     return `/images/${imageUrl}`
   }
 
-  // For any other case, return the fallback
-  return '/not.svg'
+  // Unknown cases - return empty so fallback logic can pick a category image
+  return ""
 }
 
 export function getImageWithFallback(

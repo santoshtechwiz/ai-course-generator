@@ -64,6 +64,19 @@ export default function CoursesClient({
   selectedCategory,
   sortBy = "popular",
 }: CoursesClientProps) {
+  // Helper: compute quiz count from nested courseUnits if the API didn't provide a top-level quizCount
+  const computeQuizCount = (course: any): number => {
+    if (typeof course.quizCount === 'number') return course.quizCount
+    if (!course.courseUnits || !Array.isArray(course.courseUnits)) return 0
+    return course.courseUnits.reduce((unitAcc: number, unit: any) => {
+      if (!unit.chapters || !Array.isArray(unit.chapters)) return unitAcc
+      const chapterQuizzes = unit.chapters.reduce((chapAcc: number, chap: any) => {
+        return chapAcc + ((chap._count && typeof chap._count.courseQuizzes === 'number') ? chap._count.courseQuizzes : 0)
+      }, 0)
+      return unitAcc + chapterQuizzes
+    }, 0)
+  }
+
   // State
   const [activeTab, setActiveTab] = useState<"all" | "popular" | "newest">("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("list") // Default to list for better course information display
@@ -424,8 +437,8 @@ export default function CoursesClient({
         </div>
       )}
 
-      {/* Course grid with Udemy-style responsive layout */}
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+  {/* Course grid with smoother responsive layout */}
+  <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {coursesData?.pages?.map((page: CoursesResponse, pageIndex: number) => (
           <React.Fragment key={pageIndex}>
             {page.courses?.map((course: Course) => {
@@ -443,7 +456,7 @@ export default function CoursesClient({
                   slug={course.slug || `course-${course.id}`}
                   unitCount={course.unitCount || 0}
                   lessonCount={course.lessonCount || 0}
-                  quizCount={course.quizCount || 0}
+                  quizCount={computeQuizCount(course) || 0}
                   viewCount={course.viewCount || 0}
                   category={course.category?.name || "General"}
                   duration={`${course.estimatedHours || 4} hours`}
