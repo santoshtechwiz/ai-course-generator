@@ -7,6 +7,10 @@ import {
   Suspense,
   memo,
 } from "react"
+import { UnifiedLoader } from "@/components/loaders/UnifiedLoader"
+import { DashboardErrorBoundary } from "@/components/ui/dashboard-error-boundary"
+import { AlertTriangle, RefreshCw } from "lucide-react"
+import { cleanApiData } from "@/lib/utils/data-utils"
 import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -84,9 +88,67 @@ export default function DashboardPage() {
   })
 
   // Fetch dashboard data using real data hooks - moved before conditional returns
-  const { data: learningActivityData, isLoading: isLoadingActivity } = useLearningActivity(userId)
-  const { data: progressOverviewData, isLoading: isLoadingProgress } = useProgressOverview(userId)
-  const { data: quizPerformanceData, isLoading: isLoadingQuizPerformance } = useQuizPerformance(userId)
+  const { 
+    data: rawLearningActivityData, 
+    isLoading: isLoadingActivity 
+  } = useLearningActivity(userId)
+
+  const { 
+    data: rawProgressOverviewData, 
+    isLoading: isLoadingProgress 
+  } = useProgressOverview(userId)
+
+  const { 
+    data: rawQuizPerformanceData, 
+    isLoading: isLoadingQuizPerformance 
+  } = useQuizPerformance(userId)
+
+  // Clean data before use
+  const learningActivityData = cleanApiData(rawLearningActivityData, {
+    recentEvents: [],
+    todayStats: {
+      timeSpent: 0,
+      coursesStudied: 0,
+      chaptersCompleted: 0,
+      quizzesCompleted: 0
+    },
+    weeklyStats: {
+      timeSpent: 0,
+      coursesStarted: 0,
+      coursesCompleted: 0,
+      averageScore: 0
+    }
+  })
+
+  const progressOverviewData = cleanApiData(rawProgressOverviewData, {
+    courseProgresses: [],
+    chapterProgresses: [],
+    overallStats: {
+      totalCourses: 0,
+      completedCourses: 0,
+      totalChapters: 0,
+      completedChapters: 0,
+      totalTimeSpent: 0,
+      averageProgress: 0,
+      streak: 0
+    }
+  })
+
+  const quizPerformanceData = cleanApiData(rawQuizPerformanceData, {
+    recentAttempts: [],
+    quizProgresses: [],
+    performanceStats: {
+      totalQuizzes: 0,
+      completedQuizzes: 0,
+      averageScore: 0,
+      averageAccuracy: 0,
+      totalTimeSpent: 0,
+      bestStreak: 0,
+      currentStreak: 0,
+      improvementRate: 0
+    },
+    weakAreas: []
+  })
 
   const handleTabChange = useCallback((value: string) => {
     setActiveTab(value)
@@ -167,24 +229,43 @@ export default function DashboardPage() {
     )
   }
 
-  // Show loading state
-  if (isLoading || isLoadingUserData || isLoadingUserStats || isLoadingActivity || isLoadingProgress || isLoadingQuizPerformance) {
-    return <LoadingState />
+  // Show loading state with unified loader
+  if (isLoading || isLoadingUserData || isLoadingUserStats) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <UnifiedLoader
+          variant="spinner"
+          size="lg"
+          message="Loading your dashboard..."
+          className="text-center"
+        />
+      </div>
+    )
   }
 
-  // Handle critical data load error
+  // Handle critical data load error with error boundary
   if (userDataError || userStatsError) {
+    const errorMessage = userDataError?.message || userStatsError?.message
     return (
-      <div className="p-4 sm:p-6">
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <h2 className="text-xl font-semibold mb-2">Error Loading Dashboard</h2>
-            <p className="mb-2">Something went wrong fetching your data.</p>
-            {userDataError && <p className="text-red-600 text-sm">User error: {userDataError.message}</p>}
-            {userStatsError && <p className="text-red-600 text-sm">Stats error: {userStatsError.message}</p>}
-          </CardContent>
-        </Card>
-      </div>
+      <DashboardErrorBoundary
+        fallback={({ resetErrorBoundary }) => (
+          <div className="p-4 sm:p-6">
+            <Card>
+              <CardContent className="p-4 sm:p-6 text-center">
+                <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+                <h2 className="text-xl font-semibold mb-2">Error Loading Dashboard</h2>
+                <p className="mb-4 text-muted-foreground">{errorMessage || 'Something went wrong fetching your data.'}</p>
+                <Button onClick={resetErrorBoundary}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Try Again
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      >
+        {children}
+      </DashboardErrorBoundary>
     )
   }
 
@@ -242,30 +323,83 @@ export default function DashboardPage() {
             </TabsList>
 
             <TabsContent value="overview" className="mt-0">
-              <Suspense fallback={<div className="flex justify-center py-10"><div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" /></div>}>
+              <Suspense fallback={
+                <div className="py-10">
+                  <UnifiedLoader
+                    variant="spinner"
+                    size="md"
+                    message="Loading overview..."
+                  />
+                </div>
+              }>
                 <OverviewTab userData={safeUserData} userStats={safeUserStats} />
               </Suspense>
             </TabsContent>
 
             <TabsContent value="progress" className="mt-0">
-              <ProgressOverview 
-                courseProgresses={progressOverviewData?.courseProgresses || []}
-                chapterProgresses={progressOverviewData?.chapterProgresses || []}
-                overallStats={progressOverviewData?.overallStats || { totalCourses: 0, completedCourses: 0, totalChapters: 0, completedChapters: 0, totalTimeSpent: 0, averageProgress: 0, streak: 0 }}
-              />
+              <DashboardErrorBoundary componentName="ProgressOverview">
+                {progressOverviewData ? (
+                  <ProgressOverview 
+                    courseProgresses={progressOverviewData.courseProgresses || []}
+                    chapterProgresses={progressOverviewData.chapterProgresses || []}
+                    overallStats={progressOverviewData.overallStats || { 
+                      totalCourses: 0, 
+                      completedCourses: 0, 
+                      totalChapters: 0, 
+                      completedChapters: 0, 
+                      totalTimeSpent: 0, 
+                      averageProgress: 0, 
+                      streak: 0 
+                    }}
+                  />
+                ) : (
+                  <UnifiedLoader
+                    variant="spinner"
+                    size="md"
+                    message="Loading progress data..."
+                  />
+                )}
+              </DashboardErrorBoundary>
             </TabsContent>
 
             <TabsContent value="performance" className="mt-0">
-              <QuizPerformance data={quizPerformanceData || { recentAttempts: [], quizProgresses: [], performanceStats: { totalQuizzes: 0, completedQuizzes: 0, averageScore: 0, averageAccuracy: 0, totalTimeSpent: 0, bestStreak: 0, currentStreak: 0, improvementRate: 0 }, weakAreas: [] }} />
+              <DashboardErrorBoundary componentName="QuizPerformance">
+                {quizPerformanceData ? (
+                  <QuizPerformance 
+                    data={quizPerformanceData || { 
+                      recentAttempts: [], 
+                      quizProgresses: [], 
+                      performanceStats: { 
+                        totalQuizzes: 0, 
+                        completedQuizzes: 0, 
+                        averageScore: 0, 
+                        averageAccuracy: 0, 
+                        totalTimeSpent: 0, 
+                        bestStreak: 0, 
+                        currentStreak: 0, 
+                        improvementRate: 0 
+                      }, 
+                      weakAreas: [] 
+                    }} 
+                  />
+                ) : (
+                  <UnifiedLoader
+                    variant="spinner"
+                    size="md"
+                    message="Loading performance data..."
+                  />
+                )}
+              </DashboardErrorBoundary>
             </TabsContent>
 
             <TabsContent value="courses" className="mt-0">
               <Suspense fallback={
                 <div className="min-h-[400px] flex items-center justify-center">
-                  <div className="flex flex-col items-center gap-2 py-8">
-                    <div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-                    <p className="text-xs text-muted-foreground">Loading courses...</p>
-                  </div>
+                  <UnifiedLoader
+                    variant="spinner"
+                    size="md"
+                    message="Loading courses..."
+                  />
                 </div>
               }>
                 <CoursesTab userData={safeUserData} />
@@ -273,15 +407,43 @@ export default function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="activity" className="mt-0">
-              <LearningActivity 
-                recentEvents={learningActivityData?.recentEvents || []}
-                todayStats={learningActivityData?.todayStats || { timeSpent: 0, coursesStudied: 0, chaptersCompleted: 0, quizzesCompleted: 0 }}
-                weeklyStats={learningActivityData?.weeklyStats || { timeSpent: 0, coursesStarted: 0, coursesCompleted: 0, averageScore: 0 }}
-              />
+              <DashboardErrorBoundary componentName="LearningActivity">
+                {learningActivityData ? (
+                  <LearningActivity 
+                    recentEvents={learningActivityData.recentEvents || []}
+                    todayStats={learningActivityData.todayStats || { 
+                      timeSpent: 0, 
+                      coursesStudied: 0, 
+                      chaptersCompleted: 0, 
+                      quizzesCompleted: 0 
+                    }}
+                    weeklyStats={learningActivityData.weeklyStats || { 
+                      timeSpent: 0, 
+                      coursesStarted: 0, 
+                      coursesCompleted: 0, 
+                      averageScore: 0 
+                    }}
+                  />
+                ) : (
+                  <UnifiedLoader
+                    variant="spinner"
+                    size="md"
+                    message="Loading activity data..."
+                  />
+                )}
+              </DashboardErrorBoundary>
             </TabsContent>
 
             <TabsContent value="recommendations" className="mt-0">
-              <Suspense fallback={<div className="flex justify-center py-10"><div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" /></div>}>
+              <Suspense fallback={
+                <div className="py-10">
+                  <UnifiedLoader
+                    variant="spinner"
+                    size="md"
+                    message="Loading recommendations..."
+                  />
+                </div>
+              }>
                 <RecommendationsWidget />
               </Suspense>
             </TabsContent>

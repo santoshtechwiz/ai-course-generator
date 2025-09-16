@@ -47,12 +47,18 @@ class BookmarkService {
   }
 
   async createBookmark(data: CreateBookmarkData): Promise<Bookmark> {
+    // Whitelist only allowed fields to avoid sending stale/unsupported keys (e.g., deprecated timestamp)
+    const payload: Record<string, any> = {}
+    if (typeof data.courseId === 'number') payload.courseId = data.courseId
+    if (typeof data.chapterId === 'number') payload.chapterId = data.chapterId
+    if (typeof data.note === 'string') payload.note = data.note
+
     const response = await fetch(this.baseUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     })
 
     if (!response.ok) {
@@ -63,7 +69,7 @@ class BookmarkService {
     return response.json()
   }
 
-  async updateBookmark(id: string, data: UpdateBookmarkData): Promise<Bookmark> {
+  async updateBookmark(id: number, data: UpdateBookmarkData): Promise<Bookmark> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "PUT",
       headers: {
@@ -80,7 +86,7 @@ class BookmarkService {
     return response.json()
   }
 
-  async deleteBookmark(id: string): Promise<void> {
+  async deleteBookmark(id: number): Promise<void> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "DELETE",
     })
@@ -91,7 +97,7 @@ class BookmarkService {
     }
   }
 
-  async getBookmark(id: string): Promise<Bookmark> {
+  async getBookmark(id: number): Promise<Bookmark> {
     const response = await fetch(`${this.baseUrl}/${id}`)
     if (!response.ok) {
       const error = await response.json()

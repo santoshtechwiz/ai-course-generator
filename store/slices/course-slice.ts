@@ -158,7 +158,7 @@ const courseSlice = createSlice({
       
       // Add new bookmark with properly typed fields
       state.bookmarks[videoId].push({
-        id: bookmarkId,
+        id: action.payload.id,
         videoId,
         time,
         title: title || `Bookmark at ${Math.floor(time)}s`,

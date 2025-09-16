@@ -18,8 +18,8 @@ import {
   FastForwardIcon,
   PictureInPicture2,
   Settings,
-  Minimize,
-  Volume1,
+  Minimize2 as Minimize,
+  Volume1
 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import {
@@ -55,6 +55,7 @@ interface PlayerControlsProps {
   isAuthenticated: boolean
   show?: boolean
   onCertificateClick?: () => void
+  isBookmarkLoading?: boolean
 
   onShowKeyboardShortcuts?: () => void
   onNextVideo?: () => void
@@ -131,6 +132,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   const [isCompact, setIsCompact] = useState(false)
   // Local optimistic bookmark list so new bookmark shows immediately
   const [localBookmarks, setLocalBookmarks] = useState<number[]>(bookmarks || [])
+  const [isBookmarkLoading, setIsBookmarkLoading] = useState(false)
 
   // Prevent event bubbling that could interfere with controls
   const handleControlsClick = useCallback((e: React.MouseEvent) => {
@@ -288,7 +290,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
     onSeekChange(newTime)
   }, [duration, played, onSeekChange])
 
-  const VolumeIcon = useMemo(() => {
+  const getVolumeIcon = useMemo(() => {
     if (muted || volume === 0) return VolumeX
     if (volume < 0.5) return Volume1
     return Volume2
@@ -416,6 +418,38 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               style={{ left: `${hoverPosition * 100}%` }}
             />
           )}
+
+          {/* Loading indicator for bookmarks */}
+          {isBookmarkLoading && (
+            <motion.div
+              className="absolute h-4 w-full"
+              style={{ top: "50%" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <div className="w-full h-1 bg-yellow-400/20 animate-pulse rounded" />
+            </motion.div>
+          )}
+
+          {/* Bookmark markers */}
+          {localBookmarks?.length > 0 &&
+            localBookmarks.map((time: number, index: number) => (
+              <motion.button
+                key={`bookmark-${index}`}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.9 }}
+                className="absolute w-2 h-4 bg-yellow-400 rounded-full transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 hover:bg-yellow-300 transition-colors touch-manipulation shadow-sm"
+                style={{ left: `${duration > 0 ? (time / duration) * 100 : 0}%`, top: "50%" }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSeekToBookmark?.(time)
+                }}
+                title={`Bookmark at ${formatTime(time)}`}
+                aria-label={`Seek to bookmark at ${formatTime(time)}`}
+              />
+            ))}
         </div>
 
         {/* Enhanced bookmarks on timeline */}
@@ -509,7 +543,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               title={muted ? "Unmute (M)" : "Mute (M)"}
               aria-label={muted ? "Unmute audio" : "Mute audio"}
             >
-              <VolumeIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+              {React.createElement(getVolumeIcon, { className: "h-4 w-4 sm:h-5 sm:w-5" })}
             </Button>
 
             <AnimatePresence>
@@ -522,7 +556,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
                   className="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-black/90 p-3 rounded-lg z-10 w-24 sm:w-28 backdrop-blur-sm border border-white/10 shadow-lg"
                 >
                   <div className="flex items-center gap-2 mb-2">
-                    <VolumeIcon className="h-3 w-3 text-white/60" />
+                    {React.createElement(getVolumeIcon, { className: "h-3 w-3 text-white/60" })}
                     <span className="text-xs text-white/80 font-medium">{Math.round((muted ? 0 : volume) * 100)}%</span>
                   </div>
                   <div
@@ -666,7 +700,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             (isAuthenticated || onPictureInPicture) && <div className="hidden lg:block w-px h-6 bg-white/20 mx-1" />}
 
           {/* Single bookmark button for panel toggle */}
-          {onToggleBookmarkPanel && (
+          {onToggleBookmarkPanel && isAuthenticated && (
             <Button
               variant="ghost"
               size="icon"
@@ -680,7 +714,12 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               title={bookmarkPanelOpen ? "Hide bookmarks (Shift+B)" : "Show bookmarks (Shift+B)"}
               aria-label={bookmarkPanelOpen ? "Hide bookmark panel" : "Show bookmark panel"}
             >
-              <BookmarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <BookmarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+              </motion.div>
             </Button>
           )}
 

@@ -3,12 +3,16 @@ import { getAuthSession } from "@/lib/auth"
 import prisma from "@/lib/db"
 import { z } from "zod"
 
+// NOTE: "timestamp" was previously accepted but the Bookmark model has no such column.
+// Removing it prevents Prisma validation errors when null/undefined is passed.
 const createBookmarkSchema = z.object({
-  courseId: z.number().optional(),
-  chapterId: z.number().optional(),
-  note: z.string().optional(),
-  timestamp: z.number().optional(),
-})
+  courseId: z.coerce.number().int().positive().optional(),
+  chapterId: z.coerce.number().int().positive().optional(),
+  note: z.string().trim().max(2000).optional(),
+}).refine(
+  (data) => data.courseId !== undefined || data.chapterId !== undefined,
+  { message: "Either courseId or chapterId must be provided", path: ["courseId"] }
+)
 
 const updateBookmarkSchema = z.object({
   note: z.string().optional(),
@@ -91,15 +95,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const body = await request.json()
-    const validatedData = createBookmarkSchema.parse(body)
-
-    if (!validatedData.courseId && !validatedData.chapterId) {
-      return NextResponse.json(
-        { error: "Either courseId or chapterId must be provided" },
-        { status: 400 }
-      )
+    const raw = await request.json()
+    // Sanitize: convert empty strings to undefined
+    const body = {
+      courseId: raw.courseId === '' ? undefined : raw.courseId,
+      chapterId: raw.chapterId === '' ? undefined : raw.chapterId,
+      note: typeof raw.note === 'string' && raw.note.trim().length ? raw.note : undefined,
     }
+    const validatedData = createBookmarkSchema.parse(body)
 
     const bookmark = await prisma.bookmark.create({
       data: {
@@ -107,7 +110,6 @@ export async function POST(request: NextRequest) {
         courseId: validatedData.courseId || null,
         chapterId: validatedData.chapterId || null,
         note: validatedData.note || null,
-        timestamp: validatedData.timestamp || null,
       },
       include: {
         course: {

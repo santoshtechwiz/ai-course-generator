@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useRef, useEffect } from "react"
-import { useSession } from "next-auth/react"
+import { useAuth } from "@/modules/auth"
 import useProgressTracker from "@/hooks/use-progress-tracker"
 import { useAppSelector } from "@/store/hooks"
 import { selectCourseProgressById } from "@/store/slices/courseProgress-slice"
@@ -29,7 +29,7 @@ export function useVideoProgress({
   enabled = true,
   saveInterval = 10000, // Save every 10 seconds by default
 }: UseVideoProgressOptions) {
-  const { data: session } = useSession()
+  const { user, isAuthenticated } = useAuth()
   const lastSaveTimeRef = useRef<number>(0)
   const progressDataRef = useRef<VideoProgressData>({
     progress: 0,
@@ -40,7 +40,7 @@ export function useVideoProgress({
 
   // Use centralized tracker for persistence and completion handling
   const { updateProgress } = useProgressTracker({
-    userId: session?.user?.id || '',
+    userId: user?.id || '',
     courseId: Number(courseId),
     chapterId: Number(chapterId),
     onError: (error) => {
@@ -48,15 +48,13 @@ export function useVideoProgress({
     },
   })
 
-  // Initialize completed chapters on mount
-  useEffect(() => {
-    // Completed chapters are synchronized via server -> Redux on mount elsewhere.
-  }, [session?.user?.id])
+  // No-op effect retained for possible future initialization hooks
+  useEffect(() => { /* placeholder */ }, [user?.id])
  
   // Save progress to API
   const saveProgress = useCallback(
     async (data: VideoProgressData, force = false) => {
-      if (!enabled || !session?.user?.id) return
+  if (!enabled || !isAuthenticated || !user?.id) return
 
       const now = Date.now()
       const timeSinceLastSave = now - lastSaveTimeRef.current
@@ -78,7 +76,7 @@ export function useVideoProgress({
         console.error("Failed to save video progress:", error)
       }
     },
-    [enabled, session?.user?.id, updateProgress, videoId, saveInterval]
+  [enabled, isAuthenticated, user?.id, updateProgress, videoId, saveInterval]
   )
 
   // Handle progress updates from video player
@@ -144,7 +142,7 @@ export function useVideoProgress({
 
   // Load saved progress position
   const loadSavedPosition = useCallback(async (): Promise<number> => {
-    if (!enabled || !session?.user?.id) return 0
+  if (!enabled || !isAuthenticated || !user?.id) return 0
 
     try {
       const response = await fetch(`/api/progress/${courseId}`)
@@ -161,16 +159,16 @@ export function useVideoProgress({
     }
 
     return 0
-  }, [enabled, session?.user?.id, courseId, chapterId])
+  }, [enabled, isAuthenticated, user?.id, courseId, chapterId])
 
   // Get completion status
+  const progressState = useAppSelector((state) => selectCourseProgressById(state, courseId))
   const isChapterCompleted = useCallback((): boolean => {
-    const chapterNum = Number(chapterId)
-    const progress = useAppSelector((state) => selectCourseProgressById(state, courseId))
     try {
-      return (progress?.videoProgress?.completedChapters || []).includes(chapterNum)
+      const chapterNum = Number(chapterId)
+      return (progressState?.videoProgress?.completedChapters || []).includes(chapterNum)
     } catch { return false }
-  }, [chapterId])
+  }, [progressState, chapterId])
 
   return {
     handleProgress,

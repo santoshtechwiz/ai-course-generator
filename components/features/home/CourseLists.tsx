@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import { motion } from 'framer-motion'
 import { useInfiniteQuery, type UseInfiniteQueryResult, type InfiniteData } from "@tanstack/react-query"
 import { BookOpen, LayoutGrid, List, Search, X, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -354,7 +355,7 @@ export default function CoursesClient({
 
   // Main content
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 space-y-6">
       {/* Controls */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -437,8 +438,23 @@ export default function CoursesClient({
         </div>
       )}
 
-  {/* Course grid with smoother responsive layout */}
-  <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+  {/* Course grid with enhanced responsive layout (denser at wide screens) */}
+  <motion.div
+    className={cn(
+      "grid gap-7",
+      viewMode === "grid" && "grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4",
+      viewMode === "list" && "grid-cols-1"
+    )}
+    variants={{
+      hidden: { opacity: 0 },
+      show: {
+        opacity: 1,
+        transition: { staggerChildren: 0.06, delayChildren: 0.05 }
+      }
+    }}
+    initial="hidden"
+    animate="show"
+  >
         {coursesData?.pages?.map((page: CoursesResponse, pageIndex: number) => (
           <React.Fragment key={pageIndex}>
             {page.courses?.map((course: Course) => {
@@ -448,12 +464,21 @@ export default function CoursesClient({
               ) || course
               
               return (
+                <motion.div
+                  key={course.id}
+                  variants={{
+                    hidden: { opacity: 0, y: 20, scale: 0.98 },
+                    show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 260, damping: 24 } }
+                  }}
+                >
                 <CourseCard
                   key={course.id}
+                  courseId={Number(course.id) || undefined}
                   title={course.title || course.name || "Untitled Course"}
                   description={course.description || "No description available"}
                   rating={course.rating || 0}
                   slug={course.slug || `course-${course.id}`}
+                  variant={viewMode === 'list' ? 'list' : 'grid'}
                   unitCount={course.unitCount || 0}
                   lessonCount={course.lessonCount || 0}
                   quizCount={computeQuizCount(course) || 0}
@@ -484,11 +509,12 @@ export default function CoursesClient({
                   currentChapterTitle={courseWithProgress.currentChapterTitle}
                   timeSpent={courseWithProgress.timeSpent}
                 />
+                </motion.div>
               )
             })}
           </React.Fragment>
         ))}
-      </div>
+      </motion.div>
 
       {/* Load more */}
       {hasNextPage && (

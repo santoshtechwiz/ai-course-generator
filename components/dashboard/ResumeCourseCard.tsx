@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Play, Clock, CheckCircle, BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { getImageWithFallback } from '@/utils/image-utils'
+import { getImageWithFallback, normalizeImageUrl } from '@/utils/image-utils'
 
 interface ResumeCourseCardProps {
   courseTitle: string
@@ -59,29 +59,30 @@ export default function ResumeCourseCard({
     }
   }
 
-  const courseImageUrl = getImageWithFallback(courseImage)
+  const normalized = normalizeImageUrl(courseImage)
+  const courseImageUrl = normalized || '/course-card.svg'
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={cn("mb-6", className)}
+      className={cn("mb-6 w-full", className)}
     >
-      <Card className="overflow-hidden border-primary/20 bg-gradient-to-r from-primary/5 to-blue-50">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-6">
+      <Card className="overflow-hidden w-full sm:max-w-3xl mx-auto border-primary/20 bg-gradient-to-r from-primary/5 to-blue-50">
+        <CardContent className="p-6 w-full">
+          <div className="flex flex-col sm:flex-row items-start gap-6">
             {/* Course Thumbnail */}
             <div className="flex-shrink-0">
-              <div className="w-20 h-20 bg-primary/10 rounded-lg flex items-center justify-center">
-                {courseImageUrl && courseImageUrl !== '/not.svg' ? (
+              <div className="w-20 h-20 md:w-28 md:h-28 bg-primary/10 rounded-lg flex items-center justify-center">
+                {courseImageUrl ? (
                   <img 
                     src={courseImageUrl} 
                     alt={courseTitle}
                     className="w-full h-full object-cover rounded-lg"
                     onError={(e) => {
-                      // Fallback to SVG if image fails to load
                       const target = e.target as HTMLImageElement
-                      target.src = '/not.svg'
+                      // On error, use a generic course SVG fallback
+                      target.src = '/course-card.svg'
                     }}
                   />
                 ) : (

@@ -4,7 +4,7 @@ import React from "react"
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import dynamic from "next/dynamic"
 const ReactPlayer: any = dynamic(() => import("react-player/youtube"), { ssr: false })
-import { useSession } from "next-auth/react"
+import { useAuth } from "@/modules/auth"
 import { useVideoPlayer } from "../hooks/useVideoPlayer"
 import PlayerControls from "./PlayerControls"
 
@@ -112,9 +112,9 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
   onTheaterModeToggle,
   isTheaterMode = false,
 }) => {
-    const { data: session } = useSession()
-    // Derive effective authentication (prop can override but session acts as fallback)
-    const effectiveIsAuthenticated = isAuthenticated || !!session?.user
+    const { isAuthenticated: authState, user } = useAuth()
+    // Derive effective authentication (prop can override but auth state acts as fallback)
+    const effectiveIsAuthenticated = isAuthenticated || authState
     const youtubeVideoIdRef = useRef(youtubeVideoId)
 
     // Consolidated state management with performance optimizations
@@ -301,7 +301,7 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
           if (interval) clearInterval(interval)
         })
       }
-    }, [authenticationState, session?.user?.id])
+    }, [authenticationState, user?.id])
 
     // Enhanced PiP detection and state management
     useEffect(() => {
@@ -564,7 +564,7 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
       if (playerState.playerReady) {
         loadSavedPosition()
       }
-    }, [isAuthenticated, rememberPlaybackPosition, courseId, chapterId, playerState.playerReady])
+  }, [effectiveIsAuthenticated, rememberPlaybackPosition, courseId, chapterId, playerState.playerReady])
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -586,12 +586,11 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
             break
           case "b":
           case "B":
+            event.preventDefault()
+            // Silent ignore if not authenticated; no toast per updated requirement
             if (event.shiftKey) {
-              event.preventDefault()
-              handleToggleBookmarkPanel()
-            } else {
-              event.preventDefault()
-              // Add bookmark at current time
+              if (effectiveIsAuthenticated) handleToggleBookmarkPanel()
+            } else if (effectiveIsAuthenticated) {
               handleAddBookmark(state.lastPlayedTime)
             }
             break

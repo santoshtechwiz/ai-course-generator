@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
@@ -28,7 +28,11 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { normalizeImageUrl } from "@/utils/image-utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useAuth } from "@/modules/auth"
+// Removed toast error feedback for bookmark/favorite auth prompts per request
+import bookmarkService from "@/lib/bookmark-service"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Progress } from "@/components/ui/progress"
 
@@ -58,6 +62,8 @@ export interface CourseCardProps {
   description: string
   rating: number
   slug: string
+  courseId?: number // optional numeric id to enable bookmark persistence
+  variant?: 'grid' | 'list'
   unitCount: number
   lessonCount: number
   quizCount: number
@@ -204,7 +210,8 @@ export const CourseCard = React.memo(
     title,
     description,
     rating,
-    slug,
+  slug,
+  courseId,
     unitCount,
     lessonCount,
     quizCount,
@@ -232,22 +239,29 @@ export const CourseCard = React.memo(
     totalChapters = unitCount || 0,
     lastAccessedAt,
     currentChapterTitle,
-    timeSpent = 0,
+  timeSpent = 0,
+  variant = 'grid'
   }: CourseCardProps) => {
     const [isNavigating, setIsNavigating] = useState(false)
     const [imageError, setImageError] = useState(false)
     const [isHovered, setIsHovered] = useState(false)
-    const [isFavorite, setIsFavorite] = useState(false)
-    const [isBookmarked, setIsBookmarked] = useState(false)
+  const [isFavorite, setIsFavorite] = useState(false)
+  const [isBookmarked, setIsBookmarked] = useState(false)
+  const [optimisticBusy, setOptimisticBusy] = useState<null | 'favorite' | 'bookmark'>(null)
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  // Toast removed (no user-facing error popups for auth on bookmark/favorite)
+  // Keep an up-to-date ref of auth state to avoid stale closures in keyboard handler
+  const authRef = React.useRef({ isAuthenticated, authLoading })
+  useEffect(() => { authRef.current = { isAuthenticated, authLoading } }, [isAuthenticated, authLoading])
     const router = useRouter()
 
     // Memoized random selections for consistent rendering
     const { selectedImage, gradientBg } = useMemo(() => {
-      // Use the actual image if provided and valid, otherwise fall back to category-based image
-      let imageToUse = image
-      
-      // If no image provided or it's the fallback SVG, use category-based image
-      if (!imageToUse || imageToUse === '/not.svg') {
+  // Use the actual image if provided and valid, otherwise fall back to category-based image
+  let imageToUse = normalizeImageUrl(image)
+
+  // If normalizeImageUrl returned empty, use category-based image
+  if (!imageToUse) {
         const normalizedCategory = (typeof category === 'string' ? category : '')?.toLowerCase().replace(/\s+/g, '-')
         imageToUse = COURSE_IMAGES[normalizedCategory as keyof typeof COURSE_IMAGES] || COURSE_IMAGES.default
       }
@@ -266,15 +280,112 @@ export const CourseCard = React.memo(
       router.push(`/dashboard/course/${slug}`)
     }, [router, slug])
 
-    const handleFavoriteClick = useCallback((e: React.MouseEvent) => {
-      e.stopPropagation()
-      setIsFavorite(!isFavorite)
-    }, [isFavorite])
+    // Initial favorite status fetch only (no bulk bookmarks call per card)
+    useEffect(() => {
+      let cancelled = false
+      const run = async () => {
+        if (!isAuthenticated) return
+        try {
+          const statusRes = await fetch(`/api/course/status/${slug}`)
+          if (statusRes.ok) {
+            const data = await statusRes.json()
+            if (!cancelled) setIsFavorite(!!data.isFavorite)
+          }
+        } catch {/* ignore */}
+        if (courseId && isAuthenticated) {
+          // Lightweight bookmark existence check via dedicated endpoint (avoid listing all)
+          try {
+            const res = await fetch(`/api/bookmarks?courseId=${courseId}&limit=1`)
+            if (res.ok) {
+              const data = await res.json()
+              if (!cancelled && Array.isArray(data.bookmarks) && data.bookmarks.length > 0) {
+                setIsBookmarked(true)
+              }
+            }
+          } catch {/* ignore */}
+        }
+      }
+      run()
+      return () => { cancelled = true }
+    }, [slug, courseId, isAuthenticated])
 
-    const handleBookmarkClick = useCallback((e: React.MouseEvent) => {
+    const handleFavoriteClick = useCallback(async (e: React.MouseEvent | React.KeyboardEvent) => {
       e.stopPropagation()
-      setIsBookmarked(!isBookmarked)
-    }, [isBookmarked])
+      if (authRef.current.authLoading || optimisticBusy) return
+  if (!authRef.current.isAuthenticated) return
+      const next = !isFavorite
+      setIsFavorite(next)
+      setOptimisticBusy('favorite')
+      try {
+        const res = await fetch(`/api/course/${slug}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isFavorite: next })
+        })
+  if (res.status === 401) { setIsFavorite(!next); return }
+        if (!res.ok) throw new Error('Failed to update favorite')
+  // Silent success
+      } catch (err) {
+        setIsFavorite(!next) // revert
+  // Silent failure
+      } finally {
+        setOptimisticBusy(null)
+      }
+  }, [optimisticBusy, isFavorite, slug])
+
+    const handleBookmarkClick = useCallback(async (e: React.MouseEvent | React.KeyboardEvent) => {
+      console.log('Bookmark click - Auth state:', { 
+        isAuthenticated: authRef.current.isAuthenticated,
+        isLoading: authRef.current.authLoading,
+        busy: optimisticBusy
+      })
+      e.stopPropagation()
+      
+      // Block all actions if loading or busy
+      if (authRef.current.authLoading || optimisticBusy) {
+        console.log('Blocked: Loading or busy')
+        return
+      }
+      
+      // Early return if not authenticated
+  if (!authRef.current.isAuthenticated) return
+
+      const next = !isBookmarked
+      console.log('Proceeding with bookmark:', { next })
+      setOptimisticBusy('bookmark')
+      setIsBookmarked(next)
+      try {
+        if (courseId) {
+          const result = await bookmarkService.toggleBookmark(courseId)
+          if (result.bookmarked !== next) setIsBookmarked(result.bookmarked)
+  } else { /* no courseId: silent */
+        }
+  // Silent success
+      } catch (err) {
+  setIsBookmarked(!next) // revert silently
+      } finally {
+        setOptimisticBusy(null)
+      }
+  }, [optimisticBusy, isBookmarked, courseId])
+
+    // Keyboard shortcuts: f = favorite, b = bookmark when card focused
+    const keyHandler = useCallback((e: React.KeyboardEvent) => {
+      // Ignore if ctrl/cmd/alt/shift is pressed to avoid conflicts
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+
+      // Only handle when focused (redundant but explicit)
+      if (document.activeElement !== e.currentTarget) return;
+      
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+  if (!authRef.current.isAuthenticated) return;
+        handleFavoriteClick(e as any);
+      } else if (e.key === 'b' || e.key === 'B') {
+        e.preventDefault();
+  if (!authRef.current.isAuthenticated) return;
+        handleBookmarkClick(e as any);
+      }
+    }, [handleFavoriteClick, handleBookmarkClick]);
 
     if (loading) {
       return (
@@ -316,13 +427,15 @@ export const CourseCard = React.memo(
 
     return (
       <TooltipProvider>
-        <Card
+  <Card
           onClick={handleCardClick}
           className={cn(
-            "w-full overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group",
-            "hover:border-gray-300 hover:-translate-y-1",
+      "relative w-full overflow-hidden border border-gray-200 bg-white/95 backdrop-blur-sm shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer group focus:outline-none",
+      "hover:border-transparent hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+      "before:absolute before:inset-0 before:pointer-events-none before:opacity-0 group-hover:before:opacity-100 before:transition-opacity before:duration-300 before:bg-[radial-gradient(circle_at_30%_20%,rgba(99,102,241,0.15),transparent_60%)]",
             isNavigating && "opacity-75 scale-95",
-            className
+      variant==='list' && 'md:flex md:flex-row md:h-56',
+      className
           )}
           role="button"
           tabIndex={0}
@@ -333,18 +446,29 @@ export const CourseCard = React.memo(
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
               handleCardClick(e as any);
+              return
             }
+            keyHandler(e)
           }}
         >
-          {/* Course Thumbnail */}
-          <div className="relative aspect-video overflow-hidden bg-gray-100">
+      {/* Category Accent Bar */}
+      <div className={cn(
+        "absolute top-0 left-0 right-0 h-1.5",
+        CATEGORY_CONFIG[category.toLowerCase()]?.badge
+          ?.replace('text-white','text-transparent')
+          ?.replace('px-2','px-0')
+          ?.replace('py-0.5','py-0') || 'bg-gradient-to-r from-slate-500 to-gray-600'
+      )} />
+
+      {/* Course Thumbnail - use 4:3 aspect for larger visual */}
+  <div className={cn("relative overflow-hidden bg-gray-100", variant==='list' ? 'md:w-64 md:h-full md:shrink-0' : '')} style={variant==='list' ? undefined : { paddingTop: '75%' }}>
             {!imageError ? (
               <Image
                 src={selectedImage || "/generic-course-fallback.svg"}
                 alt={`${title} course thumbnail`}
-                fill
+        layout="fill"
                 loading="lazy"
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
+        className="object-cover transition-transform duration-300 group-hover:scale-102"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 onError={() => setImageError(true)}
               />
@@ -353,11 +477,21 @@ export const CourseCard = React.memo(
                 <div className="text-gray-400 text-sm font-medium">Course Image</div>
               </div>
             )}
-
-            {/* Play button overlay */}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center">
-              <div className="w-12 h-12 bg-white/90 rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <Play className="w-5 h-5 text-gray-800 ml-0.5" fill="currentColor" />
+            {/* Hover overlay with gradient & play button */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="w-12 h-12 bg-white/95 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center">
+                  <Play className="w-5 h-5 text-gray-800 ml-0.5" fill="currentColor" />
+                </div>
+              </div>
+              {/* Bottom stats bar */}
+              <div className="absolute bottom-0 left-0 right-0 p-2 translate-y-4 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                <div className="flex items-center justify-between text-[11px] font-medium text-white/90">
+                  <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400" />{rating.toFixed(1)}</span>
+                  <span className="flex items-center gap-1"><Users className="w-3 h-3" />{enrolledCount.toLocaleString()}</span>
+                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{duration}</span>
+                </div>
               </div>
             </div>
 
@@ -370,7 +504,52 @@ export const CourseCard = React.memo(
           </div>
 
           {/* Course Content */}
-          <CardContent className="p-4 flex flex-col h-full">
+          <CardContent className={cn("p-5 flex flex-col h-full bg-gradient-to-b from-white/60 via-white/80 to-white", variant==='list' && 'md:flex-1')}>
+            {/* Quick Action Hover Bar */}
+            <div className="absolute left-0 right-0 -top-10 opacity-0 group-hover:opacity-100 group-hover:translate-y-12 transition-all duration-300 pointer-events-none flex justify-center">
+              <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-full px-4 py-2 flex items-center gap-2 border border-gray-200 pointer-events-auto">
+                <Button
+                  size="sm"
+                  className="h-8 px-3 text-xs font-medium"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleCardClick(e)
+                  }}
+                >
+                  {isEnrolled ? (progressPercentage === 100 ? 'Review' : 'Continue') : 'Preview'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleFavoriteClick}
+                  aria-label={isFavorite ? 'Unfavorite course' : 'Favorite course'}
+                  disabled={authLoading}
+                >
+                  <Heart className={cn('h-4 w-4', isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-500')} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleBookmarkClick}
+                  aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark course'}
+                  disabled={authLoading}
+                >
+                  <Bookmark className={cn('h-4 w-4', isBookmarked ? 'fill-blue-500 text-blue-500' : 'text-gray-500')} />
+                </Button>
+              </div>
+            </div>
+            {/* Discount Ribbon */}
+            {price !== undefined && originalPrice && originalPrice > price && (
+              <div className="absolute top-3 right-3 z-20">
+                <div className="relative">
+                  <div className="bg-rose-600 text-white text-[10px] font-semibold px-2 py-1 rounded shadow-lg shadow-rose-500/30">
+                    SAVE {Math.round(((originalPrice - price) / originalPrice) * 100)}%
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Header with Category and Badges */}
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -397,7 +576,7 @@ export const CourseCard = React.memo(
                       className="h-8 w-8 p-0 hover:bg-gray-100"
                       onClick={handleFavoriteClick}
                     >
-                      <Heart className={cn("h-4 w-4", isFavorite ? "fill-red-500 text-red-500" : "text-gray-400")} />
+                      <Heart className={cn("h-4 w-4", isFavorite ? "fill-red-500 text-red-500" : "text-gray-400", optimisticBusy==='favorite' && 'animate-pulse')} />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -413,7 +592,7 @@ export const CourseCard = React.memo(
                       className="h-8 w-8 p-0 hover:bg-gray-100"
                       onClick={handleBookmarkClick}
                     >
-                      <Bookmark className={cn("h-4 w-4", isBookmarked ? "fill-blue-500 text-blue-500" : "text-gray-400")} />
+                      <Bookmark className={cn("h-4 w-4", isBookmarked ? "fill-blue-500 text-blue-500" : "text-gray-400", optimisticBusy==='bookmark' && 'animate-pulse')} />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
