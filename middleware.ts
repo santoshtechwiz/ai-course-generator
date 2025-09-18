@@ -12,7 +12,7 @@ import { validateSubscriptionMiddleware } from "@/middlewares/subscription-middl
 
 // Define matcher to exclude API, static files, and favicon requests
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|unauthorized).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|unauthorized|terms|privacy|contactus|auth/.*).*)"],
 }
 
 /**

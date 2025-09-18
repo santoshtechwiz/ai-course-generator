@@ -3,6 +3,16 @@ const nextConfig = {
   distDir: ".next",
   poweredByHeader: false,
 
+  experimental: {
+    // Enable App Router features
+    appDir: true,
+    // Configure dynamic routes
+    dynamicRoutes: {
+      // Use routing.json for dynamic route config
+      config: './app/routing.json'
+    }
+  },
+
   modularizeImports: {
     lodash: {
       transform: "lodash/{{member}}",

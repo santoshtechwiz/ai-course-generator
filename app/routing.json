@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "routes": {
+    "/": {
+      "dynamic": "force-dynamic"
+    },
+    "/auth/signin": {
+      "dynamic": "force-dynamic"
+    },
+    "/auth/signout": {
+      "dynamic": "force-dynamic"
+    },
+    "/auth/error": {
+      "dynamic": "force-dynamic"
+    },
+    "/unauthorized": {
+      "dynamic": "force-dynamic"
+    },
+    "/privacy": {
+      "dynamic": "force-dynamic"
+    },
+    "/terms": {
+      "dynamic": "force-dynamic"  
+    },
+    "/unsubscribed": {
+      "dynamic": "force-dynamic"
+    },
+    "/contactus": {
+      "dynamic": "force-dynamic"
+    },
+    "/debug/video": {
+      "dynamic": "force-dynamic"
+    }
+  }
+}
