@@ -151,7 +151,7 @@ const ProgressBar = ({ progress, questionNumber, totalQuestions }: { progress: n
             <Target className="w-5 h-5" />
           </motion.div>
           <span className="text-sm font-bold">
-            Question {questionNumber} of {totalQuestions}
+            {/* Question counter removed for cleaner layout */}
           </span>
         </motion.div>
         <motion.div
@@ -390,7 +390,7 @@ export default function QuizPlayLayout({
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-gray-600 dark:text-gray-400 font-medium">
-                      Question {questionNumber} of {totalQuestions}
+                      {/* Question counter removed for cleaner layout */}
                     </Badge>
                     <Badge variant="secondary" className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 dark:from-blue-900/30 dark:to-purple-900/30 dark:text-blue-300">
                       {progress}% Complete
@@ -463,7 +463,7 @@ export default function QuizPlayLayout({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-gray-600 dark:text-gray-400 font-medium">
-                    Question {questionNumber} of {totalQuestions}
+                    {/* Question counter removed for cleaner layout */}
                   </Badge>
                   <Badge variant="secondary" className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 dark:from-blue-900/30 dark:to-purple-900/30 dark:text-blue-300">
                     {progress}%
@@ -586,7 +586,7 @@ export default function QuizPlayLayout({
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900 dark:text-white text-lg">Continue where you left off</p>
-                    <p className="text-gray-600 dark:text-gray-400 mt-0.5">Question {questionNumber} of {totalQuestions}</p>
+                    <p className="text-gray-600 dark:text-gray-400 mt-0.5">{/* Question counter removed for cleaner layout */}</p>
                   </div>
                 </div>
                 <Button 

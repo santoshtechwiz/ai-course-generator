@@ -230,23 +230,24 @@ describe('Quiz Flow Integration', () => {
 
       // Mock the submission API call
       let submissionCallCount = 0
-      global.fetch = jest.fn((url) => {
+      global.fetch = jest.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
         if (url.includes('/submit')) {
-          submissionCallCount++
-          return Promise.resolve({
-            ok: true,
-            status: 200,
-            json: () => Promise.resolve(mockResults),
-            text: () => Promise.resolve(JSON.stringify(mockResults)),
-          })
+          submissionCallCount++;
+          return Promise.resolve(
+            new Response(JSON.stringify(mockResults), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            })
+          );
         }
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve(mockQuiz),
-          text: () => Promise.resolve(JSON.stringify(mockQuiz)),
-        })
-      }) as jest.MockedFunction<typeof fetch>
+        return Promise.resolve(
+          new Response(JSON.stringify(mockQuiz), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        );
+      }) as jest.MockedFunction<typeof fetch>;
 
       const { store } = renderWithProviders(
         <CodeQuizWrapper slug={mockQuiz.slug} title={mockQuiz.title} />,

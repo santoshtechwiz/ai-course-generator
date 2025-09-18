@@ -95,9 +95,12 @@ export function QuizStateProvider({
     setState('submitting')
     setSubmitState('loading')
     
-  // globalLoading pathway removed
-    
     try {
+      // Show loading toast for better user feedback
+      const loadingToast = toast.loading('Saving your answer...', {
+        duration: Infinity,
+      })
+
       const result = submitFn()
       
       // Handle both sync and async functions
@@ -105,16 +108,45 @@ export function QuizStateProvider({
         await result
       }
       
-      setSuccess('Quiz submitted successfully!')
+      // Dismiss loading toast and show success
+      toast.dismiss(loadingToast)
+      toast.success('Answer saved successfully!', {
+        duration: 2000,
+        position: 'top-center',
+      })
+      
+      setSubmitState('success')
+      
+      // Auto-reset after successful submission
+      submitTimeoutRef.current = setTimeout(() => {
+        setSubmitState('idle')
+        setState('idle')
+      }, 1000)
       
     } catch (error) {
       console.error('Quiz submission error:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to submit quiz'
-      setError(errorMessage)
-    } finally {
-      // no global stop needed
+      
+      // Dismiss loading toast and show error
+      toast.dismiss()
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save answer'
+      toast.error(errorMessage, {
+        duration: 4000,
+        position: 'top-center',
+        action: {
+          label: 'Retry',
+          onClick: () => handleSubmit(submitFn),
+        },
+      })
+      
+      setSubmitState('error')
+      
+      // Auto-reset error state after longer delay
+      submitTimeoutRef.current = setTimeout(() => {
+        setSubmitState('idle')
+        setState('idle')
+      }, 5000)
     }
-  }, [state, globalLoading, setError, setSuccess])
+  }, [state])
 
   const handleNext = useCallback(async (nextFn: () => Promise<void> | void) => {
     if (state === 'navigating') return
@@ -123,12 +155,20 @@ export function QuizStateProvider({
     setNextState('loading')
     
     try {
+      // Show loading toast for navigation
+      const loadingToast = toast.loading('Loading next question...', {
+        duration: Infinity,
+      })
+
       const result = nextFn()
       
       // Handle both sync and async functions
       if (result && typeof result === 'object' && 'then' in result) {
         await result
       }
+      
+      // Dismiss loading toast
+      toast.dismiss(loadingToast)
       
       setNextState('success')
       
@@ -140,8 +180,19 @@ export function QuizStateProvider({
       
     } catch (error) {
       console.error('Quiz navigation error:', error)
+      
+      // Dismiss loading toast and show error
+      toast.dismiss()
+      toast.error('Failed to load next question', {
+        duration: 4000,
+        position: 'top-center',
+        action: {
+          label: 'Retry',
+          onClick: () => handleNext(nextFn),
+        },
+      })
+      
       setNextState('error')
-      toast.error('Failed to proceed to next question')
       
       // Auto-reset error state
       nextTimeoutRef.current = setTimeout(() => {

@@ -388,9 +388,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
       <CardHeader className="p-6 pb-4">
         <CardTitle className="flex items-center gap-3 text-2xl font-semibold text-purple-800 dark:text-purple-200">
           <BookOpen className="h-6 w-6 text-purple-500 dark:text-purple-300" />
-          <span>
-            Question {quizState.currentQuestionIndex + 1} of {effectiveQuestions.length}
-          </span>
+          {/* Question counter removed for cleaner layout */}
         </CardTitle>
         <p className="text-lg font-medium mt-4 text-foreground">{currentQuestion.question}</p>
       </CardHeader>
