@@ -12,11 +12,6 @@ function safeParse<T = any>(value: unknown, fallback: T): T {
   }
 }
 
-// Extract completed chapters from chapterProgress JSON field
-function extractCompletedChapters(chapterProgress: any): number[] {
-  return safeParse<any>(chapterProgress, {}).completedChapters || []
-}
-
 // Validates courseId format and security
 function validateCourseId(courseId: string) {
   if (!courseId) {
@@ -68,6 +63,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
     const userId = session.user.id
 
     try {
+      // Get course progress from CourseProgress table
       let progress = await prisma.courseProgress.findUnique({
         where: {
           unique_user_course_progress: {
@@ -77,10 +73,22 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
         },
       })
 
-      // Parse chapterProgress from JSON to extract completedChapters
+      // Get completed chapters from ChapterProgress table
+      const completedChapterRecords = await prisma.chapterProgress.findMany({
+        where: {
+          userId: userId,
+          courseId: Number.parseInt(courseId),
+          isCompleted: true,
+        },
+        select: {
+          chapterId: true,
+        },
+      })
+
+      const completedChapters = completedChapterRecords.map(record => record.chapterId)
+
+      // Add completedChapters to the progress object
       if (progress) {
-        const completedChapters = extractCompletedChapters(progress.chapterProgress)
-        // Add completedChapters as a computed field for response
         (progress as any).completedChapters = completedChapters
         // Expose last played seconds for current chapter (synthetic field) via quizProgress JSON
         const qp = safeParse<any>(progress.quizProgress, {})
@@ -90,6 +98,29 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
         if (typeof playedSeconds === "number") {
           ;(progress as any).playedSeconds = playedSeconds
         }
+      } else {
+        // If no CourseProgress record exists, create one with completed chapters
+        progress = {
+          id: 0,
+          userId: userId,
+          courseId: Number.parseInt(courseId),
+          currentChapterId: 1,
+          currentUnitId: null,
+          progress: 0,
+          timeSpent: 0,
+          isCompleted: false,
+          completionDate: null,
+          quizProgress: null,
+          notes: null,
+          chapterProgress: null,
+          lastInteractionType: null,
+          interactionCount: 0,
+          engagementScore: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          lastAccessedAt: new Date(),
+          completedChapters: completedChapters,
+        } as any
       }
 
       return NextResponse.json({ progress })
@@ -158,9 +189,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
   // Support both currentChapterId and chapterId for backward compatibility
   const chapterId = data.currentChapterId || data.chapterId
 
-      // Ensure completedChapters is an array
-      const completedChapters = Array.isArray(data.completedChapters) ? data.completedChapters : [];
-
       // Convert chapterId to number with better validation
       const currentChapterId = Number(chapterId);
       if (isNaN(currentChapterId) || currentChapterId <= 0) {
@@ -183,61 +211,35 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
       // Validate playedSeconds (frontend still sends it) but we persist inside quizProgress JSON only
       const playedSeconds = typeof data.playedSeconds === 'number' ? Math.max(0, data.playedSeconds) : 0
 
-      // Validate completedChapters array
-      if (!Array.isArray(data.completedChapters) && data.completedChapters !== undefined) {
-        return NextResponse.json(
-          {
-            error: "Invalid completedChapters format",
-            details: {
-              provided: data.completedChapters,
-              expectedFormat: "array of numbers or undefined"
-            }
+      // Handle chapter completion if provided
+      if (data.completed === true && chapterId) {
+        // Update or create ChapterProgress record
+        await prisma.chapterProgress.upsert({
+          where: {
+            userId_courseId_chapterId: {
+              userId: userId,
+              courseId: Number.parseInt(courseId),
+              chapterId: currentChapterId,
+            },
           },
-          { status: 400 }
-        )
-      }
-
-      // Get existing progress to merge completed chapters
-      const existingProgress = await prisma.courseProgress.findUnique({
-        where: {
-          unique_user_course_progress: {
+          update: {
+            isCompleted: true,
+            timeSpent: Math.max(data.timeSpent || 0, playedSeconds),
+            lastProgress: progress / 100, // Convert to 0-1 range
+            lastAccessedAt: new Date(),
+          },
+          create: {
             userId: userId,
             courseId: Number.parseInt(courseId),
+            chapterId: currentChapterId,
+            isCompleted: true,
+            timeSpent: Math.max(data.timeSpent || 0, playedSeconds),
+            lastProgress: progress / 100,
           },
-        },
-      })
-
-      // Merge and deduplicate the completed chapters
-      const existingCompletedChapters = extractCompletedChapters(existingProgress?.chapterProgress)
-      const updatedCompletedChapters = [...new Set([...existingCompletedChapters, ...completedChapters])]
-
-      // Prepare updated quizProgress JSON (store per-chapter last position)
-      const existingQuizProgress = existingProgress?.quizProgress ? safeParse<any>(existingProgress.quizProgress, {}) : {}
-      const existingLastPositions = existingQuizProgress.lastPositions || {}
-      if (playedSeconds > 0) {
-        existingLastPositions[currentChapterId] = playedSeconds
-      }
-      existingQuizProgress.lastPositions = existingLastPositions
-
-      // Derive new timeSpent using existing timeSpent (treat as cumulative minutes based on seconds / 60)
-      // Properly accumulate time spent instead of just taking maximum
-      const existingTimeSpent = existingProgress?.timeSpent || 0
-      const playedMinutes = Math.floor(playedSeconds / 60)
-
-      // Only add time if this is a new session (simple heuristic to avoid double-counting)
-      const isNewSession = !existingProgress ||
-        (new Date().getTime() - existingProgress.lastAccessedAt.getTime()) > 5 * 60 * 1000; // 5 minutes
-
-      const newTimeSpent = isNewSession ?
-        existingTimeSpent + playedMinutes :
-        existingTimeSpent;
-
-      // Update or create the progress record with enhanced data (using chapterProgress JSON field)
-      const updatedChapterProgress = {
-        completedChapters: updatedCompletedChapters,
-        lastPositions: existingQuizProgress.lastPositions || {}
+        })
       }
 
+      // Update or create the progress record
       const updatedProgress = await prisma.courseProgress.upsert({
         where: {
           unique_user_course_progress: {
@@ -247,58 +249,51 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
         },
         update: {
           currentChapterId: currentChapterId,
-          chapterProgress: updatedChapterProgress,
-          progress: progress,
+          progress: progress / 100, // Convert to 0-1 range for CourseProgress
           lastAccessedAt: new Date(),
           isCompleted: data.isCompleted || false,
-          timeSpent: newTimeSpent,
-          quizProgress: existingQuizProgress,
+          timeSpent: Math.max(existingProgress?.timeSpent || 0, Math.floor(playedSeconds / 60)),
+          quizProgress: {
+            lastPositions: {
+              ...(existingQuizProgress.lastPositions || {}),
+              [currentChapterId]: playedSeconds
+            }
+          },
         },
         create: {
           userId: userId,
           courseId: Number.parseInt(courseId),
           currentChapterId: currentChapterId,
-          chapterProgress: updatedChapterProgress,
-          progress: progress,
+          progress: progress / 100,
           isCompleted: data.isCompleted || false,
-          timeSpent: Math.max(0, playedMinutes),
+          timeSpent: Math.floor(playedSeconds / 60),
           quizProgress: { lastPositions: { [currentChapterId]: playedSeconds } },
         },
       })
 
-      console.log(`[Progress API] Updating progress for user ${userId}, course ${courseId}, chapter ${currentChapterId}, progress ${progress}%`)
+      console.log(`[Progress API] Updated progress for user ${userId}, course ${courseId}, chapter ${currentChapterId}`)
 
-      // Create LearningEvent for progress update
-      await prisma.learningEvent.create({
-        data: {
+      // Get updated completed chapters for response
+      const completedChapterRecords = await prisma.chapterProgress.findMany({
+        where: {
           userId: userId,
           courseId: Number.parseInt(courseId),
-          chapterId: currentChapterId,
-          type: 'VIDEO_PROGRESS',
-          progress: progress,
-          timeSpent: newTimeSpent,
-          metadata: {
-            playedSeconds,
-            completedChapters: updatedCompletedChapters,
-            isCompleted: data.isCompleted || false
-          }
-        }
+          isCompleted: true,
+        },
+        select: {
+          chapterId: true,
+        },
       })
 
-      console.log(`[Progress API] Created LearningEvent and updated CourseProgress successfully`)
+      const completedChapters = completedChapterRecords.map(record => record.chapterId)
+      ;(updatedProgress as any).completedChapters = completedChapters
 
-      // Parse chapterProgress from JSON to extract completedChapters for response
-      if (updatedProgress) {
-        const responseCompletedChapters = extractCompletedChapters(updatedProgress.chapterProgress)
-        // Add completedChapters as a computed field for response
-        (updatedProgress as any).completedChapters = responseCompletedChapters
-        // Attach synthetic playedSeconds for convenience
-        const qp = safeParse<any>(updatedProgress.quizProgress, {})
-        const lastPositions = qp?.lastPositions || {}
-        const ps = lastPositions?.[currentChapterId]
-        if (typeof ps === "number") {
-          ;(updatedProgress as any).playedSeconds = ps
-        }
+      // Attach playedSeconds for convenience
+      const qp = safeParse<any>(updatedProgress.quizProgress, {})
+      const lastPositions = qp?.lastPositions || {}
+      const ps = lastPositions?.[currentChapterId]
+      if (typeof ps === "number") {
+        ;(updatedProgress as any).playedSeconds = ps
       }
 
       return NextResponse.json({ progress: updatedProgress })

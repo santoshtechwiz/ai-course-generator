@@ -7,6 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { BookOpen, Brain, RefreshCw, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import { useSmartRecommendations } from "@/hooks/useRecommendations"
+import { EnhancedErrorBoundary } from "@/components/error-boundary"
+import { Loader } from "@/components/loader"
 
 interface Recommendation {
   type: "course" | "quiz"
@@ -21,7 +23,7 @@ interface Recommendation {
   aiReasoning?: string
 }
 
-export default function RecommendationsWidget() {
+function RecommendationsWidget() {
   const {
     recommendations,
     count,
@@ -32,7 +34,16 @@ export default function RecommendationsWidget() {
   } = useSmartRecommendations()
 
   if (isLoading) {
-    return <RecommendationsSkeleton />
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Recommended for You</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Loader message="Generating personalized recommendations..." />
+        </CardContent>
+      </Card>
+    )
   }
 
   if (error) {
@@ -191,3 +202,26 @@ function RecommendationsSkeleton() {
     </Card>
   )
 }
+
+// Wrapped component with error boundary for better error handling
+function RecommendationsWidgetWithErrorBoundary() {
+  return (
+    <EnhancedErrorBoundary
+      fallback={
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center text-muted-foreground">
+              <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Unable to load recommendations</p>
+              <p className="text-sm">Please try refreshing the page</p>
+            </div>
+          </CardContent>
+        </Card>
+      }
+    >
+      <RecommendationsWidget />
+    </EnhancedErrorBoundary>
+  )
+}
+
+export default RecommendationsWidgetWithErrorBoundary

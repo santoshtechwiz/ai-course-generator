@@ -178,3 +178,12 @@ export const TIME = {
   HOUR: 60 * 60 * 1000,
   DAY: 24 * 60 * 60 * 1000
 };
+
+// Cache duration constants in seconds
+export const CACHE_DURATION = {
+  PROGRESS: 30, // 30 seconds for progress data
+  COURSE_DATA: 300, // 5 minutes for course data
+  RECOMMENDATIONS: 300, // 5 minutes for recommendations
+  USER_PROFILE: 600, // 10 minutes for user profile
+  QUIZ_RESULTS: 1800 // 30 minutes for quiz results
+};

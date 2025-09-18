@@ -6,13 +6,15 @@ import useSWR from 'swr'
 interface CourseProgress {
   courseId: string
   progressPercentage: number
-  completedChapters: number
+  completedChapters: string[] // Store as array of chapter IDs
+  completedCount: number // Total number of completed chapters
   totalChapters: number
   currentChapterId?: string
   currentChapterTitle?: string
   lastAccessedAt?: string
   timeSpent?: number
   isCompleted: boolean
+  lastPositions?: Record<string, number> // Store last positions for each chapter
 }
 
 interface CourseProgressMap {
@@ -51,11 +53,13 @@ export function useCoursesWithProgress(courses: any[], userId?: string) {
       ...course,
       isEnrolled: !!progress,
       progressPercentage: progress?.progressPercentage || 0,
-      completedChapters: progress?.completedChapters || 0,
+      completedChapters: progress?.completedChapters || [],
+      completedCount: progress?.completedCount || 0,
       totalChapters: progress?.totalChapters || course.unitCount || 0,
       lastAccessedAt: progress?.lastAccessedAt,
       currentChapterTitle: progress?.currentChapterTitle,
       timeSpent: progress?.timeSpent || 0,
+      lastPositions: progress?.lastPositions || {},
     }
   })
 

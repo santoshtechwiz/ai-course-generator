@@ -1,6 +1,7 @@
-import { createSelector } from '@reduxjs/toolkit'
-import type { RootState } from '@/store'
-import { ProgressEvent, ProgressEventType } from './progress-events-slice'
+import { createSelector } from '@reduxjs/toolkit';
+import type { RootState } from '@/store';
+import { ProgressEventType } from '@/types/progress-events';
+import { CourseProgressUpdatedEvent, QuizCompletedEvent, QuizStartedEvent, QuestionAnsweredEvent } from '@/types/progress-events';
 
 // Base selectors
 export const selectProgressEventsState = (state: RootState) => state.progressEvents
@@ -10,20 +11,36 @@ export const selectFailedEvents = (state: RootState) => state.progressEvents.fai
 
 // Memoized selectors for derived state
 
-// Course completion percentage
-export const selectCourseCompletionPercentage = createSelector(
+// Course completion percentage and completed chapters
+export const selectCourseCompletionData = createSelector(
   [selectAllEvents, (state: RootState, courseId: string) => courseId],
   (events, courseId) => {
     const courseEvents = events.filter(
       event => event.entityId === courseId && event.entityType === 'course'
     )
 
-    const progressEvent = courseEvents
+    // Get the latest course progress event
+    const latestProgressEvent = courseEvents
       .filter(event => event.type === ProgressEventType.COURSE_PROGRESS_UPDATED)
       .sort((a, b) => b.timestamp - a.timestamp)[0]
 
-    return progressEvent?.metadata?.progress || 0
+    // Get completed chapters from the latest event
+    const completedChapters = latestProgressEvent?.metadata?.completedChapters || []
+    const progress = latestProgressEvent?.metadata?.progress || 0
+
+    return {
+      progress,
+      completedChapters: completedChapters,
+      currentChapterId: latestProgressEvent?.metadata?.currentChapterId,
+      timeSpent: latestProgressEvent?.metadata?.timeSpent || 0
+    }
   }
+)
+
+// Course completion percentage (for backward compatibility)
+export const selectCourseCompletionPercentage = createSelector(
+  [selectCourseCompletionData],
+  (data) => data.progress
 )
 
 // Quiz completion percentage

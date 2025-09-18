@@ -51,7 +51,7 @@ import { useVideoState } from "./video/hooks/useVideoState"
 import { migratedStorage } from "@/lib/storage"
 import VideoGenerationSection from "./VideoGenerationSection"
 import MobilePlaylistCount from "@/components/course/MobilePlaylistCount"
-import { markChapterAsCompleted } from "@/store/slices/course-slice"
+import { markChapterCompleted } from "@/store/slices/courseProgress-slice"
 import { setVideoProgress } from "@/store/slices/courseProgress-slice"
 import { progressQueue } from "@/lib/queues/ProgressQueue"
 import { useProgressEvents } from '@/utils/progress-events';
@@ -63,6 +63,7 @@ import PlaylistSidebar from "./PlaylistSidebar"
 import MobilePlaylistOverlay from "./MobilePlaylistOverlay"
 import VideoPlayer from "./video/components/VideoPlayer"
 import { storageManager } from "@/utils/storage-manager"
+import { useBookmarks } from "@/hooks/use-bookmarks"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -197,6 +198,47 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   
   // Get video state store
   const videoStateStore = useVideoState
+
+  // Load bookmarks from database and sync with Redux
+  const { bookmarks: dbBookmarks, loading: bookmarksLoading } = useBookmarks({ 
+    courseId: course.id,
+    limit: 5 // Limit to 5 bookmarks
+  })
+
+  // Sync database bookmarks with Redux state on mount
+  useEffect(() => {
+    if (!bookmarksLoading && dbBookmarks.length > 0 && currentVideoId) {
+      try {
+        const state = videoStateStore.getState()
+        const existingBookmarks = (state?.bookmarks as Record<string, any[]>) || {}
+        
+        // Only update if we don't already have bookmarks for this video
+        if (!existingBookmarks[currentVideoId] || existingBookmarks[currentVideoId].length === 0) {
+          const videoBookmarks = dbBookmarks
+            .filter(bookmark => bookmark.videoId === currentVideoId)
+            .map(bookmark => ({
+              id: bookmark.id,
+              videoId: bookmark.videoId || currentVideoId,
+              time: bookmark.timestamp || 0,
+              title: bookmark.note || `Bookmark at ${Math.floor((bookmark.timestamp || 0) / 60)}:${((bookmark.timestamp || 0) % 60).toString().padStart(2, '0')}`,
+              description: bookmark.note || '',
+              createdAt: bookmark.createdAt
+            }))
+          
+          if (videoBookmarks.length > 0) {
+            // Update Redux state with database bookmarks
+            const updatedBookmarks = {
+              ...existingBookmarks,
+              [currentVideoId]: videoBookmarks
+            }
+            videoStateStore.setState({ bookmarks: updatedBookmarks })
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to sync bookmarks from database:', error)
+      }
+    }
+  }, [dbBookmarks, bookmarksLoading, currentVideoId, videoStateStore])
   const getVideoBookmarks = useCallback((videoId?: string | null) => {
     try {
       const key = String(videoId ?? "")
@@ -214,7 +256,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     try {
       const raw = getVideoBookmarks(currentVideoId)
       if (!Array.isArray(raw)) return []
-      return raw.slice(0, 10) // Limit bookmarks to prevent performance issues
+      return raw.slice(0, 5) // Limit bookmarks to 5
     } catch {
       return []
     }
@@ -391,7 +433,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         console.log(`Marking current chapter ${currentChapterId} as completed before advancing`);
         
         // Update Redux state
-        dispatch(markChapterAsCompleted({ courseId, chapterId: currentChapterId }));
+        dispatch(markChapterCompleted({ courseId, chapterId: currentChapterId, userId: user.id }));
         
         // Mark as completed in ChapterProgress table
         const updateCurrentChapterProgress = async () => {
@@ -491,7 +533,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     videoDurations,
     currentVideoId,
     dispatchChapterCompleted,
-    markChapterAsCompleted
+    markChapterCompleted
   ])
 
   // Chapter selection handler with improved error handling
@@ -768,7 +810,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       if (!isAlreadyCompleted) {
         // Mark as completed in Redux state (local UI update)
         console.log(`Marking chapter ${chapterId} as completed for course ${courseId}`);
-        dispatch(markChapterAsCompleted({ courseId, chapterId }));
+        dispatch(markChapterCompleted({ courseId, chapterId, userId: user?.id || '' }));
       } else {
         console.log(`Chapter ${chapterId} was already completed. Updating progress only.`);
       }
@@ -1246,6 +1288,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                         currentChapter={currentChapter}
                         accessLevels={accessLevels}
                         onSeekToBookmark={handleSeekToBookmark}
+                        completedChapters={completedChapters}
                       />
                     </CardContent>
                   </Card>

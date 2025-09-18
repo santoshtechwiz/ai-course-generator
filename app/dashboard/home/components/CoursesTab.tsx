@@ -148,34 +148,39 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
         className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sticky top-0 z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border-b py-3"
       >
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
             type="search"
             placeholder="Search courses..."
             className="pl-11 h-11 shadow-sm bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 rounded-xl"
             value={searchTerm}
             onChange={handleSearchChange}
+            aria-label="Search courses by title, description, or category"
           />
         </div>
 
         <div className="flex items-center gap-2">
           {/* Enhanced View Mode Toggle */}
-          <div className="flex items-center rounded-xl border border-border/50 p-1 bg-background/50">
+          <div className="flex items-center rounded-xl border border-border/50 p-1 bg-background/50" role="group" aria-label="Course view mode">
             <Button
               variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("grid")}
               className="h-9 w-9 p-0 rounded-lg transition-all duration-200"
+              aria-label="Grid view"
+              aria-pressed={viewMode === "grid"}
             >
-              <Grid3X3 className="h-4 w-4" />
+              <Grid3X3 className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button
               variant={viewMode === "list" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("list")}
               className="h-9 w-9 p-0 rounded-lg transition-all duration-200"
+              aria-label="List view"
+              aria-pressed={viewMode === "list"}
             >
-              <List className="h-4 w-4" />
+              <List className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -183,31 +188,31 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
 
       {/* Enhanced Filter Tabs */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as FilterTab)}>
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4 bg-muted/30 p-1 rounded-xl">
-            <TabsTrigger value="all" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all">
-              <BookOpen className="h-4 w-4" />
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as FilterTab)} aria-label="Course filter tabs">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4 bg-muted/30 p-1 rounded-xl" role="tablist">
+            <TabsTrigger value="all" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all" role="tab" aria-selected={activeTab === "all"}>
+              <BookOpen className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline font-medium">All</span>
               <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
                 {courseData.all.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="in-progress" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all">
-              <Clock className="h-4 w-4" />
+            <TabsTrigger value="in-progress" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all" role="tab" aria-selected={activeTab === "in-progress"}>
+              <Clock className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline font-medium">In Progress</span>
               <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
                 {courseData.inProgress.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="completed" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all">
-              <CheckCircle className="h-4 w-4" />
+            <TabsTrigger value="completed" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all" role="tab" aria-selected={activeTab === "completed"}>
+              <CheckCircle className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline font-medium">Completed</span>
               <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
                 {courseData.completed.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="favorites" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all">
-              <Star className="h-4 w-4" />
+            <TabsTrigger value="favorites" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all" role="tab" aria-selected={activeTab === "favorites"}>
+              <Star className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline font-medium">Favorites</span>
               <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
                 {courseData.favorites.length}
@@ -254,12 +259,12 @@ function CourseGrid({ courses, viewMode, showProgress = false, onCourseClick, us
   }
 
   return (
-    <div className={cn(viewMode === "grid" ? "grid grid-cols-1 gap-8 md:grid-cols-2 2xl:grid-cols-3 max-w-[1600px] mx-auto" : "space-y-4")}>
+    <div className={cn(viewMode === "grid" ? "grid grid-cols-1 gap-8 md:grid-cols-2 2xl:grid-cols-3 max-w-[1600px] mx-auto" : "space-y-4")} role="grid" aria-label={`${viewMode === "grid" ? "Grid" : "List"} view of courses`}>
       {courses.map((course, index) => {
         const progress = userData.courseProgress?.find((p) => p.course.id === course.id)?.progress || 0
 
         return (
-          <motion.div key={course.id} variants={itemVariants} transition={{ delay: index * 0.05 }}>
+          <motion.div key={course.id} variants={itemVariants} transition={{ delay: index * 0.05 }} role="gridcell">
             {viewMode === "grid" ? (
               <CourseCard
                 course={course}
@@ -671,34 +676,56 @@ function EmptyState({ showProgress }: { showProgress: boolean }) {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="flex flex-col items-center justify-center py-16"
+      className="flex flex-col items-center justify-center py-16 px-4"
     >
-      <div className="rounded-full bg-muted p-6 mb-6">
-        <BookOpen className="h-12 w-12 text-muted-foreground" />
+      <div className="relative mb-8">
+        <div className="w-24 h-24 bg-gradient-to-br from-primary/10 to-accent/10 rounded-full flex items-center justify-center">
+          <BookOpen className="h-12 w-12 text-primary/60" />
+        </div>
+        <div className="absolute -top-2 -right-2 w-8 h-8 bg-accent rounded-full flex items-center justify-center">
+          <PlusCircle className="h-4 w-4 text-accent-foreground" />
+        </div>
       </div>
 
-      <div className="text-center space-y-3 max-w-md">
-        <h3 className="text-xl font-semibold">{showProgress ? "No courses in progress" : "No courses found"}</h3>
-        <p className="text-muted-foreground">
-          {showProgress
-            ? "Start learning today and track your progress as you go."
-            : "Try adjusting your search or explore our course catalog."}
-        </p>
-      </div>
+      <div className="text-center space-y-4 max-w-md">
+        <div className="space-y-2">
+          <h3 className="text-2xl font-bold text-foreground">
+            {showProgress ? "No courses in progress" : "Your learning journey starts here"}
+          </h3>
+          <p className="text-muted-foreground leading-relaxed">
+            {showProgress
+              ? "Ready to start learning? Browse our course catalog and begin your educational adventure."
+              : "Discover amazing courses tailored to your interests. Start building your knowledge today."}
+          </p>
+        </div>
 
-      <div className="mt-8 flex gap-3">
-        <Button asChild>
-          <Link href="/dashboard/explore">
-            <Search className="mr-2 h-4 w-4" />
-            Explore Courses
-          </Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link href="/dashboard/create">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create Course
-          </Link>
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
+          <Button asChild size="lg" className="shadow-sm">
+            <Link href="/dashboard/explore" className="gap-2">
+              <Search className="h-4 w-4" />
+              {showProgress ? "Browse Courses" : "Explore Courses"}
+            </Link>
+          </Button>
+          <Button variant="outline" asChild size="lg">
+            <Link href="/dashboard/create" className="gap-2">
+              <PlusCircle className="h-4 w-4" />
+              Create Course
+            </Link>
+          </Button>
+        </div>
+
+        {!showProgress && (
+          <div className="mt-8 pt-6 border-t border-border/50">
+            <p className="text-sm text-muted-foreground mb-4">Popular categories to get you started:</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {["Web Development", "Data Science", "Mobile Apps", "AI & Machine Learning"].map((category) => (
+                <Badge key={category} variant="secondary" className="px-3 py-1 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors">
+                  {category}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   )

@@ -32,6 +32,7 @@ interface PlaylistSidebarProps {
   };
   onChapterSelect: (chapter: any) => void;
   isPiPActive?: boolean;
+  isProgressLoading?: boolean;
 }
 
 const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
@@ -45,14 +46,15 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
   videoDurations,
   courseStats,
   onChapterSelect,
-  isPiPActive = false
+  isPiPActive = false,
+  isProgressLoading = false
 }) => {
-  // Handler for chapter selection that ensures proper formatting
+  // Handler for chapter selection that ensures proper formatting - optimized memoization
   const handleChapterSelect = useMemo(() => (chapter: any) => {
     onChapterSelect({
       ...chapter,
-      id: typeof chapter.id === 'string' ? Number(chapter.id) : chapter.id,
-      videoId: typeof chapter.videoId === 'string' ? chapter.videoId : null,
+      id: String(chapter.id), // Always convert ID to string for consistency
+      videoId: chapter.videoId || null,
       duration: typeof chapter.duration === 'number' ? chapter.duration : undefined,
     });
   }, [onChapterSelect]);
@@ -85,6 +87,7 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
             currentVideoId={currentVideoId}
             courseStats={courseStats}
             videoDurations={videoDurations}
+            isProgressLoading={isProgressLoading}
           />
         </div>
       </div>
@@ -92,4 +95,15 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
   );
 };
 
-export default React.memo(PlaylistSidebar);
+export default React.memo(PlaylistSidebar, (prevProps, nextProps) => {
+  // Optimize re-renders by only updating when key props change
+  return (
+    prevProps.course.id === nextProps.course.id &&
+    prevProps.currentChapter?.id === nextProps.currentChapter?.id &&
+    prevProps.currentVideoId === nextProps.currentVideoId &&
+    prevProps.completedChapters.length === nextProps.completedChapters.length &&
+    prevProps.courseStats.progressPercentage === nextProps.courseStats.progressPercentage &&
+    prevProps.isProgressLoading === nextProps.isProgressLoading &&
+    prevProps.isPiPActive === nextProps.isPiPActive
+  )
+});

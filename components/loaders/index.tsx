@@ -18,3 +18,7 @@ export type { LoaderProps } from './Loader'
 export { progressApi } from './progress-api'
 export type { ProgressAPI, ProgressOptions } from './progress-api'
 export { useProgress } from './use-progress'
+
+// Course Progress Loaders
+export { ChapterCompletionLoader } from './ChapterCompletionLoader'
+export { ChapterSkeletonLoader } from './ChapterSkeletonLoader'

@@ -5,14 +5,14 @@ import {
 } from '../utils/async-state'
 
 export interface VideoProgress {
-  currentChapterId: number | null
-  currentUnitId: number | null
+  currentChapterId: string | null // Changed to string to ensure consistent ID handling
+  currentUnitId: string | null // Changed to string for consistency
   progress: number // 0-100 percentage
   timeSpent: number // in minutes
   playedSeconds: number // current position in seconds
   isCompleted: boolean
   lastAccessedAt: string
-  completedChapters: number[]
+  completedChapters: string[] // Changed to string[] for consistent ID handling
   bookmarks: string[]
 }
 
@@ -66,7 +66,7 @@ export const persistVideoProgress = createAsyncThunk(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          currentChapterId: Number(chapterId),
+          currentChapterId: String(chapterId),
           progress: Math.max(0, Math.min(100, progress)),
           playedSeconds: Math.max(0, playedSeconds),
           isCompleted: completed
@@ -79,14 +79,14 @@ export const persistVideoProgress = createAsyncThunk(
 
       const result = await response.json()
 
-      // Return success data
+      // Return success data with consistently typed IDs
       return {
         courseId: String(courseId),
-        chapterId: Number(chapterId),
+        chapterId: String(chapterId),
         progress: Math.max(0, Math.min(100, progress)),
         playedSeconds: Math.max(0, playedSeconds),
         isCompleted: completed,
-        completedChapters: result.progress?.completedChapters || [],
+        completedChapters: (result.progress?.completedChapters || []).map(String), // Ensure consistent string IDs
         timestamp: Date.now()
       }
     } catch (err) {
@@ -130,39 +130,60 @@ const courseProgressSlice = createSlice({
       // Update video progress
       const updatedProgress: VideoProgress = {
         ...currentProgress,
-        currentChapterId: action.payload.chapterId,
+        currentChapterId: String(action.payload.chapterId), // Convert to string for consistency
         progress: Math.max(0, Math.min(100, action.payload.progress)),
         playedSeconds: Math.max(0, action.payload.playedSeconds),
         timeSpent: (action.payload.timeSpent || currentProgress.timeSpent) + Math.floor(action.payload.playedSeconds / 60),
         isCompleted: action.payload.completed || action.payload.progress >= 90,
         lastAccessedAt: new Date().toISOString(),
-        completedChapters: action.payload.completed && !currentProgress.completedChapters.includes(action.payload.chapterId)
-          ? [...currentProgress.completedChapters, action.payload.chapterId]
+        completedChapters: action.payload.completed && !currentProgress.completedChapters.includes(String(action.payload.chapterId))
+          ? [...currentProgress.completedChapters, String(action.payload.chapterId)] // Convert to string
           : currentProgress.completedChapters,
       }
 
       state.byCourseId[courseKey] = {
         courseId: courseKey,
         userId: action.payload.userId,
-        videoProgress: updatedProgress,
+        videoProgress: {
+          ...updatedProgress,
+          currentChapterId: updatedProgress.currentChapterId ? String(updatedProgress.currentChapterId) : null,
+          completedChapters: updatedProgress.completedChapters.map(String) // Ensure IDs are strings
+        },
         lastUpdatedAt: now,
       }
     },
 
     markChapterCompleted(
       state,
-      action: PayloadAction<{ courseId: string | number; chapterId: number; userId: string }>
+      action: PayloadAction<{ courseId: string | number; chapterId: string | number; userId: string }>
     ) {
       const courseKey = String(action.payload.courseId)
       const existing = state.byCourseId[courseKey]
       
       if (existing) {
         const completedChapters = existing.videoProgress.completedChapters
-        if (!completedChapters.includes(action.payload.chapterId)) {
-          existing.videoProgress.completedChapters = [...completedChapters, action.payload.chapterId]
-          existing.videoProgress.isCompleted = true
-          existing.videoProgress.lastAccessedAt = new Date().toISOString()
+        const chapterId = String(action.payload.chapterId)
+
+        // Only add if not already completed
+        if (!completedChapters.includes(chapterId)) {
+          // Ensure all IDs in completedChapters are strings for consistency
+          const updatedCompletedChapters = [
+            ...completedChapters.map(String),
+            chapterId
+          ]
+
+          existing.videoProgress = {
+            ...existing.videoProgress,
+            completedChapters: updatedCompletedChapters,
+            isCompleted: true,
+            lastAccessedAt: new Date().toISOString(),
+          }
           existing.lastUpdatedAt = Date.now()
+
+          // Also update the chapter ID format for consistency
+          if (existing.videoProgress.currentChapterId) {
+            existing.videoProgress.currentChapterId = String(existing.videoProgress.currentChapterId)
+          }
         }
       }
     },
@@ -287,12 +308,12 @@ export const isCourseCompleted = (state: RootState, courseId: string | number): 
   return progress?.videoProgress.isCompleted || false
 }
 
-export const getCompletedChapters = (state: RootState, courseId: string | number): number[] => {
+export const getCompletedChapters = (state: RootState, courseId: string | number): string[] => {
   const progress = state.courseProgress.byCourseId[String(courseId)]
   return progress?.videoProgress.completedChapters || []
 }
 
-export const getCurrentChapterId = (state: RootState, courseId: string | number): number | null => {
+export const getCurrentChapterId = (state: RootState, courseId: string | number): string | null => {
   const progress = state.courseProgress.byCourseId[String(courseId)]
   return progress?.videoProgress.currentChapterId || null
 }

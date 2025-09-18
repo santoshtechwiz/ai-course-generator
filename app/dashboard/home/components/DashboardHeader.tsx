@@ -25,13 +25,6 @@ interface DashboardHeaderProps {
 
 // Use memo to prevent unnecessary re-renders
 const DashboardHeader = memo(function DashboardHeader({ userData, toggleSidebar }: DashboardHeaderProps) {
-  const [greeting] = useState(() => {
-    const hour = new Date().getHours()
-    if (hour < 12) return "Good morning"
-    if (hour < 18) return "Good afternoon"
-    return "Good evening"
-  })
-
   // Memoize user data to prevent unnecessary re-renders
   const [memoizedUserData, setMemoizedUserData] = useState(userData)
 
@@ -56,13 +49,9 @@ const DashboardHeader = memo(function DashboardHeader({ userData, toggleSidebar 
               <Menu className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">
-                {greeting}, {memoizedUserData.name?.split(' ')[0] || "Learner"}!
-              </h1>
-              <p className="text-muted-foreground">
-                {memoizedUserData.streakDays > 0
-                  ? `You're on a ${memoizedUserData.streakDays} day learning streak! 🔥`
-                  : "Ready to continue your learning journey?"}
+              <h1 className="text-xl font-bold">Dashboard</h1>
+              <p className="text-sm text-muted-foreground">
+                Welcome back, {memoizedUserData.name?.split(' ')[0] || "Learner"}
               </p>
             </div>
           </div>

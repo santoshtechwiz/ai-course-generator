@@ -6,7 +6,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
+import {
+  Search,
+  Filter,
+  BookOpen,
+  Tag
+} from "lucide-react"
 import {
   FileText,
   MessageSquare,
@@ -42,9 +51,11 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/modules/auth"
 import { NoteModal } from "./modals/NoteModal"
+import { DeleteNoteDialog } from "./modals/DeleteNoteDialog"
 import { useNotes } from "@/hooks/use-notes"
 import { useBookmarks } from "@/hooks/use-bookmarks"
 import type { Bookmark } from "@prisma/client"
+import { ChapterProgressDisplay, CourseProgressSummary } from "@/components/course/ChapterProgressDisplay"
 
 export interface AccessLevels {
   isSubscribed: boolean
@@ -57,6 +68,8 @@ interface CourseDetailsTabsProps {
   currentChapter?: FullChapterType
   accessLevels?: AccessLevels
   onSeekToBookmark?: (time: number, title?: string) => void
+  completedChapters?: string[] // Add completed chapters prop
+  courseProgress?: any // Add course progress data
 }
 
 export default function CourseDetailsTabs({
@@ -64,9 +77,13 @@ export default function CourseDetailsTabs({
   currentChapter,
   accessLevels,
   onSeekToBookmark,
+  completedChapters = [], // Default to empty array
+  courseProgress: externalCourseProgress, // Rename to avoid conflict
 }: CourseDetailsTabsProps) {
   const dispatch = useAppDispatch()
   const [activeTab, setActiveTab] = useState("summary")
+  const [notesSearchQuery, setNotesSearchQuery] = useState("")
+  const [notesFilter, setNotesFilter] = useState<"all" | "recent" | "chapter">("all")
 
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const { user } = useAuth()
@@ -107,13 +124,48 @@ export default function CourseDetailsTabs({
   const courseProgress = useAppSelector(selectCourseProgress)
 
   // Notes and bookmarks hooks
-  const { 
-    notes, 
-    deleteNote 
-  } = useNotes({ 
-    courseId: course.id, 
-    chapterId: currentChapter?.id 
+  const {
+    notes,
+    deleteNote
+  } = useNotes({
+    courseId: course.id,
+    chapterId: currentChapter?.id,
+    limit: 5 // Limit to 5 notes
   })
+
+  // Filtered and searched notes
+  const filteredNotes = useMemo(() => {
+    let filtered = notes
+
+    // Apply search filter
+    if (notesSearchQuery.trim()) {
+      const query = notesSearchQuery.toLowerCase()
+      filtered = filtered.filter(note =>
+        note.note.toLowerCase().includes(query) ||
+        note.chapter?.title.toLowerCase().includes(query)
+      )
+    }
+
+    // Apply category filter
+    switch (notesFilter) {
+      case "recent":
+        // Show notes from last 7 days
+        const sevenDaysAgo = new Date()
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+        filtered = filtered.filter(note => new Date(note.createdAt) > sevenDaysAgo)
+        break
+      case "chapter":
+        // Show only current chapter notes
+        filtered = filtered.filter(note => note.chapterId === currentChapter?.id)
+        break
+      default:
+        // Show all notes
+        break
+    }
+
+    // Sort by creation date (newest first)
+    return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  }, [notes, notesSearchQuery, notesFilter, currentChapter?.id])
 
   const { 
     bookmarks: courseBookmarks, 
@@ -122,22 +174,43 @@ export default function CourseDetailsTabs({
     chapterId: currentChapter?.id 
   })
 
-  // Enhanced course statistics calculation
+  // Enhanced course statistics calculation - use external data if available
   const courseStats = useMemo(() => {
     const totalChapters = course.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0) || 0
-    const completedChapters = courseProgress?.completedChapters?.length || 0
-    const progressPercentage = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0
+    // Use external completed chapters data if available, otherwise fall back to redux
+    const completedCount = completedChapters.length > 0
+      ? completedChapters.length
+      : (courseProgress?.completedChapters?.length || 0)
+    const progressPercentage = totalChapters > 0 ? Math.round((completedCount / totalChapters) * 100) : 0
 
+    // Calculate actual total duration from chapter data
     const totalDuration = course.courseUnits?.reduce((acc, unit) => {
       return acc + unit.chapters.reduce((chapterAcc, chapter) => {
-        return chapterAcc + (typeof chapter.duration === 'number' ? chapter.duration : 15)
+        // Use videoDuration if available, otherwise fallback to duration field, then default to 15 minutes
+        const chapterDuration = chapter.videoDuration || (typeof chapter.duration === 'number' ? chapter.duration : 15)
+        return chapterAcc + chapterDuration
       }, 0)
     }, 0) || totalChapters * 15
 
-    const completedDuration = completedChapters * 15
-    const remainingChapters = totalChapters - completedChapters
-    const estimatedTimeLeft = remainingChapters * 15
-    const learningStreak = courseProgress?.learningStreak || 0
+    // Calculate completed duration based on actual completed chapters
+    const completedDuration = course.courseUnits?.reduce((acc, unit) => {
+      return acc + unit.chapters.reduce((chapterAcc, chapter) => {
+        const chapterId = String(chapter.id)
+        if (completedChapters.includes(chapterId)) {
+          const chapterDuration = chapter.videoDuration || (typeof chapter.duration === 'number' ? chapter.duration : 15)
+          return chapterAcc + chapterDuration
+        }
+        return chapterAcc
+      }, 0)
+    }, 0) || 0
+
+    const remainingChapters = totalChapters - completedCount
+    // Estimate remaining time based on average chapter duration
+    const avgChapterDuration = totalDuration / totalChapters
+    const estimatedTimeLeft = remainingChapters * avgChapterDuration
+
+    // Fix learning streak calculation - use proper field
+    const learningStreak = courseProgress?.learningStreak || externalCourseProgress?.learningStreak || 0
 
     let skillLevel = "Beginner"
     if (progressPercentage >= 90) skillLevel = "Expert"
@@ -145,12 +218,12 @@ export default function CourseDetailsTabs({
     else if (progressPercentage >= 50) skillLevel = "Intermediate"
     else if (progressPercentage >= 25) skillLevel = "Novice"
 
-    const studyTimeThisWeek = courseProgress?.studyTimeThisWeek || 0
+    const studyTimeThisWeek = externalCourseProgress?.timeSpent || courseProgress?.studyTimeThisWeek || 0
     const averageScore = courseProgress?.averageQuizScore || 0
 
     return {
       totalChapters,
-      completedChapters,
+      completedChapters: completedCount,
       progressPercentage,
       remainingChapters,
       estimatedTimeLeft,
@@ -161,9 +234,9 @@ export default function CourseDetailsTabs({
       totalBookmarks: bookmarks.length,
       studyTimeThisWeek,
       averageScore,
-      lastActivityDate: courseProgress?.lastActivityDate || null,
+      lastActivityDate: externalCourseProgress?.updatedAt || courseProgress?.lastActivityDate || null,
     }
-  }, [course.courseUnits, courseProgress, bookmarks.length])
+  }, [course.courseUnits, courseProgress, externalCourseProgress, completedChapters.length, bookmarks.length])
 
   const formatTime = useCallback((seconds: number): string => {
     if (isNaN(seconds)) return "0:00"
@@ -272,60 +345,88 @@ export default function CourseDetailsTabs({
 
     return (
       <div className="space-y-8">
-        {/* Main Progress Ring */}
+        {/* Main Progress Ring with enhanced interactivity */}
         <div className="flex items-center justify-center">
-          <div className="relative w-36 h-36">
-            <svg className="w-36 h-36 transform -rotate-90" viewBox="0 0 120 120">
+          <div className="relative w-40 h-40 group cursor-pointer">
+            <svg className="w-40 h-40 transform -rotate-90 group-hover:scale-105 transition-transform duration-300" viewBox="0 0 120 120">
+              {/* Background circle */}
               <circle
                 cx="60"
                 cy="60"
                 r="50"
                 stroke="currentColor"
-                strokeWidth="6"
+                strokeWidth="4"
                 fill="none"
                 className="text-muted/20"
               />
+              {/* Progress circle with gradient */}
+              <defs>
+                <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
+                </linearGradient>
+              </defs>
               <motion.circle
                 cx="60"
                 cy="60"
                 r="50"
-                stroke="currentColor"
+                stroke="url(#progressGradient)"
                 strokeWidth="6"
                 fill="none"
                 strokeLinecap="round"
-                className="text-primary"
                 strokeDasharray={`${2 * Math.PI * 50}`}
                 initial={{ strokeDashoffset: 2 * Math.PI * 50 }}
                 animate={{
                   strokeDashoffset: 2 * Math.PI * 50 * (1 - courseStats.progressPercentage / 100),
                 }}
                 transition={{ duration: 1.5, ease: "easeOut" }}
+                className="drop-shadow-sm"
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-foreground">{courseStats.progressPercentage}%</div>
-                <div className="text-sm text-muted-foreground">Complete</div>
+              <div className="text-center group-hover:scale-105 transition-transform duration-300">
+                <div className="text-4xl font-bold text-foreground mb-1">{courseStats.progressPercentage}%</div>
+                <div className="text-sm text-muted-foreground font-medium">Complete</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {courseStats.completedChapters}/{courseStats.totalChapters} chapters
+                </div>
               </div>
             </div>
+            {/* Animated pulse ring */}
+            <motion.div
+              className="absolute inset-0 rounded-full border-2 border-primary/20"
+              animate={{
+                scale: [1, 1.1, 1],
+                opacity: [0.5, 0.8, 0.5]
+              }}
+              transition={{
+                duration: 3,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: "easeInOut"
+              }}
+            />
           </div>
         </div>
 
-        {/* Progress Statistics Grid */}
+        {/* Enhanced Progress Statistics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-card border border-border/40 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:border-primary/20"
+            className="bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl p-6 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:border-primary/30 group cursor-pointer"
+            whileHover={{ scale: 1.02 }}
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-primary" />
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-foreground">{courseStats.completedChapters}</div>
+                <div className="text-2xl font-bold text-foreground group-hover:text-green-600 transition-colors duration-300">
+                  {courseStats.completedChapters}
+                </div>
                 <div className="text-sm text-muted-foreground font-medium">Completed</div>
+                <div className="text-xs text-muted-foreground mt-1">Chapters done</div>
               </div>
             </div>
           </motion.div>
@@ -334,17 +435,19 @@ export default function CourseDetailsTabs({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-card border border-border/40 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-500/20"
+            className="bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl p-6 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 hover:border-blue-500/30 group cursor-pointer"
+            whileHover={{ scale: 1.02 }}
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
-                <Clock className="h-6 w-6 text-blue-500" />
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <Clock className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-foreground">
+                <div className="text-2xl font-bold text-foreground group-hover:text-blue-600 transition-colors duration-300">
                   {formatDuration(courseStats.estimatedTimeLeft)}
                 </div>
                 <div className="text-sm text-muted-foreground font-medium">Remaining</div>
+                <div className="text-xs text-muted-foreground mt-1">Time to finish</div>
               </div>
             </div>
           </motion.div>
@@ -353,15 +456,19 @@ export default function CourseDetailsTabs({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-card border border-border/40 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:border-orange-500/20"
+            className="bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl p-6 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300 hover:border-orange-500/30 group cursor-pointer"
+            whileHover={{ scale: 1.02 }}
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center">
-                <Flame className="h-6 w-6 text-orange-500" />
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <Flame className="h-6 w-6 text-orange-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-foreground">{courseStats.learningStreak}</div>
+                <div className="text-2xl font-bold text-foreground group-hover:text-orange-600 transition-colors duration-300">
+                  {courseStats.learningStreak}
+                </div>
                 <div className="text-sm text-muted-foreground font-medium">Day Streak</div>
+                <div className="text-xs text-muted-foreground mt-1">Keep it up!</div>
               </div>
             </div>
           </motion.div>
@@ -370,82 +477,138 @@ export default function CourseDetailsTabs({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-card border border-border/40 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:border-amber-500/20"
+            className="bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl p-6 hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300 hover:border-amber-500/30 group cursor-pointer"
+            whileHover={{ scale: 1.02 }}
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center">
-                <BookmarkIcon className="h-6 w-6 text-amber-500" />
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <BookmarkIcon className="h-6 w-6 text-amber-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-foreground">{courseStats.totalBookmarks}</div>
+                <div className="text-2xl font-bold text-foreground group-hover:text-amber-600 transition-colors duration-300">
+                  {courseStats.totalBookmarks}
+                </div>
                 <div className="text-sm text-muted-foreground font-medium">Bookmarks</div>
+                <div className="text-xs text-muted-foreground mt-1">Saved items</div>
               </div>
             </div>
           </motion.div>
         </div>
 
-        {/* Additional Stats */}
+        {/* Enhanced Additional Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-card border border-border/40 rounded-xl p-6"
+            className="bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl p-6 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:border-primary/30 group cursor-pointer"
+            whileHover={{ scale: 1.02 }}
           >
             <div className="flex items-center justify-between mb-4">
-              <span className="text-lg font-semibold text-foreground">Study Time This Week</span>
-              <Calendar className="h-5 w-5 text-muted-foreground" />
+              <span className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
+                Study Time This Week
+              </span>
+              <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <Calendar className="h-5 w-5 text-primary" />
+              </div>
             </div>
-            <div className="text-3xl font-bold text-primary mb-2">{formatDuration(courseStats.studyTimeThisWeek)}</div>
-            <div className="text-sm text-muted-foreground">Keep up the great work!</div>
+            <div className="text-3xl font-bold text-primary mb-2 group-hover:scale-105 transition-transform duration-300">
+              {formatDuration(courseStats.studyTimeThisWeek)}
+            </div>
+            <div className="text-sm text-muted-foreground group-hover:text-muted-foreground/80 transition-colors duration-300">
+              Keep up the great work!
+            </div>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="bg-card border border-border/40 rounded-xl p-6"
+            className="bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl p-6 hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300 hover:border-amber-500/30 group cursor-pointer"
+            whileHover={{ scale: 1.02 }}
           >
             <div className="flex items-center justify-between mb-4">
-              <span className="text-lg font-semibold text-foreground">Quiz Average</span>
-              <Star className="h-5 w-5 text-muted-foreground" />
+              <span className="text-lg font-semibold text-foreground group-hover:text-amber-600 transition-colors duration-300">
+                Quiz Average
+              </span>
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-500/20 to-amber-500/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <Star className="h-5 w-5 text-amber-600" />
+              </div>
             </div>
-            <div className="text-3xl font-bold text-primary mb-2">{courseStats.averageScore}%</div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-3xl font-bold text-amber-600 mb-2 group-hover:scale-105 transition-transform duration-300">
+              {courseStats.averageScore}%
+            </div>
+            <div className="text-sm text-muted-foreground group-hover:text-muted-foreground/80 transition-colors duration-300">
               {courseStats.averageScore >= 80 ? "Excellent!" : courseStats.averageScore >= 60 ? "Good work!" : "Keep practicing!"}
             </div>
           </motion.div>
         </div>
 
-        {/* Skill Level Badge */}
+        {/* Enhanced Skill Level Badge */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.7 }}
           className="text-center"
         >
-          <Badge variant="secondary" className={cn("px-6 py-3 text-base font-semibold", skillStyling.badge)}>
-            <SkillIcon className="h-5 w-5 mr-2" />
+          <Badge
+            variant="secondary"
+            className={cn(
+              "px-8 py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer group",
+              skillStyling.badge
+            )}
+          >
+            <SkillIcon className="h-6 w-6 mr-3 group-hover:scale-110 transition-transform duration-300" />
             {courseStats.skillLevel} Level
+            <motion.div
+              className="ml-2 inline-block"
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+            >
+              {courseStats.skillLevel === "Expert" ? "🏆" : courseStats.skillLevel === "Advanced" ? "⭐" : "🎯"}
+            </motion.div>
           </Badge>
         </motion.div>
 
-        {/* Course Progress Bar */}
+        {/* Enhanced Course Progress Bar */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
-          className="bg-card border border-border/40 rounded-xl p-6"
+          className="bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl p-6 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:border-primary/30"
         >
-          <h4 className="text-lg font-semibold text-foreground mb-4">Course Progress</h4>
-          <div className="space-y-3">
+          <h4 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Course Progress
+          </h4>
+          <div className="space-y-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Completed</span>
-              <span className="font-medium text-foreground">
+              <span className="text-muted-foreground font-medium">Completed</span>
+              <span className="font-bold text-foreground">
                 {formatDuration(courseStats.completedDuration)} / {formatDuration(courseStats.totalDuration)}
               </span>
             </div>
-            <Progress value={(courseStats.completedDuration / courseStats.totalDuration) * 100} className="h-3" />
+            <div className="relative">
+              <Progress
+                value={(courseStats.completedDuration / courseStats.totalDuration) * 100}
+                className="h-4 bg-muted/30"
+              />
+              <motion.div
+                className="absolute top-0 left-0 h-4 bg-gradient-to-r from-primary to-primary/80 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${(courseStats.completedDuration / courseStats.totalDuration) * 100}%` }}
+                transition={{ duration: 1.5, ease: "easeOut", delay: 0.9 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse rounded-full"></div>
+              </motion.div>
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>0%</span>
+              <span className="font-medium text-primary">
+                {Math.round((courseStats.completedDuration / courseStats.totalDuration) * 100)}%
+              </span>
+              <span>100%</span>
+            </div>
           </div>
         </motion.div>
       </div>
@@ -572,11 +735,58 @@ export default function CourseDetailsTabs({
               <p className="text-lg text-muted-foreground">Track your journey through {course.title}</p>
             </motion.div>
 
-            <Card className="border border-border/40 shadow-sm bg-background">
-              <CardContent className="p-4">
-                <ProgressVisualization />
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Course Progress Summary */}
+              <div className="lg:col-span-1">
+                <CourseProgressSummary
+                  totalChapters={courseStats.totalChapters}
+                  completedChapters={completedChapters}
+                  currentChapterId={currentChapter?.id}
+                />
+              </div>
+              
+              {/* Detailed Chapter Progress */}
+              <div className="lg:col-span-2">
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5" />
+                      Chapter Progress
+                    </CardTitle>
+                    <CardDescription>
+                      Track your progress through each chapter
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="max-h-96 overflow-y-auto">
+                    {course.courseUnits && course.courseUnits.length > 0 ? (
+                      <div className="space-y-6">
+                        {course.courseUnits.map((unit, unitIndex) => (
+                          <div key={unit.id} className="space-y-3">
+                            <div className="flex items-center gap-2 pb-2 border-b">
+                              <Badge variant="outline" className="text-xs">
+                                Unit {unitIndex + 1}
+                              </Badge>
+                              <h4 className="font-medium text-sm">{unit.name}</h4>
+                            </div>
+                            <ChapterProgressDisplay
+                              chapters={unit.chapters as FullChapterType[]}
+                              completedChapters={completedChapters}
+                              currentChapterId={currentChapter?.id}
+                              variant="compact"
+                              showProgress={true}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center text-muted-foreground py-8">
+                        No chapters available for this course.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
 
             <AnimatePresence>
               {courseStats.progressPercentage === 100 && (
@@ -786,14 +996,14 @@ export default function CourseDetailsTabs({
                     Course Notes
                   </CardTitle>
                   <CardDescription className="text-sm">
-                    {notes.length > 0
-                      ? `${notes.length} note${notes.length !== 1 ? "s" : ""} saved for this course`
+                    {filteredNotes.length > 0
+                      ? `${filteredNotes.length} note${filteredNotes.length !== 1 ? "s" : ""} ${notesSearchQuery || notesFilter !== "all" ? "found" : "saved for this course"}`
                       : "Keep track of important insights and key learnings"}
                   </CardDescription>
                 </div>
                 {accessLevels?.isAuthenticated && (
-                  <NoteModal 
-                    courseId={course.id} 
+                  <NoteModal
+                    courseId={course.id}
                     chapterId={currentChapter?.id}
                     trigger={
                       <Button size="sm" className="bg-primary hover:bg-primary/90">
@@ -804,93 +1014,150 @@ export default function CourseDetailsTabs({
                   />
                 )}
               </div>
+
+              {/* Search and Filter Controls */}
+              {accessLevels?.isAuthenticated && notes.length > 0 && (
+                <div className="flex items-center gap-3 mt-4">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search notes..."
+                      value={notesSearchQuery}
+                      onChange={(e) => setNotesSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={notesFilter === "all" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setNotesFilter("all")}
+                      className="text-xs"
+                    >
+                      <BookOpen className="h-3 w-3 mr-1" />
+                      All
+                    </Button>
+                    <Button
+                      variant={notesFilter === "recent" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setNotesFilter("recent")}
+                      className="text-xs"
+                    >
+                      <Calendar className="h-3 w-3 mr-1" />
+                      Recent
+                    </Button>
+                    <Button
+                      variant={notesFilter === "chapter" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setNotesFilter("chapter")}
+                      className="text-xs"
+                    >
+                      <Tag className="h-3 w-3 mr-1" />
+                      This Chapter
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-4 px-4 pb-4">
-              {accessLevels?.isAuthenticated && notes.length > 0 ? (
-                <div className="space-y-4">
-                  {notes.map((note: Bookmark & {
-                    course?: { id: number; title: string; slug: string } | null;
-                    chapter?: { id: number; title: string } | null;
-                  }, index: number) => (
-                    <motion.div
-                      key={note.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="group p-6 bg-card border border-border/40 rounded-xl hover:shadow-lg transition-all duration-300 hover:border-primary/30"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                              <StickyNote className="h-5 w-5 text-primary" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Clock className="h-4 w-4" />
-                                <span>{new Date(note.createdAt).toLocaleDateString()}</span>
-                                {note.chapter && (
-                                  <>
-                                    <span>•</span>
-                                    <span className="truncate">{note.chapter.title}</span>
-                                  </>
+              {accessLevels?.isAuthenticated && filteredNotes.length > 0 ? (
+                <ScrollArea className="h-[600px] pr-4">
+                  <div className="space-y-4">
+                    {filteredNotes.map((note: Bookmark & {
+                      course?: { id: number; title: string; slug: string } | null;
+                      chapter?: { id: number; title: string } | null;
+                    }, index: number) => (
+                      <motion.div
+                        key={note.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="group p-6 bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:border-primary/30"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-10 h-10 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                <StickyNote className="h-5 w-5 text-green-600" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                                  <Clock className="h-4 w-4" />
+                                  <span>{new Date(note.createdAt).toLocaleDateString()}</span>
+                                  {note.chapter && (
+                                    <>
+                                      <Separator orientation="vertical" className="h-4" />
+                                      <BookOpen className="h-4 w-4" />
+                                      <span className="truncate font-medium">{note.chapter.title}</span>
+                                    </>
+                                  )}
+                                </div>
+                                {note.timestamp && (
+                                  <div className="flex items-center gap-1 text-xs text-primary">
+                                    <PlayCircle className="h-3 w-3" />
+                                    <span>at {Math.floor(note.timestamp / 60)}:{(note.timestamp % 60).toString().padStart(2, '0')}</span>
+                                  </div>
                                 )}
                               </div>
                             </div>
+                            <div className="bg-muted/20 rounded-lg p-4 border border-border/20 group-hover:bg-muted/30 transition-colors duration-300">
+                              <p className="text-foreground whitespace-pre-wrap text-sm leading-relaxed">
+                                {note.note}
+                              </p>
+                            </div>
                           </div>
-                          <div className="bg-muted/20 rounded-lg p-4 border border-border/20">
-                            <p className="text-foreground whitespace-pre-wrap text-sm leading-relaxed">
-                              {note.note}
-                            </p>
+                          <div className="flex items-center gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <NoteModal
+                              courseId={course.id}
+                              chapterId={currentChapter?.id}
+                              existingNote={note}
+                              trigger={
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-blue-500/10 hover:text-blue-600">
+                                  <Edit3 className="h-4 w-4" />
+                                </Button>
+                              }
+                            />
+                            <DeleteNoteDialog
+                              noteId={note.id.toString()}
+                              noteContent={note.note}
+                              onDelete={deleteNote}
+                            />
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <NoteModal 
-                            courseId={course.id} 
-                            chapterId={currentChapter?.id}
-                            existingNote={note}
-                            trigger={
-                              <Button variant="ghost" size="sm">
-                                <Edit3 className="h-4 w-4" />
-                              </Button>
-                            }
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteNote(note.id.toString())}
-                            className="hover:bg-destructive/10 hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </ScrollArea>
               ) : accessLevels?.isAuthenticated ? (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="text-center py-16"
                 >
-                  <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <StickyNote className="h-12 w-12 text-primary/50" />
+                  <div className="w-24 h-24 bg-gradient-to-br from-muted/30 to-muted/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <StickyNote className="h-12 w-12 text-muted-foreground/50" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3">No notes yet</h3>
+                  <h3 className="text-xl font-semibold mb-3">
+                    {notesSearchQuery || notesFilter !== "all" ? "No notes found" : "No notes yet"}
+                  </h3>
                   <p className="text-muted-foreground mb-6 max-w-sm mx-auto text-base leading-relaxed">
-                    Start taking notes to capture important insights and key learnings from this course
-                  </p>
-                  <NoteModal 
-                    courseId={course.id} 
-                    chapterId={currentChapter?.id}
-                    trigger={
-                      <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" size="lg">
-                        <StickyNote className="h-5 w-5 mr-2" />
-                        Create Your First Note
-                      </Button>
+                    {notesSearchQuery || notesFilter !== "all"
+                      ? "Try adjusting your search or filter criteria"
+                      : "Start taking notes to capture important insights and key learnings from this course"
                     }
-                  />
+                  </p>
+                  {(!notesSearchQuery && notesFilter === "all") && (
+                    <NoteModal
+                      courseId={course.id}
+                      chapterId={currentChapter?.id}
+                      trigger={
+                        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" size="lg">
+                          <StickyNote className="h-5 w-5 mr-2" />
+                          Create Your First Note
+                        </Button>
+                      }
+                    />
+                  )}
                 </motion.div>
               ) : (
                 <motion.div

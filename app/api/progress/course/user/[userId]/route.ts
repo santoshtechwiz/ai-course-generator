@@ -88,13 +88,17 @@ export async function GET(
       progressMap[courseId] = {
         courseId: courseId,
         progressPercentage,
-        completedChapters: completedChapterIds.length,
+        completedChapters: completedChapterIds, // Send the actual chapter IDs instead of just the count
+        completedCount: completedChapterIds.length, // Keep the count as a separate field
         totalChapters: allChapters.length,
         currentChapterId: courseProgress.currentChapterId,
         currentChapterTitle: currentChapter?.title,
         lastAccessedAt: courseProgress.lastAccessedAt?.toISOString(),
         timeSpent: courseProgress.timeSpent || 0,
         isCompleted: progressPercentage === 100,
+        lastPositions: Object.fromEntries(
+          chapterProgress.map(cp => [cp.chapterId, cp.lastProgress])
+        ), // Add last positions for progress indication
       }
 
       // Also map by slug for easy lookup

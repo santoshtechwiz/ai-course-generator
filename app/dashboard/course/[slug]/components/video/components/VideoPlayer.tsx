@@ -10,7 +10,7 @@ import PlayerControls from "./PlayerControls"
 
 import VideoErrorState from "./VideoErrorState"
 import BookmarkManager from "./BookmarkManager"
-import KeyboardShortcutsModal from "../../KeyboardShortcutsModal"
+import { NotesPanel } from "./NotesPanel"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Play, Lock, User, Maximize, HelpCircle } from "lucide-react"
@@ -24,6 +24,7 @@ import AutoPlayNotification from "./AutoPlayNotification"
 import EnhancedMiniPlayer from "./EnhancedMiniPlayer"
 import { storageManager } from "@/utils/storage-manager"
 import { videoService } from "@/services/video-service"
+import { useNotes } from "@/hooks/use-notes"
 
 // Memoized play button to prevent unnecessary re-renders
 const PlayButton = React.memo(({ onClick }: { onClick: () => void }) => (
@@ -128,6 +129,7 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
       showAutoPlayNotification: false,
       showNextChapterAutoOverlay: false,
       chapterStartShown: false,
+      showNotesPanel: false,
     })
 
     const [countdowns, setCountdowns] = useState({
@@ -233,6 +235,13 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
         onVideoLoad,
         onCertificateClick,
       })
+
+    // Initialize notes hook for chapter-specific notes
+    const { notes: chapterNotes, createNote, loading: notesLoading } = useNotes({
+      courseId: courseId || 0,
+      chapterId: chapterId || 0,
+      limit: 50
+    })
 
     // Enhanced authentication and video access check using video service
     const authenticationState = useMemo(() => {
@@ -594,6 +603,15 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
               handleAddBookmark(state.lastPlayedTime)
             }
             break
+          case "n":
+          case "N":
+            event.preventDefault()
+            if (event.shiftKey) {
+              if (effectiveIsAuthenticated) handleToggleNotesPanel()
+            } else if (effectiveIsAuthenticated) {
+              handleCreateNote()
+            }
+            break
           case "ArrowRight":
             event.preventDefault()
             handlers.onSeek(Math.min(playerState.videoDuration, state.lastPlayedTime + 10))
@@ -730,6 +748,17 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
           return
         }
 
+        // Check bookmark limit (max 5 bookmarks)
+        const currentBookmarks = bookmarks || []
+        if (currentBookmarks.length >= 5) {
+          toast({
+            title: "Bookmark limit reached",
+            description: "You can only have up to 5 bookmarks per video. Please remove some bookmarks before adding new ones.",
+            variant: "destructive",
+          })
+          return
+        }
+
         try {
           // Create automatic bookmark title with chapter information
           const automaticTitle = title || `${chapterTitle} - ${formatTime(time)}`
@@ -809,7 +838,7 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
     )
 
     const handleToggleBookmarkPanel = useCallback(() => {
-      if (!isAuthenticated) {
+      if (!effectiveIsAuthenticated) {
         toast({
           title: "Sign in required",
           description: "Please sign in to access bookmarks.",
@@ -819,6 +848,41 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
       }
       setOverlayState(prev => ({ ...prev, showBookmarkPanel: !prev.showBookmarkPanel }))
     }, [isAuthenticated, toast])
+
+    const handleToggleNotesPanel = useCallback(() => {
+      if (!effectiveIsAuthenticated) {
+        toast({
+          title: "Sign in required",
+          description: "Please sign in to access notes.",
+          variant: "destructive",
+        })
+        return
+      }
+      setOverlayState(prev => ({ ...prev, showNotesPanel: !prev.showNotesPanel }))
+    }, [isAuthenticated, toast])
+
+    const handleCreateNote = useCallback(async () => {
+      if (!effectiveIsAuthenticated || !courseId || !chapterId) return
+
+      try {
+        await createNote({
+          courseId,
+          chapterId,
+          note: `Note at ${formatTime(state.lastPlayedTime)}`,
+          timestamp: state.lastPlayedTime
+        })
+        toast({
+          title: "Note created",
+          description: "Your note has been saved successfully",
+        })
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create note",
+          variant: "destructive",
+        })
+      }
+    }, [effectiveIsAuthenticated, courseId, chapterId, createNote, state.lastPlayedTime, formatTime, toast])
 
     // Certificate download handler
     const handleCertificateDownload = useCallback(async () => {
@@ -1161,6 +1225,11 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
               isPiPActive={shouldHideMainPlayer}
               isTheaterMode={isTheaterMode}
               onToggleTheaterMode={handleTheaterModeToggle}
+              notesCount={chapterNotes.length}
+              onToggleNotesPanel={handleToggleNotesPanel}
+              notesPanelOpen={overlayState.showNotesPanel}
+              onCreateNote={handleCreateNote}
+              notes={chapterNotes}
             />
           </div>
         )}
@@ -1179,6 +1248,18 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
               formatTime={formatTime}
             />
           </div>
+        )}
+
+        {/* Notes Panel */}
+        {overlayState.showNotesPanel && effectiveIsAuthenticated && !shouldHideMainPlayer && (
+          <NotesPanel
+            courseId={courseId || 0}
+            chapterId={chapterId || 0}
+            currentTime={state.lastPlayedTime}
+            duration={playerState.videoDuration || state.duration}
+            formatTime={formatTime}
+            onSeekToTimestamp={handlers.onSeek}
+          />
         )}
 
         {/* Keyboard Shortcuts Modal */}

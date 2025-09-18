@@ -109,6 +109,14 @@ const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ onClose
                 <p className="text-xs text-muted-foreground">Toggle Bookmarks</p>
               </div>
               <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">N</p>
+                <p className="text-xs text-muted-foreground">Add Note</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">Shift + N</p>
+                <p className="text-xs text-muted-foreground">Toggle Notes</p>
+              </div>
+              <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">← / →</p>
                 <div>
                   <p className="text-xs text-muted-foreground">Skip Back / Forward</p>

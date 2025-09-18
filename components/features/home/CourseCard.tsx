@@ -36,6 +36,11 @@ import bookmarkService from "@/lib/bookmark-service"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Progress } from "@/components/ui/progress"
 
+// In-memory caches to avoid N repeated network calls per course card render
+// Resets only on full page reload (acceptable for current perf goals)
+const bookmarkPresenceCache = new Map<number, boolean>()
+const pendingBookmarkFetches = new Set<number>()
+
 // Udemy-style course images - generic SVGs for different categories
 const COURSE_IMAGES = {
   default: "/generic-course.svg",
@@ -210,8 +215,8 @@ export const CourseCard = React.memo(
     title,
     description,
     rating,
-  slug,
-  courseId,
+    slug,
+    courseId,
     unitCount,
     lessonCount,
     quizCount,
@@ -280,32 +285,49 @@ export const CourseCard = React.memo(
       router.push(`/dashboard/course/${slug}`)
     }, [router, slug])
 
-    // Initial favorite status fetch only (no bulk bookmarks call per card)
+    // Initial favorite & bookmark presence fetch with caching (one network call per courseId max)
     useEffect(() => {
       let cancelled = false
-      const run = async () => {
-        if (!isAuthenticated) return
+      if (!isAuthenticated) return
+
+      const load = async () => {
+        // Favorite status (uncached for now – inexpensive, could batch later)
         try {
           const statusRes = await fetch(`/api/course/status/${slug}`)
           if (statusRes.ok) {
             const data = await statusRes.json()
             if (!cancelled) setIsFavorite(!!data.isFavorite)
           }
-        } catch {/* ignore */}
-        if (courseId && isAuthenticated) {
-          // Lightweight bookmark existence check via dedicated endpoint (avoid listing all)
-          try {
-            const res = await fetch(`/api/bookmarks?courseId=${courseId}&limit=1`)
-            if (res.ok) {
-              const data = await res.json()
-              if (!cancelled && Array.isArray(data.bookmarks) && data.bookmarks.length > 0) {
-                setIsBookmarked(true)
-              }
-            }
-          } catch {/* ignore */}
+        } catch { /* silent */ }
+
+        if (!courseId) return
+
+        // Check cache first
+        if (bookmarkPresenceCache.has(courseId)) {
+          if (!cancelled) setIsBookmarked(!!bookmarkPresenceCache.get(courseId))
+          return
+        }
+        // Avoid duplicate in-flight fetches
+        if (pendingBookmarkFetches.has(courseId)) return
+        pendingBookmarkFetches.add(courseId)
+        try {
+          const res = await fetch(`/api/bookmarks?courseId=${courseId}&limit=1`)
+          if (res.ok) {
+            const data = await res.json()
+            const exists = Array.isArray(data.bookmarks) && data.bookmarks.length > 0
+            bookmarkPresenceCache.set(courseId, exists)
+            if (!cancelled) setIsBookmarked(exists)
+          } else {
+            bookmarkPresenceCache.set(courseId, false)
+          }
+        } catch {
+          bookmarkPresenceCache.set(courseId, false)
+        } finally {
+          pendingBookmarkFetches.delete(courseId)
         }
       }
-      run()
+
+      load()
       return () => { cancelled = true }
     }, [slug, courseId, isAuthenticated])
 
@@ -357,16 +379,24 @@ export const CourseCard = React.memo(
       try {
         if (courseId) {
           const result = await bookmarkService.toggleBookmark(courseId)
-          if (result.bookmarked !== next) setIsBookmarked(result.bookmarked)
-  } else { /* no courseId: silent */
+          if (result.bookmarked !== next) {
+            setIsBookmarked(result.bookmarked)
+            bookmarkPresenceCache.set(courseId, result.bookmarked)
+          } else {
+            bookmarkPresenceCache.set(courseId, next)
+          }
+        } else {
+          // No courseId => revert; bookmarking unsupported
+          setIsBookmarked(false)
         }
-  // Silent success
       } catch (err) {
-  setIsBookmarked(!next) // revert silently
+        // Revert on failure
+        setIsBookmarked(!next)
+        if (courseId) bookmarkPresenceCache.set(courseId, !next)
       } finally {
         setOptimisticBusy(null)
       }
-  }, [optimisticBusy, isBookmarked, courseId])
+    }, [optimisticBusy, isBookmarked, courseId])
 
     // Keyboard shortcuts: f = favorite, b = bookmark when card focused
     const keyHandler = useCallback((e: React.KeyboardEvent) => {
@@ -390,36 +420,89 @@ export const CourseCard = React.memo(
     if (loading) {
       return (
         <Card className="w-full overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
-          <div className="aspect-video bg-gray-200 animate-pulse" />
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Skeleton className="h-5 w-16" />
-              <Skeleton className="h-5 w-20" />
+          {/* Image skeleton with proper aspect ratio */}
+          <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse">
+            <div className="absolute top-3 left-3">
+              <Skeleton className="h-5 w-16 rounded-full" />
             </div>
-            <Skeleton className="h-5 w-3/4 mb-2" />
-            <Skeleton className="h-4 w-1/2 mb-3" />
-            <Skeleton className="h-4 w-full mb-2" />
-            <Skeleton className="h-4 w-2/3 mb-4" />
-            <div className="flex items-center gap-2 mb-3">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-4 w-20" />
+            <div className="absolute top-3 right-3">
+              <Skeleton className="h-5 w-12 rounded-full" />
             </div>
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            {/* Play button placeholder */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                <Skeleton className="w-5 h-5 rounded" />
+              </div>
+            </div>
+          </div>
+
+          <CardContent className="p-5 space-y-4">
+            {/* Header badges */}
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-5 w-20 rounded-full" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+
+            {/* Title */}
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-3/4" />
+            </div>
+
+            {/* Instructor */}
+            <Skeleton className="h-4 w-32" />
+
+            {/* Rating and enrollment */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 w-8" />
+                <div className="flex gap-1">
+                  {[1,2,3,4,5].map((i) => (
+                    <Skeleton key={i} className="h-4 w-4 rounded" />
+                  ))}
+                </div>
+                <Skeleton className="h-4 w-12" />
+              </div>
+              <Skeleton className="h-3 w-16" />
+            </div>
+
+            {/* Trending badges */}
+            <div className="flex gap-2">
+              <Skeleton className="h-5 w-16 rounded-full" />
+              <Skeleton className="h-5 w-14 rounded-full" />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-5/6" />
+            </div>
+
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 gap-3">
               {[1,2,3,4].map((i) => (
                 <div key={i} className="flex items-center gap-2">
                   <Skeleton className="h-4 w-4 rounded" />
-                  <div>
-                    <Skeleton className="h-4 w-8 mb-1" />
+                  <div className="space-y-1">
+                    <Skeleton className="h-4 w-8" />
                     <Skeleton className="h-3 w-12" />
                   </div>
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-between mb-3">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-4 w-20" />
+
+            {/* Tags */}
+            <div className="flex gap-1">
+              <Skeleton className="h-5 w-12 rounded-full" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+              <Skeleton className="h-5 w-14 rounded-full" />
             </div>
-            <Skeleton className="h-6 w-20" />
+
+            {/* Footer */}
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-6 w-12 rounded" />
+            </div>
           </CardContent>
         </Card>
       )
@@ -430,9 +513,9 @@ export const CourseCard = React.memo(
   <Card
           onClick={handleCardClick}
           className={cn(
-      "relative w-full overflow-hidden border border-gray-200 bg-white/95 backdrop-blur-sm shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer group focus:outline-none",
-      "hover:border-transparent hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-      "before:absolute before:inset-0 before:pointer-events-none before:opacity-0 group-hover:before:opacity-100 before:transition-opacity before:duration-300 before:bg-[radial-gradient(circle_at_30%_20%,rgba(99,102,241,0.15),transparent_60%)]",
+      "relative w-full overflow-hidden border border-gray-200 bg-white/95 backdrop-blur-sm shadow-sm hover:shadow-2xl transition-all duration-500 cursor-pointer group focus:outline-none",
+      "hover:border-primary/20 hover:-translate-y-2 focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+      "before:absolute before:inset-0 before:pointer-events-none before:opacity-0 group-hover:before:opacity-100 before:transition-opacity before:duration-500 before:bg-[radial-gradient(circle_at_30%_20%,rgba(99,102,241,0.08),transparent_70%)]",
             isNavigating && "opacity-75 scale-95",
       variant==='list' && 'md:flex md:flex-row md:h-56',
       className
@@ -466,11 +549,14 @@ export const CourseCard = React.memo(
               <Image
                 src={selectedImage || "/generic-course-fallback.svg"}
                 alt={`${title} course thumbnail`}
-        layout="fill"
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-102"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                 loading="lazy"
-        className="object-cover transition-transform duration-300 group-hover:scale-102"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                placeholder="blur"
+                blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R+IRjWjBqO6O2mhP//Z"
                 onError={() => setImageError(true)}
+                quality={85}
               />
             ) : (
               <div className={cn("w-full h-full flex items-center justify-center", gradientBg)}>
@@ -504,9 +590,9 @@ export const CourseCard = React.memo(
           </div>
 
           {/* Course Content */}
-          <CardContent className={cn("p-5 flex flex-col h-full bg-gradient-to-b from-white/60 via-white/80 to-white", variant==='list' && 'md:flex-1')}>
-            {/* Quick Action Hover Bar */}
-            <div className="absolute left-0 right-0 -top-10 opacity-0 group-hover:opacity-100 group-hover:translate-y-12 transition-all duration-300 pointer-events-none flex justify-center">
+          <CardContent className={cn("p-4 sm:p-5 flex flex-col h-full bg-gradient-to-b from-white/60 via-white/80 to-white", variant==='list' && 'md:flex-1')}>
+            {/* Quick Action Hover Bar - Hidden on mobile, shown on larger screens */}
+            <div className="hidden sm:flex absolute left-0 right-0 -top-10 opacity-0 group-hover:opacity-100 group-hover:translate-y-12 transition-all duration-300 pointer-events-none justify-center">
               <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-full px-4 py-2 flex items-center gap-2 border border-gray-200 pointer-events-auto">
                 <Button
                   size="sm"
@@ -552,11 +638,11 @@ export const CourseCard = React.memo(
             )}
             {/* Header with Category and Badges */}
             <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 {category && (
                   <Badge className={cn("text-xs font-medium px-2 py-1", CATEGORY_CONFIG[category.toLowerCase()]?.badge || CATEGORY_CONFIG.default.badge)}>
                     {React.createElement(CATEGORY_CONFIG[category.toLowerCase()]?.icon || CATEGORY_CONFIG.default.icon, { className: "w-3 h-3 mr-1" })}
-                    {category}
+                    <span className="hidden xs:inline">{category}</span>
                   </Badge>
                 )}
                 {difficulty && (
@@ -565,9 +651,9 @@ export const CourseCard = React.memo(
                   </Badge>
                 )}
               </div>
-              
-              {/* Action buttons */}
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+
+              {/* Action buttons - Always visible on mobile, hover on desktop */}
+              <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -576,14 +662,14 @@ export const CourseCard = React.memo(
                       className="h-8 w-8 p-0 hover:bg-gray-100"
                       onClick={handleFavoriteClick}
                     >
-                      <Heart className={cn("h-4 w-4", isFavorite ? "fill-red-500 text-red-500" : "text-gray-400", optimisticBusy==='favorite' && 'animate-pulse')} />
+                      <Heart className={cn("h-4 w-4 transition-all duration-300", isFavorite ? "fill-red-500 text-red-500 scale-110" : "text-gray-400", optimisticBusy==='favorite' && 'animate-pulse')} />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>{isFavorite ? "Remove from favorites" : "Add to favorites"}</p>
                   </TooltipContent>
                 </Tooltip>
-                
+
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -592,14 +678,14 @@ export const CourseCard = React.memo(
                       className="h-8 w-8 p-0 hover:bg-gray-100"
                       onClick={handleBookmarkClick}
                     >
-                      <Bookmark className={cn("h-4 w-4", isBookmarked ? "fill-blue-500 text-blue-500" : "text-gray-400", optimisticBusy==='bookmark' && 'animate-pulse')} />
+                      <Bookmark className={cn("h-4 w-4 transition-all duration-300", isBookmarked ? "fill-blue-500 text-blue-500 scale-110" : "text-gray-400", optimisticBusy==='bookmark' && 'animate-pulse')} />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>{isBookmarked ? "Remove bookmark" : "Bookmark course"}</p>
                   </TooltipContent>
                 </Tooltip>
-                
+
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -686,36 +772,36 @@ export const CourseCard = React.memo(
               {description}
             </p>
 
-            {/* Course Stats Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            {/* Course Stats Grid - Responsive layout */}
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <BookOpen className="h-4 w-4 text-blue-500" />
-                <div>
-                  <div className="font-medium text-gray-900">{unitCount}</div>
+                <BookOpen className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                <div className="min-w-0">
+                  <div className="font-medium text-gray-900 text-sm sm:text-base">{unitCount}</div>
                   <div className="text-xs">Units</div>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Play className="h-4 w-4 text-green-500" />
-                <div>
-                  <div className="font-medium text-gray-900">{lessonCount}</div>
+                <Play className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <div className="min-w-0">
+                  <div className="font-medium text-gray-900 text-sm sm:text-base">{lessonCount}</div>
                   <div className="text-xs">Lessons</div>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Code className="h-4 w-4 text-purple-500" />
-                <div>
-                  <div className="font-medium text-gray-900">{quizCount}</div>
+                <Code className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                <div className="min-w-0">
+                  <div className="font-medium text-gray-900 text-sm sm:text-base">{quizCount}</div>
                   <div className="text-xs">Quizzes</div>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Users className="h-4 w-4 text-orange-500" />
-                <div>
-                  <div className="font-medium text-gray-900">{viewCount.toLocaleString()}</div>
+                <Users className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                <div className="min-w-0">
+                  <div className="font-medium text-gray-900 text-sm sm:text-base">{viewCount.toLocaleString()}</div>
                   <div className="text-xs">Views</div>
                 </div>
               </div>

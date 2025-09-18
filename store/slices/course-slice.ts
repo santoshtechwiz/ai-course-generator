@@ -243,18 +243,43 @@ const courseSlice = createSlice({
     markChapterAsCompleted(state, action: PayloadAction<{ courseId: number; chapterId: number; userId?: string }>) {
       const { courseId, chapterId, userId = 'guest' } = action.payload;
       
+      // Initialize user progress if it doesn't exist
       if (!state.userProgress[userId]) {
         state.userProgress[userId] = {};
       }
       
-      if (state.userProgress[userId][courseId]) {
-        const completedChapters = [...state.userProgress[userId][courseId].completedChapters];
+      // Initialize course progress if it doesn't exist
+      if (!state.userProgress[userId][courseId]) {
+        state.userProgress[userId][courseId] = {
+          courseId,
+          progress: 0,
+          completedChapters: [],
+          isCompleted: false,
+          currentChapterId: undefined,
+          lastUpdated: Date.now(),
+          lastActivityDate: new Date().toISOString()
+        };
+      }
+      
+      const courseProgress = state.userProgress[userId][courseId];
+      const completedChapters = [...courseProgress.completedChapters];
+      
+      // Only add if not already included to prevent unnecessary updates
+      if (!completedChapters.includes(chapterId)) {
+        completedChapters.push(chapterId);
+        state.userProgress[userId][courseId] = {
+          ...courseProgress,
+          completedChapters,
+          lastUpdated: Date.now(),
+          lastActivityDate: new Date().toISOString(),
+          progress: completedChapters.length // We'll calculate percentage later
+        };
         
-        // Only add if not already included to prevent unnecessary updates
-        if (!completedChapters.includes(chapterId)) {
-          completedChapters.push(chapterId);
-          state.userProgress[userId][courseId].completedChapters = completedChapters;
-        }
+        console.log(`[CourseSlice] Chapter ${chapterId} marked as completed for course ${courseId}. New state:`, {
+          userId,
+          courseId,
+          completedChapters: state.userProgress[userId][courseId].completedChapters,
+        });
       }
     },
     // Add new reducers for navigation with stable updates
@@ -395,7 +420,14 @@ const courseSlice = createSlice({
       state.userProgress[userId][courseId] = progress;
 
       if (typeof courseId === "number") {
-        state.courseProgress[courseId] = progress;
+        if (!state.userProgress['guest']) {
+          state.userProgress['guest'] = {};
+        }
+        state.userProgress['guest'][courseId] = {
+          ...progress,
+          courseId,
+          lastUpdated: Date.now()
+        };
       }
     },
     

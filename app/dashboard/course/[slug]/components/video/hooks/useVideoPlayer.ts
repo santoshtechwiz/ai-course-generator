@@ -43,7 +43,8 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
         volume: videoSettings.volume,
         muted: videoSettings.muted,
         playbackRate: videoSettings.playbackRate,
-        autoPlayNext: videoSettings.autoplay
+        autoplay: videoSettings.autoplay,
+        autoPlayNext: videoSettings.autoPlayNext !== undefined ? videoSettings.autoPlayNext : true
       }
     } catch (error) {
       console.warn('Failed to load player preferences:', error)
@@ -53,9 +54,9 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
 
   const [state, setState] = useState<VideoPlayerState>({
     playing: !!options.autoPlay,
-    muted: savedPreferences.muted,
-    volume: savedPreferences.volume,
-    playbackRate: savedPreferences.playbackRate,
+    muted: savedPreferences.muted ?? false,
+    volume: savedPreferences.volume ?? 0.8,
+    playbackRate: savedPreferences.playbackRate ?? 1.0,
     played: 0,
     loaded: 0,
     duration: 0,
@@ -69,7 +70,7 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     showKeyboardShortcuts: false,
   theaterMode: false,
     userInteracted: !!options.autoPlay,
-    autoPlayNext: savedPreferences.autoPlayNext ?? true,
+    autoPlayNext: savedPreferences.autoPlayNext ?? true, // Use autoPlayNext from storage
     isPictureInPicture: false,
     isPiPSupported: false,
     isNearingCompletion: false, // Add state for preloading detection
@@ -124,6 +125,18 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
         }
       }
 
+      // Check if user has watched 90% or more of the video - mark as completed
+      if (progressState.played >= 0.9 && options.onProgress) {
+        // Call the parent's onProgress with completion flag
+        options.onProgress({
+          ...progressState,
+          shouldMarkCompleted: true
+        });
+      } else {
+        // Normal progress update
+        options.onProgress?.(progressState);
+      }
+
       // Avoid duplicate/noisy tracking while in mini-player if desired
       const shouldTrack = !state.isMiniPlayer || state.played < 0.98
 
@@ -135,9 +148,6 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       //     position: progressState.playedSeconds
       //   }))
       // }
-
-      // Pass to parent callback (single call per tick)
-      options.onProgress?.(progressState);
     },
     [options.onProgress, state.isMiniPlayer, state.played, state.duration]
   );
@@ -579,11 +589,11 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   }, [state.theaterMode])
 
   // Toggle autoPlayNext handler
-  const toggleAutoPlayNext = useCallback(() => {
+  const toggleAutoPlayNext = useCallback((checked?: boolean) => {
     setState((prev) => {
-      const newAutoPlayNext = !prev.autoPlayNext;
-      // Save to StorageManager
-      storageManager.saveVideoSettings({ autoplay: newAutoPlayNext })
+      const newAutoPlayNext = checked !== undefined ? checked : !prev.autoPlayNext;
+      // Save to StorageManager with correct key name
+      storageManager.saveVideoSettings({ autoPlayNext: newAutoPlayNext })
       return { ...prev, autoPlayNext: newAutoPlayNext };
     });
   }, []);

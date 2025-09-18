@@ -104,6 +104,22 @@ export async function POST(request: NextRequest) {
     }
     const validatedData = createBookmarkSchema.parse(body)
 
+    // Check bookmark limit (max 5 bookmarks per user per course)
+    const existingBookmarksCount = await prisma.bookmark.count({
+      where: {
+        userId: session.user.id,
+        courseId: validatedData.courseId || undefined,
+        note: null, // Only count actual bookmarks (not notes)
+      }
+    })
+
+    if (existingBookmarksCount >= 5) {
+      return NextResponse.json(
+        { error: "Bookmark limit reached. You can only have up to 5 bookmarks per course." },
+        { status: 400 }
+      )
+    }
+
     const bookmark = await prisma.bookmark.create({
       data: {
         userId: session.user.id,

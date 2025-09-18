@@ -40,6 +40,8 @@ interface PlaylistSidebarProps {
   courseStats: CourseStats
   onChapterSelect: (chapter: Chapter) => void
   isPiPActive: boolean
+  lastPositions?: Record<string, number> // Add last positions for resume
+  isLoading?: boolean // Add loading state
 }
 
 const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
@@ -54,6 +56,8 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
   courseStats,
   onChapterSelect,
   isPiPActive,
+  lastPositions = {},
+  isLoading = false,
 }) => {
   // Group chapters by their index (every 5 chapters)
   const chapterGroups = useMemo(() => {
@@ -74,6 +78,42 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
     
     return groups
   }, [course.chapters])
+
+  interface ChapterStatus {
+    isCompleted: boolean;
+    isCurrent: boolean;
+    progress: number;
+    hasProgress: boolean;
+    duration: number;
+    isFree: boolean;
+  }
+
+  // Get comprehensive status for a chapter
+  const getChapterStatus = (chapter: Chapter): ChapterStatus => {
+    // Check completion status - handle both string and number IDs
+    const chapterId = String(chapter.id);
+    const isCompleted = completedChapters.includes(chapterId);
+    const isCurrent = currentChapter?.id === chapter.id;
+    
+    // Get video duration and progress
+    const duration = typeof videoDurations[chapter.videoId || ""] === 'number' 
+      ? videoDurations[chapter.videoId || ""] 
+      : (typeof chapter.duration === 'number' ? chapter.duration : 0);
+    
+    const lastPosition = lastPositions?.[chapterId];
+    const progress = lastPosition && duration 
+      ? Math.round((lastPosition / duration) * 100) 
+      : 0;
+
+    return {
+      isCompleted,
+      isCurrent,
+      progress: Math.min(progress, 100), // Cap progress at 100%
+      hasProgress: !!lastPosition && progress > 0,
+      duration,
+      isFree: !!chapter.isFree,
+    }
+  }
   
   // Determine sidebar animation
   const sidebarAnimation = {
@@ -91,11 +131,11 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
       variants={sidebarAnimation}
       transition={{ duration: 0.3, ease: "easeInOut" }}
       className={cn(
-        "rounded-xl border bg-card overflow-hidden h-full flex flex-col min-h-[500px]",
+        "rounded-xl border bg-card overflow-hidden h-full flex flex-col min-h-[500px] relative",
         isPiPActive ? "hidden" : "hidden md:flex"
       )}
     >
-      {/* Sidebar header */}
+      {/* Sidebar header with progress */}
       <div className="p-4 border-b bg-muted/30">
         <h3 className="font-semibold line-clamp-1 text-base">{course.title}</h3>
         <div className="flex items-center justify-between mt-3 text-sm">
@@ -118,21 +158,19 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
               : "Just getting started!"}
         </div>
       </div>
-      
+
       {/* Chapter list */}
       <ScrollArea className="flex-1">
         <div className="p-4">
           {chapterGroups.map((group, groupIndex) => (
-            <div key={`group-${groupIndex}`} className="mb-6">
+            <div key={`group-${groupIndex}`} className="mb-6 last:mb-0">
               <div className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
                 Chapters {groupIndex * 5 + 1} - {groupIndex * 5 + group.length}
               </div>
               
               <div className="space-y-2">
                 {group.map((chapter) => {
-                  const isActive = currentChapter?.id === chapter.id
-                  const isCompleted = completedChapters.includes(String(chapter.id))
-                  
+                  const status = getChapterStatus(chapter);
                   return (
                     <button
                       key={chapter.id}
@@ -140,17 +178,18 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
                       className={cn(
                         "flex items-center w-full p-3 text-sm rounded-lg text-left gap-3",
                         "transition-all duration-200 group hover:shadow-sm",
-                        isActive
+                        status.isCurrent
                           ? "bg-primary/15 text-primary border border-primary/20 shadow-sm"
                           : "hover:bg-muted/60 border border-transparent",
-                        isCompleted ? "text-foreground" : "text-foreground"
                       )}
                     >
                       <div className="flex-shrink-0">
-                        {isCompleted ? (
+                        {status.isCompleted ? (
                           <CheckCircle2 className="h-5 w-5 text-green-500" />
-                        ) : isActive ? (
+                        ) : status.isCurrent ? (
                           <PlayCircle className="h-5 w-5 text-primary" />
+                        ) : status.hasProgress ? (
+                          <Circle className="h-5 w-5 text-muted-foreground" />
                         ) : (
                           <Circle className="h-5 w-5 text-muted-foreground/60" />
                         )}
@@ -160,31 +199,43 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
                         <div
                           className={cn(
                             "font-medium line-clamp-2 leading-snug",
-                            isActive ? "text-primary" : "text-foreground"
+                            status.isCurrent ? "text-primary" : "text-foreground"
                           )}
                         >
                           {chapter.title}
                         </div>
                         
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1.5">
-                          {chapter.isFree && (
+                          {/* Free Badge */}
+                          {status.isFree && (
                             <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-green-200 text-green-700 bg-green-50">
                               Free
                             </Badge>
                           )}
-                          {(videoDurations[chapter.videoId || ""] || chapter.duration) && (
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {formatDuration(
-                                typeof videoDurations[chapter.videoId || ""] === 'number' 
-                                  ? videoDurations[chapter.videoId || ""] 
-                                  : (typeof chapter.duration === 'number' ? chapter.duration : 0)
-                              )}
-                            </span>
-                          )}
-                          {isCompleted && (
-                            <span className="text-green-600 font-medium">✓ Completed</span>
-                          )}
+
+                          {/* Duration and Progress Group */}
+                          <div className="flex items-center gap-2 ml-auto">
+                            {/* Duration */}
+                            {status.duration > 0 && (
+                              <span className="flex items-center gap-1 text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                {formatDuration(status.duration)}
+                              </span>
+                            )}
+
+                            {/* Progress Badge */}
+                            {status.isCompleted ? (
+                              <Badge variant="default" className="bg-primary/20 text-primary text-xs flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3" />
+                                <span>Completed</span>
+                              </Badge>
+                            ) : status.hasProgress ? (
+                              <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                                <span>{status.progress}%</span>
+                                <Progress value={status.progress} className="w-8 h-1" />
+                              </Badge>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                     </button>
@@ -195,6 +246,31 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
           ))}
         </div>
       </ScrollArea>
+
+      {/* Loading States */}
+      {isLoading && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center"
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+            className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full"
+          />
+          <span className="mt-2 text-sm text-muted-foreground">
+            Updating progress...
+          </span>
+          <Progress 
+            value={courseStats.progressPercentage} 
+            className="w-48 mt-4"
+          />
+          <span className="text-xs text-muted-foreground mt-2">
+            {courseStats.completedCount} of {courseStats.totalChapters} chapters completed
+          </span>
+        </motion.div>
+      )}
     </motion.div>
   )
 }

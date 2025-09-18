@@ -19,9 +19,10 @@ import {
   PictureInPicture2,
   Settings,
   Minimize2 as Minimize,
-  Volume1
+  Volume1,
+  StickyNote,
 } from "lucide-react"
-import { Switch } from "@/components/ui/switch"
+import { SimpleSwitch } from "@/components/ui/simple-switch"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,9 +63,9 @@ interface PlayerControlsProps {
   onToggleBookmarkPanel?: () => void
   bookmarkPanelOpen?: boolean
   autoPlayNext?: boolean
-  onToggleAutoPlayNext?: () => void
+  onToggleAutoPlayNext?: (checked: boolean) => void
   autoPlayVideo?: boolean
-  onToggleAutoPlayVideo?: () => void
+  onToggleAutoPlayVideo?: (checked: boolean) => void
   hasNextVideo?: boolean
   nextVideoTitle?: string
   canAccessNextVideo?: boolean
@@ -74,6 +75,12 @@ interface PlayerControlsProps {
   isPiPActive?: boolean
   isTheaterMode?: boolean
   onToggleTheaterMode?: () => void
+  // Notes-related props
+  notesCount?: number
+  onToggleNotesPanel?: () => void
+  notesPanelOpen?: boolean
+  onCreateNote?: () => void
+  notes?: Array<{ id: string; timestamp?: number; note: string }>
 }
 
 const PlayerControls: React.FC<PlayerControlsProps> = ({
@@ -117,6 +124,12 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   isPiPActive = false,
   isTheaterMode = false,
   onToggleTheaterMode,
+  // Notes-related props
+  notesCount = 0,
+  onToggleNotesPanel,
+  notesPanelOpen = false,
+  onCreateNote,
+  notes = [],
 }) => {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -139,17 +152,31 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
     e.stopPropagation()
   }, [])
 
+  // Use ref to store previous bookmarks to compare for changes
+  const prevBookmarksRef = useRef<number[]>([]);
+  
   // Sync external bookmark updates into local state (while preserving optimistic additions)
   useEffect(() => {
     if (Array.isArray(bookmarks)) {
-      setLocalBookmarks((prev) => {
-        // Merge & de-dupe (precision to 2 decimals to avoid near-duplicate floats)
-        const merged = [...prev]
-        for (const b of bookmarks) {
-          if (!merged.some((m) => Math.abs(m - b) < 0.01)) merged.push(b)
-        }
-        return merged.sort((a, b) => a - b)
-      })
+      // Check if bookmarks have actually changed using the ref
+      const prevBookmarks = prevBookmarksRef.current;
+      const bookmarksHaveChanged = 
+        prevBookmarks.length !== bookmarks.length || 
+        bookmarks.some(b => !prevBookmarks.some(m => Math.abs(m - b) < 0.01));
+      
+      if (bookmarksHaveChanged) {
+        setLocalBookmarks((prev) => {
+          // Merge & de-dupe (precision to 2 decimals to avoid near-duplicate floats)
+          const merged = [...prev]
+          for (const b of bookmarks) {
+            if (!merged.some((m) => Math.abs(m - b) < 0.01)) merged.push(b)
+          }
+          const sortedResult = merged.sort((a, b) => a - b);
+          // Update the ref with current values
+          prevBookmarksRef.current = [...sortedResult];
+          return sortedResult;
+        })
+      }
     }
   }, [bookmarks])
 
@@ -450,6 +477,34 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
                 aria-label={`Seek to bookmark at ${formatTime(time)}`}
               />
             ))}
+
+          {/* Notes markers */}
+          {notes?.length > 0 &&
+            notes
+              .filter(note => note.timestamp !== undefined)
+              .map((note, index) => (
+                <motion.button
+                  key={`note-${note.id}`}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  whileHover={{ scale: 1.3 }}
+                  whileTap={{ scale: 0.8 }}
+                  className="absolute w-3 h-3 bg-green-500 rounded-full transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 hover:bg-green-400 transition-colors touch-manipulation shadow-sm border border-white/50"
+                  style={{
+                    left: `${duration > 0 ? ((note.timestamp || 0) / duration) * 100 : 0}%`,
+                    top: "50%"
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    // Seek to the note timestamp
+                    if (note.timestamp) {
+                      onSeekChange?.(note.timestamp)
+                    }
+                  }}
+                  title={`Note: ${note.note.substring(0, 50)}${note.note.length > 50 ? '...' : ''} at ${formatTime(note.timestamp || 0)}`}
+                  aria-label={`Seek to note at ${formatTime(note.timestamp || 0)}`}
+                />
+              ))}
         </div>
 
         {/* Enhanced bookmarks on timeline */}
@@ -671,7 +726,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               aria-label="Auto play on load"
             >
               <span className="text-xs text-white mr-2">Auto-play</span>
-              <Switch
+              <SimpleSwitch
                 checked={autoPlayVideo}
                 onCheckedChange={onToggleAutoPlayVideo}
                 aria-label="Toggle auto-play video on page load"
@@ -687,7 +742,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               aria-label="Auto next video"
             >
               <span className="text-xs text-white mr-2">Auto-next</span>
-              <Switch
+              <SimpleSwitch
                 checked={autoPlayNext}
                 onCheckedChange={onToggleAutoPlayNext}
                 aria-label="Toggle autoplay next video"
@@ -720,6 +775,39 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               >
                 <BookmarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               </motion.div>
+            </Button>
+          )}
+
+          {/* Notes button for panel toggle */}
+          {onToggleNotesPanel && isAuthenticated && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-8 w-8 text-white touch-manipulation transition-colors relative",
+                notesPanelOpen && "bg-white/20 text-green-400",
+              )}
+              onClick={() => {
+                onToggleNotesPanel()
+              }}
+              title={notesPanelOpen ? "Hide notes (Shift+N)" : "Show notes (Shift+N)"}
+              aria-label={notesPanelOpen ? "Hide notes panel" : "Show notes panel"}
+            >
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <StickyNote className="h-4 w-4 sm:h-5 sm:w-5" />
+              </motion.div>
+              {notesCount > 0 && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                >
+                  {notesCount > 9 ? "9+" : notesCount}
+                </motion.div>
+              )}
             </Button>
           )}
 

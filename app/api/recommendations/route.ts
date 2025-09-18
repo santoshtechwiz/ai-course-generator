@@ -75,7 +75,33 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { action, data } = await req.json()
+    // Safely parse JSON with error handling
+    let requestData
+    try {
+      const body = await req.text()
+      if (!body.trim()) {
+        return NextResponse.json(
+          { error: "Request body is required" },
+          { status: 400 }
+        )
+      }
+      requestData = JSON.parse(body)
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError)
+      return NextResponse.json(
+        { error: "Invalid JSON in request body" },
+        { status: 400 }
+      )
+    }
+
+    const { action, data } = requestData
+
+    if (!action) {
+      return NextResponse.json(
+        { error: "Action parameter is required" },
+        { status: 400 }
+      )
+    }
 
     if (action === "invalidate_cache") {
       // TODO: Implement cache invalidation with new AI service
@@ -83,7 +109,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "update_activity") {
-      // TODO: Implement activity update with new AI service  
+      // TODO: Implement activity update with new AI service
       return NextResponse.json({ success: true, message: "Activity update not yet implemented" })
     }
 

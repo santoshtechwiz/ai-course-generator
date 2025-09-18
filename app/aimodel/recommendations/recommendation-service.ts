@@ -9,13 +9,15 @@
  * - Content-based filtering
  */
 
+import OpenAI from 'openai'
+import prisma from "@/lib/db"
+import { logger } from "@/lib/logger"
+import { CACHE_DURATION } from "@/constants/global"
+
 import { BaseAIService, AIServiceContext } from "../core/base-ai-service"
 import { EmbeddingManager, EmbeddingDocument } from "../core/embedding-manager"
 import { UserAnalyzer, UserProfile } from "./user-analyzer"
 import { ContentMatcher } from "./content-matcher"
-import OpenAI from 'openai'
-import prisma from "@/lib/db"
-import { logger } from "@/lib/logger"
 
 export interface RecommendationRequest {
   userId: string
@@ -28,6 +30,7 @@ export interface RecommendationRequest {
     currentTopic?: string
     difficulty?: 'beginner' | 'intermediate' | 'advanced'
   }
+  signal?: AbortSignal // Add abort signal support
 }
 
 export interface Recommendation {
@@ -67,7 +70,11 @@ export class RecommendationService extends BaseAIService {
   private userAnalyzer: UserAnalyzer
   private contentMatcher: ContentMatcher
 
-  constructor() {
+  constructor(
+    embeddingManager: EmbeddingManager,
+    userAnalyzer: UserAnalyzer,
+    contentMatcher: ContentMatcher
+  ) {
     super({
       name: 'recommendations',
       rateLimits: {
@@ -76,7 +83,7 @@ export class RecommendationService extends BaseAIService {
       },
       cacheConfig: {
         enabled: true,
-        ttl: 1800 // 30 minutes
+        ttl: CACHE_DURATION.RECOMMENDATIONS // Use standardized cache duration
       },
       retryConfig: {
         maxRetries: 2,
@@ -84,20 +91,16 @@ export class RecommendationService extends BaseAIService {
       }
     })
 
-    this.embeddingManager = new EmbeddingManager()
-    this.userAnalyzer = new UserAnalyzer()
-    this.contentMatcher = new ContentMatcher()
+    this.embeddingManager = embeddingManager
+    this.userAnalyzer = userAnalyzer
+    this.contentMatcher = contentMatcher
   }
 
   /**
    * Initialize the recommendation service
    */
   async initialize(): Promise<void> {
-    await Promise.all([
-      this.embeddingManager.initialize(),
-      this.userAnalyzer.initialize(),
-      this.contentMatcher.initialize()
-    ])
+    // Services are already initialized and passed through constructor
     logger.info('Recommendation Service initialized')
   }
 
@@ -106,6 +109,11 @@ export class RecommendationService extends BaseAIService {
    */
   async process(request: RecommendationRequest, context: AIServiceContext): Promise<RecommendationResponse> {
     const startTime = Date.now()
+
+    // Check for abort signal
+    if (request.signal?.aborted) {
+      throw new Error('Request was aborted')
+    }
 
     // Check rate limits
     const rateLimitResult = await this.checkRateLimit(context)
@@ -165,12 +173,30 @@ export class RecommendationService extends BaseAIService {
         processingTime: Date.now() - startTime
       })
 
+      // Performance monitoring
+      const processingTime = Date.now() - startTime
+      if (processingTime > 10000) { // Log if > 10 seconds
+        logger.warn('Slow recommendation generation', {
+          userId: request.userId,
+          processingTime,
+          recommendationCount: recommendations.length
+        })
+      }
+
       return response
     }, context)
   }
 
   /**
    * Generate recommendations using multiple strategies
+   *
+   * Combines content-based filtering, collaborative filtering, and knowledge gap analysis
+   * to provide personalized recommendations. Uses weighted allocation across strategies
+   * and includes fallback mechanisms for reliability.
+   *
+   * @param request - The recommendation request with user preferences
+   * @param userProfile - Analyzed user profile with learning patterns
+   * @returns Array of personalized recommendations sorted by confidence
    */
   private async generateRecommendations(
     request: RecommendationRequest,
@@ -348,6 +374,12 @@ export class RecommendationService extends BaseAIService {
 
   /**
    * Enhance recommendations with AI explanations
+   *
+   * Uses OpenAI GPT to generate personalized explanations for why each recommendation
+   * is suitable for the user. Handles API failures gracefully with fallback explanations.
+   *
+   * @param recommendations - Array of recommendations to enhance
+   * @param userProfile - User profile for context in AI prompts
    */
   private async enhanceWithAIExplanations(
     recommendations: Recommendation[],
@@ -473,25 +505,262 @@ export class RecommendationService extends BaseAIService {
     return factors
   }
 
-  // Placeholder methods that would need implementation based on specific requirements
   private async findSimilarUsers(userId: string, userProfile: UserProfile): Promise<Array<{userId: string, similarity: number}>> {
-    // Implementation would involve comparing user learning patterns
-    return []
+    try {
+      // Get current user's completed courses
+      const userCompletions = await prisma.userCourseProgress.findMany({
+        where: {
+          userId: userId,
+          completed: true
+        },
+        select: {
+          courseId: true
+        }
+      })
+
+      const userCourseIds = new Set(userCompletions.map(c => c.courseId))
+
+      if (userCourseIds.size === 0) {
+        return []
+      }
+
+      // Find other users who have completed similar courses
+      const similarUsersData = await prisma.userCourseProgress.groupBy({
+        by: ['userId'],
+        where: {
+          courseId: {
+            in: Array.from(userCourseIds)
+          },
+          completed: true,
+          userId: {
+            not: userId
+          }
+        },
+        _count: {
+          courseId: true
+        },
+        orderBy: {
+          _count: {
+            courseId: 'desc'
+          }
+        },
+        take: 10
+      })
+
+      // Calculate similarity scores
+      const similarUsers = similarUsersData.map(user => ({
+        userId: user.userId,
+        similarity: user._count.courseId / userCourseIds.size
+      })).filter(user => user.similarity > 0.3)
+
+      return similarUsers
+    } catch (error) {
+      logger.error('Failed to find similar users', { error, userId })
+      return []
+    }
   }
 
   private async getUserCompletions(userId: string): Promise<Array<{id: string, type: string, title: string}>> {
-    // Implementation would fetch user's completed content
-    return []
+    try {
+      // Get completed courses
+      const courses = await prisma.userCourseProgress.findMany({
+        where: {
+          userId: userId,
+          completed: true
+        },
+        include: {
+          course: {
+            select: {
+              id: true,
+              title: true,
+              slug: true
+            }
+          }
+        }
+      })
+
+      // Get completed quizzes
+      const quizzes = await prisma.quizResult.findMany({
+        where: {
+          userId: userId,
+          completed: true
+        },
+        include: {
+          quiz: {
+            select: {
+              id: true,
+              title: true,
+              slug: true
+            }
+          }
+        }
+      })
+
+      const courseCompletions = courses.map(c => ({
+        id: c.course.id,
+        type: 'course' as const,
+        title: c.course.title
+      }))
+
+      const quizCompletions = quizzes.map(q => ({
+        id: q.quiz.id,
+        type: 'quiz' as const,
+        title: q.quiz.title
+      }))
+
+      return [...courseCompletions, ...quizCompletions]
+    } catch (error) {
+      logger.error('Failed to get user completions', { error, userId })
+      return []
+    }
   }
 
   private async contentToRecommendation(content: any, strategy: string, reasoning: string): Promise<Recommendation | null> {
-    // Implementation would convert content to recommendation format
-    return null
+    try {
+      if (!content || !content.id) {
+        return null
+      }
+
+      // Determine content type and fetch additional metadata
+      let metadata: any = {}
+      let title = content.title || 'Unknown Content'
+      let description = content.description || ''
+
+      if (content.type === 'course' || strategy.includes('course')) {
+        const course = await prisma.course.findUnique({
+          where: { id: content.id },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            slug: true,
+            difficulty: true,
+            category: true,
+            estimatedDuration: true
+          }
+        })
+
+        if (course) {
+          title = course.title
+          description = course.description || ''
+          metadata = {
+            contentType: 'course',
+            tags: [],
+            prerequisites: [],
+            learningObjectives: [],
+            difficulty: course.difficulty,
+            category: course.category,
+            estimatedTime: course.estimatedDuration
+          }
+        }
+      } else if (content.type === 'quiz' || strategy.includes('quiz')) {
+        const quiz = await prisma.quiz.findUnique({
+          where: { id: content.id },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            slug: true,
+            difficulty: true,
+            category: true
+          }
+        })
+
+        if (quiz) {
+          title = quiz.title
+          description = quiz.description || ''
+          metadata = {
+            contentType: 'quiz',
+            tags: [],
+            prerequisites: [],
+            learningObjectives: [],
+            difficulty: quiz.difficulty,
+            category: quiz.category
+          }
+        }
+      }
+
+      return {
+        id: content.id,
+        type: content.type || (strategy.includes('course') ? 'course' : 'quiz'),
+        title,
+        slug: content.slug || '',
+        description,
+        category: metadata.category,
+        difficulty: metadata.difficulty,
+        estimatedTime: metadata.estimatedTime,
+        confidence: content.confidence || 0.7,
+        reasoning,
+        metadata
+      }
+    } catch (error) {
+      logger.error('Failed to convert content to recommendation', { error, contentId: content?.id })
+      return null
+    }
   }
 
   private async findContentForWeakArea(weakArea: any, contentType?: string): Promise<any[]> {
-    // Implementation would find content to help with weak areas
-    return []
+    try {
+      const topic = weakArea.topic || weakArea.category || ''
+
+      if (!topic) {
+        return []
+      }
+
+      // Search for courses/quizzes related to the weak area
+      let content: any[] = []
+
+      if (!contentType || contentType === 'course') {
+        const courses = await prisma.course.findMany({
+          where: {
+            OR: [
+              { title: { contains: topic, mode: 'insensitive' } },
+              { description: { contains: topic, mode: 'insensitive' } },
+              { category: { contains: topic, mode: 'insensitive' } }
+            ]
+          },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            slug: true,
+            difficulty: true,
+            category: true,
+            type: 'course'
+          },
+          take: 3
+        })
+        content.push(...courses)
+      }
+
+      if (!contentType || contentType === 'quiz') {
+        const quizzes = await prisma.quiz.findMany({
+          where: {
+            OR: [
+              { title: { contains: topic, mode: 'insensitive' } },
+              { description: { contains: topic, mode: 'insensitive' } },
+              { category: { contains: topic, mode: 'insensitive' } }
+            ]
+          },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            slug: true,
+            difficulty: true,
+            category: true,
+            type: 'quiz'
+          },
+          take: 3
+        })
+        content.push(...quizzes)
+      }
+
+      return content
+    } catch (error) {
+      logger.error('Failed to find content for weak area', { error, weakArea })
+      return []
+    }
   }
 
   private buildAIExplanationPrompt(recommendations: Recommendation[], userProfile: UserProfile): string {
@@ -499,12 +768,156 @@ export class RecommendationService extends BaseAIService {
   }
 
   private parseAIExplanations(text: string): string[] {
-    // Implementation would parse AI response into individual explanations
-    return []
+    try {
+      if (!text || text.trim() === '') {
+        return []
+      }
+
+      // Try to parse as JSON first
+      try {
+        const parsed = JSON.parse(text)
+        if (Array.isArray(parsed)) {
+          return parsed.map(item => typeof item === 'string' ? item : item.explanation || item.reasoning || '')
+        }
+      } catch {
+        // Not JSON, continue with text parsing
+      }
+
+      // Parse as numbered list or bullet points
+      const lines = text.split('\n').filter(line => line.trim())
+      const explanations: string[] = []
+
+      for (const line of lines) {
+        const trimmed = line.trim()
+
+        // Remove numbering (1., 2., etc.) or bullets (-, *, etc.)
+        const cleanLine = trimmed
+          .replace(/^\d+\.\s*/, '')
+          .replace(/^[-*•]\s*/, '')
+          .trim()
+
+        if (cleanLine && cleanLine.length > 10) { // Only include substantial explanations
+          explanations.push(cleanLine)
+        }
+      }
+
+      return explanations
+    } catch (error) {
+      logger.error('Failed to parse AI explanations', { error, text: text.substring(0, 100) })
+      return []
+    }
   }
 
   private async getFallbackRecommendations(request: RecommendationRequest, userProfile: UserProfile): Promise<Recommendation[]> {
-    // Implementation would provide simple fallback recommendations
-    return []
+    try {
+      // Provide basic fallback recommendations based on popularity and recency
+      const limit = request.limit || 5
+
+      // Get popular courses
+      const popularCourses = await prisma.course.findMany({
+        where: {
+          published: true
+        },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          slug: true,
+          difficulty: true,
+          category: true,
+          estimatedDuration: true,
+          _count: {
+            select: {
+              userProgress: {
+                where: {
+                  completed: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          userProgress: {
+            _count: 'desc'
+          }
+        },
+        take: Math.ceil(limit / 2)
+      })
+
+      // Get recent quizzes
+      const recentQuizzes = await prisma.quiz.findMany({
+        where: {
+          published: true
+        },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          slug: true,
+          difficulty: true,
+          category: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: Math.ceil(limit / 2)
+      })
+
+      const recommendations: Recommendation[] = []
+
+      // Convert courses to recommendations
+      for (const course of popularCourses) {
+        if (recommendations.length >= limit) break
+
+        recommendations.push({
+          id: course.id,
+          type: 'course',
+          title: course.title,
+          slug: course.slug,
+          description: course.description || '',
+          category: course.category,
+          difficulty: course.difficulty,
+          estimatedTime: course.estimatedDuration,
+          confidence: 0.6, // Lower confidence for fallback
+          reasoning: 'Popular course recommended as fallback',
+          metadata: {
+            contentType: 'course',
+            tags: [],
+            prerequisites: [],
+            learningObjectives: []
+          }
+        })
+      }
+
+      // Convert quizzes to recommendations
+      for (const quiz of recentQuizzes) {
+        if (recommendations.length >= limit) break
+
+        recommendations.push({
+          id: quiz.id,
+          type: 'quiz',
+          title: quiz.title,
+          slug: quiz.slug,
+          description: quiz.description || '',
+          category: quiz.category,
+          difficulty: quiz.difficulty,
+          confidence: 0.5, // Lower confidence for fallback
+          reasoning: 'Recent quiz recommended as fallback',
+          metadata: {
+            contentType: 'quiz',
+            tags: [],
+            prerequisites: [],
+            learningObjectives: []
+          }
+        })
+      }
+
+      return recommendations
+    } catch (error) {
+      logger.error('Failed to get fallback recommendations', { error, userId: request.userId })
+
+      // Ultimate fallback: return empty array
+      return []
+    }
   }
 }

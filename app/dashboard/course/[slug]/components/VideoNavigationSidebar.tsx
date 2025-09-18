@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useCallback } from "react"
-import { CheckCircle, Clock, Play, Lock, Video, VideoOff, ChevronDown, ChevronRight, Trophy, Target, BookOpen, Zap, Star } from "lucide-react"
+import React, { useMemo, useState, useCallback, useEffect, useRef } from "react"
+import { CheckCircle, Clock, Play, Lock, Video, VideoOff, ChevronDown, ChevronRight, Trophy, Target, BookOpen, Zap, Star, Loader2 } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -38,6 +38,9 @@ interface VideoNavigationSidebarProps {
   videoDurations: Record<string, number>;
   formatDuration: (duration: number) => string;
   courseStats: Record<string, any>;
+  onProgressUpdate?: (chapterId: string, progress: number) => void;
+  onChapterComplete?: (chapterId: string) => void;
+  isProgressLoading?: boolean;
 }
 
 const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
@@ -52,17 +55,50 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
   videoDurations,
   formatDuration,
   courseStats,
+  onProgressUpdate,
+  onChapterComplete,
+  isProgressLoading = false,
 }) => {
   const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set())
   const [hoveredChapter, setHoveredChapter] = useState<string | null>(null)
 
+  // Track progress with debounced updates
+  const progressUpdateTimeout = useRef<NodeJS.Timeout>();
+  
+  useEffect(() => {
+    if (!currentChapter?.id || !progress[currentChapter.id]) return;
+    
+    if (progressUpdateTimeout.current) {
+      clearTimeout(progressUpdateTimeout.current);
+    }
+    
+    progressUpdateTimeout.current = setTimeout(() => {
+      onProgressUpdate?.(currentChapter.id, progress[currentChapter.id]);
+    }, 2000); // Matches DEBOUNCE_DELAYS.COURSE_PROGRESS_UPDATED
+    
+    // Check for chapter completion
+    if (progress[currentChapter.id] >= 0.95) { // 95% viewed
+      onChapterComplete?.(currentChapter.id);
+    }
+    
+    return () => {
+      if (progressUpdateTimeout.current) {
+        clearTimeout(progressUpdateTimeout.current);
+      }
+    };
+  }, [currentChapter?.id, progress, onProgressUpdate, onChapterComplete]);
+
   // Calculate overall course progress with smooth animation
   const overallProgress = useMemo(() => {
     if (!course?.chapters?.length || !completedChapters?.length) return 0;
-    return (completedChapters.length / course.chapters.length) * 100;
-  }, [course, completedChapters]);
+    const verified = course.chapters.filter(ch => 
+      completedChapters?.includes(String(ch.id)) || 
+      completedChapters?.includes(ch.id)
+    ).length;
+    return (verified / course.chapters.length) * 100;
+  }, [course?.chapters, completedChapters]);
 
-  // Calculate course statistics
+  // Calculate course statistics - memoized for performance
   const courseStatistics = useMemo(() => {
     const totalChapters = course?.chapters?.length || 0;
     const completedCount = completedChapters?.length || 0;
@@ -71,7 +107,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
     }, 0) || 0;
     
     const watchedDuration = course?.chapters?.reduce((acc, chapter) => {
-      if (chapter.videoId && completedChapters?.includes(chapter.id)) {
+      if (chapter.videoId && (completedChapters?.includes(String(chapter.id)) || completedChapters?.includes(chapter.id))) {
         return acc + (videoDurations?.[chapter.videoId] || 0);
       }
       return acc;
@@ -86,14 +122,25 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
     };
   }, [course, completedChapters, videoDurations]);
 
-  // Group chapters by module with enhanced logic
+  interface ModuleInfo {
+    title: string;
+    chapters: Chapter[];
+    moduleNumber: number;
+    completedCount: number;
+    totalCount: number;
+    inProgress: boolean;
+    totalDuration: number;
+    watchedDuration: number;
+  }
+
+  // Group chapters by module with enhanced logic and progress tracking - memoized for performance
   const groupedChapters = useMemo(() => {
     if (!course?.chapters?.length) return [];
 
     const moduleRegex = /^(Module\s+\d+|Unit\s+\d+|Chapter\s+\d+|Section\s+\d+):\s*(.+)$/i;
-    const modules: Record<string, { title: string; chapters: Chapter[]; moduleNumber?: number }> = {};
+    const modules: Record<string, ModuleInfo> = {};
     
-    // First pass - identify modules
+    // First pass - identify modules with enhanced completion tracking
     course.chapters.forEach(chapter => {
       const match = chapter.title.match(moduleRegex);
       if (match) {
@@ -103,15 +150,29 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
           modules[moduleKey] = { 
             title: moduleKey, 
             chapters: [],
-            moduleNumber: numberMatch ? parseInt(numberMatch[0]) : 0
+            moduleNumber: numberMatch ? parseInt(numberMatch[0]) : 0,
+            completedCount: 0,
+            inProgress: false,
+            totalDuration: 0,
+            watchedDuration: 0,
+            totalCount: 0
           };
         }
       }
     });
     
-    // If no modules found, return chapters as is
+    // If no modules found, return chapters as a single module
     if (Object.keys(modules).length === 0) {
-      return [{ title: "Course Content", chapters: course.chapters, moduleNumber: 1 }];
+      const defaultModule: ModuleInfo = {
+        title: "Course Content",
+        chapters: course.chapters,
+        moduleNumber: 1,
+        completedCount: 0,
+        totalCount: course.chapters.length,
+        inProgress: false,
+        totalDuration: 0,
+        watchedDuration: 0
+      };
     }
     
     // Second pass - group chapters
@@ -125,14 +186,63 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
         });
       } else {
         if (!modules["Additional Content"]) {
-          modules["Additional Content"] = { title: "Additional Content", chapters: [], moduleNumber: 999 };
+          modules["Additional Content"] = { 
+            title: "Additional Content", 
+            chapters: [], 
+            moduleNumber: 999,
+            completedCount: 0,
+            totalCount: 0,
+            inProgress: false,
+            totalDuration: 0,
+            watchedDuration: 0
+          };
         }
         modules["Additional Content"].chapters.push(chapter);
       }
     });
     
+    // Update completion counts and progress for each module
+    Object.values(modules).forEach(module => {
+      module.totalCount = module.chapters.length;
+      
+      // Calculate completed chapters
+      const completedChapterIds = module.chapters.filter(ch => {
+        const chapterStringId = String(ch.id);
+        return completedChapters?.some(id => String(id) === chapterStringId);
+      }).map(ch => ch.id);
+      
+      module.completedCount = completedChapterIds.length;
+      
+      // Calculate if module is in progress
+      module.inProgress = module.completedCount > 0 && module.completedCount < module.totalCount;
+      
+      // Calculate durations
+      module.totalDuration = module.chapters.reduce((acc, ch) => {
+        return acc + (ch.videoId ? videoDurations?.[ch.videoId] || 0 : 0);
+      }, 0);
+      
+      module.watchedDuration = module.chapters.reduce((acc, ch) => {
+        if (ch.videoId && completedChapterIds.includes(ch.id)) {
+          return acc + (videoDurations?.[ch.videoId] || 0);
+        }
+        return acc;
+      }, 0);
+      
+      // Debug logging in development
+      if (process.env.NODE_ENV === 'development') {
+        console.debug(`[Module Progress] ${module.title}:`, {
+          total: module.totalCount,
+          completed: module.completedCount,
+          completedIds: completedChapterIds,
+          inProgress: module.inProgress,
+          duration: module.totalDuration,
+          watched: module.watchedDuration
+        });
+      }
+    });
+
     return Object.values(modules).sort((a, b) => (a.moduleNumber || 0) - (b.moduleNumber || 0));
-  }, [course]);
+  }, [course?.chapters, completedChapters, videoDurations]);
 
   const toggleModule = useCallback((moduleTitle: string) => {
     setCollapsedModules(prev => {
@@ -196,6 +306,16 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full bg-gradient-to-b from-background to-muted/20">
+        {/* Loading overlay when progress is loading */}
+        {isProgressLoading && (
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm">Loading progress...</span>
+            </div>
+          </div>
+        )}
+        
         {/* Enhanced Course Progress Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
@@ -294,7 +414,10 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
             {groupedChapters.map((module, moduleIndex) => {
               const isCollapsed = collapsedModules.has(module.title);
               const moduleProgress = module.chapters.length > 0 
-                ? (module.chapters.filter(ch => completedChapters?.includes(ch.id)).length / module.chapters.length) * 100 
+                ? (module.chapters.filter(ch => 
+                    completedChapters?.includes(String(ch.id)) || 
+                    completedChapters?.includes(ch.id)
+                  ).length / module.chapters.length) * 100 
                 : 0;
 
               return (
@@ -308,7 +431,12 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                     <Button
                       variant="ghost"
                       onClick={() => toggleModule(module.title)}
-                      className="w-full justify-between p-4 h-auto hover:bg-muted/50 group"
+                      className={cn(
+                        "w-full justify-between p-4 h-auto group relative overflow-hidden",
+                        "hover:bg-muted/50 transition-all duration-300 hover:shadow-md",
+                        module.completedCount === module.totalCount && 
+                        "bg-gradient-to-r from-green-500/10 to-emerald-500/5 hover:from-green-500/15 hover:to-emerald-500/10 border border-green-500/20"
+                      )}
                     >
                       <div className="flex items-center gap-3">
                         <motion.div
@@ -322,18 +450,32 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                             {module.title}
                           </h3>
                           <p className="text-xs text-muted-foreground">
-                            {module.chapters.length} chapters • {Math.round(moduleProgress)}% complete
+                            {module.totalCount} chapters • {Math.round((module.completedCount / module.totalCount) * 100)}% complete
                           </p>
                         </div>
                       </div>
                       <Badge variant="outline" className="text-xs">
-                        {module.chapters.filter(ch => completedChapters?.includes(ch.id)).length}/{module.chapters.length}
+                        {module.completedCount}/{module.totalCount}
                       </Badge>
                     </Button>
                     
-                    {/* Module Progress Bar */}
-                    <div className="mt-2 mx-3">
-                      <Progress value={moduleProgress} className="h-1" />
+                    {/* Module Progress Bar and Status */}
+                    <div className="mt-2 mx-3 space-y-1">
+                      <Progress 
+                        value={(module.completedCount / module.totalCount) * 100} 
+                        className={cn(
+                          "h-2 transition-all duration-500 shadow-inner",
+                          module.completedCount === module.totalCount ? 
+                            "bg-green-200 dark:bg-green-950" : 
+                            "bg-muted/50"
+                        )} 
+                      />
+                      {module.completedCount === module.totalCount && (
+                        <div className="flex items-center justify-end gap-1 text-xs text-green-600 dark:text-green-400 font-medium">
+                          <CheckCircle className="h-3 w-3" />
+                          <span>Module completed</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -358,9 +500,20 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                           };
 
                           const isActive = currentChapter && safeChapter.id === String(currentChapter.id);
-                          const isCompleted = completedChapters?.includes(String(safeChapter.id)) ||
-                                              completedChapters?.includes(safeChapter.id);
+                          const isCompleted = completedChapters?.some(id => 
+                            String(id) === String(safeChapter.id)
+                          );
                           const chapterProgress = safeChapter.videoId ? (progress?.[safeChapter.videoId] || 0) : 0;
+
+                          // Debug logging for completion status
+                          if (process.env.NODE_ENV === 'development') {
+                            console.debug('[Chapter Completion]', {
+                              chapterId: safeChapter.id,
+                              isCompleted,
+                              completedChapters,
+                              progress: chapterProgress
+                            });
+                          }
                           const duration = safeChapter.videoId ? videoDurations?.[safeChapter.videoId] : undefined;
                           const hasVideo = !!safeChapter.videoId;
                           const isHovered = hoveredChapter === safeChapter.id;
@@ -382,15 +535,16 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                     onMouseEnter={() => setHoveredChapter(safeChapter.id)}
                                     onMouseLeave={() => setHoveredChapter(null)}
                                     className={cn(
-                                      "w-full text-left px-5 py-5 rounded-xl text-sm transition-all duration-300 group",
+                                      "w-full text-left px-5 py-5 rounded-xl text-sm transition-all duration-300 group relative",
                                       "flex items-start gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                                      "border border-transparent hover:border-border/60 hover:shadow-md",
+                                      "border hover:shadow-lg backdrop-blur-sm transform hover:-translate-y-0.5",
                                       isActive ? 
-                                        "bg-gradient-to-r from-primary/15 to-primary/10 text-primary font-semibold border-primary/30 shadow-lg shadow-primary/10" : 
-                                        "hover:bg-gradient-to-r hover:from-muted/60 hover:to-muted/30",
+                                        "bg-gradient-to-r from-primary/20 to-primary/10 text-primary font-semibold border-primary/30 shadow-lg shadow-primary/10" : 
+                                        isCompleted ? 
+                                          "bg-gradient-to-r from-green-500/10 to-emerald-500/5 border-green-500/30 hover:border-green-500/50 hover:from-green-500/15 hover:to-emerald-500/10" :
+                                          "border-border/40 hover:border-border/60 hover:bg-gradient-to-r hover:from-muted/60 hover:to-muted/30",
                                       !hasVideo && "opacity-70 cursor-not-allowed",
-                                      isLocked && "opacity-60 cursor-not-allowed",
-                                      isCompleted && !isActive && "bg-gradient-to-r from-green-50/80 to-emerald-50/60 dark:from-green-950/30 dark:to-emerald-950/20 border-green-200/60 dark:border-green-800/40"
+                                      isLocked && "opacity-60 cursor-not-allowed"
                                     )}
                                     aria-current={isActive ? "true" : "false"}
                                     disabled={!hasVideo || isLocked}
@@ -398,13 +552,41 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                     data-has-video={hasVideo ? "true" : "false"}
                                   >
                                     {/* Enhanced Thumbnail or Status Icon */}
+                                    {/* Enhanced Completion Status Indicator */}
+                                    {isCompleted && (
+                                      <motion.div 
+                                        initial={{ scale: 0, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        className="absolute -right-2 -top-2 z-10"
+                                      >
+                                        <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full p-1.5 shadow-lg ring-2 ring-white dark:ring-gray-900">
+                                          <CheckCircle className="h-5 w-5 drop-shadow" />
+                                          <motion.div 
+                                            className="absolute inset-0 rounded-full bg-white/20"
+                                            animate={{ scale: [1, 1.2, 1] }}
+                                            transition={{ duration: 1, repeat: Infinity }}
+                                          />
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                    
+                                    {/* Progress Bar - Only show for incomplete chapters */}
+                                    {!isCompleted && chapterProgress > 0 && (
+                                      <div className="absolute bottom-0 left-0 w-full h-1 bg-muted overflow-hidden">
+                                        <div 
+                                          className="h-full bg-primary transition-all duration-300 ease-out"
+                                          style={{ width: `${chapterProgress}%` }}
+                                        />
+                                      </div>
+                                    )}
+
                                     <div className="flex-shrink-0 relative">
                                       {safeChapter.thumbnail && hasVideo ? (
-                                        <div className="w-36 h-24 rounded-xl overflow-hidden border border-border/50 relative group shadow-sm">
-                                          <img 
-                                            src={safeChapter.thumbnail} 
+                                        <div className="w-36 h-24 rounded-xl overflow-hidden border border-border/50 relative group shadow-sm hover:shadow-md transition-shadow duration-300">
+                                          <img
+                                            src={safeChapter.thumbnail}
                                             alt={safeChapter.title}
-                                            className="w-full h-full object-cover transition-all duration-300 group-hover:scale-110"
+                                            className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
                                             loading="lazy"
                                             onError={(e) => {
                                               // Fallback to default thumbnail on error
@@ -419,13 +601,13 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                             </div>
                                           )}
                                           {/* Play overlay on hover */}
-                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-all duration-300 rounded-xl">
+                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center transition-all duration-300 rounded-xl">
                                             <motion.div
                                               initial={{ scale: 0.8, opacity: 0 }}
                                               whileHover={{ scale: 1, opacity: 1 }}
                                               className="bg-white/20 backdrop-blur-sm rounded-full p-3"
                                             >
-                                              <Play className="h-6 w-6 text-white" />
+                                              <Play className="h-6 w-6 text-white drop-shadow" />
                                             </motion.div>
                                           </div>
                                           {/* Lock overlay for locked content */}
@@ -437,7 +619,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                           {/* Progress bar */}
                                           {chapterProgress > 0 && !isCompleted && (
                                             <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/30">
-                                              <motion.div 
+                                              <motion.div
                                                 initial={{ width: 0 }}
                                                 animate={{ width: `${chapterProgress}%` }}
                                                 transition={{ duration: 0.8, ease: "easeOut" }}
@@ -453,7 +635,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                                 animate={{ scale: 1 }}
                                                 transition={{ type: "spring", stiffness: 200, damping: 15 }}
                                               >
-                                                <CheckCircle className="h-5 w-5 text-green-500 bg-white rounded-full shadow-lg" />
+                                                <CheckCircle className="h-5 w-5 text-green-500 bg-white rounded-full shadow-lg ring-2 ring-white/50" />
                                               </motion.div>
                                             </div>
                                           )}
@@ -584,14 +766,16 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                         <motion.div 
                                           initial={{ scaleX: 0 }}
                                           animate={{ scaleX: 1 }}
-                                          className="mt-3 h-2 bg-muted/50 rounded-full overflow-hidden shadow-inner"
+                                          className="mt-3 h-2.5 bg-muted/50 rounded-full overflow-hidden shadow-inner border border-border/20"
                                         >
                                           <motion.div 
                                             initial={{ width: 0 }}
                                             animate={{ width: `${chapterProgress}%` }}
                                             transition={{ duration: 0.8, ease: "easeOut" }}
-                                            className="bg-gradient-to-r from-primary via-primary to-primary/80 h-full rounded-full shadow-sm"
-                                          />
+                                            className="bg-gradient-to-r from-primary via-primary to-primary/80 h-full rounded-full shadow-sm relative"
+                                          >
+                                            <div className="absolute inset-0 bg-white/20 rounded-full animate-pulse"></div>
+                                          </motion.div>
                                         </motion.div>
                                       )}
                                     </div>
@@ -640,7 +824,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-5 border-t border-border/50 bg-gradient-to-r from-primary/8 via-primary/5 to-primary/8"
+            className="p-5 border-t border-border/50 bg-gradient-to-r from-primary/8 via-primary/5 to-primary/8 shadow-inner"
           >
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0">
@@ -696,7 +880,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                     transition={{ delay: 0.5 }}
                     className="mt-3"
                   >
-                    <Badge className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 font-semibold px-3 py-1">
+                    <Badge className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 font-semibold px-3 py-1 shadow-lg">
                       <Trophy className="h-3 w-3 mr-1" />
                       Achievement Unlocked
                     </Badge>

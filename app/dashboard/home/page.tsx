@@ -10,25 +10,17 @@ import {
 import { UnifiedLoader } from "@/components/loaders/UnifiedLoader"
 import { DashboardErrorBoundary } from "@/components/ui/dashboard-error-boundary"
 import { AlertTriangle, RefreshCw } from "lucide-react"
-import { cleanApiData } from "@/lib/utils/data-utils"
 import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { BookOpen, BarChart3, Clock, Award, Activity, TrendingUp, Target, Users } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import UserNotFound from "@/components/common/UserNotFound"
+import { BookOpen, Activity, TrendingUp, GraduationCap } from "lucide-react"
 
 import { useUserData, useUserStats } from "@/hooks/useUserDashboard"
-import { useLearningActivity, useProgressOverview, useQuizPerformance } from "@/hooks/useDashboardData"
 import DashboardHeader from "./components/DashboardHeader"
 import DashboardSidebar from "./components/DashboardSidebar"
-import LearningActivity from "./components/LearningActivity"
-import ProgressOverview from "./components/ProgressOverview"
-import QuizPerformance from "./components/QuizPerformance"
 import dynamic from "next/dynamic"
-import RecommendationsWidget from "@/components/RecommendationsWidget"
 
 import type { DashboardUser, UserStats } from "@/app/types/types"
 import { useAuth } from "@/hooks"
@@ -45,8 +37,8 @@ const QuizzesTab = dynamic(() => import("./components/QuizzesTab"), {
   loading: () => <Skeleton className="h-[500px] w-full" />,
   ssr: false,
 })
-const StatsTab = dynamic(() => import("./components/StatsTab"), {
-  loading: () => <Skeleton className="h-[500px] w-full" />,
+const RecommendationsWidget = dynamic(() => import("@/components/RecommendationsWidget"), {
+  loading: () => <Skeleton className="h-[300px] w-full" />,
   ssr: false,
 })
 
@@ -88,67 +80,10 @@ export default function DashboardPage() {
   })
 
   // Fetch dashboard data using real data hooks - moved before conditional returns
-  const { 
-    data: rawLearningActivityData, 
-    isLoading: isLoadingActivity 
-  } = useLearningActivity(userId)
-
-  const { 
-    data: rawProgressOverviewData, 
-    isLoading: isLoadingProgress 
-  } = useProgressOverview(userId)
-
-  const { 
-    data: rawQuizPerformanceData, 
-    isLoading: isLoadingQuizPerformance 
-  } = useQuizPerformance(userId)
+  // Removed progress-related data fetching to improve performance
 
   // Clean data before use
-  const learningActivityData = cleanApiData(rawLearningActivityData, {
-    recentEvents: [],
-    todayStats: {
-      timeSpent: 0,
-      coursesStudied: 0,
-      chaptersCompleted: 0,
-      quizzesCompleted: 0
-    },
-    weeklyStats: {
-      timeSpent: 0,
-      coursesStarted: 0,
-      coursesCompleted: 0,
-      averageScore: 0
-    }
-  })
-
-  const progressOverviewData = cleanApiData(rawProgressOverviewData, {
-    courseProgresses: [],
-    chapterProgresses: [],
-    overallStats: {
-      totalCourses: 0,
-      completedCourses: 0,
-      totalChapters: 0,
-      completedChapters: 0,
-      totalTimeSpent: 0,
-      averageProgress: 0,
-      streak: 0
-    }
-  })
-
-  const quizPerformanceData = cleanApiData(rawQuizPerformanceData, {
-    recentAttempts: [],
-    quizProgresses: [],
-    performanceStats: {
-      totalQuizzes: 0,
-      completedQuizzes: 0,
-      averageScore: 0,
-      averageAccuracy: 0,
-      totalTimeSpent: 0,
-      bestStreak: 0,
-      currentStreak: 0,
-      improvementRate: 0
-    },
-    weakAreas: []
-  })
+  // Removed progress-related data cleaning to improve performance
 
   const handleTabChange = useCallback((value: string) => {
     setActiveTab(value)
@@ -188,29 +123,7 @@ export default function DashboardPage() {
     topPerformingTopics: [],
   }
 
-  // Consolidated quick stats for header - removed since moved to OverviewTab
-  // const quickStats = useMemo(() => [
-  //   {
-  //     icon: <BookOpen className="h-5 w-5" />,
-  //     label: "Courses",
-  //     value: safeUserData.courses?.length || 0,
-  //   },
-  //   {
-  //     icon: <BarChart3 className="h-5 w-5" />,
-  //     label: "Avg. Score",
-  //     value: `${Math.round(safeUserStats.averageScore)}%`,
-  //   },
-  //   {
-  //     icon: <Clock className="h-5 w-5" />,
-  //     label: "Learning Time",
-  //     value: `${Math.round((safeUserStats.totalTimeSpent || 0) / 60)}h`,
-  //   },
-  //   {
-  //     icon: <Award className="h-5 w-5" />,
-  //     label: "Streak",
-  //     value: safeUserData.streakDays || 0,
-  //   },
-  // ], [safeUserData, safeUserStats])
+  // Consolidated quick stats moved to OverviewTab for better organization
 
   useEffect(() => {
     // No-op for now
@@ -300,21 +213,13 @@ export default function DashboardPage() {
                 <Activity className="h-4 w-4" />
                 <span className="hidden sm:inline">Overview</span>
               </TabsTrigger>
-              <TabsTrigger value="progress" className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                <span className="hidden sm:inline">Progress</span>
-              </TabsTrigger>
-              <TabsTrigger value="performance" className="flex items-center gap-2">
-                <Target className="h-4 w-4" />
-                <span className="hidden sm:inline">Quizzes</span>
-              </TabsTrigger>
               <TabsTrigger value="courses" className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4" />
                 <span className="hidden sm:inline">Courses</span>
               </TabsTrigger>
-              <TabsTrigger value="activity" className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span className="hidden sm:inline">Activity</span>
+              <TabsTrigger value="quizzes" className="flex items-center gap-2">
+                <GraduationCap className="h-4 w-4" />
+                <span className="hidden sm:inline">Quizzes</span>
               </TabsTrigger>
               <TabsTrigger value="recommendations" className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
@@ -336,62 +241,6 @@ export default function DashboardPage() {
               </Suspense>
             </TabsContent>
 
-            <TabsContent value="progress" className="mt-0">
-              <DashboardErrorBoundary componentName="ProgressOverview">
-                {progressOverviewData ? (
-                  <ProgressOverview 
-                    courseProgresses={progressOverviewData.courseProgresses || []}
-                    chapterProgresses={progressOverviewData.chapterProgresses || []}
-                    overallStats={progressOverviewData.overallStats || { 
-                      totalCourses: 0, 
-                      completedCourses: 0, 
-                      totalChapters: 0, 
-                      completedChapters: 0, 
-                      totalTimeSpent: 0, 
-                      averageProgress: 0, 
-                      streak: 0 
-                    }}
-                  />
-                ) : (
-                  <UnifiedLoader
-                    variant="spinner"
-                    size="md"
-                    message="Loading progress data..."
-                  />
-                )}
-              </DashboardErrorBoundary>
-            </TabsContent>
-
-            <TabsContent value="performance" className="mt-0">
-              <DashboardErrorBoundary componentName="QuizPerformance">
-                {quizPerformanceData ? (
-                  <QuizPerformance 
-                    data={quizPerformanceData || { 
-                      recentAttempts: [], 
-                      quizProgresses: [], 
-                      performanceStats: { 
-                        totalQuizzes: 0, 
-                        completedQuizzes: 0, 
-                        averageScore: 0, 
-                        averageAccuracy: 0, 
-                        totalTimeSpent: 0, 
-                        bestStreak: 0, 
-                        currentStreak: 0, 
-                        improvementRate: 0 
-                      }, 
-                      weakAreas: [] 
-                    }} 
-                  />
-                ) : (
-                  <UnifiedLoader
-                    variant="spinner"
-                    size="md"
-                    message="Loading performance data..."
-                  />
-                )}
-              </DashboardErrorBoundary>
-            </TabsContent>
-
             <TabsContent value="courses" className="mt-0">
               <Suspense fallback={
                 <div className="min-h-[400px] flex items-center justify-center">
@@ -406,32 +255,18 @@ export default function DashboardPage() {
               </Suspense>
             </TabsContent>
 
-            <TabsContent value="activity" className="mt-0">
-              <DashboardErrorBoundary componentName="LearningActivity">
-                {learningActivityData ? (
-                  <LearningActivity 
-                    recentEvents={learningActivityData.recentEvents || []}
-                    todayStats={learningActivityData.todayStats || { 
-                      timeSpent: 0, 
-                      coursesStudied: 0, 
-                      chaptersCompleted: 0, 
-                      quizzesCompleted: 0 
-                    }}
-                    weeklyStats={learningActivityData.weeklyStats || { 
-                      timeSpent: 0, 
-                      coursesStarted: 0, 
-                      coursesCompleted: 0, 
-                      averageScore: 0 
-                    }}
-                  />
-                ) : (
+            <TabsContent value="quizzes" className="mt-0">
+              <Suspense fallback={
+                <div className="min-h-[400px] flex items-center justify-center">
                   <UnifiedLoader
                     variant="spinner"
                     size="md"
-                    message="Loading activity data..."
+                    message="Loading quizzes..."
                   />
-                )}
-              </DashboardErrorBoundary>
+                </div>
+              }>
+                <QuizzesTab userData={safeUserData} />
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="recommendations" className="mt-0">

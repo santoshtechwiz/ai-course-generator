@@ -46,6 +46,34 @@ export function NoteModal({
       return
     }
 
+    // Additional validation to prevent course/chapter info from being saved as notes
+    if (note.includes(" - ")) {
+      toast({
+        title: "Error",
+        description: "Note content cannot contain course or chapter information. Please enter your own notes.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (note.includes("Introduction to")) {
+      toast({
+        title: "Error", 
+        description: "Note content cannot contain course titles. Please enter your own notes.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (note.trim().length < 5) {
+      toast({
+        title: "Error",
+        description: "Note content must be at least 5 characters long",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
 
     try {

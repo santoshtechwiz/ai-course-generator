@@ -6,7 +6,17 @@ import { z } from "zod"
 const createNoteSchema = z.object({
   courseId: z.number(),
   chapterId: z.number().optional(),
-  note: z.string().min(1, "Note content is required"),
+  note: z.string()
+    .min(1, "Note content is required")
+    .refine((note) => !note.includes(" - "), {
+      message: "Note content cannot contain course or chapter information. Please enter your own notes."
+    })
+    .refine((note) => !note.includes("Introduction to"), {
+      message: "Note content cannot contain course titles. Please enter your own notes."
+    })
+    .refine((note) => note.trim().length >= 5, {
+      message: "Note content must be at least 5 characters long"
+    }),
   title: z.string().optional(),
 })
 
@@ -28,7 +38,22 @@ export async function GET(request: NextRequest) {
       userId: session.user.id,
       note: {
         not: null,
+        not: "", // Exclude empty notes
       },
+      // Filter out notes that look like course/chapter titles with timestamps
+      // These are likely invalid notes created by mistake
+      NOT: [
+        {
+          note: {
+            contains: " - ", // Exclude notes that contain " - " pattern (course - timestamp)
+          }
+        },
+        {
+          note: {
+            contains: "Introduction to", // Exclude notes that start with course titles
+          }
+        }
+      ]
     }
 
     if (courseId) {
@@ -92,6 +117,36 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const validatedData = createNoteSchema.parse(body)
+
+    // Check note limit (max 5 notes per user per course)
+    const existingNotesCount = await prisma.bookmark.count({
+      where: {
+        userId: session.user.id,
+        courseId: validatedData.courseId,
+        note: {
+          not: null,
+        },
+        NOT: [
+          {
+            note: {
+              contains: " - ", // Exclude bookmarks that look like course/chapter info
+            }
+          },
+          {
+            note: {
+              contains: "Introduction to", // Exclude bookmarks that start with course titles
+            }
+          }
+        ]
+      }
+    })
+
+    if (existingNotesCount >= 5) {
+      return NextResponse.json(
+        { error: "Note limit reached. You can only have up to 5 notes per course." },
+        { status: 400 }
+      )
+    }
 
     const note = await prisma.bookmark.create({
       data: {

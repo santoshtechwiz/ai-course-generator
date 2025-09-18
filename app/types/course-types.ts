@@ -84,6 +84,13 @@ export interface FullChapterType {
   name?: string; // Legacy support
   isFree?: boolean; // Added property - derived from context
   duration?: number | string; // Added property - calculated or provided
+  videoDuration?: number | null; // Database field
+  isFreePreview?: boolean; // Database field
+  isCompleted?: boolean; // Database field
+  youtubeSearchQuery?: string | null; // Database field
+  summaryStatus?: string; // Database field
+  videoStatus?: string; // Database field
+  unitId?: number; // Database field
 }
 
 export interface CourseUnitType {
@@ -98,6 +105,7 @@ export interface FullCourseUnit {
   id: number;
   courseId: number;
   title: string;
+  name: string; // Database field mapped to title
   isCompleted: boolean;
   duration: number | null;
   order: number;

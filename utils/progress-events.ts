@@ -1,9 +1,10 @@
+'use client';
+
+import { useRef } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import {
   addEvent,
-  ProgressEvent,
-  ProgressEventType,
   syncEventsWithServer,
   selectQuizProgressFromEvents,
   selectCurrentQuizAnswers,
@@ -11,9 +12,29 @@ import {
   selectCourseProgressFromEvents,
   selectCourseCompletionPercentage
 } from '@/store/slices/progress-events-slice'
+import { 
+  ProgressEvent,
+  ProgressEventType,
+  BaseProgressEvent,
+  CourseProgressUpdatedEvent,
+  QuizCompletedEvent,
+  QuestionAnsweredEvent
+} from '@/types/progress-events'
 import { useCallback } from 'react'
 
 // Event creation utilities
+const DEBOUNCE_DELAYS: Record<ProgressEventType, number> = {
+  [ProgressEventType.COURSE_STARTED]: 0,
+  [ProgressEventType.COURSE_PROGRESS_UPDATED]: 2000,  // 2s for progress updates
+  [ProgressEventType.QUIZ_STARTED]: 0,
+  [ProgressEventType.QUESTION_ANSWERED]: 500,
+  [ProgressEventType.QUIZ_COMPLETED]: 0,
+  [ProgressEventType.COURSE_COMPLETED]: 0,
+  [ProgressEventType.VIDEO_WATCHED]: 5000,           // 5s for video progress
+  [ProgressEventType.CHAPTER_COMPLETED]: 0,          // No delay for completion events
+}
+const DEFAULT_DEBOUNCE = 1000
+
 export class ProgressEventFactory {
   static createEvent<T extends ProgressEvent>(
     type: ProgressEventType,
@@ -22,6 +43,10 @@ export class ProgressEventFactory {
     entityType: T['entityType'],
     metadata: T['metadata']
   ): T {
+    const batchId = uuidv4();
+    const debounceKey = `${type}-${entityId}-${userId}`;
+    const priority = type === ProgressEventType.CHAPTER_COMPLETED ? 1 : 0;
+    
     return {
       id: uuidv4(),
       userId,
@@ -29,7 +54,10 @@ export class ProgressEventFactory {
       type,
       entityId,
       entityType,
-      metadata
+      metadata,
+      batchId,
+      priority,
+      debounceKey
     } as T
   }
 
@@ -148,17 +176,93 @@ export class ProgressEventFactory {
 // Hook for dispatching events
 export function useProgressEvents() {
   const dispatch = useAppDispatch()
+  
+  // Create refs for debouncing
+  const videoWatchDebounceRef = useRef<{
+    timerId: ReturnType<typeof setTimeout> | null;
+    lastProgress: Record<string, { progress: number; timestamp: number }>;
+  }>({
+    timerId: null,
+    lastProgress: {}
+  })
 
   const dispatchEvent = useCallback((event: ProgressEvent) => {
+    // Special handling for video watch events with improved deduplication
+    if (event.type === ProgressEventType.VIDEO_WATCHED) {
+      const { entityId, metadata } = event
+      const lastState = videoWatchDebounceRef.current.lastProgress[entityId]
+      const now = Date.now()
+      
+      // Enhanced deduplication logic
+      if (lastState) {
+        const progressDiff = Math.abs(lastState.progress - metadata.progress)
+        const timeDiff = now - lastState.timestamp
+        
+        // Skip if:
+        // 1. Progress hasn't changed significantly (<2%) in the last 3 seconds
+        // 2. Same progress value within 1 second (duplicate call)
+        if ((progressDiff < 0.02 && timeDiff < 3000) || 
+            (progressDiff < 0.001 && timeDiff < 1000)) {
+          console.debug(`Skipping duplicate video progress event for ${entityId}: progress=${metadata.progress}`)
+          return
+        }
+      }
+
+      // Clear existing timer
+      if (videoWatchDebounceRef.current.timerId) {
+        clearTimeout(videoWatchDebounceRef.current.timerId)
+      }
+
+      // Update last progress state
+      videoWatchDebounceRef.current.lastProgress[entityId] = {
+        progress: metadata.progress,
+        timestamp: now
+      }
+
+      // Debounce the event dispatch with smart delay
+      const debounceDelay = metadata.progress > 0.9 ? 500 : 2000 // Faster for near-completion
+      videoWatchDebounceRef.current.timerId = setTimeout(() => {
+        dispatch(addEvent(event))
+        dispatch(syncEventsWithServer())
+        console.log(`Video watch event dispatched: progress=${metadata.progress} for chapter ${entityId}`)
+      }, debounceDelay)
+
+      return
+    }
+
+    // Enhanced handling for other events with deduplication
+    const eventKey = `${event.type}-${event.entityId}-${event.userId}`
+    const lastEventTime = lastEventTimestamps.current[eventKey]
+    const now = Date.now()
+    
+    // Prevent duplicate events within configured delays
+    const debounceDelay = DEBOUNCE_DELAYS[event.type] || DEFAULT_DEBOUNCE
+    if (lastEventTime && (now - lastEventTime) < debounceDelay) {
+      console.debug(`Debouncing ${event.type} event for ${event.entityId}`)
+      return
+    }
+    
+    // Update timestamp
+    lastEventTimestamps.current[eventKey] = now
+
+    // Normal handling for other events
     dispatch(addEvent(event))
-    // Auto-sync after adding event
-    setTimeout(() => {
+    
+    // Batch sync to reduce server calls
+    if (batchSyncTimeoutRef.current) {
+      clearTimeout(batchSyncTimeoutRef.current)
+    }
+    batchSyncTimeoutRef.current = setTimeout(() => {
       dispatch(syncEventsWithServer())
-    }, 1000) // Small delay to batch events
+    }, 1000) // 1 second batching window
     
     // Log for debugging
     console.log(`Progress event dispatched: ${event.type} for ${event.entityType} ${event.entityId}`)
   }, [dispatch])
+
+  // Add refs for deduplication tracking
+  const lastEventTimestamps = useRef<Record<string, number>>({})
+  const batchSyncTimeoutRef = useRef<NodeJS.Timeout>()
 
   const dispatchCourseStarted = (userId: string, courseId: string, courseSlug: string, courseTitle: string) => {
     const event = ProgressEventFactory.courseStarted(userId, courseId, courseSlug, courseTitle)

@@ -11,6 +11,13 @@ interface VideoState {
     lastAccessedAt: string
     resumePoint: number
     lastWatchedVideoId?: string
+    currentTime?: number // Store exact timestamp for resume
+    lastSyncedAt?: string // Track when we last synced with API
+    watchHistory: Array<{
+      videoId: string
+      timestamp: number
+      watchedAt: string
+    }>
   }>
   
   // Video-level state
@@ -20,6 +27,8 @@ interface VideoState {
     played: number
     playedSeconds: number
     lastUpdatedAt: string
+    autoSavePoint?: number // For crash recovery
+    lastPosition: number // Exact playback position
   }>
   bookmarks: Record<string, number[]>
   
@@ -31,6 +40,7 @@ interface VideoState {
   removeBookmark: (videoId: string, time: number) => void
   setLastWatchedVideo: (courseId: string, videoId: string) => void
   resetState: () => void // Add a reset function
+  syncWithApiData: (courseId: string, apiCompletedChapters: string[]) => void // Sync with API data
 }
 
 // Initial state to use for resets
@@ -39,8 +49,8 @@ const initialState = {
   currentCourseId: null,
   courseProgress: {},
   videoProgress: {},
-  bookmarks: {}
-};
+  bookmarks: {},
+} as VideoState;
 
 // Create a persisted store for video state
 export const useVideoState = create<VideoState>()(
@@ -54,10 +64,16 @@ export const useVideoState = create<VideoState>()(
         // Convert courseId to string if it exists
         const courseIdStr = courseId ? String(courseId) : state.currentCourseId;
         
+        // Skip update if nothing changed to prevent infinite loops
+        if (state.currentVideoId === videoId && state.currentCourseId === courseIdStr) {
+          return state;
+        }
+        
         if (process.env.NODE_ENV !== 'production') {
           console.debug('[VideoState] Setting current video:', { 
             videoId, 
-            courseId: courseIdStr || 'null' 
+            courseId: courseIdStr || 'null',
+            previousVideoId: state.currentVideoId
           });
         }
         
@@ -86,8 +102,34 @@ export const useVideoState = create<VideoState>()(
               duration: Math.round(duration)
             });
           }
+
+          // Save current position for crash recovery
+          const autoSavePoint = played >= 0.95 ? undefined : playedSeconds;
+
+          // Update course watch history
+          const courseId = state.currentCourseId;
+          const courseUpdate = courseId ? {
+            courseProgress: {
+              ...state.courseProgress,
+              [courseId]: {
+                ...state.courseProgress[courseId],
+                currentTime: playedSeconds,
+                lastWatchedVideoId: videoId,
+                lastAccessedAt: now,
+                watchHistory: [
+                  ...(state.courseProgress[courseId]?.watchHistory || []),
+                  {
+                    videoId,
+                    timestamp: playedSeconds,
+                    watchedAt: now
+                  }
+                ].slice(-50) // Keep last 50 entries
+              }
+            }
+          } : {};
             
           return {
+            ...courseUpdate,
             videoProgress: {
               ...state.videoProgress,
               [videoId]: {
@@ -95,7 +137,9 @@ export const useVideoState = create<VideoState>()(
                 played,
                 playedSeconds,
                 duration,
-                lastUpdatedAt: now
+                lastUpdatedAt: now,
+                autoSavePoint,
+                lastPosition: playedSeconds
               }
             }
           };
@@ -103,16 +147,22 @@ export const useVideoState = create<VideoState>()(
         
       markChapterCompleted: (courseId, chapterId) => 
         set((state) => {
+          const now = new Date().toISOString();
           const course = state.courseProgress[courseId] || {
             completedChapters: [],
             isCompleted: false,
-            lastAccessedAt: new Date().toISOString(),
-            resumePoint: 0
+            lastAccessedAt: now,
+            resumePoint: 0,
+            watchHistory: []
           };
           
           if (course.completedChapters.includes(chapterId)) {
             return state;
           }
+
+          // Get current video position if available
+          const videoId = state.currentVideoId;
+          const currentVideoProgress = videoId ? state.videoProgress[videoId] : undefined;
           
           return {
             courseProgress: {
@@ -120,7 +170,16 @@ export const useVideoState = create<VideoState>()(
               [courseId]: {
                 ...course,
                 completedChapters: [...course.completedChapters, chapterId],
-                lastAccessedAt: new Date().toISOString()
+                lastAccessedAt: now,
+                currentTime: currentVideoProgress?.lastPosition,
+                watchHistory: [
+                  ...(course.watchHistory || []),
+                  {
+                    videoId: chapterId,
+                    timestamp: currentVideoProgress?.lastPosition || 0,
+                    watchedAt: now
+                  }
+                ].slice(-50) // Keep last 50 entries
               }
             }
           };
@@ -171,6 +230,40 @@ export const useVideoState = create<VideoState>()(
         }),
 
       resetState: () => set(initialState),
+      
+      // Add method to sync with API data (takes precedence over localStorage)
+      syncWithApiData: (courseId: string, apiCompletedChapters: string[]) => {
+        set((state) => {
+          const now = new Date().toISOString();
+          
+          // Get local completed chapters
+          const localCompleted = state.courseProgress[courseId]?.completedChapters || [];
+          
+          // Create a merged, deduplicated set of chapter IDs from both sources
+          // This ensures we don't lose locally completed chapters if they haven't synced to API yet
+          const mergedCompletedChapters = Array.from(
+            new Set([...localCompleted, ...apiCompletedChapters].map(String))
+          );
+          
+          console.log(`[VideoState] Syncing with API data for course ${courseId}`, {
+            localCompleted,
+            apiCompleted: apiCompletedChapters,
+            mergedChapters: mergedCompletedChapters
+          });
+          
+          return {
+            courseProgress: {
+              ...state.courseProgress,
+              [courseId]: {
+                ...state.courseProgress[courseId],
+                completedChapters: mergedCompletedChapters, // Use merged data for better persistence
+                lastAccessedAt: now,
+                lastSyncedAt: now // Track when we last synced with API
+              }
+            }
+          };
+        });
+      },
     }),
     {
       name: 'video-progress-state',

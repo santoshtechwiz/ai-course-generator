@@ -77,7 +77,7 @@ export async function DELETE(req: Request, props: { params: Promise<{ slug: stri
 /**
  * GET: Get course status information
  */
-export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function GET(req: Request, props: { params: Promise<{ slug: string }> }) {
   try {
     // Check authentication
     const session = await getAuthSession()
@@ -86,7 +86,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     }
 
     // Get course status through service layer
-    const { slug } = await params
+    const { slug } = await props.params
     const status = await courseService.getCourseStatus(slug, session.user.id)
     return NextResponse.json(status)
   } catch (error) {

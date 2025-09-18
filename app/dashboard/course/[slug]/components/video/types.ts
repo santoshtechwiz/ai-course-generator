@@ -53,6 +53,7 @@ export interface ProgressState {
   played: number
   loaded: number
   playedSeconds: number
+  shouldMarkCompleted?: boolean
 }
 
 export type CertificateState = "idle" | "downloading" | "success" | "error"
@@ -67,7 +68,7 @@ export interface VideoPlayerProps {
   rememberPlaybackSettings?: boolean
   onBookmark?: (time: number, title?: string) => void
   autoPlay?: boolean
-  onToggleAutoPlay?: () => void
+  onToggleAutoPlay?: (checked: boolean) => void
   forcePlay?: boolean
   onVideoLoad?: (metadata: any) => void
   onCertificateClick?: () => void
@@ -135,9 +136,9 @@ export interface PlayerControlsProps {
   onToggleBookmarkPanel?: () => void
   bookmarkPanelOpen?: boolean
   autoPlayNext?: boolean
-  onToggleAutoPlayNext?: () => void
+  onToggleAutoPlayNext?: (checked: boolean) => void
   autoPlayVideo?: boolean
-  onToggleAutoPlayVideo?: () => void
+  onToggleAutoPlayVideo?: (checked: boolean) => void
   hasNextVideo?: boolean
   nextVideoTitle?: string
   canAccessNextVideo?: boolean

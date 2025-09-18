@@ -67,6 +67,7 @@ export interface VideoSettings {
   muted: boolean
   playbackRate: number
   autoplay: boolean
+  autoPlayNext?: boolean
   theaterMode: boolean
   miniPlayerPos?: { x: number; y: number }
   hasPlayedFreeVideo?: boolean

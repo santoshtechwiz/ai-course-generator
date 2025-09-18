@@ -8,6 +8,7 @@ import {
   BookOpen,
   BarChart3,
   ChevronRight,
+  TrendingUp,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { DashboardUser } from "@/app/types/types"
@@ -47,9 +48,9 @@ const DashboardSidebar = memo(function DashboardSidebar({
       count: userData.userQuizzes?.length || 0,
     },
     {
-      icon: BarChart3,
-      label: "Statistics",
-      value: "stats",
+      icon: TrendingUp,
+      label: "For You",
+      value: "recommendations",
     },
   ]
 
