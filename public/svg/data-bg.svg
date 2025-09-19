@@ -1,0 +1,44 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dataGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:0.1" />
+      <stop offset="50%" style="stop-color:#7c3aed;stop-opacity:0.05" />
+      <stop offset="100%" style="stop-color:#6d28d9;stop-opacity:0.02" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background pattern -->
+  <rect width="400" height="300" fill="url(#dataGradient)" />
+  
+  <!-- Data science icons -->
+  <g opacity="0.1">
+    <!-- Chart/Graph representation -->
+    <rect x="80" y="180" width="240" height="80" fill="none" stroke="#8b5cf6" stroke-width="2" />
+    
+    <!-- Bar chart -->
+    <rect x="100" y="220" width="20" height="30" fill="#8b5cf6" />
+    <rect x="130" y="200" width="20" height="50" fill="#7c3aed" />
+    <rect x="160" y="210" width="20" height="40" fill="#6d28d9" />
+    <rect x="190" y="190" width="20" height="60" fill="#8b5cf6" />
+    <rect x="220" y="205" width="20" height="45" fill="#7c3aed" />
+    <rect x="250" y="195" width="20" height="55" fill="#6d28d9" />
+    <rect x="280" y="215" width="20" height="35" fill="#8b5cf6" />
+    
+    <!-- Data points/nodes -->
+    <circle cx="120" cy="80" r="6" fill="#8b5cf6" />
+    <circle cx="180" cy="60" r="6" fill="#7c3aed" />
+    <circle cx="240" cy="100" r="6" fill="#6d28d9" />
+    <circle cx="300" cy="70" r="6" fill="#8b5cf6" />
+    
+    <!-- Connecting lines (neural network style) -->
+    <line x1="120" y1="80" x2="180" y2="60" stroke="#8b5cf6" stroke-width="1" />
+    <line x1="180" y1="60" x2="240" y2="100" stroke="#7c3aed" stroke-width="1" />
+    <line x1="240" y1="100" x2="300" y2="70" stroke="#6d28d9" stroke-width="1" />
+    <line x1="120" y1="80" x2="240" y2="100" stroke="#8b5cf6" stroke-width="1" />
+    <line x1="180" y1="60" x2="300" y2="70" stroke="#7c3aed" stroke-width="1" />
+    
+    <!-- Algorithm/formula representation -->
+    <text x="150" y="140" text-anchor="middle" fill="#8b5cf6" font-family="monospace" font-size="14">y = mx + b</text>
+    <text x="250" y="160" text-anchor="middle" fill="#7c3aed" font-family="monospace" font-size="12">Σ(x-μ)²/n</text>
+  </g>
+</svg>
