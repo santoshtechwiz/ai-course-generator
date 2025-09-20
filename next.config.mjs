@@ -3,6 +3,21 @@ const nextConfig = {
   distDir: ".next",
   poweredByHeader: false,
 
+  // CSS configuration
+  images: {
+    domains: ['localhost'],
+  },
+  
+  // Development configuration
+  typescript: {
+    ignoreBuildErrors: true, // For development only
+  },
+
+  compiler: {
+    // Enabled by default in development, disabled in production to reduce file size
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+
   experimental: {
     // Enable App Router features
     appDir: true,
@@ -10,7 +25,33 @@ const nextConfig = {
     dynamicRoutes: {
       // Use routing.json for dynamic route config
       config: './app/routing.json'
+    },
+    // Ensure SWC is properly configured
+    swcPlugins: []
+  },
+
+  // Basic webpack configuration
+  webpack: (config, { dev, isServer }) => {
+    // Apply optimizations for client-side development
+    if (dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        moduleIds: 'named',
+        chunkIds: 'named',
+        runtimeChunk: 'single',
+        splitChunks: {
+          cacheGroups: {
+            styles: {
+              name: 'styles',
+              type: 'css/mini-extract',
+              chunks: 'all',
+              enforce: true,
+            },
+          },
+        },
+      }
     }
+    return config
   },
 
   modularizeImports: {

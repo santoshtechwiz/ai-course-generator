@@ -6,7 +6,7 @@ import { motion } from "framer-motion"
 import { BookOpen, Lightbulb, Brain } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import RandomQuote from "@/components/RandomQuote"
-import { QuizCourseWrapper } from "./QuizCourseWrapper"
+import QuizCourseWrapper from "./QuizCourseWrapper"
 import { RandomQuiz } from "./layouts/RandomQuiz"
 import { JsonLD } from "@/lib/seo";
 

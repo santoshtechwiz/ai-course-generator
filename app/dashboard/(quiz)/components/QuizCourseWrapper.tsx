@@ -24,15 +24,20 @@ interface QuizCourseWrapperProps {
   queryParams?: QueryParams
 }
 
-export function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps) {
+// Named React component export for Fast Refresh compatibility
+function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps) {
   const { user, isAuthenticated } = useAuth()
   const { data: session, status } = useSession()
   const searchParams = useSearchParams()
 
   // Merge URL search params with provided queryParams
+  const urlParams = Object.fromEntries(searchParams?.entries() ?? [])
   const params: QueryParams = {
-    ...Object.fromEntries(searchParams?.entries() ?? []),
-    ...queryParams,
+    title: urlParams.title as string || queryParams?.title || "",
+    amount: urlParams.amount as string || queryParams?.amount || "",
+    topic: urlParams.topic as string || queryParams?.topic || "", 
+    difficulty: (queryParams?.difficulty || ["easy"]) as ["easy" | "medium" | "hard"],
+    type: (urlParams.type || queryParams?.type || "mcq") as "mcq" | "open_ended" | "fill_in_the_blanks"
   }
 
   const subscriptionPlan = user?.subscriptionPlan || "FREE"
@@ -85,3 +90,6 @@ export function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps)
 
   return <>{renderQuizForm()}</>
 }
+
+// Default export for Fast Refresh compatibility
+export default QuizCourseWrapper

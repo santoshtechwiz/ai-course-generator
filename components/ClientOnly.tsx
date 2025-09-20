@@ -1,10 +1,15 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect, useState } from "react"
 
-export default function ClientOnly({ children }: { children: React.ReactNode }) {
+interface ClientOnlyProps {
+  children: React.ReactNode
+  fallback?: React.ReactNode
+}
+
+// Named function component for Fast Refresh compatibility
+function ClientOnly({ children, fallback = null }: ClientOnlyProps) {
   const [hasMounted, setHasMounted] = useState(false)
 
   useEffect(() => {
@@ -12,8 +17,11 @@ export default function ClientOnly({ children }: { children: React.ReactNode }) 
   }, [])
 
   if (!hasMounted) {
-    return null
+    return <>{fallback}</>
   }
 
   return <>{children}</>
 }
+
+// Default export for Fast Refresh compatibility
+export default ClientOnly

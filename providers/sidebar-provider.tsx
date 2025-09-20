@@ -15,6 +15,7 @@ type SidebarContext = {
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
 
+// Hook with proper naming
 export function useSidebar() {
   const context = React.useContext(SidebarContext)
   if (!context) {
@@ -24,7 +25,8 @@ export function useSidebar() {
   return context
 }
 
-export function SidebarProvider({
+// Component with PascalCase naming  
+function SidebarProvider({
   children,
   defaultOpen = true,
 }: {
@@ -67,3 +69,6 @@ export function SidebarProvider({
 
   return <SidebarContext.Provider value={contextValue}>{children}</SidebarContext.Provider>
 }
+
+// Default export for Fast Refresh compatibility
+export default SidebarProvider

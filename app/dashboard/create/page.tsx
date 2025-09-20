@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import type { QueryParams } from "@/app/types/types";
 import PopularCourses from "@/app/dashboard/course/components/PopularCourses";
-import { QuizCourseWrapper } from "../(quiz)/components/QuizCourseWrapper";
+import QuizCourseWrapper from "../(quiz)/components/QuizCourseWrapper";
 
 import NavigationDebugger from "@/components/debug/NavigationDebugger";
 import { JsonLD } from "@/lib/seo";
