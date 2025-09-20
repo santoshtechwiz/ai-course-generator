@@ -24,6 +24,7 @@ interface QuizFooterProps {
   submitState?: "idle" | "loading" | "success" | "error"
   nextState?: "idle" | "loading" | "success" | "error"
   className?: string
+  disabled?: boolean
 }
 
 const buttonVariants = {
@@ -91,6 +92,7 @@ export function QuizFooter({
   submitState = "idle",
   nextState = "idle",
   className,
+  disabled = false,
 }: QuizFooterProps) {
   const isLoading = isSubmitting || submitState === "loading" || nextState === "loading"
   const isSuccess = submitState === "success" || nextState === "success"
@@ -119,7 +121,7 @@ export function QuizFooter({
             variant="outline"
             size="lg"
             className="min-w-[160px] h-14 px-6 text-base font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg border-2 hover:border-primary/50"
-            disabled={isLoading}
+            disabled={isLoading || disabled}
             aria-label="Go to previous question"
           >
             <ArrowLeft className="w-5 h-5 mr-2" aria-hidden="true" />
@@ -156,7 +158,7 @@ export function QuizFooter({
               variant="ghost"
               size="sm"
               className="text-muted-foreground hover:text-primary"
-              disabled={isLoading}
+              disabled={isLoading || disabled}
               aria-label="Skip this question"
             >
               <SkipForward className="w-4 h-4 mr-1" aria-hidden="true" />
@@ -177,7 +179,7 @@ export function QuizFooter({
             variant="outline"
             size="lg"
             className="min-w-[160px] h-14 px-6 text-base font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg border-2 hover:border-primary/50"
-            disabled={isLoading}
+            disabled={isLoading || disabled}
             aria-label="Retake the quiz"
           >
             <RotateCcw className="w-5 h-5 mr-2" aria-hidden="true" />
@@ -191,7 +193,7 @@ export function QuizFooter({
               "min-w-[160px] h-14 px-6 text-base font-bold transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg",
               "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground border-0"
             )}
-            disabled={!hasAnswer || isLoading}
+            disabled={!hasAnswer || isLoading || disabled}
             aria-label={submitLabel}
           >
             {isLoading ? (
@@ -219,7 +221,7 @@ export function QuizFooter({
               "min-w-[160px] h-14 px-6 text-base font-bold transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg",
               "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground border-0"
             )}
-            disabled={!canGoNext || isLoading}
+            disabled={!canGoNext || isLoading || disabled}
             aria-label={nextLabel}
           >
             {isLoading ? (

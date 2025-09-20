@@ -226,6 +226,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
           canGoNext={canGoNext}
           canGoPrevious={canGoPrevious}
           isLastQuestion={isLastQuestion}
+          isQuizCompleted={isCompleted}
         />
       </div>
     </div>
