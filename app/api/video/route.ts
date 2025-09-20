@@ -12,19 +12,25 @@ const bodyParser = z.object({
  */
 export async function POST(req: Request) {
   try {
+    console.log("[Video API] Received video processing request")
+    
     // Parse and validate request body
     const body = await req.json()
     const { chapterId } = bodyParser.parse(body)
 
+    console.log(`[Video API] Processing video for chapter ${chapterId}`)
     
     // Process the video through the service layer
     const result = await videoService.processVideo(chapterId)
+    
+    console.log(`[Video API] Video processing completed for chapter ${chapterId}:`, result)
     return NextResponse.json(result)
   } catch (error) {
-    console.error(`Error processing video:`, error)
+    console.error(`[Video API] Error processing video:`, error)
     
     // Handle validation errors
     if (error instanceof z.ZodError) {
+      console.error("[Video API] Validation error:", error.errors)
       return NextResponse.json({ success: false, error: "Invalid request body" }, { status: 400 })
     }
 
@@ -32,6 +38,7 @@ export async function POST(req: Request) {
     const errorMessage = error instanceof Error ? error.message : "Internal server error"
     const status = errorMessage === "Chapter not found" ? 404 : 500
     
+    console.error(`[Video API] Returning error response with status ${status}:`, errorMessage)
     return NextResponse.json({ success: false, error: errorMessage }, { status })
   }
 }

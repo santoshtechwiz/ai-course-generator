@@ -6,36 +6,49 @@ const unsplashCache: Record<string, string> = {}
 const FALLBACK_PRIMARY = "/images/placeholder.jpg"
 const FALLBACK_SECONDARY = "/images/default-thumbnail.png"
 
-export const getUnsplashImage = async (query: string) => {
+// Existing course images to use instead of external API calls
+const EXISTING_IMAGES = {
+  default: "/generic-course-improved.svg",
+  tech: "/generic-course-tech-improved.svg",
+  programming: "/generic-course-tech-improved.svg",
+  "web-development": "/generic-course-tech-improved.svg",
+  "data-science": "/generic-course-tech-improved.svg",
+  business: "/generic-course-business-improved.svg",
+  marketing: "/generic-course-business-improved.svg",
+  design: "/generic-course-creative-improved.svg",
+  creative: "/generic-course-creative-improved.svg",
+  ai: "/generic-course-tech-improved.svg",
+  cloud: "/generic-course-tech-improved.svg",
+  mobile: "/generic-course-tech-improved.svg",
+  security: "/generic-course-tech-improved.svg",
+}
+
+export const getUnsplashImage = async (query: string): Promise<string> => {
   const key = (query || '').trim().toLowerCase()
-  if (!key) return FALLBACK_PRIMARY
+  if (!key) return EXISTING_IMAGES.default
+
+  // Check cache first
   if (unsplashCache[key]) return unsplashCache[key]
 
-  // If no Unsplash key configured, short‑circuit with deterministic placeholder
-  if (!process.env.UNSPLASH_API_KEY) {
-    unsplashCache[key] = FALLBACK_PRIMARY
-    return unsplashCache[key]
+  // Use existing images instead of making API calls
+  // Map query keywords to existing images
+  const normalizedQuery = key.toLowerCase()
+
+  let selectedImage = EXISTING_IMAGES.default
+
+  if (normalizedQuery.includes('programming') || normalizedQuery.includes('code') || normalizedQuery.includes('developer')) {
+    selectedImage = EXISTING_IMAGES.tech
+  } else if (normalizedQuery.includes('business') || normalizedQuery.includes('marketing') || normalizedQuery.includes('finance')) {
+    selectedImage = EXISTING_IMAGES.business
+  } else if (normalizedQuery.includes('design') || normalizedQuery.includes('creative') || normalizedQuery.includes('art')) {
+    selectedImage = EXISTING_IMAGES.design
+  } else if (normalizedQuery.includes('data') || normalizedQuery.includes('science') || normalizedQuery.includes('analytics')) {
+    selectedImage = EXISTING_IMAGES.tech
+  } else if (normalizedQuery.includes('ai') || normalizedQuery.includes('machine') || normalizedQuery.includes('learning')) {
+    selectedImage = EXISTING_IMAGES.tech
   }
 
-  try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 4000)
-    const resp = await fetch(`https://api.unsplash.com/search/photos?per_page=1&content_filter=high&query=${encodeURIComponent(key)}&client_id=${process.env.UNSPLASH_API_KEY}`,
-      { signal: controller.signal, headers: { 'Accept-Version': 'v1' } })
-    clearTimeout(timeout)
-    if (!resp.ok) throw new Error(`Unsplash ${resp.status}`)
-    const data: any = await resp.json()
-    const url: string | undefined = data?.results?.[0]?.urls?.small || data?.results?.[0]?.urls?.thumb
-    if (!url) throw new Error('No image result')
-    unsplashCache[key] = url
-    return url
-  } catch (error) {
-    // Cache fallback to avoid retry storms
-    const fallback = FALLBACK_PRIMARY
-    unsplashCache[key] = fallback
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn(`[unsplash] fallback for "${key}":`, (error as Error)?.message)
-    }
-    return fallback || FALLBACK_SECONDARY
-  }
+  // Cache the result
+  unsplashCache[key] = selectedImage
+  return selectedImage
 }

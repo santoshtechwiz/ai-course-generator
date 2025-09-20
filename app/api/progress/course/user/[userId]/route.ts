@@ -21,7 +21,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    // Fetch course progress data
+    // Fetch course progress data with optimized single query
     const courseProgressEntries = await prisma.courseProgress.findMany({
       where: {
         userId: userId,
@@ -47,48 +47,63 @@ export async function GET(
       }
     })
 
-    // Fetch chapter progress for each course to calculate detailed progress
+    // Single optimized query to get all chapter progress for user's courses
+    const allChapterProgress = await prisma.chapterProgress.findMany({
+      where: {
+        userId: userId,
+        courseId: {
+          in: courseProgressEntries.map(cp => cp.courseId)
+        },
+        isCompleted: true,
+      },
+      select: {
+        courseId: true,
+        chapterId: true,
+        lastProgress: true,
+        lastAccessedAt: true,
+      }
+    })
+
+    // Group chapter progress by courseId for efficient lookup
+    const chapterProgressByCourse = allChapterProgress.reduce((acc, cp) => {
+      if (!acc[cp.courseId]) {
+        acc[cp.courseId] = []
+      }
+      acc[cp.courseId].push(cp)
+      return acc
+    }, {} as Record<string, typeof allChapterProgress>)
+
+    // Process course progress data
     const progressMap: Record<string, any> = {}
 
     for (const courseProgress of courseProgressEntries) {
       const courseId = courseProgress.courseId.toString()
-      
+
       // Get all chapters for this course
-      const allChapters = courseProgress.course.courseUnits.flatMap(unit => 
+      const allChapters = courseProgress.course.courseUnits.flatMap(unit =>
         unit.chapters.map(chapter => ({
           id: chapter.id,
           title: chapter.title
         }))
       )
-      
-      // Get completed chapters
-      const chapterProgress = await prisma.chapterProgress.findMany({
-        where: {
-          userId: userId,
-          courseId: courseProgress.courseId,
-          isCompleted: true,
-        },
-        select: {
-          chapterId: true,
-          lastProgress: true,
-          lastAccessedAt: true,
-        }
-      })
 
-      const completedChapterIds = chapterProgress.map(cp => cp.chapterId)
-      const progressPercentage = allChapters.length > 0 
+      // Get completed chapters from the grouped data
+      const chapterProgress = chapterProgressByCourse[courseProgress.courseId] || []
+      const completedChapterIds = chapterProgress.map((cp: any) => cp.chapterId)
+
+      const progressPercentage = allChapters.length > 0
         ? Math.round((completedChapterIds.length / allChapters.length) * 100)
         : 0
 
       // Find current chapter info
-      const currentChapter = courseProgress.currentChapterId 
+      const currentChapter = courseProgress.currentChapterId
         ? allChapters.find(ch => ch.id === courseProgress.currentChapterId)
         : null
 
       progressMap[courseId] = {
         courseId: courseId,
         progressPercentage,
-        completedChapters: completedChapterIds, // Send the actual chapter IDs instead of just the count
+        completedChapters: completedChapterIds, // Send the actual chapter IDs
         completedCount: completedChapterIds.length, // Keep the count as a separate field
         totalChapters: allChapters.length,
         currentChapterId: courseProgress.currentChapterId,
@@ -97,7 +112,7 @@ export async function GET(
         timeSpent: courseProgress.timeSpent || 0,
         isCompleted: progressPercentage === 100,
         lastPositions: Object.fromEntries(
-          chapterProgress.map(cp => [cp.chapterId, cp.lastProgress])
+          chapterProgress.map((cp: any) => [cp.chapterId, cp.lastProgress])
         ), // Add last positions for progress indication
       }
 

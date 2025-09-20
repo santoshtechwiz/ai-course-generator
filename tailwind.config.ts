@@ -438,7 +438,7 @@ const config: Config = {
   plugins: [
     require("tailwindcss-animate"),
     // Custom plugin for AI-themed utilities
-    function({ addUtilities, theme }) {
+    function({ addUtilities, theme }: { addUtilities: any; theme: any }) {
       const newUtilities = {
         // AI Glass Morphism
         '.ai-glass': {

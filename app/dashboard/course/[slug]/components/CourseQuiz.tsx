@@ -210,7 +210,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
     queryFn: async () => {
       if (!chapter?.videoId || !effectiveChapterId) throw new Error("Missing chapter data")
 
-      const response = await api.post("/coursequiz", {
+      const response = await api.post("/api/coursequiz", {
         videoId: chapter.videoId,
         chapterId: Number(effectiveChapterId),
         chapterName: chapter.title || chapter.name,
@@ -325,9 +325,13 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
 
       // Update progress with the new queue system
       const accuracy = (newScore / effectiveQuestions.length) * 100
-      dispatchQuizCompleted(userId, {
-        quizId: chapter?.id || 0,
-        courseQuizId: chapter?.id || 0,
+      dispatchQuizCompleted(userId, effectiveChapterId, course.id, quizState.score, effectiveQuestions.length, Date.now(), {
+        ...Object.entries(quizState.answers).map(([questionId, answer]) => ({
+          questionId,
+          isCorrect: answer === effectiveQuestions.find(q => q.id === questionId)?.answer,
+          timeSpent: 0, // TODO: Add time tracking
+        })),
+        chapterId: chapter?.id || 0,
         score: newScore,
         accuracy,
         timeSpent: 0, // You might want to track actual time spent

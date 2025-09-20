@@ -74,17 +74,17 @@ export function DeleteNoteDialog({
             <Trash2 className="h-5 w-5 text-destructive" />
             Delete Note
           </AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
-            <div>Are you sure you want to delete this note? This action cannot be undone.</div>
-            <div className="bg-muted/50 rounded-lg p-3 border-l-4 border-destructive/30">
-              <div className="text-sm font-medium text-muted-foreground mb-1">Note content:</div>
-              <div className="text-sm text-foreground line-clamp-3">
+          <AlertDialogDescription>
+            <span className="block mb-3">Are you sure you want to delete this note? This action cannot be undone.</span>
+            <span className="inline-block bg-muted/50 rounded-lg p-3 border-l-4 border-destructive/30 w-full">
+              <span className="block text-sm font-medium text-muted-foreground mb-1">Note content:</span>
+              <span className="block text-sm text-foreground line-clamp-3">
                 {noteContent.length > 100
                   ? `${noteContent.substring(0, 100)}...`
                   : noteContent
                 }
-              </div>
-            </div>
+              </span>
+            </span>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

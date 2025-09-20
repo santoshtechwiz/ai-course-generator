@@ -68,17 +68,37 @@ export default function CourseCreationForm({ maxQuestions, params }: {
 
   const createCourseMutation = useMutation({
     mutationFn: async (data: CreateCourseInput) => {
-      const response = await api.post("/course", data)
-      return response.data
+      console.log("Creating course with data:", data)
+      const response = await api.post("/api/course", data)
+      console.log("API response:", response)
+      return response
     },
     onSuccess: async (data) => {
+      console.log("Course creation success with data:", data)
+      console.log("Data type:", typeof data)
+      console.log("Data keys:", data ? Object.keys(data) : "data is null/undefined")
       toast({
         title: "Success",
         description: "Course created successfully",
       })
       try { await dispatch(forceSyncSubscription()).unwrap() } catch {/* ignore */}
       refreshSubscription()
-      router.push(`/dashboard/create/${data.slug}`)
+
+      // Extract slug from response
+      const slug = data?.slug
+      if (slug) {
+        console.log("Redirecting to course:", slug)
+        router.push(`/dashboard/create/${slug}`)
+      } else {
+        console.error("Course creation response missing slug:", data)
+        toast({
+          title: "Warning",
+          description: "Course created but redirect failed. Please refresh the page.",
+          variant: "destructive",
+        })
+        // Fallback: redirect to courses list
+        router.push("/dashboard/explore")
+      }
     },
     onError: () => {
       toast({

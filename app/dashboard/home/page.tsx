@@ -24,6 +24,8 @@ import dynamic from "next/dynamic"
 
 import type { DashboardUser, UserStats } from "@/app/types/types"
 import { useAuth } from "@/hooks"
+import { Button } from "@/components/ui"
+import UserNotFound from "@/components/common/UserNotFound"
 
 const OverviewTab = dynamic(() => import("./components/OverviewTab"), {
   loading: () => <Skeleton className="h-[500px] w-full" />,

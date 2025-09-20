@@ -14,13 +14,12 @@ export interface YoutubeSearchResponse {
   }>
 }
 
-export interface TranscriptResult {
-  status: number
-  message: string
-  transcript: string | null
-}
+import { TranscriptResult, TranscriptProvider, TranscriptOptions } from '@/app/types/transcript';
+import { getTranscriptWithProvider } from '@/app/services/transcript.service';
 
 class YoutubeService {
+  private static defaultTranscriptProvider: TranscriptProvider = 'youtube';
+  private static transcriptFallbackOrder: TranscriptProvider[] = ['youtube', 'vosk'];
   private static YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY
   private static SUPDATA_KEY = process.env.SUPDATA_KEY
   private static SUPDATA_KEY1 = process.env.SUPDATA_KEY1
@@ -31,9 +30,32 @@ class YoutubeService {
   private static transcriptCache = new Map<string, string>()
   private static supadata: Supadata
   private static currentSupadataKey: string
-  private static youtubeClient = api.post("https://www.googleapis.com/youtube/v3", {
-    params: { key: YoutubeService.YOUTUBE_API_KEY },
-  })
+  private static youtubeClient = {
+    get: async (endpoint: string, options: any) => {
+      const url = `https://www.googleapis.com/youtube/v3${endpoint}`
+      const params = new URLSearchParams({
+        key: YoutubeService.YOUTUBE_API_KEY || '',
+        ...options.params
+      })
+
+      // Log only on errors
+      const response = await fetch(`${url}?${params}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`[YouTube API] Error ${response.status}: ${errorText}`)
+        throw new Error(`YouTube API error: ${response.status} ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      return data
+    }
+  }
 
   // Optional provider tokens (kept in memory)
   private static youtubeCookie: string | undefined
@@ -71,34 +93,44 @@ class YoutubeService {
   static async searchYoutube(searchQuery: string): Promise<string | null> {
     try {
       const response = await pTimeout(
-        this.youtubeClient.get<YoutubeSearchResponse>("/search", {
+        this.youtubeClient.get("/search", {
           params: {
             q: searchQuery,
             videoDuration: "long",
             videoEmbeddable: true,
             type: "video",
             maxResults: 5,
+            part: "snippet",
+            order: "relevance",
           },
         }),
         { milliseconds: this.TIMEOUT },
       )
 
-      for (const item of response.data.items) {
+      const data = response as YoutubeSearchResponse
+
+      if (!data.items || data.items.length === 0) {
+        console.warn(`[YouTube Search] No videos found for "${searchQuery}"`)
+        return null
+      }
+
+      for (const item of data.items) {
         const videoId = item.id.videoId
-        if (!this.processedVideoIds.has(videoId)) {
+        if (videoId && !this.processedVideoIds.has(videoId)) {
           this.processedVideoIds.add(videoId)
           return videoId
         }
       }
 
+      console.warn(`[YouTube Search] All suitable videos already used for "${searchQuery}"`)
       return null
     } catch (error) {
-      console.warn("Error in YouTube search:", error)
+      console.error(`[YouTube Search] Error searching for "${searchQuery}":`, error)
       return null
     }
   }
 
-  static async getTranscript(videoId: string): Promise<TranscriptResult> {
+  static async getTranscript(videoId: string, options: TranscriptOptions = {}): Promise<TranscriptResult> {
     // Check cache first
     if (this.transcriptCache.has(videoId)) {
       return {
@@ -108,34 +140,39 @@ class YoutubeService {
       }
     }
 
-    try {
-      const transcriptResult = await pRetry(
-        () => pTimeout(this.fetchTranscript(videoId), { milliseconds: this.TIMEOUT }),
-        {
-          retries: this.MAX_RETRIES,
-          onFailedAttempt: (error) => {
-            if (error.message.includes("Supadata API key error")) {
-              this.switchSupadataKey()
-            }
-          },
-        },
-      )
+    const { provider = this.defaultTranscriptProvider, preferOffline = false } = options;
 
-      if (transcriptResult.transcript) {
-        // Sanitize for better markdown summarization
-        const sanitized = this.sanitizeTranscript(transcriptResult.transcript)
-        this.transcriptCache.set(videoId, sanitized)
-        return { ...transcriptResult, transcript: sanitized }
-      }
-      return transcriptResult
-    } catch (error) {
-      console.warn(`Error fetching transcript for video ${videoId}:`, error)
-      return {
-        status: 500,
-        message: `Error fetching transcript: ${error instanceof Error ? error.message : "Unknown error"}`,
-        transcript: null,
+    // Get list of providers to try based on preferences
+    const providers = preferOffline
+      ? ['vosk', 'youtube']
+      : this.transcriptFallbackOrder;
+
+    let lastError: Error | null = null;
+
+    for (const currentProvider of providers) {
+      try {
+        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        const result = await getTranscriptWithProvider(videoId, videoUrl, currentProvider);
+
+        if (result.status === 200 && result.transcript) {
+          const sanitized = this.sanitizeTranscript(result.transcript);
+          this.transcriptCache.set(videoId, sanitized);
+          return { ...result, transcript: sanitized };
+        }
+
+        lastError = new Error(result.message);
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(`[${currentProvider.toUpperCase()}] Transcript error:`, error);
       }
     }
+
+    console.error(`Failed to get transcript for video ${videoId} with all providers`);
+    return {
+      status: 500,
+      message: lastError?.message || 'Failed to get transcript with all available providers',
+      transcript: null,
+    };
   }
 
   static async fetchTranscript(videoId: string): Promise<TranscriptResult> {

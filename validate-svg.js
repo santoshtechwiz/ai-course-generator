@@ -2,11 +2,10 @@ const fs = require('fs');
 const path = require('path');
 
 const svgFiles = [
-    'generic-course.svg',
-    'generic-course-tech.svg',
-    'generic-course-business.svg',
-    'generic-course-creative.svg',
-    'generic-course-fallback.svg'
+    'generic-course-improved.svg',
+    'generic-course-tech-improved.svg',
+    'generic-course-business-improved.svg',
+    'generic-course-creative-improved.svg'
 ];
 
 console.log('🔍 Validating SVG files...\n');

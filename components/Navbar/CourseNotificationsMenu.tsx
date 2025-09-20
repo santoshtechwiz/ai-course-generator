@@ -355,6 +355,7 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
             className
           )}
           onClick={() => {
+            if (!memoizedUser) return
             setIsOpen(true)
             fetchCourseData()
           }}

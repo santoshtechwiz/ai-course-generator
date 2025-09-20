@@ -79,9 +79,10 @@ export async function POST(req: Request) {
     
     // Ensure we're returning the slug in the response
     if (!result.slug) {
-      console.error("Course service didn't return a slug")
+      console.error("Course service didn't return a slug:", result)
     }
     
+    console.log("Course creation result:", result)
     return NextResponse.json(result)
   } catch (error: any) {
     console.error(`Course creation error: ${error.message}`)

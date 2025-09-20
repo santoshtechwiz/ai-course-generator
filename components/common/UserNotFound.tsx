@@ -1,26 +1,31 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+"use client"
+
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { UserX, Home } from "lucide-react"
 import Link from "next/link"
-import { UserX } from "lucide-react"
 
 export default function UserNotFound() {
   return (
-    <div className="container mx-auto flex h-[80vh] items-center justify-center">
-      <Card className="max-w-md text-center">
-        <CardHeader>
-          <CardTitle className="flex flex-col items-center gap-2">
-            <UserX className="h-12 w-12 text-muted-foreground" />
-            <span>User Not Found</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-muted-foreground">
-            We couldn't find your user profile. This might be because you're not logged in or your account has been
-            deleted.
+    <div className="flex min-h-[60vh] items-center justify-center p-6">
+      <Card className="w-full max-w-md">
+        <CardContent className="p-6 text-center">
+          <UserX className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold mb-2">User Not Found</h2>
+          <p className="text-muted-foreground mb-6">
+            We couldn't find your user profile. This might be a temporary issue.
           </p>
-          <Button asChild>
-            <Link href="/auth/signin">Go to Login</Link>
-          </Button>
+          <div className="space-y-3">
+            <Button onClick={() => window.location.reload()} className="w-full">
+              Try Again
+            </Button>
+            <Button variant="outline" asChild className="w-full bg-transparent">
+              <Link href="/">
+                <Home className="mr-2 h-4 w-4" />
+                Go Home
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -35,31 +35,33 @@ import { useAuth } from "@/modules/auth"
 import bookmarkService from "@/lib/bookmark-service"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Progress } from "@/components/ui/progress"
+import { useBookmarkStatus, bookmarkBatchManager } from "@/lib/bookmark-batch-manager"
 
-// In-memory caches to avoid N repeated network calls per course card render
-// Resets only on full page reload (acceptable for current perf goals)
-const bookmarkPresenceCache = new Map<number, boolean>()
-const pendingBookmarkFetches = new Set<number>()
+// Removed old cache variables - now using batch bookmark manager
+// const bookmarkPresenceCache = new Map<number, boolean>()
+// const pendingBookmarkFetches = new Set<number>()
 
-// Udemy-style course images - generic SVGs for different categories
+// Udemy-style course images - using improved SVGs with better designs
 const COURSE_IMAGES = {
-  default: "/generic-course.svg",
-  tech: "/generic-course-tech.svg",
-  programming: "/generic-course-tech.svg",
-  "web-development": "/generic-course-tech.svg",
-  "data-science": "/generic-course-tech.svg",
-  business: "/generic-course-business.svg",
-  marketing: "/generic-course-business.svg",
-  design: "/generic-course-creative.svg",
-  creative: "/generic-course-creative.svg"
+  default: "/generic-course-improved.svg",
+  tech: "/generic-course-tech-improved.svg",
+  programming: "/generic-course-tech-improved.svg",
+  "web-development": "/generic-course-tech-improved.svg",
+  "data-science": "/generic-course-tech-improved.svg",
+  business: "/generic-course-business-improved.svg",
+  marketing: "/generic-course-business-improved.svg",
+  design: "/generic-course-creative-improved.svg",
+  creative: "/generic-course-creative-improved.svg"
 }
 
-// Professional gradient backgrounds for when images fail
+// Professional gradient backgrounds for when images fail - enhanced colors
 const GRADIENT_BACKGROUNDS = [
-  "bg-gradient-to-br from-slate-100 to-slate-200",
-  "bg-gradient-to-br from-gray-100 to-gray-200",
-  "bg-gradient-to-br from-zinc-100 to-zinc-200",
-  "bg-gradient-to-br from-neutral-100 to-neutral-200",
+  "bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50",
+  "bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50",
+  "bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50",
+  "bg-gradient-to-br from-rose-50 via-pink-50 to-fuchsia-50",
+  "bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50",
+  "bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50",
 ]
 
 export interface CourseCardProps {
@@ -250,25 +252,33 @@ export const CourseCard = React.memo(
     const [isNavigating, setIsNavigating] = useState(false)
     const [imageError, setImageError] = useState(false)
     const [isHovered, setIsHovered] = useState(false)
+  const [imageLoading, setImageLoading] = useState(true)
   const [isFavorite, setIsFavorite] = useState(false)
-  const [isBookmarked, setIsBookmarked] = useState(false)
   const [optimisticBusy, setOptimisticBusy] = useState<null | 'favorite' | 'bookmark'>(null)
   const { isAuthenticated, isLoading: authLoading } = useAuth()
   // Toast removed (no user-facing error popups for auth on bookmark/favorite)
   // Keep an up-to-date ref of auth state to avoid stale closures in keyboard handler
   const authRef = React.useRef({ isAuthenticated, authLoading })
   useEffect(() => { authRef.current = { isAuthenticated, authLoading } }, [isAuthenticated, authLoading])
-    const router = useRouter()
+  const router = useRouter()
+
+  // Use new batch bookmark system - only when authenticated
+  const { isBookmarked, loading: bookmarkLoading } = useBookmarkStatus(courseId, isAuthenticated)
 
     // Memoized random selections for consistent rendering
     const { selectedImage, gradientBg } = useMemo(() => {
-  // Use the actual image if provided and valid, otherwise fall back to category-based image
-  let imageToUse = normalizeImageUrl(image)
+  // Simplified image handling - prioritize actual course images over fallbacks
+  let imageToUse = image
 
-  // If normalizeImageUrl returned empty, use category-based image
-  if (!imageToUse) {
+  // If no image provided or image is empty, use category-based fallback
+  if (!imageToUse || imageToUse.trim() === '' || imageToUse === 'null' || imageToUse === 'undefined') {
         const normalizedCategory = (typeof category === 'string' ? category : '')?.toLowerCase().replace(/\s+/g, '-')
         imageToUse = COURSE_IMAGES[normalizedCategory as keyof typeof COURSE_IMAGES] || COURSE_IMAGES.default
+      } else {
+        // Ensure image has proper path
+        if (!imageToUse.startsWith('http') && !imageToUse.startsWith('/')) {
+          imageToUse = `/${imageToUse}`
+        }
       }
 
       const gradientIndex =
@@ -285,7 +295,7 @@ export const CourseCard = React.memo(
       router.push(`/dashboard/course/${slug}`)
     }, [router, slug])
 
-    // Initial favorite & bookmark presence fetch with caching (one network call per courseId max)
+    // Initial favorite status fetch (keeping individual for now - could batch later)
     useEffect(() => {
       let cancelled = false
       if (!isAuthenticated) return
@@ -299,37 +309,11 @@ export const CourseCard = React.memo(
             if (!cancelled) setIsFavorite(!!data.isFavorite)
           }
         } catch { /* silent */ }
-
-        if (!courseId) return
-
-        // Check cache first
-        if (bookmarkPresenceCache.has(courseId)) {
-          if (!cancelled) setIsBookmarked(!!bookmarkPresenceCache.get(courseId))
-          return
-        }
-        // Avoid duplicate in-flight fetches
-        if (pendingBookmarkFetches.has(courseId)) return
-        pendingBookmarkFetches.add(courseId)
-        try {
-          const res = await fetch(`/api/bookmarks?courseId=${courseId}&limit=1`)
-          if (res.ok) {
-            const data = await res.json()
-            const exists = Array.isArray(data.bookmarks) && data.bookmarks.length > 0
-            bookmarkPresenceCache.set(courseId, exists)
-            if (!cancelled) setIsBookmarked(exists)
-          } else {
-            bookmarkPresenceCache.set(courseId, false)
-          }
-        } catch {
-          bookmarkPresenceCache.set(courseId, false)
-        } finally {
-          pendingBookmarkFetches.delete(courseId)
-        }
       }
 
       load()
       return () => { cancelled = true }
-    }, [slug, courseId, isAuthenticated])
+    }, [slug, isAuthenticated])
 
     const handleFavoriteClick = useCallback(async (e: React.MouseEvent | React.KeyboardEvent) => {
       e.stopPropagation()
@@ -381,10 +365,11 @@ export const CourseCard = React.memo(
           const result = await bookmarkService.toggleBookmark(courseId)
           if (result.bookmarked !== next) {
             setIsBookmarked(result.bookmarked)
-            bookmarkPresenceCache.set(courseId, result.bookmarked)
           } else {
-            bookmarkPresenceCache.set(courseId, next)
+            setIsBookmarked(next)
           }
+          // Invalidate batch cache for this course
+          bookmarkBatchManager.invalidateCache(courseId)
         } else {
           // No courseId => revert; bookmarking unsupported
           setIsBookmarked(false)
@@ -392,7 +377,6 @@ export const CourseCard = React.memo(
       } catch (err) {
         // Revert on failure
         setIsBookmarked(!next)
-        if (courseId) bookmarkPresenceCache.set(courseId, !next)
       } finally {
         setOptimisticBusy(null)
       }
@@ -513,11 +497,11 @@ export const CourseCard = React.memo(
   <Card
           onClick={handleCardClick}
           className={cn(
-      "relative w-full overflow-hidden border border-gray-200 bg-white/95 backdrop-blur-sm shadow-sm hover:shadow-2xl transition-all duration-500 cursor-pointer group focus:outline-none",
-      "hover:border-primary/20 hover:-translate-y-2 focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-      "before:absolute before:inset-0 before:pointer-events-none before:opacity-0 group-hover:before:opacity-100 before:transition-opacity before:duration-500 before:bg-[radial-gradient(circle_at_30%_20%,rgba(99,102,241,0.08),transparent_70%)]",
+      "relative w-full overflow-hidden border border-gray-200 bg-white/95 backdrop-blur-sm shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group focus:outline-none",
+      "hover:border-primary/20 hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             isNavigating && "opacity-75 scale-95",
-      variant==='list' && 'md:flex md:flex-row md:h-56',
+      variant === 'list' && 'md:flex md:flex-row md:h-32',
+      variant === 'grid' && 'flex flex-col h-80',
       className
           )}
           role="button"
@@ -536,357 +520,243 @@ export const CourseCard = React.memo(
         >
       {/* Category Accent Bar */}
       <div className={cn(
-        "absolute top-0 left-0 right-0 h-1.5",
+        "absolute top-0 left-0 right-0 h-1",
         CATEGORY_CONFIG[category.toLowerCase()]?.badge
           ?.replace('text-white','text-transparent')
           ?.replace('px-2','px-0')
           ?.replace('py-0.5','py-0') || 'bg-gradient-to-r from-slate-500 to-gray-600'
       )} />
 
-      {/* Course Thumbnail - use 4:3 aspect for larger visual */}
-  <div className={cn("relative overflow-hidden bg-gray-100", variant==='list' ? 'md:w-64 md:h-full md:shrink-0' : '')} style={variant==='list' ? undefined : { paddingTop: '75%' }}>
+      {/* Course Thumbnail */}
+  <div className={cn(
+    "relative overflow-hidden bg-gray-100",
+    variant === 'list' && 'md:w-48 md:h-full md:shrink-0',
+    variant === 'grid' && 'w-full h-48'
+  )}>
             {!imageError ? (
-              <Image
-                src={selectedImage || "/generic-course-fallback.svg"}
-                alt={`${title} course thumbnail`}
-                fill
-                className="object-cover transition-transform duration-300 group-hover:scale-102"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                loading="lazy"
-                placeholder="blur"
-                blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R+IRjWjBqO6O2mhP//Z"
-                onError={() => setImageError(true)}
-                quality={85}
-              />
+              <>
+                {imageLoading && (
+                  <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg flex items-center justify-center z-10">
+                    <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-400 rounded-full animate-spin"></div>
+                  </div>
+                )}
+                <Image
+                  src={selectedImage || "/generic-course-improved.svg"}
+                  alt={`${title} course thumbnail`}
+                  fill
+                  className={cn(
+                    "object-cover transition-transform duration-300 group-hover:scale-105",
+                    imageLoading && "opacity-0"
+                  )}
+                  sizes={variant === 'grid' ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw" : "(max-width: 640px) 100vw, 200px"}
+                  loading="lazy"
+                  placeholder="blur"
+                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R+IRjWjBqO6O2mhP//Z"
+                  onError={(e) => {
+                    console.log('Image failed to load:', selectedImage, 'Error:', e)
+                    setImageError(true)
+                    setImageLoading(false)
+                  }}
+                  quality={75}
+                  onLoad={() => {
+                    setImageError(false)
+                    setImageLoading(false)
+                  }}
+                  onLoadingComplete={() => setImageLoading(false)}
+                />
+              </>
             ) : (
-              <div className={cn("w-full h-full flex items-center justify-center", gradientBg)}>
-                <div className="text-gray-400 text-sm font-medium">Course Image</div>
-              </div>
-            )}
-            {/* Hover overlay with gradient & play button */}
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="w-12 h-12 bg-white/95 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center">
-                  <Play className="w-5 h-5 text-gray-800 ml-0.5" fill="currentColor" />
+              <div className={cn("w-full h-full flex flex-col items-center justify-center", gradientBg)}>
+                <div className="p-4 rounded-full bg-white/20 backdrop-blur-sm mb-2">
+                  <BookOpen className="w-8 h-8 text-gray-500" />
+                </div>
+                <div className="text-gray-500 text-sm font-medium text-center px-2">
+                  Course Preview
+                </div>
+                <div className="mt-2 text-xs text-gray-400">
+                  Image unavailable
                 </div>
               </div>
-              {/* Bottom stats bar */}
-              <div className="absolute bottom-0 left-0 right-0 p-2 translate-y-4 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-                <div className="flex items-center justify-between text-[11px] font-medium text-white/90">
-                  <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400" />{rating.toFixed(1)}</span>
-                  <span className="flex items-center gap-1"><Users className="w-3 h-3" />{enrolledCount.toLocaleString()}</span>
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{duration}</span>
+            )}
+            {/* Hover overlay with play button */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className={cn(
+                  "bg-white/95 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center",
+                  variant === 'grid' ? 'w-12 h-12' : 'w-8 h-8'
+                )}>
+                  <Play className={cn("text-gray-800 ml-0.5", variant === 'grid' ? 'w-5 h-5' : 'w-4 h-4')} fill="currentColor" />
                 </div>
               </div>
             </div>
 
             {/* Best Seller Badge */}
             {isPopular && (
-              <Badge className="absolute top-3 left-3 bg-yellow-400 text-yellow-900 hover:bg-yellow-400 border-0 font-semibold text-xs px-2 py-1">
+              <Badge className="absolute top-2 left-2 bg-yellow-400 text-yellow-900 hover:bg-yellow-400 border-0 font-semibold text-xs px-1.5 py-0.5">
                 Bestseller
               </Badge>
+            )}
+
+            {/* Bookmark button - Grid view only */}
+            {variant === 'grid' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute top-2 right-2 h-8 w-8 p-0 bg-white/80 hover:bg-white opacity-0 group-hover:opacity-100 transition-all duration-200"
+                onClick={handleBookmarkClick}
+              >
+                <Bookmark className={cn("h-4 w-4 transition-all duration-300", isBookmarked ? "fill-blue-500 text-blue-500" : "text-gray-600")} />
+              </Button>
             )}
           </div>
 
           {/* Course Content */}
-          <CardContent className={cn("p-4 sm:p-5 flex flex-col h-full bg-gradient-to-b from-white/60 via-white/80 to-white", variant==='list' && 'md:flex-1')}>
-            {/* Quick Action Hover Bar - Hidden on mobile, shown on larger screens */}
-            <div className="hidden sm:flex absolute left-0 right-0 -top-10 opacity-0 group-hover:opacity-100 group-hover:translate-y-12 transition-all duration-300 pointer-events-none justify-center">
-              <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-full px-4 py-2 flex items-center gap-2 border border-gray-200 pointer-events-auto">
-                <Button
-                  size="sm"
-                  className="h-8 px-3 text-xs font-medium"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleCardClick(e)
-                  }}
-                >
-                  {isEnrolled ? (progressPercentage === 100 ? 'Review' : 'Continue') : 'Preview'}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleFavoriteClick}
-                  aria-label={isFavorite ? 'Unfavorite course' : 'Favorite course'}
-                  disabled={authLoading}
-                >
-                  <Heart className={cn('h-4 w-4', isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-500')} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleBookmarkClick}
-                  aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark course'}
-                  disabled={authLoading}
-                >
-                  <Bookmark className={cn('h-4 w-4', isBookmarked ? 'fill-blue-500 text-blue-500' : 'text-gray-500')} />
-                </Button>
-              </div>
-            </div>
-            {/* Discount Ribbon */}
-            {price !== undefined && originalPrice && originalPrice > price && (
-              <div className="absolute top-3 right-3 z-20">
-                <div className="relative">
-                  <div className="bg-rose-600 text-white text-[10px] font-semibold px-2 py-1 rounded shadow-lg shadow-rose-500/30">
-                    SAVE {Math.round(((originalPrice - price) / originalPrice) * 100)}%
-                  </div>
-                </div>
-              </div>
-            )}
-            {/* Header with Category and Badges */}
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <CardContent className={cn(
+            "flex flex-col bg-white",
+            variant === 'list' && 'p-3 h-full md:flex-1',
+            variant === 'grid' && 'p-4 flex-1'
+          )}>
+            {/* Header with Category and Actions */}
+            <div className={cn(
+              "flex items-start justify-between",
+              variant === 'list' && 'mb-2',
+              variant === 'grid' && 'mb-3'
+            )}>
+              <div className="flex flex-wrap items-center gap-1">
                 {category && (
-                  <Badge className={cn("text-xs font-medium px-2 py-1", CATEGORY_CONFIG[category.toLowerCase()]?.badge || CATEGORY_CONFIG.default.badge)}>
-                    {React.createElement(CATEGORY_CONFIG[category.toLowerCase()]?.icon || CATEGORY_CONFIG.default.icon, { className: "w-3 h-3 mr-1" })}
-                    <span className="hidden xs:inline">{category}</span>
+                  <Badge className={cn("font-medium px-1.5 py-0.5", 
+                    variant === 'grid' ? 'text-xs' : 'text-xs',
+                    CATEGORY_CONFIG[category.toLowerCase()]?.badge || CATEGORY_CONFIG.default.badge
+                  )}>
+                    <span>{category}</span>
                   </Badge>
                 )}
                 {difficulty && (
-                  <Badge className={cn("text-xs font-medium px-2 py-1", LEVEL_CONFIG[difficulty].badge)}>
+                  <Badge className={cn("font-medium px-1.5 py-0.5",
+                    variant === 'grid' ? 'text-xs' : 'text-xs',
+                    LEVEL_CONFIG[difficulty].badge
+                  )}>
                     {difficulty}
                   </Badge>
                 )}
               </div>
 
-              {/* Action buttons - Always visible on mobile, hover on desktop */}
-              <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 hover:bg-gray-100"
-                      onClick={handleFavoriteClick}
-                    >
-                      <Heart className={cn("h-4 w-4 transition-all duration-300", isFavorite ? "fill-red-500 text-red-500 scale-110" : "text-gray-400", optimisticBusy==='favorite' && 'animate-pulse')} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{isFavorite ? "Remove from favorites" : "Add to favorites"}</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 hover:bg-gray-100"
-                      onClick={handleBookmarkClick}
-                    >
-                      <Bookmark className={cn("h-4 w-4 transition-all duration-300", isBookmarked ? "fill-blue-500 text-blue-500 scale-110" : "text-gray-400", optimisticBusy==='bookmark' && 'animate-pulse')} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{isBookmarked ? "Remove bookmark" : "Bookmark course"}</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 hover:bg-gray-100"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Share2 className="h-4 w-4 text-gray-400" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Share course</p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
+              {/* Action button for list view */}
+              {variant === 'list' && (
+                <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity duration-200">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 hover:bg-gray-100"
+                    onClick={handleBookmarkClick}
+                  >
+                    <Bookmark className={cn("h-3 w-3 transition-all duration-300", isBookmarked ? "fill-blue-500 text-blue-500" : "text-gray-400")} />
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Title */}
-            <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 leading-tight group-hover:text-purple-600 transition-colors duration-200">
+            <h3 className={cn(
+              "font-bold text-gray-900 line-clamp-2 leading-tight group-hover:text-purple-600 transition-colors duration-200",
+              variant === 'list' && 'text-base mb-1',
+              variant === 'grid' && 'text-lg mb-2'
+            )}>
               {title}
             </h3>
 
             {/* Instructor */}
-            <p className="text-sm text-gray-600 mb-2 font-medium">
+            <p className={cn(
+              "text-gray-600 font-medium",
+              variant === 'list' && 'text-xs mb-2',
+              variant === 'grid' && 'text-sm mb-3'
+            )}>
               {instructor}
             </p>
 
-            {/* Rating and Enrollment */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-bold text-gray-900">{rating.toFixed(1)}</span>
-                  <div className="flex" role="img" aria-label={`Rating: ${rating} out of 5 stars`}>
-                    {[1,2,3,4,5].map((i) => (
-                      <Star
-                        key={i}
-                        className={cn(
-                          "h-4 w-4",
-                          rating >= i ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-                        )}
-                      />
-                    ))}
-                  </div>
+            {/* Rating and Stats */}
+            <div className={cn(
+              "flex items-center",
+              variant === 'list' && 'justify-between mb-2',
+              variant === 'grid' && 'gap-2 mb-3'
+            )}>
+              <div className="flex items-center gap-1">
+                <span className={cn("font-bold text-gray-900", variant === 'grid' ? 'text-sm' : 'text-sm')}>{rating.toFixed(1)}</span>
+                <div className="flex" role="img" aria-label={`Rating: ${rating} out of 5 stars`}>
+                  {[1,2,3,4,5].map((i) => (
+                    <Star
+                      key={i}
+                      className={cn(
+                        rating >= i ? "fill-yellow-400 text-yellow-400" : "text-gray-300",
+                        variant === 'grid' ? 'h-4 w-4' : 'h-3 w-3'
+                      )}
+                    />
+                  ))}
                 </div>
-                <span className="text-sm text-gray-500">
+                <span className={cn("text-gray-500 ml-1", variant === 'grid' ? 'text-sm' : 'text-xs')}>
                   ({enrolledCount.toLocaleString()})
                 </span>
               </div>
-              
-              {/* Completion Rate */}
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-green-500 rounded-full transition-all duration-300"
-                    style={{ width: `${completionRate}%` }}
-                  />
-                </div>
-                <span className="font-medium">{completionRate}%</span>
-              </div>
             </div>
 
-            {/* Trending/Popular Indicators */}
-            <div className="flex items-center gap-2 mb-3">
-              {isTrending && (
-                <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100 border-0 font-semibold text-xs px-2 py-0.5">
-                  🔥 Trending
-                </Badge>
-              )}
-              {isPopular && (
-                <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-0 font-semibold text-xs px-2 py-0.5">
-                  ⭐ Popular
-                </Badge>
-              )}
-              {completionRate >= 90 && (
-                <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-0 font-semibold text-xs px-2 py-0.5">
-                  🏆 High Completion
-                </Badge>
-              )}
-            </div>
-
-            {/* Course Description Preview */}
-            <p className="text-sm text-gray-600 mb-3 line-clamp-2 leading-relaxed">
-              {description}
-            </p>
-
-            {/* Course Stats Grid - Responsive layout */}
-            <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <BookOpen className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                <div className="min-w-0">
-                  <div className="font-medium text-gray-900 text-sm sm:text-base">{unitCount}</div>
-                  <div className="text-xs">Units</div>
+            {/* Course Stats */}
+            {variant === 'list' ? (
+              <div className="flex items-center gap-4 mb-2 text-xs text-gray-600">
+                <div className="flex items-center gap-1">
+                  <BookOpen className="h-3 w-3 text-blue-500" />
+                  <span>{unitCount} units</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Play className="h-3 w-3 text-green-500" />
+                  <span>{lessonCount} lessons</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3 text-purple-500" />
+                  <span>{duration}</span>
                 </div>
               </div>
-
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Play className="h-4 w-4 text-green-500 flex-shrink-0" />
-                <div className="min-w-0">
-                  <div className="font-medium text-gray-900 text-sm sm:text-base">{lessonCount}</div>
-                  <div className="text-xs">Lessons</div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 mb-4 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-blue-500" />
+                  <span>{unitCount} units</span>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Code className="h-4 w-4 text-purple-500 flex-shrink-0" />
-                <div className="min-w-0">
-                  <div className="font-medium text-gray-900 text-sm sm:text-base">{quizCount}</div>
-                  <div className="text-xs">Quizzes</div>
+                <div className="flex items-center gap-2">
+                  <Play className="h-4 w-4 text-green-500" />
+                  <span>{lessonCount} lessons</span>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Users className="h-4 w-4 text-orange-500 flex-shrink-0" />
-                <div className="min-w-0">
-                  <div className="font-medium text-gray-900 text-sm sm:text-base">{viewCount.toLocaleString()}</div>
-                  <div className="text-xs">Views</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Tags */}
-            {tags && tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-3">
-                {tags.slice(0, 3).map((tag, index) => (
-                  <Badge key={index} variant="outline" className="text-xs px-2 py-0.5 text-gray-500 border-gray-300">
-                    {tag}
-                  </Badge>
-                ))}
-                {tags.length > 3 && (
-                  <Badge variant="outline" className="text-xs px-2 py-0.5 text-gray-500 border-gray-300">
-                    +{tags.length - 3}
-                  </Badge>
-                )}
               </div>
             )}
 
-            {/* Duration and Updated Date */}
-            <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-              <span className="flex items-center gap-1">
-                <Play className="h-3 w-3" />
-                {duration}
-              </span>
-              {updatedAt && (
-                <span>
-                  Updated {new Date(updatedAt).toLocaleDateString('en-US', { 
-                    month: 'short', 
-                    year: 'numeric' 
-                  })}
-                </span>
-              )}
-            </div>
-
             {/* Progress Section for Enrolled Courses */}
             {isEnrolled && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+              <div className={cn(
+                "bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-lg",
+                variant === 'list' && 'mb-2 p-3',
+                variant === 'grid' && 'mb-4 p-3'
+              )}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-900">Your Progress</span>
+                  <span className={cn("font-medium text-blue-900", variant === 'grid' ? 'text-sm' : 'text-xs')}>
+                    Progress: {progressPercentage}%
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span className="text-xs text-blue-700 font-medium">Active</span>
                   </div>
-                  <Badge variant="secondary" className="text-xs">
-                    {progressPercentage}%
-                  </Badge>
                 </div>
-                
-                <Progress 
-                  value={progressPercentage} 
-                  className="h-2 mb-2" 
-                />
-                
-                <div className="flex items-center justify-between text-xs text-blue-700">
-                  <span>{completedChapters} of {totalChapters} chapters</span>
+                <Progress value={progressPercentage} className="h-2 mb-2 bg-blue-100" />
+                <div className={cn("text-blue-700 flex items-center justify-between", variant === 'grid' ? 'text-xs' : 'text-xs')}>
+                  <span className="flex items-center gap-1">
+                    <BookOpen className="h-3 w-3" />
+                    {completedChapters || 0} of {totalChapters || 0} chapters
+                  </span>
                   {lastAccessedAt && (
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
+                    <span className="text-blue-600">
                       {new Date(lastAccessedAt).toLocaleDateString()}
                     </span>
                   )}
                 </div>
-                
-                {currentChapterTitle && (
-                  <div className="mt-2 pt-2 border-t border-blue-200">
-                    <p className="text-xs text-blue-600 truncate">
-                      Continue: {currentChapterTitle}
-                    </p>
-                  </div>
-                )}
-                
-                {progressPercentage > 0 && (
-                  <Button 
-                    size="sm" 
-                    className="w-full mt-2 bg-blue-600 hover:bg-blue-700"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleCardClick(e)
-                    }}
-                  >
-                    {progressPercentage === 100 ? 'Review Course' : 'Continue Learning'}
-                  </Button>
-                )}
               </div>
             )}
 
@@ -894,18 +764,13 @@ export const CourseCard = React.memo(
             <div className="mt-auto">
               {price !== undefined ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-xl font-bold text-gray-900">${price}</span>
+                  <span className={cn("font-bold text-gray-900", variant === 'grid' ? 'text-xl' : 'text-lg')}>${price}</span>
                   {originalPrice && price && originalPrice > price && (
-                    <span className="text-sm text-gray-500 line-through">${originalPrice}</span>
-                  )}
-                  {originalPrice && price && originalPrice > price && (
-                    <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-0 font-semibold text-xs px-2 py-0.5 ml-2">
-                      {Math.round(((originalPrice - price) / originalPrice) * 100)}% OFF
-                    </Badge>
+                    <span className={cn("text-gray-500 line-through", variant === 'grid' ? 'text-sm' : 'text-sm')}>${originalPrice}</span>
                   )}
                 </div>
               ) : (
-                <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-0 font-semibold px-3 py-1">
+                <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-0 font-semibold px-2 py-1 text-xs">
                   Free
                 </Badge>
               )}

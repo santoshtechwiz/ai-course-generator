@@ -320,7 +320,7 @@ export function useCourseEditor(initialCourse: CourseWithUnits) {
         }))
 
         // Call the API to generate video
-        const response = await api.post("/video", { chapterId: chapter.id })
+        const response = await api.post("/api/video", { chapterId: chapter.id })
 
         if (response.data.success) {
           // Start polling for video status
@@ -523,7 +523,7 @@ export function useCourseEditor(initialCourse: CourseWithUnits) {
       const updatedCourse = prepareUpdateData()
 
       // Save the updated course structure
-      const response = await api.post("/course/update-chapters", updatedCourse)
+      const response = await api.post("/api/course/update-chapters", updatedCourse)
 
       toast({
         title: "Success",

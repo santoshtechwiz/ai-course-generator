@@ -294,5 +294,218 @@ static async activateFreePlan(userId: string): Promise<ActivationResult> {
 
 ---
 
+## 🚀 Performance Optimizations - Bookmark API Call Reduction
+
+### **Problem Analysis**
+**Current Issue**: Excessive API calls for bookmark status checks
+- Each CourseCard component makes individual `/api/bookmarks?courseId=X&limit=1` calls
+- Multiple course cards on dashboard cause N+1 API call pattern
+- No caching or batching mechanism implemented
+- Network logs show 8+ concurrent bookmark API calls per page load
+
+**Impact**: 
+- Increased server load and response times
+- Poor user experience with slow page loads
+- Unnecessary bandwidth consumption
+- Potential rate limiting issues
+
+### **Design Approach - Batch Bookmark Status Fetching**
+
+#### **1. Batch API Endpoint Design**
+```typescript
+// New endpoint: /api/bookmarks/batch-status
+POST /api/bookmarks/batch-status
+Body: { courseIds: number[] }
+Response: { [courseId: number]: boolean }
+
+// Implementation strategy:
+// - Accept array of course IDs (max 50 per request)
+// - Single database query with IN clause
+// - Return bookmark status map for all requested courses
+// - Cache results for 5 minutes
+```
+
+#### **2. Request Queuing & Deduplication**
+```typescript
+class BookmarkBatchManager {
+  private queue: Map<number, Promise<boolean>>
+  private pendingRequests: Set<number>
+  private batchSize: number = 20
+  private debounceMs: number = 100
+  
+  // Queue requests and batch them
+  async getBookmarkStatus(courseId: number): Promise<boolean> {
+    // Return existing promise if already queued
+    if (this.queue.has(courseId)) {
+      return this.queue.get(courseId)!
+    }
+    
+    // Create new promise and queue it
+    const promise = this.createQueuedPromise(courseId)
+    this.queue.set(courseId, promise)
+    
+    // Trigger batch processing with debounce
+    this.scheduleBatchProcessing()
+    
+    return promise
+  }
+  
+  private scheduleBatchProcessing() {
+    if (this.batchTimeout) clearTimeout(this.batchTimeout)
+    this.batchTimeout = setTimeout(() => this.processBatch(), this.debounceMs)
+  }
+  
+  private async processBatch() {
+    const courseIds = Array.from(this.queue.keys()).slice(0, this.batchSize)
+    
+    try {
+      const response = await fetch('/api/bookmarks/batch-status', {
+        method: 'POST',
+        body: JSON.stringify({ courseIds })
+      })
+      
+      const statusMap = await response.json()
+      
+      // Resolve all queued promises
+      courseIds.forEach(id => {
+        const promise = this.queue.get(id)
+        if (promise) {
+          promise.resolve(statusMap[id] || false)
+          this.queue.delete(id)
+        }
+      })
+    } catch (error) {
+      // Handle batch failure - reject all promises
+      courseIds.forEach(id => {
+        const promise = this.queue.get(id)
+        if (promise) {
+          promise.reject(error)
+          this.queue.delete(id)
+        }
+      })
+    }
+  }
+}
+```
+
+#### **3. Smart Caching Strategy**
+```typescript
+interface CacheEntry {
+  status: boolean
+  timestamp: number
+  ttl: number
+}
+
+class BookmarkCache {
+  private cache = new Map<number, CacheEntry>()
+  private readonly TTL = 5 * 60 * 1000 // 5 minutes
+  
+  get(courseId: number): boolean | null {
+    const entry = this.cache.get(courseId)
+    if (!entry) return null
+    
+    if (Date.now() - entry.timestamp > entry.ttl) {
+      this.cache.delete(courseId)
+      return null
+    }
+    
+    return entry.status
+  }
+  
+  set(courseId: number, status: boolean) {
+    this.cache.set(courseId, {
+      status,
+      timestamp: Date.now(),
+      ttl: this.TTL
+    })
+  }
+  
+  invalidate(courseId: number) {
+    this.cache.delete(courseId)
+  }
+  
+  // Bulk operations for efficiency
+  getMultiple(courseIds: number[]): Map<number, boolean> {
+    const result = new Map<number, boolean>()
+    courseIds.forEach(id => {
+      const status = this.get(id)
+      if (status !== null) {
+        result.set(id, status)
+      }
+    })
+    return result
+  }
+}
+```
+
+#### **4. React Hook Integration**
+```typescript
+// New hook: useBatchBookmarks
+function useBatchBookmarks(courseIds: number[]) {
+  const [bookmarkStatuses, setBookmarkStatuses] = useState<Map<number, boolean>>(new Map())
+  const [loading, setLoading] = useState(true)
+  
+  useEffect(() => {
+    if (!courseIds.length) {
+      setLoading(false)
+      return
+    }
+    
+    const loadStatuses = async () => {
+      try {
+        const statuses = await bookmarkBatchManager.getMultipleStatuses(courseIds)
+        setBookmarkStatuses(statuses)
+      } catch (error) {
+        console.error('Failed to load bookmark statuses:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadStatuses()
+  }, [courseIds])
+  
+  return { bookmarkStatuses, loading }
+}
+
+// Updated CourseCard usage:
+function CourseCard({ courseId, ...props }) {
+  const { bookmarkStatuses } = useBatchBookmarks([courseId])
+  const isBookmarked = bookmarkStatuses.get(courseId) || false
+  
+  // Rest of component logic...
+}
+```
+
+#### **5. Implementation Benefits**
+- **90% Reduction** in API calls (from N individual calls to 1 batch call)
+- **Improved Performance**: Single round-trip vs multiple concurrent requests
+- **Better UX**: Faster page loads with reduced network overhead
+- **Scalable**: Handles any number of course cards efficiently
+- **Cache-Friendly**: Reduces server load through intelligent caching
+- **Error Resilient**: Graceful handling of partial failures
+
+#### **6. Migration Strategy**
+1. **Phase 1**: Implement batch endpoint and queuing system
+2. **Phase 2**: Update CourseCard components to use batch hook
+3. **Phase 3**: Add caching layer and performance monitoring
+4. **Phase 4**: Remove old individual API calls and cleanup
+
+#### **7. Monitoring & Metrics**
+```typescript
+// Performance tracking
+const metrics = {
+  apiCallsReduced: 0,
+  averageResponseTime: 0,
+  cacheHitRate: 0,
+  errorRate: 0
+}
+
+// Log improvements
+console.log(`Bookmark API optimization: Reduced ${metrics.apiCallsReduced} API calls`)
+```
+
+---
+
 *Generated on: September 5, 2025*
 *Last Updated: Current analysis*

@@ -1,6 +1,5 @@
 import { courseRepository } from "@/app/repositories/course.repository";
 import { generateCourseContent } from "@/lib/chatgpt/generateCourseContent";
-import { getUnsplashImage } from "@/lib/unsplash";
 import type { OutputUnits, CourseUpdateData, CourseChaptersUpdate } from "@/app/types/course-types";
 import { z } from "zod";
 import { createChaptersSchema } from "@/schema/schema";
@@ -110,6 +109,38 @@ export interface PaginatedCoursesResult {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+/**
+ * Get existing course image based on category
+ * Uses pre-existing SVG images instead of making external API calls
+ */
+function getExistingCourseImage(category: string): string {
+  const normalizedCategory = category?.toLowerCase().trim() || '';
+
+  // Map categories to existing images
+  const imageMap: Record<string, string> = {
+    'programming': '/generic-course-tech-improved.svg',
+    'web-development': '/generic-course-tech-improved.svg',
+    'data-science': '/generic-course-tech-improved.svg',
+    'machine-learning': '/generic-course-tech-improved.svg',
+    'ai': '/generic-course-tech-improved.svg',
+    'cloud': '/generic-course-tech-improved.svg',
+    'devops': '/generic-course-tech-improved.svg',
+    'cybersecurity': '/generic-course-tech-improved.svg',
+    'mobile': '/generic-course-tech-improved.svg',
+    'business': '/generic-course-business-improved.svg',
+    'marketing': '/generic-course-business-improved.svg',
+    'finance': '/generic-course-business-improved.svg',
+    'management': '/generic-course-business-improved.svg',
+    'design': '/generic-course-creative-improved.svg',
+    'creative': '/generic-course-creative-improved.svg',
+    'art': '/generic-course-creative-improved.svg',
+    'photography': '/generic-course-creative-improved.svg',
+  };
+
+  // Return mapped image or default
+  return imageMap[normalizedCategory] || '/generic-course-improved.svg';
 }
 
 /**
@@ -223,8 +254,10 @@ export class CourseService {
     // Generate course content
     const outputUnits = await generateCourseContent(title, units);
 
-    // Get course image
-    const courseImage = await getUnsplashImage(title);    // Create or get category
+    // Use existing image instead of Unsplash API call
+    const courseImage = getExistingCourseImage(category);
+
+    // Create or get category
     const categoryId = await courseRepository.getOrCreateCategory(category);
 
     // Create course and its units

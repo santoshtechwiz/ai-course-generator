@@ -148,7 +148,8 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
         return true
       }
       // Error state
-      if (response.data.status === "error") {
+      if (response.data.videoStatus === "error" || response.data.failed) {
+        console.log(`❌ Video failed for chapter ${chapterId}`)
         const errorStatus: VideoStatus = {
           chapterId,
           status: "error",

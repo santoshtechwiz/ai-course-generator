@@ -114,7 +114,7 @@ export const useChapterProcessing = (chapter: Chapter) => {
     mutationFn: async () => {
       try {
         console.log("Generating video for chapter:", chapter.id)
-        const response = await api.post("/video", { chapterId: chapter.id })
+        const response = await api.post("/api/video", { chapterId: chapter.id })
         return response.data
       } catch (error) {
         console.error("Error in video generation API call:", error)
