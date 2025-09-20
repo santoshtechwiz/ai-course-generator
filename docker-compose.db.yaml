@@ -18,7 +18,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - node-postgres
+      - courseai-network
 
   postgres-shadow:
     image: pgvector/pgvector:0.7.0-pg15  # ✅ pgvector for shadow DB
@@ -33,12 +33,13 @@ services:
       - pgdata_shadow:/var/lib/postgresql/data
       - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
-      - node-postgres
+      - courseai-network
 
 volumes:
   pgdata:
   pgdata_shadow:
 
 networks:
-  node-postgres:
+  courseai-network:
+    name: courseai-network
     driver: bridge
