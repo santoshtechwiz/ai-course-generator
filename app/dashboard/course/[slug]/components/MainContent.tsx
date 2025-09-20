@@ -215,8 +215,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         // Only update if we don't already have bookmarks for this video
         if (!existingBookmarks[currentVideoId] || existingBookmarks[currentVideoId].length === 0) {
           const videoBookmarks = dbBookmarks
-            .filter(bookmark => bookmark.videoId === currentVideoId)
-            .map(bookmark => ({
+            .filter((bookmark: { videoId: string }) => bookmark.videoId === currentVideoId)
+            .map((bookmark: any) => ({
               id: bookmark.id,
               videoId: bookmark.videoId || currentVideoId,
               time: bookmark.timestamp || 0,

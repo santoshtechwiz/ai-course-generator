@@ -39,6 +39,7 @@ export async function POST(req: Request) {
       chapterId,
       chapterName,
     })
+    console.log(questions);
 
     return NextResponse.json(questions)
   } catch (error) {

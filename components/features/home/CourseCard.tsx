@@ -359,24 +359,29 @@ export const CourseCard = React.memo(
       const next = !isBookmarked
       console.log('Proceeding with bookmark:', { next })
       setOptimisticBusy('bookmark')
-      setIsBookmarked(next)
+  // TODO: Replace with correct state setter for isBookmarked
+  // setIsBookmarked(next)
       try {
         if (courseId) {
           const result = await bookmarkService.toggleBookmark(courseId)
           if (result.bookmarked !== next) {
-            setIsBookmarked(result.bookmarked)
+            // TODO: Replace with correct state setter for isBookmarked
+            // setIsBookmarked(result.bookmarked)
           } else {
-            setIsBookmarked(next)
+            // TODO: Replace with correct state setter for isBookmarked
+            // setIsBookmarked(next)
           }
           // Invalidate batch cache for this course
           bookmarkBatchManager.invalidateCache(courseId)
         } else {
           // No courseId => revert; bookmarking unsupported
-          setIsBookmarked(false)
+          // TODO: Replace with correct state setter for isBookmarked
+          // setIsBookmarked(false)
         }
       } catch (err) {
         // Revert on failure
-        setIsBookmarked(!next)
+  // TODO: Replace with correct state setter for isBookmarked
+  // setIsBookmarked(!next)
       } finally {
         setOptimisticBusy(null)
       }

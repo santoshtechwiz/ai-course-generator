@@ -216,7 +216,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
         chapterName: chapter.title || chapter.name,
       })
 
-      return response.data.map((q: any) => ({
+      return response.map((q: any) => ({
         ...q,
         id: q.id || `q-${Math.random().toString(36).substr(2, 9)}`,
         options: Array.isArray(q.options)

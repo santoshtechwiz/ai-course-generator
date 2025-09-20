@@ -33,29 +33,76 @@ const mockNotifications: Notification[] = [
   }
 ]
 
+const CACHE_KEY = 'notifications_cache'
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+interface CacheEntry {
+  data: Notification[]
+  timestamp: number
+}
+
+function getCachedNotifications(): Notification[] | null {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY)
+    if (!cached) return null
+
+    const { data, timestamp }: CacheEntry = JSON.parse(cached)
+    if (Date.now() - timestamp > CACHE_TTL) {
+      localStorage.removeItem(CACHE_KEY)
+      return null
+    }
+
+    return data
+  } catch {
+    return null
+  }
+}
+
+function cacheNotifications(notifications: Notification[]) {
+  try {
+    const entry: CacheEntry = {
+      data: notifications,
+      timestamp: Date.now()
+    }
+    localStorage.setItem(CACHE_KEY, JSON.stringify(entry))
+  } catch {
+    // Ignore cache errors
+  }
+}
+
 export function useNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [notifications, setNotifications] = useState<Notification[]>(() => getCachedNotifications() || [])
+  const [isLoading, setIsLoading] = useState<boolean>(!notifications.length)
   const [error, setError] = useState<Error | null>(null)
   const { toast } = useToast()
 
   // Count of unread notifications
   const unreadCount = notifications.filter(n => !n.read).length
 
-  // Simulate fetching notifications from "memory"
-  const fetchNotifications = useCallback(async () => {
+  // Load notifications from API with caching
+  const fetchNotifications = useCallback(async (force: boolean = false) => {
+    // Return cached data if available and not forced
+    if (!force && notifications.length > 0) {
+      return notifications
+    }
+
     setIsLoading(true)
     setError(null)
 
     try {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      // Use mock data
-      setNotifications(mockNotifications)
+      const response = await fetch('/api/notifications')
+      if (!response.ok) {
+        throw new Error(`Failed to fetch notifications: ${response.statusText}`)
+      }
+      
+      const data = await response.json()
+      setNotifications(data)
+      cacheNotifications(data)
+      return data
     } catch (err) {
       console.error("Failed to fetch notifications:", err)
       setError(err instanceof Error ? err : new Error(String(err)))
+      return notifications // Return current state on error
     } finally {
       setIsLoading(false)
     }
@@ -73,29 +120,109 @@ export function useNotifications() {
     return true
   }, [toast])
 
-  const markAsRead = useCallback(async (id: string) => {
-    await new Promise(resolve => setTimeout(resolve, 200))
-
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === id ? { ...notification, read: true } : notification
+  // Mark notifications as read (single or batch)
+  const markAsRead = useCallback(async (ids: string | string[]) => {
+    const notificationIds = Array.isArray(ids) ? ids : [ids]
+    
+    try {
+      // Optimistic update
+      setNotifications(current =>
+        current.map(notification =>
+          notificationIds.includes(notification.id)
+            ? { ...notification, read: true }
+            : notification
+        )
       )
-    )
 
-    toast({ title: "Notification marked as read" })
-    return true
-  }, [toast])
+      // Batch update API call
+      const response = await fetch('/api/notifications/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: notificationIds })
+      })
 
-  const deleteNotification = useCallback(async (id: string) => {
-    await new Promise(resolve => setTimeout(resolve, 200))
+      if (!response.ok) {
+        throw new Error('Failed to mark notifications as read')
+      }
 
-    setNotifications(prev =>
-      prev.filter(notification => notification.id !== id)
-    )
+      // Update cache
+      const updatedNotifications = notifications.map(notification =>
+        notificationIds.includes(notification.id)
+          ? { ...notification, read: true }
+          : notification
+      )
+      cacheNotifications(updatedNotifications)
 
-    toast({ title: "Notification deleted" })
-    return true
-  }, [toast])
+      toast({
+        title: "Success",
+        description: notificationIds.length > 1 
+          ? "Notifications marked as read"
+          : "Notification marked as read",
+      })
+    } catch (err) {
+      console.error("Failed to mark notifications as read:", err)
+      
+      // Revert optimistic update on error
+      setNotifications(current =>
+        current.map(notification =>
+          notificationIds.includes(notification.id)
+            ? { ...notification, read: false }
+            : notification
+        )
+      )
+
+      toast({
+        title: "Error",
+        description: "Failed to mark notifications as read",
+        variant: "destructive",
+      })
+    }
+  }, [notifications, toast])
+
+  // Delete notifications (single or batch)
+  const deleteNotifications = useCallback(async (ids: string | string[]) => {
+    const notificationIds = Array.isArray(ids) ? ids : [ids]
+    const notificationsToDelete = notifications.filter(n => notificationIds.includes(n.id))
+    
+    try {
+      // Optimistic update
+      setNotifications(current =>
+        current.filter(notification => !notificationIds.includes(notification.id))
+      )
+
+      // Batch delete API call
+      const response = await fetch('/api/notifications/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: notificationIds })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete notifications')
+      }
+
+      // Update cache
+      cacheNotifications(notifications.filter(n => !notificationIds.includes(n.id)))
+
+      toast({
+        title: "Success",
+        description: notificationIds.length > 1 
+          ? "Notifications deleted"
+          : "Notification deleted",
+      })
+    } catch (err) {
+      console.error("Failed to delete notifications:", err)
+      
+      // Revert optimistic update on error
+      setNotifications(current => [...current, ...notificationsToDelete])
+
+      toast({
+        title: "Error",
+        description: "Failed to delete notifications",
+        variant: "destructive",
+      })
+    }
+  }, [notifications, toast])
 
   // Optional: Auto-fetch on mount
   useEffect(() => {
@@ -108,8 +235,9 @@ export function useNotifications() {
     isLoading,
     error,
     fetchNotifications,
-    markAllAsRead,
     markAsRead,
-    deleteNotification
+    deleteNotifications,
+    // Alias for backward compatibility
+    deleteNotification: (id: string) => deleteNotifications(id)
   }
 }

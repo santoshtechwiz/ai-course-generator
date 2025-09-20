@@ -250,15 +250,6 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
           toast({
             title: "Continue Learning",
             description: firstNotification.description,
-            action: (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleNotificationClick(firstNotification)}
-              >
-                Continue
-              </Button>
-            ),
           })
           
           localStorage.setItem('last_course_notification_toast', now.toString())

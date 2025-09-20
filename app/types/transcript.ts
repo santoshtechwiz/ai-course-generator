@@ -4,6 +4,7 @@ export interface TranscriptResult {
   status: number;
   message: string;
   transcript: string | null;
+  shouldFallback?: boolean;
 }
 
 export interface TranscriptOptions {

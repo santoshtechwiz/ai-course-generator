@@ -11,6 +11,7 @@ import PlayerControls from "./PlayerControls"
 import VideoErrorState from "./VideoErrorState"
 import BookmarkManager from "./BookmarkManager"
 import { NotesPanel } from "./NotesPanel"
+import KeyboardShortcutsModal from "@/app/dashboard/course/[slug]/components/KeyboardShortcutsModal"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Play, Lock, User, Maximize, HelpCircle } from "lucide-react"
@@ -238,8 +239,8 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
 
     // Initialize notes hook for chapter-specific notes
     const { notes: chapterNotes, createNote, loading: notesLoading } = useNotes({
-      courseId: courseId || 0,
-      chapterId: chapterId || 0,
+  courseId: typeof courseId === 'string' ? parseInt(courseId) : typeof courseId === 'number' ? courseId : undefined,
+  chapterId: typeof chapterId === 'string' ? parseInt(chapterId) : typeof chapterId === 'number' ? chapterId : undefined,
       limit: 50
     })
 
@@ -513,6 +514,7 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
         showAutoPlayNotification: false,
         showNextChapterAutoOverlay: false,
         chapterStartShown: false,
+        showNotesPanel: false,
       })
       setCountdowns({
         nextChapter: 5,
@@ -643,6 +645,36 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
             event.preventDefault()
             handlePictureInPicture()
             break
+          case "[":
+            // Previous bookmark
+            event.preventDefault()
+            if (effectiveIsAuthenticated && bookmarks.length > 0) {
+              const currentTime = state.lastPlayedTime
+              const prevBookmarks = bookmarks.filter(b => b.time < currentTime).sort((a, b) => b.time - a.time)
+              if (prevBookmarks.length > 0) {
+                handlers.onSeek(prevBookmarks[0].time)
+                toast({
+                  title: "Jumped to previous bookmark",
+                  description: `At ${formatTime(prevBookmarks[0].time)}`,
+                })
+              }
+            }
+            break
+          case "]":
+            // Next bookmark
+            event.preventDefault()
+            if (effectiveIsAuthenticated && bookmarks.length > 0) {
+              const currentTime = state.lastPlayedTime
+              const nextBookmarks = bookmarks.filter(b => b.time > currentTime).sort((a, b) => a.time - b.time)
+              if (nextBookmarks.length > 0) {
+                handlers.onSeek(nextBookmarks[0].time)
+                toast({
+                  title: "Jumped to next bookmark",
+                  description: `At ${formatTime(nextBookmarks[0].time)}`,
+                })
+              }
+            }
+            break
           case "?":
           case "/":
             if (event.shiftKey && event.key === "/") {
@@ -726,7 +758,7 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
         console.warn('Could not save auto-play preference:', error)
       }
 
-      onToggleAutoPlay?.()
+  onToggleAutoPlay?.(true)
     }, [playerState.autoPlayVideo, onToggleAutoPlay])
 
     const handleChapterStartComplete = useCallback(() => {
@@ -866,8 +898,8 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
 
       try {
         await createNote({
-          courseId,
-          chapterId,
+          courseId: typeof courseId === 'string' ? parseInt(courseId) : typeof courseId === 'number' ? courseId : 0,
+          chapterId: typeof chapterId === 'string' ? parseInt(chapterId) : typeof chapterId === 'number' ? chapterId : 0,
           note: `Note at ${formatTime(state.lastPlayedTime)}`,
           timestamp: state.lastPlayedTime
         })
@@ -934,6 +966,34 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
       }))
     }, [])
 
+    // Double-click to bookmark handler
+    const handleDoubleClick = useCallback((e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+
+      if (!effectiveIsAuthenticated) {
+        toast({
+          title: "Sign in required",
+          description: "Please sign in to add bookmarks.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Add bookmark at current time
+      handleAddBookmark(state.lastPlayedTime)
+
+      // Visual feedback
+      if (containerRef.current) {
+        containerRef.current.style.transform = 'scale(1.02)'
+        setTimeout(() => {
+          if (containerRef.current) {
+            containerRef.current.style.transform = 'scale(1)'
+          }
+        }, 150)
+      }
+    }, [effectiveIsAuthenticated, handleAddBookmark, state.lastPlayedTime, toast])
+
     // Determine if mini player should be shown
     const shouldShowMiniPlayer = state.isMiniPlayer && !playerState.isNativePiPActive && playerState.isMounted
 
@@ -953,8 +1013,9 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
         }
         onMouseLeave={() => setPlayerState(prev => ({ ...prev, isHovering: false }))
         }
+        onDoubleClick={handleDoubleClick}
         role="application"
-        aria-label="Video player"
+        aria-label="Video player - Double-click to bookmark"
         tabIndex={0}
       >
         {/* Main YouTube Player - completely hidden when in PiP modes */}
@@ -1236,25 +1297,42 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
 
         {/* Bookmark Panel */}
         {overlayState.showBookmarkPanel && effectiveIsAuthenticated && !shouldHideMainPlayer && (
-          <div className="absolute top-0 right-0 bottom-16 w-64 sm:w-72 bg-black/80 backdrop-blur-sm z-30 border-l border-white/10">
-            <BookmarkManager
-              videoId={youtubeVideoId}
-              bookmarks={bookmarks}
-              currentTime={state.lastPlayedTime}
-              duration={playerState.videoDuration || state.duration}
-              onSeekToBookmark={handleSeekToBookmark}
-              onAddBookmark={handleAddBookmark}
-              onRemoveBookmark={handleRemoveBookmark}
-              formatTime={formatTime}
-            />
+          <div className="absolute top-0 right-0 bottom-16 w-64 sm:w-72 bg-black/80 backdrop-blur-sm z-30 border-l border-white/10 flex flex-col">
+            <div className="p-3 border-b border-white/10 flex-shrink-0">
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div><kbd className="px-1 py-0.5 bg-white/10 rounded text-xs">B</kbd> Add bookmark</div>
+                <div><kbd className="px-1 py-0.5 bg-white/10 rounded text-xs">[</kbd> Previous bookmark</div>
+                <div><kbd className="px-1 py-0.5 bg-white/10 rounded text-xs">]</kbd> Next bookmark</div>
+                <div><kbd className="px-1 py-0.5 bg-white/10 rounded text-xs">Double-click</kbd> Quick bookmark</div>
+              </div>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <BookmarkManager
+                videoId={youtubeVideoId}
+                bookmarks={bookmarks.map(b => ({
+                  id: b.id,
+                  videoId: b.videoId,
+                  time: b.time,
+                  title: b.title || `Bookmark at ${formatTime(b.time)}`,
+                  description: b.description || '',
+                  createdAt: b.createdAt
+                }))}
+                currentTime={state.lastPlayedTime}
+                duration={playerState.videoDuration || state.duration}
+                onSeekToBookmark={handleSeekToBookmark}
+                onAddBookmark={handleAddBookmark}
+                onRemoveBookmark={handleRemoveBookmark}
+                formatTime={formatTime}
+              />
+            </div>
           </div>
         )}
 
         {/* Notes Panel */}
         {overlayState.showNotesPanel && effectiveIsAuthenticated && !shouldHideMainPlayer && (
           <NotesPanel
-            courseId={courseId || 0}
-            chapterId={chapterId || 0}
+            courseId={typeof courseId === 'string' ? parseInt(courseId) : (courseId || 0)}
+            chapterId={typeof chapterId === 'string' ? parseInt(chapterId) : (chapterId || 0)}
             currentTime={state.lastPlayedTime}
             duration={playerState.videoDuration || state.duration}
             formatTime={formatTime}

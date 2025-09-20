@@ -45,7 +45,9 @@ export async function POST(request: NextRequest) {
 
     // Set bookmarked courses to true
     bookmarks.forEach(bookmark => {
-      bookmarkStatusMap[bookmark.courseId] = true
+      if (bookmark.courseId != null) {
+        bookmarkStatusMap[bookmark.courseId] = true
+      }
     })
 
     return NextResponse.json(bookmarkStatusMap)

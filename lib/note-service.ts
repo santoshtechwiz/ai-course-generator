@@ -29,6 +29,7 @@ interface CacheEntry {
 class NotesCache {
   private cache = new Map<string, CacheEntry>()
   private defaultTTL = 5 * 60 * 1000 // 5 minutes
+  private batchQueue = new Map<string, Promise<any>>()
 
   private getCacheKey(filters: NoteFilters): string {
     return JSON.stringify(filters)
@@ -46,6 +47,53 @@ class NotesCache {
     }
     
     return entry.data
+  }
+
+  set(filters: NoteFilters, data: any, ttl: number = this.defaultTTL) {
+    const key = this.getCacheKey(filters)
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl
+    })
+  }
+
+  invalidate(filters?: NoteFilters) {
+    if (filters) {
+      const key = this.getCacheKey(filters)
+      this.cache.delete(key)
+    } else {
+      this.cache.clear()
+    }
+  }
+
+  cleanup() {
+    const now = Date.now()
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > entry.ttl) {
+        this.cache.delete(key)
+      }
+    }
+  }
+
+  getOrQueue(filters: NoteFilters, fetchFn: () => Promise<any>): Promise<any> {
+    const key = this.getCacheKey(filters)
+    const cached = this.get(filters)
+    if (cached) return Promise.resolve(cached)
+
+    // Check if there's already a request in flight
+    let queuedRequest = this.batchQueue.get(key)
+    if (queuedRequest) return queuedRequest
+
+    // Create new request and add to queue
+    queuedRequest = fetchFn().then(data => {
+      this.set(filters, data)
+      this.batchQueue.delete(key)
+      return data
+    })
+
+    this.batchQueue.set(key, queuedRequest)
+    return queuedRequest
   }
 
   set(filters: NoteFilters, data: any, ttl?: number): void {
@@ -90,24 +138,26 @@ class NoteService {
     notes: Bookmark[]
     pagination: { total: number; limit: number; offset: number; hasMore: boolean }
   }> {
-    // Check rate limit
-    if (!apiRateLimiter.canMakeCall('getNotes')) {
-      const waitTime = apiRateLimiter.getRemainingTime('getNotes')
-      throw new Error(`Rate limit exceeded. Please wait ${Math.ceil(waitTime / 1000)} seconds.`)
-    }
+    return notesCache.getOrQueue(filters, async () => {
+      // Check rate limit
+      if (!apiRateLimiter.canMakeCall('getNotes')) {
+        const waitTime = apiRateLimiter.getRemainingTime('getNotes')
+        throw new Error(`Rate limit exceeded. Please wait ${Math.ceil(waitTime / 1000)} seconds.`)
+      }
 
-    // Check cache first
-    const cached = notesCache.get(filters)
-    if (cached) {
-      return cached
-    }
+      const params = new URLSearchParams()
+      if (filters.courseId) params.append("courseId", filters.courseId.toString())
+      if (filters.chapterId) params.append("chapterId", filters.chapterId.toString())
+      if (filters.limit) params.append("limit", filters.limit.toString())
+      if (filters.offset) params.append("offset", filters.offset.toString())
 
-    const params = new URLSearchParams()
-
-    if (filters.courseId) params.append("courseId", filters.courseId.toString())
-    if (filters.chapterId) params.append("chapterId", filters.chapterId.toString())
-    if (filters.limit) params.append("limit", filters.limit.toString())
-    if (filters.offset) params.append("offset", filters.offset.toString())
+      const response = await fetch(`${this.baseUrl}?${params}`)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch notes: ${response.statusText}`)
+      }
+      
+      return response.json()
+    })
 
     const response = await fetch(`${this.baseUrl}?${params}`)
     if (!response.ok) {

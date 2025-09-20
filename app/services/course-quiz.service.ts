@@ -53,7 +53,7 @@ export class CourseQuizService {  /**
         serviceCache.set(cacheKey, questions);
       }
     }
-
+    console.log("Questions:", questions);
     return questions || [];
   }
 
