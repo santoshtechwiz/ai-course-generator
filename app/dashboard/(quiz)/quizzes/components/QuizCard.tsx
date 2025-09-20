@@ -4,13 +4,11 @@ import type React from "react"
 import { useState, memo, useCallback, useMemo } from "react"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import {
   Code,
   PenTool,
   Flashlight,
-  Play,
   Clock,
   Star,
   Trophy,
@@ -19,7 +17,6 @@ import {
   BookOpen,
   ChevronRight,
   Heart,
-  Users,
   Brain,
   TrendingUp,
   Sparkles,
@@ -37,12 +34,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import type { QuizType } from "@/app/types/quiz-types"
 import { CircularProgress } from "@/components/ui/circular-progress"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 interface QuizCardProps {
   title: string
@@ -120,20 +112,20 @@ const quizTypeConfig = {
 } as const
 
 const difficultyConfig = {
-  Easy: { 
-    color: "text-emerald-700 dark:text-emerald-300", 
+  Easy: {
+    color: "text-emerald-700 dark:text-emerald-300",
     bg: "bg-emerald-100/80 dark:bg-emerald-950/50",
     border: "border-emerald-200/60 dark:border-emerald-800/40",
     icon: CheckCircle,
   },
-  Medium: { 
-    color: "text-amber-700 dark:text-amber-300", 
+  Medium: {
+    color: "text-amber-700 dark:text-amber-300",
     bg: "bg-amber-100/80 dark:bg-amber-950/50",
     border: "border-amber-200/60 dark:border-amber-800/40",
     icon: BarChart3,
   },
-  Hard: { 
-    color: "text-red-700 dark:text-red-300", 
+  Hard: {
+    color: "text-red-700 dark:text-red-300",
     bg: "bg-red-100/80 dark:bg-red-950/50",
     border: "border-red-200/60 dark:border-red-800/40",
     icon: Trophy,
@@ -183,24 +175,25 @@ function QuizCardComponent({
 
   const getButtonContent = useMemo(() => {
     if (completionRate >= 100) {
-      return { 
-        text: "Review Quiz", 
-        icon: RotateCcw, 
+      return {
+        text: "Review Quiz",
+        icon: RotateCcw,
         className: "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/25 border-0",
         variant: "default" as const,
       }
     } else if (completionRate > 0) {
-      return { 
-        text: "Continue Quiz", 
-        icon: ArrowRight, 
+      return {
+        text: "Continue Quiz",
+        icon: ArrowRight,
         className: "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 border-0",
         variant: "default" as const,
       }
     } else {
-      return { 
-        text: "Start Quiz", 
-        icon: Zap, 
-        className: "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-lg shadow-primary/25 border-0",
+      return {
+        text: "Start Quiz",
+        icon: Zap,
+        className:
+          "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-lg shadow-primary/25 border-0",
         variant: "default" as const,
       }
     }
@@ -209,18 +202,24 @@ function QuizCardComponent({
   const buttonContent = getButtonContent
   const ButtonIcon = buttonContent.icon
 
-  const handleFavorite = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsFavorited(!isFavorited)
-    setHasInteracted(true)
-  }, [isFavorited])
+  const handleFavorite = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsFavorited(!isFavorited)
+      setHasInteracted(true)
+    },
+    [isFavorited],
+  )
 
-  const handleDelete = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    onDelete?.(slug, quizType)
-  }, [onDelete, slug, quizType])
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      onDelete?.(slug, quizType)
+    },
+    [onDelete, slug, quizType],
+  )
 
   // Check if current user is the owner
   const isOwner = userId && currentUserId && userId === currentUserId
@@ -236,8 +235,8 @@ function QuizCardComponent({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -8, scale: 1.02 }}
-        transition={{ duration: 0.25, ease: "easeOut" }}
+        whileHover={{ y: -8, scale: 1.03 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
         className="h-full"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -246,22 +245,29 @@ function QuizCardComponent({
       >
         <Card
           className={cn(
-            "h-full overflow-hidden flex flex-col relative transition-all duration-300 border-0",
-            config.bgColor,
-            "group-hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/10",
-            config.shadowColor,
+            "h-full overflow-hidden flex flex-col relative transition-all duration-500 border-0",
+            "group-hover:shadow-2xl hover:shadow-primary/20",
             compact && "@sm:flex-row @sm:items-stretch",
-            "backdrop-blur-sm bg-white/80 dark:bg-gray-900/80",
+            "backdrop-blur-sm bg-card/90 ring-1 ring-border/30 hover:ring-primary/40",
+            "rounded-2xl",
           )}
         >
-          {/* Enhanced gradient border accent */}
-          <div className={cn("absolute inset-0 pointer-events-none rounded-xl", "[mask-image:linear-gradient(black,transparent)]")}>
-            <div className={cn("absolute inset-0 rounded-xl border-2 opacity-20 group-hover:opacity-40 transition-opacity duration-300", config.borderColor)} />
-          </div>
+          <div
+            className={cn(
+              "absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+              "bg-gradient-to-r",
+              config.gradient,
+              "blur-sm",
+            )}
+          />
 
-          {/* Subtle background pattern */}
-          <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-current to-transparent" />
+          <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
+            <div
+              className={cn(
+                "absolute inset-0 bg-gradient-to-br from-transparent via-current to-transparent rounded-2xl",
+                config.textColor,
+              )}
+            />
           </div>
 
           {/* Header */}
@@ -269,21 +275,25 @@ function QuizCardComponent({
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-4">
                 <motion.div
-                  className={cn("p-3.5 rounded-2xl bg-gradient-to-r text-white shadow-xl", config.gradient, config.shadowColor)}
-                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  className={cn("p-4 rounded-2xl bg-gradient-to-br text-white shadow-xl", config.gradient)}
+                  whileHover={{ scale: 1.15, rotate: 10 }}
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
                 >
-                  <QuizTypeIcon className="h-6 w-6" />
+                  <QuizTypeIcon className="h-7 w-7" />
                 </motion.div>
                 <div className="space-y-2">
                   <Badge
                     variant="outline"
-                    className={cn("text-xs font-semibold border-0 px-3 py-1.5", difficultyStyle.bg, difficultyStyle.color, difficultyStyle.border)}
+                    className={cn(
+                      "text-xs font-bold border-0 px-4 py-2 shadow-sm",
+                      difficultyStyle.bg,
+                      difficultyStyle.color,
+                    )}
                   >
-                    <DifficultyIcon className="h-3 w-3 mr-1.5" />
+                    <DifficultyIcon className="h-3.5 w-3.5 mr-2" />
                     {difficulty}
                   </Badge>
-                  <p className={cn("text-sm font-semibold tracking-wide", config.textColor)}>{config.label}</p>
+                  <p className={cn("text-sm font-bold tracking-wide", config.textColor)}>{config.label}</p>
                 </div>
               </div>
 
@@ -291,14 +301,20 @@ function QuizCardComponent({
                 {(isTrending || isPopular) && (
                   <div className="flex gap-2">
                     {isTrending && (
-                      <Badge variant="secondary" className="text-xs bg-orange-100/80 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border border-orange-200/60 dark:border-orange-800/40 px-2.5 py-1">
-                        <TrendingUp className="h-3 w-3 mr-1.5" />
+                      <Badge
+                        variant="secondary"
+                        className="text-xs bg-orange-100/90 text-orange-800 dark:bg-orange-900/60 dark:text-orange-200 border border-orange-200/70 dark:border-orange-800/50 px-3 py-1.5 font-semibold shadow-sm"
+                      >
+                        <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
                         Trending
                       </Badge>
                     )}
                     {isPopular && (
-                      <Badge variant="secondary" className="text-xs bg-rose-100/80 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/40 px-2.5 py-1">
-                        <Sparkles className="h-3 w-3 mr-1.5" />
+                      <Badge
+                        variant="secondary"
+                        className="text-xs bg-rose-100/90 text-rose-800 dark:bg-rose-900/60 dark:text-rose-200 border border-rose-200/70 dark:border-rose-800/50 px-3 py-1.5 font-semibold shadow-sm"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                         Popular
                       </Badge>
                     )}
@@ -309,14 +325,19 @@ function QuizCardComponent({
                   variant="ghost"
                   size="sm"
                   className={cn(
-                    "h-9 w-9 p-0 transition-all duration-300 rounded-full",
-                    "md:opacity-60 md:hover:opacity-100 hover:bg-primary/10 hover:text-primary hover:scale-110",
+                    "h-10 w-10 p-0 transition-all duration-300 rounded-full",
+                    "md:opacity-60 md:hover:opacity-100 hover:bg-red-50 hover:text-red-600 hover:scale-110",
                     "opacity-0 md:opacity-60",
-                    (hasInteracted || isHovered) && "opacity-100"
+                    (hasInteracted || isHovered) && "opacity-100",
                   )}
                   onClick={handleFavorite}
                 >
-                  <Heart className={cn("h-4 w-4 transition-all duration-200", isFavorited && "fill-current text-red-500 scale-110")} />
+                  <Heart
+                    className={cn(
+                      "h-4.5 w-4.5 transition-all duration-200",
+                      isFavorited && "fill-current text-red-500 scale-110",
+                    )}
+                  />
                 </Button>
 
                 {canShowActions && (
@@ -326,29 +347,28 @@ function QuizCardComponent({
                         variant="ghost"
                         size="sm"
                         className={cn(
-                          "h-9 w-9 p-0 transition-all duration-300 rounded-full",
+                          "h-10 w-10 p-0 transition-all duration-300 rounded-full",
                           "md:opacity-60 md:hover:opacity-100 hover:bg-primary/10 hover:text-primary hover:scale-110",
                           "opacity-0 md:opacity-60",
-                          (hasInteracted || isHovered) && "opacity-100"
+                          (hasInteracted || isHovered) && "opacity-100",
                         )}
                       >
-                        <MoreHorizontal className="h-4 w-4" />
+                        <MoreHorizontal className="h-4.5 w-4.5" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        // TODO: Add edit functionality
-                      }}>
-                        <Edit3 className="mr-2 h-4 w-4" />
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          // TODO: Add edit functionality
+                        }}
+                      >
+                        <Edit3 className="mr-3 h-4 w-4" />
                         Edit Quiz
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={handleDelete}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
+                      <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
+                        <Trash2 className="mr-3 h-4 w-4" />
                         Delete Quiz
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -358,27 +378,32 @@ function QuizCardComponent({
             </div>
           </CardHeader>
 
-          <CardContent className={cn("flex-1 space-y-5 px-7", compact && "@sm:px-5 @sm:py-7")}>
+          <CardContent className={cn("flex-1 space-y-6 px-8", compact && "@sm:px-6 @sm:py-8")}>
             {/* Title and Rating */}
             <div className="space-y-4">
-              <h3 className="font-bold text-xl leading-tight line-clamp-2 group-hover:text-primary transition-colors duration-300 tracking-tight">
+              <h3 className="font-bold text-xl leading-tight line-clamp-2 group-hover:text-primary transition-colors duration-300 tracking-tight text-balance">
                 {title}
               </h3>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                    <div className="flex items-center gap-1.5">
+                      <Star className="w-4.5 h-4.5 text-yellow-500 fill-yellow-500" />
                       <span className="text-sm font-bold text-foreground">{rating}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">({enrolledCount.toLocaleString()} enrolled)</span>
+                    <span className="text-xs text-muted-foreground font-medium">
+                      ({enrolledCount.toLocaleString()} enrolled)
+                    </span>
                   </div>
                 </div>
 
                 {completionRate > 0 && (
-                  <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 font-semibold">
-                    <Eye className="h-3 w-3 mr-1.5" />
+                  <Badge
+                    variant="secondary"
+                    className="text-xs bg-primary/15 text-primary border border-primary/30 px-3 py-1.5 font-bold shadow-sm"
+                  >
+                    <Eye className="h-3.5 w-3.5 mr-1.5" />
                     {Math.round(completionRate)}% Done
                   </Badge>
                 )}
@@ -386,26 +411,25 @@ function QuizCardComponent({
             </div>
 
             {/* Description */}
-            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">{description}</p>
+            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed text-pretty">{description}</p>
 
-            {/* Enhanced Stats */}
-            <div className="flex items-center justify-between text-sm bg-muted/40 rounded-xl p-4 border border-border/30">
+            <div className="flex items-center justify-between text-sm bg-muted/50 rounded-2xl p-5 border border-border/40 shadow-sm">
               <div className="flex items-center gap-3 text-muted-foreground">
-                <div className="p-2 rounded-lg bg-accent/60 border border-border/20">
-                  <Clock className="w-4 h-4" />
+                <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
+                  <Clock className="w-4.5 h-4.5 text-primary" />
                 </div>
                 <div>
-                  <div className="font-semibold text-foreground">{estimatedTime}</div>
-                  <div className="text-xs text-muted-foreground">Duration</div>
+                  <div className="font-bold text-foreground text-base">{estimatedTime}</div>
+                  <div className="text-xs text-muted-foreground font-medium">Duration</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-muted-foreground">
-                <div className="p-2 rounded-lg bg-accent/60 border border-border/20">
-                  <BookOpen className="w-4 h-4" />
+                <div className="p-2.5 rounded-xl bg-accent/10 border border-accent/20">
+                  <BookOpen className="w-4.5 h-4.5 text-accent" />
                 </div>
                 <div>
-                  <div className="font-semibold text-foreground">{questionCount}</div>
-                  <div className="text-xs text-muted-foreground">Questions</div>
+                  <div className="font-bold text-foreground text-base">{questionCount}</div>
+                  <div className="text-xs text-muted-foreground font-medium">Questions</div>
                 </div>
               </div>
             </div>
@@ -415,8 +439,8 @@ function QuizCardComponent({
               <div className="flex items-center justify-center">
                 <CircularProgress
                   value={completionRate}
-                  size={80}
-                  strokeWidth={6}
+                  size={90}
+                  strokeWidth={8}
                   label={`${Math.round(completionRate)}%`}
                   sublabel="Complete"
                   className="mb-2"
@@ -425,33 +449,37 @@ function QuizCardComponent({
             )}
           </CardContent>
 
-          <CardFooter className={cn("p-7 pt-0", compact && "@sm:p-5 @sm:pt-0 @sm:border-l @sm:border-white/10")}>
-            <Button className={cn("w-full group/btn font-semibold", buttonContent.className)} size="lg" tabIndex={-1}>
-              <buttonContent.icon className="w-5 h-5 mr-2 transition-transform group-hover/btn:scale-110" />
+          <CardFooter className={cn("p-8 pt-0", compact && "@sm:p-6 @sm:pt-0 @sm:border-l @sm:border-border/20")}>
+            <Button
+              className={cn("w-full group/btn font-bold text-base py-6", buttonContent.className)}
+              size="lg"
+              tabIndex={-1}
+            >
+              <buttonContent.icon className="w-5 h-5 mr-3 transition-transform group-hover/btn:scale-125" />
               {buttonContent.text}
-              <ChevronRight className="w-5 h-5 ml-2 transition-transform group-hover/btn:translate-x-1 group-hover/btn:scale-110" />
+              <ChevronRight className="w-5 h-5 ml-3 transition-transform group-hover/btn:translate-x-2 group-hover/btn:scale-125" />
             </Button>
           </CardFooter>
 
           {/* Enhanced Hover Border Effect */}
           <motion.div
             className={cn(
-              "absolute inset-0 rounded-xl border-2 pointer-events-none",
-              isHovered ? config.borderColor.replace('border-', 'border-') : "border-transparent",
+              "absolute inset-0 rounded-2xl border-2 pointer-events-none",
+              isHovered ? config.borderColor.replace("border-", "border-") : "border-transparent",
             )}
-            animate={isHovered ? { opacity: 0.6 } : { opacity: 0 }}
+            animate={isHovered ? { opacity: 0.8 } : { opacity: 0 }}
             transition={{ duration: 0.3 }}
           />
 
-          {/* Subtle glow effect on hover */}
+          {/* Enhanced glow effect on hover */}
           <motion.div
-            className={cn("absolute inset-0 rounded-xl pointer-events-none", config.shadowColor)}
-            animate={isHovered ? { opacity: 0.3 } : { opacity: 0 }}
+            className={cn("absolute inset-0 rounded-2xl pointer-events-none", config.shadowColor)}
+            animate={isHovered ? { opacity: 0.4 } : { opacity: 0 }}
             transition={{ duration: 0.3 }}
           />
         </Card>
       </motion.div>
-  </Link>
+    </Link>
   )
 }
 

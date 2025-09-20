@@ -131,3 +131,11 @@ export const categories = [
 ]
 
 export type CategoryId = (typeof categories)[number]["id"]
+
+/**
+ * Find a category by its id.
+ * Returns null if not found to make callers handle absence gracefully.
+ */
+export function getCategoryById(id: string) {
+  return categories.find((c) => c.id === id) ?? null
+}
