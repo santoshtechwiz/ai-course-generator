@@ -1,0 +1,89 @@
+<svg width="400" height="225" viewBox="0 0 400 225" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="techBgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#334155;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="codeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="glowGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#60a5fa;stop-opacity:0.4" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="225" fill="url(#techBgGradient)"/>
+
+  <!-- Glow effect -->
+  <circle cx="200" cy="112" r="100" fill="url(#glowGradient)"/>
+
+  <!-- Circuit pattern background -->
+  <g opacity="0.1">
+    <circle cx="50" cy="50" r="2" fill="#60a5fa"/>
+    <circle cx="350" cy="175" r="3" fill="#60a5fa"/>
+    <circle cx="320" cy="40" r="1.5" fill="#60a5fa"/>
+    <circle cx="80" cy="180" r="2.5" fill="#60a5fa"/>
+    <circle cx="280" cy="60" r="2" fill="#60a5fa"/>
+    <circle cx="120" cy="120" r="1.8" fill="#60a5fa"/>
+    <circle cx="250" cy="160" r="2.2" fill="#60a5fa"/>
+  </g>
+
+  <!-- Code editor window -->
+  <g transform="translate(120, 50)">
+    <!-- Window frame -->
+    <rect x="0" y="0" width="160" height="100" rx="6" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+    <!-- Title bar -->
+    <rect x="0" y="0" width="160" height="20" rx="6" fill="#0f172a"/>
+    <!-- Window controls -->
+    <circle cx="12" cy="10" r="3" fill="#ef4444"/>
+    <circle cx="22" cy="10" r="3" fill="#eab308"/>
+    <circle cx="32" cy="10" r="3" fill="#22c55e"/>
+    <!-- Code content -->
+    <rect x="8" y="25" width="144" height="67" rx="2" fill="#0f172a"/>
+    <!-- Code lines -->
+    <text x="12" y="40" fill="#60a5fa" font-family="Monaco, Consolas, monospace" font-size="9">function learn() {</text>
+    <text x="12" y="52" fill="#34d399" font-family="Monaco, Consolas, monospace" font-size="9">  return "Hello World!";</text>
+    <text x="12" y="64" fill="#fbbf24" font-family="Monaco, Consolas, monospace" font-size="9">}</text>
+    <text x="12" y="76" fill="#f87171" font-family="Monaco, Consolas, monospace" font-size="9">learn();</text>
+  </g>
+
+  <!-- Tech icons -->
+  <g transform="translate(50, 160)">
+    <!-- React/JS icon -->
+    <circle cx="20" cy="20" r="16" fill="#61dafb" stroke="#21a3c4" stroke-width="2"/>
+    <text x="20" y="25" text-anchor="middle" fill="#282c34" font-family="Arial, sans-serif" font-size="12" font-weight="bold">JS</text>
+  </g>
+
+  <g transform="translate(90, 160)">
+    <!-- Database icon -->
+    <rect x="4" y="8" width="32" height="24" rx="4" fill="#10b981" stroke="#059669" stroke-width="2"/>
+    <rect x="8" y="12" width="24" height="4" fill="#ffffff"/>
+    <rect x="8" y="18" width="24" height="4" fill="#ffffff"/>
+    <rect x="8" y="24" width="24" height="4" fill="#ffffff"/>
+  </g>
+
+  <g transform="translate(130, 160)">
+    <!-- Cloud icon -->
+    <path d="M20 25 C15 25 12 22 12 18 C12 14 8 12 8 12 C8 8 12 4 20 4 C28 4 32 8 32 12 C32 12 36 14 36 18 C36 22 32 25 28 25 Z" fill="#60a5fa" stroke="#3b82f6" stroke-width="2"/>
+  </g>
+
+  <!-- Tech elements -->
+  <g transform="translate(300, 70)">
+    <!-- Gear -->
+    <circle cx="25" cy="25" r="20" fill="none" stroke="#60a5fa" stroke-width="3"/>
+    <circle cx="25" cy="25" r="8" fill="#60a5fa"/>
+    <!-- Gear teeth -->
+    <rect x="42" y="22" width="8" height="6" rx="3" fill="#60a5fa"/>
+    <rect x="8" y="22" width="8" height="6" rx="3" fill="#60a5fa"/>
+    <rect x="22" y="8" width="6" height="8" rx="3" fill="#60a5fa"/>
+    <rect x="22" y="42" width="6" height="8" rx="3" fill="#60a5fa"/>
+  </g>
+
+  <!-- Tech title -->
+  <text x="200" y="200" text-anchor="middle" fill="rgba(96,165,250,0.8)" font-family="Arial, sans-serif" font-size="12" font-weight="600">TECHNOLOGY</text>
+</svg>

@@ -1,0 +1,95 @@
+<svg width="400" height="225" viewBox="0 0 400 225" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="creativeBgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#f97316;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#eab308;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="paletteGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fef3c7;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="glowGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#f472b6;stop-opacity:0.4" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="225" fill="url(#creativeBgGradient)"/>
+
+  <!-- Glow effect -->
+  <circle cx="200" cy="112" r="115" fill="url(#glowGradient)"/>
+
+  <!-- Decorative elements -->
+  <circle cx="45" cy="45" r="22" fill="rgba(255,255,255,0.15)"/>
+  <circle cx="355" cy="180" r="28" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="325" cy="38" r="14" fill="rgba(255,255,255,0.2)"/>
+  <circle cx="75" cy="175" r="16" fill="rgba(255,255,255,0.12)"/>
+
+  <!-- Color palette -->
+  <g transform="translate(120, 60)">
+    <!-- Palette base -->
+    <ellipse cx="70" cy="50" rx="65" ry="35" fill="url(#paletteGradient)" stroke="#fde68a" stroke-width="3"/>
+    <!-- Color circles -->
+    <circle cx="45" cy="40" r="12" fill="#ef4444"/>
+    <circle cx="60" cy="35" r="12" fill="#3b82f6"/>
+    <circle cx="75" cy="40" r="12" fill="#10b981"/>
+    <circle cx="90" cy="45" r="12" fill="#8b5cf6"/>
+    <circle cx="55" cy="55" r="12" fill="#f59e0b"/>
+    <circle cx="80" cy="60" r="12" fill="#06b6d4"/>
+  </g>
+
+  <!-- Paint brush -->
+  <g transform="translate(280, 70)">
+    <!-- Brush handle -->
+    <rect x="15" y="30" width="6" height="25" rx="3" fill="#d97706" stroke="#b45309" stroke-width="1"/>
+    <!-- Brush head -->
+    <rect x="10" y="20" width="16" height="15" rx="8" fill="#6b7280"/>
+    <!-- Bristles -->
+    <rect x="8" y="15" width="20" height="8" rx="10" fill="#374151"/>
+    <line x1="12" y1="10" x2="12" y2="23" stroke="#1f2937" stroke-width="2"/>
+    <line x1="16" y1="8" x2="16" y2="23" stroke="#1f2937" stroke-width="2"/>
+    <line x1="20" y1="10" x2="20" y2="23" stroke="#1f2937" stroke-width="2"/>
+    <line x1="24" y1="12" x2="24" y2="23" stroke="#1f2937" stroke-width="2"/>
+  </g>
+
+  <!-- Design tools -->
+  <g transform="translate(50, 140)">
+    <!-- Pencil -->
+    <rect x="8" y="15" width="4" height="20" fill="#6b7280"/>
+    <polygon points="6,15 16,15 14,8 8,8" fill="#ef4444"/>
+    <polygon points="8,8 14,8 12,2 10,2" fill="#fbbf24"/>
+  </g>
+
+  <g transform="translate(90, 140)">
+    <!-- Ruler -->
+    <rect x="0" y="18" width="35" height="6" rx="3" fill="#374151" stroke="#1f2937" stroke-width="1"/>
+    <!-- Markings -->
+    <line x1="5" y1="18" x2="5" y2="24" stroke="#9ca3af" stroke-width="1"/>
+    <line x1="10" y1="18" x2="10" y2="24" stroke="#9ca3af" stroke-width="1"/>
+    <line x1="15" y1="18" x2="15" y2="24" stroke="#9ca3af" stroke-width="1"/>
+    <line x1="20" y1="18" x2="20" y2="24" stroke="#9ca3af" stroke-width="1"/>
+    <line x1="25" y1="18" x2="25" y2="24" stroke="#9ca3af" stroke-width="1"/>
+    <line x1="30" y1="18" x2="30" y2="24" stroke="#9ca3af" stroke-width="1"/>
+  </g>
+
+  <g transform="translate(150, 140)">
+    <!-- Lightbulb -->
+    <path d="M20 8 C15 8 12 11 12 16 C12 21 15 24 20 24 C25 24 28 21 28 16 C28 11 25 8 20 8 Z" fill="#fbbf24" stroke="#f59e0b" stroke-width="2"/>
+    <rect x="18" y="24" width="4" height="8" fill="#fbbf24" stroke="#f59e0b" stroke-width="1"/>
+    <rect x="16" y="32" width="8" height="3" fill="#fbbf24" stroke="#f59e0b" stroke-width="1"/>
+    <!-- Filament -->
+    <path d="M18 12 Q20 14 22 12" stroke="#f59e0b" stroke-width="2" fill="none"/>
+  </g>
+
+  <!-- Creative elements -->
+  <g transform="translate(300, 140)">
+    <!-- Star -->
+    <polygon points="20,5 22,15 32,15 24,21 26,31 20,25 14,31 16,21 8,15 18,15" fill="#ec4899" stroke="#db2777" stroke-width="1"/>
+  </g>
+
+  <!-- Creative title -->
+  <text x="200" y="200" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="Arial, sans-serif" font-size="12" font-weight="600">CREATIVE</text>
+</svg>
