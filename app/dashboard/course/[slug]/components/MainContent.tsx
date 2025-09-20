@@ -400,7 +400,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   }, [])
 
   // Progress tracking with new event system
-  const { dispatchVideoWatched, dispatchChapterCompleted } = useProgressEvents();
+  const { dispatchVideoWatched, dispatchChapterCompleted, flushSync } = useProgressEvents();
 
   // Navigation handlers
   // Advance to next video (chapters are only marked complete when video ends)
@@ -498,7 +498,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         // Force immediate sync with server
         setTimeout(() => {
           console.log(`Syncing video start event for chapter ${nextVideoEntry.chapter.id}`)
-          dispatch(syncEventsWithServer()).catch((error) => {
+          flushSync().catch((error) => {
             console.error('Failed to sync video start event:', error);
           });
         }, 200)
@@ -595,7 +595,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           // Force immediate sync with server
           setTimeout(() => {
             console.log(`Syncing video selection event for chapter ${safeChapter.id}`)
-            dispatch(syncEventsWithServer()).catch((error) => {
+            flushSync().catch((error) => {
               console.error('Failed to sync video selection event:', error);
             });
           }, 200)
@@ -760,7 +760,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         if (progressPercent % 25 === 0 && progressPercent > 0) {
           setTimeout(() => {
             console.log(`Syncing progress at ${progressPercent}% for chapter ${currentChapter.id}`)
-            dispatch(syncEventsWithServer()).catch((error) => {
+            flushSync().catch((error) => {
               console.error('Failed to sync progress events:', error);
             });
           }, 100)
@@ -871,7 +871,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         // Force immediate sync with server to ensure events are recorded
         setTimeout(() => {
           console.log('Syncing chapter completion events with server');
-          dispatch(syncEventsWithServer()).catch((error) => {
+          flushSync().catch((error) => {
             console.error('Failed to sync events with server:', error);
           });
         }, 100); // Reduced delay for faster sync

@@ -263,6 +263,22 @@ export function useProgressEvents() {
   // Add refs for deduplication tracking
   const lastEventTimestamps = useRef<Record<string, number>>({})
   const batchSyncTimeoutRef = useRef<NodeJS.Timeout>()
+  const lastFlushTimeRef = useRef<number>(0)
+  const FLUSH_COOLDOWN_MS = 1000 // 1s cooldown to prevent rapid consecutive forced syncs
+
+  const flushSync = useCallback((): Promise<any> => {
+    const now = Date.now()
+    if (now - lastFlushTimeRef.current < FLUSH_COOLDOWN_MS) {
+      console.debug('flushSync skipped due to cooldown')
+      return Promise.resolve({ skipped: true })
+    }
+    lastFlushTimeRef.current = now
+    try {
+      return Promise.resolve(dispatch(syncEventsWithServer()))
+    } catch (err) {
+      return Promise.reject(err)
+    }
+  }, [dispatch])
 
   const dispatchCourseStarted = (userId: string, courseId: string, courseSlug: string, courseTitle: string) => {
     const event = ProgressEventFactory.courseStarted(userId, courseId, courseSlug, courseTitle)
@@ -357,6 +373,7 @@ export function useProgressEvents() {
     dispatchCourseCompleted,
     dispatchVideoWatched,
     dispatchChapterCompleted
+    , flushSync
   }
 }
 

@@ -14,7 +14,6 @@ export async function GET() {
     include: {
       courseProgress: true,
       userQuizzes: true,
-      engagementMetrics: true,
     },
   })
 
@@ -24,17 +23,30 @@ export async function GET() {
 
   const totalCourses = user.courseProgress.length
   const completedCourses = user.courseProgress.filter((progress) => progress.isCompleted).length
-  const totalQuizzes = user.totalQuizzesAttempted
-  const averageScore = user.engagementScore
+
+  // Compute quiz counts and average score from attempts
+  const totalQuizzes = await prisma.userQuizAttempt.count({ where: { userId: user.id } })
+  const avgScoreAggregate = await prisma.userQuizAttempt.aggregate({
+    _avg: { score: true },
+    where: { userId: user.id },
+  })
+  const averageScore = Math.round((avgScoreAggregate._avg.score || 0) as number)
+
+  // Compute totalCoursesWatched via courseProgress timeSpent
+  const totalCoursesWatched = await prisma.courseProgress.count({ where: { userId: user.id, timeSpent: { gt: 0 } } })
+
+  const totalTimeSpent = user.totalTimeSpent || 0
+  const streakDays = user.streakDays || 0
+  const lastStreakDate = user.lastStreakDate || null
 
   return NextResponse.json({
     totalCourses,
     completedCourses,
     totalQuizzes,
     averageScore,
-    totalCoursesWatched: user.totalCoursesWatched,
-    totalTimeSpent: user.totalTimeSpent,
-    streakDays: user.streakDays,
-    lastStreakDate: user.lastStreakDate,
+    totalCoursesWatched,
+    totalTimeSpent,
+    streakDays,
+    lastStreakDate,
   })
 }

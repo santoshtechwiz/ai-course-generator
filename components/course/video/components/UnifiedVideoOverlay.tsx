@@ -17,6 +17,7 @@ import {
   ArrowRight
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getBestQuizHref } from '@/utils/navigation'
 import type { RelatedCourse, PersonalizedRecommendation, QuizSuggestion } from '@/services/recommendationsService'
 
 type OverlayType = 'completed' | 'nextChapter' | 'autoPlay' | 'certificate'
@@ -179,9 +180,9 @@ const UnifiedVideoOverlay: React.FC<UnifiedVideoOverlayProps> = ({
                     {quizSuggestions.slice(0, 2).map((quiz) => (
                       <Card key={quiz.id} className="p-3 bg-primary/5 border-primary/10">
                         <a 
-                          href={`/dashboard/quizzes/${quiz.type}/${quiz.id}`}
-                          className="flex items-center gap-3 text-left"
-                        >
+                              href={getSafeQuizHref('quiz', (quiz as any).slug)}
+                              className="flex items-center gap-3 text-left"
+                            >
                           <div className="w-10 h-10 rounded-md bg-primary/10 text-primary flex items-center justify-center">
                             {quiz.icon || "Q"}
                           </div>

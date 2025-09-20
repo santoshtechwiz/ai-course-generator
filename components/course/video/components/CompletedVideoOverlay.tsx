@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Trophy, Award, BookOpen, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getBestQuizHref } from '@/utils/navigation'
 import type { RelatedCourse, PersonalizedRecommendation, QuizSuggestion } from '@/services/recommendationsService'
 
 interface CompletedVideoOverlayProps {
@@ -132,7 +133,7 @@ const CompletedVideoOverlay: React.FC<CompletedVideoOverlayProps> = ({
                 {quizSuggestions.slice(0, 2).map((quiz) => (
                   <Card key={quiz.id} className="p-3 bg-primary/5 border-primary/10">
                     <a 
-                      href={`/dashboard/quizzes/${quiz.type}/${quiz.id}`}
+                      href={getSafeQuizHref('quiz', (quiz as any).slug)}
                       className="flex items-center gap-3 text-left"
                     >
                       <div className={cn(

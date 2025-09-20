@@ -16,6 +16,7 @@ import {
   ArrowRight
 } from "lucide-react"
 import Link from "next/link"
+import { getSafeQuizHref } from '@/utils/navigation'
 
 interface QuizPerformanceData {
   recentAttempts: Array<{
@@ -230,7 +231,7 @@ export default function QuizPerformance({ data }: QuizPerformanceProps) {
                   {new Date(attempt.createdAt).toLocaleDateString()}
                 </div>
                 <Button size="sm" variant="ghost" asChild>
-                  <Link href={`/dashboard/quiz/${attempt.quiz.slug}`}>
+                  <Link href={getSafeQuizHref('quiz', attempt.quiz.slug)}>
                     <ArrowRight className="h-3 w-3" />
                   </Link>
                 </Button>

@@ -19,6 +19,7 @@ import {
   X
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getSafeQuizHref } from '@/utils/navigation'
 
 interface EngagementPrompt {
   id: string
@@ -134,9 +135,9 @@ export const EngagementPrompts: React.FC<EngagementPromptsProps> = ({
           message: nextSuggestion.message,
           action: {
             label: nextSuggestion.action,
-            href: nextSuggestion.type === 'quiz' ? `/dashboard/quiz/${courseId}` : 
-                  nextSuggestion.type === 'next_chapter' ? `/dashboard/course/${courseId}` : 
-                  `/dashboard/course/${courseId}/review`,
+    href: nextSuggestion.type === 'quiz' ? `/dashboard/quizzes` : 
+      nextSuggestion.type === 'next_chapter' ? `/dashboard/course/${courseId}` : 
+      `/dashboard/course/${courseId}/review`,
             icon: nextSuggestion.icon
           },
           priority: 'medium',
@@ -285,67 +286,64 @@ export const EngagementPrompts: React.FC<EngagementPromptsProps> = ({
           >
             <Card className={getPromptStyling(prompt.type, prompt.priority)}>
               <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  {/* Icon */}
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                    <Sparkles className="h-5 w-5 text-primary" />
+                <div className="flex items-center gap-3">
+                  {/* Simple icon */}
+                  <div className="flex-shrink-0 w-10 h-10 rounded-md bg-muted/10 flex items-center justify-center">
+                    <Sparkles className="h-5 w-5 text-muted-foreground" />
                   </div>
 
-                  {/* Content */}
+                  {/* Text-first content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="font-semibold text-foreground text-sm">
-                        {prompt.title}
-                      </h3>
+                    <div className="flex items-center justify-between gap-2 mb-1">
                       <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-foreground text-sm truncate">{prompt.title}</h3>
                         {prompt.priority === 'high' && (
-                          <Badge variant="destructive" className="text-xs">
-                            New
-                          </Badge>
+                          <Badge variant="destructive" className="text-xs">New</Badge>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => handleDismiss(prompt.id)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        aria-label={`Dismiss prompt ${prompt.title}`}
+                        onClick={() => handleDismiss(prompt.id)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
                     </div>
 
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {prompt.message}
-                    </p>
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{prompt.message}</p>
 
-                    {/* Action Button */}
-                    {prompt.action && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleActionClick(prompt.action!.href)}
-                        className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white"
-                      >
-                        {prompt.action.icon}
-                        <span className="ml-2">{prompt.action.label}</span>
-                        <ChevronRight className="h-3 w-3 ml-1" />
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {prompt.action ? (
+                        // Use safe hrefs for quiz actions
+                        (() => {
+                          const href = prompt.action?.href ?? '/dashboard/quizzes'
+                          return (
+                            <Button
+                              size="sm"
+                              onClick={() => handleActionClick(href)}
+                              className="inline-flex items-center gap-2 bg-primary text-primary-foreground hover:opacity-95"
+                              aria-label={prompt.action?.label || 'Take action'}
+                            >
+                              {prompt.action.icon}
+                              <span className="text-sm">{prompt.action.label}</span>
+                            </Button>
+                          )
+                        })()
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDismiss(prompt.id)}
+                        >
+                          Dismiss
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
-
-                {/* Animated background elements */}
-                <motion.div
-                  className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full"
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.3, 0.6, 0.3],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "easeInOut",
-                  }}
-                />
+                
               </CardContent>
             </Card>
           </motion.div>

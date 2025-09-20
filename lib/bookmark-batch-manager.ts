@@ -249,46 +249,71 @@ export class BookmarkBatchManager {
 export const bookmarkBatchManager = new BookmarkBatchManager()
 
 // React hook for using batch bookmarks
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 export function useBatchBookmarks(courseIds: number[], isAuthenticated: boolean = false) {
   const [bookmarkStatuses, setBookmarkStatuses] = useState<Map<number, boolean>>(new Map())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
+  // Stabilize dependency by deriving a sorted key from courseIds
+  const courseKey = useMemo(() => {
+    if (!courseIds || courseIds.length === 0) return ''
+    return courseIds.slice().sort((a, b) => a - b).join(',')
+  }, [courseIds])
+
   useEffect(() => {
-    if (!courseIds.length || !isAuthenticated) {
-      setLoading(false)
-      setBookmarkStatuses(new Map())
+    // Avoid updating state unnecessarily which can cause render loops
+    if (!courseKey || !isAuthenticated) {
+      if (bookmarkStatuses.size !== 0) setBookmarkStatuses(new Map())
+      if (loading) setLoading(false)
       return
     }
+
+    let mounted = true
 
     const loadStatuses = async () => {
       try {
         setLoading(true)
         setError(null)
-        const statuses = await bookmarkBatchManager.getMultipleStatuses(courseIds)
+        const ids = courseKey.split(',').map(s => Number(s)).filter(n => !Number.isNaN(n))
+        const statuses = await bookmarkBatchManager.getMultipleStatuses(ids)
+        if (!mounted) return
         setBookmarkStatuses(statuses)
       } catch (err) {
+        if (!mounted) return
         setError(err instanceof Error ? err : new Error('Failed to load bookmark statuses'))
         console.error('useBatchBookmarks error:', err)
       } finally {
+        if (!mounted) return
         setLoading(false)
       }
     }
 
     loadStatuses()
-  }, [courseIds, isAuthenticated])
+
+    return () => {
+      mounted = false
+    }
+  }, [courseKey, isAuthenticated])
 
   return {
     bookmarkStatuses,
     loading,
     error,
-    refetch: () => {
-      if (isAuthenticated) {
-        bookmarkBatchManager.clearCache()
-        // Trigger re-run of effect
-        setBookmarkStatuses(new Map())
+    refetch: async () => {
+      if (isAuthenticated && courseKey) {
+        try {
+          bookmarkBatchManager.clearCache()
+          setLoading(true)
+          const ids = courseKey.split(',').map(s => Number(s)).filter(n => !Number.isNaN(n))
+          const statuses = await bookmarkBatchManager.getMultipleStatuses(ids)
+          setBookmarkStatuses(statuses)
+        } catch (err) {
+          setError(err instanceof Error ? err : new Error('Failed to refetch bookmark statuses'))
+        } finally {
+          setLoading(false)
+        }
       }
     }
   }

@@ -11,13 +11,13 @@ export async function GET() {
   const user = await prisma.user.findUnique({
     where: { email: session.user.email! },
     select: {
+      id: true,
       name: true,
       email: true,
       image: true,
       credits: true,
       userType: true,
-      totalCoursesWatched: true,
-      totalQuizzesAttempted: true,
+      // historical counters may not exist on the user model; compute below
       totalTimeSpent: true,
       engagementScore: true,
       streakDays: true,
@@ -29,7 +29,15 @@ export async function GET() {
     return NextResponse.json({ error: "User not found" }, { status: 404 })
   }
 
-  return NextResponse.json(user)
+  // Compute derived aggregates
+  const totalQuizzesAttempted = await prisma.userQuizAttempt.count({ where: { userId: user.id } })
+  const totalCoursesWatched = await prisma.courseProgress.count({ where: { userId: user.id, timeSpent: { gt: 0 } } })
+
+  return NextResponse.json({
+    ...user,
+    totalQuizzesAttempted,
+    totalCoursesWatched,
+  })
 }
 
 export async function PUT(request: Request) {

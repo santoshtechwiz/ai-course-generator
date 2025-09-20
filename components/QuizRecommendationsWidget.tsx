@@ -9,6 +9,7 @@ import { GraduationCap, RefreshCw, Target, Clock, Award } from "lucide-react"
 import Link from "next/link"
 import { useSmartRecommendations } from "@/hooks/useRecommendations"
 import { EnhancedErrorBoundary } from "@/components/error-boundary"
+import { getSafeQuizHref } from '@/utils/navigation'
 
 interface QuizRecommendation {
   id: string
@@ -154,8 +155,8 @@ function QuizRecommendationsContent() {
                         </div>
                       </div>
                     </div>
-                    <Button asChild size="sm" className="ml-4">
-                      <Link href={`/dashboard/quiz/${rec.slug}`}>
+                      <Button asChild size="sm" className="ml-4">
+                      <Link href={getSafeQuizHref('quiz', rec.slug)}>
                         Take Quiz
                       </Link>
                     </Button>

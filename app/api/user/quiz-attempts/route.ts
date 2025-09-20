@@ -100,31 +100,23 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Delete all quiz attempts and related questions in a transaction
+    // NOTE: user model does not store aggregated counters like totalQuizzesAttempted
+    // anymore; compute aggregates when needed instead of persisting on the user record.
     await prisma.$transaction([
-      // First delete all attempt questions
+      // First delete all attempt questions that belong to user's attempts
       prisma.userQuizAttemptQuestion.deleteMany({
         where: {
           attempt: {
-            userId: session.user.id
-          }
-        }
+            userId: session.user.id,
+          },
+        },
       }),
       // Then delete all attempts
       prisma.userQuizAttempt.deleteMany({
         where: {
-          userId: session.user.id
-        }
+          userId: session.user.id,
+        },
       }),
-      // Reset user statistics
-      prisma.user.update({
-        where: { id: session.user.id },
-        data: {
-          totalQuizzesAttempted: 0,
-          engagementScore: 0,
-          streakDays: 0,
-          lastStreakDate: null,
-        }
-      })
     ])
 
     return NextResponse.json({ 

@@ -195,8 +195,9 @@ class ProgressService {
 
     const totalCourses = user.courseProgress?.length || 0
     const completedCourses = user.courseProgress?.filter((progress: any) => progress.isCompleted).length || 0
-    const totalQuizzes = (user as any).totalQuizzesAttempted || 0
-    const averageScore = (user as any).engagementScore || 0
+  const totalQuizzes = await prisma.userQuizAttempt.count({ where: { userId } })
+  const avgScoreAgg = await prisma.userQuizAttempt.aggregate({ _avg: { score: true }, where: { userId } })
+  const averageScore = Math.round((avgScoreAgg._avg.score || 0) as number)
 
     return {
       totalCourses,

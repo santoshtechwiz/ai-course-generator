@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { BookOpen, GraduationCap, BarChart3, Clock, Award, TrendingUp, ArrowRight, CheckCircle2, Target, Star, Play, Zap } from "lucide-react"
 import Link from "next/link"
-import Image from "next/image"
 import type { DashboardUser, UserStats } from "@/app/types/types"
 import RecentQuizCard from "./RecentQuizCard"
 import { getImageWithFallback } from '@/utils/image-utils'
 import QuizRecommendationsWidget from "@/components/QuizRecommendationsWidget"
+import { getSafeQuizHref, getBestQuizHref } from '@/utils/navigation'
 
 interface OverviewTabProps {
   userData: DashboardUser
@@ -75,7 +75,7 @@ const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewT
   const currentLearning = useMemo(() => {
     if (!userData) return []
 
-    const items = []
+    const items: { id: string; type: string; title: string; progress?: number; image: string; link: string; lastAccessed: string; score?: number }[] = []
 
     // Add in-progress courses
     const inProgressCourses = userData.courseProgress?.filter(c => !c.isCompleted) || []
@@ -94,13 +94,14 @@ const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewT
     // Add recent quiz attempts
     const recentQuizzes = userData.quizAttempts?.slice(0, 2) || []
     recentQuizzes.forEach(quiz => {
+      const href = getBestQuizHref({ slug: quiz.userQuiz?.slug, type: quiz.userQuiz?.type, id: quiz.userQuiz?.id ?? quiz.id })
       items.push({
         id: `quiz-${quiz.id}`,
         type: 'quiz',
         title: quiz.userQuiz?.title || 'Untitled Quiz',
         score: quiz.score || 0,
         image: '/quiz-placeholder.svg', // Could be improved with actual quiz images
-        link: `/dashboard/quiz/${quiz.userQuiz?.slug}`,
+        link: href,
         lastAccessed: quiz.createdAt
       })
     })
@@ -243,14 +244,12 @@ const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewT
               {currentLearning.map((item) => (
                 <Link key={item.id} href={item.link} className="block">
                   <div className="flex items-center gap-3 p-3 rounded-lg border hover:shadow-md transition-all">
-                    <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg">
-                      <Image
-                        src={item.image}
-                        alt={item.title}
-                        fill
-                        className="object-cover"
-                        sizes="48px"
-                      />
+                    <div className="flex-shrink-0 h-12 w-12 rounded-lg bg-muted/10 flex items-center justify-center">
+                      {item.type === 'course' ? (
+                        <BookOpen className="h-6 w-6 text-primary" />
+                      ) : (
+                        <GraduationCap className="h-6 w-6 text-primary" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium truncate">{item.title}</h4>

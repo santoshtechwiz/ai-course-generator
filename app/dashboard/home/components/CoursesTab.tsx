@@ -33,7 +33,7 @@ import { useRouter } from "next/navigation"
 import type { DashboardUser, Course } from "@/app/types/types"
 import { cn } from "@/lib/utils"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { getImageWithFallback } from '@/utils/image-utils'
+import { getImageWithFallback } from "@/utils/image-utils"
 
 interface CoursesTabProps {
   userData: DashboardUser
@@ -148,7 +148,10 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
         className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sticky top-0 z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border-b py-3"
       >
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <Search
+            className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
           <Input
             type="search"
             placeholder="Search courses..."
@@ -161,7 +164,11 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
 
         <div className="flex items-center gap-2">
           {/* Enhanced View Mode Toggle */}
-          <div className="flex items-center rounded-xl border border-border/50 p-1 bg-background/50" role="group" aria-label="Course view mode">
+          <div
+            className="flex items-center rounded-xl border border-border/50 p-1 bg-background/50"
+            role="group"
+            aria-label="Course view mode"
+          >
             <Button
               variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
@@ -188,30 +195,57 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
 
       {/* Enhanced Filter Tabs */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as FilterTab)} aria-label="Course filter tabs">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4 bg-muted/30 p-1 rounded-xl" role="tablist">
-            <TabsTrigger value="all" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all" role="tab" aria-selected={activeTab === "all"}>
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as FilterTab)}
+          aria-label="Course filter tabs"
+        >
+          <TabsList
+            className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4 bg-muted/30 p-1 rounded-xl"
+            role="tablist"
+          >
+            <TabsTrigger
+              value="all"
+              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all"
+              role="tab"
+              aria-selected={activeTab === "all"}
+            >
               <BookOpen className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline font-medium">All</span>
               <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
                 {courseData.all.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="in-progress" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all" role="tab" aria-selected={activeTab === "in-progress"}>
+            <TabsTrigger
+              value="in-progress"
+              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all"
+              role="tab"
+              aria-selected={activeTab === "in-progress"}
+            >
               <Clock className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline font-medium">In Progress</span>
               <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
                 {courseData.inProgress.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="completed" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all" role="tab" aria-selected={activeTab === "completed"}>
+            <TabsTrigger
+              value="completed"
+              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all"
+              role="tab"
+              aria-selected={activeTab === "completed"}
+            >
               <CheckCircle className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline font-medium">Completed</span>
               <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
                 {courseData.completed.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="favorites" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all" role="tab" aria-selected={activeTab === "favorites"}>
+            <TabsTrigger
+              value="favorites"
+              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all"
+              role="tab"
+              aria-selected={activeTab === "favorites"}
+            >
               <Star className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline font-medium">Favorites</span>
               <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
@@ -259,12 +293,20 @@ function CourseGrid({ courses, viewMode, showProgress = false, onCourseClick, us
   }
 
   return (
-    <div className={cn(viewMode === "grid" ? "grid grid-cols-1 gap-8 md:grid-cols-2 2xl:grid-cols-3 max-w-[1600px] mx-auto" : "space-y-4")} role="grid" aria-label={`${viewMode === "grid" ? "Grid" : "List"} view of courses`}>
+    <div
+      className={cn(
+        viewMode === "grid"
+          ? "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 max-w-[1800px] mx-auto"
+          : "space-y-3",
+      )}
+      role="grid"
+      aria-label={`${viewMode === "grid" ? "Grid" : "List"} view of courses`}
+    >
       {courses.map((course, index) => {
         const progress = userData.courseProgress?.find((p) => p.course.id === course.id)?.progress || 0
 
         return (
-          <motion.div key={course.id} variants={itemVariants} transition={{ delay: index * 0.05 }} role="gridcell">
+          <motion.div key={course.id} variants={itemVariants} transition={{ delay: index * 0.03 }} role="gridcell">
             {viewMode === "grid" ? (
               <CourseCard
                 course={course}
@@ -296,277 +338,202 @@ interface CourseCardProps {
 
 function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
   // Calculate course statistics with fallback values
-  const chapterCount = course.courseUnits?.reduce((total, unit) => total + (unit.chapters?.length || 0), 0) || 0;
-  
+  const chapterCount = course.courseUnits?.reduce((total, unit) => total + (unit.chapters?.length || 0), 0) || 0
+
   // Calculate total duration from estimated hours
-  const totalDuration = course.estimatedHours;
-  
+  const totalDuration = course.estimatedHours
+
   // Format creation date
-  const createdDate = course.createdAt ? new Date(course.createdAt).toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'short' 
-  }) : null;
-  
+  const createdDate = course.createdAt
+    ? new Date(course.createdAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+      })
+    : null
+
   return (
-    <motion.div 
-      whileHover={{ y: -8, scale: 1.02 }} 
-      whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.3, type: "spring", stiffness: 300, damping: 15 }}
+    <motion.div
+      whileHover={{ y: -4, scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
+      transition={{ duration: 0.2, type: "spring", stiffness: 400, damping: 25 }}
       className="relative group"
     >
-      {/* Glow Effect */}
-      <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500 group-hover:duration-200" />
-      
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-300" />
+
       <Card
         className={cn(
           "group cursor-pointer overflow-hidden border-0 relative",
-          "shadow-lg hover:shadow-2xl transition-all duration-500",
-          "ring-1 ring-border/50 hover:ring-primary/30",
-          "bg-gradient-to-br from-card/98 via-card/95 to-card/90 backdrop-blur-sm",
+          "shadow-md hover:shadow-xl transition-all duration-300",
+          "ring-1 ring-border/50 hover:ring-primary/20",
+          "bg-card backdrop-blur-sm",
           "rounded-xl h-full",
           isLoading && "opacity-70 scale-[0.98]",
         )}
         onClick={onClick}
       >
-        {/* Enhanced Course Image Section */}
-        <div className="relative aspect-[16/9] overflow-hidden rounded-t-xl">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
+        <div className="relative aspect-[5/3] overflow-hidden rounded-t-xl">
           <Image
-            src={getImageWithFallback(course.image)}
+            src={getImageWithFallback(course.image) || "/placeholder.svg"}
             alt={course.title}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
 
-          {/* Enhanced Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-          
-          {/* Hover gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-transparent to-accent/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
 
-          {/* Category Badge */}
-          {course.category && (
-            <Badge className="absolute left-3 top-3 bg-primary/90 text-primary-foreground shadow-lg backdrop-blur-sm border-0 font-medium">
-              {typeof course.category === 'object' ? course.category.name : course.category}
-            </Badge>
-          )}
+          <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
+            {course.category && (
+              <Badge className="bg-primary/90 text-primary-foreground shadow-sm backdrop-blur-sm border-0 text-xs font-medium">
+                {typeof course.category === "object" ? course.category.name : course.category}
+              </Badge>
+            )}
+            {progress === 100 && (
+              <Badge className="bg-emerald-500/90 text-white shadow-sm backdrop-blur-sm border-0 text-xs">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Done
+              </Badge>
+            )}
+          </div>
 
-          {/* Difficulty Level Badge */}
-          {course.level && (
-            <Badge className="absolute right-3 top-3 bg-secondary/90 text-secondary-foreground shadow-lg backdrop-blur-sm border-0 font-medium">
-              {course.level}
-            </Badge>
-          )}
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+            <div className="rounded-full bg-primary/90 backdrop-blur-sm p-3 shadow-lg">
+              <Play className="h-5 w-5 text-primary-foreground ml-0.5" />
+            </div>
+          </div>
 
           {/* Loading Overlay */}
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-              <Loader2 className="h-8 w-8 text-primary animate-spin" />
+              <Loader2 className="h-6 w-6 text-primary animate-spin" />
             </div>
           )}
-
-          {/* Enhanced Play Button Overlay */}
-          <div className="absolute inset-0 flex flex-col justify-between p-4 opacity-0 transition-all duration-300 group-hover:opacity-100">
-            <div className="flex justify-between items-start">
-              {course.category && (
-                <Badge className="bg-primary/90 text-primary-foreground shadow-lg backdrop-blur-sm border-0 font-medium">
-                  {typeof course.category === 'object' ? course.category.name : course.category}
-                </Badge>
-              )}
-              {progress === 100 && (
-                <Badge className="bg-emerald-500/90 text-white shadow-lg backdrop-blur-sm border-0">
-                  <CheckCircle className="w-3.5 h-3.5 mr-1" />
-                  Completed
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center justify-center">
-              <motion.div 
-                className="rounded-full bg-primary shadow-2xl backdrop-blur-sm border border-primary-foreground/20"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="p-4">
-                  <Play className="h-6 w-6 text-primary-foreground ml-0.5" />
-                </div>
-              </motion.div>
-            </div>
-          </div>
         </div>
 
-        <CardContent className="p-6 space-y-5 flex-1 flex flex-col">
-          {/* Title and Description with Enhanced Typography */}
-          <div className="space-y-3">
-            <h3 className="line-clamp-2 text-lg font-semibold leading-tight group-hover:text-primary transition-colors duration-300">
+        <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
+          <div className="space-y-2">
+            <h3 className="line-clamp-2 text-base font-semibold leading-tight group-hover:text-primary transition-colors duration-200">
               {course.title}
             </h3>
-            <p className="line-clamp-2 text-sm text-muted-foreground leading-relaxed tracking-wide">
-              {course.description}
-            </p>
-            
-            {/* Instructor and Creation Date */}
+            <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed">{course.description}</p>
+          </div>
+
+          {(course.instructor || createdDate) && (
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               {course.instructor && (
-                <span className="flex items-center gap-1">
-                  <Users className="h-3 w-3" />
-                  {course.instructor}
+                <span className="flex items-center gap-1 truncate">
+                  <Users className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{course.instructor}</span>
                 </span>
               )}
               {createdDate && (
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 flex-shrink-0">
                   <Clock className="h-3 w-3" />
                   {createdDate}
                 </span>
               )}
             </div>
-          </div>
+          )}
 
-          {/* Progress Section with Enhanced Visualization */}
           {progress !== undefined && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                  <div className="p-1 rounded-md bg-accent/50">
-                    <BookOpen className="h-3.5 w-3.5 text-primary/80" />
-                  </div>
-                  Course Progress
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground font-medium">Progress</span>
+                <span className="font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                  {Math.round(progress)}%
                 </span>
-                <motion.span 
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full text-xs shadow-sm"
-                >
-                  {Math.round(progress)}% Complete
-                </motion.span>
               </div>
-              <div className="relative h-2.5 bg-muted/50 rounded-full overflow-hidden">
+              <div className="relative h-2 bg-muted/50 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
-                  transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+                  transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
                   className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-primary/80 rounded-full"
                 />
               </div>
             </div>
           )}
 
-          {/* Enhanced Course Stats Grid - 2x2 Layout */}
-          <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border/50">
-            {/* Chapters */}
-            <motion.div 
-              whileHover={{ y: -2 }}
-              className="group/stat flex items-center gap-3 text-sm"
-            >
-              <div className="p-2.5 rounded-xl bg-accent/50 shadow-sm ring-1 ring-border/5 group-hover/stat:ring-primary/20 group-hover/stat:bg-accent transition-all duration-300">
-                <BookOpen className="h-4 w-4 text-primary/80" />
+          <div className="flex items-center justify-between pt-2 border-t border-border/50 text-xs">
+            <div className="flex items-center gap-3">
+              {/* Chapters */}
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <div className="p-1 rounded-md bg-accent/50">
+                  <BookOpen className="h-3 w-3 text-primary/80" />
+                </div>
+                <span className="font-medium">{chapterCount || "N/A"}</span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground font-medium">Chapters</span>
-                <span className="font-semibold text-foreground">{chapterCount || 'N/A'}</span>
-              </div>
-            </motion.div>
 
-            {/* Duration */}
-            <motion.div 
-              whileHover={{ y: -2 }}
-              className="group/stat flex items-center gap-3 text-sm"
-            >
-              <div className="p-2.5 rounded-xl bg-accent/50 shadow-sm ring-1 ring-border/5 group-hover/stat:ring-primary/20 group-hover/stat:bg-accent transition-all duration-300">
-                <Clock className="h-4 w-4 text-primary/80" />
+              {/* Duration */}
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <div className="p-1 rounded-md bg-accent/50">
+                  <Clock className="h-3 w-3 text-primary/80" />
+                </div>
+                <span className="font-medium">{totalDuration ? `${totalDuration}h` : "N/A"}</span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground font-medium">Duration</span>
-                <span className="font-semibold text-foreground">{totalDuration ? `${totalDuration}h` : 'N/A'}</span>
-              </div>
-            </motion.div>
+            </div>
 
-            {/* Students */}
-            <motion.div 
-              whileHover={{ y: -2 }}
-              className="group/stat flex items-center gap-3 text-sm"
-            >
-              <div className="p-2.5 rounded-xl bg-accent/50 shadow-sm ring-1 ring-border/5 group-hover/stat:ring-primary/20 group-hover/stat:bg-accent transition-all duration-300">
-                <Users className="h-4 w-4 text-primary/80" />
+            <div className="flex items-center gap-3">
+              {/* Students */}
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Users className="h-3 w-3 text-primary/80" />
+                <span className="font-medium">{course.students ? `${course.students.toLocaleString()}` : "1.2k"}</span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground font-medium">Students</span>
-                <span className="font-semibold text-foreground">{course.students ? `${course.students.toLocaleString()}` : 'N/A'}</span>
-              </div>
-            </motion.div>
 
-            {/* Rating */}
-            <motion.div 
-              whileHover={{ y: -2 }}
-              className="group/stat flex items-center gap-3 text-sm"
-            >
-              <div className="p-2.5 rounded-xl bg-accent/50 shadow-sm ring-1 ring-border/5 group-hover/stat:ring-primary/20 group-hover/stat:bg-accent transition-all duration-300">
-                <Star className="h-4 w-4 text-yellow-500" />
+              {/* Rating */}
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                <span className="font-medium">{course.rating ? `${course.rating}` : "4.8"}</span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground font-medium">Rating</span>
-                <span className="font-semibold text-foreground">{course.rating ? `${course.rating}/5` : '4.8/5'}</span>
-              </div>
-            </motion.div>
+            </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex items-center justify-between pt-2 mt-auto">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {course.level && (
+                <Badge variant="outline" className="text-xs px-2 py-0.5">
+                  {course.level}
+                </Badge>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 px-3 text-xs bg-accent/50 hover:bg-accent/80"
+                className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                 onClick={(e) => {
-                  e.stopPropagation();
+                  e.stopPropagation()
                   // Handle favorite action
                 }}
               >
-                <Heart className="h-3.5 w-3.5 mr-1" />
-                Favorite
+                <Heart className="h-3.5 w-3.5" />
               </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreHorizontal className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem className="cursor-pointer text-xs">
+                    <Heart className="h-3.5 w-3.5 mr-2" /> Favorite
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer text-xs">
+                    <Share2 className="h-3.5 w-3.5 mr-2" /> Share
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer text-xs">
+                    <BookOpen className="h-3.5 w-3.5 mr-2" /> Details
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 rounded-full bg-accent/50 hover:bg-accent/80 opacity-0 group-hover:opacity-100 transition-all duration-300"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem className="cursor-pointer flex items-center gap-2">
-                  <Heart className="h-4 w-4" /> Add to Favorites
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer flex items-center gap-2">
-                  <Share2 className="h-4 w-4" /> Share Course
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" /> View Details
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
-
-          {/* Enhanced Completion Badge */}
-          {progress === 100 && (
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Badge className="w-fit bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800">
-                <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
-                Completed
-              </Badge>
-            </motion.div>
-          )}
         </CardContent>
       </Card>
     </motion.div>
@@ -606,7 +573,7 @@ function CourseListItem({ course, progress, isLoading, onClick }: CourseCardProp
                 <div className="space-y-1">
                   {course.category && (
                     <Badge variant="outline" className="text-xs">
-                      {typeof course.category === 'object' ? course.category.name : course.category}
+                      {typeof course.category === "object" ? course.category.name : course.category}
                     </Badge>
                   )}
                   <h3 className="line-clamp-1 text-lg font-semibold group-hover:text-primary transition-colors">
@@ -719,7 +686,11 @@ function EmptyState({ showProgress }: { showProgress: boolean }) {
             <p className="text-sm text-muted-foreground mb-4">Popular categories to get you started:</p>
             <div className="flex flex-wrap justify-center gap-2">
               {["Web Development", "Data Science", "Mobile Apps", "AI & Machine Learning"].map((category) => (
-                <Badge key={category} variant="secondary" className="px-3 py-1 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors">
+                <Badge
+                  key={category}
+                  variant="secondary"
+                  className="px-3 py-1 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                >
                   {category}
                 </Badge>
               ))}

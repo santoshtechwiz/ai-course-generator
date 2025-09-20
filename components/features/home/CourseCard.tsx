@@ -36,6 +36,7 @@ import bookmarkService from "@/lib/bookmark-service"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Progress } from "@/components/ui/progress"
 import { useBookmarkStatus, bookmarkBatchManager } from "@/lib/bookmark-batch-manager"
+import courseStatusFetcher from '@/utils/course-status-fetcher'
 
 // Removed old cache variables - now using batch bookmark manager
 // const bookmarkPresenceCache = new Map<number, boolean>()
@@ -301,14 +302,15 @@ export const CourseCard = React.memo(
       if (!isAuthenticated) return
 
       const load = async () => {
-        // Favorite status (uncached for now – inexpensive, could batch later)
         try {
-          const statusRes = await fetch(`/api/course/status/${slug}`)
-          if (statusRes.ok) {
-            const data = await statusRes.json()
-            if (!cancelled) setIsFavorite(!!data.isFavorite)
+          const res = await courseStatusFetcher.getCourseStatus(slug)
+          if (res.status === 200 && res.data && !cancelled) {
+            setIsFavorite(!!res.data.isFavorite)
           }
-        } catch { /* silent */ }
+          // if 401 or other status, just silently ignore here (auth UI handles sign-in)
+        } catch (err) {
+          // silent
+        }
       }
 
       load()

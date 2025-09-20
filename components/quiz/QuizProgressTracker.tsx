@@ -37,7 +37,7 @@ export function QuizProgressTracker({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const dispatch = useAppDispatch();
   
-  const { dispatchQuizCompleted, dispatchQuestionAnswered } = useProgressEvents();
+  const { dispatchQuizCompleted, dispatchQuestionAnswered, flushSync } = useProgressEvents();
 
   const startQuiz = useCallback(() => {
     setCurrentAttempt({
@@ -100,10 +100,10 @@ export function QuizProgressTracker({
             }))
           );
           
-          // Force immediate sync with server
+          // Force immediate sync with server (throttled)
           setTimeout(() => {
             console.log(`Syncing quiz completion event to server: ${quizId}`);
-            dispatch(syncEventsWithServer());
+            flushSync().catch((err) => console.error('Failed to flush quiz completion sync:', err));
           }, 200);
         }
 

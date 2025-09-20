@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "@/components/ui/use-toast"
 import { useAuth } from "@/modules/auth"
+import courseStatusFetcher, { notifyUnauthorizedOnce } from '@/utils/course-status-fetcher'
 
 interface CourseStatus {
   isPublic: boolean
@@ -21,33 +22,33 @@ export function useCourseActions({ slug }: UseCourseActionsProps) {
   const { isAuthenticated } = useAuth() // ✅ Your global auth state
   const router = useRouter()
   const fetchCourseStatus = useCallback(async () => {
-     if (!isAuthenticated) return // ✅ Prevent API call
+     if (!isAuthenticated) return // ✅ Prevent API call when not authenticated
     try {
       setLoading("status")
-      const response = await fetch(`/api/course/status/${slug}`)
-      if (!response.ok) {
-        // If course status doesn't exist, it's not necessarily an error
-        // Just use default values
-        if (response.status === 404) {
-          console.log(`Course status not found for ${slug}, using defaults`)
-          setStatus({ isPublic: false, isFavorite: false, rating: null })
-          return
-        }
-        throw new Error(`Failed to fetch course status: ${response.statusText}`)
-      }
-      const data = await response.json()
-      setStatus(data)    } catch (error) {
-      console.error("Error fetching course status:", error)
-      // Don't show error toast for 404s, just use defaults
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      if (!errorMessage.includes('404')) {
-        toast({
-          title: "Warning",
-          description: "Could not fetch course status. Using default values.",
-          variant: "default",
+      const res = await courseStatusFetcher.getCourseStatus(slug)
+      if (res.status === 401) {
+        // Notify once and then stop further attempts until login
+        notifyUnauthorizedOnce(slug, () => {
+          toast({ title: 'Sign in required', description: 'Sign in to view course status.', variant: 'default' })
         })
+        setStatus({ isPublic: false, isFavorite: false, rating: null })
+        return
       }
-      // Set default values on error
+
+      if (res.status === 200 && res.data) {
+        setStatus(res.data)
+        return
+      }
+
+      if (res.status === 404) {
+        // Not found - use defaults
+        setStatus({ isPublic: false, isFavorite: false, rating: null })
+        return
+      }
+
+      // For other non-ok statuses, fall back to defaults and notify
+      console.warn(`Failed to fetch course status for ${slug} - status ${res.status}`)
+      toast({ title: 'Warning', description: 'Could not fetch course status. Using defaults.', variant: 'default' })
       setStatus({ isPublic: false, isFavorite: false, rating: null })
     } finally {
       setLoading(null)

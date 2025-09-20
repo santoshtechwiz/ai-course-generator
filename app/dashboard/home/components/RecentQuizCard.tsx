@@ -63,7 +63,7 @@ const RecentQuizCard = memo(function RecentQuizCard({ quiz }: RecentQuizCardProp
 
   return (
     <Link href={`/dashboard/${buildQuizSlug(quiz.quizType as QuizType)}/${quiz.slug}`}>
-      <Card className="p-6 hover:shadow-lg transition-all duration-300 border hover:border-primary/20 group">
+      <Card className="p-4 hover:shadow-sm transition-all duration-200 border hover:border-primary/10 group">
         <div className="flex items-center justify-between mb-4">
           <Badge className={cn("text-xs font-semibold", getQuizTypeColor(quiz.quizType as QuizType))}>
             {getQuizTypeLabel(quiz.quizType as QuizType)}
@@ -81,15 +81,12 @@ const RecentQuizCard = memo(function RecentQuizCard({ quiz }: RecentQuizCardProp
           )}
         </div>
 
-        <h3 className="font-bold text-lg line-clamp-1 mb-3 group-hover:text-primary transition-colors duration-300">{quiz.title}</h3>
+        <h3 className="font-semibold text-sm line-clamp-1 mb-2 group-hover:text-primary transition-colors duration-200">{quiz.title}</h3>
 
         {!quiz.timeEnded && (
-          <div className="mt-4 mb-4">
-            <div className="flex items-center justify-between text-xs mb-2">
-              <span className="text-muted-foreground font-medium">Progress</span>
-              <span className="font-semibold text-primary">{quiz.progress || 0}%</span>
-            </div>
-            <Progress value={quiz.progress || 0} className="h-2.5 bg-muted/50" />
+          <div className="mt-2 mb-2 flex items-center gap-3">
+            <Progress value={quiz.progress || 0} className="h-2 flex-1 bg-muted/50" />
+            <span className="text-xs text-muted-foreground font-medium">{quiz.progress || 0}%</span>
           </div>
         )}
 

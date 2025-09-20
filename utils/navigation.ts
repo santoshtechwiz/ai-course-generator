@@ -98,3 +98,33 @@ export const navigateToQuizResults = (
     console.error("Navigation error:", e);
   }
 };
+
+/**
+ * Return a safe href for quiz links. When slugOrId is falsy, returns the quizzes list
+ * to avoid generating links like /dashboard/quiz/undefined
+ */
+export const getSafeQuizHref = (
+  quizType: string = 'quiz',
+  slugOrId?: string | number | null
+): string => {
+  if (!slugOrId) return '/dashboard/quizzes';
+  const safe = String(slugOrId).trim();
+  if (!safe) return '/dashboard/quizzes';
+  return `/dashboard/${quizType}/${safe}`;
+};
+
+/**
+ * Build the most appropriate quiz href from available data.
+ * Preference order:
+ *  1) slug -> /dashboard/quiz/:slug
+ *  2) type + id -> /dashboard/quizzes/:type/:id
+ *  3) id -> /dashboard/quiz/:id
+ *  4) fallback -> /dashboard/quizzes
+ */
+export const getBestQuizHref = (opts: { slug?: string | null | undefined; type?: string | null | undefined; id?: string | number | null | undefined }) => {
+  const { slug, type, id } = opts || {};
+  if (slug && String(slug).trim()) return getSafeQuizHref('quiz', slug);
+  if (type && id) return `/dashboard/quizzes/${String(type)}/${String(id)}`;
+  if (id) return getSafeQuizHref('quiz', id);
+  return '/dashboard/quizzes';
+};
