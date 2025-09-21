@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useCallback, useMemo, useState } from "react"
+import { memo, useCallback, useMemo, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -13,6 +13,7 @@ import {
   PenTool,
   MessageSquare,
   Lightbulb,
+  Hash,
 } from "lucide-react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -24,6 +25,7 @@ import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
+import { ClientCreditService } from "@/services/client-credit-service"
 
 import type { QueryParams } from "@/app/types/types"
 import PlanAwareButton from "../../components/PlanAwareButton"
@@ -33,10 +35,10 @@ import { useToast } from "@/components/ui/use-toast"
 
 
 const openEndedQuizSchema = z.object({
-  topic: z
+  title: z
     .string()
-    .min(3, "Topic must be at least 3 characters long")
-    .max(100, "Topic must be at most 100 characters long"),
+    .min(3, "Title must be at least 3 characters long")
+    .max(200, "Title must be at most 200 characters long"),
   amount: z.number().min(1, "At least 1 question is required").max(15, "Maximum 20 questions allowed"),
 })
 
@@ -151,6 +153,39 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   const [isSuccess, setIsSuccess] = useState(false)
   const { toast } = useToast()
 
+  // Credit information state for consistent display
+  const [creditInfo, setCreditInfo] = useState({
+    hasCredits: false,
+    remainingCredits: credits,
+    totalCredits: 0,
+    usedCredits: 0
+  })
+
+  // Fetch detailed credit information for consistent display
+  useEffect(() => {
+    if (isLoggedIn) {
+      ClientCreditService.getCreditDetails()
+        .then(details => {
+          setCreditInfo({
+            hasCredits: details.hasCredits,
+            remainingCredits: details.remainingCredits,
+            totalCredits: details.totalCredits,
+            usedCredits: details.usedCredits
+          })
+        })
+        .catch(error => {
+          console.error('[OpenEndedQuizForm] Failed to fetch credit details:', error)
+          // Fallback to props
+          setCreditInfo({
+            hasCredits: credits > 0,
+            remainingCredits: credits,
+            totalCredits: credits,
+            usedCredits: 0
+          })
+        })
+    }
+  }, [isLoggedIn, credits])
+
   const {
     control,
     register,
@@ -160,7 +195,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   } = useForm<OpenEndedQuizFormData>({
     resolver: zodResolver(openEndedQuizSchema),
     defaultValues: {
-      topic: params?.topic || "",
+      title: params?.title || params?.topic || "",
       amount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
     },
     mode: "onChange",
@@ -176,7 +211,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ ...data, title: data.topic, type: "openended" }),
+          body: JSON.stringify({ ...data, type: "openended" }),
         })
 
         if (!response.ok) {
@@ -215,7 +250,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   const handleConfirm = useCallback(async () => {
     setIsLoading(true)
     const data = {
-      topic: watch("topic"),
+      title: watch("title"),
       amount: watch("amount"),
     }
     await generateQuiz(data)
@@ -238,46 +273,54 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
     setIsConfirmDialogOpen(true)
   }, [isLoading, isLoggedIn, credits])
 
-  const topic = watch("topic")
+  const title = watch("title")
   const amount = watch("amount")
 
   const isDisabled = useMemo(() => isLoading || credits < 1 || !isValid, [isLoading, credits, isValid])
 
   return (
-    <FormContainer spacing="lg">
-      <div className="space-y-8 lg:space-y-10">
-        <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-8 lg:space-y-10">
+    <div className="w-full max-w-4xl mx-auto">
+      <div className="space-y-6 md:space-y-8">
+        <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-6 md:space-y-8">
           <motion.div
-            className="space-y-3"
+            className="space-y-2 md:space-y-3"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <Label htmlFor="topic" className="text-sm font-medium flex items-center gap-2">
-              <Info className="h-4 w-4 text-primary" />
-              Quiz Topic
+            <Label htmlFor="title" className="text-sm md:text-base font-medium flex items-center gap-2">
+              <Info className="h-4 w-4 text-primary flex-shrink-0" />
+              Quiz Title or Topic
             </Label>
             <Input
-              id="topic"
-              {...register("topic")}
-              placeholder="E.g., Climate Change, AI in Education..."
-              className="w-full h-12 lg:h-14 text-base lg:text-lg p-3 lg:p-4 rounded-lg transition-all duration-300 focus:ring-2 focus:ring-primary border border-input"
-              aria-label="Quiz topic"
+              id="title"
+              {...register("title")}
+              placeholder="Enter your quiz topic (e.g., The impact of technology on education)"
+              className="w-full h-12 md:h-14 text-sm md:text-base p-3 md:p-4 rounded-lg transition-all duration-300 focus:ring-2 focus:ring-primary border border-input"
+              aria-label="Quiz title or topic"
               autoFocus
             />
-            {errors.topic && <p className="text-sm text-destructive">{errors.topic.message}</p>}
+            {errors.title && (
+              <p className="text-destructive text-sm mt-1 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                {errors.title.message}
+              </p>
+            )}
           </motion.div>
 
           <motion.div
-            className="space-y-3"
+            className="space-y-2 md:space-y-3"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Label htmlFor="amount" className="text-sm lg:text-base font-medium flex justify-between items-center">
-              <span>Number of Questions</span>
+            <Label htmlFor="amount" className="text-sm md:text-base font-medium flex justify-between items-center">
+              <span className="flex items-center gap-2">
+                <Hash className="h-4 w-4 text-primary flex-shrink-0" />
+                Number of Questions
+              </span>
               <motion.span
-                className="text-xl lg:text-2xl font-bold text-primary tabular-nums"
+                className="text-lg md:text-xl font-bold text-primary tabular-nums"
                 key={amount}
                 initial={{ scale: 1.2, color: "#00ff00" }}
                 animate={{ scale: 1, color: "var(--primary)" }}
@@ -301,31 +344,45 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
           </motion.div>
 
           <motion.div
-            className="rounded-lg"
+            className="bg-card/50 p-4 md:p-6 rounded-lg border"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <div className="space-y-3 lg:space-y-4">
-              <h3 className="text-base lg:text-lg font-semibold mb-2">Available Credits</h3>
-              <Progress value={(credits / 10) * 100} className="h-2 lg:h-3" />
-              <p className="text-xs lg:text-sm text-muted-foreground">
-                You have <span className="font-bold text-primary">{credits}</span> credits remaining.
+            <div className="space-y-3 md:space-y-4">
+              <h3 className="text-sm md:text-base font-semibold mb-2 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
+                Available Credits
+              </h3>
+              <Progress 
+                value={creditInfo.totalCredits > 0 ? (creditInfo.remainingCredits / creditInfo.totalCredits) * 100 : 0} 
+                className="h-2 md:h-3" 
+              />
+              <p className="text-xs md:text-sm text-muted-foreground">
+                {creditInfo.usedCredits} used of {creditInfo.totalCredits} total credits. 
+                <span className="font-bold text-primary ml-1">{creditInfo.remainingCredits} remaining</span>.
               </p>
             </div>
           </motion.div>
 
           <motion.div
-            className="cursor-pointer transition-colors rounded-lg overflow-hidden"
+            className="cursor-pointer transition-colors rounded-lg overflow-hidden border border-border hover:bg-muted/50"
             onClick={() => setOpenInfo(!openInfo)}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <div className="flex flex-row items-center justify-between py-3 lg:py-4">
-              <h3 className="text-sm lg:text-base font-semibold">About Open-ended Questions</h3>
-              <motion.div animate={{ rotate: openInfo ? 180 : 0 }} transition={{ duration: 0.3 }}>
-                <ChevronDown className="h-4 w-4 lg:h-5 lg:w-5" />
+            <div className="flex flex-row items-center justify-between p-3 md:p-4">
+              <h3 className="text-sm md:text-base font-semibold flex items-center gap-2">
+                <HelpCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                About Open-ended Questions
+              </h3>
+              <motion.div 
+                animate={{ rotate: openInfo ? 180 : 0 }} 
+                transition={{ duration: 0.3 }}
+                className="flex-shrink-0"
+              >
+                <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
               </motion.div>
             </div>
             <AnimatePresence>
@@ -365,7 +422,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
           </AnimatePresence>
 
           <motion.div
-            className="pt-6 lg:pt-8"
+            className="pt-6 md:pt-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
@@ -376,18 +433,18 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
               isLoggedIn={isLoggedIn}
               isLoading={isLoading}
               isEnabled={!isDisabled}
-              loadingLabel="Generating..."
-              className="w-full h-12 lg:h-14 text-base lg:text-lg transition-all duration-300 hover:shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed"
+              loadingLabel="Generating quiz..."
+              className="w-full h-12 md:h-14 text-sm md:text-base font-medium transition-all duration-300 hover:shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed touch-manipulation"
               customStates={{
                 default: {
                   tooltip: "Click to generate your quiz",
                 },
                 notEnabled: {
-                  label: "Enter a topic to generate",
-                  tooltip: "Please enter a topic before generating the quiz",
+                  label: "Enter a title to generate",
+                  tooltip: "Please enter a title or topic before generating the quiz",
                 },
                 noCredits: {
-                  label: "Out of credits",
+                  label: `Need credits (${creditInfo.remainingCredits} remaining)`,
                   tooltip: "You need credits to generate a quiz. Consider upgrading your plan.",
                 },
               }}
@@ -407,26 +464,26 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
         description="You are about to use AI to generate an open-ended quiz. This will use credits from your account."
         confirmText="Generate Now"
         cancelText="Cancel"
-        showTokenUsage={true}
-  status={isLoading ? "loading" : submitError ? "error" : isSuccess ? "success" : undefined}
-  errorMessage={submitError || undefined}
-        tokenUsage={{
-          used: Math.max(0, maxQuestions - credits),
-          available: maxQuestions,
+        showCreditUsage={true}
+        status={isLoading ? "loading" : submitError ? "error" : isSuccess ? "success" : undefined}
+        errorMessage={submitError || undefined}
+        creditUsage={{
+          used: Math.max(0, 100 - credits), // Assuming 100 total credits for calculation
+          available: 100,
           remaining: credits,
-          percentage: (Math.max(0, maxQuestions - credits) / maxQuestions) * 100,
+          percentage: credits > 0 ? ((100 - credits) / 100) * 100 : 100,
         }}
         quizInfo={{
           type: "Open-Ended Quiz",
-          topic: watch("topic"),
+          topic: watch("title"),
           count: watch("amount"),
-          estimatedTokens: Math.min(watch("amount") || 1, 5) * 150, // Open-ended questions use more tokens
+          estimatedCredits: 1, // Quiz creation costs 1 credit
         }}
       >
         <div className="py-2">
           <p className="text-sm">
             Generating {watch("amount")} open-ended questions for topic: {" "}
-            <span className="font-medium">{watch("topic")}</span>
+            <span className="font-medium">{watch("title")}</span>
           </p>
         </div>
       </ConfirmDialog>
@@ -464,7 +521,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
           </motion.div>
         )}
       </AnimatePresence>
-    </FormContainer>
+    </div>
   )
 }
 

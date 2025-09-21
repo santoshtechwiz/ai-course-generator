@@ -110,6 +110,55 @@ export class UserRepository extends BaseRepository<any> {
   }
 
   /**
+   * Get user subscription data for server-side validation (avoids HTTP calls)
+   */
+  async getUserSubscriptionData(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        credits: true,
+        creditsUsed: true,
+        userType: true,
+        subscription: {
+          select: {
+            id: true,
+            planId: true,
+            status: true,
+            currentPeriodEnd: true,
+            cancelAtPeriodEnd: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    // Calculate subscription status
+    const hasActiveSubscription = user.subscription && 
+      user.subscription.status === "active" && 
+      new Date(user.subscription.currentPeriodEnd) > new Date();
+
+    return {
+      credits: user.credits || 0,
+      tokensUsed: user.creditsUsed || 0,
+      creditsUsed: user.creditsUsed || 0,
+      isSubscribed: hasActiveSubscription,
+      isActive: hasActiveSubscription,
+      subscriptionPlan: user.userType || "FREE",
+      userType: user.userType || "FREE",
+      expirationDate: user.subscription?.currentPeriodEnd || null,
+      status: user.subscription?.status || "INACTIVE",
+      cancelAtPeriodEnd: user.subscription?.cancelAtPeriodEnd || false,
+      subscriptionId: user.subscription?.id || "",
+    };
+  }
+
+  /**
    * Update user profile information
    */
   async updateUserProfile(userId: string, updateData: { name?: string; image?: string }) {

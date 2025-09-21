@@ -4,7 +4,7 @@ import { use } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import QuizResult from "../../../components/QuizResult"
+import ImprovedQuizResult from "../../../components/ImprovedQuizResult"
 import GenericQuizResultHandler from "../../../components/QuizResultHandler"
 import QuizResultLayout from "../../../components/layouts/QuizResultLayout"
 
@@ -45,7 +45,7 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
         quizType="code"
       >
         {({ result }) => (
-          <QuizResult
+          <ImprovedQuizResult
             result={result}
             slug={slugString}
             quizType="code"

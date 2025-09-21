@@ -14,6 +14,7 @@ import {
   clearSubscriptionError
 } from '@/store/slices/subscription-slice'
 import { useAuth } from '../providers/AuthProvider'
+import type { SubscriptionData, SubscriptionPlanType } from '@/types/subscription'
 
 /**
  * Enhanced subscription hook with performance optimization and smart caching
@@ -52,7 +53,7 @@ export function useSubscription() {
     tokensUsed: subscriptionData?.tokensUsed || user?.creditsUsed || 0,
     subscriptionId: subscriptionData?.subscriptionId || '',
     cancelAtPeriodEnd: subscriptionData?.cancelAtPeriodEnd || false,
-    currentPeriodEnd: subscriptionData?.currentPeriodEnd || null,
+    currentPeriodEnd: subscriptionData?.expirationDate || null,
     
     // Calculated properties
     isSubscribed: sessionSubscription?.isActive || false,
@@ -60,6 +61,31 @@ export function useSubscription() {
     isPro: (sessionSubscription?.plan || 'FREE') === 'PRO',
     isEnterprise: (sessionSubscription?.plan || 'FREE') === 'ENTERPRISE',
   }), [sessionSubscription, user, subscriptionData])
+
+  // Effective credit calculation that merges session user and redux subscription
+  const effectiveCreditInfo = useMemo(() => {
+    const subTotal = subscriptionData?.credits ?? 0
+    const subUsed = subscriptionData?.tokensUsed ?? 0
+    const userTotal = user?.credits ?? 0
+    const userUsed = user?.creditsUsed ?? 0
+
+    const remainingFromSub = Math.max(subTotal - subUsed, 0)
+    const remainingFromUser = Math.max(userTotal - userUsed, 0)
+
+    const remaining = Math.max(remainingFromSub, remainingFromUser)
+
+    return {
+      total: Math.max(subTotal, userTotal),
+      used: Math.max(subUsed, userUsed),
+      remaining,
+      hasCredits: remaining > 0,
+    }
+  }, [subscriptionData, user])
+
+  // Effective permissions merged from subscription and session data
+  const effectiveCanCreate = useMemo(() => {
+    return hasActiveSubscription || effectiveCreditInfo.hasCredits
+  }, [hasActiveSubscription, effectiveCreditInfo])
   
   // Smart refresh logic - only refresh when necessary
   const refreshSubscription = useCallback((force = false) => {
@@ -94,10 +120,10 @@ export function useSubscription() {
     // Core subscription data
     subscription,
     
-    // Business logic selectors
+    // Business logic selectors (effective values merged from session + redux)
     hasActiveSubscription,
-    hasCredits,
-    canCreateQuizOrCourse,
+    hasCredits: effectiveCreditInfo.hasCredits,
+    canCreateQuizOrCourse: effectiveCanCreate,
     isExpired,
     
     // Cache and performance info
@@ -120,13 +146,13 @@ export function useSubscription() {
  */
 export function useSubscriptionPermissions() {
   const { hasActiveSubscription, hasCredits, canCreateQuizOrCourse } = useSubscription()
-  
+
   return useMemo(() => ({
     canCreateQuiz: canCreateQuizOrCourse,
     canCreateCourse: canCreateQuizOrCourse,
     canUsePremiumFeatures: hasActiveSubscription,
     hasAvailableCredits: hasCredits,
-    
+
     // Specific permission checks
     canGenerateContent: canCreateQuizOrCourse,
     canAccessAdvancedFeatures: hasActiveSubscription,

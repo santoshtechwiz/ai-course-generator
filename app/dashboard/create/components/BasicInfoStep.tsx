@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { CreateCourseInput } from "@/schema/schema"
-import { CategorySelector } from "./CategorySelector"
 import type { QueryParams } from "@/app/types/types"
 
 interface BasicInfoStepProps {
@@ -53,15 +52,20 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
 
       <div className="space-y-2">
         <div className="flex flex-col gap-1">
-          <Label className="text-base font-medium">Category</Label>
-          <p className="text-sm text-muted-foreground">Choose the category that best describes your course</p>
+          <Label htmlFor="category" className="text-base font-medium">Category</Label>
+          <p className="text-sm text-muted-foreground">Enter a category that describes your course (e.g., "web development", "data science")</p>
         </div>
         <Controller
           name="category"
           control={control}
           defaultValue={params?.category || ""}
           render={({ field }) => (
-            <CategorySelector value={field.value} onChange={field.onChange} error={!!errors.category} />
+            <Input 
+              {...field} 
+              id="category" 
+              placeholder="e.g., programming, mathematics, design" 
+              className="transition-all duration-200" 
+            />
           )}
         />
         {errors.category && <p className="text-sm text-destructive">{errors.category.message}</p>}

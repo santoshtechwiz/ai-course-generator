@@ -406,7 +406,7 @@ export const VALID_PROMO_CODES: Record<string, number> = {
  * to maintain consistent plan/status mapping across the app.
  */
 
-import type { SubscriptionPlanType } from '@/app/types/subscription'
+import type { SubscriptionPlanType } from '@/types/subscription'
 
 /**
  * Maps various subscription plan string values to standardized SubscriptionPlanType

@@ -82,18 +82,6 @@ const features = [
     description: "Deep insights into learner engagement, completion rates, and knowledge retention with beautiful, actionable dashboards.",
     gradient: "from-orange-500 to-orange-600",
   },
-  {
-    icon: "private",
-    title: "Enterprise Security",
-    description: "Bank-level security with enterprise-grade encryption, SSO integration, and compliance with GDPR, HIPAA, and other standards.",
-    gradient: "from-red-500 to-red-600",
-  },
-  {
-    icon: "integrate",
-    title: "Seamless Integration",
-    description: "Connect with your existing tools and platforms. API access, webhooks, and native integrations with popular LMS systems.",
-    gradient: "from-indigo-500 to-indigo-600",
-  },
 ]
 
 const FeatureShowcase = () => {

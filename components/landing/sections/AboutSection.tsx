@@ -52,7 +52,7 @@ const AboutSection = () => {
     {
       title: "Designed for Everyone",
       description:
-        "From classroom teachers to corporate trainers, CourseAI adapts to your needs. No technical expertise required—just your knowledge and our platform.",
+        "From classroom educators to corporate trainers, CourseAI adapts to your needs. No technical expertise required—just your knowledge and our platform.",
       color: "from-blue-500 to-sky-500",
       icon: "users",
     },

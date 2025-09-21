@@ -21,7 +21,7 @@ const testimonials = [
 	},
 	{
 		quote:
-			"The quality of AI-generated content from CourseAI is astonishing. It doesn't just create generic material—it understands context, audience, and learning objectives. My students' engagement has increased by 300% since I started using it.",
+			"The quality of AI-generated content from CourseAI is astonishing. It doesn't just create generic material—it understands context, audience, and learning objectives. My users' engagement has increased by 300% since I started using it.",
 		author: "Dr. Michael Chen",
 		role: "University Professor",
 		avatar: "/placeholder.svg?height=100&width=100&text=MC",
@@ -37,7 +37,7 @@ const testimonials = [
 	},
 	{
 		quote:
-			"I was amazed at how CourseAI captured my teaching style and voice. The AI doesn't replace the human element—it enhances it. Now I can focus on mentoring students rather than creating content from scratch.",
+			"I was amazed at how CourseAI captured my teaching style and voice. The AI doesn't replace the human element—it enhances it. Now I can focus on mentoring users rather than creating content from scratch.",
 		author: "David Kim",
 		role: "High School Teacher",
 		avatar: "/placeholder.svg?height=100&width=100&text=DK",

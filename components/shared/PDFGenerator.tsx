@@ -2,7 +2,7 @@
 import React from "react"
 import UnifiedPdfGenerator from "./UnifiedPdfGenerator"
 import type { PdfData, PdfConfig } from "./UnifiedPdfGenerator"
-import useSubscription from "@/hooks/use-subscription"
+import { useSubscription } from "@/modules/auth/hooks/useSubscription"
 
 interface PDFGeneratorProps {
   markdown: string
@@ -11,7 +11,7 @@ interface PDFGeneratorProps {
 }
 
 const PDFGenerator: React.FC<PDFGeneratorProps> = ({ markdown, chapterName, isOwner = false }) => {
-  const { data: subscription } = useSubscription()
+  const { subscription } = useSubscription()
 
   const pdfData: PdfData = {
     title: chapterName,
@@ -28,7 +28,7 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ markdown, chapterName, isOw
     highlightColor: "#10B981",
   }
 
-  const isDisabled = !subscription || subscription.currentPlan === "FREE" || subscription.currentPlan === "BASIC"
+  const isDisabled = !subscription || subscription.plan === "FREE" || subscription.plan === "BASIC"
 
   return (
     <div className="flex justify-end mt-4">

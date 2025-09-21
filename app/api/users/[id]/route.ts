@@ -1,17 +1,10 @@
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
+import { NextRequest, NextResponse } from "next/server"
+import { withAdminAuth } from "@/middlewares/auth-middleware"
+import { ApiResponseHandler } from "@/services/api-response-handler"
 import prisma from "@/lib/db"
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withAdminAuth(async (request: NextRequest, { session, params }: any) => {
   try {
-    // Check if user is authenticated and is an admin
-    const session = await getServerSession(authOptions)
-
-    if (!session || !session.user || session.user.isAdmin !== true) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const userId = (await params).id
 
     // Fetch user with their token transactions
@@ -30,25 +23,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     })
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
+      return ApiResponseHandler.notFound("User not found")
     }
 
-    return NextResponse.json(user)
+    return ApiResponseHandler.success(user)
   } catch (error) {
-    console.error("Error fetching user:", error)
-    return NextResponse.json({ error: "Failed to fetch user" }, { status: 500 })
+    return ApiResponseHandler.error(error || "Failed to fetch user")
   }
-}
+})
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withAdminAuth(async (request: NextRequest, { session, params }: any) => {
   try {
-    // Check if user is authenticated and is an admin
-    const session = await getServerSession(authOptions)
-
-    if (!session || !session.user || session.user.isAdmin !== true) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const userId = (await params).id
 
     // Check if user exists
@@ -112,16 +97,10 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     console.error("Error deleting user:", error)
     return NextResponse.json({ error: "Failed to delete user" }, { status: 500 })
   }
-}
+})
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withAdminAuth(async (request: NextRequest, { session, params }: any) => {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session || !session.user || session.user.isAdmin !== true) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const userId = (await params).id
 
     // Check if user exists
@@ -172,4 +151,4 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     console.error("Error updating user:", error)
     return NextResponse.json({ error: "Failed to update user" }, { status: 500 })
   }
-}
+})

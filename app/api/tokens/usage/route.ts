@@ -1,16 +1,10 @@
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-
+import { NextRequest } from "next/server"
+import { withAuth } from "@/middlewares/auth-middleware"
+import { ApiResponseHandler } from "@/services/api-response-handler"
 import { prisma } from "@/lib/db"
-import { authOptions } from "@/lib/auth"
 
-export async function GET() {
+export const GET = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
 
     const userId = session.user.id
 
@@ -39,14 +33,13 @@ export async function GET() {
     // Calculate remaining tokens (should match user.credits)
     const remainingTokens = user?.credits || 0
 
-    return NextResponse.json({
+    return ApiResponseHandler.success({
       used: Number(tokensUsed) || 0,
       received: Number(tokensReceived) || 0,
       remaining: Number(remainingTokens) || 0,
       transactions: tokenTransactions.slice(0, 10), // Return recent transactions for debugging
     })
   } catch (error) {
-    console.error("Error fetching token usage:", error)
-    return NextResponse.json({ error: "Failed to fetch token usage" }, { status: 500 })
+    return ApiResponseHandler.error(error || "Failed to fetch token usage")
   }
-}
+})

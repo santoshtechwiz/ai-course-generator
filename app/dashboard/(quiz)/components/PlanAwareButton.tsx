@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Button, type ButtonProps } from "@/components/ui/button"
 import { useToast } from "@/hooks"
 import { useRouter } from "next/navigation"
@@ -11,7 +11,7 @@ import { Loader2, Check, Lock, AlertCircle, Sparkles } from "lucide-react"
 import type { PlanType } from "../../../../hooks/useQuizPlan"
 // ✅ UNIFIED: Using unified auth system
 import { useAuth, useSubscription, useSubscriptionPermissions } from "@/modules/auth"
-import { calculateCreditInfo } from "@/utils/credit-utils"
+import { ClientCreditService, type ClientCreditInfo } from "@/services/client-credit-service"
 
 interface CustomButtonStates {
   default?: {
@@ -84,6 +84,11 @@ export default function PlanAwareButton({
   ...buttonProps
 }: PlanAwareButtonProps) {
   const [isLoadingState, setIsLoading] = useState(false)
+  const [creditInfo, setCreditInfo] = useState<{
+    hasCredits: boolean;
+    remainingCredits: number;
+    hasEnoughCredits: (required: number) => boolean;
+  }>({ hasCredits: false, remainingCredits: 0, hasEnoughCredits: () => false })
   const { toast } = useToast()
   const router = useRouter()
 
@@ -95,22 +100,31 @@ export default function PlanAwareButton({
   // Auto-detect authentication - prioritize internal auth state over prop
   const effectiveIsLoggedIn = isAuthenticated || (user?.id ? true : false)
 
-  // Calculate remaining credits automatically using utility
-  const creditInfo = calculateCreditInfo(
-    user?.credits,
-    user?.creditsUsed,
-    subscription?.credits,
-    subscription?.tokensUsed,
-  )
+  // SECURE: Get credit information from ClientCreditService for consistency
+  useEffect(() => {
+    if (user?.id) {
+      ClientCreditService.getCreditDetails()
+        .then((details: ClientCreditInfo) => {
+          setCreditInfo({
+            hasCredits: details.hasCredits,
+            remainingCredits: details.remainingCredits,
+            hasEnoughCredits: (required: number) => details.remainingCredits >= required
+          })
+        })
+        .catch((error: any) => {
+          console.error('[PlanAwareButton] Failed to fetch credit details:', error)
+          setCreditInfo({ hasCredits: false, remainingCredits: 0, hasEnoughCredits: () => false })
+        })
+    } else {
+      setCreditInfo({ hasCredits: false, remainingCredits: 0, hasEnoughCredits: () => false })
+    }
+  }, [user?.id])
 
   // Debug logging in development
   if (process.env.NODE_ENV === 'development') {
-    console.log('PlanAwareButton Credit Info:', {
-      userCredits: user?.credits,
-      userCreditsUsed: user?.creditsUsed,
-      subscriptionCredits: subscription?.credits,
-      subscriptionTokensUsed: subscription?.tokensUsed,
-      calculatedRemainingCredits: creditInfo.remainingCredits,
+    console.log('PlanAwareButton Credit Info (SECURE):', {
+      userId: user?.id,
+      remainingCredits: creditInfo.remainingCredits,
       hasCredits: creditInfo.hasCredits,
       hasCreditsPassedProp: hasCredits,
       creditsRequired,

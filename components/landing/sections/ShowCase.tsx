@@ -778,7 +778,7 @@ const mockProducts: CourseQuizCard[] = [
     name: "Multiple Choice Quiz Creator",
     slug: "mcq-creator",
     description:
-      "Generate adaptive multiple-choice questions that automatically adjust difficulty based on student performance.",
+      "Generate adaptive multiple-choice questions that automatically adjust difficulty based on user performance.",
     tagline: "Smart MCQs that adapt to learners",
     type: "quiz",
     quizType: "mcq",
@@ -798,7 +798,7 @@ const mockProducts: CourseQuizCard[] = [
     name: "Open-Ended Question Generator",
     slug: "open-ended-generator",
     description:
-      "Create thought-provoking open-ended questions with AI-powered grading that provides personalized feedback on student responses.",
+      "Create thought-provoking open-ended questions with AI-powered grading that provides personalized feedback on user responses.",
     tagline: "AI-graded essay questions",
     type: "quiz",
     quizType: "openended",

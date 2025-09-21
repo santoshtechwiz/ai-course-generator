@@ -3,7 +3,7 @@ import { generateObject } from "ai"
 import { openai } from "@ai-sdk/openai"
 import { z } from "zod"
 
-import { updateUserCredits } from "@/lib/db"
+import { creditService, CreditOperationType } from "@/services/credit-service"
 import { getAuthSession } from "@/lib/auth"
 
 const QuestionSchema = z.object({
@@ -65,6 +65,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
 
+    // SECURE: Atomic credit validation and deduction to prevent race conditions
+    const creditDeduction = 1 // Standard 1 credit for document quiz generation
+    const creditResult = await creditService.executeCreditsOperation(
+      session.user.id,
+      creditDeduction,
+      CreditOperationType.QUIZ_CREATION,
+      {
+        description: `Document quiz generation from ${file?.name || 'uploaded file'}`,
+        quizType: 'document',
+        questionAmount: numberOfQuestions,
+        difficulty
+      }
+    )
+
+    if (!creditResult.success) {
+      return NextResponse.json({ 
+        error: creditResult.error || "Insufficient credits" 
+      }, { status: 403 })
+    }
+
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
     }
@@ -109,12 +129,14 @@ export async function POST(req: NextRequest) {
         schema: QuizSchema,
       })
 
-      // Deduct tokens used
-      if (session?.user.id) {
-        await updateUserCredits(session.user.id, "undefined")
-      }
+      // NOTE: Credits already deducted atomically above - no need to call updateUserCredits
 
-      return NextResponse.json(result.object.questions)
+      console.log(`[Document API] Successfully generated quiz for user ${session.user.id}. Credits remaining: ${creditResult.newBalance}`)
+
+      return NextResponse.json({
+        questions: result.object.questions,
+        creditsRemaining: creditResult.newBalance
+      })
     } catch (aiError) {
       console.error("Error generating quiz with AI:", aiError)
       return NextResponse.json(

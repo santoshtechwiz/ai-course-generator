@@ -40,8 +40,8 @@ export class CodeQuizService extends BaseQuizService {
       await this.questionRepository.createQuestions(quizzes, userQuiz.id, "code");
 
     
-      // Deduct user credits
-      await this.userRepository.updateUserCredits(userId, "code");
+      // NOTE: Credits are handled by the calling API endpoint - no longer deducting here to prevent double-deduction
+      // SECURITY: Removed credit deduction from service layer to prevent race conditions
 
       return {
         userQuizId: userQuiz.id,

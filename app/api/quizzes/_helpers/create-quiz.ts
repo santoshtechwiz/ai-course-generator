@@ -10,6 +10,7 @@ import { QuestionRepository } from "@/app/repositories/question.repository"
 import { QuizRepository } from "@/app/repositories/quiz.repository"
 import { UserRepository } from "@/app/repositories/user.repository"
 import { generateFlashCards } from "@/lib/chatgpt/ai-service"
+import { creditService, CreditOperationType } from "@/services/credit-service"
 import type { QuizType } from "@/app/types/quiz-types"
 
 const questionRepo = new QuestionRepository()
@@ -51,7 +52,25 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 })
     }
 
-    // Credits are already validated by subscription validation above
+    // SECURE: Atomic credit validation and deduction to prevent race conditions
+    const creditDeduction = 1 // Standard 1 credit per quiz
+    const creditResult = await creditService.executeCreditsOperation(
+      userId,
+      creditDeduction,
+      CreditOperationType.QUIZ_CREATION,
+      {
+        description: `${normalizedType} quiz creation: ${title}`,
+        quizType: normalizedType,
+        questionAmount: amount,
+        difficulty
+      }
+    )
+
+    if (!creditResult.success) {
+      return NextResponse.json({ 
+        error: creditResult.error || "Insufficient credits" 
+      }, { status: 403 })
+    }
 
     const slug = await generateUniqueSlug(title)
 
@@ -59,7 +78,13 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       const language = (body.language || body.lang || "JavaScript").toString()
       const service = new CodeQuizService()
       const result = await service.generateCodeQuiz(userId, language, title, difficulty, amount)
-      return NextResponse.json({ userQuizId: result.userQuizId, slug: result.slug })
+      
+      console.log(`[Quiz API] Successfully created code quiz ${result.userQuizId} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
+      return NextResponse.json({ 
+        userQuizId: result.userQuizId, 
+        slug: result.slug,
+        creditsRemaining: creditResult.newBalance 
+      })
     }
 
     if (normalizedType === "mcq") {
@@ -72,12 +97,14 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
         await questionRepo.createQuestions(questions, created.id, "mcq")
       }
 
-      await Promise.all([
-        userRepo.updateUserCredits(userId, "mcq"),
-      ])
+      // NOTE: Credits already deducted atomically above - no need to call userRepo.updateUserCredits
 
-      console.log("MCQ Quiz created successfully:", { userQuizId: created.id, slug })
-      return NextResponse.json({ userQuizId: created.id, slug })
+      console.log(`[Quiz API] Successfully created MCQ quiz ${created.id} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
+      return NextResponse.json({ 
+        userQuizId: created.id, 
+        slug,
+        creditsRemaining: creditResult.newBalance 
+      })
     }
 
     if (normalizedType === "openended") {
@@ -119,11 +146,14 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
         }
       }
 
-      await Promise.all([
-          userRepo.updateUserCredits(userId, "openended"),
-      ])
+      // NOTE: Credits already deducted atomically above - no need to call userRepo.updateUserCredits
 
-      return NextResponse.json({ userQuizId: created.id, slug })
+      console.log(`[Quiz API] Successfully created openended quiz ${created.id} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
+      return NextResponse.json({ 
+        userQuizId: created.id, 
+        slug,
+        creditsRemaining: creditResult.newBalance 
+      })
     }
 
     if (normalizedType === "blanks") {
@@ -165,12 +195,14 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
         }
       }
 
-      await Promise.all([
-       
-        userRepo.updateUserCredits(userId, "blanks"),
-      ])
+      // NOTE: Credits already deducted atomically above - no need to call userRepo.updateUserCredits
 
-      return NextResponse.json({ userQuizId: created.id, slug })
+      console.log(`[Quiz API] Successfully created blanks quiz ${created.id} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
+      return NextResponse.json({ 
+        userQuizId: created.id, 
+        slug,
+        creditsRemaining: creditResult.newBalance 
+      })
     }
 
     if (normalizedType === "flashcard") {
@@ -189,11 +221,14 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
         })
       }
 
-      await Promise.all([
-          userRepo.updateUserCredits(userId, "flashcard"),
-      ])
+      // NOTE: Credits already deducted atomically above - no need to call userRepo.updateUserCredits
 
-      return NextResponse.json({ userQuizId: created.id, slug })
+      console.log(`[Quiz API] Successfully created flashcard quiz ${created.id} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
+      return NextResponse.json({ 
+        userQuizId: created.id, 
+        slug,
+        creditsRemaining: creditResult.newBalance 
+      })
     }
 
     return NextResponse.json({ error: `Unsupported quiz type: ${normalizedType}` }, { status: 400 })

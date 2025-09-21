@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service";
-import { SubscriptionPlanType } from "@/app/types/subscription";
+import { SubscriptionService } from "@/services/subscription/subscription-service";
+import { SubscriptionPlanType } from "@/types/subscription/subscription-types";
+import { userRepository } from "@/app/repositories/user.repository";
 
 export interface ValidationResult {
   isValid: boolean;
@@ -32,7 +33,8 @@ export async function validateSubscriptionServer(
   } = options;
 
   try {
-    const subscriptionData = await SubscriptionService.getSubscriptionStatus(userId);
+    // Use direct database access to avoid circular HTTP calls
+    const subscriptionData = await userRepository.getUserSubscriptionData(userId);
     
     if (!subscriptionData) {
       return {
@@ -47,9 +49,9 @@ export async function validateSubscriptionServer(
     // Plan hierarchy for validation
     const planHierarchy: Record<SubscriptionPlanType, number> = {
       "FREE": 0,
-      "BASIC": 1,
-      "PREMIUM": 2,
-      "ULTIMATE": 3
+      "PRO": 1,
+      "ENTERPRISE": 2,
+      "CUSTOM": 3
     };
 
     const currentPlanLevel = planHierarchy[plan] || 0;

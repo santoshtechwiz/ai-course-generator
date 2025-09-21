@@ -40,6 +40,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 import type { z } from "zod"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
+import { ClientCreditService } from "@/services/client-credit-service"
 import type { QueryParams } from "@/app/types/types"
 import { useSubscription } from "@/modules/auth"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
@@ -176,6 +177,39 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
 
   const { toast } = useToast()
 
+  // Credit information state for consistent display
+  const [creditInfo, setCreditInfo] = React.useState({
+    hasCredits: false,
+    remainingCredits: credits,
+    totalCredits: 0,
+    usedCredits: 0
+  })
+
+  // Fetch detailed credit information for consistent display
+  React.useEffect(() => {
+    if (isLoggedIn) {
+      ClientCreditService.getCreditDetails()
+        .then(details => {
+          setCreditInfo({
+            hasCredits: details.hasCredits,
+            remainingCredits: details.remainingCredits,
+            totalCredits: details.totalCredits,
+            usedCredits: details.usedCredits
+          })
+        })
+        .catch(error => {
+          console.error('[CodeQuizForm] Failed to fetch credit details:', error)
+          // Fallback to props
+          setCreditInfo({
+            hasCredits: credits > 0,
+            remainingCredits: credits,
+            totalCredits: credits,
+            usedCredits: 0
+          })
+        })
+    }
+  }, [isLoggedIn, credits])
+
   const [selectedLanguageGroup, setSelectedLanguageGroup] = React.useState<string>("Popular")
   const [showCustomLanguage, setShowCustomLanguage] = React.useState(false)
   const [customLanguage, setCustomLanguage] = React.useState("")
@@ -220,7 +254,7 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
   }, [params?.title, params?.amount, params?.difficulty, params?.language, maxQuestions, setValue])
 
   React.useEffect(() => {
-    const subscription = watch((value) => setFormData(value as CodeQuizFormData))
+    const subscription = watch((value: any) => setFormData(value as CodeQuizFormData))
     return () => subscription.unsubscribe()
   }, [watch, setFormData])
 
@@ -388,7 +422,7 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
   }
 
   return (
-    <FormContainer>
+    <div className="w-full max-w-4xl mx-auto">
       {submitError && !isConfirmDialogOpen && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
@@ -726,10 +760,9 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
             <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             Available Credits
           </h3>
-          <Progress value={creditPercentage} className="h-3" />
+          <Progress value={creditInfo.totalCredits > 0 ? (creditInfo.remainingCredits / creditInfo.totalCredits) * 100 : 0} className="h-3" />
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            You have <span className="font-bold text-blue-600 dark:text-blue-400">{credits}</span> credit
-            {credits !== 1 ? "s" : ""} remaining.
+            {creditInfo.usedCredits} used of {creditInfo.totalCredits} total credits. <span className="font-bold text-blue-600 dark:text-blue-400">{creditInfo.remainingCredits} remaining</span>.
           </p>
         </motion.div>
 
@@ -777,10 +810,10 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
         description="You are about to use AI to generate a code quiz. This will use credits from your account."
         confirmText="Generate Now"
         cancelText="Cancel"
-        showTokenUsage={true}
+        showCreditUsage={true}
         status={isLoading ? "loading" : submitError ? "error" : undefined}
         errorMessage={submitError ?? undefined}
-        tokenUsage={{
+        creditUsage={{
           used: Math.max(0, maxQuestions - credits),
           available: maxQuestions,
           remaining: credits,
@@ -791,7 +824,7 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
           topic: formData.title || "Not specified",
           count: formData.amount || 1,
           difficulty: formData.difficulty || "easy",
-          estimatedTokens: Math.min(formData.amount || 1, 5) * 150,
+          estimatedCredits: Math.min(formData.amount || 1, 5),
         }}
       >
         <div className="py-2">
@@ -803,6 +836,6 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
           </p>
         </div>
       </ConfirmDialog>
-    </FormContainer>
+    </div>
   )
 }

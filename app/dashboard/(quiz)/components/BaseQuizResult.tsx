@@ -98,6 +98,30 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
   
   const isSubscribed = hasActiveSubscription
 
+  // Utility functions for performance levels and formatting
+  const getCurrentLevel = () => {
+    const score = result?.score || 0
+    if (score >= 90) return { ...PERFORMANCE_LEVELS.excellent, icon: Crown }
+    if (score >= 75) return { ...PERFORMANCE_LEVELS.good, icon: Trophy }
+    if (score >= 60) return { ...PERFORMANCE_LEVELS.average, icon: Medal }
+    return { ...PERFORMANCE_LEVELS.poor, icon: Target }
+  }
+
+  const formatScore = (score: number) => Math.round(score)
+  
+  const formatTime = (ms: number) => {
+    if (!ms) return '0s'
+    if (ms < 1000) return `${ms}ms`
+    const seconds = Math.round(ms / 1000)
+    if (seconds < 60) return `${seconds}s`
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes}m ${remainingSeconds}s`
+  }
+
+  // Current level reference for consistent styling
+  const CurrentLevel = getCurrentLevel()
+
   // Enhanced date formatting
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A"
@@ -861,8 +885,58 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
-              <PerformanceOverview />
-              <CreateContentPromo context="results" topic={title} className="mt-2" storageKey={result?.slug || title} force />
+              <div className="relative overflow-hidden rounded-lg border bg-gradient-to-b from-muted/30 to-muted p-6">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {/* Performance Stats */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <div className={`rounded-lg border ${getCurrentLevel().border} p-2`}>
+                        <CurrentLevel.icon className="h-4 w-4" />
+                      </div>
+                      <h3 className="text-lg font-semibold">{getCurrentLevel().title}</h3>
+                    </div>
+                    <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                      <p>{getCurrentLevel().message}</p>
+                      <p className="font-medium">Score: {formatScore(result.score)}%</p>
+                    </div>
+                  </div>
+
+                  {/* Accuracy Chart */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Accuracy</h4>
+                    <div className="flex items-center gap-4">
+                      <div className="w-full space-y-1">
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                          <div 
+                            className={`h-full transition-all bg-gradient-to-r ${getCurrentLevel().gradient}`}
+                            style={{ width: `${result.score}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">{result.correctCount} of {result.totalQuestions} correct</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Time Stats */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Time Performance</h4>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Average: {formatTime(result.averageTime)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <CreateContentPromo 
+                context="results" 
+                topic={title} 
+                className="mt-4" 
+                storageKey={result?.slug || title} 
+                force 
+              />
             </TabsContent>
 
             {/* Review Tab */}

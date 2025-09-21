@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/db"
 import { getAuthSession } from "@/lib/auth"
+import { validateSubscriptionServer } from "@/lib/subscription-validation"
 
 export async function POST(
   req: NextRequest,
@@ -12,6 +13,20 @@ export async function POST(
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Validate subscription for quiz completion
+    const validation = await validateSubscriptionServer(session.user.id, {
+      requireCredits: true,
+      requireSubscription: false, // Allow free plan users to complete quizzes
+      requiredPlan: 'FREE'
+    })
+    
+    if (!validation.isValid) {
+      return NextResponse.json({ 
+        error: validation.error || "Subscription validation failed",
+        requiresSubscription: true 
+      }, { status: 403 })
     }
 
     const data = await req.json()

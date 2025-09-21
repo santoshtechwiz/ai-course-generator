@@ -18,8 +18,8 @@ import {
   selectQuizResults,
   selectQuizStatus,
   selectQuizQuestions,
-
-  checkAuthAndLoadResults,
+  loadQuizResults,
+  clearRequiresAuth,
   loadTempResultsAndSave,
   resetQuiz,
 } from '@/store/slices/quiz/quiz-slice'
@@ -185,16 +185,24 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
       if (isDirect || isFromExternalDomain) {
         // For direct access, try to load results from API
         console.log('Direct URL access detected, checking for saved results...')
-        dispatch(checkAuthAndLoadResults())
-          .unwrap()
-          .then(() => {
-            console.log('Successfully loaded saved results from API')
-            send({ type: 'RESULTS_LOADED_WITH_AUTH' });
-          })
-          .catch((err: any) => {
-            console.log('No saved results found, redirecting to quiz:', err.error)
-            handleRetake();
-          });
+        dispatch(clearRequiresAuth())
+        
+        // Check if we have results after clearing auth requirement
+        const hasResults = quizResults && (
+          quizResults.score !== undefined ||
+          quizResults.percentage !== undefined ||
+          quizResults.maxScore !== undefined ||
+          (quizResults.answers && Object.keys(quizResults.answers).length > 0) ||
+          (quizResults.results && quizResults.results.length > 0)
+        )
+
+        if (hasResults) {
+          console.log('Found existing results in state')
+          send({ type: 'RESULTS_LOADED_WITH_AUTH' });
+        } else {
+          console.log('No saved results found, redirecting to quiz')
+          handleRetake();
+        }
         return;
       }
     } catch (e) {
@@ -223,7 +231,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     // If no results in state, try to fetch from API
     if (!hasResults) {
       console.log('No results in state, attempting to load from API...')
-      dispatch(checkAuthAndLoadResults())
+      dispatch(loadQuizResults())
         .unwrap()
         .then(() => {
           console.log('Successfully loaded results from API')
@@ -336,7 +344,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     // If user becomes authenticated but no results, try to load them
     else if (isAuthenticated && !hasResults && !isAuthLoading && slug) {
       console.log('User authenticated but no results, attempting to load...')
-      dispatch(checkAuthAndLoadResults())
+      dispatch(loadQuizResults())
         .unwrap()
         .then(() => {
           send({ type: 'RESULTS_LOADED_WITH_AUTH' });

@@ -20,16 +20,23 @@ import { FileUpload } from "./components/FileUpload"
 import { SavedQuizList } from "./components/SavedQuizList"
 import DocumentQuizDisplay from "./components/DocumentQuizDisplay"
 import { PDFDownloadButton } from "./components/DocumentQuizPdf"
+import EnhancedPDFDownloadButton from "./components/EnhancedPDFDownloadButton"
 
 interface QuizOptionsType {
   numberOfQuestions: number
   difficulty: number
 }
 
-interface LocalQuestion {
+interface Question {
   id: string
   question: string
   options: string[]
+  correctAnswer: string | number
+  codeSnippet?: string
+  type?: string
+}
+
+interface LocalQuestion extends Omit<Question, 'correctAnswer'> {
   correctAnswer: number
 }
 
@@ -450,7 +457,7 @@ export default function DocumentQuizPage() {
                     <div className="flex gap-2">
                       {canSave && (
                         <>
-                          <PDFDownloadButton questions={quiz} title={quizTitle} variant="ghost" size="sm" />
+                          <PDFDownloadButton questions={quiz} title={quizTitle} variant="secondary" size="sm" />
                           <Button onClick={() => handleSaveQuiz()} disabled={isSaving} size="sm" className="gap-2">
                             <Save className="h-4 w-4" />
                             {isSaving ? "Saving..." : "Save Quiz"}
@@ -768,10 +775,10 @@ export default function DocumentQuizPage() {
         description="You are about to use AI to generate a quiz from your document. This will use credits from your account."
         confirmText="Generate Quiz Now"
         cancelText="Cancel"
-        showTokenUsage={true}
-        status={isLoading ? "loading" : submitError ? "error" : null}
+        showCreditUsage={true}
+        status={isLoading ? "loading" : submitError ? "error" : undefined}
         errorMessage={submitError || undefined}
-        tokenUsage={{
+        creditUsage={{
           used: Math.max(0, quizPlan.maxQuestions - quizPlan.credits),
           available: quizPlan.maxQuestions,
           remaining: quizPlan.credits,
@@ -782,7 +789,7 @@ export default function DocumentQuizPage() {
           count: quizOptions.numberOfQuestions,
           topic: file?.name || "Uploaded document",
           difficulty: quizOptions.difficulty <= 33 ? "easy" : quizOptions.difficulty <= 66 ? "medium" : "hard",
-          estimatedTokens: Math.min(quizOptions.numberOfQuestions || 1, 5) * 100 + (file?.size || 0) / 100,
+          estimatedCredits: Math.min(quizOptions.numberOfQuestions || 1, 5) * 100 + (file?.size || 0) / 100,
         }}
       >
         <div className="py-4 space-y-3">

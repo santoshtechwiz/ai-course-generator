@@ -1,20 +1,16 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { type NextRequest } from "next/server"
 import prisma, { slugToId } from "@/lib/db"
-import { getAuthSession } from "@/lib/auth"
+import { withAuth } from "@/middlewares/auth-middleware"
+import { ApiResponseHandler } from "@/services/api-response-handler"
 
-export async function POST(req: Request) {
-  const session = await getAuthSession()
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
-  const { type, id, rating } = await req.json()
-
-  if (!type || !id || rating === undefined) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-  }
-
+export const POST = withAuth(async (req: NextRequest, session) => {
   try {
+    const { type, id, rating } = await req.json()
+
+    if (!type || !id || rating === undefined) {
+      return ApiResponseHandler.validationError("Missing required fields")
+    }
+
     let result
 
     if (type === "quiz") {
@@ -49,31 +45,25 @@ export async function POST(req: Request) {
         },
       })
     } else {
-      return NextResponse.json({ error: "Invalid type" }, { status: 400 })
+      return ApiResponseHandler.validationError("Invalid type")
     }
 
-    return NextResponse.json({ success: true, data: result })
+    return ApiResponseHandler.success({ data: result })
   } catch (error) {
-    console.error("Error updating rating:", error)
-    return NextResponse.json({ error: "Failed to update rating" }, { status: 500 })
+    return ApiResponseHandler.error(error || "Failed to update rating")
   }
-}
+})
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession()
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
-  const { searchParams } = new URL(req.url)
-  const type = searchParams.get("type")
-  const id = searchParams.get("id")
-
-  if (!type || !id) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-  }
-
+export const GET = withAuth(async (req: NextRequest, session) => {
   try {
+    const { searchParams } = new URL(req.url)
+    const type = searchParams.get("type")
+    const id = searchParams.get("id")
+
+    if (!type || !id) {
+      return ApiResponseHandler.validationError("Missing required fields")
+    }
+
     let rating
 
     if (type === "quiz") {
@@ -95,12 +85,11 @@ export async function GET(req: NextRequest) {
         },
       })
     } else {
-      return NextResponse.json({ error: "Invalid type" }, { status: 400 })
+      return ApiResponseHandler.validationError("Invalid type")
     }
 
-    return NextResponse.json({ success: true, data: rating || 0 })
+    return ApiResponseHandler.success({ data: rating || 0 })
   } catch (error) {
-    console.error("Error fetching rating:", error)
-    return NextResponse.json({ error: "Failed to fetch rating" }, { status: 500 })
+    return ApiResponseHandler.error(error || "Failed to fetch rating")
   }
-}
+})

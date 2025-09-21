@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerAuthSession } from "@/lib/server-auth"
-import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
+import { SubscriptionService } from "@/services/subscription/subscription-service"
 
 /**
  * Billing History API endpoint

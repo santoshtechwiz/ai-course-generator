@@ -1,8 +1,9 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import { useState, useCallback, useMemo, memo } from "react"
 import { motion } from "framer-motion"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -26,6 +27,8 @@ import { Badge } from "@/components/ui/badge"
 import { Share2, Heart, MoreVertical, Eye, EyeOff, Trash2, Lock, Globe, FileText, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { useAuth } from "@/modules/auth"
+import { useDeleteQuiz } from "@/hooks/use-delete-quiz"
 
 // Types
 interface QuizActionsProps {
@@ -40,6 +43,7 @@ interface QuizActionsProps {
   showPdfGeneration?: boolean
   className?: string
   variant?: "default" | "compact" | "minimal"
+  userId?: string  // Add userId for ownership verification
   onVisibilityChange?: (isPublic: boolean) => void
   onFavoriteChange?: (isFavorite: boolean) => void
   onDelete?: () => void
@@ -55,6 +59,8 @@ interface ActionState {
 
 // Custom hook for quiz actions
 const useQuizActions = (props: QuizActionsProps) => {
+  const { isAuthenticated, user } = useAuth()
+  const router = useRouter()
   const [actionState, setActionState] = useState<ActionState>({
     isSharing: false,
     isFavoriting: false,
@@ -64,9 +70,47 @@ const useQuizActions = (props: QuizActionsProps) => {
   })
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
+  // Use the mutation hook for deletion
+  const deleteQuizMutation = useDeleteQuiz({
+    onSuccess: () => {
+      toast.success("Quiz deleted successfully!")
+      setShowDeleteDialog(false)
+      
+      // Call the onDelete callback if provided
+      props.onDelete?.()
+      
+      // Redirect to quizzes page after successful deletion
+      setTimeout(() => {
+        router.push('/dashboard/quizzes')
+      }, 1000) // Small delay to show the success toast
+    },
+    onError: (error) => {
+      console.error('Delete quiz error:', error)
+      toast.error("Failed to delete quiz. Please try again.")
+      setShowDeleteDialog(false)
+    }
+  })
+
   const updateActionState = useCallback((key: keyof ActionState, value: boolean) => {
     setActionState((prev) => ({ ...prev, [key]: value }))
   }, [])
+
+  // Check if user can perform actions
+  const canPerformAction = useCallback((actionType: 'edit' | 'delete') => {
+    if (!isAuthenticated || !user) {
+      toast.error("Please sign in to perform this action")
+      return false
+    }
+
+    // Check ownership for edit/delete actions
+    if ((actionType === 'edit' && !props.canEdit) || (actionType === 'delete' && !props.canDelete)) {
+      toast.error("You don't have permission to perform this action")
+      return false
+    }
+
+    // Additional server-side check will be performed by API
+    return true
+  }, [isAuthenticated, user, props.canEdit, props.canDelete])
 
   const handleShare = useCallback(async () => {
     updateActionState("isSharing", true)
@@ -94,71 +138,231 @@ const useQuizActions = (props: QuizActionsProps) => {
   }, [props.quizSlug, props.quizType, props.title, updateActionState])
 
   const handleFavorite = useCallback(async () => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to favorite quizzes")
+      return
+    }
+
     updateActionState("isFavoriting", true)
+    const newFavoriteState = !props.isFavorite
+    const actionText = newFavoriteState ? "Adding to favorites..." : "Removing from favorites..."
+    
+    toast.loading(actionText, { id: "favorite-action" })
+    
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      const response = await fetch(`/api/quizzes/${props.quizType}/${props.quizSlug}`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ isFavorite: newFavoriteState })
+      })
 
-      const newFavoriteState = !props.isFavorite
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update favorite status')
+      }
+
       props.onFavoriteChange?.(newFavoriteState)
-
-      toast.success(newFavoriteState ? "Added to favorites!" : "Removed from favorites!")
+      toast.success(newFavoriteState ? "Added to favorites!" : "Removed from favorites!", { id: "favorite-action" })
     } catch (error) {
-      toast.error("Failed to update favorite status")
+      console.error('Favorite toggle error:', error)
+      toast.error(error instanceof Error ? error.message : "Failed to update favorite status", { id: "favorite-action" })
     } finally {
       updateActionState("isFavoriting", false)
     }
-  }, [props.isFavorite, props.onFavoriteChange, updateActionState])
+  }, [isAuthenticated, props.isFavorite, props.onFavoriteChange, props.quizType, props.quizSlug, updateActionState])
 
   const handleVisibilityToggle = useCallback(async () => {
+    if (!canPerformAction('edit')) return
+
     updateActionState("isTogglingVisibility", true)
+    const newVisibility = !props.isPublic
+    const actionText = newVisibility ? "Making quiz public..." : "Making quiz private..."
+    
+    toast.loading(actionText, { id: "visibility-action" })
+    
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      const response = await fetch(`/api/quizzes/${props.quizType}/${props.quizSlug}`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ isPublic: newVisibility })
+      })
 
-      const newVisibility = !props.isPublic
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update quiz visibility')
+      }
+
       props.onVisibilityChange?.(newVisibility)
-
-      toast.success(newVisibility ? "Quiz is now public!" : "Quiz is now private!")
+      toast.success(newVisibility ? "Quiz is now public!" : "Quiz is now private!", { id: "visibility-action" })
     } catch (error) {
-      toast.error("Failed to update quiz visibility")
+      console.error('Visibility toggle error:', error)
+      toast.error(error instanceof Error ? error.message : "Failed to update quiz visibility", { id: "visibility-action" })
     } finally {
       updateActionState("isTogglingVisibility", false)
     }
-  }, [props.isPublic, props.onVisibilityChange, updateActionState])
+  }, [canPerformAction, props.isPublic, props.onVisibilityChange, props.quizType, props.quizSlug, updateActionState])
 
   const handleDelete = useCallback(async () => {
-    updateActionState("isDeleting", true)
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+    if (!canPerformAction('delete')) return
 
-      props.onDelete?.()
-      toast.success("Quiz deleted successfully!")
+    try {
+      await deleteQuizMutation.mutateAsync({
+        slug: props.quizSlug,
+        quizType: props.quizType
+      })
     } catch (error) {
-      toast.error("Failed to delete quiz")
-    } finally {
-      updateActionState("isDeleting", false)
-      setShowDeleteDialog(false)
+      // Error handling is done in the mutation hook
+      console.error('Delete quiz error:', error)
     }
-  }, [props.onDelete, updateActionState])
+  }, [canPerformAction, deleteQuizMutation, props.quizSlug, props.quizType])
 
   const handlePdfGeneration = useCallback(async () => {
-    updateActionState("isGeneratingPdf", true)
-    try {
-      // Simulate PDF generation
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+    if (!isAuthenticated) {
+      toast.error("Please sign in to generate PDF")
+      return
+    }
 
-      toast.success("PDF generated successfully!")
+    updateActionState("isGeneratingPdf", true)
+    toast.loading("Fetching quiz data for PDF generation...", { id: "pdf-generation" })
+    
+    try {
+      // Fetch quiz data first
+      const response = await fetch(`/api/quizzes/${props.quizType}/${props.quizSlug}`, {
+        method: 'GET',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch quiz data')
+      }
+
+      const quizData = await response.json()
+      
+      toast.loading("Generating PDF...", { id: "pdf-generation" })
+      
+      // Dynamically import PDF generation libraries to avoid SSR issues
+      const { pdf, Document, Page, Text, View, StyleSheet } = await import('@react-pdf/renderer')
+      
+      // Create styles
+      const styles = StyleSheet.create({
+        page: {
+          flexDirection: "column",
+          backgroundColor: "#FFFFFF",
+          padding: 30,
+          fontFamily: "Helvetica",
+        },
+        title: {
+          fontSize: 24,
+          marginBottom: 20,
+          fontWeight: "bold",
+          textAlign: "center",
+          color: "#1F2937",
+        },
+        question: {
+          fontSize: 14,
+          marginBottom: 10,
+          fontWeight: "bold",
+          color: "#1F2937",
+        },
+        option: {
+          fontSize: 12,
+          marginBottom: 5,
+          color: "#374151",
+          paddingLeft: 10,
+        },
+        correctOption: {
+          fontSize: 12,
+          marginBottom: 5,
+          color: "#10B981",
+          paddingLeft: 10,
+          fontWeight: "bold",
+        },
+        explanation: {
+          fontSize: 11,
+          marginTop: 10,
+          color: "#6B7280",
+          fontStyle: "italic",
+        },
+        section: {
+          marginBottom: 15,
+          padding: 10,
+        },
+        footer: {
+          position: "absolute",
+          bottom: 30,
+          left: 30,
+          right: 30,
+          textAlign: "center",
+          color: "#6B7280",
+          fontSize: 10,
+        }
+      })
+
+      // Create PDF Document component
+      const QuizDocument = () => (
+        React.createElement(Document, null,
+          React.createElement(Page, { size: "A4", style: styles.page },
+            React.createElement(Text, { style: styles.title }, props.title),
+            ...(quizData.questions || []).map((question: any, index: number) => 
+              React.createElement(View, { key: question.id || index, style: styles.section },
+                React.createElement(Text, { style: styles.question }, 
+                  `${index + 1}. ${question.question}`
+                ),
+                ...(question.options || []).map((option: string, optIndex: number) => 
+                  React.createElement(Text, {
+                    key: optIndex,
+                    style: question.correctAnswer === optIndex ? styles.correctOption : styles.option
+                  }, `${String.fromCharCode(65 + optIndex)}. ${option}`)
+                ),
+                question.explanation ? 
+                  React.createElement(Text, { style: styles.explanation }, 
+                    `Explanation: ${question.explanation}`
+                  ) : null
+              )
+            ),
+            React.createElement(Text, { style: styles.footer }, 
+              `© CourseAI ${new Date().getFullYear()}`
+            )
+          )
+        )
+      )
+      
+      const blob = await pdf(QuizDocument()).toBlob()
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${props.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_quiz.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+
+      toast.success("PDF generated and downloaded successfully!", { id: "pdf-generation" })
     } catch (error) {
-      toast.error("Failed to generate PDF")
+      console.error('PDF generation error:', error)
+      toast.error(error instanceof Error ? error.message : "Failed to generate PDF", { id: "pdf-generation" })
     } finally {
       updateActionState("isGeneratingPdf", false)
     }
-  }, [updateActionState])
+  }, [isAuthenticated, props.quizType, props.quizSlug, props.title, updateActionState])
 
   return {
-    actionState,
+    actionState: {
+      ...actionState,
+      isDeleting: deleteQuizMutation.isPending
+    },
     showDeleteDialog,
     setShowDeleteDialog,
     handleShare,
@@ -166,6 +370,8 @@ const useQuizActions = (props: QuizActionsProps) => {
     handleVisibilityToggle,
     handleDelete,
     handlePdfGeneration,
+    canPerformAction,
+    isAuthenticated
   }
 }
 
@@ -273,6 +479,7 @@ const QuizActions = memo(
     showPdfGeneration = false,
     className,
     variant = "default",
+    userId,
     onVisibilityChange,
     onFavoriteChange,
     onDelete,
@@ -286,6 +493,8 @@ const QuizActions = memo(
       handleVisibilityToggle,
       handleDelete,
       handlePdfGeneration,
+      canPerformAction,
+      isAuthenticated
     } = useQuizActions({
       quizId,
       quizSlug,
@@ -296,6 +505,7 @@ const QuizActions = memo(
       canEdit,
       canDelete,
       showPdfGeneration,
+      userId,
       onVisibilityChange,
       onFavoriteChange,
       onDelete,
@@ -329,32 +539,33 @@ const QuizActions = memo(
           label: isFavorite ? "Remove from Favorites" : "Add to Favorites",
           onClick: handleFavorite,
           loading: actionState.isFavoriting,
-          show: true,
-          className: isFavorite ? "text-destructive hover:text-destructive/80" : "",
+          show: isAuthenticated, // Only show for authenticated users
+          className: isFavorite ? "text-red-500 hover:text-red-600 fill-current" : "hover:text-red-500",
+          variant: "outline" as const,
+        },
+        {
+          key: "visibility",
+          icon: isPublic ? Globe : Lock,
+          label: isPublic ? "Make Private" : "Make Public",
+          onClick: handleVisibilityToggle,
+          loading: actionState.isTogglingVisibility,
+          show: canEdit && isAuthenticated,
+          className: isPublic ? "text-green-600 hover:text-green-700" : "text-gray-500 hover:text-gray-600",
           variant: "outline" as const,
         },
       ],
-      [handleShare, handleFavorite, actionState.isSharing, actionState.isFavoriting, isFavorite],
+      [handleShare, handleFavorite, handleVisibilityToggle, actionState.isSharing, actionState.isFavoriting, actionState.isTogglingVisibility, isFavorite, isPublic, isAuthenticated, canEdit],
     )
 
     const secondaryActions = useMemo(
       () => [
-        {
-          key: "visibility",
-          icon: isPublic ? Eye : EyeOff,
-          label: isPublic ? "Make Private" : "Make Public",
-          onClick: handleVisibilityToggle,
-          loading: actionState.isTogglingVisibility,
-          show: canEdit,
-          variant: "ghost" as const,
-        },
         {
           key: "pdf",
           icon: FileText,
           label: "Generate PDF",
           onClick: handlePdfGeneration,
           loading: actionState.isGeneratingPdf,
-          show: showPdfGeneration,
+          show: showPdfGeneration && isAuthenticated,
           variant: "ghost" as const,
         },
         {
@@ -363,22 +574,19 @@ const QuizActions = memo(
           label: "Delete Quiz",
           onClick: () => setShowDeleteDialog(true),
           loading: actionState.isDeleting,
-          show: canDelete,
+          show: canDelete && isAuthenticated,
           className: "text-destructive hover:text-destructive/80",
           variant: "ghost" as const,
         },
       ],
       [
-        isPublic,
-        handleVisibilityToggle,
         handlePdfGeneration,
         setShowDeleteDialog,
-        actionState.isTogglingVisibility,
         actionState.isGeneratingPdf,
         actionState.isDeleting,
-        canEdit,
         canDelete,
         showPdfGeneration,
+        isAuthenticated,
       ],
     )
 
@@ -392,14 +600,28 @@ const QuizActions = memo(
             loading={actionState.isSharing} 
             variant="ghost"
           />
-          <ActionButton
-            icon={Heart}
-            label={isFavorite ? "Unfavorite" : "Favorite"}
-            onClick={handleFavorite}
-            loading={actionState.isFavoriting}
-            className={isFavorite ? "text-destructive" : ""}
-            variant="ghost"
-          />
+          {isAuthenticated && (
+            <>
+              <ActionButton
+                icon={Heart}
+                label={isFavorite ? "Unfavorite" : "Favorite"}
+                onClick={handleFavorite}
+                loading={actionState.isFavoriting}
+                className={isFavorite ? "text-red-500 hover:text-red-600 fill-current" : "hover:text-red-500"}
+                variant="ghost"
+              />
+              {canEdit && (
+                <ActionButton
+                  icon={isPublic ? Globe : Lock}
+                  label={isPublic ? "Make Private" : "Make Public"}
+                  onClick={handleVisibilityToggle}
+                  loading={actionState.isTogglingVisibility}
+                  className={isPublic ? "text-green-600 hover:text-green-700" : "text-gray-500 hover:text-gray-600"}
+                  variant="ghost"
+                />
+              )}
+            </>
+          )}
         </div>
       )
     }

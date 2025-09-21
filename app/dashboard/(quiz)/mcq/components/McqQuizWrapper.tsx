@@ -28,6 +28,7 @@ import { UnifiedLoader, PageLoader } from "@/components/loaders"
 import { AlertCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import SubscriptionWrapper from "@/components/subscription/SubscriptionWrapper"
 
 
 interface McqQuizWrapperProps {
@@ -262,7 +263,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     )
   }
 
-  // Success state - render quiz
+  // Success state - render quiz with subscription control
   if (quizStatus === 'succeeded' && questions.length > 0) {
     const currentQ = questions[currentQuestionIndex]
     
@@ -277,28 +278,62 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     const existingAnswer = answers[String(currentQ.id)]?.selectedOptionId
 
     return (
-      <McqQuiz
-        question={{
-          id: String(currentQ?.id || ''),
-          text: currentQ?.question || '',
-          question: currentQ?.question || '',
-          options: Array.isArray(currentQ?.options) 
-            ? currentQ.options.map(opt => typeof opt === 'string' ? opt : opt.text || '')
-            : []
+      <SubscriptionWrapper
+        requiredPlan="FREE"
+        requireActiveSubscription={false}
+        requireCredits={true}
+        fallback={
+          <div className="min-h-[60vh] flex items-center justify-center p-6">
+            <Card className="w-full max-w-md text-center">
+              <CardHeader>
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+                  <AlertCircle className="h-6 w-6 text-amber-600" />
+                </div>
+                <CardTitle className="text-amber-600">Credits Required</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground">
+                  You need credits to take this quiz. Please purchase credits or upgrade your subscription to continue.
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Button onClick={() => router.push('/dashboard/subscription')} className="flex items-center gap-2">
+                    Get Credits
+                  </Button>
+                  <Button onClick={() => router.back()} variant="ghost">
+                    Go Back
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        }
+        onAccessDenied={() => {
+          router.push('/dashboard/subscription')
         }}
-        onAnswer={(answer) => {
-          handleAnswer(answer)
-        }}
-        onNext={handleNextQuestion}
-        onSubmit={handleSubmitQuiz}
-        isSubmitting={false} // Will be handled by the component's internal state
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-        existingAnswer={existingAnswer || undefined}
-        canGoNext={currentQuestionIndex < questions.length - 1}
-        isLastQuestion={currentQuestionIndex === questions.length - 1}
-        quizTitle={quizTitle}
-      />
+      >
+        <McqQuiz
+          question={{
+            id: String(currentQ?.id || ''),
+            text: currentQ?.question || '',
+            question: currentQ?.question || '',
+            options: Array.isArray(currentQ?.options) 
+              ? currentQ.options.map(opt => typeof opt === 'string' ? opt : opt.text || '')
+              : []
+          }}
+          onAnswer={(answer) => {
+            handleAnswer(answer)
+          }}
+          onNext={handleNextQuestion}
+          onSubmit={handleSubmitQuiz}
+          isSubmitting={false} // Will be handled by the component's internal state
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
+          existingAnswer={existingAnswer || undefined}
+          canGoNext={currentQuestionIndex < questions.length - 1}
+          isLastQuestion={currentQuestionIndex === questions.length - 1}
+          quizTitle={quizTitle}
+        />
+      </SubscriptionWrapper>
     )
   }
 

@@ -9,7 +9,7 @@ import type { PaymentGateway } from "./payment-gateway-interface"
 import { PaymentProvider, PaymentStatus } from "./payment-gateway-interface"
 import { getPaymentGateway } from "./payment-gateway-factory"
 import { PaymentSecurityUtils } from "./payment-config-manager"
-import { SubscriptionService } from "./subscription-service"
+import { SubscriptionService } from "../../../../services/subscription/subscription-service"
 import { logger } from "@/lib/logger"
 
 /**

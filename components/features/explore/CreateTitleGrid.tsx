@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import useSubscription from "@/hooks/use-subscription";
+import { useSubscription } from "@/modules/auth/hooks/useSubscription";
 
 // Enhanced color system with gradients
 const getColorClasses = (color: string, isPremium: boolean) => {
@@ -212,7 +212,7 @@ const tiles = [
       "Create full courses in hours, not weeks",
       "Everything organized and ready to use",
       "Add videos, quizzes, and more",
-      "Track student progress easily"
+      "Track user progress easily"
     ],
     isPremium: false,
     timeToCreate: "30 minutes",

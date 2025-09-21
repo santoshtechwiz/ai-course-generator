@@ -5,7 +5,7 @@ import { Document, Page, Text, View, StyleSheet, Font, pdf, PDFDownloadLink } fr
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Download, Lock, Loader2 } from "lucide-react"
-import useSubscription from "@/hooks/use-subscription"
+import { useSubscription } from "@/modules/auth/hooks/useSubscription"
 import { marked } from "marked"
 
 // Note: Using system fonts to avoid CSP issues with external font loading
@@ -502,7 +502,7 @@ const UnifiedPdfGenerator: React.FC<UnifiedPdfGeneratorProps> = ({
 }) => {
   const [isDownloading, setIsDownloading] = useState(false)
   const [isClient, setIsClient] = useState(false)
-  const { canDownloadPdf } = useSubscription()
+  const { hasActiveSubscription } = useSubscription()
   
   React.useEffect(() => {
     setIsClient(true)
@@ -533,7 +533,7 @@ const UnifiedPdfGenerator: React.FC<UnifiedPdfGeneratorProps> = ({
   const finalButtonText = buttonText || "Download PDF"
   
   // Allow download if user has subscription OR is the owner of the content
-  const canDownload = canDownloadPdf || isOwner
+  const canDownload = hasActiveSubscription || isOwner
   const isDisabled = !canDownload || !isDataReady || isDownloading || !isClient
 
   const handleBlobDownload = async () => {

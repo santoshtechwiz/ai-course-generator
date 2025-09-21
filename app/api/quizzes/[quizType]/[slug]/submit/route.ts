@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db"
 import { getAuthSession } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import { QuizType } from "@/app/types/quiz-types"
+import { validateSubscriptionServer } from "@/lib/subscription-validation"
 
 // Guarded debug logger: only emits in non-production environments
 const logDebug = (...args: unknown[]) => {
@@ -794,6 +795,21 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
 
     if (!userId) {
       return NextResponse.json({ success: false, error: "User not authenticated" }, { status: 401 })
+    }
+
+    // Validate subscription for quiz submission
+    const validation = await validateSubscriptionServer(userId, {
+      requireCredits: true,
+      requireSubscription: false, // Allow free plan users to submit quizzes
+      requiredPlan: 'FREE'
+    })
+    
+    if (!validation.isValid) {
+      return NextResponse.json({ 
+        success: false,
+        error: validation.error || "Subscription validation failed",
+        requiresSubscription: true 
+      }, { status: 403 })
     }
 
     let body: Record<string, any>

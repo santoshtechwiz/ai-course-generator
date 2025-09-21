@@ -17,7 +17,7 @@ import { migratedStorage } from "@/lib/storage"
 import { toast } from "@/hooks/use-toast"
 
 import { useSession } from "next-auth/react"
-import useSubscription from "@/hooks/use-subscription"
+import { useSubscription } from "@/modules/auth/hooks/useSubscription"
 
 
 export default function TrialModal() {
@@ -26,21 +26,20 @@ export default function TrialModal() {
   const [copied, setCopied] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const {
-    isSubscribed,
-    totalTokens,
+    subscription,
+    hasActiveSubscription,
     refreshSubscription,
   } = useSubscription()
   const router = useRouter()
-  const {data:subscription} = useSubscription();
   const currentMonth = new Date().toLocaleString("default", { month: "long" })
 
   useEffect(() => {
     const hasSeenTrialModal = migratedStorage.getPreference("seen_trial_modal", false)
-    if (!hasSeenTrialModal && (!isSubscribed || totalTokens === 0)) {
+    if (!hasActiveSubscription || subscription?.credits === 0) {
       const timer = setTimeout(() => setIsOpen(true), 3000)
       return () => clearTimeout(timer)
     }
-  }, [isSubscribed, totalTokens])
+  }, [hasActiveSubscription, subscription?.credits])
 
   if (!session) return null
 

@@ -4,7 +4,7 @@ import { z } from "zod"
 
 import { prisma } from "@/lib/db"
 import { authOptions } from "@/lib/auth"
-import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
+import { SubscriptionService } from "@/services/subscription/subscription-service"
 
 // Define validation schema for request body with improved type checking
 const subscriptionSchema = z.object({

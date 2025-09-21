@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db"
 import { generateSlug } from "@/lib/utils"
 import { BlanksQuizService } from "@/app/services/blanks-quiz.service"
 import { getAuthSession } from "@/lib/auth"
+import { creditService, CreditOperationType } from "@/services/credit-service"
 
 interface OpenEndedFillInTheBlanksQuestion {
   question: string
@@ -15,31 +16,48 @@ interface OpenEndedFillInTheBlanksQuestion {
 export async function POST(req: Request) {
   try {
     const session = await getAuthSession()
-    const { title, amount, topic, difficulty } = await req.json()
+    const { title, amount, difficulty } = await req.json()
     const userId = session?.user.id
 
     if (!userId) {
       return NextResponse.json({ error: "User not authenticated" }, { status: 401 })
     }
+    
     const creditDeduction = amount > 5 ? 2 : 1
 
-    if (session.user.credits < creditDeduction) {
-      return { error: "Insufficient credits", status: 403 }
-    }    // Move quiz and slug generation outside the transaction
+    // SECURE: Atomic credit validation and deduction to prevent race conditions
+    const creditResult = await creditService.executeCreditsOperation(
+      userId,
+      creditDeduction,
+      CreditOperationType.QUIZ_CREATION,
+      {
+        description: `Blanks quiz creation: ${title}`,
+        quizType: 'blanks',
+        questionAmount: amount,
+        difficulty
+      }
+    )
+
+    if (!creditResult.success) {
+      return NextResponse.json({ 
+        error: creditResult.error || "Insufficient credits" 
+      }, { status: 403 })
+    }
+
+    // Move quiz and slug generation outside the main transaction
     const blanksQuizService = new BlanksQuizService()
-    const quiz = await blanksQuizService.generateQuiz({ title: topic, amount })
-    let baseSlug = generateSlug(topic)
+    const quiz = await blanksQuizService.generateQuiz({ title, amount })
+    let baseSlug = generateSlug(title)
     let slug = baseSlug
     let suffix = 2
 
     // Ensure unique slug
     while (await prisma.userQuiz.findUnique({ where: { slug } })) {
       slug = `${baseSlug}-${suffix++}`
-    }    const userQuiz = await prisma.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id: userId },
-        data: { credits: { decrement: creditDeduction } },
-      })
+    }
+
+    const userQuiz = await prisma.$transaction(async (tx) => {
+      // NOTE: Credits already deducted atomically above - no need to deduct again
 
       // Create the quiz first
       const createdQuiz = await tx.userQuiz.create({
@@ -84,7 +102,13 @@ export async function POST(req: Request) {
       return createdQuiz
     }, { timeout: 15000 }) // Increased transaction timeout to 15 seconds
 
-    return NextResponse.json({ quizId: userQuiz.id, slug: userQuiz.slug })
+    console.log(`[BlankQuiz API] Successfully created quiz ${userQuiz.id} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
+
+    return NextResponse.json({ 
+      quizId: userQuiz.id, 
+      slug: userQuiz.slug,
+      creditsRemaining: creditResult.newBalance 
+    })
   } catch (error) {
     console.error("Error generating quiz:", error)
     return NextResponse.json({ error: "Failed to generate quiz" }, { status: 500 })

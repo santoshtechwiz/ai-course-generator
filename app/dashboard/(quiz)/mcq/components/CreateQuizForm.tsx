@@ -8,10 +8,11 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { api } from "@/lib/api-helper"
 import { signIn, useSession } from "next-auth/react"
-import { HelpCircle, Timer, Sparkles, Check, Brain, BookOpen, GraduationCap, Target, Lightbulb } from "lucide-react"
+import { HelpCircle, Timer, Sparkles, Check, Lightbulb } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAppDispatch } from "@/store"
 import { forceSyncSubscription } from "@/store/slices/subscription-slice"
+import { ClientCreditService } from "@/services/client-credit-service"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -47,83 +48,6 @@ interface CreateQuizFormProps {
   quizType?: string
 }
 
-const SUBJECT_CATEGORIES = {
-  Academic: {
-    icon: GraduationCap,
-    color:
-      "bg-gradient-to-r from-blue-400 to-cyan-500 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 border-0",
-    subjects: [
-      "Mathematics",
-      "Physics",
-      "Chemistry",
-      "Biology",
-      "Computer Science",
-      "History",
-      "Geography",
-      "Literature",
-      "Philosophy",
-      "Psychology",
-      "Economics",
-      "Political Science",
-      "Sociology",
-      "Anthropology",
-    ],
-  },
-  Professional: {
-    icon: Target,
-    color:
-      "bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/25 hover:shadow-green-500/40 border-0",
-    subjects: [
-      "Project Management",
-      "Marketing",
-      "Finance",
-      "Human Resources",
-      "Business Strategy",
-      "Data Analysis",
-      "Digital Marketing",
-      "Sales",
-      "Leadership",
-      "Operations Management",
-      "Quality Assurance",
-    ],
-  },
-  Technology: {
-    icon: Brain,
-    color:
-      "bg-gradient-to-r from-purple-400 to-violet-500 text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 border-0",
-    subjects: [
-      "Web Development",
-      "Mobile Development",
-      "Data Science",
-      "Machine Learning",
-      "Cybersecurity",
-      "Cloud Computing",
-      "DevOps",
-      "UI/UX Design",
-      "Database Management",
-      "Network Administration",
-      "Software Testing",
-    ],
-  },
-  General: {
-    icon: BookOpen,
-    color:
-      "bg-gradient-to-r from-slate-400 to-gray-500 text-white shadow-lg shadow-slate-500/25 hover:shadow-slate-500/40 border-0",
-    subjects: [
-      "General Knowledge",
-      "Current Affairs",
-      "Sports",
-      "Entertainment",
-      "Science & Nature",
-      "Art & Culture",
-      "Food & Cooking",
-      "Travel",
-      "Health & Fitness",
-      "Personal Development",
-    ],
-  },
-}
-
 export default function CreateQuizForm({
   isLoggedIn,
   maxQuestions,
@@ -148,6 +72,39 @@ export default function CreateQuizForm({
     difficulty: "medium",
     type: "mcq",
   })
+
+  // Credit information state for consistent display
+  const [creditInfo, setCreditInfo] = React.useState({
+    hasCredits: false,
+    remainingCredits: credits,
+    totalCredits: 0,
+    usedCredits: 0
+  })
+
+  // Fetch detailed credit information for consistent display
+  React.useEffect(() => {
+    if (isLoggedIn) {
+      ClientCreditService.getCreditDetails()
+        .then(details => {
+          setCreditInfo({
+            hasCredits: details.hasCredits,
+            remainingCredits: details.remainingCredits,
+            totalCredits: details.totalCredits,
+            usedCredits: details.usedCredits
+          })
+        })
+        .catch(error => {
+          console.error('[CreateQuizForm] Failed to fetch credit details:', error)
+          // Fallback to props
+          setCreditInfo({
+            hasCredits: credits > 0,
+            remainingCredits: credits,
+            totalCredits: credits,
+            usedCredits: 0
+          })
+        })
+    }
+  }, [isLoggedIn, credits])
 
   const {
     control,
@@ -175,7 +132,7 @@ export default function CreateQuizForm({
   }, [params?.title, params?.amount, maxQuestions, setValue])
 
   React.useEffect(() => {
-    const subscription = watch((value) => setFormData(value as QuizFormData))
+    const subscription = watch((value: any) => setFormData(value as QuizFormData))
     return () => subscription.unsubscribe()
   }, [watch, setFormData])
 
@@ -198,15 +155,15 @@ export default function CreateQuizForm({
   const validateQuizData = React.useCallback(
     (data: QuizFormData): string | null => {
       if (!data.title || data.title.trim().length < 3) {
-        return "Quiz title must be at least 3 characters"
+        return "Quiz title must be at least 3 characters. Try something like 'JavaScript basics' or 'World War 2 history'."
       }
 
       if (!data.amount || typeof data.amount !== "number" || data.amount < 1 || data.amount > maxQuestions) {
-        return `Number of questions must be between 1 and ${maxQuestions}`
+        return `Number of questions must be between 1 and ${maxQuestions}. Start with 5-10 questions for better results.`
       }
 
       if (!data.difficulty || ["easy", "medium", "hard"].includes(data.difficulty) === false) {
-        return "Please select a valid difficulty level"
+        return "Please select a difficulty level. Choose 'Easy' for basic concepts, 'Medium' for standard knowledge, or 'Hard' for advanced topics."
       }
 
       return null
@@ -276,10 +233,31 @@ export default function CreateQuizForm({
       router.push(`/dashboard/mcq/${slug}`)
     } catch (error: any) {
       console.error("Quiz creation error:", error)
-      const message = error?.response?.data?.message || error?.message || "Failed to create quiz. Please try again."
+      
+      // Provide more specific error messages based on error type
+      let message = "Failed to create quiz. Please try again."
+      
+      if (error?.response?.status === 403) {
+        message = "Insufficient credits. Please upgrade your plan or purchase more credits."
+      } else if (error?.response?.status === 429) {
+        message = "Too many requests. Please wait a moment and try again."
+      } else if (error?.response?.status === 400) {
+        message = "Invalid quiz configuration. Please check your inputs and try again."
+      } else if (error?.message?.includes("network") || error?.message?.includes("fetch")) {
+        message = "Network error. Please check your connection and try again."
+      } else if (error?.response?.data?.message) {
+        message = error.response.data.message
+      } else if (error?.message) {
+        message = error.message
+      }
+      
       setSubmissionError(message)
       
-      toast({ title: "Error", description: message, variant: "destructive" })
+      toast({ 
+        title: "Quiz Creation Failed", 
+        description: message, 
+        variant: "destructive" 
+      })
     } finally {
       setIsLoading(false)
     }
@@ -304,94 +282,37 @@ export default function CreateQuizForm({
   }, [credits])
 
   return (
-    <FormContainer variant="glass">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8">
+    <div className="w-full max-w-4xl mx-auto">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 md:space-y-8">
         {/* Topic Selection */}
         <motion.div
-          className="space-y-4 sm:space-y-6"
+          className="space-y-4 md:space-y-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
           <div className="flex items-center gap-2">
-            <Label htmlFor="title" className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100">
+            <Label htmlFor="title" className="text-base md:text-lg font-semibold text-slate-900 dark:text-slate-100">
               Topic
             </Label>
             <span className="text-rose-500">*</span>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <HelpCircle className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 cursor-help" />
+                  <HelpCircle className="w-4 h-4 text-slate-400 cursor-help flex-shrink-0" />
                 </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-xs text-xs sm:text-sm">
-                  <p>Enter any topic you'd like to be quizzed on</p>
+                <TooltipContent side="right" className="max-w-xs text-xs md:text-sm">
+                  <p>Enter any topic you'd like to be quizzed on. Use multiple words like "calculus derivatives" or "world history renaissance"</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
 
-          <div className="space-y-3 sm:space-y-4">
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Choose a category:</p>
-
-            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3">
-              {Object.entries(SUBJECT_CATEGORIES).map(([categoryName, category]) => {
-                const Icon = category.icon
-                const isSelected = selectedCategory === categoryName
-
-                return (
-                  <motion.button
-                    key={categoryName}
-                    type="button"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                    className={cn(
-                      "flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-full font-medium text-xs sm:text-sm transition-all duration-200 min-h-[2.5rem]",
-                      isSelected
-                        ? category.color
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700",
-                    )}
-                    onClick={() => setSelectedCategory(selectedCategory === categoryName ? null : categoryName)}
-                  >
-                    <Icon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                    <span className="truncate">{categoryName}</span>
-                  </motion.button>
-                )
-              })}
-            </div>
-
-            {selectedCategory && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 p-3 sm:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl"
-              >
-                {SUBJECT_CATEGORIES[selectedCategory as keyof typeof SUBJECT_CATEGORIES].subjects.map((subject) => (
-                  <motion.button
-                    key={subject}
-                    type="button"
-                    onClick={() => setValue("title", subject)}
-                    className={cn(
-                      "p-3 rounded-lg text-sm font-medium transition-all duration-300 text-left",
-                      title === subject
-                        ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/25"
-                        : "bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 hover:shadow-md",
-                    )}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {subject}
-                  </motion.button>
-                ))}
-              </motion.div>
-            )}
-
+          <div className="space-y-3 md:space-y-4">
             <div className="relative">
               <Input
                 id="title"
-                placeholder="Enter the quiz topic"
+                placeholder="Enter the quiz topic (e.g., 'math algebra basics', 'javascript functions')"
                 className="w-full h-12 text-base bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 pr-12"
                 {...register("title")}
                 aria-describedby="topic-description"
@@ -406,7 +327,7 @@ export default function CreateQuizForm({
             )}
 
             <p className="text-sm text-slate-600 dark:text-slate-400" id="topic-description">
-              Choose a specific topic for more focused questions
+              Be specific for more focused questions. Multi-word topics work great!
             </p>
           </div>
         </motion.div>
@@ -529,10 +450,9 @@ export default function CreateQuizForm({
             <Sparkles className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             Available Credits
           </h3>
-          <Progress value={creditPercentage} className="h-3" />
+          <Progress value={creditInfo.totalCredits > 0 ? (creditInfo.remainingCredits / creditInfo.totalCredits) * 100 : 0} className="h-3" />
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            You have <span className="font-bold text-indigo-600 dark:text-indigo-400">{credits}</span> credit
-            {credits !== 1 ? "s" : ""} remaining.
+            {creditInfo.usedCredits} used of {creditInfo.totalCredits} total credits. <span className="font-bold text-indigo-600 dark:text-indigo-400">{creditInfo.remainingCredits} remaining</span>.
           </p>
         </motion.div>
 
@@ -590,21 +510,21 @@ export default function CreateQuizForm({
         description="You are about to use AI to generate a multiple-choice quiz. This will use credits from your account."
         confirmText="Generate Now"
         cancelText="Cancel"
-        showTokenUsage={true}
-  status={isLoading ? "loading" : submissionError ? "error" : isSuccess ? "success" : undefined}
-  errorMessage={submissionError || undefined}
-        tokenUsage={{
-          used: Math.max(0, maxQuestions - credits),
-          available: maxQuestions,
-          remaining: credits,
-          percentage: (Math.max(0, maxQuestions - credits) / maxQuestions) * 100,
+        showCreditUsage={true}
+        status={isLoading ? "loading" : submissionError ? "error" : isSuccess ? "success" : undefined}
+        errorMessage={submissionError || undefined}
+        creditUsage={{
+          used: creditInfo.usedCredits,
+          available: creditInfo.totalCredits,
+          remaining: creditInfo.remainingCredits,
+          percentage: creditInfo.totalCredits > 0 ? (creditInfo.usedCredits / creditInfo.totalCredits) * 100 : 0,
         }}
         quizInfo={{
           type: "Multiple Choice Questions",
           topic: watch("title"),
           count: watch("amount"),
           difficulty: watch("difficulty"),
-          estimatedTokens: Math.min(watch("amount") || 1, 5) * 120,
+          estimatedCredits: 1, // Quiz creation costs 1 credit
         }}
       >
         <div className="py-2">
@@ -615,6 +535,6 @@ export default function CreateQuizForm({
           </p>
         </div>
       </ConfirmDialog>
-    </FormContainer>
+    </div>
   )
 }

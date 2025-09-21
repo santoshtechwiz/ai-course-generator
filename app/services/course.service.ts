@@ -1,5 +1,6 @@
 import { courseRepository } from "@/app/repositories/course.repository";
 import { generateCourseContent } from "@/lib/chatgpt/generateCourseContent";
+import { creditService, CreditOperationType } from "@/services/credit-service";
 import type { OutputUnits, CourseUpdateData, CourseChaptersUpdate } from "@/app/types/course-types";
 import { z } from "zod";
 import { createChaptersSchema } from "@/schema/schema";
@@ -243,10 +244,25 @@ export class CourseService {
    * Create a new course from title, units, and category
    */
   async createCourse(userId: string, courseData: z.infer<typeof createChaptersSchema>): Promise<CourseCreationResult> {
-    // Validate user credits
-    await courseRepository.checkUserCredits(userId);
-
     const { title, units, category, description } = courseData;
+
+    // SECURE: Atomic credit validation and deduction to prevent race conditions
+    const creditDeduction = 1 // Standard 1 credit for course creation
+    const creditResult = await creditService.executeCreditsOperation(
+      userId,
+      creditDeduction,
+      CreditOperationType.COURSE_GENERATION,
+      {
+        description: `Course creation: ${title}`,
+        courseTitle: title,
+        unitCount: units.length,
+        category
+      }
+    )
+
+    if (!creditResult.success) {
+      throw new Error(creditResult.error || "Insufficient credits")
+    }
 
     // Generate unique slug
     const slug = await courseRepository.generateUniqueSlug(title);
@@ -273,8 +289,9 @@ export class CourseService {
       outputUnits,
     );
 
-    // Decrement user credits
-    await courseRepository.decrementUserCredits(userId);
+    // NOTE: Credits already deducted atomically above - no need to call decrementUserCredits
+
+    console.log(`[Course Service] Successfully created course ${course.slug} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
 
     return { slug: course.slug! };
   }

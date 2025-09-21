@@ -332,27 +332,8 @@ export const getAuthSession = async (options?: {
   }
 }
 
-// Helper to check if user is authenticated
-export async function isAuthenticated() {
-  try {
-    const session = await getAuthSession()
-    return !!session?.user
-  } catch (error) {
-    console.error("Error checking authentication:", error)
-    return false
-  }
-}
-
-// Helper to check if user is admin
-export async function isAdmin() {
-  try {
-    const session = await getAuthSession()
-    return session?.user?.isAdmin === true
-  } catch (error) {
-    console.error("Error checking admin status:", error)
-    return false
-  }
-}
+// Authentication functions moved to AuthService
+// See: /services/auth-service.ts
 
 // Standard unauthorized response
 export function unauthorized() {

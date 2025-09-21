@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 
 import { authOptions } from "@/lib/auth"
-import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
+import { SubscriptionService } from "@/services/subscription/subscription-service"
 
 export async function GET(request: NextRequest) {
   try {

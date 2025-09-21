@@ -519,14 +519,16 @@ export const submitQuiz = createAsyncThunk(
 /**
  * Check authentication and load results if authenticated
  */
-export const checkAuthAndLoadResults = createAsyncThunk(
-  'quiz/checkAuthAndLoadResults',
+export const loadQuizResults = createAsyncThunk(
+  'quiz/loadResults',
   async (_, { getState, rejectWithValue }) => {
     const state = getState() as RootState
     const quiz = state.quiz as unknown as QuizState
-
-    // If results already loaded, no need to check auth
-    if (quiz.results) return quiz.results
+    
+    // If no results available
+    if (!quiz.results) {
+      return rejectWithValue('No results available')
+    }
 
     // If auth is required, mark it and return
     if (quiz.requiresAuth) {

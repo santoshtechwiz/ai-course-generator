@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { SUBSCRIPTION_PLANS } from "../subscription/components/subscription-plans"
-import { SubscriptionService } from "../subscription/services/subscription-service"
+import { SubscriptionService } from "../../../services/subscription/subscription-service"
 
 export const dynamic = 'force-dynamic'
 

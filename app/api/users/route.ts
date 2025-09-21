@@ -1,17 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/db"
+import { withAdminAuth } from "@/middlewares/auth-middleware"
+import { ApiResponseHandler } from "@/services/api-response-handler"
 
-export async function GET(req: NextRequest) {
+export const GET = withAdminAuth(async (req: NextRequest, session) => {
   try {
-    // Authenticate admin user
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user || session.user.isAdmin !== true) {
-      return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 403 })
-    }
-
     // Get query parameters for pagination and filtering
     const searchParams = req.nextUrl.searchParams
     const page = Number.parseInt(searchParams.get("page") || "1")
@@ -101,8 +94,7 @@ export async function GET(req: NextRequest) {
     // Determine if there are more results
     const hasMore = totalCount > page * limit
 
-    // Make sure we're returning the users array in the expected format
-    return NextResponse.json({
+    return ApiResponseHandler.success({
       users,
       totalCount,
       hasMore,
@@ -110,32 +102,19 @@ export async function GET(req: NextRequest) {
       limit,
     })
   } catch (error) {
-    console.error("Error fetching users:", error)
-    return NextResponse.json(
-      {
-        error: "Failed to fetch users",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 },
-    )
+    return ApiResponseHandler.error(error || "Failed to fetch users")
   }
-}
+})
 
-export async function POST(req: NextRequest) {
+export const POST = withAdminAuth(async (req: NextRequest, session) => {
   try {
-    // Authenticate admin user
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user || session.user.isAdmin !== true) {
-      return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 403 })
-    }
 
     // Parse request body
     const { name, email, credits, isAdmin, userType, sendWelcomeEmail } = await req.json()
 
     // Validate required fields
     if (!name || !email) {
-      return NextResponse.json({ error: "Name and email are required" }, { status: 400 })
+      return ApiResponseHandler.validationError("Name and email are required")
     }
 
     // Check if user with email already exists
@@ -144,7 +123,11 @@ export async function POST(req: NextRequest) {
     })
 
     if (existingUser) {
-      return NextResponse.json({ error: "A user with this email already exists" }, { status: 409 })
+      return ApiResponseHandler.error({
+        code: "USER_EXISTS",
+        message: "A user with this email already exists",
+        status: 409
+      })
     }
 
     // Create new user
@@ -159,7 +142,7 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    return NextResponse.json({
+    return ApiResponseHandler.success({
       id: user.id,
       name: user.name,
       email: user.email,
@@ -168,13 +151,6 @@ export async function POST(req: NextRequest) {
       userType: user.userType,
     })
   } catch (error) {
-    console.error("Error creating user:", error)
-    return NextResponse.json(
-      {
-        error: "Failed to create user",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 },
-    )
+    return ApiResponseHandler.error(error || "Failed to create user")
   }
 }

@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { useToast } from '@/hooks';
-import useSubscription from '@/hooks/use-subscription';
+import { useSubscription } from '@/modules/auth';
 import { PROTECTED_ACTIONS } from '@/config/subscription-routes';
 
 export interface UseProtectedActionOptions {
@@ -12,7 +12,7 @@ export interface UseProtectedActionOptions {
 }
 
 export function useProtectedAction() {
-  const { validateSubscription, hasActiveSubscription, hasCredits } = useSubscription();
+  const { hasActiveSubscription, hasCredits, isAuthenticated } = useSubscription();
   const { toast } = useToast();
 
   const executeProtectedAction = useCallback(async <T,>(
@@ -46,11 +46,13 @@ export function useProtectedAction() {
       }
 
       // Validate subscription if needed
-      if (validateFirst) {
-        const validationResult = await validateSubscription();
-        if (!validationResult) {
-          return null;
-        }
+      if (validateFirst && !isAuthenticated) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to perform this action.",
+          variant: "destructive"
+        });
+        return null;
       }
 
       return await action();
@@ -62,7 +64,7 @@ export function useProtectedAction() {
       });
       return null;
     }
-  }, [validateSubscription, hasActiveSubscription, hasCredits, toast]);
+  }, [hasActiveSubscription, hasCredits, isAuthenticated, toast]);
 
   return {
     executeProtectedAction,

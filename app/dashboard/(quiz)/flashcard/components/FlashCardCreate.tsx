@@ -22,13 +22,12 @@ import { Badge } from "@/components/ui/badge"
 
 import { usePersistentState } from "@/lib/storage"
 import { cn } from "@/lib/utils"
-import { useSubscription } from "@/modules/auth"
 
 import { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
-import useSubscriptionHook from "@/hooks/use-subscription"
+import { useSubscription } from "@/modules/auth"
 import PlanAwareButton from "../../components/PlanAwareButton"
 import { calculateCreditInfo } from "@/utils/credit-utils"
 
@@ -59,7 +58,6 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
 
   // Get subscription data from the unified auth system
   const { subscription: subscriptionData, user } = useSubscription()
-  const { data: subscriptionStatus } = useSubscriptionHook()
 
   // Calculate accurate credit information
   const creditInfo = calculateCreditInfo(
@@ -112,7 +110,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
 
   // Use debounce for form data updates to improve performance
   React.useEffect(() => {
-    const subscription = watch((value) => {
+    const subscription = watch((value: any) => {
       const timeoutId = setTimeout(() => {
         setFormData(value as FlashCardFormData)
       }, 500) // 500ms debounce
@@ -534,10 +532,10 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
         description="You are about to use AI to generate flashcards. This will use credits from your account."
         confirmText="Generate Now"
         cancelText="Cancel"
-        showTokenUsage={true}
-        status={isLoading ? "loading" : submissionError ? "error" : isSuccess ? "success" : "idle"}
+        showCreditUsage={true}
+        status={isLoading ? "loading" : submissionError ? "error" : isSuccess ? "success" : undefined}
         errorMessage={submissionError || undefined}
-        tokenUsage={{
+        creditUsage={{
           used: Math.max(0, maxCards - credits),
           available: maxCards,
           remaining: credits,

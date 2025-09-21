@@ -1,22 +1,14 @@
 /**
- * Session-Subscription Sync Hook
+ * Enhanced Session-Subscription Sync Hook
  * 
- * This hook provides unified session and subscription state management.
- * It automatically syncs subscription data when the session changes,
- * eliminating the need for manual sync calls or dual auth systems.
+ * This hook provides unified session and subscription state management with
+ * improved performance and reliability.
  * 
  * Features:
- * - Automatic sync on session change
- * - Efficient caching and deduplication
- * - Real-time subscription updates
- * - Proper error handling and fallbacks
- * - SSR/hydration safe
- * - Prevents infinite update loops with careful dependency management
- * 
- * Fixed Issues:
- * - Removed circular dependency that caused "Maximum update depth exceeded" errors
- * - Uses refs to track subscription state without triggering re-renders
- * - Optimized useCallback dependencies to prevent unnecessary re-creations
+ * - Request deduplication and race condition prevention
+ * - Automatic cleanup of pending requests
+ * - Smart caching with configurable intervals
+ * - Comprehensive error logging
  */
 
 import { useEffect, useRef, useCallback } from 'react'
@@ -25,10 +17,11 @@ import { useAppDispatch, useAppSelector } from '@/store'
 import { 
   fetchSubscription, 
   forceSyncSubscription,
-  setSubscriptionData,
-  selectSubscription 
+  selectSubscription, 
+  setSubscriptionData
 } from '@/store/slices/subscription-slice'
 import { logger } from '@/lib/logger'
+import type { SubscriptionData } from '@/types/subscription'
 
 interface SessionSyncOptions {
   enableAutoSync?: boolean
@@ -49,30 +42,54 @@ export function useSessionSubscriptionSync(options: SessionSyncOptions = {}) {
   const { data: session, status } = useSession()
   const dispatch = useAppDispatch()
   const subscription = useAppSelector(selectSubscription)
-  // Track last sync to prevent excessive calls
-  const lastSyncRef = useRef<number>(0)
-  const sessionIdRef = useRef<string | null>(null)
   
-  // Optimized sync function with deduplication
+  // Use refs to prevent unnecessary re-renders
+  const lastSyncRef = useRef<number>(0)
+  const syncInProgressRef = useRef<boolean>(false)
+  const sessionIdRef = useRef<string | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  
+  // Cleanup function to abort pending requests
+  const cleanup = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+  }, [])
+
+  // Enhanced sync function with better race condition handling
   const syncSubscription = useCallback(async (
-    force = false, 
+    force = false,
     reason = 'manual'
   ) => {
+    // Skip if sync already in progress
+    if (syncInProgressRef.current) {
+      logger.debug('Subscription sync already in progress', { reason })
+      return
+    }
+    
     const now = Date.now()
     const timeSinceLastSync = now - lastSyncRef.current
     
     // Skip if recent sync and not forced
     if (!force && timeSinceLastSync < config.minSyncInterval) {
+      logger.debug('Skipping sync - too soon', { timeSinceLastSync })
       return
     }
     
     // Skip if no session
     if (status !== 'authenticated' || !session?.user?.id) {
+      logger.debug('Skipping sync - no active session')
       return
     }
     
     try {
+      syncInProgressRef.current = true
       lastSyncRef.current = now
+      
+      // Create new AbortController for this sync
+      cleanup()
+      abortControllerRef.current = new AbortController()
       
       if (force) {
         await dispatch(forceSyncSubscription()).unwrap()
@@ -105,6 +122,7 @@ export function useSessionSubscriptionSync(options: SessionSyncOptions = {}) {
         status: "INACTIVE",
         cancelAtPeriodEnd: false,
         subscriptionId: "",
+        expirationDate: null,
       }))
       sessionIdRef.current = null
       hasSubscriptionDataRef.current = false
@@ -136,32 +154,58 @@ export function useSessionSubscriptionSync(options: SessionSyncOptions = {}) {
     }
   }, [subscription.currentSubscription])
   
-  // Secondary sync: Window focus (to catch external changes)
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      cleanup()
+      syncInProgressRef.current = false
+    }
+  }, [cleanup])
+  
+  // Secondary sync: Window focus with debounce
   useEffect(() => {
     if (!config.syncOnFocus) return
     
+    let focusTimeout: NodeJS.Timeout
+    
     const handleFocus = () => {
-      if (status === 'authenticated' && session?.user?.id) {
-        syncSubscription(false, 'window_focus')
-      }
+      clearTimeout(focusTimeout)
+      focusTimeout = setTimeout(() => {
+        if (status === 'authenticated' && session?.user?.id) {
+          syncSubscription(false, 'window_focus')
+        }
+      }, 100) // Small debounce to prevent multiple syncs
     }
     
     window.addEventListener('focus', handleFocus)
-    return () => window.removeEventListener('focus', handleFocus)
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      clearTimeout(focusTimeout)
+    }
   }, [syncSubscription, session, status, config.syncOnFocus])
   
-  // Tertiary sync: Visibility change (mobile/tab switching)
+  // Tertiary sync: Visibility change with error retry
   useEffect(() => {
     if (!config.syncOnVisibilityChange) return
     
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible' && status === 'authenticated' && session?.user?.id) {
-        syncSubscription(false, 'visibility_change')
+        try {
+          await syncSubscription(false, 'visibility_change')
+        } catch (error) {
+          logger.error('Visibility change sync failed:', error)
+          // Retry once after a short delay
+          setTimeout(() => {
+            syncSubscription(true, 'visibility_change_retry')
+          }, 2000)
+        }
       }
     }
     
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+      return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [syncSubscription, session, status, config.syncOnVisibilityChange])
   
   // Expose manual sync function for components that need it
@@ -172,10 +216,10 @@ export function useSessionSubscriptionSync(options: SessionSyncOptions = {}) {
   return {
     // State
     isAuthenticated: status === 'authenticated',
-  isLoading: status === 'loading' || subscription.isLoading,
-  user: session?.user || null,
-  subscription: subscription.currentSubscription,
-  subscriptionError: subscription.error,
+    isLoading: status === 'loading' || subscription.isLoading,
+    user: session?.user || null,
+    subscription: subscription.currentSubscription,
+    subscriptionError: subscription.error,
     
     // Actions
     syncSubscription: manualSync,

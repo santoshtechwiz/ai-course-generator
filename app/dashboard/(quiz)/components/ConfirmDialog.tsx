@@ -31,7 +31,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
-interface TokenUsage {
+interface CreditUsage {
   used: number
   available: number
   remaining: number
@@ -43,7 +43,7 @@ interface QuizInfo {
   topic?: string
   count?: number
   difficulty?: string
-  estimatedTokens?: number
+  estimatedCredits?: number
 }
 
 interface ConfirmDialogProps {
@@ -54,8 +54,8 @@ interface ConfirmDialogProps {
   description: string
   confirmText?: string
   cancelText?: string
-  showTokenUsage?: boolean
-  tokenUsage?: TokenUsage
+  showCreditUsage?: boolean
+  creditUsage?: CreditUsage
   quizInfo?: QuizInfo
   status?: "loading" | "error" | "success"
   errorMessage?: string
@@ -105,8 +105,8 @@ export function ConfirmDialog({
   description,
   confirmText = "Confirm",
   cancelText = "Cancel",
-  showTokenUsage = false,
-  tokenUsage,
+  showCreditUsage = false,
+  creditUsage,
   quizInfo,
   status,
   errorMessage,
@@ -186,12 +186,12 @@ export function ConfirmDialog({
                   </div>
                 )}
 
-                {quizInfo.estimatedTokens && (
+                {quizInfo.estimatedCredits && (
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Est. Tokens:</span>
+                    <span className="text-muted-foreground">Credits Required:</span>
                     <div className="flex items-center gap-1">
                       <Zap className="h-3 w-3 text-amber-500" />
-                      <span className="font-medium">{quizInfo.estimatedTokens}</span>
+                      <span className="font-medium">{quizInfo.estimatedCredits}</span>
                     </div>
                   </div>
                 )}
@@ -199,8 +199,8 @@ export function ConfirmDialog({
             </motion.div>
           )}
 
-          {/* Token Usage */}
-          {showTokenUsage && tokenUsage && (
+          {/* Credit Usage */}
+          {showCreditUsage && creditUsage && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -211,29 +211,29 @@ export function ConfirmDialog({
                 <span className="text-sm font-medium">Credit Usage</span>
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
                   <Clock className="h-3 w-3" />
-                  <span>{tokenUsage.remaining} remaining</span>
+                  <span>{creditUsage.remaining} remaining</span>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Progress
-                  value={tokenUsage.percentage}
+                  value={creditUsage.percentage}
                   className={cn(
                     "h-2",
-                    tokenUsage.percentage > 80
+                    creditUsage.percentage > 80
                       ? "bg-red-100"
-                      : tokenUsage.percentage > 60
+                      : creditUsage.percentage > 60
                         ? "bg-yellow-100"
                         : "bg-green-100",
                   )}
                 />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{tokenUsage.used} used</span>
-                  <span>{tokenUsage.available} total</span>
+                  <span>{creditUsage.used} used</span>
+                  <span>{creditUsage.available} total</span>
                 </div>
               </div>
 
-              {tokenUsage.remaining < 5 && (
+              {creditUsage.remaining < 5 && (
                 <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-950/20 rounded-md">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <span className="text-xs text-amber-800 dark:text-amber-200">
@@ -264,9 +264,18 @@ export function ConfirmDialog({
               >
                 <div className="flex items-start gap-2">
                   <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-red-800 dark:text-red-200">Generation Failed</p>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-red-800 dark:text-red-200">Quiz Generation Failed</p>
                     <p className="text-xs text-red-600 dark:text-red-300">{errorMessage}</p>
+                    <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded text-xs text-red-700 dark:text-red-300">
+                      <p className="font-medium mb-1">Common solutions:</p>
+                      <ul className="list-disc list-inside space-y-0.5 text-xs">
+                        <li>Check your internet connection</li>
+                        <li>Try using a simpler topic name</li>
+                        <li>Reduce the number of questions</li>
+                        <li>Wait a moment and try again</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -288,7 +297,7 @@ export function ConfirmDialog({
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Generating your quiz...</p>
                     <p className="text-xs text-blue-600 dark:text-blue-300">
-                      This may take a few moments. Please don't close this window.
+                      AI is creating personalized questions for "{quizInfo?.topic || 'your topic'}". This typically takes 30-60 seconds.
                     </p>
                   </div>
                 </div>

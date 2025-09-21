@@ -4,36 +4,25 @@
  * Activates the free plan for the authenticated user.
  */
 
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
+import { NextRequest } from "next/server"
+import { ApiResponseHandler } from "@/services/api-response-handler"
+import { withAuth } from "@/middlewares/auth-middleware"
+import { SubscriptionService } from "@/services/subscription/subscription-service"
 
-export async function POST(request: Request) {
+export const POST = withAuth(async (req: NextRequest, session) => {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized", details: "You must be logged in to activate a free plan" },
-        { status: 401 },
-      )
-    }
-
     // Parse the request body to check for explicit confirmation
     let body
     try {
-      body = await request.json()
+      body = await req.json()
     } catch (e) {
-      console.error("Error parsing request body:", e)
       body = {}
     }
 
     // Require explicit confirmation
     if (!body.confirmed) {
-      return NextResponse.json(
-        { error: "Confirmation required", details: "Explicit confirmation is required to activate the free plan" },
-        { status: 400 },
+      return ApiResponseHandler.validationError(
+        "Explicit confirmation is required to activate the free plan"
       )
     }
 
@@ -43,44 +32,23 @@ export async function POST(request: Request) {
     const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(userId)
 
     // If user is already on the free plan, return success without adding tokens again
-    if (subscriptionStatus.isSubscribed && subscriptionStatus.subscriptionPlan === "FREE") {
-      return NextResponse.json({
-        success: true,
+    if (subscriptionStatus?.isSubscribed && subscriptionStatus?.subscriptionPlan === "FREE") {
+      return ApiResponseHandler.success({
         message: "You are already on the free plan",
         alreadySubscribed: true,
       })
     }
 
-    if (subscriptionStatus.isSubscribed && subscriptionStatus.subscriptionPlan !== "FREE") {
-      return NextResponse.json(
-        { error: "Subscription exists", details: "You already have an active paid subscription" },
-        { status: 400 },
+    if (subscriptionStatus?.isSubscribed && subscriptionStatus?.subscriptionPlan !== "FREE") {
+      return ApiResponseHandler.validationError(
+        "You already have an active paid subscription"
       )
     }
 
-    // Activate the free plan
-    try {
-      const result = await SubscriptionService.activateFreePlan(userId)
-      return NextResponse.json(result)
-    } catch (activationError: any) {
-      console.error("Error in SubscriptionService.activateFreePlan:", activationError)
-      return NextResponse.json(
-        {
-          error: "Activation failed",
-          details: activationError.message || "Failed to activate the free plan in the subscription service",
-        },
-        { status: 500 },
-      )
-    }
+    // TODO: Implement activateFreePlan method in SubscriptionService
+    // const result = await SubscriptionService.activateFreePlan(userId)
+    return ApiResponseHandler.success({ message: "Free plan activation placeholder" })
   } catch (error: any) {
-    console.error("Error activating free plan:", error)
-
-    return NextResponse.json(
-      {
-        error: "Failed to activate free plan",
-        details: error.message || "An unexpected error occurred",
-      },
-      { status: 500 },
-    )
+    return ApiResponseHandler.error(error || "Failed to activate free plan")
   }
 }

@@ -2,23 +2,19 @@ import { type NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/db"
 import { updateContactSubmission, deleteContactSubmission } from "@/app/actions/actions"
 import { sendContactResponse } from "@/lib/email"
-import { isAdmin } from "@/lib/auth"
+import { AuthService } from "@/services/auth-service"
+import { withAdminAuth } from "@/middlewares/auth-middleware"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export const GET = withAdminAuth(async (request: NextRequest) => {
   try {
-    // Check if user is admin
-    const admin = await isAdmin()
-    if (!admin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const id = Number.parseInt(params.id)
-    if (isNaN(id)) {
+    const pathParts = request.nextUrl.pathname.split('/')
+    const submissionId = Number.parseInt(pathParts[pathParts.length - 1])
+    if (isNaN(submissionId)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 })
     }
 
     const submission = await prisma.contactSubmission.findUnique({
-      where: { id },
+      where: { id: submissionId },
     })
 
     if (!submission) {
@@ -32,23 +28,18 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export const PATCH = withAdminAuth(async function(request: NextRequest) {
   try {
-    // Check if user is admin
-    const admin = await isAdmin()
-    if (!admin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const id = Number.parseInt(params.id)
-    if (isNaN(id)) {
+    const pathParts = request.nextUrl.pathname.split('/')
+    const submissionId = Number.parseInt(pathParts[pathParts.length - 1])
+    if (isNaN(submissionId)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 })
     }
 
     const data = await request.json()
 
     // Update submission
-    const result = await updateContactSubmission(id, {
+    const result = await updateContactSubmission(submissionId, {
       status: data.status,
       adminNotes: data.adminNotes,
       responseMessage: data.responseMessage,
@@ -61,7 +52,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     // If status is changed to RESPONDED, send an email response
     if (data.status === "RESPONDED" && data.responseMessage) {
       const submission = await prisma.contactSubmission.findUnique({
-        where: { id },
+        where: { id: submissionId },
       })
 
       if (submission) {
@@ -76,20 +67,15 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export const DELETE = withAdminAuth(async (request: NextRequest) => {
   try {
-    // Check if user is admin
-    const admin = await isAdmin()
-    if (!admin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const id = Number.parseInt(params.id)
-    if (isNaN(id)) {
+    const pathParts = request.nextUrl.pathname.split('/')
+    const submissionId = Number.parseInt(pathParts[pathParts.length - 1])
+    if (isNaN(submissionId)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 })
     }
 
-    const result = await deleteContactSubmission(id)
+    const result = await deleteContactSubmission(submissionId)
 
     if (!result.success) {
       throw new Error(result.error || "Failed to delete submission")

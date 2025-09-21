@@ -10,7 +10,7 @@ import { syncUserCredits } from "@/lib/db"
 import { AlertTriangle } from "lucide-react"
 import SubscriptionDetails from "./component/SubscriptionDetails"
 import { AccountOverview } from "./component/AccountOverview"
-import { SubscriptionService } from "../subscription/services/subscription-service"
+import { SubscriptionService } from "../../../services/subscription/subscription-service"
 import { BillingHistory } from "./component/BillingHistory"
 import { PageWrapper, PageHeader } from "@/components/layout/PageWrapper"
 

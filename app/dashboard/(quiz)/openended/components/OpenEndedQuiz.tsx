@@ -203,11 +203,7 @@ export default function OpenEndedQuiz({
     <QuizContainer
       questionNumber={questionNumber}
       totalQuestions={totalQuestions}
-      quizType="openended"
       animationKey={String(question.id)}
-      quizTitle="Open-Ended Question"
-      timeSpent={timeSpent}
-      difficulty={questionData.difficulty.toLowerCase() as "easy" | "medium" | "hard"}
       fullWidth={true}
     >
       <motion.div

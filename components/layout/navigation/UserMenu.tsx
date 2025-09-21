@@ -18,21 +18,58 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { useAuth, useSubscription } from "@/modules/auth"
-import { calculateCreditInfo } from "@/utils/credit-utils"
-import { useState, useCallback } from "react"
+import { ClientCreditService } from "@/services/client-credit-service"
+import { useState, useCallback, useEffect } from "react"
+
+interface CreditInfo {
+  hasCredits: boolean
+  remainingCredits: number
+  totalCredits: number
+  usedCredits: number
+}
 
 export function UserMenu() {
   const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth()
   const { subscription } = useSubscription()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [creditInfo, setCreditInfo] = useState<CreditInfo>({
+    hasCredits: false,
+    remainingCredits: 0,
+    totalCredits: 0,
+    usedCredits: 0
+  })
   const router = useRouter()
 
-  const creditInfo = calculateCreditInfo(
-    user?.credits,
-    user?.creditsUsed,
-    subscription?.credits,
-    subscription?.tokensUsed
-  )
+  // SECURE: Get credit information from ClientCreditService for consistency
+  useEffect(() => {
+    if (user?.id) {
+      ClientCreditService.getCreditDetails()
+        .then(details => {
+          setCreditInfo({
+            hasCredits: details.hasCredits,
+            remainingCredits: details.remainingCredits,
+            totalCredits: details.totalCredits,
+            usedCredits: details.usedCredits
+          })
+        })
+        .catch(error => {
+          console.error('[UserMenu] Failed to fetch credit details:', error)
+          setCreditInfo({
+            hasCredits: false,
+            remainingCredits: 0,
+            totalCredits: 0,
+            usedCredits: 0
+          })
+        })
+    } else {
+      setCreditInfo({
+        hasCredits: false,
+        remainingCredits: 0,
+        totalCredits: 0,
+        usedCredits: 0
+      })
+    }
+  }, [user?.id])
 
   const handleSignIn = useCallback(() => {
     const currentPath = typeof window !== "undefined" ? window.location.pathname : "/"

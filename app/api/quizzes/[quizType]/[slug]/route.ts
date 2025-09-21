@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { QuizServiceFactory } from "@/app/services/quiz-service-factory"
 import { getAuthSession } from "@/lib/auth"
 import { createCacheManager } from "@/app/services/cache/cache-manager"
+import { validateSubscriptionServer } from "@/lib/subscription-validation"
 
 const cache = createCacheManager()
 
@@ -23,9 +24,13 @@ export async function GET(
       return response
     }
     
-    // Get the user session for authorization if needed
+    // Get the user session for authorization and subscription validation
     const session = await getAuthSession()
     const userId = session?.user?.id || ""
+    
+    // For quiz viewing, we don't need to validate subscription or credits
+    // Users should be able to view and take quizzes freely
+    // Only quiz submission/results require authentication and credits
     
     // Use the factory to get the appropriate quiz service
     const quizService = QuizServiceFactory.getQuizService(quizType)

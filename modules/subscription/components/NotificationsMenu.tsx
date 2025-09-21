@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,16 +14,61 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth, useSubscription } from "@/modules/auth"
-import { calculateCreditInfo } from "@/utils/credit-utils"
+import { ClientCreditService } from "@/services/client-credit-service"
 
 interface NotificationsMenuProps {
   refreshCredits?: () => void
 }
 
+interface CreditInfo {
+  hasCredits: boolean
+  remainingCredits: number
+  totalCredits: number
+  usedCredits: number
+}
+
 export default function NotificationsMenu({ refreshCredits }: NotificationsMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [creditInfo, setCreditInfo] = useState<CreditInfo>({
+    hasCredits: false,
+    remainingCredits: 0,
+    totalCredits: 0,
+    usedCredits: 0
+  })
+  
   const { user } = useAuth()
   const { subscription } = useSubscription()
+
+  // SECURE: Get credit information from API for consistency
+  useEffect(() => {
+    if (user?.id) {
+      ClientCreditService.getCreditDetails()
+        .then(details => {
+          setCreditInfo({
+            hasCredits: details.hasCredits,
+            remainingCredits: details.remainingCredits,
+            totalCredits: details.totalCredits,
+            usedCredits: details.usedCredits
+          })
+        })
+        .catch(error => {
+          console.error('[NotificationsMenu] Failed to fetch credit details:', error)
+          setCreditInfo({
+            hasCredits: false,
+            remainingCredits: 0,
+            totalCredits: 0,
+            usedCredits: 0
+          })
+        })
+    } else {
+      setCreditInfo({
+        hasCredits: false,
+        remainingCredits: 0,
+        totalCredits: 0,
+        usedCredits: 0
+      })
+    }
+  }, [user?.id])
 
   const handleOpen = (open: boolean) => {
     setIsOpen(open)
@@ -31,14 +76,6 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
       refreshCredits()
     }
   }
-  
-  // Calculate accurate credit information
-  const creditInfo = calculateCreditInfo(
-    user?.credits,
-    user?.creditsUsed,
-    subscription?.credits,
-    subscription?.tokensUsed
-  )
   
   const subscriptionPlan = subscription?.plan || "FREE"
   const isSubscribed = subscription?.isActive || false

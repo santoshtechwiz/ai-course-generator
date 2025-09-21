@@ -5,6 +5,26 @@ import {
   getErrorMessage
 } from '../utils/async-state'
 
+export const checkAuthAndLoadResults = createAsyncThunk<QuizResultsState | null, void, { rejectValue: string }>(
+  'flashcards/checkAuthAndLoadResults',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch('/api/quiz/results', {
+        method: 'GET',
+        credentials: 'include',
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to load quiz results')
+      }
+
+      const data = await res.json()
+      return data
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error))
+    }
+  }
+)
 
 export const ANSWER_TYPES = {
   CORRECT: 'correct',
@@ -242,13 +262,15 @@ export const saveFlashCardResults = createAsyncThunk(
   }
 )
 
-export const checkAuthAndLoadResults = createAsyncThunk(
-  'flashcard/checkAuthAndLoadResults',
-  async (_, { getState }) => {
+export const loadFlashcardResults = createAsyncThunk(
+  'flashcard/loadResults',
+  async (_, { getState, rejectWithValue }) => {
     const state = getState() as RootState
     const { isCompleted, results } = state.flashcard
 
-    if (!isCompleted || !results) return null
+    if (!isCompleted || !results) {
+      return rejectWithValue('No results available')
+    }
 
     return results
   }
@@ -499,7 +521,7 @@ clearQuizState: (state) => {
         return;
       }
       
-      if (shouldUpdateState(state, incomingTs)) {
+      if (!state.lastUpdated || incomingTs > state.lastUpdated) {
         // Debug log the incoming payload
         console.log('Processing flashcard quiz payload:', {
           id: action.payload.id,

@@ -268,6 +268,20 @@ export default function QuizPlayLayout({
   const [isFocusMode, setIsFocusMode] = useState(false)
   const [showEngage, setShowEngage] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
+  
+  // Local state for quiz properties to enable immediate UI updates
+  const [localIsPublic, setLocalIsPublic] = useState(isPublic)
+  const [localIsFavorite, setLocalIsFavorite] = useState(isFavorite)
+  
+  // Update local state when props change
+  useEffect(() => {
+    setLocalIsPublic(isPublic)
+  }, [isPublic])
+  
+  useEffect(() => {
+    setLocalIsFavorite(isFavorite)
+  }, [isFavorite])
+  
   const { quizzes: relatedQuizzes } = useRelatedQuizzes({ 
     quizType, 
     difficulty: quizData?.difficulty, 
@@ -342,6 +356,20 @@ export default function QuizPlayLayout({
   const resetQuiz = useCallback(() => {
     setElapsed(0)
     // Add your reset logic here
+  }, [])
+
+  // Quiz action callbacks for immediate UI updates
+  const handleVisibilityChange = useCallback((newIsPublic: boolean) => {
+    setLocalIsPublic(newIsPublic)
+  }, [])
+
+  const handleFavoriteChange = useCallback((newIsFavorite: boolean) => {
+    setLocalIsFavorite(newIsFavorite)
+  }, [])
+
+  const handleDelete = useCallback(() => {
+    // Navigate to quizzes page after successful deletion
+    window.location.href = "/dashboard/quizzes"
   }, [])
 
   const QuizTypeIcon = quizTypeIcons[quizType] || Award
@@ -640,10 +668,16 @@ export default function QuizPlayLayout({
                         quizSlug={quizSlug}
                         quizType={quizType}
                         title={quizData?.title || "Quiz"}
-                        isOwner={isOwner}
-                        isSubscribed={isSubscribed}
-                        subscriptionExpired={subscriptionExpired}
+                        isPublic={localIsPublic}
+                        isFavorite={localIsFavorite}
+                        canEdit={isOwner}
+                        canDelete={isOwner}
+                        showPdfGeneration={true}
+                        variant="compact"
                         userId={session?.user?.id}
+                        onVisibilityChange={handleVisibilityChange}
+                        onFavoriteChange={handleFavoriteChange}
+                        onDelete={handleDelete}
                         className="w-full" 
                       />
                     </Suspense>
@@ -765,13 +799,16 @@ export default function QuizPlayLayout({
                     quizSlug={quizSlug || ""}
                     quizType={quizType || "quiz"}
                     title={quizData?.title || "Quiz"}
-                    isPublic={isPublic}
-                    isFavorite={isFavorite}
-                    isOwner={isOwner}
-                    isSubscribed={isSubscribed}
-                    subscriptionExpired={subscriptionExpired}
+                    isPublic={localIsPublic}
+                    isFavorite={localIsFavorite}
+                    canEdit={isOwner}
+                    canDelete={isOwner}
+                    showPdfGeneration={true}
+                    variant="compact"
                     userId={session?.user?.id}
-                    quizData={quizData}
+                    onVisibilityChange={handleVisibilityChange}
+                    onFavoriteChange={handleFavoriteChange}
+                    onDelete={handleDelete}
                     className="w-full"
                   />
                 </Suspense>

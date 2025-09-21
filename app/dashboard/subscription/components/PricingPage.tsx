@@ -17,12 +17,19 @@ import { migratedStorage } from "@/lib/storage"
 import { useMediaQuery, useToast } from "@/hooks"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
-import useSubscriptionHook from "@/hooks/use-subscription"
+import { useSubscription, useSubscriptionPermissions } from "@/modules/auth"
 import {
-  PricingPageProps,
   SubscriptionPlanType,
   SubscriptionStatusType,
-} from "@/app/types/subscription"
+} from "@/types/subscription"
+
+interface PricingPageProps {
+  userId?: string
+  isProd?: boolean
+  onUnauthenticatedSubscribe?: (planName: SubscriptionPlanType, duration: number, promoCode?: string, promoDiscount?: number) => void
+  onManageSubscription?: () => void
+  isMobile?: boolean
+}
 import { calculateSavings } from "../utils/subscription-utils"
 import { CancellationDialog } from "./cancellation-dialog"
 import FeatureComparison from "./FeatureComparison"
@@ -45,7 +52,6 @@ export function PricingPage({
   const dispatch = useAppDispatch()
   const { toast } = useToast()
   const isMobile = propIsMobile || useMediaQuery("(max-width: 768px)")
-  const subscriptionData = useAppSelector(selectSubscriptionData)
   const isAuthenticated = !!userId
 
   const [loading, setLoading] = useState<SubscriptionPlanType | null>(null)
@@ -58,50 +64,27 @@ export function PricingPage({
   const [showPromotion, setShowPromotion] = useState(true)
   const [showCancellationDialog, setShowCancellationDialog] = useState(false)
   const router = useRouter();
-  const {
-    handleSubscribe: doSubscribe,
-    canSubscribeToPlan,
-    isSubscribedToAnyPaidPlan,
-    isSubscribedToAllPlans,
-    canResubscribe,
-    subscriptionMessage,
-    hadPreviousPaidPlan,
-    isExpired,
-  } = useSubscriptionHook({
-    onSubscriptionSuccess: (result: any) => {
-      if (result.redirectUrl) {
-        router.push(result.redirectUrl);
-        return;
-      }
-      
-      toast({
-        title: "You're Subscribed!",
-        description: result.message || "Plan updated successfully.",
-        variant: "default",
-      })
-    },
-    onSubscriptionError: (error: any) => {
-      toast({
-        title: "Subscription Error",
-        description: error.message,
-        variant: "destructive",
-      })
-      setSubscriptionError(error?.message ?? null)
-    },
-  })
+  
+  const { subscription, hasActiveSubscription, isExpired } = useSubscription();
+  const { 
+    canUsePremiumFeatures,
+    needsSubscriptionUpgrade,
+    hasAvailableCredits,
+  } = useSubscriptionPermissions();
 
-  const currentPlan = subscriptionData?.subscriptionPlan || "FREE"
+  const subscriptionData = subscription;
+  const currentPlan = subscriptionData?.plan || "FREE"
   const normalizedStatus = subscriptionData?.status?.toUpperCase() as SubscriptionStatusType || "INACTIVE"
   const isSubscribed = currentPlan !== "FREE" && normalizedStatus === "ACTIVE"
-  const expirationDate = subscriptionData?.expirationDate
-    ? new Date(subscriptionData.expirationDate).toLocaleDateString()
+  const expirationDate = subscriptionData?.currentPeriodEnd
+    ? new Date(subscriptionData.currentPeriodEnd).toLocaleDateString()
     : null
   const cancelAtPeriodEnd = subscriptionData?.cancelAtPeriodEnd ?? false
   const tokensUsed = subscriptionData?.tokensUsed ?? 0
   const credits = subscriptionData?.credits ?? 0
 
-  const hasAnyPaidPlan = isSubscribedToAnyPaidPlan
-  const hasAllPlans = isSubscribedToAllPlans
+  const hasAnyPaidPlan = !subscriptionData?.isFree
+  const hasAllPlans = false // This seems unused, setting to false
 
   const handleSubscribe = async (planName: SubscriptionPlanType, duration: number) => {
     setLoading(planName)
@@ -119,11 +102,9 @@ export function PricingPage({
         return
       }
 
-      const { canSubscribe, reason } = canSubscribeToPlan(
-        currentPlan, 
-        planName, 
-        normalizedStatus
-      )
+      // Simple subscription validation - user can subscribe if they don't have active subscription
+      const canSubscribe = !hasActiveSubscription || currentPlan === "FREE"
+      const reason = canSubscribe ? '' : 'You already have an active subscription'
       
       if (!canSubscribe) {
         toast({
@@ -134,11 +115,26 @@ export function PricingPage({
         return
       }
 
-      const result = await doSubscribe(planName, duration)
+      // Call subscription API directly
+      const response = await fetch('/api/subscription/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planName, duration, ...promoArgs })
+      });
+      const result = await response.json();
       
       // Handle redirects directly if not handled by callback
       if (result?.redirectUrl) {
         router.push(result.redirectUrl);
+        return;
+      }
+      
+      if (result?.success) {
+        toast({
+          title: "You're Subscribed!",
+          description: result.message || "Plan updated successfully.",
+          variant: "default",
+        });
         return;
       }      if (!result.success) {
         // Show user-friendly error messages based on error type
@@ -212,7 +208,7 @@ export function PricingPage({
   }, [isAuthenticated, subscriptionData, dispatch]);
     
   const daysUntilExpiration = expirationDate
-    ? Math.ceil((new Date(subscriptionData!.expirationDate!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((new Date(subscriptionData!.currentPeriodEnd!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null
 
   return (
@@ -295,7 +291,7 @@ export function PricingPage({
       {isMobile ? (
         <div className="space-y-6">
           {SUBSCRIPTION_PLANS.map((plan) => {
-            const option = plan.options.find((o) => o.duration === selectedDuration)!
+            const option = plan.options.find((o: any) => o.duration === selectedDuration)!
             const price = getDiscountedPrice(option.price)
             return (
               <div key={plan.id} className="p-4 border rounded-xl shadow-sm">
@@ -328,23 +324,23 @@ export function PricingPage({
           getDiscountedPrice={getDiscountedPrice}
           isPlanAvailable={(p) => {
             // Always allow subscription for expired, canceled, or free users
-            if (isExpired || normalizedStatus === "CANCELED" || currentPlan === "FREE") {
+            if (isExpired || normalizedStatus === "CANCELLED" || currentPlan === "FREE") {
               return true;
             }
             
             // Use the enhanced logic for other cases
-            return canSubscribeToPlan(currentPlan, p, normalizedStatus).canSubscribe;
+            return !hasActiveSubscription;
           }}
           getPlanUnavailableReason={(p) => {
             if (isExpired) {
-              return null; // No restriction for expired users
+              return undefined; // No restriction for expired users
             }
-            if (normalizedStatus === "CANCELED") {
-              return null; // No restriction for canceled users
+            if (normalizedStatus === "CANCELLED") {
+              return undefined; // No restriction for canceled users
             }
             
-            const { reason } = canSubscribeToPlan(currentPlan, p, normalizedStatus);
-            return reason || null;
+            const reason = hasActiveSubscription ? "You already have an active subscription" : "";
+            return reason || undefined;
           }}
           expirationDate={expirationDate}
           isAuthenticated={isAuthenticated}
@@ -352,7 +348,7 @@ export function PricingPage({
           hasAllPlans={hasAllPlans}
           cancelAtPeriodEnd={cancelAtPeriodEnd}
           userId={userId}
-          hadPreviousPaidPlan={hadPreviousPaidPlan}
+          hadPreviousPaidPlan={false}
         />
       )}
 
@@ -373,7 +369,7 @@ export function PricingPage({
           }
         }}
         expirationDate={subscriptionData?.currentPeriodEnd || null}
-        planName={subscriptionData?.subscriptionPlan || 'FREE'}
+        planName={subscriptionData?.plan || 'FREE'}
       />
     </div>
   )

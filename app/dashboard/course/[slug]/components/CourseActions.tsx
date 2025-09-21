@@ -12,6 +12,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
   Heart,
   Share2,
   MoreVertical,
@@ -24,6 +35,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useCourseActions } from "@/hooks/useCourseActions"
 import { useAuth } from "@/modules/auth"
+import { toast } from "sonner"
 
 interface CourseActionsProps {
   slug: string
@@ -45,35 +57,57 @@ export default function CourseActions({
 
   const handleShare = async () => {
     try {
+      const shareUrl = `${window.location.origin}/dashboard/course/${slug}`
       if (navigator.share) {
         await navigator.share({
           title: title,
-          url: window.location.href,
+          text: `Check out this course: ${title}`,
+          url: shareUrl,
         })
+        toast.success("Course shared successfully!")
       } else {
-        await navigator.clipboard.writeText(window.location.href)
-        // You might want to add a toast notification here
+        await navigator.clipboard.writeText(shareUrl)
+        toast.success("Course link copied to clipboard!")
       }
     } catch (error) {
-      console.error("Error sharing:", error)
+      if (error instanceof Error && error.name !== "AbortError") {
+        console.error("Error sharing:", error)
+        toast.error("Failed to share course")
+      }
     }
   }
 
   const handleFavoriteToggle = () => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated) {
+      toast.error("Please sign in to favorite courses")
+      return
+    }
     handleAction("favorite")
   }
 
   const handlePrivacyToggle = () => {
-    if (!isOwner) return
+    if (!isOwner) {
+      toast.error("You don't have permission to change course privacy")
+      return
+    }
+    if (!isAuthenticated) {
+      toast.error("Please sign in to manage course settings")
+      return
+    }
     handleAction("privacy")
   }
 
   const handleDelete = () => {
-    if (!isOwner) return
-    if (window.confirm("Are you sure you want to delete this course? This action cannot be undone.")) {
-      handleAction("delete")
+    if (!isOwner) {
+      toast.error("You don't have permission to delete this course")
+      return
     }
+    if (!isAuthenticated) {
+      toast.error("Please sign in to delete courses")
+      return
+    }
+    // Confirmation dialog is handled in the AlertDialog component
+    handleAction("delete")
   }
 
   if (variant === "compact") {
@@ -133,18 +167,47 @@ export default function CourseActions({
                 Make {status.isPublic ? "Private" : "Public"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={handleDelete}
-                disabled={loading === "delete"}
-                className="text-red-600 focus:text-red-600"
-              >
-                {loading === "delete" ? (
-                  <Loader2 className="h-4 w-4 mr-2" />
-                ) : (
-                  <Trash2 className="h-4 w-4 mr-2" />
-                )}
-                Delete Course
-              </DropdownMenuItem>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem 
+                    onSelect={(e) => e.preventDefault()}
+                    disabled={loading === "delete"}
+                    className="text-red-600 focus:text-red-600 cursor-pointer"
+                  >
+                    {loading === "delete" ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 mr-2" />
+                    )}
+                    Delete Course
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Course</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{title}"? This action cannot be undone and will permanently remove all course content, chapters, and progress data.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      disabled={loading === "delete"}
+                      className="bg-destructive hover:bg-destructive/80"
+                    >
+                      {loading === "delete" ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        "Delete Course"
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -228,18 +291,47 @@ export default function CourseActions({
                     Make {status.isPublic ? "Private" : "Public"}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleDelete}
-                    disabled={loading === "delete"}
-                    className="text-red-600 focus:text-red-600"
-                  >
-                    {loading === "delete" ? (
-                      <Loader2 className="h-4 w-4 mr-2" />
-                    ) : (
-                      <Trash2 className="h-4 w-4 mr-2" />
-                    )}
-                    Delete Course
-                  </DropdownMenuItem>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem
+                        onSelect={(e) => e.preventDefault()}
+                        disabled={loading === "delete"}
+                        className="text-red-600 focus:text-red-600 cursor-pointer"
+                      >
+                        {loading === "delete" ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4 mr-2" />
+                        )}
+                        Delete Course
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Course</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete "{title}"? This action cannot be undone and will permanently remove all course content, chapters, and progress data.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDelete}
+                          disabled={loading === "delete"}
+                          className="bg-destructive hover:bg-destructive/80"
+                        >
+                          {loading === "delete" ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Deleting...
+                            </>
+                          ) : (
+                            "Delete Course"
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}

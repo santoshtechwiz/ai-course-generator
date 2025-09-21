@@ -1,5 +1,6 @@
-import { useMemo } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { useAuth } from "@/modules/auth"
+import { ClientCreditService } from "@/services/client-credit-service"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
 
 export type PlanType = "FREE" | "BASIC" | "PREMIUM" | "ULTIMATE"
@@ -52,15 +53,37 @@ const FEATURE_PLAN_REQUIREMENTS: Record<string, PlanType> = {
 
 export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPlanConfig>): QuizPlanData {
   const { user, subscription, isAuthenticated, isLoading } = useAuth()
+  const [credits, setCredits] = useState(0)
+  const [creditLoading, setCreditLoading] = useState(true)
+  
+  // Fetch current credit information from ClientCreditService for consistency
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      setCreditLoading(true)
+      ClientCreditService.getCreditDetails()
+        .then(creditInfo => {
+          setCredits(creditInfo.remainingCredits)
+          setCreditLoading(false)
+        })
+        .catch(error => {
+          console.error('[useQuizPlan] Failed to fetch credit details:', error)
+          setCredits(0)
+          setCreditLoading(false)
+        })
+    } else {
+      setCredits(0)
+      setCreditLoading(false)
+    }
+  }, [isAuthenticated, user?.id])
   
   const mergedConfig = useMemo(() => ({
     ...DEFAULT_CONFIG,
     ...config,
   }), [config])
+  
   return useMemo(() => {
-    const currentPlan = subscription?.plan || "FREE"
+    const currentPlan = (subscription?.plan as PlanType) || "FREE"
     const isSubscribed = subscription?.status === 'active' || false
-    const credits = user?.credits || 0
     const hasCredits = credits >= requiredCredits
 
     const maxQuestions = mergedConfig.maxQuestions[currentPlan] || DEFAULT_CONFIG.maxQuestions.FREE
@@ -77,7 +100,7 @@ export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPl
       .filter(([_, requiredPlan]) => planHierarchy[currentPlan] >= planHierarchy[requiredPlan])
       .map(([featureId, _]) => featureId)
 
-    const canCreateQuiz = isAuthenticated && hasCredits && !isLoading
+    const canCreateQuiz = isAuthenticated && hasCredits && !isLoading && !creditLoading
 
     const getRequiredPlanForAction = (action: 'create' | 'edit' | 'advanced'): PlanType => {
       switch (action) {
@@ -97,7 +120,7 @@ export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPl
 
     return {
       isLoggedIn: isAuthenticated,
-      isLoading,
+      isLoading: isLoading || creditLoading,
       currentPlan,
       isSubscribed,
       credits,
@@ -110,7 +133,7 @@ export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPl
       meetsPlanRequirement,
       availableFeatures,
     }
-  }, [isAuthenticated, isLoading, subscription, user, requiredCredits, mergedConfig])
+  }, [isAuthenticated, isLoading, creditLoading, subscription, credits, requiredCredits, mergedConfig])
 }
 
 export default useQuizPlan

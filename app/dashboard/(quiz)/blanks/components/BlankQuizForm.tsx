@@ -31,6 +31,7 @@ import { ConfirmDialog } from "../../components/ConfirmDialog"
 import PlanAwareButton from "../../components/PlanAwareButton"
 import FormContainer from "@/app/dashboard/FormContainer"
 import { useToast } from "@/components/ui/use-toast"
+import { ClientCreditService } from "@/services/client-credit-service"
 
 
 type BlankQuizFormData = z.infer<typeof blanksQuizSchema> & {}
@@ -49,13 +50,45 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
   const [submitError, setSubmitError] = React.useState<string | null>(null)
   const { toast } = useToast()
 
+  // Credit information state for consistent display
+  const [creditInfo, setCreditInfo] = React.useState({
+    hasCredits: false,
+    remainingCredits: credits,
+    totalCredits: 0,
+    usedCredits: 0
+  })
+
+  // Fetch detailed credit information for consistent display
+  React.useEffect(() => {
+    if (isLoggedIn) {
+      ClientCreditService.getCreditDetails()
+        .then(details => {
+          setCreditInfo({
+            hasCredits: details.hasCredits,
+            remainingCredits: details.remainingCredits,
+            totalCredits: details.totalCredits,
+            usedCredits: details.usedCredits
+          })
+        })
+        .catch(error => {
+          console.error('[BlankQuizForm] Failed to fetch credit details:', error)
+          // Fallback to props
+          setCreditInfo({
+            hasCredits: credits > 0,
+            remainingCredits: credits,
+            totalCredits: credits,
+            usedCredits: 0
+          })
+        })
+    }
+  }, [isLoggedIn, credits])
+
   const [formData, setFormData] = usePersistentState<BlankQuizFormData>("blankQuizFormData", {
     title: params?.title || "",
     amount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
     difficulty: (typeof params?.difficulty === "string" && ["easy", "medium", "hard"].includes(params.difficulty)
       ? params.difficulty
       : "easy") as "easy" | "medium" | "hard",
-    topic: params?.topic || "",
     type: "blanks",
   })
 
@@ -85,13 +118,10 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
     if (typeof params?.difficulty === "string" && ["easy", "medium", "hard"].includes(params.difficulty)) {
       setValue("difficulty", params.difficulty as "easy" | "medium" | "hard")
     }
-    if (params?.topic) {
-      setValue("topic", params.topic)
-    }
-  }, [params?.title, params?.amount, params?.difficulty, params?.topic, maxQuestions, setValue])
+  }, [params?.title, params?.amount, params?.difficulty, maxQuestions, setValue])
 
   React.useEffect(() => {
-    const subscription = watch((value) => setFormData(value as BlankQuizFormData))
+    const subscription = watch((value: Record<string, unknown>) => setFormData(value as BlankQuizFormData))
     return () => subscription.unsubscribe()
   }, [watch, setFormData])
 
@@ -110,7 +140,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
     (data: BlankQuizFormData) => {
       if (isLoading) return
 
-      if (!data.title || !data.amount || !data.difficulty || !data.topic) {
+      if (!data.title || !data.amount || !data.difficulty) {
         setSubmitError("Please fill in all required fields")
         return
       }
@@ -130,7 +160,6 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
         title: formValues.title,
         amount: formValues.amount,
         difficulty: formValues.difficulty,
-        topic: formValues.topic,
         type: "blanks",
   })
       const userQuizId = response?.quizId || response?.userQuizId
@@ -152,11 +181,10 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
   const amount = watch("amount")
   const difficulty = watch("difficulty")
   const title = watch("title")
-  const topic = watch("topic")
 
   const isFormValid = React.useMemo(() => {
-    return !!title && !!amount && !!difficulty && !!topic && isValid
-  }, [title, amount, difficulty, topic, isValid])
+    return !!title && !!amount && !!difficulty && isValid
+  }, [title, amount, difficulty, isValid])
 
   const isDisabled = React.useMemo(() => credits < 1 || !isFormValid || isLoading, [credits, isFormValid, isLoading])
 
@@ -169,17 +197,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
     ]
   }, [])
 
-  // Suggested topics for blanks quizzes
-  const suggestedTopics = [
-    "English Grammar",
-    "Vocabulary",
-    "Science Terms",
-    "Historical Facts",
-    "Famous Quotes",
-    "Literary Passages",
-    "Business Terminology",
-  ]
-
+  
   // Fix credit percentage calculation to be type-safe and display actual credits
   const creditPercentage = React.useMemo(() => {
     if (typeof credits !== "number" || isNaN(credits) || credits <= 0) {
@@ -200,7 +218,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
   }
 
   return (
-    <FormContainer>
+    <div className="w-full max-w-4xl mx-auto">
       {submitError && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
@@ -209,16 +227,8 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
         </Alert>
       )}
       <Card className="bg-background border border-border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
-        <CardContent className="space-y-8 lg:space-y-10 p-6 lg:p-8">
-          {submitError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{submitError}</AlertDescription>
-            </Alert>
-          )}
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 lg:space-y-10">
+        <CardContent className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 md:space-y-8">
             <motion.div
               className="space-y-4 lg:space-y-5"
               initial={{ opacity: 0, y: 20 }}
@@ -244,8 +254,8 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                         <span className="font-medium text-blue-900 dark:text-blue-100">AI Tip</span>
                       </div>
                       <p className="text-sm">
-                        Enter a descriptive title for your fill-in-the-blanks quiz. Our AI will generate relevant
-                        questions based on this topic.
+                        Enter a descriptive title or topic for your fill-in-the-blanks quiz. You can use complete 
+                        sentences or phrases. Our AI will generate relevant questions based on this content.
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -254,7 +264,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
               <div className="relative group">
                 <Input
                   id="title"
-                  placeholder="Enter the quiz title (e.g., Common English Idioms, Medical Terminology)"
+                  placeholder="Enter your quiz topic or a complete sentence (e.g., The benefits of renewable energy sources, How photosynthesis works in plants)"
                   className={cn(
                     "w-full p-3 lg:p-4 h-12 lg:h-14 text-base lg:text-lg rounded-xl transition-all duration-300 pr-12",
                     "border-2 border-slate-200 dark:border-slate-700",
@@ -282,77 +292,23 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                   id="title-error"
                   role="alert"
                 >
-                  <div className="w-1 h-1 bg-red-500 rounded-full"></div>
+                  <span className="inline-block w-1 h-1 bg-red-500 rounded-full" />
                   {errors.title.message}
                 </motion.p>
               )}
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/50">
                 <p className="text-sm text-slate-700 dark:text-slate-300" id="title-description">
-                  <span className="font-medium text-blue-700 dark:text-blue-300">💡 Examples:</span> Common English
-                  Idioms, Medical Terminology, Scientific Concepts, Historical Events
+                  <span className="font-medium text-blue-700 dark:text-blue-300">💡 Examples:</span> "The process of photosynthesis in green plants", "Key principles of quantum mechanics", "Benefits of renewable energy sources", or simply "World War II Events"
                 </p>
               </div>
             </motion.div>
 
-            <motion.div
-              className="space-y-4 lg:space-y-5"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Label htmlFor="topic" className="text-base font-medium text-foreground flex items-center gap-2">
-                Topic *
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p className="w-[200px]">Select a topic for your fill-in-the-blanks quiz</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </Label>
+           
+          
 
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2 lg:gap-3 mb-3 lg:mb-4">
-                  {suggestedTopics.map((suggestedTopic) => (
-                    <Badge
-                      key={suggestedTopic}
-                      variant={topic === suggestedTopic ? "default" : "outline"}
-                      className="cursor-pointer transition-all duration-200 hover:shadow-sm text-sm lg:text-base px-3 py-1.5 lg:px-4 lg:py-2"
-                      onClick={() => setValue("topic", suggestedTopic)}
-                    >
-                      {suggestedTopic}
-                    </Badge>
-                  ))}
-                </div>
 
-                <Input
-                  id="topic"
-                  placeholder="Enter a topic or choose from above"
-                  className={cn(
-                    "w-full p-3 h-12 border border-input rounded-md transition-all",
-                    "focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary",
-                    errors.topic ? "border-red-300 focus-visible:ring-red-300" : "",
-                  )}
-                  {...register("topic")}
-                  aria-invalid={errors.topic ? "true" : "false"}
-                />
-              </div>
-
-              {errors.topic && (
-                <motion.p
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="text-sm text-destructive mt-1"
-                  role="alert"
-                >
-                  {errors.topic.message}
-                </motion.p>
-              )}
-            </motion.div>
+            
+           
 
             <motion.div
               className="space-y-4 lg:space-y-5"
@@ -469,10 +425,9 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                 <Sparkles className="h-4 w-4 lg:h-5 lg:w-5 text-primary" />
                 Available Credits
               </h3>
-              <Progress value={creditPercentage} className="h-2 lg:h-3" />
+              <Progress value={creditInfo.totalCredits > 0 ? (creditInfo.remainingCredits / creditInfo.totalCredits) * 100 : 0} className="h-2 lg:h-3" />
               <p className="text-xs lg:text-sm text-muted-foreground">
-                You have <span className="font-bold text-primary">{credits}</span> credit{credits !== 1 ? "s" : ""}{" "}
-                remaining.
+                {creditInfo.usedCredits} used of {creditInfo.totalCredits} total credits. <span className="font-bold text-primary">{creditInfo.remainingCredits} remaining</span>.
               </p>
             </motion.div>
 
@@ -534,21 +489,21 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
         description="You are about to use AI to generate a fill-in-the-blanks quiz. This will use credits from your account."
         confirmText="Generate Now"
         cancelText="Cancel"
-        showTokenUsage={true}
+        showCreditUsage={true}
         status={isLoading ? "loading" : submitError ? "error" : undefined}
         errorMessage={submitError ?? undefined}
-        tokenUsage={{
-          used: Math.max(0, maxQuestions - credits),
-          available: maxQuestions,
+        creditUsage={{
+          used: Math.max(0, 100 - credits), // Assuming 100 total credits for calculation  
+          available: 100,
           remaining: credits,
-          percentage: (Math.max(0, maxQuestions - credits) / maxQuestions) * 100,
+          percentage: credits > 0 ? ((100 - credits) / 100) * 100 : 100,
         }}
         quizInfo={{
           type: "Fill-in-the-Blanks Quiz",
           topic: watch("title"),
           count: watch("amount"),
           difficulty: watch("difficulty"),
-          estimatedTokens: Math.min(watch("amount") || 1, 5) * 120,
+          estimatedCredits: 1, // Quiz creation costs 1 credit
         }}
       >
         <div className="py-2">
@@ -559,6 +514,6 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
           </p>
         </div>
       </ConfirmDialog>
-    </FormContainer>
+    </div>
   )
 }
