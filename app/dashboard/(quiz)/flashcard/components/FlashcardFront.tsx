@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
+import SyntaxHighlighter from "react-syntax-highlighter"
+import vs from "react-syntax-highlighter/dist/styles/vs"
 
 interface FlashcardFrontProps {
   question: string
@@ -119,7 +119,7 @@ export function FlashcardFront({
                 <div className="max-h-60 sm:max-h-72 overflow-y-auto">
                   <SyntaxHighlighter
                     language={language}
-                    style={vscDarkPlus}
+                    style={vs}
                     customStyle={{
                       margin: 0,
                       fontSize: '0.875rem',

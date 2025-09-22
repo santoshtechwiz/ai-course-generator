@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
-import { vscDarkPlus, vs } from "react-syntax-highlighter/dist/esm/styles/prism"
+import SyntaxHighlighter from "react-syntax-highlighter"
+import vs from "react-syntax-highlighter/dist/styles/vs"
 import { HintSystem } from "@/components/quiz/HintSystem"
 import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
 import { generateBlanksHints, generateOpenEndedHints } from "@/lib/utils/hint-system"
@@ -632,7 +632,7 @@ export function UnifiedQuizQuestion({
                 </div>
                 <SyntaxHighlighter
                   language={codeQuestion.language || 'javascript'}
-                  style={vscDarkPlus}
+                  style={vs}
                   className="text-sm !bg-zinc-950 !p-6 !m-0"
                   showLineNumbers={true}
                   wrapLines={true}

@@ -152,6 +152,15 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
       dispatch(resetQuiz());
     }
   }, [dispatch, quizResults, slug]);
+
+  // Monitor quiz status for authentication requirements
+  useEffect(() => {
+    if (quizStatus === 'requires-auth' && hasResults) {
+      console.log('Quiz requires authentication, showing sign-in prompt with results')
+      send({ type: 'RESULTS_LOADED_NO_AUTH' });
+    }
+  }, [quizStatus, hasResults, send]);
+
   // Optimized effect for loading results
   useEffect(() => {
     if (!slug || isAuthLoading) return

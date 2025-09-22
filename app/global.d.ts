@@ -7,5 +7,5 @@ declare global {
     };
   }
 }
-
+declare module "langchain/vectorstores/memory";
 export {};

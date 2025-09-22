@@ -377,3 +377,6 @@ export function invalidateSessionCache() {
   // Also clear userCache if you want to be thorough
   userCache.clear()
 }
+
+// Re-export isAdmin from server-auth for convenience
+export { isAdmin } from "./server-auth"

@@ -82,7 +82,18 @@ function loadPersistedProgress(slug: string | null, quizType: QuizType | null): 
 /**
  * fetchQuiz with error handling and cancellation
  */
-export const fetchQuiz = createAsyncThunk(
+export const fetchQuiz = createAsyncThunk<
+  any,
+  {
+    slug?: string
+    quizType?: QuizType
+    data?: any
+  },
+  {
+    state: RootState
+    rejectValue: any
+  }
+>(
   "quiz/fetch",
   async (
     payload: {
@@ -482,14 +493,17 @@ export const submitQuiz = createAsyncThunk(
         
         // Check for authentication errors
         if (response.status === 401 || response.status === 403) {
-          // User not authenticated, save results temporarily and redirect
+          // User not authenticated, save results temporarily and return results for local display
           storageManager.saveTempQuizResults(slug!, quizType!, quizResults, answers)
           
-          return rejectWithValue({
+          // Return the calculated results instead of redirecting immediately
+          // This allows the component to show results locally with signin prompt
+          return {
+            ...quizResults,
             requiresAuth: true,
-            redirectUrl: `/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/${quizType}/${slug}/results`)}`,
-            tempResults: quizResults
-          })
+            tempResults: true,
+            __lastUpdated: Date.now(),
+          }
         }
         
         throw new Error(errorData?.error || 'Failed to submit quiz')
@@ -723,6 +737,18 @@ export const loadTempResultsAndSave = createAsyncThunk(
         } catch (parseError) {
           console.warn('Failed to parse error response:', parseError)
         }
+        
+        // If authentication failed, don't treat it as an error - just return the results
+        if (response.status === 401 || response.status === 403) {
+          console.log('User not authenticated for saving temp results, returning local results')
+          return {
+            ...results,
+            requiresAuth: true,
+            tempResults: true,
+            __lastUpdated: Date.now(),
+          }
+        }
+        
         console.error('Failed to save temp results to DB:', errorData)
         throw new Error(errorData?.error || 'Failed to save results')
       }
@@ -748,7 +774,7 @@ const quizSlice = createSlice({
   name: 'quiz',
   initialState,
   reducers: {
-    setQuiz(state, action: PayloadAction<{ slug: string; quizType: QuizType; title: string; questions: QuizQuestion[]; userId?: string }>) {
+    setQuiz(state: QuizState, action: PayloadAction<{ slug: string; quizType: QuizType; title: string; questions: QuizQuestion[]; userId?: string }>) {
       state.slug = action.payload.slug
       state.quizType = action.payload.quizType
       state.title = action.payload.title
@@ -763,7 +789,7 @@ const quizSlice = createSlice({
   state.lastUpdated = Date.now()
     },
 
-    saveAnswer(state, action: PayloadAction<{
+    saveAnswer(state: QuizState, action: PayloadAction<{
       questionId: string;
       answer: string | Record<string, any>;
       selectedOptionId?: string;
@@ -807,7 +833,7 @@ const quizSlice = createSlice({
       }
     },
 
-    setCurrentQuestionIndex(state, action: PayloadAction<number>) {
+    setCurrentQuestionIndex(state: QuizState, action: PayloadAction<number>) {
       const index = action.payload
       if (index >= 0 && index < state.questions.length) {
         state.currentQuestionIndex = index
@@ -816,7 +842,7 @@ const quizSlice = createSlice({
     },
 
     // Handle navigation between quiz pages
-    handleNavigation(state, action: PayloadAction<{ keepData?: boolean }>) {
+    handleNavigation(state: QuizState, action: PayloadAction<{ keepData?: boolean }>) {
       const keepData = action.payload?.keepData ?? false
       
       // Cancel all pending requests during navigation
@@ -842,7 +868,7 @@ const quizSlice = createSlice({
       state.error = null
     },
 
-    resetQuiz(state, action: PayloadAction<{ keepResults?: boolean } | undefined>) {
+    resetQuiz(state: QuizState, action: PayloadAction<{ keepResults?: boolean } | undefined>) {
       const keep = action.payload?.keepResults ?? false
       
       // Reset quiz state
@@ -876,7 +902,7 @@ const quizSlice = createSlice({
     /**
      * Mark that authentication is required to see quiz results
      */
-    markRequiresAuth(state, action: PayloadAction<{ redirectUrl: string }>) {
+    markRequiresAuth(state: QuizState, action: PayloadAction<{ redirectUrl: string }>) {
       state.requiresAuth = true
       state.redirectAfterLogin = action.payload.redirectUrl
     },
@@ -897,11 +923,11 @@ const quizSlice = createSlice({
   state.lastUpdated = null
     },
 
-    setQuizCompleted(state, action: PayloadAction<boolean>) {
+    setQuizCompleted(state: QuizState, action: PayloadAction<boolean>) {
       state.isCompleted = action.payload
     },
 
-    setQuizResults(state, action: PayloadAction<QuizResults>) {
+    setQuizResults(state: QuizState, action: PayloadAction<QuizResults>) {
       state.results = action.payload
       state.isCompleted = true
   state.lastUpdated = Date.now()
@@ -910,7 +936,7 @@ const quizSlice = createSlice({
     /**
      * Track when a question is first viewed to calculate time spent
      */
-    startQuestionTimer(state, action: PayloadAction<{ questionId: string }>) {
+    startQuestionTimer(state: QuizState, action: PayloadAction<{ questionId: string }>) {
       const questionId = action.payload.questionId
       if (!state.questionStartTimes[questionId]) {
         state.questionStartTimes[questionId] = Date.now()
@@ -920,17 +946,17 @@ const quizSlice = createSlice({
     /**
      * Reset question timers (useful when retaking quiz)
      */
-    resetQuestionTimers(state) {
+    resetQuestionTimers(state: QuizState) {
       state.questionStartTimes = {}
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchQuiz.pending, (state) => {
+      .addCase(fetchQuiz.pending, (state: QuizState) => {
         state.status = 'loading'
         state.error = null
       })
-      .addCase(fetchQuiz.fulfilled, (state, action) => {
+      .addCase(fetchQuiz.fulfilled, (state: QuizState, action) => {
         console.log('fetchQuiz.fulfilled - updating state with:', {
           title: action.payload.title,
           questionsCount: action.payload.questions?.length || 0,
@@ -947,7 +973,7 @@ const quizSlice = createSlice({
         state.isInitialized = true
         state.lastUpdated = Date.now()
       })
-      .addCase(fetchQuiz.rejected, (state, action) => {
+      .addCase(fetchQuiz.rejected, (state: QuizState, action) => {
         console.log('fetchQuiz.rejected - error:', action.payload || action.error.message)
 
         state.status = 'failed'
@@ -958,16 +984,22 @@ const quizSlice = createSlice({
         state.status = 'submitting'
         state.error = null
       })
-      .addCase(submitQuiz.fulfilled, (state, action) => {
+      .addCase(submitQuiz.fulfilled, (state: QuizState, action) => {
         const incomingTs = (action.payload as any)?.__lastUpdated || Date.now()
         if (!state.lastUpdated || incomingTs >= state.lastUpdated) {
           state.status = 'succeeded'
           state.results = action.payload
           state.isCompleted = true
           state.lastUpdated = incomingTs
+          
+          // Check if authentication is required for saving
+          if ((action.payload as any)?.requiresAuth) {
+            state.requiresAuth = true
+            state.status = 'requires-auth'
+          }
         }
       })
-      .addCase(submitQuiz.rejected, (state, action) => {
+      .addCase(submitQuiz.rejected, (state: QuizState, action) => {
         const payload = action.payload as any
         if (payload?.requiresAuth) {
           state.requiresAuth = true
@@ -983,13 +1015,13 @@ const quizSlice = createSlice({
       .addCase(saveQuizResultsToDB.pending, (state) => {
         // Optional: could set a saving status
       })
-      .addCase(saveQuizResultsToDB.fulfilled, (state, action) => {
+      .addCase(saveQuizResultsToDB.fulfilled, (state: QuizState, action) => {
         // Update results with server response if needed
         if (action.payload) {
           state.results = action.payload
         }
       })
-      .addCase(saveQuizResultsToDB.rejected, (state, action) => {
+      .addCase(saveQuizResultsToDB.rejected, (state: QuizState, action) => {
         state.status = 'failed'
         state.error = action.error.message || 'Failed to save results'
       })
@@ -997,7 +1029,7 @@ const quizSlice = createSlice({
         state.status = 'loading'
         state.error = null
       })
-      .addCase(loadTempResultsAndSave.fulfilled, (state, action) => {
+      .addCase(loadTempResultsAndSave.fulfilled, (state: QuizState, action) => {
         state.status = 'succeeded'
         state.results = action.payload
         state.isCompleted = true
@@ -1006,7 +1038,7 @@ const quizSlice = createSlice({
         state.redirectAfterLogin = null
         state.lastUpdated = Date.now()
       })
-      .addCase(loadTempResultsAndSave.rejected, (state, action) => {
+      .addCase(loadTempResultsAndSave.rejected, (state: QuizState, action) => {
         const payload = action.payload as any
         state.status = 'failed'
         state.error = payload?.error || action.error.message || 'Failed to load results'
@@ -1034,7 +1066,7 @@ export const selectQuizState = (state: RootState) => state.quiz
 
 export const selectCurrentQuestion = createSelector(
   (state: RootState) => state.quiz,
-  (quiz) => {
+  (quiz: QuizState) => {
     if (!quiz.slug || !quiz.questions.length) return null
     return quiz.questions[quiz.currentQuestionIndex] || null
   }
@@ -1042,7 +1074,7 @@ export const selectCurrentQuestion = createSelector(
 
 export const selectQuizProgress = createSelector(
   (state: RootState) => state.quiz,
-  (quiz) => {
+  (quiz: QuizState) => {
     const totalQuestions = quiz.questions.length
     const answeredQuestions = Object.keys(quiz.answers).length
     const completed = quiz.isCompleted || (answeredQuestions === totalQuestions)
@@ -1068,68 +1100,68 @@ export const selectQuizProgress = createSelector(
 
 export const selectQuizResults = createSelector(
   (state: RootState) => state.quiz,
-  (quiz) => quiz.results
+  (quiz: QuizState) => quiz.results
 )
 
 export const selectIsQuizCompleted = createSelector(
   (state: RootState) => state.quiz,
-  (quiz) => quiz.isCompleted
+  (quiz: QuizState) => quiz.isCompleted
 )
 
 export const selectQuizError = createSelector(
   (state: RootState) => state.quiz,
-  (quiz) => quiz.error
+  (quiz: QuizState) => quiz.error
 )
 
 export const selectQuizStatus = createSelector(
   (state: RootState) => state.quiz,
-  (quiz) => quiz.status
+  (quiz: QuizState) => quiz.status
 )
 
 export const selectRequiresAuth = createSelector(
   (state: RootState) => state.quiz,
-  (quiz) => quiz.requiresAuth
+  (quiz: QuizState) => quiz.requiresAuth
 )
 
 export const selectRedirectAfterLogin = createSelector(
   (state: RootState) => state.quiz,
-  (quiz) => quiz.redirectAfterLogin
+  (quiz: QuizState) => quiz.redirectAfterLogin
 )
 
 export const selectQuizQuestions = createSelector(
   (state: RootState) => state.quiz,
-  (quiz) => (quiz as unknown as QuizState).questions
+  (quiz: QuizState) => quiz.questions
 )
 
 export const selectQuizAnswers = createSelector(
   (state: RootState) => state.quiz,
-  (quiz) => (quiz as unknown as QuizState).answers
+  (quiz: QuizState) => quiz.answers
 )
 
 export const selectCurrentQuestionIndex = createSelector(
   (state: RootState) => state.quiz,
-  (quiz) => (quiz as unknown as QuizState).currentQuestionIndex
+  (quiz: QuizState) => quiz.currentQuestionIndex
 )
 
 export const selectQuizTitle = createSelector(
   (state: RootState) => state.quiz,
-  (quiz) => (quiz as unknown as QuizState).title
+  (quiz: QuizState) => quiz.title
 )
 
 export const selectIsQuizComplete = createSelector(
   (state: RootState) => state.quiz,
-  (quiz) => (quiz as unknown as QuizState).isCompleted
+  (quiz: QuizState) => quiz.isCompleted
 )
 
 export const selectQuizUserId = createSelector(
   (state: RootState) => state.quiz,
-  (quiz) => (quiz as unknown as QuizState).userId
+  (quiz: QuizState) => quiz.userId
 )
 
 // Added missing selector for quizType (fixes build error in OpenEndedQuizWrapper)
 export const selectQuizType = createSelector(
   (state: RootState) => state.quiz,
-  (quiz) => (quiz as unknown as QuizState).quizType
+  (quiz: QuizState) => quiz.quizType
 )
 
 export default quizSlice.reducer

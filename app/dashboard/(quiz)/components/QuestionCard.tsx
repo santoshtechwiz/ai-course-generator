@@ -4,8 +4,8 @@ import { CheckCircle2, XCircle, Clock, Lightbulb, AlertCircle } from "lucide-rea
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
+import SyntaxHighlighter from "react-syntax-highlighter"
+import vs from "react-syntax-highlighter/dist/styles/vs"
 
 interface ProcessedAnswer {
   questionId: string
@@ -119,7 +119,7 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
               <div className="max-h-96 overflow-auto">
                 <SyntaxHighlighter
                   language={(question.language || 'javascript').toLowerCase()}
-                  style={vscDarkPlus}
+                  style={vs}
                   customStyle={{
                     margin: 0,
                     borderRadius: 0,

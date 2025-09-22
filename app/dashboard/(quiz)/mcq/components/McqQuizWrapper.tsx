@@ -139,44 +139,18 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   }, [currentQuestionIndex, questions.length, dispatch])
 
   const handleSubmitQuiz = useCallback(async () => {
-    // Check authentication before submission
-    if (!user?.id) {
-      toast.error("Please sign in to save your quiz results", {
-        action: {
-          label: "Sign In",
-          onClick: () => {
-            const currentUrl = `/dashboard/mcq/${slug}`
-            const signInUrl = `/auth/signin?callbackUrl=${encodeURIComponent(currentUrl)}`
-            router.push(signInUrl)
-          }
-        },
-        duration: 5000
-      })
-      return
-    }
-
     try {
       await dispatch(submitQuiz()).unwrap()
-
+      toast.success("Quiz submitted successfully!")
+      // Always navigate to results, even if authentication is required
       setTimeout(() => {
         router.push(`/dashboard/mcq/${slug}/results`)
       }, 500)
     } catch (err: any) {
-      // Check if it's an authentication error
-      if (err?.requiresAuth) {
-        // Authentication required, redirect will be handled by useEffect
-        return
-      }
       console.error("Error submitting quiz:", err)
+      toast.error("Failed to submit quiz. Please try again.")
     }
-  }, [dispatch, router, slug, user?.id])
-
-  // Handle authentication redirect
-  useEffect(() => {
-    if (requiresAuth && redirectAfterLogin) {
-      router.push(redirectAfterLogin)
-    }
-  }, [requiresAuth, redirectAfterLogin, router])
+  }, [dispatch, router, slug])
 
   // Loading state with improved handling
   if (quizStatus === 'loading' && !questions.length) {

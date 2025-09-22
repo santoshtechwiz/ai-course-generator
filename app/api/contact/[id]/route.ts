@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/db"
 import { updateContactSubmission, deleteContactSubmission } from "@/app/actions/actions"
 import { sendContactResponse } from "@/lib/email"
-import { AuthService } from "@/services/auth-service"
 import { withAdminAuth } from "@/middlewares/auth-middleware"
 
 export const GET = withAdminAuth(async (request: NextRequest) => {
@@ -26,7 +25,7 @@ export const GET = withAdminAuth(async (request: NextRequest) => {
     console.error("Error fetching contact submission:", error)
     return NextResponse.json({ error: "Failed to fetch contact submission" }, { status: 500 })
   }
-}
+})
 
 export const PATCH = withAdminAuth(async function(request: NextRequest) {
   try {
@@ -65,7 +64,7 @@ export const PATCH = withAdminAuth(async function(request: NextRequest) {
     console.error("Error updating contact submission:", error)
     return NextResponse.json({ error: "Failed to update contact submission" }, { status: 500 })
   }
-}
+})
 
 export const DELETE = withAdminAuth(async (request: NextRequest) => {
   try {
@@ -86,4 +85,4 @@ export const DELETE = withAdminAuth(async (request: NextRequest) => {
     console.error("Error deleting contact submission:", error)
     return NextResponse.json({ error: "Failed to delete contact submission" }, { status: 500 })
   }
-}
+})

@@ -51,7 +51,14 @@ const nextConfig = {
         },
       }
     }
-    return config
+        // Provide alias for js-tiktoken lite to satisfy named imports used by @langchain
+        config.resolve = config.resolve || {};
+        config.resolve.alias = {
+          ...(config.resolve.alias || {}),
+          'js-tiktoken/lite': require('path').resolve(__dirname, 'src/shims/js-tiktoken-shim.cjs'),
+        };
+
+        return config
   },
 
   modularizeImports: {

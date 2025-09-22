@@ -9,8 +9,8 @@ import { motion } from "framer-motion"
 
 import { CheckCircle, XCircle, Clock, HelpCircle } from "lucide-react"
 
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
-import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
+import SyntaxHighlighter from "react-syntax-highlighter"
+import vs from "react-syntax-highlighter/dist/styles/vs"
 
 interface AnswerReviewItemProps {
   index: number
@@ -54,7 +54,7 @@ export function AnswerReviewItem({
     return (
       <SyntaxHighlighter
         language={lang}
-        style={vscDarkPlus}
+  style={vs}
         customStyle={{
           margin: 0,
           padding: "1rem",

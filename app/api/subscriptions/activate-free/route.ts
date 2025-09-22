@@ -52,3 +52,5 @@ export const POST = withAuth(async (req: NextRequest, session) => {
     return ApiResponseHandler.error(error || "Failed to activate free plan")
   }
 }
+
+)

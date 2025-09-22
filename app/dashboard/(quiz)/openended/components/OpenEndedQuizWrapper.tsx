@@ -152,22 +152,6 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
 
   // Submit quiz and navigate to results
   const handleSubmitQuiz = useCallback(async () => {
-    // Check authentication before submission
-    if (!user?.id) {
-      toast.error("Please sign in to save your quiz results", {
-        action: {
-          label: "Sign In",
-          onClick: () => {
-            const currentUrl = `/dashboard/openended/${slug}`
-            const signInUrl = `/auth/signin?callbackUrl=${encodeURIComponent(currentUrl)}`
-            router.push(signInUrl)
-          }
-        },
-        duration: 5000
-      })
-      return
-    }
-
     try {
       await dispatch(submitQuiz()).unwrap()
       toast.success("Quiz submitted successfully!")

@@ -1,6 +1,5 @@
 import { api } from "@/lib/api-helper"
 import { YtTranscript } from "yt-transcript"
-import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube"
 import { Supadata, type TranscriptChunk } from "@supadata/js"
 import pRetry from "p-retry"
 import pTimeout from "p-timeout"
@@ -201,13 +200,20 @@ class YoutubeService {
   }
 
   private static async getLangchainTranscript(videoId: string): Promise<string | null> {
-    const loader = YoutubeLoader.createFromUrl(`https://youtu.be/${videoId}`, {
-      language: "en",
-      addVideoInfo: false,
-    })
+    try {
+      // Dynamically import YoutubeLoader to avoid build-time resolution errors
+      const { YoutubeLoader } = await import('@langchain/community/document_loaders/web/youtube')
+      const loader = YoutubeLoader.createFromUrl(`https://youtu.be/${videoId}`, {
+        language: 'en',
+        addVideoInfo: false,
+      })
 
-    const docs = await loader.load()
-    return docs.map((doc) => doc.pageContent).join(" ")
+      const docs = await loader.load()
+      return docs.map((doc: any) => doc.pageContent).join(' ')
+    } catch (err) {
+      console.warn('LangChain YoutubeLoader unavailable or failed to load:', err)
+      return null
+    }
   }
 
   private static async getSupadataTranscript(videoId: string): Promise<string | null> {

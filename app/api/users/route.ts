@@ -154,3 +154,5 @@ export const POST = withAdminAuth(async (req: NextRequest, session) => {
     return ApiResponseHandler.error(error || "Failed to create user")
   }
 }
+
+)
