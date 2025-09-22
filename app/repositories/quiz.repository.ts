@@ -95,6 +95,55 @@ export class QuizRepository extends BaseRepository<any> {
     includePrivate?: boolean;
     favoritesOnly?: boolean;
   }) {
+    // Handle favorites filtering with user-specific favorites
+    if (favoritesOnly && userId) {
+      // Get user's favorite quiz IDs first
+      const favoriteQuizzes = await prisma.userQuizFavorite.findMany({
+        where: { userId },
+        select: { userQuizId: true }
+      });
+      
+      const favoriteQuizIds = favoriteQuizzes.map(f => f.userQuizId);
+      
+      if (favoriteQuizIds.length === 0) {
+        return []; // No favorites found
+      }
+
+      const where: any = {
+        id: { in: favoriteQuizIds },
+        ...(quizType ? { quizType } : {}),
+        ...(search
+          ? {
+              OR: [
+                { title: { contains: search, mode: "insensitive" } },
+                { slug: { contains: search, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      };
+
+      // Handle public/private filtering for favorites
+      if (!includePrivate) {
+        where.isPublic = isPublic;
+      }
+
+      return prisma.userQuiz.findMany({
+        where,
+        take: limit,
+        orderBy: {
+          createdAt: "desc",
+        },
+        include: {
+          _count: {
+            select: {
+              questions: true,
+            },
+          },
+        },
+      });
+    }
+
+    // Regular listing (non-favorites)
     const where: any = {
       ...(quizType ? { quizType } : {}),
       ...(search
@@ -115,11 +164,6 @@ export class QuizRepository extends BaseRepository<any> {
     // If user ID is provided, filter by user's quizzes
     if (userId) {
       where.userId = userId;
-      
-      // If favorites only, filter by favorites
-      if (favoritesOnly) {
-        where.isFavorite = true;
-      }
     }
 
     return prisma.userQuiz.findMany({
@@ -204,39 +248,82 @@ export class QuizRepository extends BaseRepository<any> {
 
 
   /**
-   * Add quiz to favorites
+   * Check if a user has favorited a specific quiz
+   */
+  async checkIfUserFavorited(slug: string, userId: string): Promise<boolean> {
+    if (!userId) return false;
+    
+    try {
+      const quiz = await this.findBySlug(slug);
+      if (!quiz) return false;
+
+      // Check if user has favorited this quiz using the UserQuizFavorite table
+      const favorite = await prisma.userQuizFavorite.findUnique({
+        where: {
+          userId_userQuizId: {
+            userId,
+            userQuizId: quiz.id
+          }
+        }
+      });
+
+      return !!favorite;
+    } catch (error) {
+      console.error('Error checking user favorite status:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Add quiz to user's favorites (user-specific)
    */
   async addToFavorite(slug: string, userId: string) {
     const quiz = await this.findBySlug(slug);
     if (!quiz) {
       throw new Error("Quiz not found");
     }
-    if (quiz.userId !== userId) {
-      throw new Error("Unauthorized");
+
+    // Allow any authenticated user to favorite any public quiz
+    if (!quiz.isPublic && quiz.userId !== userId) {
+      throw new Error("Cannot favorite private quiz unless you're the owner");
     }
 
-    return prisma.userQuiz.update({
-      where: { slug },
-      data: { isFavorite: true },
-    });
+    // Create a user-specific favorite entry
+    try {
+      await prisma.userQuizFavorite.create({
+        data: {
+          userId,
+          userQuizId: quiz.id
+        }
+      });
+      return quiz;
+    } catch (error: any) {
+      // If it's already favorited, that's fine - just return the quiz
+      if (error.code === 'P2002') {
+        return quiz;
+      }
+      throw error;
+    }
   }
 
   /**
-   * Remove quiz from favorites
+   * Remove quiz from user's favorites (user-specific)
    */
   async removeFromFavorite(slug: string, userId: string) {
     const quiz = await this.findBySlug(slug);
     if (!quiz) {
       throw new Error("Quiz not found");
     }
-    if (quiz.userId !== userId) {
-      throw new Error("Unauthorized");
-    }
 
-    return prisma.userQuiz.update({
-      where: { slug },
-      data: { isFavorite: false },
+    // Remove the user-specific favorite entry
+    await prisma.userQuizFavorite.deleteMany({
+      where: {
+        userId,
+        userQuizId: quiz.id
+      }
     });
+
+    return quiz;
   }
 
   /**

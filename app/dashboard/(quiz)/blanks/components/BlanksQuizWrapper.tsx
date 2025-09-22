@@ -126,6 +126,21 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   }, [currentQuestionIndex, dispatch])
   // Submit quiz and navigate to results
   const handleSubmitQuiz = useCallback(async () => {
+    // Check authentication before submission
+    if (!user?.id) {
+      toast.error("Please sign in to save your quiz results", {
+        action: {
+          label: "Sign In",
+          onClick: () => {
+            const currentUrl = `/dashboard/blanks/${slug}`
+            const signInUrl = `/auth/signin?callbackUrl=${encodeURIComponent(currentUrl)}`
+            router.push(signInUrl)
+          }
+        },
+        duration: 5000
+      })
+      return
+    }
     
     try {
       await dispatch(submitQuiz()).unwrap()
@@ -142,7 +157,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
     } finally {
   // No global loader; rely on page state
     }
-  }, [dispatch, slug, router])
+  }, [dispatch, slug, router, user?.id])
 
   // Loading & error states
   const isLoading = quizStatus === "loading" || quizStatus === "idle"

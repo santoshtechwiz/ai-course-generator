@@ -20,7 +20,7 @@ export abstract class BaseQuizService {
   }
 
   /**
-   * Get a quiz by its slug
+   * Get a quiz by its slug with user-specific data
    */
   async getQuizBySlug(slug: string, userId: string) {
     const quiz = await this.quizRepository.findBySlug(slug);
@@ -28,10 +28,17 @@ export abstract class BaseQuizService {
     if (!quiz) {
       return null;
     }
+
+    // Check if the current user has favorited this quiz
+    let isFavorite = false;
+    if (userId) {
+      isFavorite = await this.quizRepository.checkIfUserFavorited(slug, userId);
+    }
+
     console.log("Quiz found:", quiz);
     return {
       isPublic: quiz.isPublic,
-      isFavorite: quiz.isFavorite,
+      isFavorite: isFavorite, // User-specific favorite status
       id: quiz.id,
       title: quiz.title,
       questions: this.formatQuestions(quiz.questions),

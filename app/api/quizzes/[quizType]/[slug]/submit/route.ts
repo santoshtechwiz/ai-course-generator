@@ -794,7 +794,14 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
     const userId = session?.user?.id
 
     if (!userId) {
-      return NextResponse.json({ success: false, error: "User not authenticated" }, { status: 401 })
+      return NextResponse.json({ 
+        success: false, 
+        error: "Please sign in to save your quiz results", 
+        details: { 
+          requiresAuth: true,
+          message: "Sign in to save your progress and see detailed results"
+        }
+      }, { status: 401 })
     }
 
     // Validate subscription for quiz submission
@@ -807,8 +814,11 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
     if (!validation.isValid) {
       return NextResponse.json({ 
         success: false,
-        error: validation.error || "Subscription validation failed",
-        requiresSubscription: true 
+        error: validation.error || "Unable to submit quiz at this time",
+        details: {
+          requiresSubscription: true,
+          message: "Please upgrade your subscription to submit quiz results"
+        }
       }, { status: 403 })
     }
 

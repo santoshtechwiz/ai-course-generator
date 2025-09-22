@@ -487,7 +487,7 @@ export const submitQuiz = createAsyncThunk(
           
           return rejectWithValue({
             requiresAuth: true,
-            redirectUrl: `/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/quiz/${quizType}/${slug}/results`)}`,
+            redirectUrl: `/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/${quizType}/${slug}/results`)}`,
             tempResults: quizResults
           })
         }

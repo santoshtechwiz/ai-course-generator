@@ -28,6 +28,7 @@ import { UnifiedLoader, PageLoader } from "@/components/loaders"
 import { AlertCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { toast } from "sonner"
 import SubscriptionWrapper from "@/components/subscription/SubscriptionWrapper"
 
 
@@ -138,6 +139,22 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   }, [currentQuestionIndex, questions.length, dispatch])
 
   const handleSubmitQuiz = useCallback(async () => {
+    // Check authentication before submission
+    if (!user?.id) {
+      toast.error("Please sign in to save your quiz results", {
+        action: {
+          label: "Sign In",
+          onClick: () => {
+            const currentUrl = `/dashboard/mcq/${slug}`
+            const signInUrl = `/auth/signin?callbackUrl=${encodeURIComponent(currentUrl)}`
+            router.push(signInUrl)
+          }
+        },
+        duration: 5000
+      })
+      return
+    }
+
     try {
       await dispatch(submitQuiz()).unwrap()
 
@@ -152,7 +169,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
       }
       console.error("Error submitting quiz:", err)
     }
-  }, [dispatch, router, slug])
+  }, [dispatch, router, slug, user?.id])
 
   // Handle authentication redirect
   useEffect(() => {

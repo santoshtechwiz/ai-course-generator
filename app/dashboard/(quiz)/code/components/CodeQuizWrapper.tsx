@@ -148,6 +148,22 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   }, [currentQuestionIndex, questions.length, dispatch])
 
   const handleSubmitQuiz = useCallback(async () => {
+    // Check authentication before submission
+    if (!user?.id) {
+      toast.error("Please sign in to save your quiz results", {
+        action: {
+          label: "Sign In",
+          onClick: () => {
+            const currentUrl = `/dashboard/code/${slug}`
+            const signInUrl = `/auth/signin?callbackUrl=${encodeURIComponent(currentUrl)}`
+            router.push(signInUrl)
+          }
+        },
+        duration: 5000
+      })
+      return
+    }
+
     try {
       await dispatch(submitQuiz()).unwrap()
       toast.success("Quiz submitted successfully!")
@@ -164,7 +180,7 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
     }
-  }, [dispatch, router, slug])
+  }, [dispatch, router, slug, user?.id])
 
 
   const isLoading = quizStatus === "loading" || quizStatus === "idle"
