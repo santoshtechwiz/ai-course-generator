@@ -26,7 +26,7 @@ const footerLinks = [
   {
     title: "Resources",
     links: [
-      { name: "Learning Path", href: "/dashboard/dashboard" },
+      { name: "Learning Path", href: "/dashboard" },
       { name: "Membership", href: "/dashboard/subscription" },
     ],
   },

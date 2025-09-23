@@ -467,7 +467,7 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
                         {quizSuggestions.slice(0, 2).map((quiz, idx) => (
                           <motion.a
                             key={quiz.id}
-                            href={getSafeQuizHref('quiz', (quiz as any).slug)}
+                            href={getSafeQuizHref('mcq', (quiz as any).slug)}
                             className="block p-3 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 transition-colors border border-gray-700/30"
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}

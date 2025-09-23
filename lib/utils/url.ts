@@ -38,7 +38,7 @@ export function getSiteUrl(): string {
  */
 export function buildQuizUrl(quizId: string, type?: string): string {
   const baseUrl = getBaseUrl()
-  const path = type ? `/dashboard/${type}/${quizId}` : `/dashboard/quiz/${quizId}`
+  const path = type ? `/dashboard/${type}/${quizId}` : `/dashboard/mcq/${quizId}`
   return `${baseUrl}${path}`
 }
 

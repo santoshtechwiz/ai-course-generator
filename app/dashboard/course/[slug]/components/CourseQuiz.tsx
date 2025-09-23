@@ -117,7 +117,8 @@ const QuizSkeleton = () => (
 )
 
 export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, chapterId, accessLevels }: QuizProps) {
-  const hasQuizAccess = accessLevels.isSubscribed || accessLevels.isAuthenticated || chapter?.isFree === true || (chapter as any)?.isFreeQuiz === true
+  // Quiz should only be available to subscribed users (not just authenticated)
+  const hasQuizAccess = accessLevels.isSubscribed || chapter?.isFree === true || (chapter as any)?.isFreeQuiz === true
   const { toast } = useToast()
   const { data: session } = useSession()
   const isUserAuthenticated = accessLevels.isAuthenticated || !!session
@@ -325,10 +326,10 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
 
       // Update progress with the new queue system
       const accuracy = (newScore / effectiveQuestions.length) * 100
-      dispatchQuizCompleted(userId, effectiveChapterId, course.id, quizState.score, effectiveQuestions.length, Date.now(), {
+      dispatchQuizCompleted(userId, effectiveChapterId, course.id, newScore, effectiveQuestions.length, Date.now(), {
         ...Object.entries(quizState.answers).map(([questionId, answer]) => ({
           questionId,
-          isCorrect: answer === effectiveQuestions.find(q => q.id === questionId)?.answer,
+          isCorrect: answer?.trim() === effectiveQuestions.find(q => q.id === questionId)?.answer?.trim(),
           timeSpent: 0, // TODO: Add time tracking
         })),
         chapterId: chapter?.id || 0,

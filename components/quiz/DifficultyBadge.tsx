@@ -1,32 +1,22 @@
-"use client"
+import { memo } from 'react'
+import { Badge } from '@/components/ui/badge'
 
-import { Badge } from "@/components/ui/badge"
-import { Zap } from "lucide-react"
-import { cn } from "@/lib/utils"
-
-interface DifficultyBadgeProps {
+type DifficultyBadgeProps = {
   difficulty: string
-  className?: string
 }
 
-export function DifficultyBadge({ difficulty, className }: DifficultyBadgeProps) {
-  const getDifficultyColor = (diff: string) => {
-    switch (diff.toLowerCase()) {
-      case "easy":
-        return "bg-emerald-500 text-white border-emerald-500"
-      case "medium":
-        return "bg-amber-500 text-white border-amber-500"
-      case "hard":
-        return "bg-accent text-accent-foreground border-accent"
-      default:
-        return "bg-muted text-muted-foreground border-muted"
-    }
-  }
+export const DifficultyBadge = memo(({ difficulty }: DifficultyBadgeProps) => {
+  const color = {
+    easy: 'bg-green-500/10 text-green-500 hover:bg-green-500/20',
+    medium: 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20',
+    hard: 'bg-red-500/10 text-red-500 hover:bg-red-500/20',
+  }[difficulty.toLowerCase()] || 'bg-gray-500/10 text-gray-500 hover:bg-gray-500/20'
 
   return (
-    <Badge className={cn("text-xs font-medium", getDifficultyColor(difficulty), className)}>
-      <Zap className="w-3 h-3 mr-1" />
+    <Badge variant="outline" className={color}>
       {difficulty}
     </Badge>
   )
-}
+})
+
+DifficultyBadge.displayName = "DifficultyBadge"

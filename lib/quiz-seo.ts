@@ -171,7 +171,7 @@ export function generateQuizMetadata(
     title: finalConfig.title,
     description: finalConfig.description,
     keywords: finalConfig.keywords,
-    canonical: finalConfig.canonical || `/dashboard/quiz/${quizType}`,
+    canonical: finalConfig.canonical || `/dashboard/${quizType}`,
     type: finalConfig.type || "website",
     noIndex: true, // Dashboard pages should not be indexed
   })

@@ -72,10 +72,7 @@ TheaterModeButton.displayName = "TheaterModeButton"
 // Certificate download states
 type CertificateState = "idle" | "downloading" | "success" | "error"
 
-const VideoPlayer = React.memo<VideoPlayerProps & {
-  onTheaterModeToggle?: (isTheater: boolean) => void
-  isTheaterMode?: boolean
-}>(({
+const VideoPlayer = React.memo<VideoPlayerProps>(({
   youtubeVideoId,
   chapterId,
   onEnded,
@@ -113,6 +110,7 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
   isKeyChapter = false,
   onTheaterModeToggle,
   isTheaterMode = false,
+  isLoading = false,
 }) => {
     const { isAuthenticated: authState, user } = useAuth()
     // Derive effective authentication (prop can override but auth state acts as fallback)
@@ -376,12 +374,8 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
       return videoService.formatTime(seconds)
     }, [])
 
-    // Video loading state management
-    const [isLoading, setIsLoading] = useState(true);
-
     // Enhanced player ready handler with proper autoplay
     const handlePlayerReady = useCallback(() => {
-      setIsLoading(false);
       setPlayerState(prev => ({
         ...prev,
         playerReady: true,
@@ -901,7 +895,6 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
           courseId: typeof courseId === 'string' ? parseInt(courseId) : typeof courseId === 'number' ? courseId : 0,
           chapterId: typeof chapterId === 'string' ? parseInt(chapterId) : typeof chapterId === 'number' ? chapterId : 0,
           note: `Note at ${formatTime(state.lastPlayedTime)}`,
-          timestamp: state.lastPlayedTime
         })
         toast({
           title: "Note created",
@@ -1062,6 +1055,16 @@ const VideoPlayer = React.memo<VideoPlayerProps & {
                 },
               } as any}
             />
+          </div>
+        )}
+
+        {/* Loading Overlay */}
+        {(isLoading || (!playerState.playerReady && youtubeVideoId)) && !shouldHideMainPlayer && (
+          <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-20">
+            <div className="flex flex-col items-center gap-3 text-white">
+              <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm font-medium">Loading video...</p>
+            </div>
           </div>
         )}
 

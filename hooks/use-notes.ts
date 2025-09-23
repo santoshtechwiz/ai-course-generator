@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react"
 import useSWR from "swr"
 import { Bookmark } from "@prisma/client"
 import { noteService, CreateNoteData, UpdateNoteData, NoteFilters } from "@/lib/note-service"
+import { useAuth } from "@/modules/auth"
 
 const fetcher = async (url: string) => {
   const response = await fetch(url)
@@ -12,15 +13,19 @@ const fetcher = async (url: string) => {
 }
 
 export function useNotes(filters: NoteFilters = {}) {
+  const { isAuthenticated } = useAuth()
+  
   // Create cache key from filters
   const cacheKey = useMemo(() => {
+    if (!isAuthenticated) return null // Don't make API call if not authenticated
+    
     const params = new URLSearchParams()
     if (filters.courseId) params.append("courseId", filters.courseId.toString())
     if (filters.chapterId) params.append("chapterId", filters.chapterId.toString())
     if (filters.limit) params.append("limit", filters.limit.toString())
     if (filters.offset) params.append("offset", filters.offset.toString())
     return `/api/notes?${params.toString()}`
-  }, [filters])
+  }, [filters, isAuthenticated])
 
   const {
     data,

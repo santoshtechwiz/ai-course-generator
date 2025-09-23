@@ -133,7 +133,7 @@ const CompletedVideoOverlay: React.FC<CompletedVideoOverlayProps> = ({
                 {quizSuggestions.slice(0, 2).map((quiz) => (
                   <Card key={quiz.id} className="p-3 bg-primary/5 border-primary/10">
                     <a 
-                      href={getSafeQuizHref('quiz', (quiz as any).slug)}
+                      href={getSafeQuizHref('mcq', (quiz as any).slug)}
                       className="flex items-center gap-3 text-left"
                     >
                       <div className={cn(

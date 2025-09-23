@@ -10,7 +10,7 @@ import { generateQuizMetadata } from "@/lib/quiz-seo"
  */
 
 export const metadata: Metadata = generateQuizMetadata("document", {
-  canonical: "/dashboard/quiz/document",
+  canonical: "/dashboard/document",
 })
 
 export default function DocumentLayout({

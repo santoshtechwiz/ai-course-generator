@@ -11,10 +11,11 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import SyntaxHighlighter from "react-syntax-highlighter"
 import vs from "react-syntax-highlighter/dist/styles/vs"
-import { HintSystem } from "@/components/quiz/HintSystem"
+
 import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
 import { generateBlanksHints, generateOpenEndedHints } from "@/lib/utils/hint-system"
 import { toast } from "sonner"
+import { HintSystem } from "./HintSystem"
 
 // Enhanced animation variants with modern easing
 const containerVariants = {

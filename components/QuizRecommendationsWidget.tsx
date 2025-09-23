@@ -156,7 +156,7 @@ function QuizRecommendationsContent() {
                       </div>
                     </div>
                       <Button asChild size="sm" className="ml-4">
-                      <Link href={getSafeQuizHref('quiz', rec.slug)}>
+                      <Link href={getSafeQuizHref('mcq', rec.slug)}>
                         Take Quiz
                       </Link>
                     </Button>

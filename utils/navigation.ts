@@ -101,7 +101,7 @@ export const navigateToQuizResults = (
 
 /**
  * Return a safe href for quiz links. When slugOrId is falsy, returns the quizzes list
- * to avoid generating links like /dashboard/quiz/undefined
+ * to avoid generating links like /dashboard/quizType/undefined
  */
 export const getSafeQuizHref = (
   quizType: string = 'quiz',
@@ -116,15 +116,19 @@ export const getSafeQuizHref = (
 /**
  * Build the most appropriate quiz href from available data.
  * Preference order:
- *  1) slug -> /dashboard/quiz/:slug
- *  2) type + id -> /dashboard/quizzes/:type/:id
- *  3) id -> /dashboard/quiz/:id
+ *  1) slug -> /dashboard/{quizType}/{slug}
+ *  2) type + id -> /dashboard/quizzes/{type}/{id}
+ *  3) id -> /dashboard/mcq/{id} (default to mcq type)
  *  4) fallback -> /dashboard/quizzes
  */
 export const getBestQuizHref = (opts: { slug?: string | null | undefined; type?: string | null | undefined; id?: string | number | null | undefined }) => {
   const { slug, type, id } = opts || {};
-  if (slug && String(slug).trim()) return getSafeQuizHref('quiz', slug);
-  if (type && id) return `/dashboard/quizzes/${String(type)}/${String(id)}`;
-  if (id) return getSafeQuizHref('quiz', id);
+  if (slug && String(slug).trim()) {
+    // If we have a type, use it; otherwise default to mcq
+    const quizType = type && String(type).trim() ? String(type) : 'mcq';
+    return getSafeQuizHref(quizType, slug);
+  }
+  if (type && id) return `/dashboard/${String(type)}/${String(id)}`;
+  if (id) return getSafeQuizHref('mcq', id);
   return '/dashboard/quizzes';
 };

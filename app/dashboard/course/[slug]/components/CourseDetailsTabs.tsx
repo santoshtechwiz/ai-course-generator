@@ -140,9 +140,9 @@ export default function CourseDetailsTabs({
     // Apply search filter
     if (notesSearchQuery.trim()) {
       const query = notesSearchQuery.toLowerCase()
-      filtered = filtered.filter(note =>
-        note.note.toLowerCase().includes(query) ||
-        note.chapter?.title.toLowerCase().includes(query)
+      filtered = filtered.filter((note: any) =>
+        note.note?.toLowerCase().includes(query) ||
+        note.chapter?.title?.toLowerCase().includes(query)
       )
     }
 
@@ -152,11 +152,11 @@ export default function CourseDetailsTabs({
         // Show notes from last 7 days
         const sevenDaysAgo = new Date()
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-        filtered = filtered.filter(note => new Date(note.createdAt) > sevenDaysAgo)
+        filtered = filtered.filter((note: any) => new Date(note.createdAt) > sevenDaysAgo)
         break
       case "chapter":
         // Show only current chapter notes
-        filtered = filtered.filter(note => note.chapterId === currentChapter?.id)
+        filtered = filtered.filter((note: any) => note.chapterId === currentChapter?.id)
         break
       default:
         // Show all notes
@@ -164,7 +164,7 @@ export default function CourseDetailsTabs({
     }
 
     // Sort by creation date (newest first)
-    return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    return filtered.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }, [notes, notesSearchQuery, notesFilter, currentChapter?.id])
 
   const { 
@@ -186,8 +186,8 @@ export default function CourseDetailsTabs({
     // Calculate actual total duration from chapter data
     const totalDuration = course.courseUnits?.reduce((acc, unit) => {
       return acc + unit.chapters.reduce((chapterAcc, chapter) => {
-        // Use videoDuration if available, otherwise fallback to duration field, then default to 15 minutes
-        const chapterDuration = chapter.videoDuration || (typeof chapter.duration === 'number' ? chapter.duration : 15)
+        // Use duration if available, otherwise fallback to default of 15 minutes
+        const chapterDuration = (typeof chapter.duration === 'number' ? chapter.duration : 15)
         return chapterAcc + chapterDuration
       }, 0)
     }, 0) || totalChapters * 15
@@ -197,7 +197,7 @@ export default function CourseDetailsTabs({
       return acc + unit.chapters.reduce((chapterAcc, chapter) => {
         const chapterId = String(chapter.id)
         if (completedChapters.includes(chapterId)) {
-          const chapterDuration = chapter.videoDuration || (typeof chapter.duration === 'number' ? chapter.duration : 15)
+          const chapterDuration = (typeof chapter.duration === 'number' ? chapter.duration : 15)
           return chapterAcc + chapterDuration
         }
         return chapterAcc
@@ -619,47 +619,66 @@ export default function CourseDetailsTabs({
     <div className="h-full w-full flex flex-col">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full flex flex-col">
         {/* Enhanced tab navigation with better styling */}
-        <TabsList className="grid w-full grid-cols-5 h-auto bg-gradient-to-r from-muted/20 via-muted/30 to-muted/20 rounded-none border-b border-border/30 p-3 gap-3">
+        <TabsList className="grid w-full grid-cols-5 h-auto bg-gradient-to-r from-muted/20 via-muted/30 to-muted/20 rounded-none border-b border-border/30 p-2 md:p-3 gap-1 md:gap-3">
           <TabsTrigger
             value="summary"
-            className="flex items-center gap-3 text-sm font-medium h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group"
+            className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
           >
-            <FileText className="h-5 w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
-            <span className="hidden sm:inline font-semibold">Summary</span>
+            <FileText className="h-4 w-4 md:h-5 md:w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
+            <span className="font-semibold">Summary</span>
           </TabsTrigger>
           <TabsTrigger
             value="quiz"
-            className="flex items-center gap-3 text-sm font-medium h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group"
+            className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
           >
-            <MessageSquare className="h-5 w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
-            <span className="hidden sm:inline font-semibold">Quiz</span>
+            <MessageSquare className="h-4 w-4 md:h-5 md:w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
+            <span className="font-semibold">Quiz</span>
           </TabsTrigger>
           <TabsTrigger
             value="notes"
-            className="flex items-center gap-3 text-sm font-medium h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group"
+            className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
           >
-            <StickyNote className="h-5 w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
-            <span className="hidden sm:inline font-semibold">Notes</span>
+            <StickyNote className="h-4 w-4 md:h-5 md:w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
+            <span className="font-semibold">Notes</span>
           </TabsTrigger>
           <TabsTrigger
             value="progress"
-            className="flex items-center gap-3 text-sm font-medium h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group"
+            className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
           >
-            <BarChart3 className="h-5 w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
-            <span className="hidden sm:inline font-semibold">Progress</span>
+            <BarChart3 className="h-4 w-4 md:h-5 md:w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
+            <span className="font-semibold">Progress</span>
           </TabsTrigger>
           <TabsTrigger
             value="bookmarks"
-            className="flex items-center gap-3 text-sm font-medium h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group"
+            className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
           >
-            <BookmarkIcon className="h-5 w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
-            <span className="hidden sm:inline font-semibold">Bookmarks</span>
+            <BookmarkIcon className="h-4 w-4 md:h-5 md:w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
+            <span className="font-semibold">Bookmarks</span>
           </TabsTrigger>
         </TabsList>
 
   {/* Enhanced tabs content with better spacing */}
   <TabsContent value="summary" className="flex-1 overflow-auto w-full p-0">
-          {currentChapter ? (
+          {/* First check authentication */}
+          {!accessLevels?.isAuthenticated ? (
+            <div className="h-full flex items-center justify-center p-6">
+              <Card className="w-full max-w-md mx-auto">
+                <CardContent className="flex flex-col items-center justify-center p-6 text-center">
+                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                    <FileText className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">Sign In Required</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Please sign in to view AI-generated course summaries.
+                  </p>
+                  <Button onClick={() => window.location.href = "/auth/signin"} className="gap-2">
+                    <FileText className="h-4 w-4" />
+                    Sign In
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          ) : currentChapter ? (
             <CourseAISummary
               chapterId={currentChapter.id}
               name={currentChapter.title || currentChapter.name || "Chapter Summary"}
@@ -689,7 +708,26 @@ export default function CourseDetailsTabs({
         </TabsContent>
 
   <TabsContent value="quiz" className="flex-1 overflow-auto w-full p-0">
-          {currentChapter ? (
+          {/* First check authentication */}
+          {!accessLevels?.isAuthenticated ? (
+            <div className="h-full flex items-center justify-center p-6">
+              <Card className="w-full max-w-md mx-auto">
+                <CardContent className="flex flex-col items-center justify-center p-6 text-center">
+                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                    <MessageSquare className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">Sign In Required</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Please sign in to access course quizzes.
+                  </p>
+                  <Button onClick={() => window.location.href = "/auth/signin"} className="gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Sign In
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          ) : currentChapter ? (
             <CourseDetailsQuiz
               key={currentChapter.id}
               course={course}
@@ -1092,10 +1130,10 @@ export default function CourseDetailsTabs({
                                     </>
                                   )}
                                 </div>
-                                {note.timestamp && (
+                                {(note as any).timestamp && (
                                   <div className="flex items-center gap-1 text-xs text-primary">
                                     <PlayCircle className="h-3 w-3" />
-                                    <span>at {Math.floor(note.timestamp / 60)}:{(note.timestamp % 60).toString().padStart(2, '0')}</span>
+                                    <span>at {Math.floor((note as any).timestamp / 60)}:{((note as any).timestamp % 60).toString().padStart(2, '0')}</span>
                                   </div>
                                 )}
                               </div>
@@ -1119,7 +1157,7 @@ export default function CourseDetailsTabs({
                             />
                             <DeleteNoteDialog
                               noteId={note.id.toString()}
-                              noteContent={note.note}
+                              noteContent={note.note || ''}
                               onDelete={deleteNote}
                             />
                           </div>

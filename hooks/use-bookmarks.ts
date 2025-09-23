@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react"
 import useSWR from "swr"
 import { Bookmark } from "@prisma/client"
 import { bookmarkService, CreateBookmarkData, UpdateBookmarkData, BookmarkFilters } from "@/lib/bookmark-service"
+import { useAuth } from "@/modules/auth"
 
 const fetcher = async (url: string) => {
   const response = await fetch(url)
@@ -12,15 +13,19 @@ const fetcher = async (url: string) => {
 }
 
 export function useBookmarks(filters: BookmarkFilters = {}) {
+  const { isAuthenticated } = useAuth()
+  
   // Create cache key from filters
   const cacheKey = useMemo(() => {
+    if (!isAuthenticated) return null // Don't make API call if not authenticated
+    
     const params = new URLSearchParams()
     if (filters.courseId) params.append("courseId", filters.courseId.toString())
     if (filters.chapterId) params.append("chapterId", filters.chapterId.toString())
     if (filters.limit) params.append("limit", filters.limit.toString())
     if (filters.offset) params.append("offset", filters.offset.toString())
     return `/api/bookmarks?${params.toString()}`
-  }, [filters])
+  }, [filters, isAuthenticated])
 
   const {
     data,

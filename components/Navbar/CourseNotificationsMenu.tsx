@@ -277,7 +277,7 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
           break
         case 'pending_quiz':
           if (notification.quizId) {
-            router.push(getSafeQuizHref('quiz', notification.quizId))
+            router.push(getSafeQuizHref('mcq', notification.quizId))
           } else {
             console.warn('Missing quiz ID for notification:', notification)
             router.push('/dashboard/quizzes')

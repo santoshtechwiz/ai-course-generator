@@ -12,7 +12,6 @@
 
 import { OpenAIEmbeddings } from "@langchain/openai"
 import { Document } from "langchain/document"
-import { MemoryVectorStore } from "langchain/vectorstores/memory"
 import prisma from "@/lib/db"
 import { logger } from "@/lib/logger"
 
@@ -42,7 +41,7 @@ export class EmbeddingManager {
   private config: EmbeddingConfig
   private isInitialized: boolean = false
   private isPgVectorAvailable: boolean = false
-  private memoryStore: MemoryVectorStore | null = null
+  private memoryStore: any = null
   private inMemoryDocuments: Map<string, EmbeddingDocument> = new Map()
   private storageMode: 'postgres' | 'memory' | 'auto' = 'auto'
 
@@ -196,6 +195,8 @@ export class EmbeddingManager {
    */
   private async initializeMemoryStore(): Promise<void> {
     try {
+      // Dynamic import to avoid TypeScript compilation issues
+      const { MemoryVectorStore } = await import("langchain/vectorstores/memory")
       this.memoryStore = new MemoryVectorStore(this.embeddings)
       logger.info('Memory vector store initialized')
     } catch (error) {
@@ -266,7 +267,7 @@ export class EmbeddingManager {
     try {
       const results = await this.memoryStore.similaritySearch(queryText, limit)
       
-      return results.map((doc, index) => ({
+      return results.map((doc: any, index: number) => ({
         id: doc.metadata.id || `mem_${index}`,
         content: doc.pageContent,
         metadata: doc.metadata,

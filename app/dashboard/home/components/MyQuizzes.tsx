@@ -20,7 +20,7 @@ const buildQuizSlug = (quizType: QuizType) => {
     case "mcq":
       return "mcq";
     case "openended":
-      return "open-ended"; // Fixed slug for open-ended quizzes
+      return "openended"; // Fixed slug to match route structure
     case "blanks":
       return "blanks";
     case "code":

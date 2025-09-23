@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Play,
+  Pause,
   Clock,
   Star,
   BookOpen,
@@ -25,9 +26,9 @@ import {
   Award,
   Sparkles,
   Eye,
-  ThumbsUp,
-  Pause
+  ThumbsUp
 } from "lucide-react"
+import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 
@@ -129,23 +130,6 @@ const QuizIcon = memo(({ type, className }: { type: keyof typeof QUIZ_ICONS; cla
   return <Icon className={className} />
 })
 QuizIcon.displayName = "QuizIcon"
-
-const DifficultyBadge = memo(({ difficulty }: { difficulty: string }) => {
-  const difficultyKey = difficulty?.toLowerCase() as keyof typeof DIFFICULTY_COLORS
-  const colors = DIFFICULTY_COLORS[difficultyKey] || DIFFICULTY_COLORS.medium
-
-  return (
-    <Badge 
-      className={cn(
-        "font-semibold border-0 shadow-sm",
-        `bg-gradient-to-r ${colors.accent} text-white`
-      )}
-    >
-      {difficulty?.charAt(0).toUpperCase() + difficulty?.slice(1) || "Medium"}
-    </Badge>
-  )
-})
-DifficultyBadge.displayName = "DifficultyBadge"
 
 const QuizStats = memo(({
   questionCount,
