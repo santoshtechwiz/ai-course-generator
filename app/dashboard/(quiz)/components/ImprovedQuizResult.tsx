@@ -28,6 +28,8 @@ import { Separator } from "@/components/ui/separator"
 import { NoResults } from "@/components/ui/no-results"
 import { QuizType } from "@/app/types/quiz-types"
 import { resetQuiz } from "@/store/slices/quiz"
+import { useAuth } from "@/modules/auth"
+import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
 
 // Import existing result components
 import BlankQuizResults from "../blanks/components/BlankQuizResults"
@@ -90,10 +92,49 @@ export default function ImprovedQuizResult({ result, slug, quizType = "mcq", onR
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   const [showDetails, setShowDetails] = useState(false)
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth()
 
   const handleRetake = () => {
     dispatch(resetQuiz())
     router.push(`/dashboard/${quizType}/${slug}`)
+  }
+
+  const handleSignIn = () => {
+    router.push('/auth/signin')
+  }
+
+  // Show loading state while checking authentication
+  if (isAuthLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="ml-2">Loading...</span>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Show sign-in prompt for unauthenticated users
+  if (!isAuthenticated) {
+    return (
+      <SignInPrompt
+        onSignIn={handleSignIn}
+        onRetake={handleRetake}
+        quizType={quizType}
+        previewData={{
+          percentage: result?.percentage ?? result?.score ?? 0,
+          score: result?.score,
+          maxScore: result?.maxScore,
+          correctAnswers: result?.correctAnswers ?? result?.score,
+          totalQuestions: result?.totalQuestions ?? result?.maxScore ?? 1,
+          stillLearningAnswers: result?.stillLearningAnswers,
+          incorrectAnswers: result?.incorrectAnswers
+        }}
+      />
+    )
   }
 
   const handleShare = async () => {

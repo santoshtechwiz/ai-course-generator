@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getAuthSession } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { progressService } from "@/app/services/progress.service"
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,29 +17,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Quiz ID is required" }, { status: 400 })
     }
 
-    // Get quiz progress for the user
-    const quizProgress = await prisma.userQuiz.findFirst({
-      where: {
-        id: quizId,
-        userId: session.user.id,
-      },
-      include: {
-        attempts: {
-          orderBy: {
-            createdAt: 'desc'
-          },
-          take: 10, // Last 10 attempts
-          include: {
-            attemptQuestions: {
-              select: {
-                isCorrect: true,
-                timeSpent: true
-              }
-            }
-          }
-        }
-      }
-    })
+    // Get quiz progress using the progress service
+    const quizProgress = await progressService.getQuizProgress(session.user.id, parseInt(quizId))
 
     if (!quizProgress) {
       return NextResponse.json({
@@ -49,46 +29,40 @@ export async function GET(req: NextRequest) {
         attemptsCount: 0,
         lastAttemptAt: null,
         averageScore: 0,
-        averageTime: 0
+        averageTime: 0,
+        recentAttempts: []
       })
     }
 
-    // Calculate progress metrics
-    const attempts = quizProgress.attempts
-    const attemptsCount = attempts.length
-    const bestScore = attempts.length > 0 ? Math.max(...attempts.map(a => a.score)) : 0
-    const averageScore = attempts.length > 0
-      ? attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length
-      : 0
-
-    const totalTime = attempts.reduce((sum, a) => sum + a.timeSpent, 0)
-    const averageTime = attemptsCount > 0 ? totalTime / attemptsCount : 0
-
-    const lastAttemptAt = attempts.length > 0 ? attempts[0].createdAt : null
-
-    // Determine if completed (e.g., score >= 70% or specific criteria)
-    const isCompleted = bestScore >= 70
-
-    // Calculate progress percentage based on attempts and improvement
-    let progress = 0
-    if (attemptsCount > 0) {
-      progress = Math.min(bestScore, 100) // Cap at 100%
-    }
+    // Get recent attempts for detailed view
+    const recentAttempts = await prisma.userQuizAttempt.findMany({
+      where: {
+        userId: session.user.id,
+        userQuizId: parseInt(quizId)
+      },
+      include: {
+        attemptQuestions: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 5
+    })
 
     return NextResponse.json({
       quizId,
-      progress,
-      isCompleted,
-      bestScore,
-      attemptsCount,
-      lastAttemptAt,
-      averageScore: Math.round(averageScore),
-      averageTime: Math.round(averageTime),
-      recentAttempts: attempts.slice(0, 5).map(attempt => ({
-        id: attempt.id,
-        score: attempt.score,
-        timeSpent: attempt.timeSpent,
-        createdAt: attempt.createdAt,
+      progress: quizProgress.progress,
+      isCompleted: quizProgress.isCompleted,
+      bestScore: quizProgress.bestScore,
+      attemptsCount: quizProgress.attemptsCount,
+      lastAttemptAt: quizProgress.lastAttempted.toISOString(),
+      averageScore: quizProgress.averageScore,
+      averageTime: quizProgress.attemptsCount > 0 ? Math.round(quizProgress.totalTimeSpent / quizProgress.attemptsCount) : 0,
+      recentAttempts: recentAttempts.map(attempt => ({
+        id: attempt.id.toString(),
+        score: attempt.score || 0,
+        timeSpent: attempt.timeSpent || 0,
+        createdAt: attempt.createdAt.toISOString(),
         correctAnswers: attempt.attemptQuestions.filter(q => q.isCorrect).length,
         totalQuestions: attempt.attemptQuestions.length
       }))
@@ -110,49 +84,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    const body = await req.json()
     const { quizId, progress, score, timeSpent, isCompleted } = body
 
     if (!quizId) {
       return NextResponse.json({ error: "Quiz ID is required" }, { status: 400 })
     }
 
-    // Update or create quiz progress
-    const quizProgress = await prisma.userQuiz.upsert({
-      where: {
-        id: quizId
-      },
-      update: {
-        progress: progress || 0,
-        bestScore: {
-          set: Math.max(
-            (await prisma.userQuiz.findUnique({
-              where: { id: quizId },
-              select: { bestScore: true }
-            }))?.bestScore || 0,
-            score || 0
-          )
-        },
-        lastAttemptAt: new Date(),
-        timeSpent: {
-          increment: timeSpent || 0
-        }
-      },
-      create: {
-        id: quizId,
-        userId: session.user.id,
-        title: body.title || 'Unknown Quiz',
-        progress: progress || 0,
-        bestScore: score || 0,
-        timeSpent: timeSpent || 0,
-        lastAttemptAt: new Date(),
-        isCompleted: isCompleted || false
+    // Update quiz progress using the progress service
+    const updatedProgress = await progressService.updateQuizProgress(
+      session.user.id,
+      parseInt(quizId),
+      {
+        score: score,
+        timeSpent: timeSpent,
+        isCompleted: isCompleted
       }
-    })
+    )
 
     return NextResponse.json({
       success: true,
-      quizProgress
+      quizProgress: {
+        id: updatedProgress.id,
+        quizId: updatedProgress.quizId.toString(),
+        progress: updatedProgress.progress,
+        bestScore: updatedProgress.bestScore,
+        attemptsCount: updatedProgress.attemptsCount,
+        totalTimeSpent: updatedProgress.totalTimeSpent,
+        isCompleted: updatedProgress.isCompleted,
+        lastAttempted: updatedProgress.lastAttempted.toISOString(),
+        averageScore: updatedProgress.averageScore
+      }
     })
 
   } catch (error) {

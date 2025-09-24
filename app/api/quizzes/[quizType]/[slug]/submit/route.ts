@@ -804,23 +804,8 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
       }, { status: 401 })
     }
 
-    // Validate subscription for quiz submission
-    const validation = await validateSubscriptionServer(userId, {
-      requireCredits: true,
-      requireSubscription: false, // Allow free plan users to submit quizzes
-      requiredPlan: 'FREE'
-    })
-    
-    if (!validation.isValid) {
-      return NextResponse.json({ 
-        success: false,
-        error: validation.error || "Unable to submit quiz at this time",
-        details: {
-          requiresSubscription: true,
-          message: "Please upgrade your subscription to submit quiz results"
-        }
-      }, { status: 403 })
-    }
+    // Allow quiz submission for all authenticated users (no subscription/credit requirements for taking quizzes)
+    // Quiz creation requires credits, but taking/submitting completed quizzes does not
 
     let body: Record<string, any>
     try {

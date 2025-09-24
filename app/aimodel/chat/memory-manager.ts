@@ -9,7 +9,7 @@
  */
 
 import { ChatMessage } from "./chat-service"
-import prisma from "@/lib/db"
+import { prisma } from "@/lib/db"
 import { logger } from "@/lib/logger"
 
 export interface MemoryConfig {

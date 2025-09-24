@@ -24,6 +24,8 @@ import { toast } from "@/components/ui/use-toast"
 import CertificateGenerator from "@/app/dashboard/course/[slug]/components/CertificateGenerator"
 import { PDFDownloadLink } from "@react-pdf/renderer"
 import CreateContentPromo from "@/components/growth/CreateContentPromo"
+import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
+import type { QuizType } from "@/app/types/quiz-types"
 
 // Enhanced performance level configurations with modern styling
 const PERFORMANCE_LEVELS = {
@@ -98,6 +100,35 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
   
   const isSubscribed = hasActiveSubscription
 
+  // Determine quiz type from current path
+  const getQuizType = useCallback((): QuizType => {
+    if (typeof window === 'undefined') return 'mcq'
+    
+    const path = window.location.pathname
+    if (path.includes('/code/')) return 'code'
+    if (path.includes('/mcq/')) return 'mcq'
+    if (path.includes('/openended/')) return 'openended'
+    if (path.includes('/blanks/')) return 'blanks'
+    if (path.includes('/flashcard/')) return 'flashcard'
+    return 'mcq'
+  }, [])
+
+  // Handle sign in for results
+  const handleSignIn = useCallback(() => {
+    const currentPath = window.location.pathname
+    window.location.href = `/api/auth/signin?callbackUrl=${encodeURIComponent(currentPath)}`
+  }, [])
+
+  // Handle retake quiz
+  const handleRetake = useCallback(() => {
+    if (onRetake) {
+      onRetake()
+    } else {
+      const quizType = getQuizType()
+      router.push(`/dashboard/${quizType}/${result.slug || ""}`)
+    }
+  }, [onRetake, router, result.slug, getQuizType])
+
   // Utility functions for performance levels and formatting
   const getCurrentLevel = () => {
     const score = result?.score || 0
@@ -146,6 +177,10 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
   const score = typeof result?.score === "number" ? result.score : 0
   const maxScore = typeof result?.maxScore === "number" ? result.maxScore : processedAnswers.length
   const percentage = typeof result?.percentage === "number" ? result.percentage : Math.round((score / Math.max(maxScore, 1)) * 100)
+
+  // Certificate variables
+  const safeTitle = (title || "Quiz").trim()
+  const certificateFile = `${safeTitle.replace(/[^a-z0-9]+/gi, "_")}_Certificate.pdf`
 
   const performance = useMemo(() => getPerformanceLevel(percentage), [percentage])
 
@@ -845,151 +880,239 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
 
   return (
     <>
-      <motion.div
-        className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
-          {/* Enhanced Header with better mobile layout */}
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            className="text-center mb-8"
-          >
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
-              {title}
-            </h1>
-            <p className="text-muted-foreground text-base md:text-lg">
-              Quiz completed on {formatDate(result?.completedAt || new Date().toISOString())}
-            </p>
-          </motion.div>
+      {/* Show sign-in prompt if user is not authenticated */}
+      {!isAuthenticated ? (
+        <SignInPrompt
+          onSignIn={handleSignIn}
+          onRetake={handleRetake}
+          quizType={getQuizType()}
+          previewData={{
+            percentage: percentage,
+            score: score,
+            maxScore: maxScore,
+            correctAnswers: stats.correct,
+            totalQuestions: stats.total,
+          }}
+        />
+      ) : (
+        <motion.div
+          className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="container mx-auto px-4 py-8 max-w-7xl">
+            {/* Enhanced Header with better mobile layout */}
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              className="text-center mb-8"
+            >
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+                {title}
+              </h1>
+              <p className="text-muted-foreground text-base md:text-lg">
+                Quiz completed on {formatDate(result?.completedAt || new Date().toISOString())}
+              </p>
+            </motion.div>
 
-          {/* Enhanced Tabs with better mobile experience */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-8 h-12 bg-muted/50 rounded-xl p-1">
-              <TabsTrigger value="overview" className="flex items-center gap-2 text-sm font-medium rounded-lg">
-                <BarChart3 className="w-4 h-4" />
-                <span className="hidden sm:inline">Overview</span>
-              </TabsTrigger>
-              <TabsTrigger value="review" className="flex items-center gap-2 text-sm font-medium rounded-lg">
-                <Target className="w-4 h-4" />
-                <span className="hidden sm:inline">Review</span>
-              </TabsTrigger>
-              <TabsTrigger value="insights" className="flex items-center gap-2 text-sm font-medium rounded-lg">
-                <Award className="w-4 h-4" />
-                <span className="hidden sm:inline">Insights</span>
-              </TabsTrigger>
-            </TabsList>
+            {/* Enhanced Tabs with better mobile experience */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-8 h-12 bg-muted/50 rounded-xl p-1">
+                <TabsTrigger value="overview" className="flex items-center gap-2 text-sm font-medium rounded-lg">
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Overview</span>
+                </TabsTrigger>
+                <TabsTrigger value="review" className="flex items-center gap-2 text-sm font-medium rounded-lg">
+                  <Target className="w-4 h-4" />
+                  <span className="hidden sm:inline">Review</span>
+                </TabsTrigger>
+                <TabsTrigger value="insights" className="flex items-center gap-2 text-sm font-medium rounded-lg">
+                  <Award className="w-4 h-4" />
+                  <span className="hidden sm:inline">Insights</span>
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-6">
-              <div className="relative overflow-hidden rounded-lg border bg-gradient-to-b from-muted/30 to-muted p-6">
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {/* Performance Stats */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <div className={`rounded-lg border ${getCurrentLevel().border} p-2`}>
-                        <CurrentLevel.icon className="h-4 w-4" />
-                      </div>
-                      <h3 className="text-lg font-semibold">{getCurrentLevel().title}</h3>
-                    </div>
-                    <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-                      <p>{getCurrentLevel().message}</p>
-                      <p className="font-medium">Score: {formatScore(result.score)}%</p>
-                    </div>
-                  </div>
-
-                  {/* Accuracy Chart */}
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Accuracy</h4>
-                    <div className="flex items-center gap-4">
-                      <div className="w-full space-y-1">
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                          <div 
-                            className={`h-full transition-all bg-gradient-to-r ${getCurrentLevel().gradient}`}
-                            style={{ width: `${result.score}%` }}
-                          />
+              {/* Overview Tab */}
+              <TabsContent value="overview" className="space-y-6">
+                <div className="relative overflow-hidden rounded-lg border bg-gradient-to-b from-muted/30 to-muted p-6">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {/* Performance Stats */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <div className={`rounded-lg border ${getCurrentLevel().border} p-2`}>
+                          <CurrentLevel.icon className="h-4 w-4" />
                         </div>
-                        <p className="text-xs text-muted-foreground">{result.correctCount} of {result.totalQuestions} correct</p>
+                        <h3 className="text-lg font-semibold">{getCurrentLevel().title}</h3>
+                      </div>
+                      <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                        <p>{getCurrentLevel().message}</p>
+                        <p className="font-medium">Score: {formatScore(result.score)}%</p>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Time Stats */}
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Time Performance</h4>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">
-                        Average: {formatTime(result.averageTime)}
-                      </span>
+                    {/* Accuracy Chart */}
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Accuracy</h4>
+                      <div className="flex items-center gap-4">
+                        <div className="w-full space-y-1">
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                            <div 
+                              className={`h-full transition-all bg-gradient-to-r ${getCurrentLevel().gradient}`}
+                              style={{ width: `${result.score}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground">{stats.correct} of {stats.total} correct</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Time Stats */}
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Time Performance</h4>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          Average: {formatTime(stats.avgTime)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <CreateContentPromo 
-                context="results" 
-                topic={title} 
-                className="mt-4" 
-                storageKey={result?.slug || title} 
-                force 
-              />
-            </TabsContent>
+                <CreateContentPromo 
+                  context="results" 
+                  topic={title} 
+                  className="mt-4" 
+                  storageKey={result?.slug || title} 
+                  force 
+                />
+              </TabsContent>
 
-            {/* Review Tab */}
-            <TabsContent value="review" className="space-y-6">
-              <EnhancedReviewControls />
-              <QuickReviewCard />
+              {/* Review Tab */}
+              <TabsContent value="review" className="space-y-6">
+                <EnhancedReviewControls />
+                <QuickReviewCard />
 
-              <Card className="overflow-hidden shadow-xl border-0">
-                <CardHeader className="bg-gradient-to-r from-muted/50 to-muted/30 border-b">
-                  <CardTitle className="flex items-center gap-3 text-xl">
-                    <Target className="w-6 h-6 text-primary" />
-                    Answer Review
-                    <Badge variant="secondary" className="ml-2">
-                      {filteredQuestions.length} Questions
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  {showAllQuestions ? (
-                    <div className={cn(
-                      "gap-6",
-                      viewMode === "grid" 
-                        ? "grid grid-cols-1 lg:grid-cols-2" 
-                        : "space-y-6"
-                    )}>
-                      <AnimatePresence>
-                        {filteredQuestions.map((question, index) => (
-                          <motion.div
-                            key={question.questionId}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ delay: index * 0.05 }}
-                          >
-                            <QuestionCard question={question} index={index} />
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
-                    </div>
-                  ) : (
-                    renderSingleQuestionView()
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                <Card className="overflow-hidden shadow-xl border-0">
+                  <CardHeader className="bg-gradient-to-r from-muted/50 to-muted/30 border-b">
+                    <CardTitle className="flex items-center gap-3 text-xl">
+                      <Target className="w-6 h-6 text-primary" />
+                      Answer Review
+                      <Badge variant="secondary" className="ml-2">
+                        {filteredQuestions.length} Questions
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    {showAllQuestions ? (
+                      <div className={cn(
+                        "gap-6",
+                        viewMode === "grid" 
+                          ? "grid grid-cols-1 lg:grid-cols-2" 
+                          : "space-y-6"
+                      )}>
+                        <AnimatePresence>
+                          {filteredQuestions.map((question, index) => (
+                            <motion.div
+                              key={question.questionId}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -20 }}
+                              transition={{ delay: index * 0.05 }}
+                            >
+                              <QuestionCard question={question} index={index} />
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
+                      </div>
+                    ) : (
+                      renderSingleQuestionView()
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-            {/* Insights Tab */}
-            <TabsContent value="insights" className="space-y-6">
-              {renderInsightsTab(performance, stats)}
-            </TabsContent>
-          </Tabs>
-        </div>
-      </motion.div>
+              {/* Insights Tab */}
+              <TabsContent value="insights" className="space-y-6">
+                {renderInsightsTab(performance, stats)}
+              </TabsContent>
+            </Tabs>
+
+            {/* Enhanced Action Buttons with better mobile layout */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8">
+              <Button 
+                onClick={handleRetake} 
+                size="lg" 
+                className="w-full sm:w-auto min-w-[200px] h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <RotateCcw className="h-5 w-5 mr-2" />
+                Retake Quiz
+              </Button>
+              <PDFDownloadLink
+                document={<CertificateGenerator courseName={safeTitle} userName={user?.name || "Student"} />}
+                fileName={certificateFile}
+              >
+                {({ loading }) => (
+                  <Button 
+                    size="lg"
+                    disabled={loading}
+                    className="w-full sm:w-auto min-w-[220px] h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <Award className="h-5 w-5 mr-2" />
+                    {loading ? "Preparing..." : "Download Certificate"}
+                  </Button>
+                )}
+              </PDFDownloadLink>
+              
+              <Button 
+                onClick={handleSaveResult} 
+                disabled={isSaving} 
+                variant="outline" 
+                size="lg" 
+                className="w-full sm:w-auto min-w-[200px] h-12 text-base font-semibold bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : hasActiveSubscription ? (
+                  <>
+                    <Save className="h-5 w-5 mr-2" />
+                    Save Result
+                  </>
+                ) : (
+                  <>
+                    <Lock className="h-5 w-5 mr-2" />
+                    Save (Premium)
+                  </>
+                )}
+              </Button>
+              
+              <Button 
+                onClick={handleShare} 
+                variant="outline" 
+                size="lg" 
+                className="w-full sm:w-auto min-w-[200px] h-12 text-base font-semibold bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <Share2 className="h-5 w-5 mr-2" />
+                Share Results
+              </Button>
+              
+              <Button 
+                onClick={handleGoHome} 
+                variant="ghost" 
+                size="lg" 
+                className="w-full sm:w-auto min-w-[200px] h-12 text-base font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300"
+              >
+                <Home className="h-5 w-5 mr-2" />
+                Dashboard
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {showConfetti && <Confetti isActive />}
     </>

@@ -96,6 +96,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
             select: {
               id: true,
               title: true,
+              slug: true,
               quizType: true,
               difficulty: true,
             },
@@ -145,6 +146,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
           ...attempt.userQuiz,
           id: attempt.userQuiz.id,
           title: attempt.userQuiz.title,
+          slug: attempt.userQuiz.slug,
           quizType: attempt.userQuiz.quizType,
           difficulty: attempt.userQuiz.difficulty,
         } : undefined,

@@ -4,7 +4,7 @@
  * Matches users with content based on various algorithms and strategies
  */
 
-import prisma from "@/lib/db"
+import { prisma } from "@/lib/db"
 import { logger } from "@/lib/logger"
 import { EmbeddingManager } from "../core/embedding-manager"
 import { UserProfile } from "./user-analyzer"

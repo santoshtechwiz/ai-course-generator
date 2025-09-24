@@ -4,7 +4,7 @@
  * Analyzes user learning patterns and behaviors to create comprehensive profiles
  */
 
-import prisma from "@/lib/db"
+import { prisma } from "@/lib/db"
 import { logger } from "@/lib/logger"
 
 export interface UserProfile {

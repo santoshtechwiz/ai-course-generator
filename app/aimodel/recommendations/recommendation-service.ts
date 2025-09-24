@@ -10,7 +10,7 @@
  */
 
 import OpenAI from 'openai'
-import prisma from "@/lib/db"
+import { prisma } from "@/lib/db"
 import { logger } from "@/lib/logger"
 import { CACHE_DURATION } from "@/constants/global"
 
@@ -221,6 +221,12 @@ export class RecommendationService extends BaseAIService {
       // Remove duplicates and sort by confidence
       const uniqueRecommendations = this.deduplicateRecommendations(recommendations)
       uniqueRecommendations.sort((a, b) => b.confidence - a.confidence)
+
+      // If no recommendations found, use fallback
+      if (uniqueRecommendations.length === 0) {
+        logger.info('No recommendations from strategies, using fallback', { userId: request.userId })
+        return await this.getFallbackRecommendations(request, userProfile)
+      }
 
       return uniqueRecommendations.slice(0, limit)
 
@@ -508,10 +514,10 @@ export class RecommendationService extends BaseAIService {
   private async findSimilarUsers(userId: string, userProfile: UserProfile): Promise<Array<{userId: string, similarity: number}>> {
     try {
       // Get current user's completed courses
-      const userCompletions = await prisma.userCourseProgress.findMany({
+      const userCompletions = await prisma.courseProgress.findMany({
         where: {
           userId: userId,
-          completed: true
+          isCompleted: true
         },
         select: {
           courseId: true
@@ -525,13 +531,13 @@ export class RecommendationService extends BaseAIService {
       }
 
       // Find other users who have completed similar courses
-      const similarUsersData = await prisma.userCourseProgress.groupBy({
+      const similarUsersData = await prisma.courseProgress.groupBy({
         by: ['userId'],
         where: {
           courseId: {
             in: Array.from(userCourseIds)
           },
-          completed: true,
+          isCompleted: true,
           userId: {
             not: userId
           }
@@ -563,10 +569,10 @@ export class RecommendationService extends BaseAIService {
   private async getUserCompletions(userId: string): Promise<Array<{id: string, type: string, title: string}>> {
     try {
       // Get completed courses
-      const courses = await prisma.userCourseProgress.findMany({
+      const courses = await prisma.courseProgress.findMany({
         where: {
           userId: userId,
-          completed: true
+          isCompleted: true
         },
         include: {
           course: {
@@ -580,13 +586,12 @@ export class RecommendationService extends BaseAIService {
       })
 
       // Get completed quizzes
-      const quizzes = await prisma.quizResult.findMany({
+      const quizzes = await prisma.userQuizAttempt.findMany({
         where: {
-          userId: userId,
-          completed: true
+          userId: userId
         },
         include: {
-          quiz: {
+          userQuiz: {
             select: {
               id: true,
               title: true,
@@ -597,15 +602,15 @@ export class RecommendationService extends BaseAIService {
       })
 
       const courseCompletions = courses.map(c => ({
-        id: c.course.id,
+        id: c.course.id.toString(),
         type: 'course' as const,
         title: c.course.title
       }))
 
       const quizCompletions = quizzes.map(q => ({
-        id: q.quiz.id,
+        id: q.userQuiz.id.toString(),
         type: 'quiz' as const,
-        title: q.quiz.title
+        title: q.userQuiz.title
       }))
 
       return [...courseCompletions, ...quizCompletions]
@@ -636,7 +641,7 @@ export class RecommendationService extends BaseAIService {
             slug: true,
             difficulty: true,
             category: true,
-            estimatedDuration: true
+            estimatedHours: true
           }
         })
 
@@ -649,12 +654,12 @@ export class RecommendationService extends BaseAIService {
             prerequisites: [],
             learningObjectives: [],
             difficulty: course.difficulty,
-            category: course.category,
-            estimatedTime: course.estimatedDuration
+            category: course.category?.name,
+            estimatedTime: course.estimatedHours
           }
         }
       } else if (content.type === 'quiz' || strategy.includes('quiz')) {
-        const quiz = await prisma.quiz.findUnique({
+        const quiz = await prisma.userQuiz.findUnique({
           where: { id: content.id },
           select: {
             id: true,
@@ -662,7 +667,7 @@ export class RecommendationService extends BaseAIService {
             description: true,
             slug: true,
             difficulty: true,
-            category: true
+            quizType: true
           }
         })
 
@@ -675,7 +680,7 @@ export class RecommendationService extends BaseAIService {
             prerequisites: [],
             learningObjectives: [],
             difficulty: quiz.difficulty,
-            category: quiz.category
+            category: quiz.quizType
           }
         }
       }
@@ -716,7 +721,7 @@ export class RecommendationService extends BaseAIService {
             OR: [
               { title: { contains: topic, mode: 'insensitive' } },
               { description: { contains: topic, mode: 'insensitive' } },
-              { category: { contains: topic, mode: 'insensitive' } }
+              { category: { name: { contains: topic, mode: 'insensitive' } } }
             ]
           },
           select: {
@@ -725,8 +730,11 @@ export class RecommendationService extends BaseAIService {
             description: true,
             slug: true,
             difficulty: true,
-            category: true,
-            type: 'course'
+            category: {
+              select: {
+                name: true
+              }
+            }
           },
           take: 3
         })
@@ -734,12 +742,12 @@ export class RecommendationService extends BaseAIService {
       }
 
       if (!contentType || contentType === 'quiz') {
-        const quizzes = await prisma.quiz.findMany({
+        const quizzes = await prisma.userQuiz.findMany({
           where: {
             OR: [
               { title: { contains: topic, mode: 'insensitive' } },
               { description: { contains: topic, mode: 'insensitive' } },
-              { category: { contains: topic, mode: 'insensitive' } }
+              { quizType: { contains: topic, mode: 'insensitive' } }
             ]
           },
           select: {
@@ -748,8 +756,7 @@ export class RecommendationService extends BaseAIService {
             description: true,
             slug: true,
             difficulty: true,
-            category: true,
-            type: 'quiz'
+            quizType: true
           },
           take: 3
         })
@@ -815,9 +822,6 @@ export class RecommendationService extends BaseAIService {
 
       // Get popular courses
       const popularCourses = await prisma.course.findMany({
-        where: {
-          published: true
-        },
         select: {
           id: true,
           title: true,
@@ -825,40 +829,20 @@ export class RecommendationService extends BaseAIService {
           slug: true,
           difficulty: true,
           category: true,
-          estimatedDuration: true,
-          _count: {
-            select: {
-              userProgress: {
-                where: {
-                  completed: true
-                }
-              }
-            }
-          }
-        },
-        orderBy: {
-          userProgress: {
-            _count: 'desc'
-          }
+          estimatedHours: true
         },
         take: Math.ceil(limit / 2)
       })
 
       // Get recent quizzes
-      const recentQuizzes = await prisma.quiz.findMany({
-        where: {
-          published: true
-        },
+      const recentQuizzes = await prisma.userQuiz.findMany({
         select: {
           id: true,
           title: true,
           description: true,
           slug: true,
           difficulty: true,
-          category: true
-        },
-        orderBy: {
-          createdAt: 'desc'
+          quizType: true
         },
         take: Math.ceil(limit / 2)
       })
@@ -870,14 +854,14 @@ export class RecommendationService extends BaseAIService {
         if (recommendations.length >= limit) break
 
         recommendations.push({
-          id: course.id,
+          id: course.id.toString(),
           type: 'course',
           title: course.title,
-          slug: course.slug,
-          description: course.description || '',
-          category: course.category,
-          difficulty: course.difficulty,
-          estimatedTime: course.estimatedDuration,
+          slug: course.slug || '',
+          description: course.description || undefined,
+          category: course.category?.name || undefined,
+          difficulty: course.difficulty || undefined,
+          estimatedTime: course.estimatedHours || undefined,
           confidence: 0.6, // Lower confidence for fallback
           reasoning: 'Popular course recommended as fallback',
           metadata: {
@@ -894,13 +878,13 @@ export class RecommendationService extends BaseAIService {
         if (recommendations.length >= limit) break
 
         recommendations.push({
-          id: quiz.id,
+          id: quiz.id.toString(),
           type: 'quiz',
           title: quiz.title,
-          slug: quiz.slug,
-          description: quiz.description || '',
-          category: quiz.category,
-          difficulty: quiz.difficulty,
+          slug: quiz.slug || '',
+          description: quiz.description || undefined,
+          category: quiz.quizType,
+          difficulty: quiz.difficulty || undefined,
           confidence: 0.5, // Lower confidence for fallback
           reasoning: 'Recent quiz recommended as fallback',
           metadata: {

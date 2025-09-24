@@ -22,6 +22,7 @@ import {
   clearRequiresAuth,
   loadTempResultsAndSave,
   resetQuiz,
+  setQuizResults,
 } from '@/store/slices/quiz/quiz-slice'
 
 import type { AppDispatch } from '@/store'
@@ -167,20 +168,27 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
     // First, check for temporary results from unauthenticated submission
     const tempResults = storageManager.getTempQuizResults(slug, quizType)
-    if (tempResults && isAuthenticated) {
-      console.log('Found temporary results, loading and saving to DB...')
-      dispatch(loadTempResultsAndSave({ slug, quizType }))
-        .unwrap()
-        .then(() => {
-          console.log('Successfully loaded and saved temp results')
-          send({ type: 'RESULTS_LOADED_WITH_AUTH' });
-        })
-        .catch((err: any) => {
-          console.error('Failed to load and save temp results:', err)
-          // Clear temp results on failure
-          storageManager.clearTempQuizResults(slug, quizType)
-          handleRetake();
-        });
+    if (tempResults) {
+      if (isAuthenticated) {
+        console.log('Found temporary results, loading and saving to DB...')
+        dispatch(loadTempResultsAndSave({ slug, quizType }))
+          .unwrap()
+          .then(() => {
+            console.log('Successfully loaded and saved temp results')
+            send({ type: 'RESULTS_LOADED_WITH_AUTH' });
+          })
+          .catch((err: any) => {
+            console.error('Failed to load and save temp results:', err)
+            // Clear temp results on failure
+            storageManager.clearTempQuizResults(slug, quizType)
+            handleRetake();
+          });
+      } else {
+        console.log('Found temporary results for unauthenticated user, showing sign-in prompt')
+        // Load temp results into Redux state for display
+        dispatch(setQuizResults(tempResults.results))
+        send({ type: 'RESULTS_LOADED_NO_AUTH' });
+      }
       return;
     }
 
@@ -271,7 +279,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
       percentage: quizResults.percentage || 0,
       submittedAt: quizResults.submittedAt || new Date().toISOString(),
       completedAt: quizResults.completedAt || new Date().toISOString(),
-      questionResults: quizResults.results?.map((result) => {
+      questionResults: Array.isArray(quizResults.results) ? quizResults.results.map((result) => {
         const answerDetail = quizResults.answers?.find(
           (answer) => answer.questionId === result.questionId
         )
@@ -296,7 +304,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
           difficulty: (result as any)?.difficulty || '',
           category: (questionData as any)?.category || (result as any)?.category || '',
         }
-      }) || [],
+      }) : [],
     }
   }, [quizResults, quizQuestions, slug])
 

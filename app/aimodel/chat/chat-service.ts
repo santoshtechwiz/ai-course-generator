@@ -15,7 +15,7 @@ import { ContextBuilder } from "./context-builder"
 import { openai } from "@ai-sdk/openai"
 import { streamText, generateText } from "ai"
 import { type CoreMessage } from "ai"
-import prisma from "@/lib/db"
+import { prisma } from "@/lib/db"
 import { logger } from "@/lib/logger"
 
 export interface ChatMessage {

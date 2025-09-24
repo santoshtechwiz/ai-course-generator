@@ -1,0 +1,299 @@
+/**
+ * Worker Thread for Processing Progress Batches
+ * Handles the actual database operations for progress updates
+ */
+
+import { parentPort, workerData } from 'worker_threads'
+import { PrismaClient } from '@prisma/client'
+
+interface Task {
+  id: string
+  type: 'process_batch' | 'flush_queue' | 'cleanup'
+  payload: any
+}
+
+interface Event {
+  userId: string
+  courseId?: string | number
+  chapterId?: string | number
+  quizId?: string | number
+  eventType: string
+  progress: number
+  timeSpent?: number
+  timestamp: string | number | Date
+  metadata?: Record<string, any>
+}
+
+interface Batch {
+  id: string
+  events: Event[]
+}
+
+class ProgressWorker {
+  private workerId: string
+  private prisma: PrismaClient
+  private processedCount = 0
+  private failedCount = 0
+
+  constructor(workerId: string) {
+    this.workerId = workerId
+    this.prisma = new PrismaClient()
+
+    if (parentPort) {
+      parentPort.on('message', this.handleMessage.bind(this))
+    }
+  }
+
+  private async handleMessage(task: Task) {
+    try {
+      let result: any
+
+      switch (task.type) {
+        case 'process_batch':
+          result = await this.processBatch(task.payload as Batch)
+          break
+        case 'flush_queue':
+          result = await this.flushQueue(task.payload)
+          break
+        case 'cleanup':
+          result = await this.cleanup(task.payload)
+          break
+        default:
+          throw new Error(`Unknown task type: ${task.type}`)
+      }
+
+      parentPort?.postMessage({
+        success: true,
+        data: result,
+        taskId: task.id
+      })
+    } catch (error: any) {
+      console.error(`Worker ${this.workerId} error processing task ${task.id}:`, error)
+
+      parentPort?.postMessage({
+        success: false,
+        error: error.message,
+        taskId: task.id
+      })
+    }
+  }
+
+  private async processBatch(batch: Batch) {
+    const results = {
+      batchId: batch.id,
+      processed: 0,
+      failed: 0,
+      errors: [] as string[]
+    }
+
+    console.log(
+      `Worker ${this.workerId} processing batch ${batch.id} with ${batch.events.length} events`
+    )
+
+    const eventGroups = this.groupEventsByType(batch.events)
+
+    for (const [eventType, events] of eventGroups.entries()) {
+      try {
+        await this.processEventGroup(eventType, events)
+        results.processed += events.length
+      } catch (error: any) {
+        console.error(`Failed to process ${eventType} events:`, error)
+        results.failed += events.length
+        results.errors.push(`${eventType}: ${error.message}`)
+      }
+    }
+
+    this.processedCount += results.processed
+    this.failedCount += results.failed
+
+    return results
+  }
+
+  private groupEventsByType(events: Event[]) {
+    const groups = new Map<string, Event[]>()
+    for (const event of events) {
+      if (!groups.has(event.eventType)) {
+        groups.set(event.eventType, [])
+      }
+      groups.get(event.eventType)!.push(event)
+    }
+    return groups
+  }
+
+  private async processEventGroup(eventType: string, events: Event[]) {
+    switch (eventType) {
+      case 'chapter_start':
+      case 'chapter_progress':
+      case 'chapter_complete':
+        await this.processChapterEvents(events)
+        break
+      case 'quiz_start':
+      case 'quiz_progress':
+      case 'quiz_complete':
+        await this.processQuizEvents(events)
+        break
+      default:
+        console.warn(`Unknown event type: ${eventType}`)
+    }
+  }
+
+  private async processChapterEvents(events: Event[]) {
+    const chapterUpdates = events.map(event => ({
+      userId: event.userId,
+      courseId: Number(event.courseId),
+      chapterId: Number(event.chapterId),
+      progress: Math.min(100, Math.max(0, event.progress)),
+      timeSpent: Math.max(0, event.timeSpent || 0),
+      completed: event.eventType === 'chapter_complete' || event.progress >= 100,
+      lastWatchedAt: new Date(event.timestamp),
+      metadata: event.metadata || {}
+    }))
+
+    for (const update of chapterUpdates) {
+      await this.prisma.chapterProgress.upsert({
+        where: {
+          userId_courseId_chapterId: {
+            userId: update.userId,
+            courseId: update.courseId,
+            chapterId: update.chapterId
+          }
+        },
+        update: {
+          progress: update.progress,
+          timeSpent: { increment: update.timeSpent },
+          completed: update.completed,
+          lastWatchedAt: update.lastWatchedAt,
+          metadata: update.metadata
+        },
+        create: update
+      })
+    }
+
+    await this.updateCourseProgress(chapterUpdates)
+  }
+
+  private async processQuizEvents(events: Event[]) {
+    const quizGroups = new Map<string, Event[]>()
+
+    for (const event of events) {
+      const key = `${event.userId}:${event.quizId}`
+      if (!quizGroups.has(key)) quizGroups.set(key, [])
+      quizGroups.get(key)!.push(event)
+    }
+
+    for (const [key, quizEvents] of quizGroups.entries()) {
+      const [userId, quizId] = key.split(':')
+      await this.processQuizGroup(userId, Number(quizId), quizEvents)
+    }
+  }
+
+  private async processQuizGroup(userId: string, quizId: number, events: Event[]) {
+    const latestEvent = events.reduce((latest, current) =>
+      new Date(current.timestamp).getTime() > new Date(latest.timestamp).getTime()
+        ? current
+        : latest
+    )
+
+    const totalTimeSpent = events.reduce((sum, e) => sum + (e.timeSpent || 0), 0)
+
+    await this.prisma.quizProgress.upsert({
+      where: { userId_quizId: { userId, quizId } },
+      update: {
+        progress: latestEvent.progress,
+        timeSpent: { increment: totalTimeSpent },
+        completed: latestEvent.eventType === 'quiz_complete',
+        lastAttemptAt: new Date(latestEvent.timestamp),
+        metadata: latestEvent.metadata || {}
+      },
+      create: {
+        userId,
+        quizId,
+        progress: latestEvent.progress,
+        timeSpent: totalTimeSpent,
+        completed: latestEvent.eventType === 'quiz_complete',
+        lastAttemptAt: new Date(latestEvent.timestamp),
+        metadata: latestEvent.metadata || {}
+      }
+    })
+  }
+
+  private async updateCourseProgress(chapterUpdates: any[]) {
+    const courseGroups = new Map<string, any[]>()
+    for (const update of chapterUpdates) {
+      const key = `${update.userId}:${update.courseId}`
+      if (!courseGroups.has(key)) courseGroups.set(key, [])
+      courseGroups.get(key)!.push(update)
+    }
+
+    for (const [key] of courseGroups.entries()) {
+      const [userId, courseIdStr] = key.split(':')
+      const courseId = Number(courseIdStr)
+
+      const allChapterProgress = await this.prisma.chapterProgress.findMany({
+        where: { userId, courseId }
+      })
+
+      const totalChapters = await this.prisma.chapter.count({
+        where: { unit: { courseId } }
+      })
+
+      const completedChapters = allChapterProgress.filter(cp => cp.completed).length
+      const totalTimeSpent = allChapterProgress.reduce((sum, cp) => sum + cp.timeSpent, 0)
+      const avgProgress =
+        totalChapters > 0
+          ? allChapterProgress.reduce((sum, cp) => sum + cp.progress, 0) / totalChapters
+          : 0
+
+      await this.prisma.courseProgress.upsert({
+        where: { userId_courseId: { userId, courseId } },
+        update: {
+          progress: Math.round(avgProgress),
+          completedChapters,
+          totalTimeSpent,
+          lastAccessedAt: new Date(),
+          completed: completedChapters === totalChapters && totalChapters > 0
+        },
+        create: {
+          userId,
+          courseId,
+          progress: Math.round(avgProgress),
+          completedChapters,
+          totalTimeSpent,
+          lastAccessedAt: new Date(),
+          completed: completedChapters === totalChapters && totalChapters > 0
+        }
+      })
+    }
+  }
+
+  private async flushQueue(_: any) {
+    return { success: true, message: 'Queue flushed' }
+  }
+
+  private async cleanup(_: any) {
+    const cutoffDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+
+    const deletedCount = await this.prisma.chapterProgress.deleteMany({
+      where: {
+        lastWatchedAt: { lt: cutoffDate },
+        completed: false,
+        progress: 0
+      }
+    })
+
+    return { deletedRecords: deletedCount.count }
+  }
+
+  async shutdown() {
+    await this.prisma.$disconnect()
+  }
+}
+
+// Initialize worker
+const worker = new ProgressWorker(workerData?.workerId || 'unknown')
+
+// Handle shutdown
+process.on('SIGTERM', async () => {
+  await worker.shutdown()
+  process.exit(0)
+})
