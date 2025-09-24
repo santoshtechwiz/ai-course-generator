@@ -23,6 +23,7 @@ interface DashboardLayoutProps {
  * - Footer with copyright and links
  * - Global components (Toaster, Chatbot, Dev Tools)
  * - Mobile responsive design
+ * - Professional n8n-inspired design
  */
 export function DashboardLayout({
   children,
@@ -30,20 +31,20 @@ export function DashboardLayout({
   className
 }: DashboardLayoutProps) {
   return (
-    <div className={cn("min-h-screen bg-background", className)}>
+    <div className={cn("min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900", className)}>
       {/* Main Navbar - Complete navigation with AI features, search, and user management */}
       <MainNavbar />
 
-      {/* Main Content Area */}
-      <main className="min-h-[calc(100vh-12rem)] pt-16">
-        <div className="container mx-auto px-4 py-6">
+      {/* Main Content Area - More spacious like n8n */}
+      <main className="min-h-[calc(100vh-12rem)] pt-20">
+        <div className="container max-w-7xl mx-auto px-6 py-8">
           <ReduxErrorBoundary>
             {children}
           </ReduxErrorBoundary>
         </div>
       </main>
 
-    
+
       {/* Global Dashboard Components */}
       <Toaster />
       {userId && <Chatbot userId={userId} />}

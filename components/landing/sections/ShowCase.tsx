@@ -187,6 +187,12 @@ const ProductGallery = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't capture keyboard shortcuts when user is typing in input fields
+      const target = e.target as HTMLElement
+      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) {
+        return
+      }
+      
       if (e.key === "ArrowRight") {
         nextProduct()
       } else if (e.key === "ArrowLeft") {

@@ -542,6 +542,12 @@ export const RandomQuiz = memo(({
     const handleKeyPress = (e: KeyboardEvent) => {
       if (quizzes.length <= 1) return
       
+      // Don't capture keyboard shortcuts when user is typing in input fields
+      const target = e.target as HTMLElement
+      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) {
+        return
+      }
+      
       switch (e.key) {
         case 'ArrowLeft':
           e.preventDefault()

@@ -93,7 +93,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           </motion.span>
         </motion.div>
 
-        {/* Main heading */}
+        {/* Main heading - More impactful like n8n */}
         <motion.h1
           className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 max-w-4xl mx-auto leading-tight"
           initial={{ opacity: 0, y: 15 }}
@@ -101,11 +101,13 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           transition={{ duration: 0.7, delay: 0.3, ease: APPLE_EASING }}
           id="hero-heading"
         >
-          <span className="inline-block">Create</span>{" "}
-          <span className="inline-block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            extraordinary
-          </span>{" "}
-          <span className="inline-block">courses with AI</span>
+          <span className="bg-gradient-to-r from-gray-900 via-blue-800 to-gray-900 dark:from-white dark:via-blue-200 dark:to-white bg-clip-text text-transparent">
+            Transform any topic into
+          </span>
+          <br />
+          <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 dark:from-blue-400 dark:via-purple-400 dark:to-blue-400 bg-clip-text text-transparent">
+            extraordinary courses
+          </span>
         </motion.h1>
 
         <motion.span
@@ -114,7 +116,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
           transition={{ duration: 0.7, delay: 0.4, ease: APPLE_EASING }}
         >
-          From any topic, in minutes
+          The fast way to create engaging courses
         </motion.span>
 
         <motion.p
@@ -124,9 +126,9 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           transition={{ duration: 0.7, delay: 0.5, ease: APPLE_EASING }}
           id="hero-description"
         >
-          Transform your knowledge into engaging, interactive courses.
-          CourseAI creates comprehensive learning experiences from any topic,
-          complete with quizzes, progress tracking, and beautiful design.
+          Combine AI-powered content creation with beautiful design.
+          Create comprehensive learning experiences from any topic,
+          complete with interactive quizzes and progress tracking.
         </motion.p>
 
         <motion.div
@@ -145,9 +147,9 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
               scrollToFeatures()
               return true
             }}
-            aria-label="Explore CourseAI features"
+            aria-label="Get started with CourseAI"
           >
-            <span className="relative z-10">Start Creating</span>
+            <span className="relative z-10">Get started for free</span>
             <motion.span
               className="inline-block ml-2 relative z-10"
               initial={{ x: 0 }}
@@ -170,7 +172,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
               scrollToHowItWorks()
               return true
             }}
-            aria-label="Watch CourseAI demo video"
+            aria-label="See how CourseAI works"
           >
             <motion.div
               className="mr-3 rounded-full bg-blue-100 dark:bg-blue-900/50 p-1.5 flex items-center justify-center"
@@ -179,30 +181,43 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
             >
               <Play className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             </motion.div>
-            Watch Demo
+            See how it works
           </FeedbackButton>
         </motion.div>
 
-        {/* Trust indicators */}
+        {/* Trust indicators - More like n8n */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.8, delay: 1.2, ease: APPLE_EASING }}
-          className="mt-16 flex flex-wrap items-center justify-center gap-6 md:gap-8 text-sm text-gray-600 dark:text-gray-400"
-          role="region"
-          aria-label="Trust indicators"
+          className="mt-16 space-y-8"
         >
-          <div className="flex items-center gap-2" role="text">
-            <div className="w-2 h-2 rounded-full bg-green-500" aria-hidden="true"></div>
-            <span>No credit card required</span>
+          {/* Social proof stats */}
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex items-center gap-2" role="text">
+              <div className="w-2 h-2 rounded-full bg-green-500" aria-hidden="true"></div>
+              <span>10,000+ courses created</span>
+            </div>
+            <div className="flex items-center gap-2" role="text">
+              <div className="w-2 h-2 rounded-full bg-blue-500" aria-hidden="true"></div>
+              <span>50,000+ learners</span>
+            </div>
+            <div className="flex items-center gap-2" role="text">
+              <div className="w-2 h-2 rounded-full bg-purple-500" aria-hidden="true"></div>
+              <span>Free forever plan</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2" role="text">
-            <div className="w-2 h-2 rounded-full bg-blue-500" aria-hidden="true"></div>
-            <span>Free 14-day trial</span>
-          </div>
-          <div className="flex items-center gap-2" role="text">
-            <div className="w-2 h-2 rounded-full bg-purple-500" aria-hidden="true"></div>
-            <span>Cancel anytime</span>
+
+          {/* Company logos or trust indicators */}
+          <div className="text-center">
+            <p className="text-sm text-gray-500 dark:text-gray-500 mb-4">Trusted by educators and organizations worldwide</p>
+            <div className="flex flex-wrap items-center justify-center gap-8 opacity-60">
+              {/* Placeholder for company logos - you can add actual logos here */}
+              <div className="text-gray-400 font-semibold">Universities</div>
+              <div className="text-gray-400 font-semibold">Corporate Training</div>
+              <div className="text-gray-400 font-semibold">E-learning Platforms</div>
+              <div className="text-gray-400 font-semibold">Educational Startups</div>
+            </div>
           </div>
         </motion.div>
       </div>

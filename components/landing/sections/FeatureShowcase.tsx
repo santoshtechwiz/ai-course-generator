@@ -89,29 +89,23 @@ const FeatureShowcase = () => {
   const isInView = useInView(containerRef, { once: true, amount: 0.1 })
 
   return (
-    <div ref={containerRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      {/* Header */}
-      <motion.div
-        className="text-center mb-16"
-        initial={{ opacity: 0, y: 20 }}
-        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-        transition={{ duration: 0.6, ease: APPLE_EASING }}
-      >
-        <h2
-          className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4"
-          id="features-heading"
+    <div ref={containerRef} className="py-24 bg-white dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header - More like n8n */}
+        <motion.div
+          className="text-center mb-20"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6, ease: APPLE_EASING }}
         >
-          Everything you need to create
-          <br />
-          <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            extraordinary courses
-          </span>
-        </h2>
-        <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto leading-relaxed">
-          CourseAI combines powerful AI with intuitive design to help you create engaging,
-          interactive learning experiences that captivate and educate your audience.
-        </p>
-      </motion.div>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            Everything you need to create extraordinary courses
+          </h2>
+          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+            From content creation to learner analytics, CourseAI provides all the tools
+            you need to build engaging, effective learning experiences.
+          </p>
+        </motion.div>
 
       {/* Features Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -167,6 +161,7 @@ const FeatureShowcase = () => {
           </span>
         </div>
       </motion.div>
+      </div>
     </div>
   )
 }
