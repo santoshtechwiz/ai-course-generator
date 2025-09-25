@@ -181,7 +181,7 @@ function QuizCardComponent({
     return "Start"
   }
 
-  const isOwner = userId && currentUserId && userId === currentUserId
+  const isOwner = userId && currentUserId && String(userId) === String(currentUserId)
   const canShowActions = showActions && isOwner
   const ButtonIcon = getButtonIcon()
 
@@ -258,7 +258,7 @@ function QuizCardComponent({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="h-8 w-8 p-0"
                       >
                         <MoreHorizontal className="h-3.5 w-3.5" />
                       </Button>

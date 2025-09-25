@@ -3,16 +3,17 @@ import { QuizServiceFactory } from "@/app/services/quiz-service-factory"
 import { getAuthSession } from "@/lib/auth"
 import { createCacheManager } from "@/app/services/cache/cache-manager"
 import { validateSubscriptionServer } from "@/lib/subscription-validation"
+import { validateSubscriptionServer } from "@/lib/subscription-validation"
 
 const cache = createCacheManager()
 
 export async function GET(
   req: NextRequest, 
-  { params }: { params: Promise<{ quizType: string; slug: string }> }
+  context: { params: Promise<{ quizType: string; slug: string }> }
 ): Promise<NextResponse> {
   try {
     // Extract parameters - await params first
-    const { quizType, slug } = await params
+    const { quizType, slug } = await context.params
 
     // Try cache first
     const cacheKey = `api:quiz:${quizType}:${slug}`
@@ -61,7 +62,7 @@ export async function GET(
     // Await params before using its properties in error logging
     let quizType = "unknown"
     try {
-      const awaitedParams = await params
+      const awaitedParams = await context.params
       quizType = awaitedParams.quizType
     } catch {}
     console.error(`Error fetching ${quizType} quiz:`, error)
@@ -71,11 +72,11 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest, 
-  { params }: { params: Promise<{ quizType: string; slug: string }> }
+  context: { params: Promise<{ quizType: string; slug: string }> }
 ): Promise<NextResponse> {
   try {
     // Extract parameters
-    const { quizType, slug } = await params
+    const { quizType, slug } = await context.params
     
     // Get the user session for authorization
     const session = await getAuthSession()
@@ -109,7 +110,7 @@ export async function PATCH(
     // Await params before using its properties in error logging
     let quizType = "unknown"
     try {
-      const awaitedParams = await params
+      const awaitedParams = await context.params
       quizType = awaitedParams.quizType
     } catch {}
     console.error(`Error updating ${quizType} quiz:`, error)
@@ -119,11 +120,11 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest, 
-  { params }: { params: { quizType: string; slug: string } }
+  context: { params: Promise<{ quizType: string; slug: string }> }
 ): Promise<NextResponse> {
   try {
     // Extract parameters
-    const { quizType, slug } = params
+    const { quizType, slug } = await context.params
     
     // Get the user session for authorization
     const session = await getAuthSession()
@@ -147,7 +148,13 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Quiz deleted successfully" })
   } catch (error) {
-    console.error(`Error deleting ${params.quizType} quiz:`, error)
+    // Await params before using its properties in error logging
+    let quizType = "unknown"
+    try {
+      const awaitedParams = await context.params
+      quizType = awaitedParams.quizType
+    } catch {}
+    console.error(`Error deleting ${quizType} quiz:`, error)
     return NextResponse.json({ error: "Failed to delete quiz" }, { status: 500 })
   }
 }
@@ -155,11 +162,11 @@ export async function DELETE(
 
 export async function POST(
   req: NextRequest, 
-  { params }: { params: { quizType: string; slug: string } }
+  context: { params: Promise<{ quizType: string; slug: string }> }
 ): Promise<NextResponse> {
   try {
     // Extract parameters
-    const { quizType, slug } = params
+    const { quizType, slug } = await context.params
 
     // Get the user session for authorization
     const session = await getAuthSession()
@@ -185,7 +192,7 @@ export async function POST(
     // Await params before using its properties in error logging
     let quizType = "unknown"
     try {
-      const awaitedParams = await params
+      const awaitedParams = await context.params
       quizType = awaitedParams.quizType
     } catch {}
     console.error(`Error creating ${quizType} quiz:`, error)

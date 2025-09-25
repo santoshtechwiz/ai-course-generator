@@ -236,7 +236,8 @@ async function updateCourseProgress(userId: string, courseId: number) {
   const totalChapters = chapterProgress.length
   const completedChapters = chapterProgress.filter(cp => cp.isCompleted).length
   const totalTimeSpent = chapterProgress.reduce((sum, cp) => sum + cp.timeSpent, 0)
-  const overallProgress = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0
+  // Prisma CourseProgress.progress stores a fraction between 0 and 1
+  const overallProgress = totalChapters > 0 ? (completedChapters / totalChapters) : 0
 
   // Update course progress
   await prisma.courseProgress.upsert({
@@ -258,7 +259,6 @@ async function updateCourseProgress(userId: string, courseId: number) {
       progress: overallProgress,
       timeSpent: totalTimeSpent,
       currentChapterId: chapterProgress[0]?.chapterId || 1,
-      totalChapters,
       isCompleted: completedChapters === totalChapters && totalChapters > 0,
       lastAccessedAt: new Date()
     }

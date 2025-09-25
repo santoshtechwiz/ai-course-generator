@@ -52,7 +52,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   const lastFilterRef = useRef("")
   const lastTabRef = useRef("all")
 
-  // AI Modal state with adaptive logic
+  // AI Modal state with conservative logic - only show when users need help
   const {
     shouldShow: showAIModal,
     showModal: triggerAIModal,
@@ -60,10 +60,10 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     dismissModal: dismissAIModal,
     trackEngagement
   } = useAIModal({
-    minTimeBetweenShows: 4 * 60 * 60 * 1000, // 4 hours
-    maxShowsPerSession: 1,
-    maxShowsPerDay: 2,
-    triggerEvents: ['search', 'filter', 'browse']
+    minTimeBetweenShows: 7 * 24 * 60 * 60 * 1000, // 7 days minimum
+    maxShowsPerSession: 1, // Max 1 per session
+    maxShowsPerDay: 1, // Max 1 per day
+    triggerEvents: ['no_results', 'first_visit', 'low_engagement'] // Only show for specific scenarios
   })
 
   // Restore persisted preferences
@@ -230,6 +230,29 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     showPublicOnly ||
     activeTab !== "all"
   )
+
+  // Trigger AI modal only when users are having difficulty finding content
+  useEffect(() => {
+    if (noResults && isSearching && !isLoading && !isError) {
+      // User searched/filtered but got no results - they might need AI help
+      triggerAIModal('no_results')
+    }
+  }, [noResults, isSearching, isLoading, isError, triggerAIModal])
+
+  // Show modal on first visit to new users
+  useEffect(() => {
+    if (!isLoading && quizzes.length > 0 && !isSearching) {
+      // Only trigger on first visit if user hasn't seen modal before
+      const hasSeenModal = localStorage.getItem('ai-quiz-modal-state')
+      if (!hasSeenModal) {
+        // Small delay to not be intrusive
+        const timer = setTimeout(() => {
+          triggerAIModal('first_visit')
+        }, 3000)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [isLoading, quizzes.length, isSearching, triggerAIModal])
 
   // Load more when in view - prevent infinite loading by adding more conditions
   useEffect(() => {
@@ -491,6 +514,19 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
           </ErrorBoundary>
         </div>
       </div>
+
+      {/* AI Quiz Notice Modal - only shows when users need help */}
+      <AIQuizNoticeModal
+        isOpen={showAIModal}
+        onClose={hideAIModal}
+        onStartQuiz={handleStartQuiz}
+        onCreateQuiz={handleCreateQuizFromModal}
+        onDismissWithPreference={(preference) => {
+          dismissAIModal()
+          // Track dismissal preference
+          trackEngagement('dismiss')
+        }}
+      />
     </div>
   )
 }

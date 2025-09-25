@@ -70,6 +70,19 @@ const useQuizActions = (props: QuizActionsProps) => {
   })
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
+  // Check if user is the owner
+  const isOwner = user?.id && props.userId && String(user.id) === String(props.userId)
+
+  console.log('QuizActions Hook Debug:', {
+    userId: user?.id,
+    propsUserId: props.userId,
+    userIdType: typeof user?.id,
+    propsUserIdType: typeof props.userId,
+    isOwner,
+    isAuthenticated,
+    userExists: !!user
+  })
+
   // Use the mutation hook for deletion
   const deleteQuizMutation = useDeleteQuiz({
     onSuccess: () => {
@@ -103,14 +116,14 @@ const useQuizActions = (props: QuizActionsProps) => {
     }
 
     // Check ownership for edit/delete actions
-    if ((actionType === 'edit' && !props.canEdit) || (actionType === 'delete' && !props.canDelete)) {
+    if ((actionType === 'edit' && !isOwner) || (actionType === 'delete' && !isOwner)) {
       toast.error("You don't have permission to perform this action")
       return false
     }
 
     // Additional server-side check will be performed by API
     return true
-  }, [isAuthenticated, user, props.canEdit, props.canDelete])
+  }, [isAuthenticated, user, isOwner])
 
   const handleShare = useCallback(async () => {
     updateActionState("isSharing", true)
@@ -371,7 +384,8 @@ const useQuizActions = (props: QuizActionsProps) => {
     handleDelete,
     handlePdfGeneration,
     canPerformAction,
-    isAuthenticated
+    isAuthenticated,
+    isOwner
   }
 }
 
@@ -494,7 +508,8 @@ const QuizActions = memo(
       handleDelete,
       handlePdfGeneration,
       canPerformAction,
-      isAuthenticated
+      isAuthenticated,
+      isOwner
     } = useQuizActions({
       quizId,
       quizSlug,
@@ -549,16 +564,17 @@ const QuizActions = memo(
           label: isPublic ? "Make Private" : "Make Public",
           onClick: handleVisibilityToggle,
           loading: actionState.isTogglingVisibility,
-          show: canEdit && isAuthenticated,
+          show: isOwner && isAuthenticated,
           className: isPublic ? "text-green-600 hover:text-green-700" : "text-gray-500 hover:text-gray-600",
           variant: "outline" as const,
         },
       ],
-      [handleShare, handleFavorite, handleVisibilityToggle, actionState.isSharing, actionState.isFavoriting, actionState.isTogglingVisibility, isFavorite, isPublic, isAuthenticated, canEdit],
+      [handleShare, handleFavorite, handleVisibilityToggle, actionState.isSharing, actionState.isFavoriting, actionState.isTogglingVisibility, isFavorite, isPublic, isAuthenticated, isOwner],
     )
 
     const secondaryActions = useMemo(
-      () => [
+      () => {
+        const actions = [
         {
           key: "pdf",
           icon: FileText,
@@ -574,19 +590,30 @@ const QuizActions = memo(
           label: "Delete Quiz",
           onClick: () => setShowDeleteDialog(true),
           loading: actionState.isDeleting,
-          show: canDelete && isAuthenticated,
+          show: isOwner && isAuthenticated,
           className: "text-destructive hover:text-destructive/80",
           variant: "ghost" as const,
         },
-      ],
+      ]
+        console.log('QuizActions Debug:', {
+          isOwner,
+          isAuthenticated,
+          showPdfGeneration,
+          deleteShowCondition: isOwner && isAuthenticated,
+          variant,
+          secondaryActions: actions.map(a => ({ key: a.key, show: a.show }))
+        })
+        return actions
+      },
       [
         handlePdfGeneration,
         setShowDeleteDialog,
         actionState.isGeneratingPdf,
         actionState.isDeleting,
-        canDelete,
+        isOwner,
         showPdfGeneration,
         isAuthenticated,
+        variant,
       ],
     )
 
@@ -669,9 +696,14 @@ const QuizActions = memo(
               </motion.div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              {secondaryActions
-                .filter((action) => action.show)
-                .map((action, index) => (
+              {(() => {
+                const visibleActions = secondaryActions.filter((action) => action.show)
+                console.log('DropdownMenu rendering:', {
+                  totalSecondaryActions: secondaryActions.length,
+                  visibleActions: visibleActions.length,
+                  visibleActionKeys: visibleActions.map(a => a.key)
+                })
+                return visibleActions.map((action, index) => (
                   <div key={action.key}>
                     {index > 0 && action.key === "delete" && <DropdownMenuSeparator />}
                     <DropdownMenuItem
@@ -687,7 +719,8 @@ const QuizActions = memo(
                       {action.label}
                     </DropdownMenuItem>
                   </div>
-                ))}
+                ))
+              })()}
             </DropdownMenuContent>
           </DropdownMenu>
 

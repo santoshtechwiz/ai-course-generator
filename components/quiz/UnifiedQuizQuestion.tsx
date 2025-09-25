@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import SyntaxHighlighter from "react-syntax-highlighter"
-import vs from "react-syntax-highlighter/dist/styles/vs"
+
+import SyntaxHighlighter from "react-syntax-highlighter";
+import vs from "react-syntax-highlighter/dist/styles/vs";
 
 import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
 import { generateBlanksHints, generateOpenEndedHints } from "@/lib/utils/hint-system"
@@ -620,30 +621,41 @@ export function UnifiedQuizQuestion({
       >
         {codeQuestion.codeSnippet && (
           <Card className="bg-muted/30">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Target className="w-5 h-5 text-primary" />
-                <span className="text-sm font-medium text-muted-foreground">Code Snippet</span>
+            <CardContent className="p-3 sm:p-4 lg:p-6">
+              <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                <Target className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                <span className="text-xs sm:text-sm font-medium text-muted-foreground">Code Snippet</span>
+                <Badge variant="secondary" className="text-xs font-mono ml-auto">
+                  {codeQuestion.language || 'javascript'}
+                </Badge>
               </div>
               <div className="rounded-lg overflow-hidden relative group">
-                <div className="absolute right-2 top-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Badge variant="secondary" className="text-xs font-mono">
-                    {codeQuestion.language || 'javascript'}
-                  </Badge>
+                <div className="overflow-x-auto">
+                  <SyntaxHighlighter
+                    language={codeQuestion.language || 'javascript'}
+                    style={vs}
+                      className="!text-xs sm:!text-sm !bg-slate-900 !p-3 sm:!p-4 lg:!p-6 !m-0 !rounded-lg"
+                    showLineNumbers={true}
+                    wrapLines={false}
+                    customStyle={{
+                      margin: 0,
+                      padding: '1rem',
+                      borderRadius: '0.5rem',
+                      fontSize: 'clamp(0.75rem, 2.5vw, 0.9rem)',
+                      lineHeight: '1.5',
+                      fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata, "Roboto Mono", "Source Code Pro", monospace',
+                    }}
+                    codeTagProps={{
+                      style: {
+                        fontSize: 'inherit',
+                        fontFamily: 'inherit',
+                        lineHeight: 'inherit',
+                      }
+                    }}
+                  >
+                    {codeQuestion.codeSnippet}
+                  </SyntaxHighlighter>
                 </div>
-                <SyntaxHighlighter
-                  language={codeQuestion.language || 'javascript'}
-                  style={vs}
-                  className="text-sm !bg-zinc-950 !p-6 !m-0"
-                  showLineNumbers={true}
-                  wrapLines={true}
-                  customStyle={{
-                    borderRadius: '0.5rem',
-                    fontSize: '0.9rem',
-                  }}
-                >
-                  {codeQuestion.codeSnippet}
-                </SyntaxHighlighter>
               </div>
             </CardContent>
           </Card>

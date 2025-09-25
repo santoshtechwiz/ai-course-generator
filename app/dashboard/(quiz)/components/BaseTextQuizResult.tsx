@@ -33,6 +33,10 @@ import { NoResults } from "@/components/ui/no-results"
 import { BestGuess } from "@/components/ui/best-guess"
 
 import { useDispatch } from "react-redux"
+import { useAuth } from "@/modules/auth"
+import CertificateGenerator from "@/app/dashboard/course/[slug]/components/CertificateGenerator"
+
+import { toast } from "@/components/ui/use-toast"
 
 import {
   getPerformanceLevel,
@@ -74,12 +78,11 @@ interface QuizResultBase {
 interface QuizResultsProps {
   result?: QuizResultBase
   onRetake?: () => void
-  isAuthenticated?: boolean
   slug: string
   quizType: "open-ended" | "blanks"
 }
 
-export function BaseQuizResults({ result, onRetake, isAuthenticated = true, slug, quizType }: QuizResultsProps) {
+export function BaseQuizResults({ result, onRetake, slug, quizType }: QuizResultsProps) {
   const router = useRouter()
   const [showConfetti, setShowConfetti] = useState(false)
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set())
@@ -195,6 +198,53 @@ export function BaseQuizResults({ result, onRetake, isAuthenticated = true, slug
     router.push("/dashboard/quizzes")
   }, [router])
 
+  // Auth & save state for action bar
+  const { user, subscription, isAuthenticated } = useAuth()
+  const hasActiveSubscription = subscription?.status !== null
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleSaveResult = async () => {
+    if (!isAuthenticated) {
+      toast({ title: "Sign In Required", description: "Please sign in to save your results.", variant: "destructive" })
+      return
+    }
+
+    if (!hasActiveSubscription) {
+      toast({ title: "Upgrade Required", description: "Save results is available for Premium users.", variant: "destructive" })
+      return
+    }
+
+    try {
+      setIsSaving(true)
+
+      const path = window.location.pathname
+      let quizType = "openended"
+      if (path.includes("/blanks/")) quizType = "blanks"
+
+      const quizSlug = result.slug || path.split('/').pop()
+
+      const answersToSubmit = Array.isArray(enhancedResults) && enhancedResults.length > 0 ? enhancedResults : []
+
+      const resp = await fetch(`/api/quizzes/${quizType}/${quizSlug}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quizId: quizSlug, score: percentage, answers: answersToSubmit, totalTime: stats.totalTime || 0, type: quizType, completedAt: result.completedAt || new Date().toISOString() })
+      })
+
+      if (!resp.ok) {
+        const errorData = await resp.json()
+        throw new Error(errorData?.error || "Failed to save result")
+      }
+
+      toast({ title: "Results Saved", description: "Your quiz results have been saved." })
+    } catch (err) {
+      console.error(err)
+      toast({ title: "Save Failed", description: err instanceof Error ? err.message : String(err), variant: "destructive" })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const handleShare = useCallback(async () => {
     try {
       const shareData = {
@@ -291,10 +341,7 @@ export function BaseQuizResults({ result, onRetake, isAuthenticated = true, slug
                   stats={stats}
                 />
               </div>
-              <div className="space-y-6">
-                <SimilarityInsights stats={stats} />
-                <QuizActions onRetake={handleRetake} onViewAll={handleViewAllQuizzes} onShare={handleShare} />
-              </div>
+             
             </div>
 
             {/* Question Review */}
@@ -599,50 +646,6 @@ function SimilarityBreakdown({
   )
 }
 
-// Enhanced Actions Component
-function QuizActions({
-  onRetake,
-  onViewAll,
-  onShare,
-}: {
-  onRetake: () => void
-  onViewAll: () => void
-  onShare: () => void
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.3 }}
-    >
-      <Card className="shadow-lg">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
-            Quick Actions
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent className="space-y-3">
-          <Button onClick={onRetake} className="w-full justify-start gap-2" size="lg">
-            <RefreshCw className="w-4 h-4" />
-            Retake Quiz
-          </Button>
-
-          <Button onClick={onViewAll} variant="outline" className="w-full justify-start gap-2 bg-transparent" size="lg">
-            <Home className="w-4 h-4" />
-            Browse Quizzes
-          </Button>
-
-          <Button onClick={onShare} variant="ghost" className="w-full justify-start gap-2" size="lg">
-            <Share2 className="w-4 h-4" />
-            Share Results
-          </Button>
-        </CardContent>
-      </Card>
-    </motion.div>
-  )
-}
 
 // Enhanced Question Review
 function QuestionReview({

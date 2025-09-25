@@ -128,55 +128,47 @@ export function useAIModal(options: UseAIModalOptions = {}) {
     const now = Date.now()
     const today = new Date().toDateString()
 
-    // Check user preference
+    // Check user preference - respect user choice
     if (modalState.userPreference === 'never') return false
     if (modalState.dismissed && modalState.userPreference === 'less') {
-      // For 'less' preference, only show after longer intervals
-      if (modalState.lastShown && (now - modalState.lastShown) < minTimeBetweenShows * 2) {
+      // For 'less' preference, only show after much longer intervals
+      if (modalState.lastShown && (now - modalState.lastShown) < minTimeBetweenShows * 4) {
         return false
       }
     }
 
-    // Check time constraints
-    if (modalState.lastShown && (now - modalState.lastShown) < minTimeBetweenShows) {
+    // Only show modal when users are having difficulty or need assistance
+    // Don't show for regular browsing/searching
+    const validTriggers = ['no_results', 'repeated_search', 'low_engagement', 'first_visit']
+    if (triggerType && !validTriggers.includes(triggerType)) {
       return false
     }
 
-    // Check session limits
-    if (sessionShows >= maxShowsPerSession) return false
-
-    // Check daily limits
-    if (todayShows >= maxShowsPerDay) return false
-
-    // Check if trigger type is relevant
-    if (triggerType && !triggerEvents.includes(triggerType)) return false
-
-    // Adaptive logic based on user behavior and engagement
-    const timeSinceLastShow = modalState.lastShown ? now - modalState.lastShown : Infinity
-    const engagementMultiplier = modalState.engagementScore / 50 // 0.5 to 2.0
-
-    // Show more frequently for highly engaged users, less for disengaged users
-    if (modalState.engagementScore > 70) {
-      // Highly engaged - show more often
-      if (timeSinceLastShow > minTimeBetweenShows * 0.5) {
-        return Math.random() < 0.6 * engagementMultiplier
-      }
-    } else if (modalState.engagementScore < 30) {
-      // Disengaged - show less often
-      if (timeSinceLastShow > minTimeBetweenShows * 2) {
-        return Math.random() < 0.2 / engagementMultiplier
-      }
-    } else {
-      // Normal engagement - use standard logic
-      if (modalState.showCount === 0) return true
-      if (modalState.showCount < 3) return Math.random() < 0.7
-      if (timeSinceLastShow > 7 * 24 * 60 * 60 * 1000) return Math.random() < 0.5
-      if (timeSinceLastShow > 3 * 24 * 60 * 60 * 1000) return Math.random() < 0.3
-      return Math.random() < 0.1
+    // Check time constraints - much longer intervals
+    if (modalState.lastShown && (now - modalState.lastShown) < minTimeBetweenShows * 7) { // 7 days minimum
+      return false
     }
 
+    // Check session limits - very restrictive
+    if (sessionShows >= 1) return false // Max 1 per session
+
+    // Check daily limits - very restrictive
+    if (todayShows >= 1) return false // Max 1 per day
+
+    // Only show for users who might actually need help
+    if (modalState.engagementScore < 20) {
+      // Very disengaged users - might need encouragement
+      return Math.random() < 0.3
+    }
+
+    // Only show on first visit or when explicitly triggered by difficulty
+    if (modalState.showCount === 0 && triggerType === 'first_visit') {
+      return Math.random() < 0.4
+    }
+
+    // Don't show for regular users
     return false
-  }, [modalState, sessionShows, todayShows, minTimeBetweenShows, maxShowsPerSession, maxShowsPerDay, triggerEvents])
+  }, [modalState, sessionShows, todayShows, minTimeBetweenShows, maxShowsPerSession, maxShowsPerDay])
 
   // Show modal with trigger tracking
   const showModal = useCallback((triggerType?: string) => {

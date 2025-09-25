@@ -159,13 +159,21 @@ class ProgressWorker {
           }
         },
         update: {
-          progress: update.progress,
+          // schema fields: lastProgress (0..1), timeSpent, isCompleted, lastAccessedAt
+          lastProgress: update.progressPercent / 100,
           timeSpent: { increment: update.timeSpent },
-          completed: update.completed,
-          lastWatchedAt: update.lastWatchedAt,
-          metadata: update.metadata
+          isCompleted: update.completed,
+          lastAccessedAt: update.lastAccessedAt,
         },
-        create: update
+        create: {
+          userId: update.userId,
+          courseId: update.courseId,
+          chapterId: update.chapterId,
+          lastProgress: update.progressPercent / 100,
+          timeSpent: update.timeSpent,
+          isCompleted: update.completed,
+          lastAccessedAt: update.lastAccessedAt,
+        }
       })
     }
 
@@ -182,12 +190,14 @@ class ProgressWorker {
     }
 
     for (const [key, quizEvents] of quizGroups.entries()) {
-      const [userId, quizId] = key.split(':')
-      await this.processQuizGroup(userId, Number(quizId), quizEvents)
+      const [userId, courseIdStr, chapterIdStr] = key.split(':')
+      const courseId = Number(courseIdStr)
+      const chapterId = Number(chapterIdStr)
+      await this.processQuizGroup(userId, courseId, chapterId, quizEvents)
     }
   }
 
-  private async processQuizGroup(userId: string, quizId: number, events: Event[]) {
+  private async processQuizGroup(userId: string, courseId: number, chapterId: number, events: Event[]) {
     const latestEvent = events.reduce((latest, current) =>
       new Date(current.timestamp).getTime() > new Date(latest.timestamp).getTime()
         ? current
@@ -195,24 +205,24 @@ class ProgressWorker {
     )
 
     const totalTimeSpent = events.reduce((sum, e) => sum + (e.timeSpent || 0), 0)
-
+    // Upsert into QuizProgress: schema uses userId + courseId + chapterId unique key
     await this.prisma.quizProgress.upsert({
-      where: { userId_quizId: { userId, quizId } },
+      where: { userId_courseId_chapterId: { userId, courseId, chapterId } },
       update: {
-        progress: latestEvent.progress,
+        // map event.progress to currentQuestionIndex (index or percentage depending on producer)
+        currentQuestionIndex: typeof latestEvent.progress === 'number' ? latestEvent.progress : undefined,
         timeSpent: { increment: totalTimeSpent },
-        completed: latestEvent.eventType === 'quiz_complete',
-        lastAttemptAt: new Date(latestEvent.timestamp),
-        metadata: latestEvent.metadata || {}
+        isCompleted: latestEvent.eventType === 'quiz_complete',
+        lastUpdated: new Date(latestEvent.timestamp),
       },
       create: {
         userId,
-        quizId,
-        progress: latestEvent.progress,
+        courseId,
+        chapterId,
+        currentQuestionIndex: typeof latestEvent.progress === 'number' ? latestEvent.progress : 0,
         timeSpent: totalTimeSpent,
-        completed: latestEvent.eventType === 'quiz_complete',
-        lastAttemptAt: new Date(latestEvent.timestamp),
-        metadata: latestEvent.metadata || {}
+        isCompleted: latestEvent.eventType === 'quiz_complete',
+        lastUpdated: new Date(latestEvent.timestamp),
       }
     })
   }
@@ -237,30 +247,35 @@ class ProgressWorker {
         where: { unit: { courseId } }
       })
 
-      const completedChapters = allChapterProgress.filter(cp => cp.completed).length
+      const completedChapters = allChapterProgress.filter(cp => cp.isCompleted).length
       const totalTimeSpent = allChapterProgress.reduce((sum, cp) => sum + cp.timeSpent, 0)
       const avgProgress =
         totalChapters > 0
-          ? allChapterProgress.reduce((sum, cp) => sum + cp.progress, 0) / totalChapters
+          ? allChapterProgress.reduce((sum, cp) => sum + (cp.lastProgress || 0), 0) / totalChapters
           : 0
 
       await this.prisma.courseProgress.upsert({
-        where: { userId_courseId: { userId, courseId } },
+        where: { unique_user_course_progress: { userId, courseId } },
         update: {
-          progress: Math.round(avgProgress),
-          completedChapters,
-          totalTimeSpent,
+          // progress: store as fraction 0..1
+          progress: avgProgress,
+          // total time in seconds
+          timeSpent: totalTimeSpent,
+          // embed completed chapter ids in chapterProgress JSON
+          chapterProgress: { completedChapters: allChapterProgress.filter(cp => cp.isCompleted).map(cp => cp.chapterId) },
           lastAccessedAt: new Date(),
-          completed: completedChapters === totalChapters && totalChapters > 0
+          // isCompleted boolean flag
+          isCompleted: completedChapters === totalChapters && totalChapters > 0
         },
         create: {
           userId,
           courseId,
-          progress: Math.round(avgProgress),
-          completedChapters,
-          totalTimeSpent,
+          progress: avgProgress,
+          timeSpent: totalTimeSpent,
+          chapterProgress: { completedChapters: allChapterProgress.filter(cp => cp.isCompleted).map(cp => cp.chapterId) },
+          currentChapterId: allChapterProgress[0]?.chapterId || 1,
           lastAccessedAt: new Date(),
-          completed: completedChapters === totalChapters && totalChapters > 0
+          isCompleted: completedChapters === totalChapters && totalChapters > 0
         }
       })
     }
@@ -275,9 +290,9 @@ class ProgressWorker {
 
     const deletedCount = await this.prisma.chapterProgress.deleteMany({
       where: {
-        lastWatchedAt: { lt: cutoffDate },
-        completed: false,
-        progress: 0
+        lastAccessedAt: { lt: cutoffDate },
+        isCompleted: false,
+        lastProgress: 0
       }
     })
 

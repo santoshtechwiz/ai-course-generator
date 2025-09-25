@@ -29,7 +29,9 @@ import { NoResults } from "@/components/ui/no-results"
 import { QuizType } from "@/app/types/quiz-types"
 import { resetQuiz } from "@/store/slices/quiz"
 import { useAuth } from "@/modules/auth"
+
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
+import CertificateGenerator from "@/app/dashboard/course/[slug]/components/CertificateGenerator"
 
 // Import existing result components
 import BlankQuizResults from "../blanks/components/BlankQuizResults"
@@ -93,6 +95,8 @@ export default function ImprovedQuizResult({ result, slug, quizType = "mcq", onR
   const dispatch = useDispatch<AppDispatch>()
   const [showDetails, setShowDetails] = useState(false)
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth()
+  const { user, subscription } = useAuth()
+  const hasActiveSubscription = subscription?.status !== null
 
   const handleRetake = () => {
     dispatch(resetQuiz())
@@ -203,14 +207,14 @@ export default function ImprovedQuizResult({ result, slug, quizType = "mcq", onR
   const IconComponent = config.icon
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Header Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="border-none shadow-lg bg-gradient-to-br from-background to-muted/30">
+        <Card className="border-none shadow-lg bg-gradient-to-br from-background to-muted/30 overflow-hidden">
           <CardHeader className="text-center pb-4">
             <motion.div
               initial={{ scale: 0 }}
@@ -223,11 +227,11 @@ export default function ImprovedQuizResult({ result, slug, quizType = "mcq", onR
               </div>
             </motion.div>
             
-            <CardTitle className="text-2xl md:text-3xl font-bold text-foreground">
+            <CardTitle className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground px-2">
               {getEnhancedTitle(result, slug, quizType)}
             </CardTitle>
-            
-            <Badge variant="secondary" className="mt-2 text-sm font-medium">
+
+            <Badge variant="secondary" className="mt-2 text-xs sm:text-sm font-medium px-3 py-1">
               {formatQuizType(quizType)} Quiz Results
             </Badge>
           </CardHeader>
@@ -241,90 +245,59 @@ export default function ImprovedQuizResult({ result, slug, quizType = "mcq", onR
                 transition={{ delay: 0.4, type: "spring", stiffness: 150 }}
                 className="relative"
               >
-                <div className="text-5xl md:text-6xl font-bold text-foreground">
+                <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground">
                   {Math.round(metrics.percentage)}%
                 </div>
-                <Badge 
+                <Badge
                   variant={metrics.performanceLevel === 'excellent' ? 'default' : 'secondary'}
-                  className="mt-2"
+                  className="mt-2 text-sm"
                 >
                   {config.badge}
                 </Badge>
               </motion.div>
 
-              <Progress 
-                value={metrics.percentage} 
-                className="w-full h-3 bg-muted"
+              <Progress
+                value={metrics.percentage}
+                className="w-full h-2 sm:h-3 bg-muted mx-auto max-w-xs"
               />
 
-              <p className="text-muted-foreground text-sm md:text-base max-w-md mx-auto">
+              <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto px-2">
                 {config.message}
               </p>
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="text-center p-2 sm:p-3 bg-muted/50 rounded-lg">
+                <div className="text-xl sm:text-2xl font-bold text-foreground">
                   {metrics.correctAnswers}
                 </div>
-                <div className="text-sm text-muted-foreground">Correct</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Correct</div>
               </div>
-              
-              <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">
+
+              <div className="text-center p-2 sm:p-3 bg-muted/50 rounded-lg">
+                <div className="text-xl sm:text-2xl font-bold text-foreground">
                   {metrics.totalQuestions}
                 </div>
-                <div className="text-sm text-muted-foreground">Total</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Total</div>
               </div>
 
               {metrics.timeSpent && (
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-foreground">
+                <div className="text-center p-2 sm:p-3 bg-muted/50 rounded-lg">
+                  <div className="text-lg sm:text-xl font-bold text-foreground">
                     {formatTime(metrics.timeSpent)}
                   </div>
-                  <div className="text-sm text-muted-foreground">Time</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">Time</div>
                 </div>
               )}
 
-              <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">
+              <div className="text-center p-2 sm:p-3 bg-muted/50 rounded-lg">
+                <div className="text-lg sm:text-xl font-bold text-foreground">
                   {Math.round(metrics.accuracy)}%
                 </div>
-                <div className="text-sm text-muted-foreground">Accuracy</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Accuracy</div>
               </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-wrap gap-3 justify-center">
-              <Button 
-                onClick={onRetake || handleRetake}
-                size="lg"
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Retake Quiz
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                onClick={handleShare}
-                size="lg"
-                className="flex items-center gap-2"
-              >
-                <Share2 className="w-4 h-4" />
-                Share Results
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => setShowDetails(!showDetails)}
-                size="lg"
-                className="flex items-center gap-2"
-              >
-                {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                {showDetails ? 'Hide' : 'Show'} Details
-              </Button>
             </div>
           </CardContent>
         </Card>

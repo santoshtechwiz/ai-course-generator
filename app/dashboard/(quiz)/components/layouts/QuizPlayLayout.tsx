@@ -41,7 +41,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Sparkles, Wand2 } from "lucide-react"
 import RecommendedSection from "@/components/shared/RecommendedSection"
 import { cn } from "@/lib/utils"
-import { useSession } from "next-auth/react"
+import { useAuth } from "@/modules/auth"
 import { useSessionSubscriptionSync } from "@/hooks/useSessionSubscriptionSync"
 
 // Removed force-dynamic; let Next.js infer rendering strategy
@@ -293,13 +293,24 @@ export default function QuizPlayLayout({
   const mainRef = useRef<HTMLDivElement>(null)
 
   // Session and subscription management
-  const { data: session } = useSession()
+ 
+  const { user: authUser } = useAuth()
   const { subscription } = useSessionSubscriptionSync()
 
   // Determine ownership and subscription status
   const isOwner = useMemo((): boolean => {
-    return Boolean(session?.user?.id && quizData?.userId === session.user.id)
-  }, [session?.user?.id, quizData?.userId])
+    const sessionUserId = authUser?.id
+    const quizUserId = quizData?.userId
+    const owner = Boolean(sessionUserId && quizUserId && String(sessionUserId) === String(quizUserId))
+    console.log('QuizPlayLayout ownership check:', {
+      sessionUserId,
+      quizUserId,
+      sessionUserIdType: typeof sessionUserId,
+      quizUserIdType: typeof quizUserId,
+      isOwner: owner
+    })
+    return owner
+  }, [authUser?.id, quizData?.userId])
 
   const isSubscribed = useMemo(() => {
     return subscription?.isSubscribed === true
@@ -374,6 +385,12 @@ export default function QuizPlayLayout({
 
   const QuizTypeIcon = quizTypeIcons[quizType] || Award
   const progress = useMemo(() => Math.min(100, Math.max(0, Math.round((questionNumber / totalQuestions) * 100))), [questionNumber, totalQuestions])
+  // Hide heavy sidebar actions on result/review pages to avoid duplicate CTAs
+  const hideSidebarActions = useMemo(() => {
+    if (!pathname) return false
+    const p = pathname.toLowerCase()
+    return p.includes('/results') || p.includes('/review') || p.includes('/result')
+  }, [pathname])
   
   const header = useMemo(() => {
     const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
@@ -662,25 +679,27 @@ export default function QuizPlayLayout({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <Suspense fallback={<QuizSkeleton />}>
-                      <QuizActions 
-                        quizId={quizId || ""}
-                        quizSlug={quizSlug}
-                        quizType={quizType}
-                        title={quizData?.title || "Quiz"}
-                        isPublic={localIsPublic}
-                        isFavorite={localIsFavorite}
-                        canEdit={isOwner}
-                        canDelete={isOwner}
-                        showPdfGeneration={true}
-                        variant="compact"
-                        userId={session?.user?.id}
-                        onVisibilityChange={handleVisibilityChange}
-                        onFavoriteChange={handleFavoriteChange}
-                        onDelete={handleDelete}
-                        className="w-full" 
-                      />
-                    </Suspense>
+                    {!hideSidebarActions && (
+                      <Suspense fallback={<QuizSkeleton />}>
+                        <QuizActions 
+                          quizId={quizId || ""}
+                          quizSlug={quizSlug}
+                          quizType={quizType}
+                          title={quizData?.title || "Quiz"}
+                          isPublic={localIsPublic}
+                          isFavorite={localIsFavorite}
+                          canEdit={isOwner}
+                          canDelete={isOwner}
+                          showPdfGeneration={true}
+                          variant="compact"
+                          userId={authUser?.id}
+                          onVisibilityChange={handleVisibilityChange}
+                          onFavoriteChange={handleFavoriteChange}
+                          onDelete={handleDelete}
+                          className="w-full" 
+                        />
+                      </Suspense>
+                    )}
                   </motion.div>
 
                   <motion.div 
@@ -805,7 +824,7 @@ export default function QuizPlayLayout({
                     canDelete={isOwner}
                     showPdfGeneration={true}
                     variant="compact"
-                    userId={session?.user?.id}
+                    userId={authUser?.id}
                     onVisibilityChange={handleVisibilityChange}
                     onFavoriteChange={handleFavoriteChange}
                     onDelete={handleDelete}
