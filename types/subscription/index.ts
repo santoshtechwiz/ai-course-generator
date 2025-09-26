@@ -24,6 +24,8 @@ export interface SubscriptionData {
   tokensUsed: number
   isSubscribed: boolean
   subscriptionPlan: string
+  // compatibility alias - some session objects use `plan` while backend uses `subscriptionPlan`
+  plan?: string
   expirationDate: string | null
   status: SubscriptionStatusType
   cancelAtPeriodEnd: boolean
@@ -46,7 +48,8 @@ export interface SubscriptionState {
 }
 
 export type SubscriptionStatusType = 'ACTIVE' | 'INACTIVE' | 'CANCELLED' | 'TRIAL'
-export type SubscriptionPlanType = 'FREE' | 'PRO' | 'ENTERPRISE' | 'CUSTOM'
+// Canonical plan identifiers used throughout the application
+export type SubscriptionPlanType = 'FREE' | 'BASIC' | 'PREMIUM' | 'ULTIMATE'
 
 // Subscription service types
 export interface SubscriptionService {

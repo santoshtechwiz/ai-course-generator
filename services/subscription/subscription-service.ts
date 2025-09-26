@@ -314,4 +314,38 @@ export class SubscriptionService {
       throw error
     }
   }
+
+  /**
+   * Verify payment success for a given session/payment id
+   * Returns a normalized object with important subscription details
+   */
+  static async verifyPaymentSuccess(userId: string, sessionId: string): Promise<any> {
+    try {
+      const response = await fetch(this.getUrl(`/verify-payment`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, sessionId }),
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to verify payment')
+      }
+
+      const data = await response.json()
+
+      // Normalize response to expected shape used by callers
+      // Allowed fields: planId, credits, currentPeriodEnd, status, ...
+      return {
+        planId: data?.planId || data?.subscriptionPlan || data?.plan || null,
+        credits: typeof data?.credits === 'number' ? data.credits : (data?.addedCredits ?? 0),
+        currentPeriodEnd: data?.currentPeriodEnd || data?.nextBillingDate || null,
+        status: data?.status || 'ACTIVE',
+        raw: data,
+      }
+    } catch (error: any) {
+      logger.error(`Error verifying payment for user ${SecurityService.maskSensitiveString(userId)}:`, SecurityService.sanitizeError(error))
+      return null
+    }
+  }
 }

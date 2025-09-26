@@ -42,25 +42,31 @@ export function useSubscription() {
   const cacheStatus = useAppSelector(selectSubscriptionCacheStatus)
   
   // Memoized subscription object that combines session and Redux data
+  // Helper: pick canonical plan string from session or redux subscription
+  const canonicalPlan = useMemo(() => {
+    const p = sessionSubscription?.plan || subscriptionData?.subscriptionPlan || subscriptionData?.plan || 'FREE'
+    return (String(p || 'FREE').toUpperCase()) as SubscriptionPlanType
+  }, [sessionSubscription, subscriptionData])
+
   const subscription = useMemo(() => ({
     // Primary data from session (real-time)
-    plan: sessionSubscription?.plan || 'FREE',
-    status: sessionSubscription?.status || 'INACTIVE',
-    isActive: sessionSubscription?.isActive || false,
-    credits: sessionSubscription?.credits || user?.credits || 0,
+    plan: canonicalPlan,
+    status: sessionSubscription?.status || subscriptionData?.status || 'INACTIVE',
+    isActive: Boolean(sessionSubscription?.isActive ?? (subscriptionData?.isSubscribed ?? false)),
+    credits: sessionSubscription?.credits ?? subscriptionData?.credits ?? user?.credits ?? 0,
     
     // Enhanced data - prefer Redux subscription data over user session data for accuracy
-    tokensUsed: subscriptionData?.tokensUsed || user?.creditsUsed || 0,
+    tokensUsed: subscriptionData?.tokensUsed ?? user?.creditsUsed ?? 0,
     subscriptionId: subscriptionData?.subscriptionId || '',
     cancelAtPeriodEnd: subscriptionData?.cancelAtPeriodEnd || false,
     currentPeriodEnd: subscriptionData?.expirationDate || null,
     
     // Calculated properties
-    isSubscribed: sessionSubscription?.isActive || false,
-    isFree: (sessionSubscription?.plan || 'FREE') === 'FREE',
-    isPro: (sessionSubscription?.plan || 'FREE') === 'PRO',
-    isEnterprise: (sessionSubscription?.plan || 'FREE') === 'ENTERPRISE',
-  }), [sessionSubscription, user, subscriptionData])
+    isSubscribed: Boolean(sessionSubscription?.isActive ?? subscriptionData?.isSubscribed ?? false),
+    isFree: canonicalPlan === 'FREE',
+    isPro: canonicalPlan === 'BASIC' || canonicalPlan === 'PREMIUM',
+    isEnterprise: canonicalPlan === 'ULTIMATE',
+  }), [canonicalPlan, sessionSubscription, user, subscriptionData])
 
   // Effective credit calculation that merges session user and redux subscription
   const effectiveCreditInfo = useMemo(() => {

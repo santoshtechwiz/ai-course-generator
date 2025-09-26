@@ -7,7 +7,8 @@ import { ApiResponse } from './api-types'
 /**
  * Subscription plans and statuses
  */
-export type SubscriptionPlanType = 'FREE' | 'PRO' | 'ENTERPRISE' | 'CUSTOM'
+// Keep the canonical plan ids in sync with UI and plan configuration
+export type SubscriptionPlanType = 'FREE' | 'BASIC' | 'PREMIUM' | 'ULTIMATE'
 export type SubscriptionStatusType = 'ACTIVE' | 'INACTIVE' | 'CANCELLED' | 'TRIAL'
 
 /**
@@ -32,6 +33,8 @@ export interface SubscriptionData {
   tokensUsed: number
   isSubscribed: boolean
   subscriptionPlan: SubscriptionPlanType
+  // alias for compatibility with session/user objects that use `plan`
+  plan?: SubscriptionPlanType
   expirationDate: string | null
   status: SubscriptionStatusType
   cancelAtPeriodEnd: boolean
