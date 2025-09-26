@@ -1,5 +1,3 @@
-"use client"
-
 /**
  * Enhanced SEO Components with Google Schema compliance
  * Maintains existing API while adding comprehensive functionality
