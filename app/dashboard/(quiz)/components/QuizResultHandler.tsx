@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDispatch, useSelector } from 'react-redux'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -132,6 +132,9 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isRedirecting, setIsRedirecting] = useState<boolean>(false)
   
+  // Ref to prevent multiple temp result loads
+  const tempResultsLoadedRef = useRef(false)
+  
   // Initialize the state machine
   const [state, send] = useMachine(quizResultMachine);
   
@@ -164,11 +167,12 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
   // Optimized effect for loading results
   useEffect(() => {
-    if (!slug || isAuthLoading) return
+    if (!slug || isAuthLoading || tempResultsLoadedRef.current) return
 
     // First, check for temporary results from unauthenticated submission
     const tempResults = storageManager.getTempQuizResults(slug, quizType)
     if (tempResults) {
+      tempResultsLoadedRef.current = true
       if (isAuthenticated) {
         console.log('Found temporary results, loading and saving to DB...')
         dispatch(loadTempResultsAndSave({ slug, quizType }))

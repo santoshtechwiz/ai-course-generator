@@ -116,10 +116,10 @@ export function PricingPage({
       }
 
       // Call subscription API directly
-      const response = await fetch('/api/subscription/subscribe', {
+      const response = await fetch('/api/subscriptions/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planName, duration, ...promoArgs })
+        body: JSON.stringify({ planId: planName, duration, ...promoArgs })
       });
       const result = await response.json();
       

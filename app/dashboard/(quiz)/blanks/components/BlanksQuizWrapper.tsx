@@ -127,21 +127,20 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   // Submit quiz and navigate to results
   const handleSubmitQuiz = useCallback(async () => {
     try {
-      await dispatch(submitQuiz()).unwrap()
-      toast.success("Quiz submitted successfully!")
+      const result = await dispatch(submitQuiz()).unwrap()
+      if ('requiresAuth' in result && result.requiresAuth) {
+        toast.info("Sign in to save your results!")
+      } else {
+        toast.success("Quiz submitted successfully!")
+      }
       router.push(`/dashboard/blanks/${slug}/results`)
     } catch (err: any) {
-      // Check if it's an authentication error
-      if (err?.requiresAuth) {
-        // Authentication required, redirect will be handled by useEffect
-        return
-      }
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
     } finally {
   // No global loader; rely on page state
     }
-  }, [dispatch, slug, router, user?.id])
+  }, [dispatch, slug, router])
 
   // Loading & error states
   const isLoading = quizStatus === "loading" || quizStatus === "idle"

@@ -5,6 +5,7 @@ import { z } from "zod"
 import { prisma } from "@/lib/db"
 import { authOptions } from "@/lib/auth"
 import { SubscriptionService } from "@/services/subscription/subscription-service"
+import StripeGateway from "@/app/dashboard/subscription/services/stripe-gateway"
 
 // Define validation schema for request body with improved type checking
 const subscriptionSchema = z.object({
@@ -177,7 +178,8 @@ export async function POST(req: NextRequest) {
 
     // Create checkout session
     try {
-      const result = await SubscriptionService.createCheckoutSession(
+      const stripeGateway = new StripeGateway()
+      const result = await stripeGateway.createCheckoutSession(
         userId,
         validatedData.planId,
         validatedData.duration,

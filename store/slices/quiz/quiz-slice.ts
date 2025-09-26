@@ -483,15 +483,7 @@ export const submitQuiz = createAsyncThunk(
       })
 
       if (!response.ok) {
-        let errorData: any = {}
-        try {
-          errorData = await response.json()
-        } catch (parseError) {
-          console.warn('Failed to parse error response:', parseError)
-        }
-        console.error('Quiz submission failed:', errorData)
-        
-        // Check for authentication errors
+        // Check for authentication errors first, before parsing body
         if (response.status === 401 || response.status === 403) {
           // User not authenticated, save results temporarily and return results for local display
           storageManager.saveTempQuizResults(slug!, quizType!, quizResults, answers)
@@ -505,8 +497,16 @@ export const submitQuiz = createAsyncThunk(
             __lastUpdated: Date.now(),
           }
         }
+
+        let errorData: any = {}
+        try {
+          errorData = await response.json()
+        } catch (parseError) {
+          console.warn('Failed to parse error response:', parseError)
+        }
+        console.error('Quiz submission failed:', response.status, response.statusText, errorData)
         
-        throw new Error(errorData?.error || 'Failed to submit quiz')
+        throw new Error(Object.keys(errorData).length > 0 ? errorData?.error || 'Failed to submit quiz' : `HTTP ${response.status}: ${response.statusText}`)
       }
 
       const responseData = await response.json()

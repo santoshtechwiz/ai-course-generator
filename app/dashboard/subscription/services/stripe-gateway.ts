@@ -762,9 +762,26 @@ export class StripeGateway implements PaymentGateway {
 
       // Check if user already has a Stripe customer ID
       if (user.subscription?.stripeCustomerId) {
-        // Cache the customer ID
-        customerCache.set(user.id, user.subscription.stripeCustomerId)
-        return user.subscription.stripeCustomerId
+        try {
+          // Verify the customer still exists in Stripe (handles environment mismatches)
+          await stripe.customers.retrieve(user.subscription.stripeCustomerId)
+          // Cache the customer ID if verification succeeds
+          customerCache.set(user.id, user.subscription.stripeCustomerId)
+          return user.subscription.stripeCustomerId
+        } catch (error: any) {
+          // Customer doesn't exist in current Stripe environment (e.g., test vs live mode mismatch)
+          if (error.code === 'resource_missing' || error.message.includes('No such customer')) {
+            logger.warn(`Customer ${user.subscription.stripeCustomerId} not found in current Stripe environment, creating new customer for user ${user.id}`)
+            // Clear the invalid customer ID so a new one gets created below
+            await prisma.userSubscription.update({
+              where: { userId: user.id },
+              data: { stripeCustomerId: null },
+            })
+          } else {
+            // Re-throw other errors
+            throw error
+          }
+        }
       }
 
       // Validate required user fields

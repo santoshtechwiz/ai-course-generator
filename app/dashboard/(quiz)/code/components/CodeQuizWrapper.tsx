@@ -150,25 +150,18 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const handleSubmitQuiz = useCallback(async () => {
     try {
       const result = await dispatch(submitQuiz()).unwrap()
-      toast.success("Quiz submitted successfully!")
+      if ('requiresAuth' in result && result.requiresAuth) {
+        toast.info("Please sign in to save your results permanently")
+      } else {
+        toast.success("Quiz submitted successfully!")
+      }
 
       setTimeout(() => {
         router.push(`/dashboard/code/${slug}/results`)
       }, 500)
     } catch (err: any) {
       console.error("Error submitting quiz:", err)
-      
-      // Check if this is an authentication error (temp results saved)
-      if (err?.requiresAuth) {
-        console.log('Quiz submission requires authentication, navigating to results with sign-in prompt')
-        toast.info("Please sign in to save your results permanently")
-        
-        setTimeout(() => {
-          router.push(`/dashboard/code/${slug}/results`)
-        }, 500)
-      } else {
-        toast.error("Failed to submit quiz. Please try again.")
-      }
+      toast.error("Failed to submit quiz. Please try again.")
     }
   }, [dispatch, router, slug])
 

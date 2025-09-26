@@ -11,7 +11,7 @@ import type {
   FAQItem,
   SubscriptionPlan,
   FeatureAvailability,
-} from "@/app/types/subscription"
+} from "@/types/subscription"
 import { CreditCard, Zap, Rocket, Crown } from "lucide-react"
 
 // First, let's examine the current structure of features in the subscription plans
@@ -145,7 +145,7 @@ export const PLAN_FEATURES: Record<string, Record<string, { available: boolean }
     [FEATURES.AI_ACCURACY.id]: { available: false },
     [FEATURES.PRIORITY_SUPPORT.id]: { available: false },
   },
-  PRO: {
+  PREMIUM: {
     [FEATURES.COURSE_CREATION.id]: { available: true },
     [FEATURES.MCQ_GENERATOR.id]: { available: true },
     [FEATURES.FILL_BLANKS.id]: { available: true },

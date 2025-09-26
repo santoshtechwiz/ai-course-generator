@@ -3,8 +3,7 @@ import type {
   SubscriptionData,
   SubscriptionPlanType,
   SubscriptionStatusType,
-  SubscriptionResult,
-} from "@/app/types/subscription"
+} from "@/types/subscription"
 
 /**
  * Safely parses subscription data from storage
@@ -121,14 +120,9 @@ export function validateSubscriptionPlan(plan: any): SubscriptionPlanType {
 export function validateSubscriptionStatus(status: any): SubscriptionStatusType {
   const validStatuses: SubscriptionStatusType[] = [
     "ACTIVE",
-    "CANCELED",
-    "PAST_DUE",
-    "UNPAID",
-    "TRIAL",
-    "NONE",
     "INACTIVE",
-    "EXPIRED",
-    "PENDING",
+    "CANCELLED",
+    "TRIAL",
   ]
 
   if (typeof status === "string" && validStatuses.includes(status.toUpperCase() as SubscriptionStatusType)) {
@@ -193,34 +187,6 @@ export function isExpiringSoon(expirationDate: string | Date | null | undefined)
 }
 
 /**
- * Creates a default subscription result for error cases
- * @param message Error message
- * @param error Error type
- * @returns Subscription result
- */
-export function createErrorResult(message: string, error?: string): SubscriptionResult {
-  return {
-    success: false,
-    message,
-    error,
-  }
-}
-
-/**
- * Creates a success subscription result
- * @param message Success message
- * @param data Additional data
- * @returns Subscription result
- */
-export function createSuccessResult(message: string, data?: Partial<SubscriptionResult>): SubscriptionResult {
-  return {
-    success: true,
-    message,
-    ...data,
-  }
-}
-
-/**
  * Determines if a user can change from one plan to another
  * @param currentPlan Current subscription plan
  * @param targetPlan Target subscription plan
@@ -248,7 +214,7 @@ export function canChangePlan(
   const planHierarchy: Record<SubscriptionPlanType, number> = {
     FREE: 0,
     BASIC: 1,
-    PRO: 2,
+    PREMIUM: 2,
     ULTIMATE: 3,
   }
 

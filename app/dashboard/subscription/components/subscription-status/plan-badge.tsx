@@ -1,4 +1,4 @@
-import type { SubscriptionPlanType } from "@/app/types/subscription"
+import type { SubscriptionPlanType } from "@/types/subscription"
 import { Badge } from "@/components/ui/badge"
 
 interface PlanBadgeProps {

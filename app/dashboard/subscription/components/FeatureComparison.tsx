@@ -6,7 +6,7 @@ import { useMemo } from "react"
 import { Check, X, HelpCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { FEATURES, PLAN_FEATURES, FeatureCategory } from "./subscription-plans"
-import type { SubscriptionPlanType } from "../../../types/subscription"
+import type { SubscriptionPlanType } from "@/types/subscription"
 import { useAuth } from "@/modules/auth"
 
 /**
@@ -120,10 +120,8 @@ export function FeatureComparison() {
       const availability: Record<SubscriptionPlanType, boolean> = {
         FREE: PLAN_FEATURES.FREE[feature.id]?.available || false,
         BASIC: PLAN_FEATURES.BASIC[feature.id]?.available || false,
-        PRO: PLAN_FEATURES.PRO[feature.id]?.available || false,
+        PREMIUM: PLAN_FEATURES.PREMIUM[feature.id]?.available || false,
         ULTIMATE: PLAN_FEATURES.ULTIMATE[feature.id]?.available || false,
-        PREMIUM: PLAN_FEATURES.PREMIUM?.[feature.id]?.available || false,
-        ENTERPRISE: PLAN_FEATURES.ENTERPRISE?.[feature.id]?.available || false,
       }
 
       const featureWithAvailability = {
@@ -197,7 +195,7 @@ export function FeatureComparison() {
                       )}
                     </td>
                     <td className="text-center p-2">
-                      {feature.availability.PRO ? (
+                      {feature.availability.PREMIUM ? (
                         <Check className="h-4 w-4 text-green-500 mx-auto" />
                       ) : (
                         <X className="h-4 w-4 text-muted-foreground mx-auto" />

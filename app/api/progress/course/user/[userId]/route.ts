@@ -109,10 +109,10 @@ export async function GET(
         currentChapterId: courseProgress.currentChapterId,
         currentChapterTitle: currentChapter?.title,
         lastAccessedAt: courseProgress.lastAccessedAt?.toISOString(),
-        timeSpent: courseProgress.timeSpent || 0,
+        timeSpent: courseProgress.timeSpent ?? 0,
         isCompleted: progressPercentage === 100,
         lastPositions: Object.fromEntries(
-          chapterProgress.map((cp: any) => [cp.chapterId, cp.lastProgress])
+          chapterProgress.map((cp: any) => [cp.chapterId, cp.lastProgress.toNumber()])
         ), // Add last positions for progress indication
       }
 
