@@ -435,12 +435,12 @@ export default function FlashCardQuiz({
 
   return (
     <motion.div
-      className="w-full h-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8"
+      className="w-full h-full max-w-4xl mx-auto px-3 sm:px-4 lg:px-6"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
-      <div className="space-y-6 sm:space-y-8">
+      <div className="space-y-4 sm:space-y-6 lg:space-y-8">
         {/* Header */}
         <motion.div
           className="text-center space-y-6"
@@ -539,11 +539,11 @@ export default function FlashCardQuiz({
           <motion.div
             key={`card-${currentQuestionIndex}`}
             drag="x"
-            dragConstraints={{ left: -50, right: 50 }}
-            dragElastic={0.2}
+            dragConstraints={{ left: -100, right: 100 }} // Increased for better touch
+            dragElastic={0.3} // More elastic for touch
             onDragEnd={handleDragEnd}
             animate={cardControls}
-            className="w-full cursor-grab active:cursor-grabbing"
+            className="w-full cursor-grab active:cursor-grabbing touch-manipulation" // Better touch handling
             ref={cardRef}
             whileHover={{
               y: -8,

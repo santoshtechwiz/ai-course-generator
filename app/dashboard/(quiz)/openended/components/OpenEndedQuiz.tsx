@@ -211,7 +211,7 @@ export default function OpenEndedQuiz({
         initial="hidden"
         animate="visible"
         exit="exit"
-        className="w-full h-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8"
+        className="w-full h-full max-w-4xl mx-auto px-3 sm:px-4 lg:px-6"
       >
         <div className="w-full h-full space-y-6 sm:space-y-8">
           {/* Question Display */}
@@ -283,14 +283,18 @@ export default function OpenEndedQuiz({
               onKeyDown={handleKeyDown}
               placeholder="Share your understanding and reasoning..."
               className={cn(
-                "w-full min-h-[140px] resize-y transition-all border-2 bg-background text-base",
-                "focus:outline-none focus:ring-0 p-4 rounded-lg",
+                "w-full min-h-[120px] sm:min-h-[140px] resize-y transition-all border-2 bg-background text-base sm:text-lg",
+                "focus:outline-none focus:ring-0 p-4 sm:p-6 rounded-lg", // Larger padding on mobile
+                "min-h-[3rem]", // Ensure minimum touch target when focused
                 isAnswered
                   ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300"
                   : showValidation
                     ? "border-red-500 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300"
                     : "border-gray-300 hover:border-violet-400 focus:border-violet-500 focus:shadow-violet-200/30",
               )}
+              inputMode="text" // Better mobile keyboard
+              autoCapitalize="sentences"
+              autoComplete="off"
               autoFocus
               aria-label="Enter your detailed answer"
             />

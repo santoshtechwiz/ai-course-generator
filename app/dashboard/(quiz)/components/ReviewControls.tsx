@@ -80,7 +80,7 @@ export function ReviewControls({
               variant={showAllQuestions ? "default" : "outline"}
               size="sm"
               onClick={() => setShowAllQuestions(!showAllQuestions)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 min-h-[44px]"
             >
               {showAllQuestions ? (
                 <>
@@ -124,7 +124,7 @@ export function ReviewControls({
                 setSearchQuery("")
                 setFilterType("all")
               }}
-              className="text-xs h-6 px-2"
+              className="text-xs h-6 px-2 min-h-[44px]"
             >
               Clear all
             </Button>

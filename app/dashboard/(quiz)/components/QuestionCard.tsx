@@ -116,17 +116,34 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
                 <div>Code</div>
                 <div className="font-mono opacity-80">{question.language || 'javascript'}</div>
               </div>
-              <div className="max-h-96 overflow-auto">
+              <div className="max-h-96 overflow-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800">
                 <SyntaxHighlighter
                   language={(question.language || 'javascript').toLowerCase()}
                   style={vs}
+                  showLineNumbers={false}
+                  wrapLines={true}
+                  wrapLongLines={true}
                   customStyle={{
                     margin: 0,
                     borderRadius: 0,
                     background: 'transparent',
-                    fontSize: '0.85rem',
+                    fontSize: '0.875rem',
+                    lineHeight: '1.5',
+                    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata, "Roboto Mono", "Source Code Pro", monospace',
+                    wordBreak: 'break-all',
+                    whiteSpace: 'pre-wrap',
+                    overflowWrap: 'break-word',
                   }}
-                  wrapLongLines
+                  codeTagProps={{
+                    style: {
+                      fontSize: 'inherit',
+                      fontFamily: 'inherit',
+                      lineHeight: 'inherit',
+                      wordBreak: 'break-all',
+                      whiteSpace: 'pre-wrap',
+                      overflowWrap: 'break-word',
+                    }
+                  }}
                 >
                   {question.codeSnippet}
                 </SyntaxHighlighter>

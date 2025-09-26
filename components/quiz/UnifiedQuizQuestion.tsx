@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 
 import SyntaxHighlighter from "react-syntax-highlighter";
-import vs from "react-syntax-highlighter/dist/styles/vs";
+import atomOneDark from "react-syntax-highlighter/dist/styles/atom-one-dark";
 
 import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
 import { generateBlanksHints, generateOpenEndedHints } from "@/lib/utils/hint-system"
@@ -288,7 +288,7 @@ export function UnifiedQuizQuestion({
     }))
 
     return (
-      <div className="w-full max-w-4xl mx-auto">
+      <div className="w-full max-w-4xl mx-auto px-2 sm:px-4">
         <div
           className="space-y-3 sm:space-y-4"
           role="radiogroup"
@@ -342,10 +342,12 @@ export function UnifiedQuizQuestion({
                   <label
                     htmlFor={`option-${option.id}`}
                     className={cn(
-                      "relative flex items-center gap-4 sm:gap-5 lg:gap-6 p-3 sm:p-4 lg:p-5 w-full rounded-2xl cursor-pointer transition-all duration-500 overflow-hidden",
+                      "relative flex items-center gap-3 sm:gap-4 lg:gap-6 p-2 sm:p-3 lg:p-5 w-full rounded-2xl cursor-pointer transition-all duration-500",
                       "bg-gradient-to-br from-card/90 via-card/95 to-card/90 backdrop-blur-xl border border-border/50",
                       "min-h-[3rem] sm:min-h-[3.5rem] lg:min-h-[4rem]",
                       "shadow-lg hover:shadow-2xl",
+                      "active:scale-95 transition-transform", // Add touch feedback
+                      "focus:outline-none focus:ring-2 focus:ring-primary/20", // Better focus states
                       isSelected
                         ? "border-primary/60 bg-gradient-to-br from-primary/8 via-primary/5 to-primary/8 shadow-2xl shadow-primary/20"
                         : isHovered || isFocused
@@ -412,7 +414,7 @@ export function UnifiedQuizQuestion({
 
                     {/* Enhanced text content */}
                     <div
-                      className="relative flex-1 text-sm sm:text-base md:text-lg lg:text-xl font-medium leading-relaxed min-w-0 text-foreground group-hover:text-primary transition-all duration-300 z-10"
+                      className="relative flex-1 text-sm sm:text-base font-medium leading-relaxed min-w-0 text-foreground group-hover:text-primary transition-all duration-300 z-10 break-words"
                       id={`option-description-${option.id}`}
                     >
                       <span className="relative">
@@ -519,7 +521,7 @@ export function UnifiedQuizQuestion({
                   {part}
                   {index < array.length - 1 && (
                     <Input
-                      className="inline-block w-32 mx-2 text-center border-2 border-dashed border-primary/50 focus:border-primary"
+                      className="inline-block w-20 sm:w-24 md:w-32 mx-1 sm:mx-2 text-center border-2 border-dashed border-primary/50 focus:border-primary"
                       placeholder={`Blank ${index + 1}`}
                       value={selectedAnswer.split('___')[index] || ''}
                       onChange={(e) => {
@@ -630,26 +632,32 @@ export function UnifiedQuizQuestion({
                 </Badge>
               </div>
               <div className="rounded-lg overflow-hidden relative group">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800">
                   <SyntaxHighlighter
                     language={codeQuestion.language || 'javascript'}
-                    style={vs}
-                      className="!text-xs sm:!text-sm !bg-slate-900 !p-3 sm:!p-4 lg:!p-6 !m-0 !rounded-lg"
-                    showLineNumbers={true}
-                    wrapLines={false}
+                    style={atomOneDark}
+                    showLineNumbers={false}
+                    wrapLines={true}
                     customStyle={{
                       margin: 0,
                       padding: '1rem',
                       borderRadius: '0.5rem',
-                      fontSize: 'clamp(0.75rem, 2.5vw, 0.9rem)',
+                      backgroundColor: 'rgb(15 23 42)', // slate-900
+                      fontSize: '0.875rem', // text-sm
                       lineHeight: '1.5',
                       fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata, "Roboto Mono", "Source Code Pro", monospace',
+                      wordBreak: 'break-all',
+                      whiteSpace: 'pre-wrap',
+                      overflowWrap: 'break-word',
                     }}
                     codeTagProps={{
                       style: {
                         fontSize: 'inherit',
                         fontFamily: 'inherit',
                         lineHeight: 'inherit',
+                        wordBreak: 'break-all',
+                        whiteSpace: 'pre-wrap',
+                        overflowWrap: 'break-word',
                       }
                     }}
                   >
@@ -703,7 +711,7 @@ export function UnifiedQuizQuestion({
 
         {/* Enhanced Question Text */}
         <motion.div
-          className="relative max-w-5xl mx-auto px-4"
+          className="relative max-w-4xl mx-auto px-2 sm:px-4"
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -712,7 +720,7 @@ export function UnifiedQuizQuestion({
           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 rounded-3xl blur-2xl transform scale-110" />
 
           <h2
-            className="relative text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent leading-tight tracking-tight px-6 py-4"
+            className="relative text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent leading-tight tracking-tight px-4 sm:px-6 py-4 break-words"
             id="question-text"
             tabIndex={-1}
           >

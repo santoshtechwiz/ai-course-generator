@@ -231,7 +231,7 @@ export function HintSystem({
           </AnimatePresence>
 
           {/* Reveal button */}
-          <Button onClick={handleReveal} disabled={!nextHint} className="w-full">
+          <Button onClick={handleReveal} disabled={!nextHint} className="w-full min-h-[44px] py-3 text-base">
             {nextHint ? "Reveal Next Hint" : "No More Hints"}
           </Button>
 

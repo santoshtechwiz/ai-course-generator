@@ -116,21 +116,34 @@ export function FlashcardFront({
                   </div>
                   <Terminal className="w-4 h-4 text-gray-400" />
                 </div>
-                <div className="max-h-60 sm:max-h-72 overflow-y-auto">
+                <div className="max-h-60 sm:max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800">
                   <SyntaxHighlighter
                     language={language}
                     style={vs}
+                    showLineNumbers={false}
+                    wrapLines={true}
+                    wrapLongLines={true}
                     customStyle={{
                       margin: 0,
                       fontSize: '0.875rem',
                       padding: '1.5rem',
                       background: '#0f172a',
                       borderRadius: 0,
+                      lineHeight: '1.5',
+                      fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata, "Roboto Mono", "Source Code Pro", monospace',
+                      wordBreak: 'break-all',
+                      whiteSpace: 'pre-wrap',
+                      overflowWrap: 'break-word',
                     }}
-                    lineNumberStyle={{
-                      color: '#64748b',
-                      paddingRight: '1rem',
-                      minWidth: '2.5em',
+                    codeTagProps={{
+                      style: {
+                        fontSize: 'inherit',
+                        fontFamily: 'inherit',
+                        lineHeight: 'inherit',
+                        wordBreak: 'break-all',
+                        whiteSpace: 'pre-wrap',
+                        overflowWrap: 'break-word',
+                      }
                     }}
                   >
                     {codeSnippet}

@@ -52,20 +52,40 @@ export function AnswerReviewItem({
     if (!code) return <span className="text-muted-foreground italic">No code provided</span>
 
     return (
-      <SyntaxHighlighter
-        language={lang}
-  style={vs}
-        customStyle={{
-          margin: 0,
-          padding: "1rem",
-          fontSize: "0.9rem",
-          borderRadius: "0.375rem",
-          maxHeight: "200px",
-        }}
-        showLineNumbers={true}
-      >
-        {code}
-      </SyntaxHighlighter>
+      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800">
+        <SyntaxHighlighter
+          language={lang}
+          style={vs}
+          showLineNumbers={false}
+          wrapLines={true}
+          wrapLongLines={true}
+          customStyle={{
+            margin: 0,
+            padding: "1rem",
+            fontSize: "0.875rem",
+            borderRadius: "0.375rem",
+            backgroundColor: 'rgb(15 23 42)',
+            lineHeight: '1.5',
+            fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata, "Roboto Mono", "Source Code Pro", monospace',
+            wordBreak: 'break-all',
+            whiteSpace: 'pre-wrap',
+            overflowWrap: 'break-word',
+            maxHeight: "200px",
+          }}
+          codeTagProps={{
+            style: {
+              fontSize: 'inherit',
+              fontFamily: 'inherit',
+              lineHeight: 'inherit',
+              wordBreak: 'break-all',
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'break-word',
+            }
+          }}
+        >
+          {code}
+        </SyntaxHighlighter>
+      </div>
     )
   }
 

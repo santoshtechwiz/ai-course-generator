@@ -1037,7 +1037,7 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
                 variant="outline"
                 size="sm"
                 onClick={() => setActiveTab("review")}
-                className="text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                className="text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/30 min-h-[44px]"
               >
                 View all {incorrectQuestions.length} questions →
               </Button>
@@ -1071,7 +1071,7 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
             size="sm"
             onClick={() => setFlashcardIndex(Math.max(0, flashcardIndex - 1))}
             disabled={flashcardIndex === 0}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 min-h-[44px]"
           >
             <ChevronLeft className="w-4 h-4" />
             Previous
@@ -1096,7 +1096,7 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
             size="sm"
             onClick={() => setFlashcardIndex(Math.min(filteredQuestions.length - 1, flashcardIndex + 1))}
             disabled={flashcardIndex === filteredQuestions.length - 1}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 min-h-[44px]"
           >
             Next
             <ChevronRight className="w-4 h-4" />
@@ -1244,7 +1244,7 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
               variant={viewMode === "list" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("list")}
-              className="flex items-center gap-2 h-9 text-xs"
+              className="flex items-center gap-2 h-9 text-xs min-h-[44px] min-w-[44px]"
             >
               <List className="w-4 h-4" />
               <span className="hidden sm:inline">List</span>
@@ -1253,7 +1253,7 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
               variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("grid")}
-              className="flex items-center gap-2 h-9 text-xs"
+              className="flex items-center gap-2 h-9 text-xs min-h-[44px] min-w-[44px]"
             >
               <Grid className="w-4 h-4" />
               <span className="hidden sm:inline">Grid</span>
@@ -1262,7 +1262,7 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
               variant={viewMode === "flashcard" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("flashcard")}
-              className="flex items-center gap-2 h-9 text-xs"
+              className="flex items-center gap-2 h-9 text-xs min-h-[44px] min-w-[44px]"
             >
               <BookOpen className="w-4 h-4" />
               <span className="hidden sm:inline">Cards</span>
@@ -1321,7 +1321,7 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
           variant={showInlineReview ? "default" : "outline"}
           onClick={() => setShowInlineReview(!showInlineReview)}
           size="sm"
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 min-h-[44px]"
         >
           {showInlineReview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           {showInlineReview ? "Hide" : "Show"} Quick Review

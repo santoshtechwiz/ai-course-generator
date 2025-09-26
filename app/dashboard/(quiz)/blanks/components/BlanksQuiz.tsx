@@ -281,14 +281,18 @@ export default function BlanksQuiz({
                   disabled={isQuizCompleted}
                   className={cn(
                     "text-center font-semibold border-2 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md",
-                    "text-base py-3 px-4 focus:ring-0 focus:ring-offset-0",
+                    "text-base sm:text-lg py-4 px-6 focus:ring-0 focus:ring-offset-0", // Larger on mobile
                     "bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50",
+                    "min-h-[3rem]", // Ensure minimum touch target
                     isAnswered
                       ? "border-emerald-400 bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-950/30 dark:to-green-900/30 text-emerald-800 dark:text-emerald-200 shadow-emerald-200/50"
                       : showValidation
                         ? "border-rose-400 bg-gradient-to-br from-rose-50 to-red-100/50 dark:from-rose-950/30 dark:to-red-900/20 shadow-rose-200/50"
                         : "border-cyan-200 dark:border-cyan-700 hover:border-cyan-400 dark:hover:border-cyan-500 focus:border-cyan-500 dark:focus:border-cyan-400 focus:shadow-cyan-200/50 dark:focus:shadow-cyan-800/30",
                   )}
+                  inputMode="text" // Better mobile keyboard
+                  autoCapitalize="sentences"
+                  autoComplete="off"
                   autoFocus
                 />
 

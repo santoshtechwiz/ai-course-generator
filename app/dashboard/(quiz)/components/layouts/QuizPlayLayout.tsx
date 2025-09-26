@@ -478,11 +478,11 @@ export default function QuizPlayLayout({
               </div>
               
               <div className="flex items-center gap-2 border-l border-gray-200 dark:border-gray-700 pl-3">
-                <Button variant="ghost" size="sm" onClick={goHome} className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <Button variant="ghost" size="sm" onClick={goHome} className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors min-h-[44px] min-w-[44px] p-3">
                   <Home className="h-4 w-4" />
                 </Button>
                 
-                <Button variant="ghost" size="sm" onClick={toggleFullscreen} className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <Button variant="ghost" size="sm" onClick={toggleFullscreen} className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors min-h-[44px] min-w-[44px] p-3">
                   {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
                 </Button>
                 
@@ -519,10 +519,10 @@ export default function QuizPlayLayout({
               
               <div className="flex items-center justify-between py-1.5 px-3 bg-gray-50/80 dark:bg-gray-800/50 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={togglePause} className="h-8 hover:bg-white/50 dark:hover:bg-gray-900/50">
+                  <Button variant="ghost" size="sm" onClick={togglePause} className="min-h-[44px] min-w-[44px] p-3 hover:bg-white/50 dark:hover:bg-gray-900/50">
                     {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={resetQuiz} className="h-8 hover:bg-white/50 dark:hover:bg-gray-900/50">
+                  <Button variant="ghost" size="sm" onClick={resetQuiz} className="min-h-[44px] min-w-[44px] p-3 hover:bg-white/50 dark:hover:bg-gray-900/50">
                     <RotateCcw className="h-4 w-4" />
                   </Button>
                 </div>
@@ -579,11 +579,11 @@ export default function QuizPlayLayout({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Lock className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          <Lock className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-gray-400" />
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
             Private Quiz
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-6">
             This quiz is private and can only be viewed by its owner.
           </p>
           {!session?.user && (
@@ -652,8 +652,8 @@ export default function QuizPlayLayout({
             className={cn(
               "flex-1 rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-xl transition-all duration-300",
               isFullscreen 
-                ? "p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-8rem)]" 
-                : "p-6 sm:p-8"
+                ? "p-2 sm:p-4 lg:p-6 min-h-[calc(100vh-8rem)]" 
+                : "p-3 sm:p-4 lg:p-6"
             )}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -665,8 +665,8 @@ export default function QuizPlayLayout({
           {/* Enhanced Sidebar */}
           <AnimatePresence>
             {sidebarOpen && !isFullscreen && (
-              <motion.aside 
-                className="hidden lg:block w-80 xl:w-96 shrink-0"
+              <motion.aside
+                className="hidden xl:block w-80 xl:w-96 shrink-0"
                 initial={{ opacity: 0, x: 20, width: 0 }}
                 animate={{ opacity: 1, x: 0, width: isFullscreen ? 0 : 320 }}
                 exit={{ opacity: 0, x: 20, width: 0 }}
@@ -778,7 +778,7 @@ export default function QuizPlayLayout({
       <AnimatePresence>
         {sidebarOpen && !isFullscreen && (
           <motion.div 
-            className="fixed inset-0 z-50 lg:hidden" 
+            className="fixed inset-0 z-50 xl:hidden" 
             role="dialog" 
             aria-modal="true"
             initial={{ opacity: 0 }}
@@ -799,13 +799,13 @@ export default function QuizPlayLayout({
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
             >
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 min-h-[4rem]">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Quiz Panel</h2>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={() => setSidebarOpen(false)}
-                  className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="hover:bg-gray-100 dark:hover:bg-gray-800 min-h-[44px] min-w-[44px] p-3"
                 >
                   <X className="h-5 w-5" />
                 </Button>

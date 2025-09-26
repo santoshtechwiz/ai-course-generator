@@ -18,15 +18,15 @@ export function QuestionNavigation({ currentIndex, total, onPrev, onNext }: Ques
         size="sm"
         onClick={onPrev}
         disabled={currentIndex === 0}
-        className="flex items-center gap-2 bg-transparent"
+        className="flex items-center gap-2 bg-transparent min-h-[44px] px-4"
       >
         <ChevronLeft className="w-4 h-4" />
-        Previous
+        <span className="hidden sm:inline">Previous</span>
       </Button>
 
       <div className="flex items-center gap-3">
-        <Badge variant="secondary" className="px-3 py-1">
-          Question {currentIndex + 1} of {total}
+        <Badge variant="secondary" className="px-3 py-1 text-sm">
+          <span className="hidden sm:inline">Question </span>{currentIndex + 1}<span className="hidden sm:inline"> of {total}</span>
         </Badge>
         <div className="flex gap-1">
           {Array.from({ length: Math.min(total, 10) }, (_, i) => (
@@ -46,9 +46,9 @@ export function QuestionNavigation({ currentIndex, total, onPrev, onNext }: Ques
         size="sm"
         onClick={onNext}
         disabled={currentIndex === total - 1}
-        className="flex items-center gap-2 bg-transparent"
+        className="flex items-center gap-2 bg-transparent min-h-[44px] px-4"
       >
-        Next
+        <span className="hidden sm:inline">Next</span>
         <ChevronRight className="w-4 h-4" />
       </Button>
     </div>
