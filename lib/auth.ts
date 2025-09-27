@@ -378,5 +378,10 @@ export function invalidateSessionCache() {
   userCache.clear()
 }
 
-// Re-export isAdmin from server-auth for convenience
-export { isAdmin } from "./server-auth"
+// Avoid a static re-export which can create a circular import during server-side
+// initialization (auth -> server-auth -> auth). Provide a small lazy wrapper
+// that imports the server helper at call time to break the circular dependency.
+export async function isAdmin(options?: { skipCache?: boolean }) {
+  const mod = await import("./server-auth")
+  return mod.isAdmin(options)
+}
