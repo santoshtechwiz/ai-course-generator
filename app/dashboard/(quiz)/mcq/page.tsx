@@ -12,6 +12,7 @@ const McqPage = () => {
   const quizPlan = useQuizPlan(1);
   const searchParams = useSearchParams();
   const [draft, setDraft] = useState<any | null>(null);
+  const [suggestedData, setSuggestedData] = useState<any | null>(null);
 
   useEffect(() => {
     if (searchParams?.get("draft") === "1") {
@@ -20,15 +21,39 @@ const McqPage = () => {
         if (raw) setDraft(JSON.parse(raw));
       } catch {}
     }
+
+    // Handle suggested data from recommendations
+    if (searchParams?.get("suggested") === "true") {
+      try {
+        const suggestedRaw = searchParams.get("data");
+        if (suggestedRaw) {
+          const parsedData = JSON.parse(decodeURIComponent(suggestedRaw));
+          setSuggestedData(parsedData);
+        }
+      } catch (error) {
+        console.error("Failed to parse suggested data:", error);
+      }
+    }
   }, [searchParams]);
 
   const initialParams = useMemo(() => {
+    if (suggestedData) {
+      // Use suggested data for initialization
+      return {
+        title: suggestedData.title || "",
+        amount: suggestedData.questionCount || 5,
+        difficulty: suggestedData.difficulty || "medium",
+        topic: suggestedData.topic || "",
+        suggestedPrompt: suggestedData.suggestedPrompt || ""
+      };
+    }
+
     if (!draft) return undefined;
     const p: Record<string, string> = {};
     if (draft.title) p.title = String(draft.title);
     if (draft.items?.length) p.amount = String(Math.max(1, draft.items.length));
     return p;
-  }, [draft]);
+  }, [draft, suggestedData]);
 
   return (
     <QuizCreateLayout

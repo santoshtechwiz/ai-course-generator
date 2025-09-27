@@ -53,7 +53,7 @@ interface CoursesClientProps {
   sortBy?: "popular" | "rating" | "newest" | "price-low" | "price-high"
 }
 
-const ITEMS_PER_PAGE = 12
+const ITEMS_PER_PAGE = 8 // Reduced from 12 for faster initial load
 
 export default function CoursesClient({
   url,
@@ -73,6 +73,26 @@ export default function CoursesClient({
       }, 0)
       return unitAcc + chapterQuizzes
     }, 0)
+  }
+
+  // Helper: compute unit count and lesson count from nested structure if missing
+  const computeUnitAndLessonCounts = (course: any) => {
+    const unitCount = typeof course.unitCount === 'number' && course.unitCount > 0
+      ? course.unitCount
+      : (Array.isArray(course.courseUnits) ? course.courseUnits.length : 0)
+
+    let lessonCount = 0
+    if (typeof course.lessonCount === 'number' && course.lessonCount > 0) {
+      lessonCount = course.lessonCount
+    } else if (Array.isArray(course.courseUnits)) {
+      for (const unit of course.courseUnits) {
+        if (Array.isArray(unit.chapters)) {
+          lessonCount += unit.chapters.length
+        }
+      }
+    }
+
+    return { unitCount, lessonCount }
   }
 
   // State
@@ -484,9 +504,14 @@ export default function CoursesClient({
                     rating={course.rating || 0}
                     slug={course.slug || `course-${course.id}`}
                     variant={viewMode}
-                    unitCount={course.unitCount || 0}
-                    lessonCount={course.lessonCount || 0}
-                    quizCount={computeQuizCount(course) || 0}
+                    {...(() => {
+                      const counts = computeUnitAndLessonCounts(course)
+                      return {
+                        unitCount: counts.unitCount,
+                        lessonCount: counts.lessonCount,
+                        quizCount: computeQuizCount(course) || 0,
+                      }
+                    })()}
                     viewCount={course.viewCount || 0}
                     category={course.category?.name || "General"}
                     duration={`${course.estimatedHours || 4} hours`}

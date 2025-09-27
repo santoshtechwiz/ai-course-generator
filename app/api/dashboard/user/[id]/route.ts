@@ -37,7 +37,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     // Add cache headers to reduce frequent calls
     const headers = new Headers()
     if (!forceRefresh) {
-      headers.set("Cache-Control", "max-age=60, s-maxage=60, stale-while-revalidate=120")
+      headers.set("Cache-Control", "max-age=300, s-maxage=300, stale-while-revalidate=600") // 5 min cache, 10 min stale
     } else {
       headers.set("Cache-Control", "no-cache, no-store, must-revalidate")
     }

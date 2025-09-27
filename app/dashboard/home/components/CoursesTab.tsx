@@ -105,8 +105,10 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
 
   const handleCourseClick = useCallback(
     (courseId: string, slug: string) => {
-      // Remove global loader since navigation already handles loading
-      router.push(`/dashboard/course/${slug}`)
+      if (slug) {
+        // Remove global loader since navigation already handles loading
+        router.push(`/dashboard/course/${slug}`)
+      }
     },
     [router],
   )

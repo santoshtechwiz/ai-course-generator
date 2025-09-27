@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo } from "react"
-import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
 import { UnifiedQuizQuestion, type CodeQuestion as UnifiedCodeQuestion } from "@/components/quiz/UnifiedQuizQuestion"
 import { QuizStateProvider } from "@/components/quiz/QuizStateProvider"
@@ -51,17 +50,20 @@ const CodeQuiz = ({
   timeLimit,
 }: CodeQuizProps) => {
   // Convert legacy question format to unified format
-  const unifiedQuestion: UnifiedCodeQuestion = useMemo(() => ({
-    id: String(question.id),
-    text: question.text || question.question,
-    question: question.text || question.question,
-    type: 'code',
-    options: question.options,
-    codeSnippet: question.codeSnippet,
-    language: question.language,
-    difficulty: difficulty.toLowerCase() as 'easy' | 'medium' | 'hard',
-    category,
-  }), [question, difficulty, category])
+  const unifiedQuestion: UnifiedCodeQuestion = useMemo(
+    () => ({
+      id: String(question.id),
+      text: question.text || question.question,
+      question: question.text || question.question,
+      type: "code",
+      options: question.options,
+      codeSnippet: question.codeSnippet,
+      language: question.language,
+      difficulty: difficulty.toLowerCase() as "easy" | "medium" | "hard",
+      category,
+    }),
+    [question, difficulty, category],
+  )
 
   const handleAnswer = (answer: string, similarity?: number, hintsUsed?: number) => {
     onAnswer(answer)
@@ -75,14 +77,7 @@ const CodeQuiz = ({
       globalLoading={isLastQuestion}
     >
       {(stateManager) => (
-        <QuizContainer
-          animationKey={`code-${question.id}`}
-          fullWidth={true}
-          showProgress={true}
-          progressValue={Math.round(((questionNumber - 1) / totalQuestions) * 100)}
-          questionNumber={questionNumber}
-          totalQuestions={totalQuestions}
-        >
+        <div className="w-full h-full flex flex-col space-y-6">
           <UnifiedQuizQuestion
             question={unifiedQuestion}
             questionNumber={questionNumber}
@@ -112,7 +107,7 @@ const CodeQuiz = ({
               nextState={stateManager.nextState}
             />
           )}
-        </QuizContainer>
+        </div>
       )}
     </QuizStateProvider>
   )

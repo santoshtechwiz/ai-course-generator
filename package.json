@@ -168,7 +168,7 @@
     "@types/postcss-load-config": "3.0.1",
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.19",
-    "@types/react-syntax-highlighter": "^15.5.13",
+    "@types/react-syntax-highlighter": "15.5.13",
     "autoprefixer": "10.4.21",
     "caniuse-lite": "1.0.30001743",
     "cross-env": "10.0.0",
@@ -191,7 +191,7 @@
     "canvas": "^2.11.2"
   },
   "engines": {
-  "node": "20.x"
-},
+    "node": "20.x"
+  },
   "packageManager": "pnpm@9.12.3+sha512.cce0f9de9c5a7c95bef944169cc5dfe8741abfb145078c0d508b868056848a87c81e626246cb60967cbd7fd29a6c062ef73ff840d96b3c86c40ac92cf4a813ee"
 }

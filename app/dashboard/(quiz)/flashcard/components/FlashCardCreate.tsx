@@ -28,7 +28,7 @@ import type { QueryParams } from "@/app/types/types"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import { useSubscription } from "@/modules/auth"
-import PlanAwareButton from "../../components/PlanAwareButton"
+import PlanAwareButton from "@/components/quiz/PlanAwareButton"
 import { calculateCreditInfo } from "@/utils/credit-utils"
 
 const flashcardSchema = z.object({

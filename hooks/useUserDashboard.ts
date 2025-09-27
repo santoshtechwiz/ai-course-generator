@@ -28,8 +28,10 @@ export function useUserData(userId: string) {
     fetcher,
     {
       revalidateOnFocus: false,
-      dedupingInterval: 60000, // 1 minute
+      revalidateOnReconnect: true,
+      dedupingInterval: 120000, // 2 minutes (increased from 1)
       shouldRetryOnError: false, // Don't retry on auth errors
+      staleTime: 300000, // 5 minutes (added)
       onError: (error) => {
         console.error('useUserData error:', error, 'for userId:', userId)
       }
@@ -50,7 +52,8 @@ export function useUserStats(userId: string, options?: { enabled?: boolean; stal
     fetcher,
     {
       revalidateOnFocus: false,
-      dedupingInterval: 300000, // 5 minutes
+      revalidateOnReconnect: true,
+      dedupingInterval: 300000, // 5 minutes (increased from 5)
       shouldRetryOnError: false,
       onError: (error) => {
         console.error('useUserStats error:', error, 'for userId:', userId)

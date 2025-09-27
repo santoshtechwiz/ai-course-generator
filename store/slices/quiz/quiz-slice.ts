@@ -509,7 +509,20 @@ export const submitQuiz = createAsyncThunk(
         throw new Error(Object.keys(errorData).length > 0 ? errorData?.error || 'Failed to submit quiz' : `HTTP ${response.status}: ${response.statusText}`)
       }
 
-      const responseData = await response.json()
+      let responseData
+      try {
+        const responseText = await response.text()
+        if (!responseText.trim()) {
+          console.warn('Empty response from quiz submission, using local results')
+          responseData = {}
+        } else {
+          responseData = JSON.parse(responseText)
+        }
+      } catch (parseError) {
+        console.warn('Failed to parse quiz submission response:', parseError)
+        responseData = {}
+      }
+      
       if (process.env.NODE_ENV !== 'production') {
         console.log('Quiz submitted successfully:', responseData)
       }
@@ -559,7 +572,17 @@ export const loadQuizResults = createAsyncThunk(
         // First, try to get the quiz data to check if it's been completed
         const quizResponse = await fetch(`/api/quizzes/${quiz.quizType}/${quiz.slug}`)
         if (quizResponse.ok) {
-          const quizData = await quizResponse.json()
+          let quizData
+          try {
+            const responseText = await quizResponse.text()
+            if (!responseText.trim()) {
+              return rejectWithValue({ error: 'Empty response from server' })
+            }
+            quizData = JSON.parse(responseText)
+          } catch (parseError) {
+            console.error('Failed to parse quiz data response:', parseError)
+            return rejectWithValue({ error: 'Invalid response format from server' })
+          }
 
           // Check if quiz has been completed (has timeEnded)
           if (quizData.timeEnded && quizData.bestScore !== null) {
@@ -753,7 +776,20 @@ export const loadTempResultsAndSave = createAsyncThunk(
         throw new Error(errorData?.error || 'Failed to save results')
       }
 
-      const responseData = await response.json()
+      let responseData
+      try {
+        const responseText = await response.text()
+        if (!responseText.trim()) {
+          console.warn('Empty response from temp results save, using local results')
+          responseData = {}
+        } else {
+          responseData = JSON.parse(responseText)
+        }
+      } catch (parseError) {
+        console.warn('Failed to parse temp results save response:', parseError)
+        responseData = {}
+      }
+      
       return {
         ...results,
         percentage: responseData.result?.percentageScore || results.percentage,

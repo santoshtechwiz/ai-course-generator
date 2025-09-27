@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Quiz, quizStore } from "@/lib/quiz-store"
 import { useQuizPlan } from "@/modules/auth"
 import { ConfirmDialog } from "../components/ConfirmDialog"
-import PlanAwareButton from "../components/PlanAwareButton"
+import PlanAwareButton from "@/components/quiz/PlanAwareButton"
 
 import { DocumentQuizOptions } from "./components/DocumentQuizOptions"
 import { FileUpload } from "./components/FileUpload"

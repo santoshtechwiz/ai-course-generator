@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useMediaQuery, useResponsive } from "@/hooks"
+import { useMediaQuery } from "@/hooks"
 import { usePathname } from "next/navigation"
 import { Suspense, useEffect, useState, useRef, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
@@ -14,15 +14,12 @@ import {
   Home, 
   Maximize, 
   Minimize, 
-  Menu, 
   X, 
   Target, 
   Play, 
   Pause,
   RotateCcw,
   BookOpen,
-  Users,
-  TrendingUp,
   Award,
   Zap,
   Eye,
@@ -32,17 +29,15 @@ import {
   Brain,
   Lock
 } from "lucide-react"
-import { QuizActions } from "../QuizActions"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+
 import { RandomQuiz } from "./RandomQuiz"
 import { useRelatedQuizzes } from "@/hooks/useRelatedQuizzes"
-import Confetti from "react-confetti"
 import { motion, AnimatePresence } from "framer-motion"
-import { Sparkles, Wand2 } from "lucide-react"
 import RecommendedSection from "@/components/shared/RecommendedSection"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/modules/auth"
 import { useSessionSubscriptionSync } from "@/hooks/useSessionSubscriptionSync"
+import { QuizActions } from "@/components/quiz/QuizActions"
 
 // Removed force-dynamic; let Next.js infer rendering strategy
 

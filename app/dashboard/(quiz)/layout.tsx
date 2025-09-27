@@ -1,16 +1,6 @@
 import type React from "react"
-import { ModuleLayout } from "@/components/layout/ModuleLayout"
 import type { Metadata } from "next"
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
-
-/**
- * Quiz Module Layout
- *
- * Unified layout for all quiz-related pages with:
- * - Consistent spacing and styling
- * - Full-width responsive design
- * - SEO optimization for quiz discovery
- */
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "Interactive Quizzes – Master Your Knowledge | CourseAI",
@@ -38,14 +28,23 @@ export const metadata: Metadata = generateSEOMetadata({
   noIndex: true, // Dashboard content should not be indexed
 })
 
+/**
+ * Simplified Quiz Layout
+ * - Removes ModuleLayout wrapper for the quiz module
+ * - Uses full-viewport flex container so children can occupy full width/height
+ * - Keeps markup intentionally minimal to avoid layout constraints
+ */
 export default function QuizLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <ModuleLayout variant="default" className="quiz-module-layout">
-      {children}
-    </ModuleLayout>
+    <div className="min-h-screen w-full flex flex-col">
+      {/* main acts as the flexible container so children can grow/shrink */}
+      <main className="flex-1 w-full min-h-0">
+        {children}
+      </main>
+    </div>
   )
 }

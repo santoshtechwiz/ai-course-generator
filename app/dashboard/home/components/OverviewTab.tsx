@@ -10,7 +10,7 @@ import Link from "next/link"
 import type { DashboardUser, UserStats } from "@/app/types/types"
 import RecentQuizCard from "./RecentQuizCard"
 import { getImageWithFallback } from '@/utils/image-utils'
-import QuizRecommendationsWidget from "@/components/QuizRecommendationsWidget"
+// Quiz recommendations removed from overview to simplify home page
 import { getSafeQuizHref, getBestQuizHref } from '@/utils/navigation'
 
 interface OverviewTabProps {
@@ -326,8 +326,7 @@ const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewT
         </CardContent>
       </Card>
 
-      {/* Quiz Recommendations */}
-      <QuizRecommendationsWidget />
+  {/* Quiz Recommendations removed */}
     </div>
   )
 })

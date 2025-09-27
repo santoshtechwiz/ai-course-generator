@@ -29,7 +29,7 @@ import { NoResults } from "@/components/ui/no-results"
 import OpenEndedQuiz from "./OpenEndedQuiz"
 
 
-import { QuizActions } from "../../components/QuizActions"
+import { QuizActions } from "@/components/quiz/QuizActions"
 import { UnifiedLoader } from "@/components/loaders"
 import { OpenEndedQuestion } from "@/app/types/quiz-types"
 
@@ -235,8 +235,8 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   }
 
   return (
-    <div className="w-full max-w-4xl ">
-      <div className="space-y-6">
+    <div className="w-full max-w-4xl mx-auto h-full flex flex-col">
+      <div className="flex-1 min-h-0">
         <OpenEndedQuiz
           question={formattedQuestion!}
           questionNumber={currentQuestionIndex + 1}

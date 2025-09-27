@@ -17,7 +17,7 @@ import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import PlanAwareButton from "@/app/dashboard/(quiz)/components/PlanAwareButton"
+import PlanAwareButton from "@/components/quiz/PlanAwareButton"
 
 import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
 

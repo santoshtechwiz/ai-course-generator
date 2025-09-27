@@ -46,6 +46,8 @@ const quizSchema = z.object({
   difficulty: z.enum(["easy", "medium", "hard"]),
   type: z.enum(["mcq"]).default("mcq"),
   userType: z.enum(["FREE", "BASIC", "PREMIUM"]).default("FREE").optional(),
+  topic: z.string().optional(),
+  prompt: z.string().optional(),
 })
 
 export const createChaptersSchema = z.object({

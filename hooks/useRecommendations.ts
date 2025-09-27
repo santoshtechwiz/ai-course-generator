@@ -9,7 +9,7 @@ interface UseRecommendationsOptions {
 export function useRecommendations(options: UseRecommendationsOptions = {}) {
   const {
     enabled = true,
-    refetchInterval = 30 * 60 * 1000 // 30 minutes
+    refetchInterval = 60 * 60 * 1000 // 60 minutes (increased from 30)
   } = options
 
   return useQuery({
@@ -23,8 +23,8 @@ export function useRecommendations(options: UseRecommendationsOptions = {}) {
     },
     enabled,
     refetchInterval,
-    staleTime: 25 * 60 * 1000, // 25 minutes
-    gcTime: 60 * 60 * 1000, // 1 hour
+    staleTime: 45 * 60 * 1000, // 45 minutes (increased from 25)
+    gcTime: 120 * 60 * 1000, // 2 hours (increased from 1)
   })
 }
 

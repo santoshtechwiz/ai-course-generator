@@ -105,9 +105,26 @@ function RecommendationsWidget() {
 function RecommendationItem({ recommendation }: { recommendation: Recommendation }) {
   const { type, title, slug, description, category, quizType, reason, confidence, aiReasoning } = recommendation
 
+  const buildQuizSlug = (quizType: string) => {
+    switch (quizType) {
+      case "mcq":
+        return "mcq"
+      case "openended":
+        return "openended"
+      case "blanks":
+        return "blanks"
+      case "code":
+        return "code"
+      case "flashcard":
+        return "flashcard"
+      default:
+        return "quiz"
+    }
+  }
+
   const linkHref = type === "course"
     ? `/dashboard/course/${slug}`
-    : `/dashboard/${quizType}/${slug}`
+    : `/dashboard/${buildQuizSlug(category || quizType || "quiz")}/${slug}`
 
   const confidenceColor = confidence >= 0.8 ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" :
                          confidence >= 0.6 ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" :

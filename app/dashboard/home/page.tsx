@@ -26,6 +26,7 @@ import type { DashboardUser, UserStats } from "@/app/types/types"
 import { useAuth } from "@/hooks"
 import { Button } from "@/components/ui"
 import UserNotFound from "@/components/common/UserNotFound"
+import Head from "next/head"
 
 const OverviewTab = dynamic(() => import("./components/OverviewTab"), {
   loading: () => <Skeleton className="h-[500px] w-full" />,
@@ -65,6 +66,7 @@ export default function DashboardPage() {
   
   const [activeTab, setActiveTab] = useState("overview")
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false)
 
   const {
     data: userData,
@@ -77,9 +79,16 @@ export default function DashboardPage() {
     isLoading: isLoadingUserStats,
     error: userStatsError,
   } = useUserStats(userId, {
-    enabled: !!userId,
-    staleTime: 60_000,
+    enabled: !!userId && activeTab === "overview", // Only load stats when on overview tab
+    staleTime: 600_000, // 10 minutes
   })
+
+  // Track initial data loading
+  useEffect(() => {
+    if (userData && !isLoadingUserData) {
+      setHasLoadedInitialData(true)
+    }
+  }, [userData, isLoadingUserData])
 
   // Fetch dashboard data using real data hooks - moved before conditional returns
   // Removed progress-related data fetching to improve performance
@@ -89,7 +98,12 @@ export default function DashboardPage() {
 
   const handleTabChange = useCallback((value: string) => {
     setActiveTab(value)
-  }, [])
+
+    // Prefetch recommendations when hovering over the tab
+    if (value === "recommendations" && !hasLoadedInitialData) {
+      // Prefetch logic can be added here if needed
+    }
+  }, [hasLoadedInitialData])
 
   const handleToggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => !prev)
@@ -191,6 +205,12 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background">
+      <Head>
+        <link rel="preload" href="/api/dashboard/user" as="fetch" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+      </Head>
+
       {/* Sidebar: collapses on mobile, visible on md+ */}
       <div className={"w-full md:w-64 md:flex-shrink-0 " + (sidebarOpen ? "block" : "hidden md:block") + " z-20"}>
         <DashboardSidebar
@@ -272,17 +292,23 @@ export default function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="recommendations" className="mt-0">
-              <Suspense fallback={
-                <div className="py-10">
-                  <UnifiedLoader
-                    variant="spinner"
-                    size="md"
-                    message="Loading recommendations..."
-                  />
+              {activeTab === "recommendations" ? (
+                <Suspense fallback={
+                  <div className="py-10">
+                    <UnifiedLoader
+                      variant="spinner"
+                      size="md"
+                      message="Loading recommendations..."
+                    />
+                  </div>
+                }>
+                  <RecommendationsWidget />
+                </Suspense>
+              ) : (
+                <div className="py-10 text-center text-muted-foreground">
+                  <p>Click the "For You" tab to load personalized recommendations</p>
                 </div>
-              }>
-                <RecommendationsWidget />
-              </Suspense>
+              )}
             </TabsContent>
           </Tabs>
         </main>

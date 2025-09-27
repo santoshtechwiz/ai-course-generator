@@ -44,7 +44,7 @@ import { ClientCreditService } from "@/services/client-credit-service"
 import type { QueryParams } from "@/app/types/types"
 import { useSubscription } from "@/modules/auth"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
-import PlanAwareButton from "../../components/PlanAwareButton"
+import PlanAwareButton from "@/components/quiz/PlanAwareButton"
 import FormContainer from "@/app/dashboard/FormContainer"
 import { useToast } from "@/components/ui/use-toast"
 

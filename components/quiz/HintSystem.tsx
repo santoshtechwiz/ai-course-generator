@@ -26,6 +26,7 @@ interface HintSystemProps {
   correctAnswer?: string
   questionText?: string
   maxHints?: number
+  expectedLength?: "short" | "medium" | "long"
 }
 
 const containerVariants = {
@@ -67,6 +68,7 @@ export function HintSystem({
   correctAnswer,
   questionText,
   maxHints = 5,
+  expectedLength = "medium",
 }: HintSystemProps) {
   const [revealedCount, setRevealedCount] = useState(0)
   const [proactiveHint, setProactiveHint] = useState<string | null>(null)
@@ -76,12 +78,12 @@ export function HintSystem({
 
   useEffect(() => {
     if (userInput && correctAnswer && questionText) {
-      const feedback = analyzeUserInput(userInput, correctAnswer, questionText)
+      const feedback = analyzeUserInput(userInput, correctAnswer, questionText, expectedLength)
       setProactiveHint(feedback)
     } else {
       setProactiveHint(null)
     }
-  }, [userInput, correctAnswer, questionText])
+  }, [userInput, correctAnswer, questionText, expectedLength])
 
   if (!hints || hints.length === 0) return null
 
@@ -90,7 +92,7 @@ export function HintSystem({
 
   const handleReveal = () => {
     if (!nextHint) return
-    if (nextHint.spoilerLevel === "high" && revealedCount >= 3) {
+    if (nextHint.spoilerLevel === "high") {
       setHintToConfirm(nextHint)
       setHintIndexToConfirm(revealedCount)
       setShowConfirmation(true)

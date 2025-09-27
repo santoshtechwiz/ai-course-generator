@@ -52,12 +52,13 @@ export default function CodeQuizPage({ params }: CodeQuizPageProps) {
     const title = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
     return (
       <>
-        <QuizSEOClient />
         <QuizJsonLd slug={slug} title={title} />
+        <QuizSEOClient />
         <CodeQuizClient params={params} />
       </>
     )
   }
+  // @ts-expect-error Async Server Component
   // @ts-expect-error Async Server Component
   return <ClientWithJsonLd />
 }

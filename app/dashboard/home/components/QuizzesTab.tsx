@@ -95,6 +95,23 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
     }
   }, [])
 
+  const buildQuizSlug = useCallback((quizType: QuizType) => {
+    switch (quizType) {
+      case "mcq":
+        return "mcq"
+      case "openended":
+        return "openended"
+      case "blanks":
+        return "blanks"
+      case "code":
+        return "code"
+      case "flashcard":
+        return "flashcard"
+      default:
+        return "quiz"
+    }
+  }, [])
+
   const getScoreColor = useCallback((score: number) => {
     if (score >= 90) return "text-emerald-600 dark:text-emerald-400"
     if (score >= 80) return "text-green-600 dark:text-green-400"
@@ -133,15 +150,16 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
 
   // Use useCallback to memoize this function
   const handleQuizClick = useCallback(
-    (quizId: string, quizType: string, slug: string | undefined) => {
-      if (slug) {
+    (quizId: string, quizType: QuizType, slug: string | undefined) => {
+      if (slug && quizType) {
+        const quizSlug = buildQuizSlug(quizType)
         setNavigatingQuizId(quizId)
-        router.push(`/dashboard/${quizType}/${slug}`)
+        router.push(`/dashboard/${quizSlug}/${slug}`)
         // Reset after navigation (in case user goes back)
         setTimeout(() => setNavigatingQuizId(null), 2000)
       }
     },
-    [router],
+    [router, buildQuizSlug],
   )
 
   const handleResetAttempts = async () => {

@@ -22,7 +22,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     // Add cache headers to reduce frequent calls
     const headers = new Headers()
-    headers.set("Cache-Control", "max-age=60, s-maxage=60, stale-while-revalidate=120")
+    headers.set("Cache-Control", "max-age=600, s-maxage=600, stale-while-revalidate=1200") // 10 min cache, 20 min stale
 
     return NextResponse.json(userStats, {
       headers: {

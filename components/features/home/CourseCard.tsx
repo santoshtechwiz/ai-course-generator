@@ -3,12 +3,15 @@
 import * as React from "react"
 import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Star, Play, Heart, Bookmark, Clock, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Progress } from "@/components/ui/progress"
+import { CourseIcon } from "@/components/icons/CourseIcon"
+import CoursePlaceholder from '@/components/icons/CoursePlaceholder'
 
 export interface CourseCardProps {
   title: string
@@ -64,7 +67,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
     quizCount,
     viewCount,
     category = "Course",
-    duration = "4-6 weeks",
+  duration = "4-6 weeks",
     className,
     loading = false,
     image,
@@ -80,6 +83,11 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
     progressPercentage = 0,
     completedChapters = 0,
     totalChapters = unitCount || 0,
+    lastAccessedAt,
+    updatedAt,
+    currentChapterTitle,
+    timeSpent,
+    tags,
     variant = "grid",
   } = props
 
@@ -163,18 +171,25 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
           variant === "grid" && "w-full h-48",
         )}
       >
-        {/* Generic course image */}
-        <div className="w-full h-full bg-gradient-to-br from-primary/10 via-accent/5 to-primary/5 flex items-center justify-center">
-          <div className="text-center space-y-3">
-            <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center">
-              <Play className="w-8 h-8 text-primary" />
-            </div>
-            <div className="space-y-1">
-              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{category}</div>
-              <div className="text-sm font-semibold text-foreground/80">Course Preview</div>
+  {/* Course image or generic placeholder */}
+        {image ? (
+          <div className="w-full h-full relative">
+            <Image
+              src={image}
+              alt={title}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          </div>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-muted/10">
+            <div className="p-4">
+              <CoursePlaceholder className="w-full h-auto" />
             </div>
           </div>
-        </div>
+        )}
 
         {/* Hover overlay */}
         <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors duration-500" />
@@ -212,7 +227,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
       <CardContent
         className={cn(
           "flex flex-col justify-between bg-card",
-          variant === "list" && "p-4 flex-1",
+          variant === "list" && "md:flex-row md:items-center md:p-6 gap-6",
           variant === "grid" && "p-6 flex-1",
         )}
       >
@@ -237,7 +252,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
         </div>
 
         {/* Title and instructor */}
-        <div className="mb-4 space-y-2">
+        <div className="mb-3 space-y-1">
           <h3
             className={cn(
               "font-bold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors duration-300",
@@ -249,8 +264,15 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
           <p className="text-sm text-muted-foreground font-medium">{instructor}</p>
         </div>
 
-        {/* Rating and stats */}
-        <div className="flex items-center justify-between mb-4">
+        {/* Description - show on both grid and list so home cards display content */}
+        {description && (
+          <p className="text-sm text-muted-foreground line-clamp-3 mb-3">
+            {description}
+          </p>
+        )}
+
+        {/* Rating and enrollment stats */}
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
@@ -258,39 +280,107 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
             </div>
             <span className="text-xs text-muted-foreground">({enrolledCount.toLocaleString()})</span>
           </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
+          {viewCount > 0 && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Users className="h-3 w-3" />
-              <span>{unitCount} lessons</span>
+              <span>{viewCount.toLocaleString()} views</span>
             </div>
-            <div className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              <span>{duration}</span>
-            </div>
+          )}
+        </div>
+
+        {/* Course stats */}
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="flex flex-col items-center p-2 bg-muted/30 rounded-md hover:bg-muted/50 transition-colors">
+            <div className="text-sm font-bold text-foreground">{typeof unitCount === 'number' && unitCount > 0 ? unitCount : 'N/A'}</div>
+            <div className="text-xs text-muted-foreground">Chapters</div>
           </div>
+          <div className="flex flex-col items-center p-2 bg-muted/30 rounded-md hover:bg-muted/50 transition-colors">
+            <div className="text-sm font-bold text-foreground">{typeof lessonCount === 'number' && lessonCount > 0 ? lessonCount : 'N/A'}</div>
+            <div className="text-xs text-muted-foreground">Lessons</div>
+          </div>
+          <div className="flex flex-col items-center p-2 bg-muted/30 rounded-md hover:bg-muted/50 transition-colors">
+            <div className="text-sm font-bold text-foreground">{typeof quizCount === 'number' && quizCount > 0 ? quizCount : 'N/A'}</div>
+            <div className="text-xs text-muted-foreground">Quizzes</div>
+          </div>
+        </div>
+
+        {/* Duration and last updated */}
+        <div className="flex items-center justify-between mb-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            <span>{duration}</span>
+          </div>
+          {updatedAt && (
+            <div className="flex items-center gap-1">
+              <span>Updated {new Date(updatedAt).toLocaleDateString()}</span>
+            </div>
+          )}
         </div>
 
         {/* Progress for enrolled courses */}
         {isEnrolled && (
-          <div className="bg-primary/5 border border-primary/10 rounded-lg p-4 mb-4">
+          <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 mb-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-primary">{progressPercentage}% Complete</span>
+              <span className="text-sm font-medium text-primary">{progressPercentage > 0 ? `${progressPercentage}% Complete` : 'Not started'}</span>
               <span className="text-xs text-muted-foreground">
-                {completedChapters}/{totalChapters} chapters
+                {typeof totalChapters === 'number' && totalChapters > 0 ? `${completedChapters}/${totalChapters} chapters` : 'N/A chapters'}
               </span>
             </div>
-            <Progress value={progressPercentage} className="h-2" />
+            <Progress value={progressPercentage} className="h-2 mb-2" />
+            {currentChapterTitle && (
+              <div className="text-xs text-muted-foreground mb-1">
+                Current: {currentChapterTitle}
+              </div>
+            )}
+            {timeSpent && (
+              <div className="text-xs text-muted-foreground">
+                Time spent: {Math.round(timeSpent / 60)}h {timeSpent % 60}m
+              </div>
+            )}
           </div>
         )}
 
-        {/* Free course badge */}
-        {price === undefined && (
-          <div className="mt-auto">
-            <Badge className="bg-accent/10 text-accent border-accent/20 font-semibold px-3 py-1 text-xs">
-              Free Course
-            </Badge>
+        {/* Tags */}
+        {tags && tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-3">
+            {tags.slice(0, 3).map((tag, index) => (
+              <Badge key={index} variant="outline" className="text-xs px-2 py-0">
+                {tag}
+              </Badge>
+            ))}
+            {tags.length > 3 && (
+              <Badge variant="outline" className="text-xs px-2 py-0">
+                +{tags.length - 3}
+              </Badge>
+            )}
           </div>
         )}
+
+        {/* Footer with badges */}
+        <div className="flex items-center justify-between mt-auto">
+          <div className="flex items-center gap-2">
+            {price === undefined && (
+              <Badge className="bg-accent/10 text-accent border-accent/20 font-semibold px-3 py-1 text-xs">
+                Free Course
+              </Badge>
+            )}
+            {isPopular && (
+              <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 text-xs">
+                Popular
+              </Badge>
+            )}
+            {isTrending && (
+              <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 text-xs">
+                Trending
+              </Badge>
+            )}
+          </div>
+          {lastAccessedAt && (
+            <div className="text-xs text-muted-foreground">
+              Last accessed {new Date(lastAccessedAt).toLocaleDateString()}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   )

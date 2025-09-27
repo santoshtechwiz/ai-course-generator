@@ -28,7 +28,7 @@ import { SubscriptionSlider } from "@/app/dashboard/subscription/components/Subs
 import { ClientCreditService } from "@/services/client-credit-service"
 
 import type { QueryParams } from "@/app/types/types"
-import PlanAwareButton from "../../components/PlanAwareButton"
+import PlanAwareButton from "@/components/quiz/PlanAwareButton"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import FormContainer from "@/app/dashboard/FormContainer"
 import { useToast } from "@/components/ui/use-toast"

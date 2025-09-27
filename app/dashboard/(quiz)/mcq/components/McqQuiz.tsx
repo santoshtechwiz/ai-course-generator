@@ -1,8 +1,6 @@
 "use client"
 
 import { useMemo } from "react"
-import { QuizContainer } from "@/components/quiz/QuizContainer"
-import { QuizFooter } from "@/components/quiz/QuizFooter"
 import { UnifiedQuizQuestion, type MCQQuestion } from "@/components/quiz/UnifiedQuizQuestion"
 import { QuizStateProvider } from "@/components/quiz/QuizStateProvider"
 
@@ -51,15 +49,18 @@ const McqQuiz = ({
   timeLimit,
 }: McqQuizProps) => {
   // Convert legacy question format to unified format
-  const unifiedQuestion: MCQQuestion = useMemo(() => ({
-    id: question.id,
-    text: question.text || question.question,
-    question: question.text || question.question,
-    type: 'mcq',
-    options: question.options,
-    difficulty: difficulty.toLowerCase() as 'easy' | 'medium' | 'hard',
-    category,
-  }), [question, difficulty, category])
+  const unifiedQuestion: MCQQuestion = useMemo(
+    () => ({
+      id: question.id,
+      text: question.text || question.question,
+      question: question.text || question.question,
+      type: "mcq",
+      options: question.options,
+      difficulty: difficulty.toLowerCase() as "easy" | "medium" | "hard",
+      category,
+    }),
+    [question, difficulty, category],
+  )
 
   const handleAnswer = (answer: string, similarity?: number, hintsUsed?: number) => {
     onAnswer(answer)
@@ -73,14 +74,7 @@ const McqQuiz = ({
       globalLoading={isLastQuestion}
     >
       {(stateManager) => (
-        <QuizContainer
-          animationKey={`mcq-${question.id}`}
-          fullWidth={true}
-          showProgress={true}
-          progressValue={Math.round(((questionNumber - 1) / totalQuestions) * 100)}
-          questionNumber={questionNumber}
-          totalQuestions={totalQuestions}
-        >
+        <div className="w-full h-full">
           <UnifiedQuizQuestion
             question={unifiedQuestion}
             questionNumber={questionNumber}
@@ -93,22 +87,7 @@ const McqQuiz = ({
             isLastQuestion={isLastQuestion}
             isSubmitting={isSubmitting}
           />
-
-          <QuizFooter
-            onNext={onNext ? () => stateManager.handleNext(onNext) : undefined}
-            onPrevious={undefined}
-            onSubmit={isLastQuestion && onSubmit ? () => stateManager.handleSubmit(onSubmit) : undefined}
-            onRetake={onRetake}
-            canGoNext={!!existingAnswer && !isSubmitting}
-            canGoPrevious={false}
-            isLastQuestion={isLastQuestion}
-            isSubmitting={isSubmitting || stateManager.isSubmitting}
-            showRetake={showRetake}
-            hasAnswer={!!existingAnswer}
-            submitState={stateManager.submitState}
-            nextState={stateManager.nextState}
-          />
-        </QuizContainer>
+        </div>
       )}
     </QuizStateProvider>
   )

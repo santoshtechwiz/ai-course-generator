@@ -7,11 +7,10 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle, AlertCircle, BookOpen, Lightbulb, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
 import { HintSystem } from "@/components/quiz/HintSystem"
 import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
-import { generateOpenEndedHints } from "@/lib/utils/hint-system"
+import { generateContentAwareHints } from "@/lib/utils/hint-system"
 import type { OpenEndedQuestion } from "@/app/types/quiz-types"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
@@ -111,12 +110,31 @@ export default function OpenEndedQuiz({
     }
   }, [question])
 
-  // Generate hints for this question using actual question hints
+  // Determine expected answer length based on question and answer characteristics
+  const expectedLength = useMemo(() => {
+    const questionText = questionData.text || ""
+    const correctAnswer = questionData.answer || ""
+
+    // Check question type indicators
+    if (questionText.toLowerCase().includes("briefly") || questionText.toLowerCase().includes("short")) {
+      return "short"
+    }
+    if (questionText.toLowerCase().includes("detail") || questionText.toLowerCase().includes("explain") || questionText.toLowerCase().includes("discuss")) {
+      return "long"
+    }
+
+    // Check answer length as indicator
+    const answerWords = correctAnswer.split(/\s+/).filter(word => word.length > 0)
+    if (answerWords.length < 25) return "short"
+    if (answerWords.length > 100) return "long"
+    return "medium"
+  }, [questionData.text, questionData.answer])
+
+  // Generate hints for this question using content-aware generation
   const hints = useMemo(() => {
     const validKeywords = Array.isArray(questionData.keywords) ? questionData.keywords : []
-    const validHints = Array.isArray(questionData.hints) ? questionData.hints : []
-    return generateOpenEndedHints(validKeywords, questionData.text || "", validHints)
-  }, [questionData.keywords, questionData.text, questionData.hints])
+    return generateContentAwareHints(questionData.text || "", validKeywords, expectedLength)
+  }, [questionData.keywords, questionData.text, expectedLength])
 
   // Calculate similarity and keyword coverage when answer changes
   useEffect(() => {
@@ -174,7 +192,7 @@ export default function OpenEndedQuiz({
 
   const handleHintUsed = useCallback((hintLevel: number) => {
     if (hintLevel > 0) {
-      setHintsUsed((prev) => Math.max(prev, hintLevel))
+      setHintsUsed((prev) => prev + 1)
     }
   }, [])
 
@@ -200,20 +218,15 @@ export default function OpenEndedQuiz({
     .filter((word) => word.length > 0).length
 
   return (
-    <QuizContainer
-      questionNumber={questionNumber}
-      totalQuestions={totalQuestions}
-      animationKey={String(question.id)}
-      fullWidth={true}
-    >
+    <div className="w-full h-full flex flex-col">
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
         exit="exit"
-        className="w-full h-full max-w-4xl mx-auto px-3 sm:px-4 lg:px-6"
+        className="w-full h-full max-w-4xl mx-auto px-3 sm:px-4 lg:px-6 flex-1 overflow-y-auto"
       >
-        <div className="w-full h-full space-y-6 sm:space-y-8">
+        <div className="w-full h-full space-y-6 sm:space-y-8 pb-24">
           {/* Question Display */}
           <motion.div
             variants={itemVariants}
@@ -334,33 +347,35 @@ export default function OpenEndedQuiz({
           >
             <HintSystem
               hints={hints || []}
-              onHintUsed={(hintIndex) => handleHintUsed(hintIndex + 1)}
+              onHintUsed={(hintIndex, hint) => handleHintUsed(hintIndex + 1)}
               questionText={questionData.text}
+              userInput={answer}
+              correctAnswer={questionData.answer}
               maxHints={3}
-            />
-          </motion.div>
-
-          {/* Footer */}
-          <motion.div
-            variants={itemVariants}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="w-full"
-          >
-            <QuizFooter
-              onNext={handleNext}
-              onPrevious={onPrevious}
-              onSubmit={handleSubmit}
-              canGoNext={canProceed}
-              canGoPrevious={canGoPrevious}
-              isLastQuestion={isLastQuestion}
-              nextLabel="Next Question"
-              submitLabel="Finish Quiz"
+              expectedLength={expectedLength}
             />
           </motion.div>
         </div>
       </motion.div>
-    </QuizContainer>
+
+      {/* Footer - Sticky at bottom */}
+      <motion.div
+        variants={itemVariants}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="w-full flex-shrink-0"
+      >
+        <QuizFooter
+          onNext={handleNext}
+          onPrevious={onPrevious}
+          onSubmit={handleSubmit}
+          canGoNext={canProceed}
+          canGoPrevious={canGoPrevious}
+          isLastQuestion={isLastQuestion}
+          hasAnswer={canProceed}
+        />
+      </motion.div>
+    </div>
   )
 }

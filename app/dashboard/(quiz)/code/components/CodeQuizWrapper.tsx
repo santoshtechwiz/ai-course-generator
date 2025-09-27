@@ -26,7 +26,7 @@ import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
-import { QuizActions } from "../../components/QuizActions"
+import { QuizActions } from "@/components/quiz/QuizActions"
 import { UnifiedLoader } from "@/components/loaders"
 
 

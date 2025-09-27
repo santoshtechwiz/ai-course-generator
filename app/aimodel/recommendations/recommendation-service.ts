@@ -25,10 +25,13 @@ export interface RecommendationRequest {
   limit?: number
   includeExplanation?: boolean
   forceRefresh?: boolean
+  useAI?: boolean // NEW: Enable AI-powered recommendations
   context?: {
     currentCourse?: string
     currentTopic?: string
     difficulty?: 'beginner' | 'intermediate' | 'advanced'
+    learningGoal?: string
+    timeAvailable?: number
   }
   signal?: AbortSignal // Add abort signal support
 }
@@ -57,7 +60,7 @@ export interface RecommendationResponse {
   recommendations: Recommendation[]
   totalCount: number
   generatedAt: Date
-  cacheExpiry: Date
+  cacheExpiry?: Date
   explanations?: {
     methodology: string
     userProfileSummary: string
@@ -66,6 +69,7 @@ export interface RecommendationResponse {
 }
 
 export class RecommendationService extends BaseAIService {
+  private openai: OpenAI
   private embeddingManager: EmbeddingManager
   private userAnalyzer: UserAnalyzer
   private contentMatcher: ContentMatcher
@@ -89,6 +93,11 @@ export class RecommendationService extends BaseAIService {
         maxRetries: 2,
         backoffMs: 1000
       }
+    })
+
+    // Initialize OpenAI client
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
     })
 
     this.embeddingManager = embeddingManager
@@ -141,8 +150,15 @@ export class RecommendationService extends BaseAIService {
       // Analyze user profile
       const userProfile = await this.userAnalyzer.analyzeUser(request.userId)
       
-      // Get content recommendations using multiple strategies
-      const recommendations = await this.generateRecommendations(request, userProfile)
+      let recommendations: Recommendation[]
+      
+      // Use AI-powered recommendations if requested
+      if (request.useAI) {
+        recommendations = await this.generateAIRecommendations(request, userProfile)
+      } else {
+        // Get content recommendations using traditional strategies
+        recommendations = await this.generateRecommendations(request, userProfile)
+      }
       
       // Enhance with AI explanations if requested
       if (request.includeExplanation) {
@@ -155,7 +171,7 @@ export class RecommendationService extends BaseAIService {
         generatedAt: new Date(),
         cacheExpiry: new Date(Date.now() + this.config.cacheConfig.ttl * 1000),
         explanations: request.includeExplanation ? {
-          methodology: this.getMethodologyExplanation(),
+          methodology: request.useAI ? 'AI-powered analysis with GPT-4' : this.getMethodologyExplanation(),
           userProfileSummary: this.getUserProfileSummary(userProfile),
           factors: this.getRecommendationFactors(userProfile)
         } : undefined
@@ -235,6 +251,49 @@ export class RecommendationService extends BaseAIService {
       
       // Fallback to simple recommendations
       return await this.getFallbackRecommendations(request, userProfile)
+    }
+  }
+
+  /**
+   * Generate AI-powered recommendations using OpenAI GPT-4
+   */
+  private async generateAIRecommendations(
+    request: RecommendationRequest,
+    userProfile: UserProfile
+  ): Promise<Recommendation[]> {
+    const limit = request.limit || 5
+
+    try {
+      // Build comprehensive user context for AI
+      const userContext = this.buildUserContextForAI(userProfile, request)
+
+      // Get available content for recommendations
+      const availableContent = await this.getAvailableContentForAI(request)
+
+      // Generate AI-powered recommendations
+      const aiRecommendations = await this.callOpenAIForRecommendations(
+        userContext,
+        availableContent,
+        request,
+        limit
+      )
+
+      // Convert AI response to structured recommendations
+      const recommendations = await this.processAIRecommendations(aiRecommendations, userProfile)
+
+      // Fallback to traditional methods if AI fails
+      if (recommendations.length === 0) {
+        logger.warn('AI recommendations failed, falling back to traditional methods', { userId: request.userId })
+        return await this.generateRecommendations(request, userProfile)
+      }
+
+      return recommendations
+
+    } catch (error) {
+      logger.error('Failed to generate AI recommendations', { error, userId: request.userId })
+
+      // Fallback to traditional recommendations
+      return await this.generateRecommendations(request, userProfile)
     }
   }
 
@@ -902,6 +961,362 @@ export class RecommendationService extends BaseAIService {
 
       // Ultimate fallback: return empty array
       return []
+    }
+  }
+
+  /**
+   * Build comprehensive user context for AI recommendations
+   */
+  private buildUserContextForAI(userProfile: UserProfile, request: RecommendationRequest): string {
+    const context = {
+      completedTopics: userProfile.completedCourses.map(c => c.title).slice(0, 10), // Limit to recent
+      preferredTopics: userProfile.preferredTopics.slice(0, 5),
+      strugglingAreas: userProfile.weakAreas.map(w => w.topic).slice(0, 5),
+      skillLevel: userProfile.level,
+      learningGoals: [], // Not available in current interface
+      recentActivity: userProfile.recentTopics.slice(0, 5),
+      preferredDifficulty: userProfile.preferences.difficulty,
+      timeSpent: userProfile.totalLearningTime,
+      currentTopic: request.context?.currentTopic,
+      learningGoal: request.context?.learningGoal,
+      timeAvailable: request.context?.timeAvailable,
+      requestedType: request.type,
+      limit: request.limit
+    }
+
+    return JSON.stringify(context, null, 2)
+  }
+
+  /**
+   * Get available content for AI to recommend from
+   */
+  private async getAvailableContentForAI(request: RecommendationRequest): Promise<any[]> {
+    try {
+      const content: any[] = []
+
+      // Get courses
+      const courses = await prisma.course.findMany({
+        where: {
+          // Remove isPublished filter as it doesn't exist
+          ...(request.type === 'course' && {}),
+          ...(request.context?.difficulty && {
+            difficulty: request.context.difficulty
+          })
+        },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          category: { select: { name: true } },
+          difficulty: true,
+          estimatedHours: true,
+          // Remove tags as it doesn't exist
+        },
+        take: 50,
+        orderBy: { createdAt: 'desc' } // Use createdAt instead of viewCount
+      })
+
+      content.push(...courses.map(c => ({
+        id: c.id,
+        type: 'course',
+        title: c.title,
+        slug: c.slug,
+        description: c.description,
+        category: c.category?.name,
+        difficulty: c.difficulty,
+        estimatedTime: c.estimatedHours,
+        // Remove tags as it's not selected
+      })))
+
+      // Get quizzes
+      // NOTE: Prisma client uses camelCase for model accessors (UserQuiz -> userQuiz)
+      const quizzes = await prisma.userQuiz.findMany({
+        where: {
+          isPublic: true,
+          ...(request.type === 'quiz' && {}),
+          ...(request.context?.difficulty && {
+            difficulty: request.context.difficulty
+          })
+        },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          quizType: true,
+          difficulty: true,
+          questionCount: true
+        },
+        take: 50,
+        orderBy: { createdAt: 'desc' }
+      })
+
+      content.push(...quizzes.map((q: any) => ({
+        id: q.id,
+        type: 'quiz',
+        title: q.title,
+        slug: q.slug,
+        description: q.description,
+        category: q.quizType,
+        difficulty: q.difficulty,
+        questionCount: q.questionCount
+      })))
+
+      return content
+    } catch (error) {
+      logger.error('Failed to get available content for AI', { error })
+      return []
+    }
+  }
+
+  /**
+   * Call OpenAI to generate personalized recommendations
+   */
+  private async callOpenAIForRecommendations(
+    userContext: string,
+    availableContent: any[],
+    request: RecommendationRequest,
+    limit: number
+  ): Promise<string> {
+    const contentSummary = availableContent.slice(0, 20).map(c => ({
+      id: c.id,
+      type: c.type,
+      title: c.title,
+      description: c.description?.substring(0, 100),
+      category: c.category,
+      difficulty: c.difficulty,
+      tags: c.tags?.slice(0, 3)
+    }))
+
+    const prompt = `You are an expert educational recommendation system. Based on the following user profile and available content, recommend the ${limit} most relevant learning materials.
+
+USER PROFILE:
+${userContext}
+
+AVAILABLE CONTENT:
+${JSON.stringify(contentSummary, null, 2)}
+
+INSTRUCTIONS:
+1. Analyze the user's learning patterns, preferences, and goals
+2. Consider their current skill level and areas where they struggle
+3. Recommend content that will help them progress in their learning journey
+4. Prioritize content that matches their preferred difficulty and interests
+5. For each recommendation, provide:
+   - contentId: The ID of the recommended content
+   - reasoning: Why this content is relevant (2-3 sentences)
+   - confidence: A score from 0.1 to 1.0 indicating how confident you are in this recommendation
+   - priority: A number from 1-${limit} indicating the order of recommendation
+
+Return your response as a JSON array of recommendation objects. Only recommend content that exists in the AVAILABLE CONTENT list above.
+
+RESPONSE FORMAT:
+[
+  {
+    "contentId": "123",
+    "reasoning": "This course is perfect for you because...",
+    "confidence": 0.9,
+    "priority": 1
+  }
+]`
+
+    const response = await this.openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+      max_tokens: 2000
+    })
+
+    return response.choices[0].message.content || "[]"
+  }
+
+  /**
+   * Process AI recommendations and convert to structured format
+   */
+  private async processAIRecommendations(
+    aiResponse: string,
+    userProfile: UserProfile
+  ): Promise<Recommendation[]> {
+    try {
+      let aiRecommendations: any
+
+      // Try strict JSON parse first
+      try {
+        aiRecommendations = JSON.parse(aiResponse)
+      } catch (parseError) {
+        // If AI returned explanatory text + JSON, try to extract the first JSON array/object from the string
+        const arrayMatch = aiResponse.match(/\[\s*\{[\s\S]*\}\s*\]/)
+        const objMatch = aiResponse.match(/\{[\s\S]*\}/)
+        const extract = arrayMatch?.[0] || objMatch?.[0]
+        if (extract) {
+          try {
+            aiRecommendations = JSON.parse(extract)
+          } catch (innerErr) {
+            // fallback to empty
+            logger.warn('Failed to parse extracted AI JSON', { error: innerErr, snippet: extract })
+            aiRecommendations = []
+          }
+        } else {
+          logger.warn('AI response did not contain JSON; returning empty recommendations', { aiResponse })
+          aiRecommendations = []
+        }
+      }
+
+      if (!Array.isArray(aiRecommendations)) {
+        throw new Error('AI response is not an array')
+      }
+
+      const recommendations: Recommendation[] = []
+
+      for (const aiRec of aiRecommendations) {
+        try {
+          // Find the content in database
+          const content = await this.findContentById(aiRec.contentId)
+
+          if (content) {
+            const recommendation = await this.convertContentToRecommendation(
+              content,
+              aiRec.reasoning,
+              aiRec.confidence,
+              'ai_generated'
+            )
+
+            if (recommendation && !this.isAlreadyCompleted(recommendation, userProfile)) {
+              recommendations.push(recommendation)
+            }
+          }
+        } catch (error) {
+          logger.warn('Failed to process AI recommendation', { error, contentId: aiRec.contentId })
+        }
+      }
+
+      // Sort by AI priority
+      recommendations.sort((a, b) => {
+        const aPriority = aiRecommendations.find(r => r.contentId === a.id)?.priority || 999
+        const bPriority = aiRecommendations.find(r => r.contentId === b.id)?.priority || 999
+        return aPriority - bPriority
+      })
+
+      return recommendations
+
+    } catch (error) {
+      logger.error('Failed to process AI recommendations', { error, aiResponse: aiResponse.substring(0, 200) })
+      return []
+    }
+  }
+
+  /**
+   * Find content by ID in database
+   */
+  private async findContentById(contentId: string): Promise<any> {
+    try {
+      // Try to find as course first
+      const course = await prisma.course.findUnique({
+        where: { id: +contentId },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          category: { select: { name: true } },
+          difficulty: true,
+          estimatedHours: true,
+          // Remove tags as it doesn't exist
+        }
+      })
+
+      if (course) {
+        return {
+          ...course,
+          type: 'course',
+          category: course.category?.name
+        }
+      }
+
+      // Try to find as quiz
+      const quiz = await prisma.userQuiz.findUnique({
+        where: { id: +contentId },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          quizType: true,
+          difficulty: true,
+          questionCount: true
+        }
+      })
+
+      if (quiz) {
+        return {
+          ...quiz,
+          type: 'quiz',
+          category: quiz.quizType
+        }
+      }
+
+      return null
+    } catch (error) {
+      logger.error('Failed to find content by ID', { error, contentId })
+      return null
+    }
+  }
+
+  /**
+   * Convert content to recommendation format
+   */
+  private async convertContentToRecommendation(
+    content: any,
+    reasoning: string,
+    confidence: number,
+    source: string
+  ): Promise<Recommendation | null> {
+    try {
+      if (content.type === 'course') {
+        return {
+          id: content.id,
+          type: 'course',
+          title: content.title,
+          slug: content.slug,
+          description: content.description,
+          category: content.category,
+          difficulty: content.difficulty,
+          estimatedTime: content.estimatedHours,
+          confidence: Math.max(0.1, Math.min(1.0, confidence)),
+          reasoning,
+          aiExplanation: reasoning,
+          metadata: {
+            contentType: 'course',
+            tags: content.tags || [],
+            prerequisites: [],
+            learningObjectives: []
+          }
+        }
+      } else if (content.type === 'quiz') {
+        return {
+          id: content.id.toString(),
+          type: 'quiz',
+          title: content.title,
+          slug: content.slug,
+          description: content.description,
+          category: content.category,
+          difficulty: content.difficulty,
+          confidence: Math.max(0.1, Math.min(1.0, confidence)),
+          reasoning,
+          aiExplanation: reasoning,
+          metadata: {
+            contentType: 'quiz',
+            tags: [],
+            prerequisites: [],
+            learningObjectives: []
+          }
+        }
+      }
+
+      return null
+    } catch (error) {
+      logger.error('Failed to convert content to recommendation', { error, contentId: content.id })
+      return null
     }
   }
 }

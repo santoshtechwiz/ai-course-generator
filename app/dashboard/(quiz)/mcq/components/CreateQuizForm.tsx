@@ -29,7 +29,7 @@ import { useSubscription } from "@/modules/auth"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
-import PlanAwareButton from "../../components/PlanAwareButton"
+import PlanAwareButton from "@/components/quiz/PlanAwareButton"
 import { SubscriptionSlider } from "../../../subscription/components/SubscriptionSlider"
 import FormContainer from "@/app/dashboard/FormContainer"
 
@@ -67,8 +67,8 @@ export default function CreateQuizForm({
   const subscriptionData = subscription
 
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
-    title: params?.title || "",
-    amount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
+    title: params?.title && typeof params.title === 'string' ? params.title : "",
+    amount: params?.amount && typeof params.amount === 'string' ? Number.parseInt(params.amount, 10) : maxQuestions,
     difficulty: "medium",
     type: "mcq",
   })
@@ -129,7 +129,16 @@ export default function CreateQuizForm({
         setValue("amount", Math.min(amount, maxQuestions))
       }
     }
-  }, [params?.title, params?.amount, maxQuestions, setValue])
+    if (params?.difficulty && typeof params.difficulty === 'string') {
+      setValue("difficulty", params.difficulty as "easy" | "medium" | "hard")
+    }
+    if (params?.topic) {
+      setValue("topic", params.topic)
+    }
+    if (params?.suggestedPrompt) {
+      setValue("prompt", params.suggestedPrompt)
+    }
+  }, [params?.title, params?.amount, params?.difficulty, params?.topic, params?.suggestedPrompt, maxQuestions, setValue])
 
   React.useEffect(() => {
     const subscription = watch((value: any) => setFormData(value as QuizFormData))
