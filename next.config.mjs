@@ -1,73 +1,19 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const nextConfig = {
   reactStrictMode: false,
   distDir: ".next",
   poweredByHeader: false,
 
+  // Output configuration for Render.com static deployment
+  output: 'standalone',
+
   // CSS configuration
   images: {
     domains: ['localhost'],
-  },
-  
-  // Development configuration
-  typescript: {
-    ignoreBuildErrors: true, // For development only
-  },
-
-  compiler: {
-    // Enabled by default in development, disabled in production to reduce file size
-    removeConsole: process.env.NODE_ENV === 'production',
-  },
-
-  experimental: {
-    // Enable App Router features
-    appDir: true,
-    // Configure dynamic routes
-    dynamicRoutes: {
-      // Use routing.json for dynamic route config
-      config: './app/routing.json'
-    },
-    // Ensure SWC is properly configured
-    swcPlugins: []
-  },
-
-  // Basic webpack configuration
-  webpack: (config, { dev, isServer }) => {
-    // Apply optimizations for client-side development
-    if (dev && !isServer) {
-      config.optimization = {
-        ...config.optimization,
-        moduleIds: 'named',
-        chunkIds: 'named',
-        runtimeChunk: 'single',
-        splitChunks: {
-          cacheGroups: {
-            styles: {
-              name: 'styles',
-              type: 'css/mini-extract',
-              chunks: 'all',
-              enforce: true,
-            },
-          },
-        },
-      }
-    }
-        // Provide alias for js-tiktoken lite to satisfy named imports used by @langchain
-        config.resolve = config.resolve || {};
-        config.resolve.alias = {
-          ...(config.resolve.alias || {}),
-          'js-tiktoken/lite': require('path').resolve(__dirname, 'src/shims/js-tiktoken-shim.cjs'),
-        };
-
-        return config
-  },
-
-  modularizeImports: {
-    lodash: {
-      transform: "lodash/{{member}}",
-    },
-  },
-
-  images: {
     formats: ["image/avif", "image/webp"],
     deviceSizes: [320, 420, 640, 768, 1024, 1280, 1440, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
@@ -96,6 +42,33 @@ const nextConfig = {
     minimumCacheTTL: 600,
   },
 
+  // Build configuration
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
+  typescript: {
+    ignoreBuildErrors: true, // Re-enable to handle Next.js 15 type generation issues
+  },
+
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+
+  compress: true,
+
+  // Environment variables
+  env: {
+    DISABLE_STATIC_SLUG: process.env.DISABLE_STATIC_SLUG || "no-static",
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    STRIPE_BASIC_PRICE_ID: process.env.STRIPE_BASIC_PRICE_ID,
+    STRIPE_PREMIUM_PRICE_ID: process.env.STRIPE_PREMIUM_PRICE_ID,
+    STRIPE_ULTIMATE_PRICE_ID: process.env.STRIPE_ULTIMATE_PRICE_ID,
+  },
+
+  // URL rewrites
   async rewrites() {
     return [
       {
@@ -109,39 +82,43 @@ const nextConfig = {
     ];
   },
 
-  env: {
-    DISABLE_STATIC_SLUG: process.env.DISABLE_STATIC_SLUG || "no-static",
-    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
-    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
-    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-    // Price ID mappings for secure Stripe integration
-    STRIPE_BASIC_PRICE_ID: process.env.STRIPE_BASIC_PRICE_ID,
-    STRIPE_PREMIUM_PRICE_ID: process.env.STRIPE_PREMIUM_PRICE_ID,
-    STRIPE_ULTIMATE_PRICE_ID: process.env.STRIPE_ULTIMATE_PRICE_ID,
+  // Modular imports optimization
+  modularizeImports: {
+    lodash: {
+      transform: "lodash/{{member}}",
+    },
   },
 
-  eslint: {
-    ignoreDuringBuilds: true,
+  // Experimental features
+  experimental: {
+    optimizeCss: false,
+    serverSourceMaps: true,
+    optimizePackageImports: ["lucide-react", "recharts", "@radix-ui/react-icons"],
   },
 
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-
-  compress: true,
-  turbopack: {
-     resolveExtensions: ['.mdx', '.tsx', '.ts', '.jsx', '.js', '.mjs', '.json'],
-  },
+  // Webpack configuration
   webpack: (config, { dev, isServer }) => {
-    if (dev) {
+    // Apply optimizations for client-side development
+    if (dev && !isServer) {
       config.optimization = {
         ...config.optimization,
-        removeAvailableModules: false,
-        removeEmptyChunks: false,
-        splitChunks: false,
-      };
+        moduleIds: 'named',
+        chunkIds: 'named',
+        runtimeChunk: 'single',
+        splitChunks: {
+          cacheGroups: {
+            styles: {
+              name: 'styles',
+              type: 'css/mini-extract',
+              chunks: 'all',
+              enforce: true,
+            },
+          },
+        },
+      }
     }
 
+    // Production optimizations
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: "all",
@@ -161,13 +138,14 @@ const nextConfig = {
       };
     }
 
-    return config;
-  },
+    // Provide alias for js-tiktoken lite to satisfy named imports used by @langchain
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      'js-tiktoken/lite': path.resolve(__dirname, 'src/shims/js-tiktoken-shim.cjs'),
+    };
 
-  experimental: {
-    optimizeCss: false,
-    serverSourceMaps: true,
-    optimizePackageImports: ["lucide-react", "recharts", "@radix-ui/react-icons"],
+    return config;
   },
 };
 
