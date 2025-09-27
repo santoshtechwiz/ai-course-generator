@@ -1,13 +1,13 @@
 "use client"
 
 import type React from "react"
-import { useState, useCallback, useEffect, useMemo, useRef } from "react"
+import { useState, useCallback, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/useDebounce"
 import { useInView } from "react-intersection-observer"
 import { ErrorBoundary } from "react-error-boundary"
-import { AlertCircle, RefreshCw, Crown, Rocket, Sparkles, Filter, Flame } from "lucide-react"
+import { AlertCircle, RefreshCw, Search } from "lucide-react"
 import type { QuizType } from "@/app/types/quiz-types"
 import type { QuizListItem } from "@/app/actions/getQuizes"
 import { getQuizzes } from "@/app/actions/getQuizes"
@@ -16,12 +16,7 @@ import { QuizList } from "./QuizList"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { QuizCard } from "./QuizCard"
-import { cn } from "@/lib/utils"
-import RecommendedSection from "@/components/shared/RecommendedSection"
-import AIQuizNoticeModal from "../../components/AIQuizNoticeModal"
-import { useAIModal } from "@/hooks/useAIModal"
+import { Input } from "@/components/ui/input"
 
 interface QuizzesClientProps {
   initialQuizzesData: {
@@ -47,24 +42,8 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   const [activeTab, setActiveTab] = useState("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
-  // Refs to prevent infinite loops
-  const lastSearchRef = useRef("")
-  const lastFilterRef = useRef("")
-  const lastTabRef = useRef("all")
-
-  // AI Modal state with conservative logic - only show when users need help
-  const {
-    shouldShow: showAIModal,
-    showModal: triggerAIModal,
-    hideModal: hideAIModal,
-    dismissModal: dismissAIModal,
-    trackEngagement
-  } = useAIModal({
-    minTimeBetweenShows: 7 * 24 * 60 * 60 * 1000, // 7 days minimum
-    maxShowsPerSession: 1, // Max 1 per session
-    maxShowsPerDay: 1, // Max 1 per day
-    triggerEvents: ['no_results', 'first_visit', 'low_engagement'] // Only show for specific scenarios
-  })
+  const debouncedSearch = useDebounce(search, 300)
+  const { ref, inView } = useInView({ threshold: 0.1 })
 
   // Restore persisted preferences
   useEffect(() => {
@@ -76,13 +55,8 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
       if (savedTab) setActiveTab(savedTab)
       if (savedView === "grid" || savedView === "list") {
         setViewMode(savedView)
-      } else {
-        // Default to compact list on mobile when no saved preference
-        if (typeof window !== 'undefined' && window.innerWidth < 640) {
-          setViewMode("list")
-        }
       }
-      if (typeof savedSearch === 'string') setSearch(savedSearch)
+      if (typeof savedSearch === "string") setSearch(savedSearch)
       if (savedTypes) {
         const arr = savedTypes.split(",").filter(Boolean) as QuizType[]
         if (arr.length > 0) setSelectedTypes(arr)
@@ -92,56 +66,25 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
 
   // Persist preferences
   useEffect(() => {
-    try { localStorage.setItem("quiz_active_tab", activeTab) } catch {}
+    try {
+      localStorage.setItem("quiz_active_tab", activeTab)
+    } catch {}
   }, [activeTab])
   useEffect(() => {
-    try { localStorage.setItem("quiz_view_mode", viewMode) } catch {}
+    try {
+      localStorage.setItem("quiz_view_mode", viewMode)
+    } catch {}
   }, [viewMode])
   useEffect(() => {
-    try { localStorage.setItem("quiz_search", search) } catch {}
+    try {
+      localStorage.setItem("quiz_search", search)
+    } catch {}
   }, [search])
   useEffect(() => {
-    try { localStorage.setItem("quiz_types", selectedTypes.join(",")) } catch {}
+    try {
+      localStorage.setItem("quiz_types", selectedTypes.join(","))
+    } catch {}
   }, [selectedTypes])
-
-  const debouncedSearch = useDebounce(search, 300)
-  const { ref, inView } = useInView({ threshold: 0.1 })
-
-  // AI Modal trigger logic - prevent infinite loops with refs
-  useEffect(() => {
-    const currentSearch = debouncedSearch.trim()
-    if (currentSearch.length > 2 && currentSearch !== lastSearchRef.current) {
-      lastSearchRef.current = currentSearch
-      trackEngagement('search')
-      triggerAIModal('search')
-    }
-  }, [debouncedSearch, triggerAIModal, trackEngagement])
-
-  // Filter change detection with ref to prevent loops
-  const filterKey = useMemo(() =>
-    `${selectedTypes.join(',')}-${questionCountRange.join('-')}-${showPublicOnly}`,
-    [selectedTypes, questionCountRange, showPublicOnly]
-  )
-
-  useEffect(() => {
-    if (filterKey !== lastFilterRef.current && filterKey !== '---false') {
-      lastFilterRef.current = filterKey
-      trackEngagement('filter')
-      triggerAIModal('filter')
-    }
-  }, [filterKey, triggerAIModal, trackEngagement])
-
-  // Tab change detection with ref to prevent loops
-  useEffect(() => {
-    if (activeTab !== lastTabRef.current && activeTab !== "all") {
-      lastTabRef.current = activeTab
-      trackEngagement('browse')
-      const timer = setTimeout(() => {
-        triggerAIModal('browse')
-      }, 3000) // Wait 3 seconds to avoid showing immediately on page load
-      return () => clearTimeout(timer)
-    }
-  }, [activeTab, triggerAIModal, trackEngagement])
 
   const queryKey = useMemo(
     () => [
@@ -159,9 +102,8 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useInfiniteQuery({
     queryKey,
     queryFn: async ({ pageParam = 1, signal }) => {
-      // Handle abort signal properly
       if (signal?.aborted) {
-        throw new Error('Query was cancelled')
+        throw new Error("Query was cancelled")
       }
 
       const result = await getQuizzes({
@@ -188,19 +130,14 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
     retry: (failureCount, error) => {
-      // Don't retry on AbortError or cancellation errors
-      if (error?.name === 'AbortError' || error?.message?.includes('cancelled') || error?.message?.includes('Query was cancelled')) {
+      if (error?.name === "AbortError" || error?.message?.includes("cancelled")) {
         return false
       }
       return failureCount < 1
     },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   })
 
-  // Dedupe helper
   const dedupeById = useCallback((items: QuizListItem[]) => {
     const seen = new Set<string>()
     const result: QuizListItem[] = []
@@ -218,53 +155,18 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   const rawQuizzes = extractQuizzes(data)
   const quizzes = useMemo(() => dedupeById(rawQuizzes), [rawQuizzes, dedupeById])
 
-  // Avoid fetching next page when no results at all
   const noResults = !isLoading && !isError && quizzes.length === 0
-
-  // Determine whether filters/search are active for empty state UX
-  const isSearching = (
+  const isSearching =
     debouncedSearch.trim() !== "" ||
     selectedTypes.length > 0 ||
     questionCountRange[0] > 0 ||
     questionCountRange[1] < 50 ||
     showPublicOnly ||
     activeTab !== "all"
-  )
 
-  // Trigger AI modal only when users are having difficulty finding content
+  // Load more when in view
   useEffect(() => {
-    if (noResults && isSearching && !isLoading && !isError) {
-      // User searched/filtered but got no results - they might need AI help
-      triggerAIModal('no_results')
-    }
-  }, [noResults, isSearching, isLoading, isError, triggerAIModal])
-
-  // Show modal on first visit to new users
-  useEffect(() => {
-    if (!isLoading && quizzes.length > 0 && !isSearching) {
-      // Only trigger on first visit if user hasn't seen modal before
-      const hasSeenModal = localStorage.getItem('ai-quiz-modal-state')
-      if (!hasSeenModal) {
-        // Small delay to not be intrusive
-        const timer = setTimeout(() => {
-          triggerAIModal('first_visit')
-        }, 3000)
-        return () => clearTimeout(timer)
-      }
-    }
-  }, [isLoading, quizzes.length, isSearching, triggerAIModal])
-
-  // Load more when in view - prevent infinite loading by adding more conditions
-  useEffect(() => {
-    if (
-      inView &&
-      hasNextPage &&
-      !isFetchingNextPage &&
-      !isLoading &&
-      !isError &&
-      !noResults &&
-      quizzes.length > 0 // Additional guard to prevent fetching when no initial data
-    ) {
+    if (inView && hasNextPage && !isFetchingNextPage && !isLoading && !isError && !noResults && quizzes.length > 0) {
       fetchNextPage()
     }
   }, [inView, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage, isError, noResults, quizzes.length])
@@ -291,29 +193,14 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   }, [])
 
   const handleCreateQuiz = useCallback(() => {
-    trackEngagement('create')
     router.push("/dashboard/mcq")
-  }, [router, trackEngagement])
-
-  const handleStartQuiz = useCallback(() => {
-    trackEngagement('search') // Starting a quiz shows search/browse interest
-    hideAIModal()
-    // Could navigate to a random quiz or featured quiz
-    router.push("/dashboard/quizzes")
-  }, [router, hideAIModal, trackEngagement])
-
-  const handleCreateQuizFromModal = useCallback(() => {
-    trackEngagement('create')
-    hideAIModal()
-    router.push("/dashboard/mcq")
-  }, [router, hideAIModal, trackEngagement])
+  }, [router])
 
   const handleRetry = useCallback(() => {
     refetch()
   }, [refetch])
 
   const handleQuizDeleted = useCallback(() => {
-    // Refetch the data to update the list after deletion
     refetch()
   }, [refetch])
 
@@ -359,100 +246,33 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     </Card>
   )
 
-  // Enhanced Featured banner for engagement
-  const FeaturedBanner = () => (
-    <Card className="border-0 shadow-xl overflow-hidden bg-gradient-to-r from-violet-600/15 via-fuchsia-500/10 to-rose-500/10 backdrop-blur-sm">
-      <CardContent className="p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-        <div className="flex items-start gap-4">
-          <div className="p-4 rounded-2xl bg-primary text-primary-foreground shadow-lg">
-            <Crown className="h-6 w-6" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-xl font-bold text-foreground">Unlock Premium Quizzes</h3>
-            <p className="text-muted-foreground leading-relaxed">
-              Get access to advanced question banks, code challenges, and AI insights to accelerate learning.
-            </p>
-            <div className="flex items-center gap-3 pt-2">
-              <Badge variant="secondary" className="bg-primary/10 text-primary border border-primary/20 px-3 py-1">Popular</Badge>
-              <Badge variant="outline" className="gap-1.5 border-primary/30 text-primary hover:bg-primary/5">
-                <Flame className="h-3.5 w-3.5" /> Trending now
-              </Badge>
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <Button variant="outline" className="border-primary/30 text-primary hover:bg-primary/5">
-            Learn More
-          </Button>
-          <Button className="bg-gradient-to-r from-primary to-primary/80 hover:scale-105 transition-all duration-300 shadow-lg">
-            Upgrade Now
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  )
-
-
-
-  // Recommended row (horizontal scroll)
-  const recommended = useMemo(() => {
-    if (!quizzes?.length) return []
-    return [...quizzes]
-      .sort((a, b) => (b.questionCount || 0) - (a.questionCount || 0))
-      .slice(0, 8)
-  }, [quizzes])
-
-  const filteredGridQuizzes = useMemo(() => {
-    if (!recommended.length) return quizzes
-    const recIds = new Set(recommended.map((q) => String(q.id || q.slug)))
-    return quizzes.filter((q) => !recIds.has(String(q.id || q.slug)))
-  }, [quizzes, recommended])
-
-  const RecommendedRow = () => {
-    if (!recommended.length) return null
-    return (
-      <RecommendedSection
-        title="Recommended for you"
-        action={<Button variant="ghost" size="sm" className="text-xs" onClick={() => setActiveTab("all")}>View all</Button>}
-      >
-        <div className="-mx-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none]" aria-label="Recommended quizzes">
-          <style jsx>{`
-            div::-webkit-scrollbar { display: none; }
-          `}</style>
-          <div className="flex items-stretch gap-4 px-2 pb-2 snap-x snap-mandatory">
-            {recommended.map((q) => (
-              <div key={q.id} className="min-w-[280px] max-w-[320px] snap-start transition-transform duration-200 hover:-translate-y-0.5">
-                <QuizCard
-                  title={q.title}
-                  description={q.title}
-                  questionCount={q.questionCount || 0}
-                  isPublic={q.isPublic}
-                  slug={q.slug}
-                  quizType={q.quizType as QuizType}
-                  estimatedTime={`${Math.max(Math.ceil((q.questionCount || 0) * 0.5), 1)} min`}
-                  completionRate={Math.min(Math.max(q.bestScore || 0, 0), 100)}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </RecommendedSection>
-    )
-  }
-
   return (
-    <div className="space-y-8">
-      {/* AI Learning Modal with adaptive display */}
-      <AIQuizNoticeModal
-        isOpen={showAIModal}
-        onClose={() => dismissAIModal('less')}
-        onStartQuiz={handleStartQuiz}
-        onCreateQuiz={handleCreateQuizFromModal}
-        onDismissWithPreference={dismissAIModal}
-        quizType="quiz"
-      />
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="mb-12">
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl md:text-6xl font-bold gradient-text text-balance">Find your Quiz</h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto text-pretty">
+            Jumpstart your learning journey with interactive quizzes from CourseAI and our community.
+          </p>
+        </div>
+      </div>
 
-      <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
+      <div className="mb-8">
+        <div className="max-w-2xl mx-auto">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search quizzes..."
+              value={search}
+              onChange={handleSearchChange}
+              className="pl-12 h-14 text-lg bg-card border-border/50 focus:border-primary/50 focus:ring-primary/20"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-8">
         <ErrorBoundary fallbackRender={ErrorFallback} onReset={handleRetry} resetKeys={[queryKey.join("")]}>
           <div className="lg:w-80 lg:flex-shrink-0">
             <QuizSidebar
@@ -470,21 +290,14 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
           </div>
         </ErrorBoundary>
 
-        <div className="flex-1 min-w-0 space-y-8">
+        <div className="flex-1 min-w-0">
           <ErrorBoundary fallbackRender={ErrorFallback} onReset={handleRetry} resetKeys={[queryKey.join("")]}>
             {isLoading ? (
               <QuizzesSkeleton />
             ) : (
               <>
-                <FeaturedBanner />
-
-                {/* Enhanced Recommended Section */}
-                <div className="bg-gradient-to-r from-accent/10 to-primary/5 rounded-xl p-6 border border-border/30">
-                  <RecommendedRow />
-                </div>
-
                 <QuizList
-                  quizzes={filteredGridQuizzes}
+                  quizzes={quizzes}
                   isLoading={false}
                   isError={isError}
                   isFetchingNextPage={isFetchingNextPage}
@@ -514,19 +327,6 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
           </ErrorBoundary>
         </div>
       </div>
-
-      {/* AI Quiz Notice Modal - only shows when users need help */}
-      <AIQuizNoticeModal
-        isOpen={showAIModal}
-        onClose={hideAIModal}
-        onStartQuiz={handleStartQuiz}
-        onCreateQuiz={handleCreateQuizFromModal}
-        onDismissWithPreference={(preference) => {
-          dismissAIModal()
-          // Track dismissal preference
-          trackEngagement('dismiss')
-        }}
-      />
     </div>
   )
 }

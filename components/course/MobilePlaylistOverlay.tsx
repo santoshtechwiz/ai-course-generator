@@ -106,10 +106,10 @@ const MobilePlaylistOverlay: React.FC<MobilePlaylistOverlayProps> = ({
             </div>
             
             {/* Chapter list */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 overflow-hidden">
               <div className="p-4 divide-y divide-border">
                 {course.chapters.map((chapter, index) => {
-                  const isActive = currentChapter?.id === chapter.id
+                  const isActive = String(currentChapter?.id) === String(chapter.id)
                   const isCompleted = completedChapters.includes(String(chapter.id))
                   
                   return (
@@ -117,12 +117,12 @@ const MobilePlaylistOverlay: React.FC<MobilePlaylistOverlayProps> = ({
                       key={chapter.id}
                       className={cn(
                         "py-3 first:pt-0 last:pb-0",
-                        isActive ? "bg-primary/5" : ""
+                        isActive ? "bg-primary/10 border-l-4 border-primary/40 shadow-md" : ""
                       )}
                     >
                       <button
                         onClick={() => handleChapterSelect(chapter)}
-                        className="flex items-start w-full text-left gap-3"
+                        className="flex items-start w-full text-left gap-3 overflow-hidden"
                       >
                         <div className="mt-1 flex-shrink-0">
                           {isCompleted ? (
@@ -134,7 +134,7 @@ const MobilePlaylistOverlay: React.FC<MobilePlaylistOverlayProps> = ({
                           )}
                         </div>
                         
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 overflow-hidden">
                           <div className="flex items-center justify-between">
                             <div className="text-xs text-muted-foreground">
                               Chapter {index + 1}
@@ -152,7 +152,7 @@ const MobilePlaylistOverlay: React.FC<MobilePlaylistOverlayProps> = ({
                             {chapter.title}
                           </div>
                           
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1 min-w-0">
                             {chapter.isFree && (
                               <Badge variant="outline" className="text-[10px] py-0 border-primary/30 text-primary bg-primary/5">
                                 Free

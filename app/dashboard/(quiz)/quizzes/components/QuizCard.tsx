@@ -13,15 +13,11 @@ import {
   Star,
   Target,
   BookOpen,
-  ChevronRight,
-  Heart,
   Brain,
-  RotateCcw,
-  ArrowRight,
-  Play,
   MoreHorizontal,
   Edit3,
   Trash2,
+  ExternalLink,
 } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from "next/link"
@@ -38,87 +34,48 @@ interface QuizCardProps {
   quizType: QuizType
   estimatedTime: string
   completionRate?: number
-  difficulty?: "Easy" | "Medium" | "Hard"
-  rating?: number
-  enrolledCount?: number
-  isPopular?: boolean
-  isTrending?: boolean
-  isPremium?: boolean
   compact?: boolean
-  userId?: string // Quiz owner ID
-  currentUserId?: string // Current user ID
+  userId?: string
+  currentUserId?: string
   onDelete?: (slug: string, quizType: QuizType) => void
-  showActions?: boolean // Whether to show edit/delete actions
+  showActions?: boolean
 }
 
 const quizTypeConfig = {
   mcq: {
     label: "Multiple Choice",
     icon: Target,
-    gradient: "from-blue-500 to-cyan-500",
-    bgColor: "bg-blue-50/80 dark:bg-blue-950/30",
-    textColor: "text-blue-700 dark:text-blue-300",
-    borderColor: "border-blue-200/60 dark:border-blue-800/40",
-    accentColor: "bg-blue-500",
-    shadowColor: "shadow-blue-500/20",
+    color: "text-blue-400",
+    bg: "bg-blue-500/10",
+    border: "border-blue-500/20",
   },
   openended: {
     label: "Open Ended",
     icon: Brain,
-    gradient: "from-violet-500 to-purple-500",
-    bgColor: "bg-violet-50/80 dark:bg-violet-950/30",
-    textColor: "text-violet-700 dark:text-violet-300",
-    borderColor: "border-violet-200/60 dark:border-violet-800/40",
-    accentColor: "bg-violet-500",
-    shadowColor: "shadow-violet-500/20",
+    color: "text-purple-400",
+    bg: "bg-purple-500/10",
+    border: "border-purple-500/20",
   },
   code: {
     label: "Code Challenge",
     icon: Code,
-    gradient: "from-green-500 to-emerald-500",
-    bgColor: "bg-green-50/80 dark:bg-green-950/30",
-    textColor: "text-green-700 dark:text-green-300",
-    borderColor: "border-green-200/60 dark:border-green-800/40",
-    accentColor: "bg-green-500",
-    shadowColor: "shadow-green-500/20",
+    color: "text-green-400",
+    bg: "bg-green-500/10",
+    border: "border-green-500/20",
   },
   blanks: {
     label: "Fill Blanks",
     icon: PenTool,
-    gradient: "from-cyan-500 to-teal-500",
-    bgColor: "bg-cyan-50/80 dark:bg-cyan-950/30",
-    textColor: "text-cyan-700 dark:text-cyan-300",
-    borderColor: "border-cyan-200/60 dark:border-cyan-800/40",
-    accentColor: "bg-cyan-500",
-    shadowColor: "shadow-cyan-500/20",
+    color: "text-orange-400",
+    bg: "bg-orange-500/10",
+    border: "border-orange-500/20",
   },
   flashcard: {
     label: "Flash Cards",
     icon: Flashlight,
-    gradient: "from-amber-500 to-amber-600",
-    bgColor: "bg-amber-50/80 dark:bg-amber-950/30",
-    textColor: "text-amber-700 dark:text-amber-300",
-    borderColor: "border-amber-200/60 dark:border-amber-800/40",
-    accentColor: "bg-amber-500",
-    shadowColor: "shadow-amber-500/20",
-  },
-} as const
-
-const difficultyConfig = {
-  Easy: {
-    color: "text-emerald-700 dark:text-emerald-300",
-    bg: "bg-emerald-100/80 dark:bg-emerald-950/50",
-    border: "border-emerald-200/60 dark:border-emerald-800/40",
-  },
-  Medium: {
-    color: "text-amber-700 dark:text-amber-300",
-    bg: "bg-amber-100/80 dark:bg-amber-950/50",
-    border: "border-amber-200/60 dark:border-amber-800/40",
-  },
-  Hard: {
-    color: "text-red-700 dark:text-red-300",
-    bg: "bg-red-100/80 dark:bg-red-950/50",
-    border: "border-red-200/60 dark:border-red-800/40",
+    color: "text-yellow-400",
+    bg: "bg-yellow-500/10",
+    border: "border-yellow-500/20",
   },
 } as const
 
@@ -130,11 +87,6 @@ function QuizCardComponent({
   quizType,
   estimatedTime,
   completionRate = 0,
-  difficulty = "Medium",
-  rating = 4.5,
-  enrolledCount = 1250,
-  isPopular = false,
-  isTrending = false,
   compact = false,
   userId,
   currentUserId,
@@ -142,23 +94,12 @@ function QuizCardComponent({
   showActions = false,
 }: QuizCardProps) {
   const [isHovered, setIsHovered] = useState(false)
-  const [isFavorited, setIsFavorited] = useState(false)
 
   const config = quizTypeConfig[quizType] || quizTypeConfig.mcq
-  const difficultyStyle = difficultyConfig[difficulty]
   const QuizTypeIcon = config.icon
 
   const handleMouseEnter = useCallback(() => setIsHovered(true), [])
   const handleMouseLeave = useCallback(() => setIsHovered(false), [])
-
-  const handleFavorite = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      setIsFavorited(!isFavorited)
-    },
-    [isFavorited],
-  )
 
   const handleDelete = useCallback(
     (e: React.MouseEvent) => {
@@ -169,129 +110,83 @@ function QuizCardComponent({
     [onDelete, slug, quizType],
   )
 
-  const getButtonIcon = () => {
-    if (completionRate >= 100) return RotateCcw
-    if (completionRate > 0) return ArrowRight
-    return Play
-  }
-
-  const getButtonText = () => {
-    if (completionRate >= 100) return "Review"
-    if (completionRate > 0) return "Continue"
-    return "Start"
-  }
-
   const isOwner = userId && currentUserId && String(userId) === String(currentUserId)
   const canShowActions = showActions && isOwner
-  const ButtonIcon = getButtonIcon()
 
   return (
     <Link
       href={`/dashboard/${quizType}/${slug}`}
-      className="h-full group block focus:outline-none"
+      className="h-full group block focus:outline-none focus-ring"
       tabIndex={0}
       aria-label={`Open quiz: ${title}`}
     >
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -4, scale: 1.02 }}
+        whileHover={{ y: -2 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
         className="h-full"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <Card
-          className={cn(
-            "h-full overflow-hidden relative transition-all duration-300 border-0",
-            "group-hover:shadow-xl hover:shadow-primary/15",
-            "backdrop-blur-sm bg-card/95 ring-1 ring-border/20 hover:ring-primary/30",
-            "rounded-xl",
-          )}
-        >
-          <div
-            className={cn(
-              "absolute -inset-0.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300",
-              "bg-gradient-to-r",
-              config.gradient,
-              "blur-sm -z-10",
-            )}
-          />
-
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className={cn("p-2 rounded-lg bg-gradient-to-br text-white shadow-md", config.gradient)}>
-                  <QuizTypeIcon className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-base leading-tight line-clamp-1 group-hover:text-primary transition-colors duration-200">
-                    {title}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge
-                      variant="outline"
-                      className={cn("text-xs px-2 py-0.5 border-0", difficultyStyle.bg, difficultyStyle.color)}
-                    >
-                      {difficulty}
-                    </Badge>
-                    <span className={cn("text-xs font-medium", config.textColor)}>{config.label}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1">
-                {(isTrending || isPopular) && <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />}
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={handleFavorite}
-                >
-                  <Heart className={cn("h-3.5 w-3.5", isFavorited && "fill-current text-red-500")} />
-                </Button>
-
-                {canShowActions && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                      >
-                        <MoreHorizontal className="h-3.5 w-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40">
-                      <DropdownMenuItem>
-                        <Edit3 className="mr-2 h-3.5 w-3.5" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleDelete} className="text-destructive">
-                        <Trash2 className="mr-2 h-3.5 w-3.5" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
+        <Card className="h-full overflow-hidden bg-card border-border/50 hover:border-border transition-all duration-200 card-hover">
+          <div className="aspect-video bg-gradient-to-br from-muted/50 to-muted/20 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/10" />
+            <div className="absolute top-4 left-4">
+              <div className={cn("p-2 rounded-lg", config.bg, config.border, "border")}>
+                <QuizTypeIcon className={cn("h-5 w-5", config.color)} />
               </div>
             </div>
+            <div className="absolute top-4 right-4">
+              {canShowActions && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 bg-background/80 backdrop-blur-sm">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40">
+                    <DropdownMenuItem>
+                      <Edit3 className="mr-2 h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+            <div className="absolute bottom-4 left-4">
+              <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm text-xs">
+                {config.label}
+              </Badge>
+            </div>
+          </div>
 
-            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">{description}</p>
+          <CardContent className="p-6 space-y-4">
+            <div className="space-y-2">
+              <h3 className="font-semibold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                {title}
+              </h3>
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                Get started with {config.label.toLowerCase()} and test your knowledge.
+              </p>
+            </div>
 
-            <div className="flex items-center justify-between text-xs text-muted-foreground bg-muted/30 rounded-lg p-3">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5" />
-                <span className="font-medium">{estimatedTime}</span>
+                <span>{estimatedTime}</span>
               </div>
               <div className="flex items-center gap-1">
                 <BookOpen className="w-3.5 h-3.5" />
-                <span className="font-medium">{questionCount} questions</span>
+                <span>{questionCount} questions</span>
               </div>
               <div className="flex items-center gap-1">
                 <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-                <span className="font-medium">{rating}</span>
+                <span>4.5</span>
               </div>
             </div>
 
@@ -299,33 +194,33 @@ function QuizCardComponent({
               <div className="space-y-2">
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">Progress</span>
-                  <span className="font-medium text-primary">{Math.round(completionRate)}%</span>
+                  <span className="font-medium">{Math.round(completionRate)}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-1.5">
                   <div
-                    className={cn("h-1.5 rounded-full transition-all duration-500", config.accentColor)}
+                    className="bg-primary h-1.5 rounded-full transition-all duration-500"
                     style={{ width: `${completionRate}%` }}
                   />
                 </div>
               </div>
             )}
 
-            <Button
-              className={cn(
-                "w-full group/btn font-medium text-sm py-2 mt-4",
-                completionRate >= 100
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                  : completionRate > 0
-                    ? "bg-blue-600 hover:bg-blue-700 text-white"
-                    : "bg-primary hover:bg-primary/90 text-primary-foreground",
-              )}
-              size="sm"
-              tabIndex={-1}
-            >
-              <ButtonIcon className="w-4 h-4 mr-2" />
-              {getButtonText()}
-              <ChevronRight className="w-4 h-4 ml-2 transition-transform group-hover/btn:translate-x-1" />
-            </Button>
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
+                  <span className="text-[10px] font-medium">V</span>
+                </div>
+                <span>Vercel</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                tabIndex={-1}
+              >
+                <ExternalLink className="w-3 h-3" />
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </motion.div>

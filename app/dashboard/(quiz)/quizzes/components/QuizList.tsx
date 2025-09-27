@@ -3,12 +3,10 @@
 import { memo, useMemo, useState } from "react"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
 import { useInView } from "react-intersection-observer"
-import { AlertCircle, FileQuestion, Search, Plus, RefreshCw, Trophy, Grid3X3, List } from "lucide-react"
-import { CreateCard } from "@/components/CreateCard"
+import { AlertCircle, FileQuestion, Search, Plus, RefreshCw, Grid3X3, List, Sparkles } from "lucide-react"
 import { QuizCard } from "./QuizCard"
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { QuizListItem } from "@/app/actions/getQuizes"
 import type { QuizType } from "@/app/types/quiz-types"
@@ -47,7 +45,7 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.03 },
+    transition: { staggerChildren: 0.05 },
   },
 }
 
@@ -108,7 +106,7 @@ function QuizListComponent({
   )
 
   const handleDeleteQuiz = (slug: string, quizType: QuizType) => {
-    const quiz = quizzes.find(q => q.slug === slug)
+    const quiz = quizzes.find((q) => q.slug === slug)
     if (quiz) {
       setQuizToDelete({ slug, title: quiz.title, quizType })
       setDeleteDialogOpen(true)
@@ -155,7 +153,7 @@ function QuizListComponent({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className="border-dashed">
+        <Card className="border-dashed border-border/50">
           <CardContent className="flex flex-col items-center justify-center p-12 text-center">
             {isSearching ? (
               <>
@@ -175,11 +173,10 @@ function QuizListComponent({
                 <p className="text-muted-foreground mb-6 max-w-md">
                   Create your first quiz to test knowledge and skills.
                 </p>
-                <CreateCard
-                  title="Create Your First Quiz"
-                  description="Quick and easy quiz builder"
-                  animationDuration={2.0}
-                />
+                <Button onClick={onCreateQuiz} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Your First Quiz
+                </Button>
               </>
             )}
           </CardContent>
@@ -190,68 +187,37 @@ function QuizListComponent({
 
   return (
     <div className="space-y-8">
-      {/* Enhanced Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 bg-gradient-to-r from-background to-accent/20 rounded-xl border border-border/30">
-        <div className="space-y-2">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
-            {activeFilter === "all" ? "All Quizzes" : `${activeFilter.toUpperCase()} Quizzes`}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold text-foreground">
+            {activeFilter === "all" ? "All Quzzez" : `${activeFilter.toUpperCase()} Quizzes`}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {filteredQuizzes.length} quiz{filteredQuizzes.length !== 1 ? "es" : ""} available
+            {filteredQuizzes.length} quizzes{filteredQuizzes.length !== 1 ? "s" : ""} available
           </p>
         </div>
 
         {onViewModeChange && (
-          <ToggleGroup type="single" value={viewMode} onValueChange={onViewModeChange} className="bg-muted/40 p-1.5 rounded-xl border border-border/30">
-            <ToggleGroupItem value="grid" aria-label="Grid view" className="data-[state=on]:bg-background data-[state=on]:shadow-sm h-10 w-10">
+          <ToggleGroup
+            type="single"
+            value={viewMode}
+            onValueChange={onViewModeChange}
+            className="bg-card border border-border/50"
+          >
+            <ToggleGroupItem value="grid" aria-label="Grid view" className="data-[state=on]:bg-muted">
               <Grid3X3 className="h-4 w-4" />
             </ToggleGroupItem>
-            <ToggleGroupItem value="list" aria-label="List view" className="data-[state=on]:bg-background data-[state=on]:shadow-sm h-10 w-10">
+            <ToggleGroupItem value="list" aria-label="List view" className="data-[state=on]:bg-muted">
               <List className="h-4 w-4" />
             </ToggleGroupItem>
           </ToggleGroup>
         )}
       </div>
 
-      {/* Enhanced Quiz Distribution Stats */}
-      {quizzes.length > 0 && (
-        <Card className="bg-gradient-to-r from-accent/20 to-primary/5 border-border/30 shadow-lg">
-          <CardContent className="p-6 sm:p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-lg text-foreground">Quiz Distribution</h3>
-              <Badge variant="secondary" className="bg-primary/10 text-primary px-3 py-1.5 font-semibold">
-                {quizzes.length} total
-              </Badge>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
-              {Object.entries(quizCounts)
-                .filter(([key]) => key !== "all")
-                .map(([type, count]) => (
-                  <motion.div
-                    key={type}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className="text-center p-4 rounded-xl bg-background/80 border border-border/30 hover:bg-accent/60 hover:border-primary/30 transition-all duration-300 hover:scale-105"
-                  >
-                    <div className="text-2xl sm:text-3xl font-bold text-primary mb-2">{count}</div>
-                    <div className="text-sm text-muted-foreground capitalize font-medium">
-                      {type === "openended" ? "Open Ended" : type}
-                    </div>
-                  </motion.div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Enhanced Quiz Grid */}
       <motion.div
         className={cn(
-          "grid gap-6 sm:gap-8",
-          viewMode === "grid" 
-            ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" 
-            : "grid-cols-1 max-w-5xl mx-auto",
+          "grid gap-6",
+          viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 max-w-4xl",
         )}
         variants={containerVariants}
         initial="hidden"
@@ -268,7 +234,7 @@ function QuizListComponent({
                 initial="hidden"
                 animate="visible"
                 exit={{ opacity: 0, y: 20, transition: { duration: 0.2 } }}
-                transition={{ delay: idx * 0.02 }}
+                transition={{ delay: idx * 0.03 }}
               >
                 <QuizCard
                   title={quiz.title}
@@ -291,39 +257,29 @@ function QuizListComponent({
         </LayoutGroup>
       </motion.div>
 
-      {/* Enhanced Loading More */}
+      {/* Loading more */}
       {isFetchingNextPage && (
-        <div className="flex justify-center py-12">
-          <div className="flex items-center gap-3 text-sm text-muted-foreground bg-accent/30 px-6 py-3 rounded-full border border-border/30">
-            <div className="w-5 h-5 border-2 border-primary border-r-transparent rounded-full animate-spin" />
-            Loading more quizzes...
+        <div className="flex justify-center py-8">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <div className="w-4 h-4 border-2 border-primary border-r-transparent rounded-full animate-spin" />
+            Loading more templates...
           </div>
         </div>
       )}
 
-      {/* Enhanced End Message */}
+      {/* End message */}
       {!hasNextPage && quizzes.length > 0 && (
         <motion.div
           ref={endMessageRef}
           initial={{ opacity: 0, y: 20 }}
           animate={endMessageInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.5 }}
+          className="text-center py-8"
         >
-          <Card className="border-dashed border-primary/30 bg-gradient-to-r from-primary/5 to-accent/20">
-            <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-              <Trophy className="h-16 w-16 text-primary mb-4" />
-              <h3 className="font-bold text-xl mb-2 text-foreground">You've seen them all!</h3>
-              <p className="text-muted-foreground mb-6 max-w-md">
-                You've explored all available quizzes. Ready to create something new?
-              </p>
-              {onCreateQuiz && (
-                <Button onClick={onCreateQuiz} className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:scale-105 transition-all duration-300 shadow-lg">
-                  <Plus className="h-4 w-4" />
-                  Create New Quiz
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <div className="inline-flex items-center gap-2 text-sm text-muted-foreground bg-card px-4 py-2 rounded-full border border-border/50">
+            <Sparkles className="h-4 w-4" />
+            You've seen them all!
+          </div>
         </motion.div>
       )}
 
@@ -336,7 +292,7 @@ function QuizListComponent({
         description={
           quizToDelete ? (
             <>
-              Are you sure you want to delete <strong>{quizToDelete.title}</strong>? This action cannot be undone and will permanently remove all quiz data, questions, and user attempts.
+              Are you sure you want to delete <strong>{quizToDelete.title}</strong>? This action cannot be undone.
             </>
           ) : (
             "Are you sure you want to delete this quiz?"
@@ -349,16 +305,4 @@ function QuizListComponent({
   )
 }
 
-export const QuizList = memo(QuizListComponent, (prevProps, nextProps) => {
-  return (
-    prevProps.quizzes.length === nextProps.quizzes.length &&
-    prevProps.isLoading === nextProps.isLoading &&
-    prevProps.isError === nextProps.isError &&
-    prevProps.isFetchingNextPage === nextProps.isFetchingNextPage &&
-    prevProps.hasNextPage === nextProps.hasNextPage &&
-    prevProps.activeFilter === nextProps.activeFilter &&
-    prevProps.viewMode === nextProps.viewMode &&
-    prevProps.currentUserId === nextProps.currentUserId &&
-    prevProps.showActions === nextProps.showActions
-  )
-})
+export const QuizList = memo(QuizListComponent)

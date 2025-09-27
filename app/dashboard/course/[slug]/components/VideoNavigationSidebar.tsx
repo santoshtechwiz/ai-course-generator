@@ -360,7 +360,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
             {/* Quick Stats */}
             <div className="grid grid-cols-3 gap-3">
               <Tooltip>
-                <TooltipTrigger asChild>
+                      <TooltipTrigger asChild>
                   <Card className="bg-background/50 border-border/50 hover:bg-background/80 transition-colors cursor-help">
                     <CardContent className="p-3 text-center">
                       <Target className="h-4 w-4 text-blue-500 mx-auto mb-1" />
@@ -378,7 +378,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                     <CardContent className="p-3 text-center">
                       <Clock className="h-4 w-4 text-green-500 mx-auto mb-1" />
                       <div className="text-lg font-bold text-foreground">
-                        {formatDuration(courseStatistics.watchedDuration).split(' ')[0]}
+                        {formatDuration(courseStatistics.watchedDuration)}
                       </div>
                       <div className="text-xs text-muted-foreground">Watched</div>
                     </CardContent>
@@ -487,7 +487,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="space-y-2 ml-4"
+                        className="space-y-2"
                       >
                         {module.chapters.map((chapter, chapterIndex) => {
                           const safeChapter = {
@@ -535,8 +535,8 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                     onMouseEnter={() => setHoveredChapter(safeChapter.id)}
                                     onMouseLeave={() => setHoveredChapter(null)}
                                     className={cn(
-                                      "w-full text-left px-5 py-5 rounded-xl text-sm transition-all duration-300 group relative",
-                                      "flex items-start gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                                                    "w-full text-left px-4 py-3 rounded-xl text-sm transition-all duration-300 group relative overflow-hidden",
+                                                     "flex items-start gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                                       "border hover:shadow-lg backdrop-blur-sm transform hover:-translate-y-0.5",
                                       isActive ? 
                                         "bg-gradient-to-r from-primary/20 to-primary/10 text-primary font-semibold border-primary/30 shadow-lg shadow-primary/10" : 
@@ -557,7 +557,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                       <motion.div 
                                         initial={{ scale: 0, opacity: 0 }}
                                         animate={{ scale: 1, opacity: 1 }}
-                                        className="absolute -right-2 -top-2 z-10"
+                                        className="absolute right-2 top-2 z-10"
                                       >
                                         <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full p-1.5 shadow-lg ring-2 ring-white dark:ring-gray-900">
                                           <CheckCircle className="h-5 w-5 drop-shadow" />
@@ -582,7 +582,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
 
                                     <div className="flex-shrink-0 relative">
                                       {safeChapter.thumbnail && hasVideo ? (
-                                        <div className="w-36 h-24 rounded-xl overflow-hidden border border-border/50 relative group shadow-sm hover:shadow-md transition-shadow duration-300">
+                                                      <div className="w-28 h-20 rounded-xl overflow-hidden border border-border/50 relative group shadow-sm hover:shadow-md transition-shadow duration-300 flex-shrink-0">
                                           <img
                                             src={safeChapter.thumbnail}
                                             alt={safeChapter.title}
@@ -719,21 +719,35 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                     </div>
                                     
                                     {/* Chapter Content with better alignment */}
-                                    <div className="flex-1 min-w-0">
+                                      <div className="flex-1 min-w-0">
                                       <div className="flex items-start justify-between gap-3">
-                                        <p className={cn(
-                                          "line-clamp-2 leading-relaxed text-sm font-medium transition-colors duration-200",
-                                          isActive ? "text-primary" : 
-                                          isCompleted ? "text-foreground" : "text-muted-foreground",
-                                          !hasVideo && "italic",
-                                          isLocked && "text-muted-foreground/70",
-                                          isHovered && !isActive && "text-foreground"
-                                        )}>
-                                          {safeChapter.title}
-                                          {!hasVideo && " (No Video)"}
-                                          {isLocked && " (Locked)"}
-                                        </p>
-                                        
+                                        <div className="min-w-0">
+                                          <p className={cn(
+                                            "line-clamp-3 leading-relaxed text-sm font-medium transition-colors duration-200",
+                                            isActive ? "text-primary" : 
+                                            isCompleted ? "text-foreground" : "text-muted-foreground",
+                                            !hasVideo && "italic",
+                                            isLocked && "text-muted-foreground/70",
+                                            isHovered && !isActive && "text-foreground"
+                                          )}>
+                                            {safeChapter.title}
+                                            {!hasVideo && " (No Video)"}
+                                            {isLocked && " (Locked)"}
+                                          </p>
+                                          {/* small meta row under title */}
+                                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                            {duration && hasVideo && (
+                                              <span className="flex items-center gap-1">
+                                                <Clock className="h-3 w-3" />
+                                                {formatDuration(duration)}
+                                              </span>
+                                            )}
+                                            {chapterProgress > 0 && chapterProgress < 100 && hasVideo && !isLocked && (
+                                              <span className="text-xs text-primary font-semibold">{Math.round(chapterProgress)}% watched</span>
+                                            )}
+                                          </div>
+                                        </div>
+
                                         {/* Chapter Number Badge with better alignment */}
                                         <Badge variant="outline" className={cn(
                                           "text-xs shrink-0 min-w-7 h-6 text-center font-semibold transition-all duration-200",

@@ -1,11 +1,9 @@
 "use client"
 
 import React, { useState } from "react"
-import { Search, X } from "lucide-react"
+import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
-import { categories } from "@/config/categories"
 import CourseList from "./CourseLists"
 import type { CategoryId } from "@/config/categories"
 
@@ -55,57 +53,7 @@ export default function CourseListWithFilters({ url, userId }: CourseListWithFil
             </div>
           </div>
 
-          {/* Filters and Sort */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
-            {/* Categories */}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={selectedCategory === null ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleCategorySelect(null)}
-                className={cn(
-                  "rounded-full",
-                  selectedCategory === null
-                    ? "bg-purple-600 hover:bg-purple-700 text-white"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                )}
-              >
-                All Categories
-              </Button>
-              {categories.slice(0, 6).map((category) => (
-                <Button
-                  key={category.id}
-                  variant={selectedCategory === category.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleCategorySelect(selectedCategory === category.id ? null : category.id)}
-                  className={cn(
-                    "rounded-full",
-                    selectedCategory === category.id
-                      ? "bg-purple-600 hover:bg-purple-700 text-white"
-                      : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                  )}
-                >
-                  {category.label}
-                </Button>
-              ))}
-            </div>
-
-            {/* Sort Dropdown */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600 font-medium">Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
-              >
-                <option value="popular">Most Popular</option>
-                <option value="rating">Highest Rated</option>
-                <option value="newest">Newest</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-              </select>
-            </div>
-          </div>
+          {/* Filters removed (category pills and sort) per design */}
         </div>
       </div>
 

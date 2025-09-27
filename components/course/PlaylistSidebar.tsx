@@ -92,8 +92,8 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
   const getChapterStatus = (chapter: Chapter): ChapterStatus => {
     // Check completion status - handle both string and number IDs
     const chapterId = String(chapter.id);
-    const isCompleted = completedChapters.includes(chapterId);
-    const isCurrent = currentChapter?.id === chapter.id;
+  const isCompleted = completedChapters.includes(chapterId);
+  const isCurrent = String(currentChapter?.id) === String(chapter.id);
     
     // Get video duration and progress
     const duration = typeof videoDurations[chapter.videoId || ""] === 'number' 
@@ -160,7 +160,7 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
       </div>
 
       {/* Chapter list */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 overflow-hidden">
         <div className="p-4">
           {chapterGroups.map((group, groupIndex) => (
             <div key={`group-${groupIndex}`} className="mb-6 last:mb-0">
@@ -176,10 +176,10 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
                       key={chapter.id}
                       onClick={() => onChapterSelect(chapter)}
                       className={cn(
-                        "flex items-center w-full p-3 text-sm rounded-lg text-left gap-3",
+                        "flex items-center w-full p-3 text-sm rounded-lg text-left gap-3 overflow-hidden",
                         "transition-all duration-200 group hover:shadow-sm",
                         status.isCurrent
-                          ? "bg-primary/15 text-primary border border-primary/20 shadow-sm"
+                          ? "bg-primary/10 text-primary border-l-4 border-primary/50 shadow-lg"
                           : "hover:bg-muted/60 border border-transparent",
                       )}
                     >
@@ -195,7 +195,7 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
                         )}
                       </div>
                       
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 overflow-hidden">
                         <div
                           className={cn(
                             "font-medium line-clamp-2 leading-snug",
@@ -214,7 +214,7 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
                           )}
 
                           {/* Duration and Progress Group */}
-                          <div className="flex items-center gap-2 ml-auto">
+                          <div className="flex items-center gap-2 ml-auto min-w-0">
                             {/* Duration */}
                             {status.duration > 0 && (
                               <span className="flex items-center gap-1 text-muted-foreground">
@@ -225,14 +225,14 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
 
                             {/* Progress Badge */}
                             {status.isCompleted ? (
-                              <Badge variant="default" className="bg-primary/20 text-primary text-xs flex items-center gap-1">
-                                <CheckCircle2 className="h-3 w-3" />
-                                <span>Completed</span>
+                              <Badge variant="default" className="bg-primary/20 text-primary text-xs flex items-center gap-1 max-w-[120px] truncate">
+                                <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
+                                <span className="truncate">Completed</span>
                               </Badge>
                             ) : status.hasProgress ? (
-                              <Badge variant="secondary" className="text-xs flex items-center gap-1">
-                                <span>{status.progress}%</span>
-                                <Progress value={status.progress} className="w-8 h-1" />
+                              <Badge variant="secondary" className="text-xs flex items-center gap-1 max-w-[140px]">
+                                <span className="flex-shrink-0">{status.progress}%</span>
+                                <Progress value={status.progress} className="w-12 h-1 min-w-[32px]" />
                               </Badge>
                             ) : null}
                           </div>

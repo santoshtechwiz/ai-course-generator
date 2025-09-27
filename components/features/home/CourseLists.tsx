@@ -62,6 +62,12 @@ export default function CoursesClient({
   selectedCategory,
   sortBy = "popular",
 }: CoursesClientProps) {
+  // Local filter state (kept client-side to drive UI and query)
+  const [categoryFilter, setCategoryFilter] = useState<CategoryId | null>(selectedCategory || null)
+  const [levelFilter, setLevelFilter] = useState<string | null>(null)
+  // instructor filter removed per design
+  const [ratingFilter, setRatingFilter] = useState<number | undefined>(undefined)
+  const [sortFilter, setSortFilter] = useState<typeof sortBy>(sortBy)
   // Helper: compute quiz count from nested courseUnits if the API didn't provide a top-level quizCount
   const computeQuizCount = (course: any): number => {
     if (typeof course.quizCount === "number") return course.quizCount
@@ -122,8 +128,15 @@ export default function CoursesClient({
         if (shouldSearch && effectiveSearchQuery) {
           apiUrl.searchParams.set("search", effectiveSearchQuery)
         }
-        if (selectedCategory) {
-          apiUrl.searchParams.set("category", selectedCategory)
+        if (categoryFilter) {
+          apiUrl.searchParams.set("category", String(categoryFilter))
+        }
+        if (levelFilter) {
+          apiUrl.searchParams.set("level", String(levelFilter))
+        }
+        // instructor filter intentionally removed
+        if (typeof ratingFilter === "number") {
+          apiUrl.searchParams.set("minRating", String(ratingFilter))
         }
         if (userId) {
           apiUrl.searchParams.set("userId", userId)
@@ -137,8 +150,8 @@ export default function CoursesClient({
           "price-low": "price",
           "price-high": "price",
         }
-        apiUrl.searchParams.set("sortBy", sortMapping[sortBy] || "viewCount")
-        apiUrl.searchParams.set("sortOrder", sortBy === "price-low" ? "asc" : "desc")
+        apiUrl.searchParams.set("sortBy", sortMapping[sortFilter] || "viewCount")
+        apiUrl.searchParams.set("sortOrder", sortFilter === "price-low" ? "asc" : "desc")
 
         const response = await fetch(apiUrl.toString(), {
           headers: { "Cache-Control": "no-cache" },
@@ -162,12 +175,21 @@ export default function CoursesClient({
         throw error
       }
     },
-    [shouldSearch, effectiveSearchQuery, selectedCategory, userId, sortBy],
+    [shouldSearch, effectiveSearchQuery, categoryFilter, levelFilter, ratingFilter, userId, sortFilter],
   )
 
   // Query
   const queryResult: UseInfiniteQueryResult<InfiniteData<CoursesResponse>, Error> = useInfiniteQuery({
-    queryKey: ["courses", shouldSearch ? effectiveSearchQuery : "", selectedCategory || "", userId || "", sortBy],
+    queryKey: [
+      "courses",
+      shouldSearch ? effectiveSearchQuery : "",
+      categoryFilter || "",
+      levelFilter || "",
+    // instructorFilter removed
+      ratingFilter || "",
+      userId || "",
+      sortFilter,
+    ],
     initialPageParam: 1,
     queryFn,
     getNextPageParam: (lastPage: CoursesResponse, allPages) => (lastPage.hasMore ? allPages.length + 1 : undefined),
@@ -200,6 +222,12 @@ export default function CoursesClient({
 
   // Extract all courses from pages for progress integration
   const allCourses = data?.pages?.flatMap((page) => page.courses) || []
+
+  // Derive available filters from loaded courses for the sidebar selects
+  const availableCategories = Array.from(
+    new Set(allCourses.map((c: any) => (c.category ? (typeof c.category === 'object' ? c.category.name : c.category) : null)).filter(Boolean)),
+  ) as string[]
+  // availableInstructors removed - instructor filter intentionally omitted
 
   // Get course progress data
   const { courses: coursesWithProgress } = useCoursesWithProgress(allCourses, userId)
@@ -353,6 +381,81 @@ export default function CoursesClient({
   // Main content
   return (
     <div className="w-full max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 space-y-6">
+      <div className="grid grid-cols-12 gap-6">
+        {/* Sidebar Filters */}
+        <aside className="col-span-12 lg:col-span-3 xl:col-span-3">
+          <div className="sticky top-20 space-y-6">
+            <div className="p-4 bg-card rounded-lg border">
+              <h4 className="text-sm font-semibold mb-3">Filters</h4>
+              <label className="block text-xs text-muted-foreground mb-1">Category</label>
+              <select
+                value={categoryFilter ?? ""}
+                onChange={(e) => setCategoryFilter(e.target.value ? (e.target.value as CategoryId) : null)}
+                className="w-full p-2 rounded-md border bg-background"
+              >
+                <option value="">All Categories</option>
+                {availableCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+
+              <label className="block text-xs text-muted-foreground mt-3 mb-1">Level</label>
+              <select
+                value={levelFilter ?? ""}
+                onChange={(e) => setLevelFilter(e.target.value || null)}
+                className="w-full p-2 rounded-md border bg-background"
+              >
+                <option value="">All Levels</option>
+                <option value="Beginner">Beginner</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Advanced">Advanced</option>
+              </select>
+
+              {/* Instructor filter removed */}
+            </div>
+
+            <div className="p-4 bg-card rounded-lg border">
+              <h4 className="text-sm font-semibold mb-3">Sort By</h4>
+              <div className="flex flex-col space-y-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="sort"
+                    checked={sortFilter === "popular"}
+                    onChange={() => setSortFilter("popular")}
+                    className="accent-primary"
+                  />
+                  <span className="text-sm">Relevance</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="sort"
+                    checked={sortFilter === "newest"}
+                    onChange={() => setSortFilter("newest")}
+                    className="accent-primary"
+                  />
+                  <span className="text-sm">Newest</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="sort"
+                    checked={sortFilter === "rating"}
+                    onChange={() => setSortFilter("rating")}
+                    className="accent-primary"
+                  />
+                  <span className="text-sm">Highest Rated</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main content area (header removed as requested) */}
+        <main className="col-span-12 lg:col-span-9 xl:col-span-9">
       {/* View Mode Toggle */}
       <div className="flex justify-end">
         <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
@@ -468,7 +571,8 @@ export default function CoursesClient({
       <motion.div
         className={cn(
           "grid gap-6",
-          viewMode === "grid" && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5",
+          // fewer columns at larger breakpoints to make cards larger
+          viewMode === "grid" && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3",
           viewMode === "list" && "grid-cols-1 max-w-4xl gap-4",
         )}
         variants={{
@@ -577,6 +681,8 @@ export default function CoursesClient({
             </div>
           </div>
         )}
+        </main>
+      </div>
     </div>
   )
 }

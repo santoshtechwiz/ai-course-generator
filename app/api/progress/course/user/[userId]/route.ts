@@ -112,7 +112,13 @@ export async function GET(
         timeSpent: courseProgress.timeSpent ?? 0,
         isCompleted: progressPercentage === 100,
         lastPositions: Object.fromEntries(
-          chapterProgress.map((cp: any) => [cp.chapterId, cp.lastProgress.toNumber()])
+          chapterProgress.map((cp: any) => {
+            // lastProgress may be a Prisma Decimal, a number, or a string depending on driver/version.
+            // Coerce safely to a JS number without assuming toNumber exists.
+            const raw = cp.lastProgress
+            const value = raw && typeof raw === "object" && typeof raw.toNumber === "function" ? raw.toNumber() : Number(raw)
+            return [cp.chapterId, Number.isFinite(value) ? value : 0]
+          })
         ), // Add last positions for progress indication
       }
 

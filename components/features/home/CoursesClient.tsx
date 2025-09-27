@@ -299,17 +299,7 @@ export default function CoursesClient({
           </div>
         </div>
 
-        <div className="relative">
-          <div
-            className="flex items-start gap-3 overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent py-2 px-1 -mx-1"
-            role="navigation"
-            aria-label="Categories tag cloud"
-          >
-            <CategoryTagCloud selectedCategory={selectedCategory} counts={categoryCounts} enableClear />
-          </div>
-          <div className="pointer-events-none absolute left-0 top-0 h-full w-8 bg-gradient-to-r from-background via-background/80 to-transparent" />
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-background via-background/80 to-transparent" />
-        </div>
+    
       </motion.div>
 
       <AnimatePresence mode="wait">
