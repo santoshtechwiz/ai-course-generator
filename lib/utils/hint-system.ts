@@ -67,25 +67,42 @@ export function generateBlanksHints(
   correctAnswer: string,
   questionText: string,
   providedHints: string[] = [],
+  learnerAnswer?: string,
+  options?: { allowDirectAnswer?: boolean; maxHints?: number }
 ): HintLevel[] {
   const hints: HintLevel[] = []
+  const allowDirect = options?.allowDirectAnswer || false
+  const maxHints = options?.maxHints ?? 5
 
-  // Use provided hints first
-  if (providedHints && providedHints.length > 0) {
-    providedHints.forEach((hint, index) => {
-      hints.push({
-        level: index < 2 ? "low" : index < 4 ? "medium" : "high",
-        type: "contextual",
-        content: hint,
-        spoilerLevel: index < 2 ? "low" : index < 4 ? "medium" : "high",
-        penalty: HINT_LEVELS[index]?.penalty || 20,
-        description: HINT_LEVELS[index]?.description || "Custom hint",
-      })
-    })
-  }
+  // Keep provided hints queued to append after generated hints (so generated hints appear first)
+  const queuedProvidedHints = Array.isArray(providedHints) ? providedHints.slice() : []
 
   // Generate comprehensive hints for blanks (5 total hints)
   if (correctAnswer) {
+    // If learner provided an attempt, compute edit distance and provide a "closeness" hint
+    if (learnerAnswer && learnerAnswer.trim()) {
+      try {
+        const distance = levenshtein(learnerAnswer.trim().toLowerCase(), correctAnswer.trim().toLowerCase())
+        const distanceHint = distance === 0
+          ? `Your answer matches exactly.`
+          : distance === 1
+          ? `You're very close — only 1 edit away from the answer.`
+          : `You're ${distance} edits away from the correct answer.`
+
+        if (hints.length < 5) {
+          hints.push({
+            level: "low",
+            type: "structural",
+            content: distanceHint,
+            spoilerLevel: "low",
+            penalty: 4,
+            description: "Proximity hint",
+          })
+        }
+      } catch (err) {
+        // ignore distance failures and continue
+      }
+    }
     // Hint 1: Context/Category hint
     if (hints.length < 5) {
       const contextHint = generateContextHint(correctAnswer, questionText)
@@ -138,8 +155,8 @@ export function generateBlanksHints(
       })
     }
 
-    // Hint 5: Direct answer (last resort)
-    if (hints.length < 5) {
+    // Hint 5: Direct answer (last resort) - only include when explicitly allowed
+    if (allowDirect && hints.length < maxHints) {
       hints.push({
         level: "high",
         type: "direct",
@@ -151,17 +168,98 @@ export function generateBlanksHints(
     }
   }
 
-  return hints.slice(0, 5) // Ensure exactly 5 hints
+  // After generating the canonical hints, include provided contextual hints.
+  // Strategy: fill any available space first; if there are more provided hints than space,
+  // replace trailing generated hints so learners still see instructor-provided clues.
+  if (queuedProvidedHints.length > 0) {
+    const toAppend = queuedProvidedHints.map((h) => sanitizeProvidedHint(h, correctAnswer))
+    // Space available to append without removing generated hints
+    const space = Math.max(0, maxHints - hints.length)
+    let appended = 0
+    for (let i = 0; i < toAppend.length && appended < space; i++, appended++) {
+      const safeHint = toAppend[i]
+      const index = hints.length
+      hints.push({
+        level: index < 2 ? "low" : index < 4 ? "medium" : "high",
+        type: "contextual",
+        content: safeHint,
+        spoilerLevel: index < 2 ? "low" : index < 4 ? "medium" : "high",
+        penalty: HINT_LEVELS[index]?.penalty || 5,
+        description: HINT_LEVELS[index]?.description || "Context clue",
+      })
+    }
+
+    // If still have provided hints left, replace trailing generated hints with them
+    const remaining = toAppend.slice(appended)
+    for (let i = 0; i < remaining.length && hints.length > 0; i++) {
+      // Remove the last generated hint to make space (preserve order of provided hints)
+      hints.pop()
+      const safeHint = remaining[i]
+      const index = hints.length
+      hints.push({
+        level: index < 2 ? "low" : index < 4 ? "medium" : "high",
+        type: "contextual",
+        content: safeHint,
+        spoilerLevel: index < 2 ? "low" : index < 4 ? "medium" : "high",
+        penalty: HINT_LEVELS[index]?.penalty || 5,
+        description: HINT_LEVELS[index]?.description || "Context clue",
+      })
+    }
+  }
+
+  return hints.slice(0, maxHints)
+}
+
+// Sanitize provided hints so they don't reveal the answer directly
+function sanitizeProvidedHint(hint: string, answer: string): string {
+  if (!hint || !answer) return hint || ""
+  try {
+    const safe = hint.replace(new RegExp(answer, "ig"), (m) => "_".repeat(m.length))
+    // Also redact any quoted forms of the answer
+    return safe.replace(new RegExp(`\"${answer}\"`, "ig"), '"' + '_'.repeat(answer.length) + '"')
+  } catch (e) {
+    return hint
+  }
+}
+
+// Simple Levenshtein distance implementation (returns edit distance)
+export function levenshtein(a: string, b: string): number {
+  const alen = a.length
+  const blen = b.length
+  if (alen === 0) return blen
+  if (blen === 0) return alen
+
+  const v0 = new Array(blen + 1).fill(0)
+  const v1 = new Array(blen + 1).fill(0)
+
+  for (let i = 0; i <= blen; i++) v0[i] = i
+
+  for (let i = 0; i < alen; i++) {
+    v1[0] = i + 1
+    for (let j = 0; j < blen; j++) {
+      const cost = a.charAt(i) === b.charAt(j) ? 0 : 1
+      v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost)
+    }
+    for (let k = 0; k <= blen; k++) v0[k] = v1[k]
+  }
+
+  return v1[blen]
 }
 
 // Generate content-aware hints based on question analysis
 export function generateContentAwareHints(
   questionText: string,
   keywords: string[] = [],
-  expectedLength: "short" | "medium" | "long" = "medium"
+  expectedLength: "short" | "medium" | "long" = "medium",
+  learnerAnswer?: string,
+  options?: { allowDirectAnswer?: boolean; maxHints?: number; partialWords?: number }
 ): HintLevel[] {
   const hints: HintLevel[] = []
   const question = questionText.toLowerCase()
+  const allowDirect = options?.allowDirectAnswer || false
+  const maxHints = options?.maxHints ?? 3
+  // Penalty scaling: long answers should receive smaller per-hint penalties
+  const penaltyFactor = expectedLength === 'long' ? 0.6 : 1
 
   // Analyze question type and topic
   const questionType = analyzeQuestionType(question)
@@ -185,12 +283,151 @@ export function generateContentAwareHints(
       hints.push(...generateGenericSmartHints(questionType, keywords, expectedLength))
   }
 
-  // Ensure we have at least 3 hints
-  while (hints.length < 3) {
+  // If this question expects a long answer, generate long-answer friendly hints
+  if (expectedLength === 'long') {
+    const longHints: HintLevel[] = []
+
+    const outline = generateOutlineHint(questionText, keywords)
+    longHints.push({
+      level: "low",
+      type: "structural",
+      content: outline,
+      spoilerLevel: "low",
+      penalty: Math.round(6 * penaltyFactor),
+      description: "Suggested outline",
+    })
+
+    const keyPoints = generateKeyPointsHint(questionText, keywords)
+    longHints.push({
+      level: "low",
+      type: "semantic",
+      content: keyPoints,
+      spoilerLevel: "low",
+      penalty: Math.round(6 * penaltyFactor),
+      description: "Key points to include",
+    })
+
+    const opening = generateOpeningSentenceHint(questionText)
+    longHints.push({
+      level: "medium",
+      type: "depth",
+      content: opening,
+      spoilerLevel: "medium",
+      penalty: Math.round(8 * penaltyFactor),
+      description: "Opening sentence template",
+    })
+
+    const lengthGuidance = generateLengthGuidanceHint(expectedLength)
+    longHints.push({
+      level: "low",
+      type: "length",
+      content: lengthGuidance,
+      spoilerLevel: "low",
+      penalty: Math.round(4 * penaltyFactor),
+      description: "Length & structure guidance",
+    })
+
+    // Prepend longHint suggestions so learners see structure first
+    hints.unshift(...longHints)
+  }
+
+  // Ensure we have at least 3 hints (fallback)
+  while (hints.length < Math.min(maxHints, 3)) {
     hints.push(generateFallbackHint(hints.length, expectedLength))
   }
 
-  return hints.slice(0, 3) // Return exactly 3 hints
+  // If learner provided an attempt, prepend a low-level proximity hint and a partial-sentence hint
+  if (learnerAnswer && learnerAnswer.trim()) {
+    try {
+      const distance = levenshtein(learnerAnswer.trim().toLowerCase(), (questionText || "").trim().toLowerCase())
+      const proximityHint = distance === 0
+        ? `Your answer matches a key phrase in the question.`
+        : distance === 1
+        ? `You're very close — only 1 edit away from a matching phrase.`
+        : `You're ${distance} edits away from a closely matching phrase.`
+
+      // Prepend proximity hint
+      hints.unshift({
+        level: "low",
+        type: "structural",
+        content: proximityHint,
+        spoilerLevel: "low",
+        penalty: 4,
+        description: "Proximity hint",
+      })
+
+      // Partial sentence hint (first N words of canonical answer or question text)
+      const partialWords = options?.partialWords ?? 3
+      const partial = generatePartialSentenceHint(questionText || "", partialWords)
+      if (partial) {
+        hints.splice(1, 0, {
+          level: "low",
+          type: "semantic",
+          content: partial,
+          spoilerLevel: "low",
+          penalty: 6,
+          description: "Partial sentence hint",
+        })
+      }
+    } catch (e) {
+      // ignore and continue
+    }
+  }
+
+  // Trim to maxHints before returning
+  return hints.slice(0, maxHints)
+}
+
+// Return the first nWords of a sentence and mask the rest for an open-ended partial hint
+function generatePartialSentenceHint(text: string, nWords = 3): string {
+  if (!text) return ""
+  const words = text.trim().split(/\s+/).filter((w) => w.length > 0)
+  if (words.length === 0) return ""
+  const take = Math.min(nWords, words.length)
+  const first = words.slice(0, take).join(" ")
+  if (take === words.length) return `${first}`
+  return `${first} ${"_".repeat(6)}...`
+}
+
+// Generate an outline hint: 3-5 bullet points suggesting sections to include
+function generateOutlineHint(text: string, keywords: string[] = []): string {
+  const base = extractTopic((text || '').toLowerCase()) || 'topic'
+  const bullets = [
+    `Intro: define the ${base} and its purpose.`,
+    `Core: 2-3 main points with examples or evidence.`,
+    `Implications: explain importance or consequences.`,
+    `Summary: concise conclusion linking back to the question.`
+  ]
+  return bullets.join(' ')
+}
+
+// Generate key points hint: short list of items to mention
+function generateKeyPointsHint(text: string, keywords: string[] = []): string {
+  const kws = (keywords || []).slice(0, 4)
+  const points = kws.length > 0 ? kws.map(k => `Mention: ${k}.`) : [`Cover definition, purpose, examples, and impact.`]
+  return points.join(' ')
+}
+
+// Provide an opening sentence template the learner can adapt
+function generateOpeningSentenceHint(text: string): string {
+  const topic = extractTopic((text || '').toLowerCase()) || 'the topic'
+  return `Start with: "${capitalizeFirst(`In short, ${topic} is`)}..." then expand with 2-3 key points.`
+}
+
+function generateLengthGuidanceHint(expectedLength: "short" | "medium" | "long"): string {
+  switch (expectedLength) {
+    case 'short':
+      return 'Aim for 10-30 words: 1-2 sentences focusing on the core idea.'
+    case 'medium':
+      return 'Aim for 30-60 words: include definition and one example.'
+    case 'long':
+      return 'Aim for 80+ words: include definition, 2 examples, and a short conclusion.'
+  }
+}
+
+function capitalizeFirst(s: string) {
+  if (!s) return ''
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 // Analyze question type
@@ -654,33 +891,47 @@ function generateStructureHint(answer: string): string {
 }
 
 function generateLetterHint(answer: string): string {
-  const firstLetter = answer.charAt(0).toUpperCase()
-  const lastLetter = answer.charAt(answer.length - 1).toLowerCase()
+  // Provide non-revealing first/last character hints. Avoid revealing whole words.
+  const cleaned = answer.trim()
+  if (!cleaned) return ""
 
-  if (answer.includes(" ")) {
-    const words = answer.split(" ")
-    return `The first word starts with "${firstLetter}" and the last word ends with "${lastLetter}".`
+  const words = cleaned.split(/\s+/)
+  if (words.length === 1) {
+    const w = words[0]
+    const first = w.charAt(0).toUpperCase()
+    const last = w.charAt(w.length - 1).toLowerCase()
+    return `${w.length} letters — starts with '${first}' and ends with '${last}'.`
   } else {
-    return `The word starts with "${firstLetter}" and ends with "${lastLetter}".`
+    const first = words[0].charAt(0).toUpperCase()
+    const lastWord = words[words.length - 1]
+    const last = lastWord.charAt(lastWord.length - 1).toLowerCase()
+    return `${words.length} words — first word starts with '${first}' and last word ends with '${last}'.`
   }
 }
 
 function generatePartialHint(answer: string): string {
-  if (answer.includes(" ")) {
-    // For multi-word answers, reveal first word
-    const firstWord = answer.split(" ")[0]
-    const remaining = answer
-      .split(" ")
-      .slice(1)
-      .map((w) => "_".repeat(w.length))
-      .join(" ")
-    return `The answer starts with: "${firstWord} ${remaining}"`
+  const cleaned = answer.trim()
+  if (!cleaned) return ""
+
+  const words = cleaned.split(/\s+/)
+  if (words.length === 1) {
+    // Reveal low-fidelity masked hint: show first character and last character with masked middle
+    const w = words[0]
+    if (w.length <= 2) {
+      return `The word has ${w.length} letters.`
+    }
+    const first = w.charAt(0)
+    const last = w.charAt(w.length - 1)
+    const mask = "_".repeat(Math.max(1, w.length - 2))
+    return `Pattern: ${first}${mask}${last} (length ${w.length})`
   } else {
-    // For single words, reveal first half
-    const halfLength = Math.ceil(answer.length / 2)
-    const revealed = answer.substring(0, halfLength)
-    const hidden = "_".repeat(answer.length - halfLength)
-    return `The word is: "${revealed}${hidden}"`
+    // For multi-word answers, reveal the first word and mask the rest
+    const firstWord = words[0]
+    const masked = words
+      .slice(1)
+      .map((w) => "_".repeat(Math.min(3, w.length)))
+      .join(" ")
+    return `Starts with: "${firstWord} ${masked}"`
   }
 }
 

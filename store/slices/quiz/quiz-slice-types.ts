@@ -1,16 +1,12 @@
-// Local QuizType so the slice is self-contained and doesn't depend on app/type
-export type QuizType = 'blanks' | 'openended' | 'mcq' | 'code' | 'flashcard'
+import { QuizType } from "@/app/types/quiz-types";
 
-// Unified quiz types used by the store and components. This file consolidates
-// quiz-related interfaces previously split across multiple files.
 
 export interface QuizQuestion {
   id: string | number
   question: string
   type: string
-  options?: { id: string | number; text: string }[] | string[]
-  correctOptionId?: string
-  correctAnswer?: string
+  options?: { id: string | number; text: string }[]
+  correctOptionId?: string,
   codeSnippet?: string
   language?: string
   answer?: string
@@ -28,9 +24,6 @@ export interface QuizAnswer {
   isCorrect: boolean
   type: string
   timestamp: number
-  timeSpent?: number
-  // optional metadata
-  correctAnswer?: string
 }
 
 export interface QuestionResult {
@@ -52,9 +45,10 @@ export interface QuizResults {
   completedAt: string
   answers: QuizAnswer[]
   results: QuestionResult[]
-  totalTime?: number
-  accuracy?: number
 }
+
+
+// -- Initial State --
 
 export interface QuizState {
   slug: string | null
@@ -65,20 +59,13 @@ export interface QuizState {
   answers: Record<string, QuizAnswer>
   results: QuizResults | null
   isCompleted: boolean
-  status: 'idle' | 'loading' | 'submitting' | 'succeeded' | 'failed' | 'not-found' | 'requires-auth'
+  status: 'idle' | 'loading' | 'submitting' | 'succeeded' | 'failed'
   error: string | null
-  requiresAuth: boolean
-  redirectAfterLogin: string | null
-  userId: string | null
-  questionStartTimes: Record<string, number>
-  // Timestamp (ms) of the last applied update to the quiz state. Used to avoid
-  // race conditions where older async responses overwrite newer state.
-  lastUpdated?: number | null
-  isInitialized: boolean
-  pendingRedirect: boolean
+  requiresAuth: boolean // ⇨ used to redirect unauthenticated users
+  redirectAfterLogin: string | null // ⇨ where to redirect after auth
+  userId: string | null // ⇨ owner of the quiz, used for sharing
 }
-
 // Type aliases for better readability
-export type QuizStatus = "idle" | "loading" | "succeeded" | "failed" | "submitting" | "not-found" | 'requires-auth'
+export type QuizStatus = "idle" | "loading" | "succeeded" | "failed" | "submitting"
 export type AuthStatus = "checking" | "authenticated" | "unauthenticated" | "idle"
 export type QuestionType = "mcq" | "code" | "blanks" | "openended"

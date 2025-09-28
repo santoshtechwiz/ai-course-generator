@@ -13,6 +13,7 @@ import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
 import { generateContentAwareHints } from "@/lib/utils/hint-system"
 import type { OpenEndedQuestion } from "@/app/types/quiz-types"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useOptionalQuizState } from "@/components/quiz/QuizStateProvider"
 
 interface OpenEndedQuizProps {
   question: OpenEndedQuestion
@@ -133,8 +134,14 @@ export default function OpenEndedQuiz({
   // Generate hints for this question using content-aware generation
   const hints = useMemo(() => {
     const validKeywords = Array.isArray(questionData.keywords) ? questionData.keywords : []
-    return generateContentAwareHints(questionData.text || "", validKeywords, expectedLength)
-  }, [questionData.keywords, questionData.text, expectedLength])
+    return generateContentAwareHints(
+      questionData.text || "",
+      validKeywords,
+      expectedLength,
+      answer,
+      { allowDirectAnswer: false, maxHints: 3, partialWords: 4 },
+    )
+  }, [questionData.keywords, questionData.text, expectedLength, answer])
 
   // Calculate similarity and keyword coverage when answer changes
   useEffect(() => {
@@ -181,7 +188,18 @@ export default function OpenEndedQuiz({
   const handleNext = useCallback(() => {
     if (handleAnswerSubmit() && onNext) {
       onNext()
+
+      // Return a cleanup function to reset hints and answer state when moving to the next question
+      return () => {
+        setAnswer("")
+        setSimilarity(0)
+        setIsAnswered(false)
+        setShowValidation(false)
+        setHintsUsed(0)
+        setKeywordsCovered([])
+      }
     }
+    return undefined
   }, [handleAnswerSubmit, onNext])
 
   const handleSubmit = useCallback(() => {
@@ -367,7 +385,17 @@ export default function OpenEndedQuiz({
         className="w-full flex-shrink-0"
       >
         <QuizFooter
-          onNext={handleNext}
+          onNext={(() => {
+            const stateManager = useOptionalQuizState()
+            if (stateManager) {
+              return () => stateManager.handleNext(handleNext)
+            }
+            return () => {
+              const result = handleNext()
+              // If handleNext returned a cleanup function, call it immediately here for non-provider case
+              if (typeof result === 'function') result()
+            }
+          })()}
           onPrevious={onPrevious}
           onSubmit={handleSubmit}
           canGoNext={canProceed}

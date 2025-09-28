@@ -356,206 +356,43 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
 
   return (
     <motion.div
-      whileHover={{ y: -6, scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.3, type: "spring", stiffness: 300, damping: 20 }}
+      whileHover={{ y: -3 }}
+      whileTap={{ scale: 0.995 }}
+      transition={{ duration: 0.18 }}
       className="relative group"
     >
-      <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-2xl blur-sm opacity-0 group-hover:opacity-100 transition duration-500" />
-
       <Card
         className={cn(
-          "group cursor-pointer overflow-hidden border-0 relative",
-          "shadow-lg hover:shadow-2xl transition-all duration-500",
-          "ring-1 ring-border/30 hover:ring-primary/30",
+          "cursor-pointer border-0",
+          "shadow-sm hover:shadow-md transition-all duration-200",
           "bg-card/80 backdrop-blur-sm",
-          "rounded-2xl h-full",
-          isLoading && "opacity-70 scale-[0.98]",
+          "rounded-xl h-full flex items-center justify-center",
+          isLoading && "opacity-70",
         )}
         onClick={onClick}
       >
-        <div className="relative aspect-[5/3] overflow-hidden rounded-t-2xl">
-          <Image
-            src={getImageWithFallback(course.image) || "/api/placeholder"}
-            alt={course.title}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-110"
-          />
-
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-          <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-            {course.category && (
-              <div className="flex items-center gap-2">
-                <CategoryIcon
-                  categoryId={
-                    typeof course.category === "object"
-                      ? course.category.name.toLowerCase()
-                      : course.category?.toLowerCase()
-                  }
-                  size="sm"
-                  variant="gradient"
-                  animated
-                />
-                <Badge className="bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm border-0 text-xs font-semibold px-3 py-1.5">
-                  {typeof course.category === "object" ? course.category.name : course.category}
-                </Badge>
-              </div>
-            )}
-            {progress === 100 && (
-              <Badge className="bg-emerald-500/95 text-white shadow-lg backdrop-blur-sm border-0 text-xs font-semibold px-3 py-1.5">
-                <CheckCircle className="w-3 h-3 mr-1.5" />
-                Completed
-              </Badge>
+        <CardContent className="p-6 flex items-center justify-center flex-col gap-3 text-center">
+          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 text-primary">
+            {course.category ? (
+              (() => {
+                const cat = typeof course.category === 'object' && course.category?.name ? String(course.category.name) : String(course.category)
+                const categoryId = cat ? cat.toLowerCase() : ''
+                return (
+                  <CategoryIcon
+                    categoryId={categoryId}
+                    size="lg"
+                    variant="flat"
+                  />
+                )
+              })()
+            ) : (
+              <BookOpen className="h-6 w-6" />
             )}
           </div>
 
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100">
-            <motion.div
-              className="rounded-full bg-primary/95 backdrop-blur-sm p-4 shadow-2xl"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <Play className="h-6 w-6 text-primary-foreground ml-1" />
-            </motion.div>
-          </div>
-
-          {/* Loading Overlay */}
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/90 backdrop-blur-sm">
-              <Loader2 className="h-8 w-8 text-primary animate-spin" />
-            </div>
-          )}
-        </div>
-
-        <CardContent className="p-6 space-y-4 flex-1 flex flex-col">
-          <div className="space-y-3">
-            <h3 className="line-clamp-2 text-lg font-bold leading-tight group-hover:text-primary transition-colors duration-300 text-balance">
-              {course.title}
-            </h3>
-            <p className="line-clamp-2 text-sm text-muted-foreground leading-relaxed text-pretty">
-              {course.description}
-            </p>
-          </div>
-
-          {(course.instructor || createdDate) && (
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              {course.instructor && (
-                <span className="flex items-center gap-2 truncate">
-                  <div className="p-1.5 rounded-lg bg-accent/20">
-                    <Users className="h-3.5 w-3.5 text-primary" />
-                  </div>
-                  <span className="truncate font-medium">{course.instructor}</span>
-                </span>
-              )}
-              {createdDate && (
-                <span className="flex items-center gap-2 flex-shrink-0">
-                  <Clock className="h-3.5 w-3.5 text-primary" />
-                  <span className="font-medium">{createdDate}</span>
-                </span>
-              )}
-            </div>
-          )}
-
-          {progress !== undefined && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground font-semibold">Progress</span>
-                <span className="font-bold text-primary bg-primary/10 px-3 py-1 rounded-full text-xs">
-                  {Math.round(progress)}%
-                </span>
-              </div>
-              <div className="relative h-2.5 bg-muted/60 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
-                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary via-accent to-primary rounded-full shadow-sm"
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between pt-3 border-t border-border/50 text-sm">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <div className="p-1.5 rounded-lg bg-primary/10">
-                  <BookOpen className="h-4 w-4 text-primary" />
-                </div>
-                <span className="font-semibold text-foreground">{chapterCount || "N/A"}</span>
-                <span className="text-xs">chapters</span>
-              </div>
-
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <div className="p-1.5 rounded-lg bg-accent/10">
-                  <Clock className="h-4 w-4 text-accent" />
-                </div>
-                <span className="font-semibold text-foreground">{totalDuration ? `${totalDuration}h` : "N/A"}</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Users className="h-4 w-4 text-primary" />
-                <span className="font-semibold text-foreground">
-                  {course.students ? `${course.students.toLocaleString()}` : "1.2k"}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                <span className="font-semibold text-foreground">{course.rating ? `${course.rating}` : "4.8"}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-3 mt-auto">
-            <div className="flex items-center gap-2">
-              {course.level && (
-                <Badge variant="outline" className="text-xs px-3 py-1 font-medium border-primary/30 text-primary">
-                  {course.level}
-                </Badge>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-50 hover:text-red-600"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  // Handle favorite action
-                }}
-              >
-                <Heart className="h-4 w-4" />
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-all duration-300"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem className="cursor-pointer text-sm">
-                    <Heart className="h-4 w-4 mr-3" /> Add to Favorites
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer text-sm">
-                    <Share2 className="h-4 w-4 mr-3" /> Share Course
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer text-sm">
-                    <BookOpen className="h-4 w-4 mr-3" /> View Details
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+          <h3 className="text-base font-semibold leading-tight text-foreground line-clamp-2">
+            {course.title}
+          </h3>
         </CardContent>
       </Card>
     </motion.div>
@@ -566,94 +403,28 @@ function CourseListItem({ course, progress, isLoading, onClick }: CourseCardProp
   return (
     <Card
       className={cn(
-        "group cursor-pointer overflow-hidden transition-all duration-200 hover:shadow-md",
+        "group cursor-pointer transition-all duration-150",
         isLoading && "opacity-70",
       )}
       onClick={onClick}
     >
-      <CardContent className="p-0">
-        <div className="flex">
-          {/* Course Image */}
-          <div className="relative h-24 w-32 flex-shrink-0 sm:h-32 sm:w-48">
-            <Image
-              src={course.image || "/api/placeholder?height=128&width=192"}
-              alt={course.title}
-              fill
-              className="object-cover"
-            />
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/80">
-                <Loader2 className="h-6 w-6 text-primary" />
-              </div>
-            )}
-          </div>
+      <CardContent className="flex items-center gap-4 p-4">
+        <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary/10 text-primary">
+          {course.category ? (
+            (() => {
+              const cat = typeof course.category === 'object' && course.category?.name ? String(course.category.name) : String(course.category)
+              const categoryId = cat ? cat.toLowerCase() : ''
+              return (
+                <CategoryIcon categoryId={categoryId} size="sm" variant="flat" />
+              )
+            })()
+          ) : (
+            <BookOpen className="h-4 w-4" />
+          )}
+        </div>
 
-          {/* Course Info */}
-          <div className="flex flex-1 flex-col justify-between p-4 sm:p-6">
-            <div className="space-y-2">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  {course.category && (
-                    <Badge variant="outline" className="text-xs">
-                      {typeof course.category === "object" ? course.category.name : course.category}
-                    </Badge>
-                  )}
-                  <h3 className="line-clamp-1 text-lg font-semibold group-hover:text-primary transition-colors">
-                    {course.title}
-                  </h3>
-                </div>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>Add to Favorites</DropdownMenuItem>
-                    <DropdownMenuItem>Share Course</DropdownMenuItem>
-                    <DropdownMenuItem>View Details</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              <p className="line-clamp-2 text-sm text-muted-foreground">{course.description}</p>
-            </div>
-
-            <div className="mt-4 space-y-3">
-              {/* Progress */}
-              {progress !== undefined && (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Progress</span>
-                    <span className="font-medium text-primary">{Math.round(progress)}%</span>
-                  </div>
-                  <Progress value={progress} className="h-2" />
-                </div>
-              )}
-
-              {/* Stats */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{course.estimatedHours || "N/A"}h</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    <span>1.2k students</span>
-                  </div>
-                </div>
-
-                {progress === 100 && (
-                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                    <CheckCircle className="mr-1 h-3 w-3" />
-                    Completed
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
+        <div className="flex-1">
+          <h3 className="text-sm font-medium text-foreground line-clamp-1">{course.title}</h3>
         </div>
       </CardContent>
     </Card>

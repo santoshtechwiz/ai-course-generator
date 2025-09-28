@@ -22,12 +22,28 @@ export function Loader({
   }
 
   return (
-    <div className={cn("flex flex-col items-center justify-center space-y-3", className)}>
-      <Loader2 className={cn("animate-spin text-primary", sizeClasses[size])} />
+    <div className={cn("flex flex-col items-center justify-center space-y-4 p-6", className)}>
+      <div className="relative">
+        <Loader2 className={cn("animate-spin text-primary", sizeClasses[size])} />
+        {/* Add a subtle pulse effect behind the spinner */}
+        <div className={cn(
+          "absolute inset-0 rounded-full animate-ping opacity-20",
+          sizeClasses[size],
+          "bg-primary"
+        )} />
+      </div>
       {message && (
-        <p className="text-sm text-muted-foreground text-center">
-          {message}
-        </p>
+        <div className="text-center space-y-1">
+          <p className="text-sm font-medium text-muted-foreground">
+            {message}
+          </p>
+          {/* Add a subtle loading dots animation */}
+          <div className="flex justify-center space-x-1">
+            <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+        </div>
       )}
     </div>
   )

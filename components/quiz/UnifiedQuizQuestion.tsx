@@ -637,7 +637,6 @@ export function UnifiedQuizQuestion({
                     language={codeQuestion.language || 'javascript'}
                     style={atomOneDark}
                     showLineNumbers={false}
-                    wrapLines={true}
                     customStyle={{
                       margin: 0,
                       padding: '1rem',
@@ -646,18 +645,19 @@ export function UnifiedQuizQuestion({
                       fontSize: '0.875rem', // text-sm
                       lineHeight: '1.5',
                       fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata, "Roboto Mono", "Source Code Pro", monospace',
-                      wordBreak: 'break-all',
-                      whiteSpace: 'pre-wrap',
-                      overflowWrap: 'break-word',
+                      // prevent wrapping and allow horizontal scroll from the container
+                      whiteSpace: 'pre',
+                      wordBreak: 'normal',
+                      overflowWrap: 'normal',
                     }}
                     codeTagProps={{
                       style: {
                         fontSize: 'inherit',
                         fontFamily: 'inherit',
                         lineHeight: 'inherit',
-                        wordBreak: 'break-all',
-                        whiteSpace: 'pre-wrap',
-                        overflowWrap: 'break-word',
+                        whiteSpace: 'pre',
+                        wordBreak: 'normal',
+                        overflowWrap: 'normal',
                       }
                     }}
                   >

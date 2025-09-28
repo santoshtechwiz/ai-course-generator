@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import SyntaxHighlighter from "react-syntax-highlighter"
 import vs from "react-syntax-highlighter/dist/styles/vs"
 
+
 interface FlashcardFrontProps {
   question: string
   keywords?: string[]
@@ -96,7 +97,7 @@ export function FlashcardFront({
               />
             </div>
 
-            {type === 'code' && codeSnippet && (
+            {type === 'code' && (
               <motion.div
                 className="rounded-lg overflow-hidden border border-muted bg-muted/30"
                 initial={{ opacity: 0, y: 10 }}
@@ -117,37 +118,43 @@ export function FlashcardFront({
                   <Terminal className="w-4 h-4 text-gray-400" />
                 </div>
                 <div className="max-h-60 sm:max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800">
-                  <SyntaxHighlighter
-                    language={language}
-                    style={vs}
-                    showLineNumbers={false}
-                    wrapLines={true}
-                    wrapLongLines={true}
-                    customStyle={{
-                      margin: 0,
-                      fontSize: '0.875rem',
-                      padding: '1.5rem',
-                      background: '#0f172a',
-                      borderRadius: 0,
-                      lineHeight: '1.5',
-                      fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata, "Roboto Mono", "Source Code Pro", monospace',
-                      wordBreak: 'break-all',
-                      whiteSpace: 'pre-wrap',
-                      overflowWrap: 'break-word',
-                    }}
-                    codeTagProps={{
-                      style: {
-                        fontSize: 'inherit',
-                        fontFamily: 'inherit',
-                        lineHeight: 'inherit',
-                        wordBreak: 'break-all',
-                        whiteSpace: 'pre-wrap',
-                        overflowWrap: 'break-word',
-                      }
-                    }}
-                  >
-                    {codeSnippet}
-                  </SyntaxHighlighter>
+                  {codeSnippet ? (
+                    <div className="overflow-x-auto">
+                      <SyntaxHighlighter
+                        language={language}
+                        style={vs}
+                        showLineNumbers={false}
+                        customStyle={{
+                          margin: 0,
+                          fontSize: '0.875rem',
+                          padding: '1.5rem',
+                          background: '#0f172a',
+                          borderRadius: 0,
+                          lineHeight: '1.5',
+                          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata, "Roboto Mono", "Source Code Pro", monospace',
+                          whiteSpace: 'pre',
+                          wordBreak: 'normal',
+                          overflowWrap: 'normal',
+                        }}
+                        codeTagProps={{
+                          style: {
+                            fontSize: 'inherit',
+                            fontFamily: 'inherit',
+                            lineHeight: 'inherit',
+                            whiteSpace: 'pre',
+                            wordBreak: 'normal',
+                            overflowWrap: 'normal',
+                          }
+                        }}
+                      >
+                        {codeSnippet}
+                      </SyntaxHighlighter>
+                    </div>
+                  ) : (
+                    <div className="p-4">
+                      <Badge variant="secondary" className="text-xs">No code provided</Badge>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}

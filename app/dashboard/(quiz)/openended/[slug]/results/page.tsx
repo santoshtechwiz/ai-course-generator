@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import QuizResultHandler from "../../../components/QuizResultHandler"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import ImprovedQuizResult from "../../../components/ImprovedQuizResult"
+import UnifiedQuizResult from "../../../components/UnifiedQuizResult"
 import QuizResultLayout from "../../../components/layouts/QuizResultLayout"
 
 interface ResultsPageProps {
@@ -40,7 +40,7 @@ export default function OpenEndedResultsPage({ params }: ResultsPageProps) {
   return (
     <QuizResultLayout title="Results" quizType="openended" slug={slug}>
       <QuizResultHandler slug={slug} quizType="openended">
-        {({ result }) => <ImprovedQuizResult result={result} slug={slug} quizType="openended" onRetake={handleRetakeQuiz} />}
+        {({ result }) => <UnifiedQuizResult result={result} slug={slug} quizType="openended" onRetake={handleRetakeQuiz} />}
       </QuizResultHandler>
     </QuizResultLayout>
   )

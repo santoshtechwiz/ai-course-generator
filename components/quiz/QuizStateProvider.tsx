@@ -11,7 +11,7 @@ interface QuizState {
 }
 
 interface QuizStateManager extends QuizState {
-  handleNext: (onNext: () => void | Promise<void>) => Promise<void>
+  handleNext: (onNext: () => void | Promise<void> | (() => void) | Promise<() => void>) => Promise<void>
   handleSubmit: (onSubmit: () => void | Promise<void>) => Promise<void>
   setError: (error: string) => void
   setSuccess: (message: string) => void
@@ -37,11 +37,20 @@ export const QuizStateProvider = ({ children, onError, onSuccess, globalLoading 
   })
 
   const handleNext = useCallback(
-    async (onNext: () => void | Promise<void>) => {
+    async (onNext: () => void | Promise<void> | (() => void) | Promise<() => void>) => {
       setState((prev) => ({ ...prev, nextState: "loading" }))
       try {
-        await onNext()
+        // Allow onNext to optionally return a cleanup function which we will invoke after success
+        const result = await onNext()
         setState((prev) => ({ ...prev, nextState: "success" }))
+        try {
+          if (typeof result === 'function') {
+            // result is a cleanup function
+            result()
+          }
+        } catch (cleanupErr) {
+          // ignore cleanup errors
+        }
         setTimeout(() => setState((prev) => ({ ...prev, nextState: "idle" })), 1000)
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Failed to proceed to next question"
@@ -109,5 +118,11 @@ export const useQuizState = () => {
   if (!context) {
     throw new Error("useQuizState must be used within a QuizStateProvider")
   }
+  return context
+}
+
+// Safe optional accessor: returns the state manager if present, otherwise null
+export const useOptionalQuizState = () => {
+  const context = useContext(QuizStateContext)
   return context
 }

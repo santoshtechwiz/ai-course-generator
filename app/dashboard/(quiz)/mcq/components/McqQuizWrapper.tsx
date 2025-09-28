@@ -69,9 +69,26 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
       } catch (err: any) {
         // Only show error if component is still mounted and it's not a cancellation
         if (isMounted && err?.code !== 'CANCELLED') {
-          console.error("Failed to load quiz:", err)
+          // Enhanced error logging with more details
+          console.error("Failed to load quiz:", {
+            error: err,
+            message: err?.message,
+            code: err?.code,
+            status: err?.status,
+            stack: err?.stack,
+            type: typeof err,
+            keys: err ? Object.keys(err) : [],
+            slug,
+            quizType: "mcq"
+          });
+
+          // Handle empty error objects
+          if (!err || (typeof err === 'object' && Object.keys(err).length === 0)) {
+            console.warn("Received empty error object, this may indicate a serialization issue");
+          }
+
           // Don't use toast to avoid UI breaking - handle errors inline
-          // toast.error(errorMessage)
+          // Could potentially show error state in UI instead
         }
       }
     }

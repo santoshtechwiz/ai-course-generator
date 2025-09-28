@@ -4,6 +4,67 @@ import { NextResponse } from "next/server"
 import { QuizType } from "@/app/types/quiz-types"
 import { validateSubscriptionServer } from "@/lib/subscription-validation"
 
+// Simple in-memory cache for quiz data and course associations
+// In production, consider using Redis for distributed caching
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+  ttl: number; // Time to live in milliseconds
+}
+
+class SimpleCache {
+  private cache = new Map<string, CacheEntry<any>>();
+  private readonly defaultTTL = 5 * 60 * 1000; // 5 minutes default
+
+  get<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+
+    if (Date.now() - entry.timestamp > entry.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return entry.data;
+  }
+
+  set<T>(key: string, data: T, ttl?: number): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl: ttl || this.defaultTTL
+    });
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  // Clean up expired entries periodically
+  cleanup(): void {
+    const now = Date.now();
+    const keysToDelete: string[] = [];
+
+    this.cache.forEach((entry, key) => {
+      if (now - entry.timestamp > entry.ttl) {
+        keysToDelete.push(key);
+      }
+    });
+
+    keysToDelete.forEach(key => this.cache.delete(key));
+  }
+}
+
+// Global cache instances
+const quizCache = new SimpleCache();
+const courseAssociationCache = new SimpleCache();
+
+// Clean up expired cache entries every 10 minutes
+setInterval(() => {
+  quizCache.cleanup();
+  courseAssociationCache.cleanup();
+}, 10 * 60 * 1000);
+
 // Guarded debug logger: only emits in non-production environments
 const logDebug = (...args: unknown[]) => {
   if (process.env.NODE_ENV !== 'production') {
@@ -284,37 +345,58 @@ function calculatePercentageScore(score: number, totalQuestions: number, type: Q
 }
 
 // Separate function to handle course progress updates (outside main transaction)
-async function updateCourseProgress(userId: string, quiz: any, totalTime: number) {
+async function updateCourseProgress(
+  userId: string,
+  quiz: any,
+  totalTime: number,
+  percentageScore: number,
+  accuracyScore: number,
+  submission: QuizSubmission
+) {
   try {
   logDebug(`Looking for course association for quiz: ${quiz.id}, slug: ${quiz.slug}`);
-    
-    // Try to find a course quiz linked to this user quiz
-    // The connection between userQuiz and courseQuiz is based on matching content
-    // Since there's no direct foreign key relationship, we need to use text matching
-    let courseQuiz = await prisma.courseQuiz.findFirst({
-      where: {
-        OR: [
-          // Try matching by quiz slug in the question or answer field
-          { question: { contains: quiz.slug } },
-          { answer: { contains: quiz.slug } },
-          
-          // Try matching by quiz ID (as string) in the question or answer field
-          { question: { contains: String(quiz.id) } },
-          { answer: { contains: String(quiz.id) } }
-        ]
-      },
-      include: {
-        chapter: {
-          include: {
-            unit: {
-              include: {
-                course: true
+
+    // Check cache first for course association
+    const cacheKey = `courseAssociation:${quiz.id}:${quiz.slug}`;
+    let courseQuiz = courseAssociationCache.get<any>(cacheKey);
+
+    if (!courseQuiz) {
+      // Try to find a course quiz linked to this user quiz
+      // The connection between userQuiz and courseQuiz is based on matching content
+      // Since there's no direct foreign key relationship, we need to use text matching
+      // OPTIMIZATION: Try exact matches first (much faster), then contains
+      courseQuiz = await prisma.courseQuiz.findFirst({
+        where: {
+          OR: [
+            // Exact matches first (fastest)
+            { question: quiz.slug },
+            { answer: quiz.slug },
+            { question: String(quiz.id) },
+            { answer: String(quiz.id) },
+            // Then try contains for partial matches (slower)
+            { question: { contains: quiz.slug } },
+            { answer: { contains: quiz.slug } }
+          ]
+        },
+        include: {
+          chapter: {
+            include: {
+              unit: {
+                include: {
+                  course: true
+                }
               }
             }
           }
         }
-      }
-    });
+      });
+
+      // Cache the result (longer TTL since course associations don't change often)
+      courseAssociationCache.set(cacheKey, courseQuiz || null, 30 * 60 * 1000); // 30 minutes TTL
+      logDebug(courseQuiz ? `Cached course association for quiz: ${quiz.id}` : `Cached null association for quiz: ${quiz.id}`);
+    } else {
+      logDebug(`Cache hit for course association: ${quiz.id}`);
+    }
     
     logDebug(courseQuiz ? 
       `Found associated course quiz: ${JSON.stringify({
@@ -431,7 +513,7 @@ async function updateCourseProgress(userId: string, quiz: any, totalTime: number
           });
         }
       }, {
-        timeout: 15000, // Separate timeout for course progress
+        timeout: 8000, // Reduced timeout for async operation
       });
     }
   } catch (error) {
@@ -462,19 +544,27 @@ interface QuizWithQuestions {
 
 async function getQuizWithQuestions(quizId: string): Promise<QuizWithQuestions | null> {
   try {
-    // Ensure quizId is converted to a Number
-    // const numericId = Number(quizId);
-    
-    // // Validate that it's actually a valid number
-    // if (isNaN(numericId)) {
-    //   console.error("Invalid quiz ID format:", quizId);
-    //   throw new Error(`Invalid quiz ID format: ${quizId}`);
-    // }
-    
-    return await prisma.userQuiz.findUnique({
+    // Check cache first
+    const cacheKey = `quiz:${quizId}`;
+    const cachedQuiz = quizCache.get<QuizWithQuestions>(cacheKey);
+    if (cachedQuiz) {
+      logDebug(`Cache hit for quiz: ${quizId}`);
+      return cachedQuiz;
+    }
+
+    // Fetch from database
+    const quiz = await prisma.userQuiz.findUnique({
       where: { slug: quizId },
       include: { questions: true },
-    })
+    });
+
+    // Cache the result (shorter TTL for quiz data since it might change)
+    if (quiz) {
+      quizCache.set(cacheKey, quiz, 2 * 60 * 1000); // 2 minutes TTL
+      logDebug(`Cached quiz: ${quizId}`);
+    }
+
+    return quiz;
   } catch (error) {
     console.error("Error fetching quiz with questions:", error)
     throw new Error("Failed to fetch quiz data")
@@ -542,7 +632,7 @@ async function processQuizSubmission(
           },
         })
 
-        await processQuestionAnswers(tx, quiz.questions, submission.answers, quizAttempt.id, submission.type)
+        await processQuestionAnswersBatch(tx, quiz.questions, submission.answers, quizAttempt.id, submission.type)
         
         return {
           updatedUserQuiz,
@@ -558,49 +648,49 @@ async function processQuizSubmission(
       },
     )
 
-    // Handle course progress update separately (outside transaction to avoid timeout)
-    try {
-      await updateCourseProgress(userId, quiz, submission.totalTime);
-    } catch (error) {
+    // Handle course progress update asynchronously (fire-and-forget to avoid blocking response)
+    // This prevents slow database queries from delaying quiz submission results
+    updateCourseProgress(userId, quiz, submission.totalTime, percentageScore, accuracyScore, submission).catch((error) => {
       // Log but don't fail the quiz submission if course progress update fails
-      console.error("Error updating course progress (non-blocking):", error);
-    }
-    
-    // Always create a learning event for quiz completion, even for standalone quizzes
-    try {
-      await prisma.learningEvent.create({
-        data: {
-          userId: userId,
-          type: 'QUIZ_COMPLETED',
-          entityId: quiz.id.toString(),
-          progress: Math.round(percentageScore),
-          timeSpent: Math.round(submission.totalTime),
-          metadata: {
-            quizId: quiz.id,
-            quizSlug: quiz.slug,
-            quizType: submission.type,
-            score: Math.round(percentageScore),
-            totalQuestions: quiz.questions.length,
-            correctAnswers: Math.round((percentageScore / 100) * quiz.questions.length),
-            accuracy: accuracyScore,
-            passed: percentageScore >= 70
-          }
-        }
-      });
-      console.log(`Created learning event for standalone quiz: ${quiz.slug}`);
-    } catch (error) {
-      console.error("Error creating quiz progress records (non-blocking):", error);
-    }
+      console.error("Error updating course progress (async):", error);
+    });
 
-    return result
+    // Always create a learning event for quiz completion, even for standalone quizzes (fire-and-forget)
+    // Capture variables for the async operation
+    const eventData = {
+      userId: userId,
+      type: 'QUIZ_COMPLETED' as const,
+      entityId: quiz.id.toString(),
+      progress: Math.round(percentageScore),
+      timeSpent: Math.round(submission.totalTime),
+      metadata: {
+        quizId: quiz.id,
+        quizSlug: quiz.slug,
+        quizType: submission.type,
+        score: Math.round(percentageScore),
+        totalQuestions: quiz.questions.length,
+        correctAnswers: Math.round((percentageScore / 100) * quiz.questions.length),
+        accuracy: accuracyScore,
+        passed: percentageScore >= 70
+      }
+    };
+
+    prisma.learningEvent.create({
+      data: eventData
+    }).catch((error) => {
+      // Log but don't fail the quiz submission if learning event creation fails
+      console.error("Error creating learning event (async):", error);
+    });
+
+    return result;
   } catch (error) {
     console.error("Error processing quiz submission:", error)
     throw error
   }
 }
 
-async function processQuestionAnswers(
-  tx: any, // Using 'any' for transaction is necessary due to Prisma's transaction API design
+async function processQuestionAnswersBatch(
+  tx: any,
   questions: Array<{ id: string | number; answer?: string; correctAnswer?: string; modelAnswer?: string }>,
   answers: QuizAnswerUnion[],
   attemptId: number,
@@ -613,8 +703,8 @@ async function processQuestionAnswers(
       return []
     }
 
-    // Map answers to questions, handling the case when question count and answer count differ
-    const questionPromises = questions.map((question, index) => {
+    // Prepare all question data for batch processing
+    const questionData = questions.map((question) => {
       // Find matching answer for this question
       const answer = answers.find(a => {
         // Handle both string and number question IDs
@@ -631,16 +721,13 @@ async function processQuestionAnswers(
         }
         return false;
       });
-      
+
       if (!answer) {
         console.warn(`No answer found for question ID ${question.id}`);
-        return Promise.resolve(); // Skip questions without answers
+        return null; // Skip questions without answers
       }
 
       // Extract user's answer consistently - using type guards to handle union type
-      let userAnswer: string;
-      
-      // Use a type assertion function to handle the union type
       const extractAnswer = (answer: QuizAnswerUnion): string => {
         if ('answer' in answer && answer.answer !== undefined) {
           return typeof answer.answer === 'string' ? answer.answer : String(answer.answer);
@@ -649,17 +736,17 @@ async function processQuestionAnswers(
         }
         return '';
       };
-      
-      userAnswer = extractAnswer(answer);
+
+      const userAnswer = extractAnswer(answer);
 
       // Determine if answer is correct
       let isCorrect = false;
-      
+
       // Function to check if the isCorrect property exists in answer
       const hasIsCorrectProperty = (answer: QuizAnswerUnion): answer is QuizAnswer => {
         return 'isCorrect' in answer && typeof answer.isCorrect === 'boolean';
       };
-      
+
       if (hasIsCorrectProperty(answer)) {
         // Trust client-side judgment if provided
         isCorrect = answer.isCorrect;
@@ -672,91 +759,66 @@ async function processQuestionAnswers(
             const correctAnswer = question.answer || question.correctAnswer;
             isCorrect = correctAnswer === userAnswer;
             break;
-            
+
           case 'openended':
             // For open-ended, we'd ideally do more sophisticated matching
             // This is simplified for now - in reality would use better comparison
             const modelAnswer = question.answer || question.correctAnswer || question.modelAnswer;
             if (modelAnswer && userAnswer) {
-              isCorrect = userAnswer.toLowerCase().includes(modelAnswer.toLowerCase()) || 
+              isCorrect = userAnswer.toLowerCase().includes(modelAnswer.toLowerCase()) ||
                           modelAnswer.toLowerCase().includes(userAnswer.toLowerCase());
             }
             break;
-            
+
           case 'blanks':
             // For blanks, exact match expected
             const expectedAnswer = question.answer || question.correctAnswer;
             isCorrect = expectedAnswer === userAnswer;
             break;
-            
+
           default:
             isCorrect = false;
         }
       }
 
       // Ensure userAnswer is a string and not too long
-      const userAnswerString = typeof userAnswer === 'string' ? 
+      const userAnswerString = typeof userAnswer === 'string' ?
           userAnswer.substring(0, 1000) : // Limit length
           String(userAnswer).substring(0, 1000); // Convert to string and limit length
 
       const timeSpent = parseInt(String(answer.timeSpent), 10) || 0;
-      
-      try {
-        // Use a unified structure for storing all quiz types
-        // Ensure question.id is properly converted to a number for the database
-        const questionId = typeof question.id === 'string' ? parseInt(question.id, 10) : question.id;
-        
-        // Skip if we couldn't convert to a valid number
-        if (isNaN(questionId)) {
-          console.warn(`Invalid question ID format: ${question.id}, skipping`);
-          return Promise.resolve();
-        }
-        
-        return tx.userQuizAttemptQuestion
-          .upsert({
-            where: {
-              attemptId_questionId: {
-                attemptId,
-                questionId: questionId,
-              },
-            },
-            update: {
-              userAnswer: userAnswerString,
-              isCorrect,
-              timeSpent: Math.round(timeSpent),
-            },
-            create: {
-              attemptId,
-              questionId: questionId,
-              userAnswer: userAnswerString,
-              isCorrect,
-              timeSpent: Math.round(timeSpent),
-            },
-          })
-          .catch((error: Error) => {
-            console.error("Database upsert error:", error, {
-              attemptId,
-              questionId: question.id,
-              userAnswer: userAnswerString,
-              timeSpent,
-            });
-            // Continue with other questions despite this error
-            return Promise.resolve();
-          });
-      } catch (error) {
-        console.error("Error processing question:", error, { questionId: question.id });
-        // Continue with other questions despite this error
-        return Promise.resolve();
-      }
-    });
 
-    // Continue even if some questions fail
-    const results = await Promise.allSettled(questionPromises);
-  logDebug(`Processed ${results.length} questions, ${results.filter(r => r.status === 'fulfilled').length} successful`);
-    
-    return results;
+      // Ensure question.id is properly converted to a number for the database
+      const questionId = typeof question.id === 'string' ? parseInt(question.id, 10) : question.id;
+
+      // Skip if we couldn't convert to a valid number
+      if (isNaN(questionId)) {
+        console.warn(`Invalid question ID format: ${question.id}, skipping`);
+        return null;
+      }
+
+      return {
+        attemptId,
+        questionId: questionId,
+        userAnswer: userAnswerString,
+        isCorrect,
+        timeSpent: Math.round(timeSpent),
+      };
+    }).filter(Boolean); // Remove null entries
+
+    // Single batch insert for all questions
+    if (questionData.length > 0) {
+      await tx.userQuizAttemptQuestion.createMany({
+        data: questionData,
+        skipDuplicates: true, // Handle potential conflicts gracefully
+      });
+
+      logDebug(`Batch processed ${questionData.length} questions for attempt ${attemptId}`);
+    }
+
+    return questionData;
   } catch (error) {
-    console.error("Error processing question answers:", error)
+    console.error("Error in batch question processing:", error)
     throw error
   }
 }

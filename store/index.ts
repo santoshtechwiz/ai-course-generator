@@ -1,11 +1,11 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit"
+import { createListenerMiddleware } from '@reduxjs/toolkit'
 import { persistReducer, persistStore } from "redux-persist"
 import storage from "redux-persist/lib/storage"
-import { performanceMiddleware } from "./middleware/performance"
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux"
 
-// Core reducers (session-based auth, no user slice needed)
-import { quizReducer } from "./slices/quiz"
+// Core reducers
+import { quizReducer, setCurrentQuestionIndex } from "./slices/quiz"
 import flashcardReducer from "./slices/flashcard-slice"
 import courseReducer from "./slices/course-slice"
 import certificateReducer from "./slices/certificate-slice"
@@ -16,7 +16,6 @@ import progressEventsReducer from "./slices/progress-events-slice"
 // Storage with fallback
 const createStorage = () => {
   try {
-    // Test if localStorage is available
     if (typeof window !== 'undefined' && window.localStorage) {
       const testKey = '__redux_persist_test__'
       localStorage.setItem(testKey, 'test')
@@ -26,8 +25,7 @@ const createStorage = () => {
   } catch (error) {
     console.warn('localStorage not available, using memory storage fallback')
   }
-  
-  // Fallback to memory storage
+
   return {
     getItem: (key: string) => Promise.resolve(null),
     setItem: (key: string, value: string) => Promise.resolve(),
@@ -99,6 +97,57 @@ const rootReducer = combineReducers({
   progressEvents: progressEventsReducer,
 })
 
+// ---------------------
+// Listener middleware: debounced persistence for quiz progress
+// ---------------------
+import { storageManager } from '@/utils/storage-manager'
+
+// Simple debounce helper (module-scoped to preserve timer between invocations)
+function debounce<Func extends (...args: any[]) => void>(fn: Func, wait = 250) {
+  let timeout: ReturnType<typeof setTimeout> | null = null
+  return (...args: Parameters<Func>) => {
+    if (timeout) clearTimeout(timeout)
+    timeout = setTimeout(() => fn(...args), wait)
+  }
+}
+
+const listenerMiddleware = createListenerMiddleware()
+
+// Debounced persist function: writes quiz progress into storageManager
+const debouncedPersist = debounce((slug: string | null, quizType: string | null, currentQuestionIndex: number) => {
+  try {
+    if (!slug || !quizType) return
+    // Use the same shape storageManager expects in existing code
+    const progress = {
+      courseId: slug,
+      chapterId: `${quizType}_${slug}`,
+      currentQuestionIndex,
+      answers: {},
+      timeSpent: 0,
+      lastUpdated: Date.now(),
+      isCompleted: false,
+    }
+    storageManager.saveQuizProgress(progress)
+  } catch (e) {
+    // swallow errors to avoid breaking UI
+    // eslint-disable-next-line no-console
+    console.warn('Failed to persist quiz progress (listener):', e)
+  }
+}, 300)
+
+// Listener: responds to setCurrentQuestionIndex actions
+listenerMiddleware.startListening({
+  actionCreator: setCurrentQuestionIndex,
+  effect: async (action, api) => {
+    const state = api.getState() as any
+    const quiz = (state as any).quiz || {}
+    const slug = quiz.slug ?? null
+    const quizType = quiz.quizType ?? null
+    const idx = action.payload as number
+    debouncedPersist(slug, String(quizType), idx)
+  }
+})
+
 // ✅ Clean store setup without auth middleware (session-based auth)
 const isProd = process.env.NODE_ENV === 'production'
 // Allow opting back into safety checks if desired: NEXT_PUBLIC_REDUX_SAFETY_CHECKS=true
@@ -108,7 +157,7 @@ const forceDevtools = process.env.NEXT_PUBLIC_FORCE_REDUX_DEVTOOLS === 'true'
 export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) => {
-    return getDefaultMiddleware({
+    const base = getDefaultMiddleware({
       // Disable costly dev-only invariant/serializable checks unless explicitly re-enabled
       immutableCheck: safetyChecksEnabled ? { warnAfter: 128 } : false,
       serializableCheck: safetyChecksEnabled ? {
@@ -119,7 +168,8 @@ export const store = configureStore({
         warnAfter: 128,
       } : false,
     })
-    // .concat(performanceMiddleware) // (optional) re-enable if you want custom perf telemetry
+    // Attach listener middleware
+    return base.concat(listenerMiddleware.middleware)
   },
   // Enable Redux DevTools with useful tracing during development
   devTools: !isProd || forceDevtools ? {

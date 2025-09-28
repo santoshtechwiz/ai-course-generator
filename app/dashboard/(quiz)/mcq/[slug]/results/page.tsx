@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import QuizResultHandler from "../../../components/QuizResultHandler"
 
 import { use } from "react"
-import { McqQuizResult } from "../../components/McqQuizResult"
+import UnifiedQuizResult from "../../../components/UnifiedQuizResult"
 import QuizResultLayout from "../../../components/layouts/QuizResultLayout"
 
 interface ResultsPageProps {
@@ -48,8 +48,10 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
       >
         {({ result }) => (
           result ? (
-            <McqQuizResult
+            <UnifiedQuizResult
               result={result}
+              slug={slug}
+              quizType="mcq"
               onRetake={handleRetakeQuiz}
             />
           ) : null

@@ -138,61 +138,142 @@ class ProgressWorker {
   }
 
   private async processChapterEvents(events: Event[]) {
-    const chapterUpdates = events.map(event => ({
-      userId: event.userId,
-      courseId: Number(event.courseId),
-      chapterId: Number(event.chapterId),
-      progress: Math.min(100, Math.max(0, event.progress)),
-      timeSpent: Math.max(0, event.timeSpent || 0),
-      completed: event.eventType === 'chapter_complete' || event.progress >= 100,
-      lastWatchedAt: new Date(event.timestamp),
-      metadata: event.metadata || {}
-    }))
+    // Merge events for the same user/course/chapter to avoid repeated upserts
+    const merged = new Map<string, {
+      userId: string
+      courseId: number
+      chapterId: number
+      progress: number
+      timeSpent: number
+      completed: boolean
+      lastWatchedAt: Date
+      metadata: Record<string, any>
+    }>()
+
+    for (const ev of events) {
+      const key = `${ev.userId}:${ev.courseId}:${ev.chapterId}`
+      const progress = Math.min(100, Math.max(0, ev.progress || 0))
+      const timeSpent = Math.max(0, ev.timeSpent || 0)
+      const completed = ev.eventType === 'chapter_complete' || progress >= 100
+      const lastWatchedAt = new Date(ev.timestamp)
+
+      if (!merged.has(key)) {
+        merged.set(key, {
+          userId: ev.userId,
+          courseId: Number(ev.courseId),
+          chapterId: Number(ev.chapterId),
+          progress,
+          timeSpent,
+          completed,
+          lastWatchedAt,
+          metadata: ev.metadata || {}
+        })
+        continue
+      }
+
+      const existing = merged.get(key)!
+
+      // Keep the highest progress, sum timeSpent, mark completed if any event completed
+      existing.progress = Math.max(existing.progress, progress)
+      existing.timeSpent = existing.timeSpent + timeSpent
+      existing.completed = existing.completed || completed
+      if (lastWatchedAt.getTime() > existing.lastWatchedAt.getTime()) {
+        existing.lastWatchedAt = lastWatchedAt
+      }
+      existing.metadata = { ...(existing.metadata || {}), ...(ev.metadata || {}) }
+    }
+
+    const chapterUpdates = Array.from(merged.values())
+
+    // Thresholds: only persist if progress changes by >= 2% or timeSpent increases by >= 10s
+    const PROGRESS_DELTA_THRESHOLD = 0.02 // fraction
+    const TIME_DELTA_SECONDS = 10
+
+    const toUpdate = [] as any[]
 
     for (const update of chapterUpdates) {
-      await this.prisma.chapterProgress.upsert({
-        where: {
+      try {
+        const where = {
           userId_courseId_chapterId: {
             userId: update.userId,
             courseId: update.courseId,
             chapterId: update.chapterId
           }
-        },
-        update: {
-          // schema fields: lastProgress (0..1), timeSpent, isCompleted, lastAccessedAt
-          lastProgress: update.progressPercent / 100,
-          timeSpent: { increment: update.timeSpent },
-          isCompleted: update.completed,
-          lastAccessedAt: update.lastAccessedAt,
-        },
-        create: {
-          userId: update.userId,
-          courseId: update.courseId,
-          chapterId: update.chapterId,
-          lastProgress: update.progressPercent / 100,
-          timeSpent: update.timeSpent,
-          isCompleted: update.completed,
-          lastAccessedAt: update.lastAccessedAt,
         }
-      })
+
+        const existing = await this.prisma.chapterProgress.findUnique({ where })
+
+        const newLastProgress = Math.min(1, Math.max(0, update.progress / 100))
+        const newTimeSpent = Math.max(0, update.timeSpent)
+        const newCompleted = Boolean(update.completed)
+
+        let shouldUpsert = true
+
+        if (existing) {
+          const existingProgress = existing.lastProgress || 0
+          const progressDelta = Math.abs(newLastProgress - existingProgress)
+          const existingTime = existing.timeSpent || 0
+          const timeDelta = Math.max(0, newTimeSpent - existingTime)
+
+          // If progress delta is tiny, added time is small, and completion state didn't change, skip
+          const completionChanged = Boolean(newCompleted) !== Boolean(existing.isCompleted)
+          if (progressDelta < PROGRESS_DELTA_THRESHOLD && timeDelta < TIME_DELTA_SECONDS && !completionChanged) {
+            shouldUpsert = false
+          }
+        }
+
+        if (!shouldUpsert) {
+          console.log(`Skipping no-op upsert for chapterProgress ${update.userId}:${update.courseId}:${update.chapterId} (progress ${update.progress}%, time ${update.timeSpent}s)`) 
+          continue
+        }
+
+        // Perform upsert
+        await this.prisma.chapterProgress.upsert({
+          where,
+          update: {
+            lastProgress: newLastProgress,
+            timeSpent: { increment: newTimeSpent },
+            isCompleted: newCompleted,
+            lastAccessedAt: update.lastWatchedAt,
+          },
+          create: {
+            userId: update.userId,
+            courseId: update.courseId,
+            chapterId: update.chapterId,
+            lastProgress: newLastProgress,
+            timeSpent: newTimeSpent,
+            isCompleted: newCompleted,
+            lastAccessedAt: update.lastWatchedAt,
+          }
+        })
+
+        toUpdate.push(update)
+      } catch (error: any) {
+        console.error('Failed to persist chapter update:', error)
+      }
     }
 
-    await this.updateCourseProgress(chapterUpdates)
+    if (toUpdate.length > 0) {
+      await this.updateCourseProgress(toUpdate)
+    }
   }
 
   private async processQuizEvents(events: Event[]) {
     const quizGroups = new Map<string, Event[]>()
 
     for (const event of events) {
-      const key = `${event.userId}:${event.quizId}`
+      // Build grouping key including course and chapter when available to keep context
+      const coursePart = event.courseId ? String(event.courseId) : '0'
+      const chapterPart = event.chapterId ? String(event.chapterId) : '0'
+      const key = `${event.userId}:${coursePart}:${chapterPart}:${event.quizId || '0'}`
       if (!quizGroups.has(key)) quizGroups.set(key, [])
       quizGroups.get(key)!.push(event)
     }
 
     for (const [key, quizEvents] of quizGroups.entries()) {
       const [userId, courseIdStr, chapterIdStr] = key.split(':')
-      const courseId = Number(courseIdStr)
-      const chapterId = Number(chapterIdStr)
+      const courseId = Number(courseIdStr || 0)
+      const chapterId = Number(chapterIdStr || 0)
       await this.processQuizGroup(userId, courseId, chapterId, quizEvents)
     }
   }

@@ -12,10 +12,9 @@
  */
 
 import { hydrateFromStorage } from "../../../middlewares/store/persistence"
-import { STORAGE_KEYS } from "@/constants/global"
-import type { QuizState, QuizAnswer, QuizQuestion, QuizResults, QuestionResult } from "./quiz-types"
-import type { QuizType } from "@/app/types/quiz-types"
-import { API_PATHS } from "@/constants/global"
+import { STORAGE_KEYS } from '@/constants/global'
+import type { QuizState, QuizAnswer, QuizQuestion, QuizResults, QuestionResult, QuizType } from "./quiz-types"
+import { API_PATHS } from '@/constants/global'
 
 /**
  * API endpoints configuration

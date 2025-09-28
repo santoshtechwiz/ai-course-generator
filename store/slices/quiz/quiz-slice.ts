@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@reduxjs/toolkit'
+// Use a local RootState alias for focused type-checking of the quiz slice
 import type { RootState } from '@/store'
 import { API_ENDPOINTS } from './quiz-helpers'
-import { QuizQuestion, QuizResults, QuizState, QuestionResult } from './quiz-types'
-import { QuizType } from '@/app/types/quiz-types'
+import { QuizQuestion, QuizResults, QuizState, QuestionResult, QuizType } from './quiz-types'
 import { STORAGE_KEYS } from '@/constants/global'
 import { 
   shouldUpdateState, 
@@ -37,7 +37,8 @@ function setCachedQuiz(type: QuizType | null, slug: string | null, data: any): v
   quizCache.set(key, { timestamp: Date.now(), data })
   // Evict oldest if over capacity
   if (quizCache.size > MAX_CACHE_ENTRIES) {
-    const oldestKey = [...quizCache.entries()].sort((a, b) => a[1].timestamp - b[1].timestamp)[0]?.[0]
+    const entriesArr = Array.from(quizCache.entries())
+    const oldestKey = entriesArr.sort((a, b) => a[1].timestamp - b[1].timestamp)[0]?.[0]
     if (oldestKey) quizCache.delete(oldestKey)
   }
 }
@@ -276,6 +277,21 @@ export const fetchQuiz = createAsyncThunk<
 
     } catch (error: any) {
       // Handle different types of errors
+      console.error('Quiz fetch error details:', {
+        error,
+        message: error?.message,
+        name: error?.name,
+        stack: error?.stack,
+        code: error?.code,
+        status: error?.status,
+        url,
+        type,
+        slug,
+        typeOfError: typeof error,
+        errorKeys: error ? Object.keys(error) : [],
+        isEmptyObject: error && typeof error === 'object' && Object.keys(error).length === 0
+      });
+
       if (error.name === 'AbortError' || error.message?.includes('aborted')) {
         return rejectWithValue({ error: 'Request was cancelled', code: 'CANCELLED' })
       }
@@ -351,23 +367,72 @@ export const submitQuiz = createAsyncThunk(
         let userAnswer: string | null = null
         const skipped = !answer || (!answer.selectedOptionId && !answer.userAnswer)
 
-        switch (quizType) {
-          case 'mcq':
-          case 'code': {
-            correctAnswer = String(question.answer ?? '').trim()
-            const selected = String(answer?.selectedOptionId ?? '').trim()
-            userAnswer = selected || null
-            isCorrect = answer?.isCorrect === true || selected === correctAnswer
+  // Derive question-level metadata (use any casts to handle union shapes)
+  const qAny: any = question as any
+  const qCorrect = String((qAny.correctAnswer ?? qAny.answer ?? '') || '').trim()
+  const qOptions = qAny.options || []
 
-            // Format for API
-            answersForAPI.push({
-              questionId: String(question.id),
-              answer: selected,
-              timeSpent: answer?.timeSpent || 0,
-              isCorrect: isCorrect
-            })
-            break
-          }
+  switch (quizType) {
+            case 'mcq':
+            case 'code': {
+              // For MCQ we usually have a selectedOptionId; for Code we usually have userAnswer/code text.
+              // Accept either selectedOptionId or a userAnswer (or code) string.
+              correctAnswer = String(question.answer ?? '').trim()
+              const aAny: any = answer as any
+              const selectedOrText = String(aAny.selectedOptionId ?? aAny.userAnswer ?? aAny.code ?? '').trim()
+              // Try to map selected value to a human-friendly label when options are provided
+              let selectedOptionLabel: string | null = null
+              let selectedOptionIndex: number | null = null
+              if (Array.isArray(qOptions) && qOptions.length) {
+                // qOptions may be array of strings or objects
+                for (let i = 0; i < qOptions.length; i++) {
+                  const opt = qOptions[i]
+                  if (typeof opt === 'string') {
+                    if (opt === selectedOrText) {
+                      selectedOptionLabel = opt
+                      selectedOptionIndex = i
+                      break
+                    }
+                  } else if (opt && typeof opt === 'object') {
+                    const optId = String((opt as any).id ?? (opt as any).value ?? (opt as any).key ?? '')
+                    const optLabel = String((opt as any).label ?? (opt as any).text ?? (opt as any).title ?? (opt as any).value ?? (opt as any).id ?? '')
+                    if (optId && optId === selectedOrText) {
+                      selectedOptionLabel = optLabel
+                      selectedOptionIndex = i
+                      break
+                    }
+                    if (optLabel && optLabel === selectedOrText) {
+                      selectedOptionLabel = optLabel
+                      selectedOptionIndex = i
+                      break
+                    }
+                  }
+                }
+              }
+
+              userAnswer = selectedOrText || null
+              // Coerce to boolean to avoid mixed-type issues
+              isCorrect = Boolean(aAny.isCorrect === true || (selectedOrText && selectedOrText === qCorrect))
+
+              // Prefer explicit userAnswer/code if present for API payload
+              const apiAnswer = (typeof aAny.userAnswer === 'string' && aAny.userAnswer.trim() !== '')
+                ? aAny.userAnswer
+                : ((typeof aAny.code === 'string' && aAny.code.trim() !== '') ? aAny.code : selectedOrText)
+
+              // Format for API
+              answersForAPI.push({
+                questionId: String(question.id),
+                answer: apiAnswer,
+                timeSpent: answer?.timeSpent || 0,
+                isCorrect: isCorrect,
+                // include label/index for clarity
+                selectedOptionLabel: selectedOptionLabel,
+                selectedOptionIndex: selectedOptionIndex,
+              })
+
+              // Include label info in temp results below
+              break
+            }
 
           case 'blanks': {
             correctAnswer = String(question.answer ?? '').trim().toLowerCase()
@@ -429,13 +494,20 @@ export const submitQuiz = createAsyncThunk(
 
         if (isCorrect) score++
 
-        tempResults.push({
+        // Build a temp result object and cast to QuestionResult to satisfy typing
+        const tempResultAny: any = {
           questionId: String(question.id),
           userAnswer,
-          correctAnswer,
+          // ensure correct answer is filled from question
+          correctAnswer: qCorrect,
           isCorrect,
           skipped,
-        })
+          // If the answer included a selectedOptionLabel, include it for clarity
+          selectedOptionLabel: answersForAPI[answersForAPI.length - 1]?.selectedOptionLabel ?? null,
+          selectedOptionIndex: answersForAPI[answersForAPI.length - 1]?.selectedOptionIndex ?? null,
+        }
+
+        tempResults.push(tempResultAny as QuestionResult)
       }
 
       const total = questions.length
@@ -587,6 +659,36 @@ export const loadQuizResults = createAsyncThunk(
 
           // Check if quiz has been completed (has timeEnded)
           if (quizData.timeEnded && quizData.bestScore !== null) {
+            // Try to fetch detailed attempt data
+            let detailedResults: any[] = []
+            try {
+              const attemptsResponse = await fetch('/api/user/quiz-attempts?limit=1')
+              if (attemptsResponse.ok) {
+                const attemptsData = await attemptsResponse.json()
+                const latestAttempt = attemptsData.attempts?.find((a: any) => 
+                  a.userQuiz.slug === quiz.slug && a.userQuiz.quizType === quiz.quizType
+                )
+                
+                if (latestAttempt?.attemptQuestions) {
+                  detailedResults = latestAttempt.attemptQuestions.map((aq: any) => ({
+                    questionId: aq.questionId.toString(),
+                    question: aq.question.question,
+                    userAnswer: aq.userAnswer,
+                    correctAnswer: aq.question.answer,
+                    isCorrect: aq.isCorrect,
+                    explanation: aq.question.explanation || '',
+                    type: aq.question.questionType || 'mcq',
+                    options: aq.question.options ? JSON.parse(aq.question.options) : [],
+                    difficulty: '',
+                    category: ''
+                  }))
+                }
+              }
+            } catch (attemptsError) {
+              console.warn('Failed to fetch detailed attempt data:', attemptsError)
+              // Continue without detailed results
+            }
+
             // Create results object from saved quiz data
             const savedResults: QuizResults = {
               slug: quiz.slug,
@@ -597,7 +699,7 @@ export const loadQuizResults = createAsyncThunk(
               submittedAt: quizData.timeEnded,
               completedAt: quizData.timeEnded,
               answers: [], // We don't have the detailed answers, but that's OK for results display
-              results: [], // We don't have detailed results, but that's OK for basic display
+              results: detailedResults, // Include detailed question results
               totalTime: 0, // We don't have this saved
               accuracy: 0, // We don't have this saved
             }
@@ -859,6 +961,37 @@ const quizSlice = createSlice({
         ? (action.payload.answer.userAnswer ?? '')
         : (action.payload.answer as string)
 
+      // Derive a human-friendly option label when possible
+      let selectedOptionLabel: string | null = null
+      try {
+        const optsAny: any = (question as any).options || []
+        if (Array.isArray(optsAny) && selectedOptionId) {
+          for (const opt of optsAny) {
+            if (typeof opt === 'string') {
+              if (String(opt) === String(selectedOptionId) || String(opt) === String(computedUserAnswer)) {
+                selectedOptionLabel = String(opt)
+                break
+              }
+            } else if (opt && typeof opt === 'object') {
+              const optId = String((opt as any).id ?? (opt as any).value ?? (opt as any).key ?? '')
+              const optLabel = String((opt as any).label ?? (opt as any).text ?? (opt as any).title ?? (opt as any).value ?? (opt as any).id ?? '')
+              if (optId && String(optId) === String(selectedOptionId)) {
+                selectedOptionLabel = optLabel || optId
+                break
+              }
+              if (optLabel && String(optLabel) === String(selectedOptionId)) {
+                selectedOptionLabel = optLabel
+                break
+              }
+            }
+          }
+        }
+      } catch (err) {
+        // ignore mapping errors and leave label null
+      }
+
+      const normalizedCorrectAnswer = String((question as any).correctAnswer ?? (question as any).answer ?? '')
+
       state.answers[action.payload.questionId] = {
         questionId: action.payload.questionId,
         selectedOptionId: selectedOptionId,
@@ -867,6 +1000,8 @@ const quizSlice = createSlice({
         type: question.type,
         timestamp: currentTime,
         timeSpent: timeSpent, // Already in seconds
+        selectedOptionLabel: selectedOptionLabel,
+        correctAnswer: normalizedCorrectAnswer,
       }
     },
 
@@ -874,7 +1009,7 @@ const quizSlice = createSlice({
       const index = action.payload
       if (index >= 0 && index < state.questions.length) {
         state.currentQuestionIndex = index
-        persistProgress(state.slug, state.quizType, state.currentQuestionIndex)
+        // Persist progress moved to a listener middleware to avoid side-effects inside reducers
       }
     },
 

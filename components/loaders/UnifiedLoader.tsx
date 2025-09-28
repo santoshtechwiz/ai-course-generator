@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Loader2, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react'
+import { Loader2, RefreshCw, CheckCircle, AlertCircle, Brain, BookOpen, Target, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export type LoaderVariant = 'spinner' | 'pulse' | 'dots' | 'progress' | 'skeleton'
@@ -95,11 +95,37 @@ export function UnifiedLoader({
       case 'spinner':
         return (
           <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            className={cn(sizeClasses[size], 'text-primary')}
+            className="relative"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.3 }}
           >
-            {spinnerIcon || <Loader2 className="w-full h-full" />}
+            {/* Outer rotating ring */}
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+              className={cn(sizeClasses[size], 'border-2 border-primary/20 border-t-primary rounded-full')}
+            />
+            {/* Inner pulsing icon */}
+            <motion.div
+              className="absolute inset-0 flex items-center justify-center"
+              animate={{
+                scale: [1, 1.1, 1],
+                opacity: [0.7, 1, 0.7]
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: 'easeInOut'
+              }}
+            >
+              {spinnerIcon || <Brain className={cn(sizeClasses.xs, 'text-primary')} />}
+            </motion.div>
+            {/* Subtle background glow */}
+            <div className={cn(
+              'absolute inset-0 rounded-full bg-primary/5 animate-pulse',
+              sizeClasses[size].replace('h-', 'h-[').replace('w-', 'w-[') + ']'
+            )} />
           </motion.div>
         )
 
@@ -114,11 +140,15 @@ export function UnifiedLoader({
 
       case 'dots':
         return (
-          <div className="flex gap-1">
+          <div className="flex gap-2">
             {[0, 1, 2].map((i) => (
               <motion.div
                 key={i}
-                animate={{ y: [0, -8, 0] }}
+                animate={{
+                  y: [0, -12, 0],
+                  scale: [1, 1.2, 1],
+                  backgroundColor: ['hsl(var(--primary))', 'hsl(var(--primary)/0.6)', 'hsl(var(--primary))']
+                }}
                 transition={{
                   duration: 0.8,
                   repeat: Infinity,
@@ -172,8 +202,9 @@ export function UnifiedLoader({
     if (state === 'success') {
       return (
         <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 10 }}
           className={cn(iconClass, 'text-green-600')}
         >
           {successIcon || <CheckCircle className="w-full h-full" />}
@@ -184,8 +215,9 @@ export function UnifiedLoader({
     if (state === 'error') {
       return (
         <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
+          initial={{ scale: 0, rotate: 180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 10 }}
           className={cn(iconClass, 'text-red-600')}
         >
           {errorIcon || <AlertCircle className="w-full h-full" />}

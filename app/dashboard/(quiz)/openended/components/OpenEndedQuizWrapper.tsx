@@ -78,9 +78,40 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
         await dispatch(fetchQuiz({ slug, quizType: "openended" })).unwrap()
         setError(null)
       } catch (err) {
-        console.error("Failed to load quiz:", err)
-        setError("Failed to load quiz. Please try again.")
-        toast.error("Failed to load quiz. Please try again.")
+        // Enhanced error logging with more details
+        console.error("Failed to load quiz:", {
+          error: err,
+          message: err?.message,
+          code: err?.code,
+          status: err?.status,
+          stack: err?.stack,
+          type: typeof err,
+          keys: err ? Object.keys(err) : [],
+          slug,
+          quizType: "openended"
+        });
+
+        // Provide more specific error messages based on error type
+        let errorMessage = "Failed to load quiz. Please try again.";
+
+        // Handle empty error objects
+        if (!err || (typeof err === 'object' && Object.keys(err).length === 0)) {
+          console.warn("Received empty error object, this may indicate a serialization issue");
+          errorMessage = "Unable to load quiz. The quiz may not exist or there may be a connection issue.";
+        } else if (err && typeof err === 'object' && 'code' in err) {
+          if (err.code === 'NOT_FOUND') {
+            errorMessage = "Quiz not found. It may have been deleted or the URL is incorrect.";
+          } else if (err.code === 'NETWORK_ERROR') {
+            errorMessage = "Network error. Please check your internet connection.";
+          } else if (err.code === 'SERVER_ERROR') {
+            errorMessage = "Server error. Please try again in a few moments.";
+          } else if (err.code === 'CANCELLED') {
+            errorMessage = "Request was cancelled. Please try again.";
+          }
+        }
+
+        setError(errorMessage);
+        toast.error(errorMessage);
       }
     }
 

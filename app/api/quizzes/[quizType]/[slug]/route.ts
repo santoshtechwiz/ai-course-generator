@@ -44,6 +44,7 @@ export async function GET(
     const quiz = await quizService.getQuizBySlug(slug, userId)
     
     if (!quiz) {
+      console.error(`Quiz not found: ${quizType}/${slug}, userId: ${userId}`)
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
     }
     

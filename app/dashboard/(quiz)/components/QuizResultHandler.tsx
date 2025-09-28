@@ -11,7 +11,7 @@ import { useMachine } from '@xstate/react'
 import { NoResults } from '@/components/ui/no-results'
 import SignInPrompt from '@/app/auth/signin/components/SignInPrompt'
 import { Progress } from '@/components/ui/progress'
-import { Loader } from '@/components/loader'
+import { UnifiedLoader } from '@/components/loaders'
 
 import { useAuth } from '@/modules/auth'
 import { storageManager } from '@/utils/storage-manager'
@@ -26,7 +26,6 @@ import {
   setQuizResults,
 } from '@/store/slices/quiz/quiz-slice'
 
-import type { AppDispatch } from '@/store'
 import { QuizType } from '@/app/types/quiz-types'
 
 interface Props {
@@ -403,13 +402,23 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
       handleRetake();
     }
   }, [state.value, isRedirecting]); // eslint-disable-line react-hooks/exhaustive-deps// Render loading or redirecting states with a single consistent loader
-  if (isLoading || state.matches('loading') || isRedirecting) {
+    // If the machine is still in 'loading' but we already have matching results in Redux,
+    // transition the machine immediately to avoid a stuck "Loading" UI (common after submit).
+    if (state.matches('loading') && hasResults) {
+      if (isAuthenticated) send({ type: 'RESULTS_LOADED_WITH_AUTH' })
+      else send({ type: 'RESULTS_LOADED_NO_AUTH' })
+    }
+
+    if (isLoading || state.matches('loading') || isRedirecting) {
     const isRedirectingToQuiz = isRedirecting;
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
-        <Loader 
-          message={isRedirectingToQuiz ? "Redirecting to quiz..." : "Loading quiz results..."} 
-          size="large"
+        <UnifiedLoader
+          state="loading"
+          variant="spinner"
+          size="lg"
+          message={isRedirectingToQuiz ? "Redirecting to quiz..." : "Loading quiz results..."}
+          className="text-center"
         />
       </div>
     )

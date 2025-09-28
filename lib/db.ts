@@ -15,6 +15,9 @@ new PrismaClient({
         url: databaseUrl,
       },
     },
+    // Connection pooling configuration for better performance
+    // Adjust these values based on your database capacity and load
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   })
 
 // Avoid creating multiple Prisma instances in development

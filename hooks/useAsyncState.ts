@@ -6,6 +6,7 @@
 import { useSelector } from 'react-redux'
 import type { RootState } from '@/store'
 import { useMemo } from 'react'
+import { createSelector } from '@reduxjs/toolkit'
 
 // Loading state from different slices
 export function useLoadingState() {
@@ -64,30 +65,40 @@ export function useAsyncState() {
 
 // Specific hooks for different features
 export function useQuizState() {
-  const quiz = useSelector((state: RootState) => state.quiz)
-  
-  return {
-    ...quiz,
-    isLoading: quiz.status === 'loading',
-    isSubmitting: quiz.status === 'submitting',
-    hasError: quiz.status === 'failed',
-    isSuccess: quiz.status === 'succeeded',
-    isNotFound: quiz.status === 'not-found',
-    hasData: quiz.questions.length > 0
-  }
+  const selectQuizMeta = useMemo(() => createSelector(
+    (s: RootState) => s.quiz.status,
+    (s: RootState) => s.quiz.slug,
+    (s: RootState) => s.quiz.quizType,
+    (s: RootState) => s.quiz.questions.length,
+    (status, slug, quizType, qLen) => ({
+      isLoading: status === 'loading',
+      isSubmitting: status === 'submitting',
+      hasError: status === 'failed',
+      isSuccess: status === 'succeeded',
+      isNotFound: status === 'not-found',
+      hasData: qLen > 0,
+      slug,
+      quizType,
+    })
+  ), [])
+
+  return useSelector(selectQuizMeta)
 }
 
 export function useFlashcardState() {
-  const flashcard = useSelector((state: RootState) => state.flashcard)
-  
-  return {
-    ...flashcard,
-    isLoading: flashcard.status === 'loading',
-    isSubmitting: flashcard.status === 'submitting',
-    hasError: flashcard.status === 'failed',
-    isSuccess: flashcard.status === 'succeeded',
-    hasData: flashcard.questions.length > 0
-  }
+  const selectFlashcardMeta = useMemo(() => createSelector(
+    (s: RootState) => s.flashcard.status,
+    (s: RootState) => s.flashcard.questions.length,
+    (status, qLen) => ({
+      isLoading: status === 'loading',
+      isSubmitting: status === 'submitting',
+      hasError: status === 'failed',
+      isSuccess: status === 'succeeded',
+      hasData: qLen > 0,
+    })
+  ), [])
+
+  return useSelector(selectFlashcardMeta)
 }
 
 export function useSubscriptionState() {
@@ -102,26 +113,27 @@ export function useSubscriptionState() {
 
 // Hook for checking if data is stale and needs refresh
 export function useDataFreshness() {
-  const quiz = useSelector((state: RootState) => state.quiz)
-  const flashcard = useSelector((state: RootState) => state.flashcard)
-  
   const STALENESS_THRESHOLD = 5 * 60 * 1000 // 5 minutes
   const now = Date.now()
-  
-  const freshness = useMemo(() => ({
-    quiz: {
-      isStale: quiz.lastUpdated ? (now - quiz.lastUpdated) > STALENESS_THRESHOLD : true,
-      lastUpdated: quiz.lastUpdated,
-      age: quiz.lastUpdated ? now - quiz.lastUpdated : null
-    },
-    flashcard: {
-      isStale: flashcard.lastUpdated ? (now - flashcard.lastUpdated) > STALENESS_THRESHOLD : true,
-      lastUpdated: flashcard.lastUpdated,
-      age: flashcard.lastUpdated ? now - flashcard.lastUpdated : null
-    }
-  }), [quiz.lastUpdated, flashcard.lastUpdated, now])
 
-  return freshness
+  const selectFreshness = useMemo(() => createSelector(
+    (s: RootState) => s.quiz.lastUpdated,
+    (s: RootState) => s.flashcard.lastUpdated,
+    (quizLastUpdated, flashLastUpdated) => ({
+      quiz: {
+        isStale: quizLastUpdated ? (now - quizLastUpdated) > STALENESS_THRESHOLD : true,
+        lastUpdated: quizLastUpdated,
+        age: quizLastUpdated ? now - quizLastUpdated : null
+      },
+      flashcard: {
+        isStale: flashLastUpdated ? (now - flashLastUpdated) > STALENESS_THRESHOLD : true,
+        lastUpdated: flashLastUpdated,
+        age: flashLastUpdated ? now - flashLastUpdated : null
+      }
+    })
+  ), [now])
+
+  return useSelector(selectFreshness)
 }
 
 // Hook for components that need to show loading skeleton vs error state

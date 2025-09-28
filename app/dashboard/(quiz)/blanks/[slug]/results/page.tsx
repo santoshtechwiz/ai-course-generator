@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import QuizResultHandler from "../../../components/QuizResultHandler"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import ImprovedQuizResult from "../../../components/ImprovedQuizResult"
+import UnifiedQuizResult from "../../../components/UnifiedQuizResult"
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }> | { slug: string }
@@ -38,7 +38,7 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
   return (
     <div className="container max-w-4xl py-10">
       <QuizResultHandler slug={slug} quizType="blanks">
-        {({ result }) => <ImprovedQuizResult result={result} slug={slug} quizType="blanks" onRetake={handleRetakeQuiz} />}
+        {({ result }) => <UnifiedQuizResult result={result} slug={slug} quizType="blanks" onRetake={handleRetakeQuiz} />}
       </QuizResultHandler>
     </div>
   )

@@ -227,43 +227,48 @@ export async function POST(req: NextRequest) {
     if (quizTopicRaw) {
       const topic = quizTopicRaw.toLowerCase()
       try {
-        const courseQuizzes = await prisma.courseQuiz.findMany({
-          where: { question: { contains: topic, mode: 'insensitive' } },
-          take: 20,
-        })
-        const userQuizzes = await prisma.userQuiz.findMany({
-          where: {
-            OR: [
-              { title: { contains: topic, mode: 'insensitive' } },
-              { description: { contains: topic, mode: 'insensitive' } },
-            ],
-          },
-          take: 20,
-        })
+        // Parallelize independent queries and include related records to avoid N+1
+        const [courseQuizzes, userQuizzes] = await Promise.all([
+          prisma.courseQuiz.findMany({
+            where: { question: { contains: topic, mode: 'insensitive' } },
+            take: 20,
+            // include chapter -> unit -> course to avoid per-item queries
+            include: { chapter: { include: { unit: { include: { course: true } } } } },
+          }),
+          prisma.userQuiz.findMany({
+            where: {
+              OR: [
+                { title: { contains: topic, mode: 'insensitive' } },
+                { description: { contains: topic, mode: 'insensitive' } },
+              ],
+            },
+            take: 20,
+            // the relation name on UserQuiz for questions is `questions`
+            include: { _count: { select: { questions: true } } },
+          }),
+        ])
 
         if ((courseQuizzes?.length || 0) + (userQuizzes?.length || 0) > 0) {
           const matches: any[] = []
           // For course-bound quizzes, include a link to the course/chapter where they belong
           for (const cq of courseQuizzes) {
+            // Chapter and course unit were included above to avoid per-item queries
             let courseLink = null
-            try {
-              const chapter = await prisma.chapter.findUnique({ where: { id: cq.chapterId }, include: { unit: true, course: true } })
-              if (chapter?.course) {
-                courseLink = `/dashboard/course/${chapter.course.slug}#chapter-${chapter.id}`
-              } else if (chapter) {
-                courseLink = `/dashboard/course/${chapter.id}`
-              }
-            } catch (e) {
-              // ignore
+            const chapter = (cq as any).chapter
+            if (chapter?.course) {
+              courseLink = `/dashboard/course/${chapter.course.slug}#chapter-${chapter.id}`
+            } else if (chapter) {
+              courseLink = `/dashboard/course/${chapter.id}`
             }
             matches.push({ source: 'course', id: cq.id, title: `Quiz from chapter ${cq.chapterId}`, link: courseLink, snippet: cq.question })
           }
 
           // For user-created quizzes use slug-based dashboard links
           for (const uq of userQuizzes) {
-            const questions = await prisma.userQuizQuestion.findMany({ where: { userQuizId: uq.id } })
+            // We included a question count above to avoid per-item question queries
             const link = uq.slug ? `/dashboard/quiz/${uq.slug}` : null
-            matches.push({ source: 'user', id: uq.id, title: uq.title, quizType: uq.quizType, link, questionCount: questions.length })
+            const questionCount = (uq as any)?._count?.questions ?? null
+            matches.push({ source: 'user', id: uq.id, title: uq.title, quizType: uq.quizType, link, questionCount })
           }
 
           const assistant = `Found ${matches.length} matching quiz(es) for "${quizTopicRaw}". I can open any of these for you:`

@@ -207,7 +207,7 @@ export function HintSystem({
                       </div>
                     </div>
                     <Badge className={cn("text-xs font-medium", getColor(hint.spoilerLevel, index))}>
-                      {index >= 4 ? "ANSWER" : index >= 2 ? "DETAILED" : "GENTLE"}
+                      {index >= 4 ? "HIGH" : index >= 2 ? "DETAILED" : "GENTLE"}
                     </Badge>
                   </div>
 

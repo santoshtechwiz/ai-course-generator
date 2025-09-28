@@ -198,14 +198,14 @@ export default function FlashcardQuizWrapper({
   // Loading skeleton with simplified UI
   if (quizStatus === "loading" || quizStatus === "idle") {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-gray-900">Loading flashcards...</h3>
-            <p className="text-gray-600">Preparing your learning session</p>
-          </div>
-        </div>
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <UnifiedLoader
+          state="loading"
+          variant="spinner"
+          size="lg"
+          message="Loading flashcards..."
+          className="text-center"
+        />
       </div>
     )
   }

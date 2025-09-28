@@ -11,10 +11,11 @@ class ClientProgressQueue {
   private queue: ProgressEvent[] = []
   private isProcessing = false
   private maxQueueSize = 100
-  private flushInterval = 5000
+  private flushInterval = 15000
 
   constructor() {
     // Auto-flush every 5 seconds
+    // Auto-flush on a slightly longer interval to reduce frequent small writes
     setInterval(() => this.flush(), this.flushInterval)
   }
 
@@ -23,15 +24,37 @@ class ClientProgressQueue {
       console.warn('Progress queue is full, dropping oldest event')
       this.queue.shift()
     }
-    
-    this.queue.push(event)
-    console.log(`Progress event queued: ${event.eventType} for ${event.courseId}:${event.chapterId}`)
-    
-    // Auto-flush if queue is getting full
-    if (this.queue.length >= 10) {
+
+    // Attempt to merge with an existing queued event for same user/course/chapter/eventType
+    const keyOf = (e: ProgressEvent) => `${e.userId}:${e.courseId}:${e.chapterId}:${e.eventType}`
+    const incomingKey = keyOf(event)
+    const existingIndex = this.queue.findIndex(q => keyOf(q) === incomingKey)
+
+    if (existingIndex >= 0) {
+      const existing = this.queue[existingIndex]
+      if (event.eventType === 'chapter_progress') {
+        // Merge progress: keep highest progress, sum timeSpent, prefer latest timestamp/metadata
+        existing.progress = Math.max(existing.progress || 0, event.progress || 0)
+        existing.timeSpent = (existing.timeSpent || 0) + (event.timeSpent || 0)
+        existing.timestamp = Math.max(existing.timestamp || 0, event.timestamp || 0)
+        existing.metadata = { ...(existing.metadata || {}), ...(event.metadata || {}) }
+        this.queue[existingIndex] = existing
+        console.log(`Merged progress event in queue for ${event.courseId}:${event.chapterId} -> ${existing.progress}%`) 
+      } else {
+        // For other events, replace with latest
+        this.queue[existingIndex] = event
+        console.log(`Replaced queued event ${event.eventType} for ${event.courseId}:${event.chapterId}`)
+      }
+    } else {
+      this.queue.push(event)
+      console.log(`Progress event queued: ${event.eventType} for ${event.courseId}:${event.chapterId}`)
+    }
+
+    // Auto-flush only when queue grows large to reduce frequency
+    if (this.queue.length >= 25) {
       this.flush()
     }
-    
+
     return true
   }
 
@@ -41,7 +64,8 @@ class ClientProgressQueue {
     }
 
     this.isProcessing = true
-    const events = [...this.queue]
+    // Coalesce similar events to reduce duplicate updates (especially chapter_progress)
+    const events = this.coalesceEvents([...this.queue])
     this.queue = []
 
     try {
@@ -67,6 +91,49 @@ class ClientProgressQueue {
     } finally {
       this.isProcessing = false
     }
+  }
+
+  /**
+   * Coalesce events by user/course/chapter/eventType to reduce noise.
+   * - For chapter_progress: keep the event with the highest progress and sum timeSpent.
+   * - For other event types: keep the most recent event (by timestamp).
+   */
+  private coalesceEvents(events: ProgressEvent[]): ProgressEvent[] {
+    const map = new Map<string, ProgressEvent>()
+
+    for (const ev of events) {
+      const key = `${ev.userId}:${ev.courseId}:${ev.chapterId}:${ev.eventType}`
+
+      if (!map.has(key)) {
+        map.set(key, { ...ev })
+        continue
+      }
+
+      const existing = map.get(key) as ProgressEvent
+
+      if (ev.eventType === 'chapter_progress') {
+        // Keep the highest progress and aggregate timeSpent; prefer latest metadata/timestamp
+        const higherProgress = ev.progress > existing.progress ? ev.progress : existing.progress
+        const combinedTime = (existing.timeSpent || 0) + (ev.timeSpent || 0)
+        const latest = ev.timestamp > existing.timestamp ? ev : existing
+
+        map.set(key, {
+          ...latest,
+          progress: higherProgress,
+          timeSpent: combinedTime,
+          // keep an id (latest) and merged metadata
+          id: latest.id,
+          metadata: { ...(existing.metadata || {}), ...(ev.metadata || {}) },
+          timestamp: Math.max(existing.timestamp || 0, ev.timestamp || 0)
+        })
+      } else {
+        // For other events prefer the most recent one
+        const latest = ev.timestamp > existing.timestamp ? ev : existing
+        map.set(key, { ...latest })
+      }
+    }
+
+    return Array.from(map.values())
   }
 
   getQueueSize(): number {

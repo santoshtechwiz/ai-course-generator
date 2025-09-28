@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
 import { HintSystem } from "@/components/quiz/HintSystem"
+import { useOptionalQuizState } from "@/components/quiz/QuizStateProvider"
 import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
 import { generateBlanksHints } from "@/lib/utils/hint-system"
 import type { BlankQuizQuestion } from "@/app/types/quiz-types"
@@ -126,8 +127,14 @@ export default function BlanksQuiz({
 
   // Generate comprehensive hints for this question
   const hints = useMemo(() => {
-    return generateBlanksHints(questionData.answer, questionData.text, questionData.hints)
-  }, [questionData.answer, questionData.text, questionData.hints])
+    return generateBlanksHints(
+      questionData.answer,
+      questionData.text,
+      questionData.hints,
+      answer,
+    { allowDirectAnswer: false, maxHints: 3 }
+    )
+  }, [questionData.answer, questionData.text, questionData.hints, answer])
 
   // Parse question parts for blank display
   const questionParts = useMemo(() => {
@@ -188,7 +195,19 @@ export default function BlanksQuiz({
   const handleNext = useCallback(() => {
     if (handleAnswerSubmit() && onNext) {
       onNext()
+
+      // Return cleanup to clear answer and hint counters
+      return () => {
+        setAnswer("")
+        setSimilarity(0)
+        setIsAnswered(false)
+        setShowValidation(false)
+        setHintsUsed(0)
+        setIsFocused(false)
+        setShowCelebration(false)
+      }
     }
+    return undefined
   }, [handleAnswerSubmit, onNext])
 
   const handleSubmit = useCallback(() => {
@@ -406,7 +425,16 @@ export default function BlanksQuiz({
         {/* Footer */}
         <motion.div variants={itemVariants}>
           <QuizFooter
-            onNext={handleNext}
+              onNext={(() => {
+                const stateManager = useOptionalQuizState()
+                if (stateManager) {
+                  return () => stateManager.handleNext(handleNext)
+                }
+                return () => {
+                  const result = handleNext()
+                  if (typeof result === 'function') result()
+                }
+              })()}
             onPrevious={onPrevious}
             onSubmit={handleSubmit}
             canGoNext={canProceed && !isQuizCompleted}
