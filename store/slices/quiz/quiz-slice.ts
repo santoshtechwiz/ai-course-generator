@@ -344,7 +344,8 @@ export const submitQuiz = createAsyncThunk(
       const answersForAPI: any[] = []
 
       for (const question of questions) {
-        const answer = answers[question.id]
+        // answers keys are stored as strings (see saveAnswer) so normalize id to string
+        const answer = answers[String(question.id)]
         let isCorrect = false
         let correctAnswer = ''
         let userAnswer: string | null = null

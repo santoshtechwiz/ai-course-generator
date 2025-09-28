@@ -99,6 +99,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
     (answer: string) => {
       if (!currentQuestion) return false
 
+      // SaveAnswer expects questionId as string
       dispatch(
         saveAnswer({
           questionId: String(currentQuestion.id),

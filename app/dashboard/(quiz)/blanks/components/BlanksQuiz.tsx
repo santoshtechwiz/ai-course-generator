@@ -222,7 +222,6 @@ export default function BlanksQuiz({
       questionNumber={questionNumber}
       totalQuestions={totalQuestions}
       animationKey={String(question.id)}
-      fullWidth={true}
     >
       {isQuizCompleted && (
         <motion.div
@@ -411,6 +410,7 @@ export default function BlanksQuiz({
             onPrevious={onPrevious}
             onSubmit={handleSubmit}
             canGoNext={canProceed && !isQuizCompleted}
+            hasAnswer={canProceed}
             canGoPrevious={canGoPrevious}
             isLastQuestion={isLastQuestion}
             nextLabel="Next Question"
