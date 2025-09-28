@@ -3,6 +3,8 @@
 import type React from "react"
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import { useChat } from "@ai-sdk/react"
+import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,11 +14,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { MessageSquare, X, Send, Loader2, BrainCircuit, Crown, AlertCircle, HelpCircle } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { motion, AnimatePresence } from "framer-motion"
-import { migratedStorage } from "@/lib/storage"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useSubscription } from "@/modules/auth/hooks/useSubscription"
+import { storageManager } from "@/utils/storage-manager"
 
 
 
@@ -103,7 +105,7 @@ interface ChatbotProps {
   userId: string
 }
 
-export default function Chatbot({ userId }: ChatbotProps) {
+export function Chatbot({ userId }: ChatbotProps) {
   const [isOpen, setIsOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -111,20 +113,92 @@ export default function Chatbot({ userId }: ChatbotProps) {
   const [remainingQuestions, setRemainingQuestions] = useState(5)
   const [lastQuestionTime, setLastQuestionTime] = useState(Date.now())
   const [showTooltip, setShowTooltip] = useState(false)
+  const { toast } = useToast()
 
-  const [input, setInput] = useState("")
-  const [messages, setMessages] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { messages, input, handleInputChange, handleSubmit, isLoading, error, setMessages } = useChat({
+    api: "/api/chat",
+    body: { userId },
+    onFinish: (message) => {
+      // Message completed successfully
+      setRemainingQuestions((prev) => Math.max(0, prev - 1))
+      setLastQuestionTime(Date.now())
+    },
+    onResponse: (response) => {
+      // Check if the response is valid
+      if (response.ok) {
+        // Response is good, but let's validate the content type
+        const contentType = response.headers.get('content-type')
+        if (!contentType?.includes('text/event-stream')) {
+          console.warn("Unexpected content type:", contentType)
+          // fallback: attempt to fetch full non-streaming response
+          (async () => {
+            try {
+              const fallbackRes = await fetch('/api/chat/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages: [{ role: 'user', content: input }] }),
+              })
+              if (fallbackRes.ok) {
+                const data = await fallbackRes.json()
+                if (data?.assistant) {
+                  setMessages((prev) => [...prev, { id: `msg_${Date.now()}`, role: 'assistant', content: data.assistant }])
+                }
+              }
+            } catch (e) {
+              console.warn('Fallback sync failed', e)
+            }
+          })()
+        }
+      } else {
+        console.error("Chat response error:", response.statusText)
+        toast({
+          title: "Error sending message",
+          description: "There was a problem processing your request. Please try again.",
+          variant: "destructive",
+          duration: 3000,
+        })
+      }
+    },
+    onError: (err) => {
+      console.error("Chat error:", err)
+      
+      // Add a fallback message when streaming fails and attempt sync fallback
+      if (err.message?.includes("Failed to parse stream")) {
+        (async () => {
+          try {
+            const fallbackRes = await fetch('/api/chat/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ messages: [{ role: 'user', content: input }] }),
+            })
+            if (fallbackRes.ok) {
+              const data = await fallbackRes.json()
+              if (data?.assistant) {
+                setMessages((prev) => [...prev, { id: `msg_${Date.now()}`, role: 'assistant', content: data.assistant }])
+                return
+              }
+            }
+          } catch (e) {
+            console.warn('Fallback sync failed', e)
+          }
 
-  // Provide default values to prevent undefined errors
-  const safeInput = input
-  const safeIsLoading = isLoading
-  const safeMessages = messages
-
-  console.log('Chatbot render - messages:', safeMessages, 'isLoading:', safeIsLoading)
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)
+          const errorMessage = {
+            id: `error-${Date.now()}`,
+            role: 'assistant' as const,
+            content: "I apologize, but I encountered an error while processing your request. Please try asking again."
+          }
+          setMessages((prev) => [...prev, errorMessage])
+        })()
+      }
+      
+      toast({
+        title: "Connection error",
+        description: "Failed to connect to the chat service. Please try again later.",
+        variant: "destructive",
+        duration: 3000,
+      })
+    }
+  })
 
   // Focus input when chat opens
   useEffect(() => {
@@ -148,7 +222,7 @@ export default function Chatbot({ userId }: ChatbotProps) {
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (scrollAreaRef.current && safeMessages.length > 0) {
+    if (scrollAreaRef.current && messages.length > 0) {
       const scrollContainer = scrollAreaRef.current.querySelector("[data-radix-scroll-area-viewport]")
       if (scrollContainer) {
         setTimeout(() => {
@@ -156,275 +230,34 @@ export default function Chatbot({ userId }: ChatbotProps) {
         }, 100)
       }
     }
-  }, [safeMessages])
+  }, [messages])
 
   // Show tooltip for new users
   useEffect(() => {
-    const hasSeenTooltip = migratedStorage.getPreference("seen_chat_tooltip", false)
-    if (!hasSeenTooltip) {
+    const userPrefs = storageManager.getUserPreferences()
+    if (!userPrefs.hasSeenChatTooltip) {
       setShowTooltip(true)
       setTimeout(() => {
         setShowTooltip(false)
-        migratedStorage.setPreference("seen_chat_tooltip", true)
+        storageManager.saveUserPreferences({ hasSeenChatTooltip: true })
       }, 5000)
     }
   }, [])
 
   const canUseChat = useCallback(() => {
-    if (process.env.NODE_ENV === "development") return true;
-    if (!subscription) return false;
-    if (!subscription?.isSubscribed) return remainingQuestions > 0; // Allow free users some questions
-    return true; // Subscribers have unlimited questions
-  }, [subscription?.status, remainingQuestions]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (input.trim() && !isLoading && canUseChat()) {
-      const userMessage = input
-      setInput("")
-      setIsLoading(true)
-      setError(null)
-
-      // Add user message to chat
-      setMessages(prev => {
-        const newMsgs = [...prev, { role: "user", content: userMessage }]
-        console.log('Added user message, new messages:', newMsgs)
-        return newMsgs
-      })
-
-      try {
-        // Use absolute URL to avoid issues with base href in some environments
-        const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/api/chat`
-
-        // First, ping the server to verify connectivity and origin
-        try {
-          const pingUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/api/ping`
-          console.log('Pinging server at', pingUrl)
-          const pingResp = await fetch(pingUrl, { method: 'GET' })
-          if (!pingResp.ok) {
-            console.error('Ping failed', pingResp.status)
-            throw new Error('Ping failed')
-          }
-          const pingJson = await pingResp.json().catch(() => null)
-          console.log('Ping response:', pingJson)
-        } catch (pingErr) {
-          console.error('Server ping failed, aborting chat request:', pingErr)
-          throw new Error('Server unreachable (ping failed)')
-        }
-
-        // Try the request with a longer timeout and one retry on network failure
-        const makeRequest = async (useAbort = true) => {
-          const controller = useAbort ? new AbortController() : undefined
-          const timeoutMs = useAbort ? 60000 : 0 // 60s timeout for abort-enabled request
-          const timeoutId = useAbort ? setTimeout(() => controller!.abort(), timeoutMs) : undefined
-
-          try {
-            console.log('Posting chat request to', url)
-            const resp = await fetch(url, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ messages: [...messages, { role: 'user', content: userMessage }] }),
-              signal: controller?.signal,
-            })
-
-            if (timeoutId) clearTimeout(timeoutId)
-            return resp
-          } catch (err) {
-            if (timeoutId) clearTimeout(timeoutId)
-            throw err
-          }
-        }
-
-        let response
-        try {
-          response = await makeRequest(true)
-        } catch (err) {
-          console.error('First fetch attempt failed, will retry without abort:', err)
-          // Retry once without AbortController to rule out abort/timing issues
-          try {
-            response = await makeRequest(false)
-          } catch (err2) {
-            console.error('Retry fetch failed', err2)
-            throw err2
-          }
-        }
-
-  if (!response) throw new Error('No response received from fetch')
-
-        if (!response.ok) {
-          const text = await response.text().catch(() => '<unreadable>')
-          console.error('Server responded with non-OK status', response.status, text)
-          throw new Error('Failed to get response')
-        }
-        // If server returned JSON (DB-only response), handle it directly
-        const contentType = response.headers.get('content-type') || ''
-        const assistantHeader = response.headers.get('x-assistant-text') || ''
-
-        if (contentType.includes('application/json')) {
-          const json = await response.json().catch(() => null)
-          const assistantText = (json && (json.assistant || json.text)) || assistantHeader || ''
-          // If the server returned structured matches, push a structured assistant message
-          if (json && Array.isArray(json.matches) && json.matches.length > 0) {
-            // Push a message object that contains text + matches so the renderer can create clickable UI
-            setMessages(prev => [...prev, { role: 'assistant', content: { text: assistantText, matches: json.matches } }])
-          } else if (assistantText) {
-            setMessages(prev => [...prev, { role: 'assistant', content: assistantText }])
-          }
-          // decrement local remainingQuestions for non-subscribers
-          setRemainingQuestions((prev) => Math.max(0, prev - 1))
-          setLastQuestionTime(Date.now())
-          // Done — no stream to read
-          return
-        }
-
-        // Read assistant fallback header (if present) so UI can show immediate content for streaming
-        const reader = response.body?.getReader()
-        if (!reader) {
-          // If there's no streaming body, but we have header text, show it
-          if (assistantHeader) {
-            setMessages(prev => {
-              const newMsgs = [...prev, { role: 'assistant', content: assistantHeader }]
-              return newMsgs
-            })
-          }
-          throw new Error("No response body")
-        }
-
-        let assistantMessage = assistantHeader || ""
-        // If header provided, append an assistant message immediately (optimistic)
-        if (assistantHeader) {
-          setMessages(prev => [...prev, { role: 'assistant', content: assistantHeader }])
-        } else {
-          setMessages(prev => [...prev, { role: 'assistant', content: "" }])
-        }
-
-        console.log('Starting to read stream...')
-
-        // Buffer to accumulate partial chunks (SSE events may be split across reads)
-        let buffer = ""
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) {
-            console.log('Stream done, assistantMessage:', assistantMessage, 'bufferLeftover:', buffer)
-            // Try to flush any leftover buffer as a last attempt
-            if (buffer && buffer.trim()) {
-              try {
-                const trimmed = buffer.trim()
-                if (trimmed !== '[DONE]') {
-                  // Try parse as JSON first
-                  try {
-                    const parsed = JSON.parse(trimmed)
-                    const content = parsed.delta?.content || parsed.content || parsed.choices?.[0]?.delta?.content || ""
-                    if (content) assistantMessage += content
-                  } catch (e) {
-                    // Not JSON — append raw trimmed text
-                    assistantMessage += trimmed
-                  }
-
-                  // Update UI with any flushed content
-                  setMessages(prev => {
-                    const newMessages = [...prev]
-                    const lastMessageIndex = newMessages.length - 1
-                    if (newMessages[lastMessageIndex]?.role === 'assistant') {
-                      newMessages[lastMessageIndex] = {
-                        ...newMessages[lastMessageIndex],
-                        content: assistantMessage
-                      }
-                    }
-                    return newMessages
-                  })
-                }
-              } catch (e) {
-                console.log('Error flushing buffer on stream end', e)
-              }
-            }
-            break
-          }
-
-          const chunk = new TextDecoder().decode(value)
-          // Append to buffer — SSE events are separated by \n\n
-          buffer += chunk
-          // Fast sanity log for strange short chunks
-          if (chunk.trim().length <= 3) console.log('Received small chunk (len<=3):', JSON.stringify(chunk))
-
-          // Split full events (events end with a blank line)
-          const events = buffer.split(/\n\n/)
-          // Keep the last partial event in buffer
-          buffer = events.pop() || ""
-
-          for (const ev of events) {
-            if (!ev) continue
-            // Extract all data: lines and join them (SSE spec allows multiple data lines)
-            const dataLines = ev
-              .split(/\n/)
-              .map((l) => (l.trim().startsWith('data:') ? l.trim().slice(5).trim() : null))
-              .filter(Boolean)
-              .join('')
-
-            const payload = dataLines || ev.trim()
-            if (!payload) continue
-            if (payload === '[DONE]') continue
-
-            try {
-              // Try JSON first (standard streaming shape)
-              const parsed = JSON.parse(payload)
-              console.log('Parsed data event:', parsed)
-              const content = parsed.delta?.content || parsed.content || parsed.choices?.[0]?.delta?.content || ""
-              if (content) {
-                assistantMessage += content
-                setMessages(prev => {
-                  const newMessages = [...prev]
-                  const lastMessageIndex = newMessages.length - 1
-                  if (newMessages[lastMessageIndex]?.role === 'assistant') {
-                    newMessages[lastMessageIndex] = {
-                      ...newMessages[lastMessageIndex],
-                      content: assistantMessage
-                    }
-                  }
-                  return newMessages
-                })
-                console.log('Assistant message now:', assistantMessage)
-              }
-            } catch (e) {
-              // Not JSON — treat as plain text chunk
-              console.log('Non-JSON payload received, appending as text:', payload)
-              assistantMessage += payload
-              setMessages(prev => {
-                const newMessages = [...prev]
-                const lastMessageIndex = newMessages.length - 1
-                if (newMessages[lastMessageIndex]?.role === 'assistant') {
-                  newMessages[lastMessageIndex] = {
-                    ...newMessages[lastMessageIndex],
-                    content: assistantMessage
-                  }
-                }
-                return newMessages
-              })
-            }
-          }
-        }
-
-        setRemainingQuestions((prev) => Math.max(0, prev - 1))
-        setLastQuestionTime(Date.now())
-      } catch (err) {
-        setError("Failed to send message")
-        console.error("Chat error:", err)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-  }
+    if (!subscription) return false
+    if (!subscription?.isSubscribed) return remainingQuestions > 0 // Allow free users some questions
+    return true // Subscribers have unlimited questions
+  }, [subscription?.status, remainingQuestions])
 
   const handleChatSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
-      if (!canUseChat()) {
-        e.preventDefault()
-        return
+      e.preventDefault()
+      if (canUseChat() && input.trim()) {
+        handleSubmit(e)
       }
-      handleSubmit(e)
     },
-    [handleSubmit, canUseChat],
+    [canUseChat, handleSubmit, input],
   )
 
   const toggleChat = () => setIsOpen(!isOpen)
@@ -459,78 +292,6 @@ export default function Chatbot({ userId }: ChatbotProps) {
   }
 
   // Update the return statement in the Chatbot component to use the improved animations
-  const renderedMessages: React.ReactNode[] = safeMessages.map((m, index) => {
-    // Support structured assistant messages: { text, matches }
-    let content: any = ''
-    let matches: any[] | undefined
-    if (typeof m.content === 'string') {
-      content = m.content
-    } else if (m.content && typeof m.content === 'object' && (m.content.text || Array.isArray(m.content.matches))) {
-      content = m.content.text || ''
-      matches = Array.isArray(m.content.matches) ? m.content.matches : undefined
-    } else if (Array.isArray(m.content)) {
-      content = m.content.join('')
-    } else {
-      content = m.content?.toString() || 'Loading...'
-    }
-    console.log(`Rendering message ${index} (${m.role}):`, content)
-    return (
-      <motion.div
-        key={`message-${index}`}
-        custom={index}
-        initial="hidden"
-        animate="visible"
-        variants={messageVariants}
-        className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}
-      >
-        <div
-          className={cn(
-            "flex gap-2 max-w-[85%]",
-            m.role === "user" ? "flex-row-reverse" : "flex-row",
-            m.role === "user" ? "items-end" : "items-start",
-          )}
-        >
-          <Avatar className="w-7 h-7 shrink-0">
-            {m.role === "user" ? (
-              <AvatarImage src="/user-avatar.png" alt="User" />
-            ) : (
-              <div className="w-full h-full bg-primary/10 flex items-center justify-center">
-                <Crown className="h-3.5 w-3.5 text-primary" />
-              </div>
-            )}
-            <AvatarFallback>{m.role === "user" ? "U" : "AI"}</AvatarFallback>
-          </Avatar>
-          <div className={cn("px-3 py-2 rounded-lg text-sm", m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground") }>
-            <div>
-              <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none">{content}</ReactMarkdown>
-            </div>
-            {matches && matches.length > 0 && (
-              <div className="mt-2 space-y-2">
-                {matches.map((match, mi) => (
-                  <div key={`match-${index}-${mi}`} className="flex items-center justify-between gap-2 bg-muted/40 p-2 rounded">
-                    <div className="text-xs">
-                      <div className="font-medium">{match.title || match.id || 'Quiz'}</div>
-                      <div className="text-muted-foreground">{match.source} {match.quizType ? `• ${match.quizType}` : ''}</div>
-                    </div>
-                    {match.link ? (
-                      <Button size="sm" onClick={() => { window.location.href = match.link }}>
-                        Open
-                      </Button>
-                    ) : (
-                      <Button size="sm" variant="outline" onClick={() => { /* TODO: maybe generate */ }}>
-                        View
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    )
-  })
-
   return (
     <div className="fixed bottom-4 right-4 z-50">
       <AnimatePresence>
@@ -585,7 +346,7 @@ export default function Chatbot({ userId }: ChatbotProps) {
 
               <CardContent className="flex-grow overflow-hidden p-0">
                 <ScrollArea className="h-[400px] px-4" ref={scrollAreaRef}>
-                  {safeMessages.length === 0 ? (
+                  {messages.length === 0 ? (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -638,7 +399,52 @@ export default function Chatbot({ userId }: ChatbotProps) {
                     </motion.div>
                   ) : (
                     <div className="space-y-4 pt-4 pb-4">
-                      {renderedMessages}
+                      {messages.map((m, index) => (
+                        <motion.div
+                          key={m.id}
+                          custom={index}
+                          initial="hidden"
+                          animate="visible"
+                          variants={messageVariants}
+                          className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}
+                        >
+                          <div
+                            className={cn(
+                              "flex gap-2 max-w-[85%]",
+                              m.role === "user" ? "flex-row-reverse" : "flex-row",
+                              m.role === "user" ? "items-end" : "items-start",
+                            )}
+                          >
+                            <Avatar className="w-7 h-7 shrink-0">
+                              {m.role === "user" ? (
+                                <AvatarImage src="/user-avatar.png" alt="User" />
+                              ) : (
+                                <div className="w-full h-full bg-primary/10 flex items-center justify-center">
+                                  <Crown className="h-3.5 w-3.5 text-primary" />
+                                </div>
+                              )}
+                              <AvatarFallback>{m.role === "user" ? "U" : "AI"}</AvatarFallback>
+                            </Avatar>
+                            <div
+                              className={cn(
+                                "px-3 py-2 rounded-lg text-sm",
+                                m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+                              )}
+                            >
+                              {m.content && (
+                                <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none">
+                                  {m.content}
+                                </ReactMarkdown>
+                              )}
+                              {!m.content && (
+                                <div className="text-red-500 italic text-xs">
+                                  Message could not be displayed. Please try again.
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
                       {isLoading && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
                           <div className="flex items-start gap-2">
@@ -690,7 +496,7 @@ export default function Chatbot({ userId }: ChatbotProps) {
                         >
                           <Alert variant="destructive" className="mx-0 mt-2 p-2">
                             <AlertCircle className="h-3.5 w-3.5" />
-                            <AlertDescription className="text-xs">{error ? String(error) : "An error occurred"}</AlertDescription>
+                            <AlertDescription className="text-xs">{error.message}</AlertDescription>
                           </Alert>
                         </motion.div>
                       )}
@@ -719,15 +525,15 @@ export default function Chatbot({ userId }: ChatbotProps) {
                 <form onSubmit={handleChatSubmit} className="flex w-full items-center space-x-2">
                   <Input
                     ref={inputRef}
-                    value={safeInput}
+                    value={input}
                     onChange={handleInputChange}
                     placeholder={canUseChat() ? "Ask a question..." : "Chatbot unavailable"}
-                    disabled={safeIsLoading || !canUseChat()}
+                    disabled={isLoading || !canUseChat()}
                     className="flex-grow text-sm h-9 rounded-full transition-all focus-visible:ring-primary/30 focus-visible:border-primary/50"
                   />
                   <Button
                     type="submit"
-                    disabled={safeIsLoading || !safeInput.trim() || !canUseChat()}
+                    disabled={isLoading || !input.trim() || !canUseChat()}
                     size="icon"
                     className="shrink-0 h-9 w-9 rounded-full transition-all"
                   >

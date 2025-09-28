@@ -288,51 +288,60 @@ export class EmbeddingManager {
       // Generate embeddings for the batch
       const texts = documents.map(doc => doc.content)
       const embeddings = await this.embeddings.embedDocuments(texts)
-
-      // Insert into database 
-      const insertPromises = documents.map(async (doc, index) => {
+      // Upsert into database using deterministic ids when possible (prevent duplicates and data loss)
+      const upsertPromises = documents.map(async (doc, index) => {
         const embedding = embeddings[index]
-        const id = doc.id || `emb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        
+        // Deterministic id when metadata contains type+id, otherwise fallback to doc.id or generated id
+        let id = doc.id
+        try {
+          const mType = (doc.metadata && (doc.metadata as any).type) || undefined
+          const mId = (doc.metadata && (doc.metadata as any).id) || undefined
+          if (!id && mType && mId !== undefined) {
+            id = `${String(mType)}_${String(mId)}`
+          }
+        } catch (e) {
+          // ignore
+        }
+        if (!id) id = `emb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+        // When pgvector available, use raw SQL upsert to insert or update vector column
         if (this.isPgVectorAvailable) {
           try {
-            // Use raw SQL for pgvector if available
             await prisma.$executeRaw`
               INSERT INTO "Embedding" (id, content, embedding, "embeddingJson", type, metadata, "createdAt", "updatedAt")
-              VALUES (${id}, ${doc.content}, ${embedding}::vector, ${JSON.stringify(embedding)}::jsonb, ${doc.metadata.type || 'unknown'}, ${JSON.stringify(doc.metadata)}::jsonb, NOW(), NOW())
+              VALUES (${id}, ${doc.content}, ${embedding}::vector, ${JSON.stringify(embedding)}::jsonb, ${doc.metadata?.type || 'unknown'}, ${JSON.stringify(doc.metadata)}::jsonb, NOW(), NOW())
+              ON CONFLICT (id) DO UPDATE
+                SET content = EXCLUDED.content,
+                    embedding = EXCLUDED.embedding,
+                    "embeddingJson" = EXCLUDED."embeddingJson",
+                    metadata = EXCLUDED.metadata,
+                    type = EXCLUDED.type,
+                    "updatedAt" = NOW()
             `
           } catch (error) {
-            // If vector insertion fails, try with jsonb format
-            logger.warn('Failed to insert as vector type, trying with JSON format', { error: String(error) });
-            await prisma.embedding.create({
-              data: {
-                id,
-                content: doc.content,
-                embeddingJson: embedding,
-                type: doc.metadata.type || 'unknown',
-                metadata: doc.metadata
-              }
-            });
+            logger.warn('Pgvector upsert failed, falling back to Prisma upsert', { error: String(error) })
+            // Fallback to prisma upsert with JSON embedding
+            await prisma.embedding.upsert({
+              where: { id },
+              update: { content: doc.content, embedding: JSON.stringify(embedding), embeddingJson: embedding, metadata: doc.metadata || {}, type: doc.metadata?.type || 'unknown' },
+              create: { id, content: doc.content, embeddingJson: embedding, embedding: JSON.stringify(embedding), metadata: doc.metadata || {}, type: doc.metadata?.type || 'unknown' }
+            })
           }
         } else {
-          // Use Prisma with JSON storage
-          await prisma.embedding.create({
-            data: {
-              id,
-              content: doc.content,
-              embeddingJson: embedding,
-              type: doc.metadata.type || 'unknown',
-              metadata: doc.metadata
-            }
+          // Use Prisma upsert with JSON storage
+          await prisma.embedding.upsert({
+            where: { id },
+            update: { content: doc.content, embeddingJson: embedding, metadata: doc.metadata || {}, type: doc.metadata?.type || 'unknown', updatedAt: new Date() },
+            create: { id, content: doc.content, embeddingJson: embedding, metadata: doc.metadata || {}, type: doc.metadata?.type || 'unknown' }
           })
         }
 
         return id
       })
 
-      const results = await Promise.all(insertPromises)
+      const results = await Promise.all(upsertPromises)
       logger.info(`Successfully processed batch of ${documents.length} documents`)
-      
+
       return results
     } catch (error) {
       logger.error('Failed to process document batch', { error, batchSize: documents.length })

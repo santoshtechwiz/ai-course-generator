@@ -15,7 +15,6 @@ import { SuspenseGlobalFallback } from "@/components/loaders"
 import BProgressProvider from "./providers"
 import { MotionProvider } from "@/components/MotionProvider"
 import Footer from "@/components/shared/Footer"
-import { Chatbot } from "@/components/Chatbot"
 import { Toaster } from "@/components/ui/toaster"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -132,7 +131,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Suspense>
               <GoogleAnalyticsClient />
             </Suspense>
-            <Chatbot userId={session?.user?.id ?? ""}></Chatbot>
             <DefaultSEO enableFAQ={false} />
             <Toaster />
           </Providers>

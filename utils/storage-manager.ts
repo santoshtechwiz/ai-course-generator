@@ -205,6 +205,7 @@ class StorageManager {
         }
       } catch (error) {
         console.warn(`Failed to cleanup quiz progress for key "${key}":`, error)
+        // Remove corrupted data
         this.safeRemoveItem(key)
       }
     })
@@ -229,14 +230,16 @@ class StorageManager {
     keys.forEach(key => {
       try {
         const data = this.safeGetItem(key)
-        if (data) {
+        if (data && data.trim()) {
           const parsed = JSON.parse(data)
           if (parsed.lastUpdated && (now - parsed.lastUpdated > STORAGE_CONFIG.dataExpiry)) {
             this.safeRemoveItem(key)
           }
         }
-      } catch {
-        // Ignore parsing errors
+      } catch (error) {
+        console.warn(`Failed to parse data for key "${key}":`, error)
+        // Remove corrupted data
+        this.safeRemoveItem(key)
       }
     })
   }
@@ -350,7 +353,7 @@ class StorageManager {
   getTempQuizResults(slug: string, quizType: string): QuizTempResults | null {
     const key = `${STORAGE_PREFIXES.QUIZ_TEMP_RESULTS}${slug}_${quizType}`
     const data = this.safeGetItem(key)
-    if (data) {
+    if (data && data.trim()) {
       try {
         const tempResults: QuizTempResults = JSON.parse(data)
         // Check if expired (24 hours)
@@ -359,7 +362,10 @@ class StorageManager {
           return null
         }
         return tempResults
-      } catch {
+      } catch (error) {
+        console.warn(`Failed to parse temp quiz results for key "${key}":`, error)
+        // Remove corrupted data
+        this.safeRemoveItem(key)
         return null
       }
     }
@@ -381,7 +387,7 @@ class StorageManager {
     progressKeys.forEach(key => {
       try {
         const data = this.safeGetItem(key)
-        if (data) {
+        if (data && data.trim()) {
           const progress: QuizProgress = JSON.parse(data)
           if (!progress.isCompleted) {
             incomplete.push(progress)
@@ -389,6 +395,8 @@ class StorageManager {
         }
       } catch (error) {
         console.warn(`Failed to load quiz progress for key "${key}":`, error)
+        // Remove corrupted data
+        this.safeRemoveItem(key)
       }
     })
 

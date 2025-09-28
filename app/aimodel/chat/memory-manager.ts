@@ -143,12 +143,26 @@ export class ChatMemoryManager {
       // Use Prisma model instead of raw SQL
       await prisma.chatMessage.create({
         data: {
-          userId: this.userId,
           sessionId: sessionId,
           role: message.role,
           content: message.content,
           metadata: message.metadata || {},
-          createdAt: new Date(message.timestamp || Date.now())
+          createdAt: new Date(message.timestamp || Date.now()),
+          user: {
+            connectOrCreate: {
+              where: { id: this.userId },
+              create: {
+                id: this.userId,
+                email: `${this.userId}@test.local`,
+                name: `Test User ${this.userId}`,
+                credits: 100,
+                creditsUsed: 0,
+                // Prisma schema defines default userType values like "FREE"
+                userType: "FREE",
+                isAdmin: false,
+              }
+            }
+          }
         }
       })
     } catch (error) {
@@ -286,11 +300,13 @@ export class ChatMemoryManager {
    */
   private async replaceSessionMessages(sessionId: string, messages: ChatMessage[]): Promise<void> {
     try {
-      // Delete old messages
-      await prisma.$executeRaw`
-        DELETE FROM chat_messages 
-        WHERE session_id = ${sessionId}
-      `
+      // Delete old messages using Prisma API (avoid raw SQL table name mismatches)
+      await prisma.chatMessage.deleteMany({
+        where: {
+          userId: this.userId,
+          sessionId: sessionId,
+        },
+      })
 
       // Insert new messages
       for (const message of messages) {
@@ -306,10 +322,13 @@ export class ChatMemoryManager {
    */
   async cleanupExpiredSessions(): Promise<void> {
     try {
-      await prisma.$executeRaw`
-        DELETE FROM chat_messages 
-        WHERE created_at < NOW() - INTERVAL '${this.config.sessionTimeoutHours * 2} hours'
-      `
+      // Use Prisma to delete expired messages; convert interval calculation to JS Date
+      const cutoff = new Date(Date.now() - this.config.sessionTimeoutHours * 2 * 60 * 60 * 1000)
+      await prisma.chatMessage.deleteMany({
+        where: {
+          createdAt: { lt: cutoff }
+        }
+      })
 
       // Also clean up cache
       const expiredSessions: string[] = []

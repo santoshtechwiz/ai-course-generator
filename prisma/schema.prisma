@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider          = "postgresql"
   url               = env("DATABASE_URL_PROD")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL_LOCAL")
   
 }
 
@@ -853,6 +854,18 @@ model Embedding {
   @@index([type])
   @@index([createdAt])
   @@index([embedding], type: Gin) // optional: vector index for fast search
+}
+
+model EmbeddingJob {
+  id        Int     @id @default(autoincrement())
+  status    String  @default("queued") // queued | running | completed | failed
+  payload   Json?
+  progress  Int     @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
 }
 
 model ChatMessage {
