@@ -78,7 +78,7 @@ export function Attachment({
         <div className="relative h-10 w-10 overflow-hidden rounded-md border bg-muted">
           {!isImageLoaded && <InlineSpinner size={20} className="absolute inset-0" />}
           <Image
-            src={thumbnailUrl || "/placeholder.svg"}
+            src={thumbnailUrl || "/api/placeholder"}
             alt={name}
             fill
             className={cn("object-cover transition-opacity duration-300", isImageLoaded ? "opacity-100" : "opacity-0")}

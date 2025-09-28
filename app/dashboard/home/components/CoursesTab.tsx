@@ -376,7 +376,7 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
       >
         <div className="relative aspect-[5/3] overflow-hidden rounded-t-2xl">
           <Image
-            src={getImageWithFallback(course.image) || "/placeholder.svg"}
+            src={getImageWithFallback(course.image) || "/api/placeholder"}
             alt={course.title}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-110"
@@ -576,7 +576,7 @@ function CourseListItem({ course, progress, isLoading, onClick }: CourseCardProp
           {/* Course Image */}
           <div className="relative h-24 w-32 flex-shrink-0 sm:h-32 sm:w-48">
             <Image
-              src={course.image || "/placeholder.svg?height=128&width=192"}
+              src={course.image || "/api/placeholder?height=128&width=192"}
               alt={course.title}
               fill
               className="object-cover"

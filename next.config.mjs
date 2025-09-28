@@ -1,68 +1,61 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
+
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Production-ready Next.js config
+ * - Optimized for faster builds
+ * - Keeps type-checking separate (use `npm run type-check` in CI/dev)
+ * - Enables caching and minimal experimental flags
+ */
 const nextConfig = {
   reactStrictMode: false,
   distDir: ".next",
   poweredByHeader: false,
 
-  // Output configuration for Render.com static deployment
-  output: 'standalone',
+  // Render.com static / Docker standalone build support
+  output: "standalone",
 
-  // CSS configuration
+  // Image optimization
   images: {
-    domains: ['localhost'],
+    domains: ["localhost"],
     formats: ["image/avif", "image/webp"],
     deviceSizes: [320, 420, 640, 768, 1024, 1280, 1440, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "img.clerk.com",
-      },
-      {
-        protocol: "https",
-        hostname: "placehold.co",
-      },
-      {
-        protocol: "https",
-        hostname: "avatars.githubusercontent.com",
-      },
-      {
-        protocol: "https",
-        hostname: "img.youtube.com",
-      },
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-      },
+      { protocol: "https", hostname: "img.clerk.com" },
+      { protocol: "https", hostname: "placehold.co" },
+      { protocol: "https", hostname: "avatars.githubusercontent.com" },
+      { protocol: "https", hostname: "img.youtube.com" },
+      { protocol: "https", hostname: "images.unsplash.com" },
     ],
     minimumCacheTTL: 600,
   },
 
   // Build configuration
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true, // run lint separately in CI
   },
 
   typescript: {
-    ignoreBuildErrors: true, // Re-enable to handle Next.js 15 type generation issues
+    ignoreBuildErrors: true, // build won’t block; run `npm run type-check` separately
   },
 
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    removeConsole: process.env.NODE_ENV === "production",
   },
 
   compress: true,
 
-  // Environment variables
+  // Environment variables (safe for build-time injection)
   env: {
     DISABLE_STATIC_SLUG: process.env.DISABLE_STATIC_SLUG || "no-static",
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
-    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
+      process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     STRIPE_BASIC_PRICE_ID: process.env.STRIPE_BASIC_PRICE_ID,
     STRIPE_PREMIUM_PRICE_ID: process.env.STRIPE_PREMIUM_PRICE_ID,
     STRIPE_ULTIMATE_PRICE_ID: process.env.STRIPE_ULTIMATE_PRICE_ID,
@@ -71,51 +64,45 @@ const nextConfig = {
   // URL rewrites
   async rewrites() {
     return [
-      {
-        source: "/sitemap.xml",
-        destination: "/api/sitemap",
-      },
-      {
-        source: "/rss.xml",
-        destination: "/api/rss",
-      },
+      { source: "/sitemap.xml", destination: "/api/sitemap" },
+      { source: "/rss.xml", destination: "/api/rss" },
     ];
   },
 
-  // Modular imports optimization
+  // Modular imports optimization (tree-shaking)
   modularizeImports: {
     lodash: {
       transform: "lodash/{{member}}",
     },
   },
 
-  // Experimental features
+  // Minimal experimental features (avoid slowing builds)
   experimental: {
-    optimizeCss: false,
-    serverSourceMaps: true,
+    // optimizeCss: false, // off by default
+    // serverSourceMaps: true, // disable for faster builds
     optimizePackageImports: ["lucide-react", "recharts", "@radix-ui/react-icons"],
   },
 
-  // Webpack configuration
+  // Webpack config
   webpack: (config, { dev, isServer }) => {
-    // Apply optimizations for client-side development
+    // Optimize client dev build
     if (dev && !isServer) {
       config.optimization = {
         ...config.optimization,
-        moduleIds: 'named',
-        chunkIds: 'named',
-        runtimeChunk: 'single',
+        moduleIds: "named",
+        chunkIds: "named",
+        runtimeChunk: "single",
         splitChunks: {
           cacheGroups: {
             styles: {
-              name: 'styles',
-              type: 'css/mini-extract',
-              chunks: 'all',
+              name: "styles",
+              type: "css/mini-extract",
+              chunks: "all",
               enforce: true,
             },
           },
         },
-      }
+      };
     }
 
     // Production optimizations
@@ -138,11 +125,14 @@ const nextConfig = {
       };
     }
 
-    // Provide alias for js-tiktoken lite to satisfy named imports used by @langchain
+    // Alias for js-tiktoken (used by @langchain)
     config.resolve = config.resolve || {};
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
-      'js-tiktoken/lite': path.resolve(__dirname, 'src/shims/js-tiktoken-shim.cjs'),
+      "js-tiktoken/lite": path.resolve(
+        __dirname,
+        "src/shims/js-tiktoken-shim.cjs"
+      ),
     };
 
     return config;
@@ -150,3 +140,4 @@ const nextConfig = {
 };
 
 export default nextConfig;
+

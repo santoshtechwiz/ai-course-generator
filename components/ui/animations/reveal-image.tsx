@@ -82,7 +82,7 @@ export function RevealImage({
       {...props}
     >
       <Image
-        src={src || "/placeholder.svg"}
+        src={src || "/api/placeholder"}
         alt={alt}
         fill={!(width && height)}
         width={width}

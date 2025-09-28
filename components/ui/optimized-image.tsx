@@ -26,7 +26,7 @@ export function OptimizedImage({
 
   return (
     <Image
-      src={src || "/placeholder.svg"}
+      src={src || "/api/placeholder"}
       alt={optimizedAlt}
       width={width}
       height={height}

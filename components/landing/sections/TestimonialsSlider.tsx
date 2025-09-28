@@ -16,7 +16,7 @@ const testimonials = [
 			"CourseAI has revolutionized my content creation workflow. What once took me days of research and writing now happens in minutes, and the results are incredibly professional and engaging. It's like having a team of expert educators at my fingertips.",
 		author: "Sarah Johnson",
 		role: "Digital Learning Designer",
-		avatar: "/placeholder.svg?height=100&width=100&text=SJ",
+		avatar: "/api/placeholder?height=100&width=100&text=SJ",
 		id: "testimonial-1",
 	},
 	{
@@ -24,7 +24,7 @@ const testimonials = [
 			"The quality of AI-generated content from CourseAI is astonishing. It doesn't just create generic material—it understands context, audience, and learning objectives. My users' engagement has increased by 300% since I started using it.",
 		author: "Dr. Michael Chen",
 		role: "University Professor",
-		avatar: "/placeholder.svg?height=100&width=100&text=MC",
+		avatar: "/api/placeholder?height=100&width=100&text=MC",
 		id: "testimonial-2",
 	},
 	{
@@ -32,7 +32,7 @@ const testimonials = [
 			"As someone who creates corporate training programs, I need tools that deliver results. CourseAI doesn't just save time—it creates better learning experiences. Our completion rates have doubled, and feedback scores are through the roof.",
 		author: "Emily Rodriguez",
 		role: "Corporate Training Director",
-		avatar: "/placeholder.svg?height=100&width=100&text=ER",
+		avatar: "/api/placeholder?height=100&width=100&text=ER",
 		id: "testimonial-3",
 	},
 	{
@@ -40,7 +40,7 @@ const testimonials = [
 			"I was amazed at how CourseAI captured my teaching style and voice. The AI doesn't replace the human element—it enhances it. Now I can focus on mentoring users rather than creating content from scratch.",
 		author: "David Kim",
 		role: "High School Teacher",
-		avatar: "/placeholder.svg?height=100&width=100&text=DK",
+		avatar: "/api/placeholder?height=100&width=100&text=DK",
 		id: "testimonial-4",
 	},
 ]
@@ -218,7 +218,7 @@ const TestimonialsSlider = () => {
 													transition={{ duration: 0.3, ease: APPLE_EASING }}
 												>
 													<Avatar className="h-16 w-16 mr-4 border-2 border-primary/10 shadow-lg">
-														<AvatarImage src={testimonial.avatar || "/placeholder.svg"} alt={testimonial.author} />
+														<AvatarImage src={testimonial.avatar || "/api/placeholder"} alt={testimonial.author} />
 														<AvatarFallback>
 															{testimonial.author
 																.split(" ")

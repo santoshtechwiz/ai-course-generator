@@ -251,7 +251,7 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       <UnifiedLoader
         state="loading"
         variant="skeleton"
-        message="Preparing quiz..."
+        message="Loading quiz..."
         size="md"
       />
     )

@@ -34,7 +34,6 @@ import { toast } from "sonner";
 import { NoResults } from "@/components/ui/no-results";
 import { useAuth } from "@/modules/auth";
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
-
 import { UnifiedLoader } from "@/components/loaders";
 
 interface FlashcardQuizWrapperProps {
@@ -56,6 +55,7 @@ export default function FlashcardQuizWrapper({
   const isReviewMode = searchParams?.get("review") === "true";
   const isResetMode = searchParams?.get("reset") === "true";
 
+  // Selectors
   const questions = useSelector(selectQuizQuestions);
   const answers = useSelector(selectQuizAnswers);
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex);
@@ -127,7 +127,7 @@ export default function FlashcardQuizWrapper({
           hasInitialized.current = false; // Allow retry on error
         });
     }
-  }, [dispatch, slug, isResetMode, isReviewMode, isLoading, quizStatus, questions.length]);
+  }, [dispatch, slug, isResetMode, isReviewMode, isLoading, quizStatus, questions.length, currentSlug]);
 
   // Reset initialization flag when component unmounts or slug changes
   useEffect(() => {
@@ -151,6 +151,7 @@ export default function FlashcardQuizWrapper({
     }
   }, [shouldRedirectToResults, isCompleted, router, slug, isReviewMode]);
 
+  // Compute review questions with memoization
   const reviewQuestions = useMemo(() => {
     if (!isReviewMode || !questions.length) return questions;
 
@@ -194,55 +195,86 @@ export default function FlashcardQuizWrapper({
 
   const currentCards = isReviewMode ? reviewQuestions : questions;
 
-  // Loading skeleton
+  // Loading skeleton with simplified UI
   if (quizStatus === "loading" || quizStatus === "idle") {
     return (
-      <UnifiedLoader
-        state="loading"
-        variant="skeleton"
-        message="Loading flashcards..."
-        size="md"
-      />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-gray-900">Loading flashcards...</h3>
+            <p className="text-gray-600">Preparing your learning session</p>
+          </div>
+        </div>
+      </div>
     )
   }
 
   // Error state with retry
   if (quizStatus === "failed" || error) {
     return (
-      <NoResults
-        variant="error"
-        title="Oops! Something went wrong."
-        description={error || "Unable to load flashcards at this moment."}
-        action={{
-          label: "Retry",
-          onClick: () => {
-            dispatch(clearQuizState());
-            dispatch(fetchFlashCardQuiz(slug));
-          },
-        }}
-        secondaryAction={{
-          label: "Browse Topics",
-          onClick: () => router.push("/dashboard/quizzes"),
-        }}
-      />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="text-6xl">❌</div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-semibold text-gray-900">Oops! Something went wrong</h3>
+            <p className="text-gray-600">{error || "Unable to load flashcards at this moment."}</p>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => {
+                dispatch(clearQuizState());
+                dispatch(fetchFlashCardQuiz(slug));
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => router.push("/dashboard/quizzes")}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Browse Topics
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
   // Sign-in prompt for auth-required quizzes
   if (requiresAuth && !isAuthenticated && !isLoading) {
     return (
-      <SignInPrompt
-        onSignIn={() =>
-          router.push(
-            `/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/flashcard/${slug}`)}`
-          )
-        }
-        onRetake={() => {
-          dispatch(clearQuizState());
-          router.push(`/dashboard/flashcard/${slug}?reset=true`);
-        }}
-        quizType="flashcard"
-      />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="text-6xl">🔒</div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-semibold text-gray-900">Sign in required</h3>
+            <p className="text-gray-600">Please sign in to access this flashcard quiz</p>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() =>
+                router.push(
+                  `/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/flashcard/${slug}`)}`
+                )
+              }
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => {
+                dispatch(clearQuizState());
+                router.push(`/dashboard/flashcard/${slug}?reset=true`);
+              }}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -250,51 +282,74 @@ export default function FlashcardQuizWrapper({
   if (isReviewMode && questions.length > 0 && (reviewQuestions?.length || 0) === 0) {
     const cardsParam = searchParams?.get("cards");
     return (
-      <NoResults
-        variant="empty"
-        title={cardsParam ? "Cards Not Found" : "All Clear!"}
-        description={
-          cardsParam
-            ? `We couldn't find the specific cards you requested (IDs: ${cardsParam}). They may have been removed or updated.`
-            : "You've reviewed all cards. Great job!"
-        }
-        action={{
-          label: "Take Full Quiz",
-          onClick: () => {
-            dispatch(clearQuizState());
-            router.push(`/dashboard/flashcard/${slug}?reset=true`);
-          },
-        }}
-        secondaryAction={{
-          label: "Back to Results",
-          onClick: () => router.push(`/dashboard/flashcard/${slug}/results`),
-        }}
-      />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="text-6xl">✨</div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-semibold text-gray-900">
+              {cardsParam ? "Cards Not Found" : "All Clear!"}
+            </h3>
+            <p className="text-gray-600">
+              {cardsParam
+                ? `We couldn't find the specific cards you requested (IDs: ${cardsParam}). They may have been removed or updated.`
+                : "You've reviewed all cards that need attention. Great job!"}
+            </p>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => {
+                dispatch(clearQuizState());
+                router.push(`/dashboard/flashcard/${slug}?reset=true`);
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Take Full Quiz
+            </button>
+            <button
+              onClick={() => router.push(`/dashboard/flashcard/${slug}/results`)}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Back to Results
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
   // No questions found
   if (!currentCards || currentCards.length === 0) {
     return (
-      <NoResults
-        variant="error"
-        title="No Flashcards Available"
-        description="We couldn't find any flashcards for this topic."
-        action={{
-          label: "Try Again",
-          onClick: () => {
-            dispatch(clearQuizState());
-            router.push(`/dashboard/flashcard/${slug}?reset=true`);
-          },
-        }}
-        secondaryAction={{
-          label: "Browse Topics",
-          onClick: () => router.push("/dashboard/quizzes"),
-        }}
-      />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="text-6xl">📚</div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-semibold text-gray-900">No Flashcards Available</h3>
+            <p className="text-gray-600">We couldn't find any flashcards for this topic.</p>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => {
+                dispatch(clearQuizState());
+                router.push(`/dashboard/flashcard/${slug}?reset=true`);
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => router.push("/dashboard/quizzes")}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Browse Topics
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
+  // Quiz completion handler
   const onComplete = () => {
     const ratingAnswers = answers.filter(
       (a): a is RatingAnswer => "answer" in a
@@ -347,22 +402,20 @@ export default function FlashcardQuizWrapper({
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="space-y-6">
-        <FlashcardQuiz
-          cards={currentCards as any}
-          quizId={slug}
-          slug={slug}
-          title={quizTitle || title || "Flashcard Quiz"}
-          onSaveCard={(card) => {
-            const idNum = parseInt(String(card.id));
-            if (!isNaN(idNum)) {
-              dispatch(saveFlashCard({ cardId: idNum, saved: !card.saved }));
-            }
-          }}
-          isReviewMode={isReviewMode}
-          onComplete={onComplete}
-        />
-      </div>
+      <FlashcardQuiz
+        cards={currentCards as any}
+        quizId={slug}
+        slug={slug}
+        title={quizTitle || title || "Flashcard Quiz"}
+        onSaveCard={(card) => {
+          const idNum = parseInt(String(card.id));
+          if (!isNaN(idNum)) {
+            dispatch(saveFlashCard({ cardId: idNum, saved: !card.saved }));
+          }
+        }}
+        isReviewMode={isReviewMode}
+        onComplete={onComplete}
+      />
     </div>
   )
 }

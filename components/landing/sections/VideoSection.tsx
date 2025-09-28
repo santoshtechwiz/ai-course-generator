@@ -115,7 +115,7 @@ const VideoSection = () => {
               <video
                 ref={videoRef}
                 className="w-full h-full object-cover"
-                poster="/placeholder.svg?height=720&width=1280&text=AI+Coding+Coach"
+                poster="/api/placeholder?height=720&width=1280&text=AI+Coding+Coach"
                 muted
                 playsInline
                 loop

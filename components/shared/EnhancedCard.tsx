@@ -124,7 +124,7 @@ export function EnhancedCard({
         
         {/* Image */}
         <Image
-          src={imageUrl || "/placeholder.svg"}
+          src={imageUrl || "/api/placeholder"}
           alt={`${title} thumbnail`}
           fill
           className={cn(

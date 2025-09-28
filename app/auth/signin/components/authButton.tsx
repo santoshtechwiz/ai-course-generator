@@ -85,7 +85,7 @@ export function AuthButton({
         <Loader2 className="h-5 w-5 animate-spin" />
       ) : (
         <Image
-          src={logo || "/placeholder.svg"}
+          src={logo || "/api/placeholder"}
           alt={`${provider} Logo`}
           width={24}
           height={24}

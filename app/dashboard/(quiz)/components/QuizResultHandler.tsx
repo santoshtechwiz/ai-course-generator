@@ -11,6 +11,7 @@ import { useMachine } from '@xstate/react'
 import { NoResults } from '@/components/ui/no-results'
 import SignInPrompt from '@/app/auth/signin/components/SignInPrompt'
 import { Progress } from '@/components/ui/progress'
+import { Loader } from '@/components/loader'
 
 import { useAuth } from '@/modules/auth'
 import { storageManager } from '@/utils/storage-manager'
@@ -406,7 +407,10 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     const isRedirectingToQuiz = isRedirecting;
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
-        <span className="h-8 w-8 inline-block rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+        <Loader 
+          message={isRedirectingToQuiz ? "Redirecting to quiz..." : "Loading quiz results..."} 
+          size="large"
+        />
       </div>
     )
   }

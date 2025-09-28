@@ -93,7 +93,7 @@ const RelatedCourseCard: React.FC<RelatedCourseCardProps> = ({ course, index, on
           {/* Course image */}
           {course.image && !imageError ? (
             <img
-              src={course.image || "/placeholder.svg"}
+              src={course.image || "/api/placeholder"}
               alt={course.title || "Course"}
               className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
               style={{ opacity: imageLoaded ? 1 : 0 }}

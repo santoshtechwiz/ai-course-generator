@@ -40,7 +40,7 @@ export function AuthButtonGroup({ providers, callbackUrl }: AuthButtonGroupProps
             logo = "/linkedin.svg"
             break
           default:
-            logo = "/placeholder.svg"
+            logo = "/api/placeholder"
         }
 
         return (

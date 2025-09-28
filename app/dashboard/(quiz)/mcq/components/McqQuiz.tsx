@@ -3,6 +3,8 @@
 import { useMemo } from "react"
 import { UnifiedQuizQuestion, type MCQQuestion } from "@/components/quiz/UnifiedQuizQuestion"
 import { QuizStateProvider } from "@/components/quiz/QuizStateProvider"
+import { QuizFooter } from "@/components/quiz/QuizFooter"
+import { Loader } from "@/components/loader"
 
 interface McqQuizProps {
   question: {
@@ -74,7 +76,14 @@ const McqQuiz = ({
       globalLoading={isLastQuestion}
     >
       {(stateManager) => (
-        <div className="w-full h-full">
+        <div className="w-full h-full flex flex-col space-y-6 relative">
+          {/* Loading overlay when submitting */}
+          {stateManager.isSubmitting && (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
+              <Loader message="Submitting quiz..." size="large" />
+            </div>
+          )}
+          
           <UnifiedQuizQuestion
             question={unifiedQuestion}
             questionNumber={questionNumber}
@@ -86,6 +95,21 @@ const McqQuiz = ({
             canGoNext={canGoNext}
             isLastQuestion={isLastQuestion}
             isSubmitting={isSubmitting}
+          />
+
+          <QuizFooter
+            onNext={onNext ? () => stateManager.handleNext(onNext) : undefined}
+            onPrevious={undefined}
+            onSubmit={isLastQuestion && onSubmit ? () => stateManager.handleSubmit(onSubmit) : undefined}
+            onRetake={onRetake}
+            canGoNext={canGoNext}
+            canGoPrevious={false}
+            isLastQuestion={isLastQuestion}
+            isSubmitting={isSubmitting || stateManager.isSubmitting}
+            showRetake={showRetake}
+            hasAnswer={!!existingAnswer}
+            submitState={stateManager.submitState}
+            nextState={stateManager.nextState}
           />
         </div>
       )}

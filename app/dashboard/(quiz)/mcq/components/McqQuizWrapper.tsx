@@ -298,7 +298,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   return (
     <UnifiedLoader
       state="loading"
-      message="Preparing quiz..."
+      message="Loading quiz..."
       variant="spinner"
       size="md"
     />
