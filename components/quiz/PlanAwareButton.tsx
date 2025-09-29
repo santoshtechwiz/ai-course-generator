@@ -8,7 +8,8 @@ import { useRouter } from "next/navigation"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { Loader2, Check, Lock, AlertCircle, Sparkles } from "lucide-react"
-import type { PlanType } from "../../../../hooks/useQuizPlan"
+// Update the import path to the correct location of PlanType
+import type { PlanType } from "@/hooks/useQuizPlan"
 // ✅ UNIFIED: Using unified auth system
 import { useAuth, useSubscription, useSubscriptionPermissions } from "@/modules/auth"
 import { ClientCreditService, type ClientCreditInfo } from "@/services/client-credit-service"
@@ -132,8 +133,17 @@ export default function PlanAwareButton({
     })
   }
 
-  // Use provided hasCredits or calculate automatically based on credits required
-  const effectiveHasCredits = hasCredits !== undefined ? hasCredits : creditInfo.hasEnoughCredits(creditsRequired)
+  // Use provided hasCredits prop when present, but prefer the authoritative client-side
+  // credit check. This prevents stale session-derived props from incorrectly marking
+  // the user as out-of-credits while the client service shows available credits.
+  const effectiveHasCredits = (() => {
+    const clientSaysEnough = creditInfo.hasEnoughCredits(creditsRequired)
+    if (hasCredits !== undefined) {
+      // If prop says user has credits OR client service confirms enough, allow the action
+      return Boolean(hasCredits) || clientSaysEnough
+    }
+    return clientSaysEnough
+  })()
 
   // Use provided plan or get from unified auth state if not provided
   const effectivePlan = currentPlan || subscription?.plan || "FREE"

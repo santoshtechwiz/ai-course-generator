@@ -2,10 +2,12 @@
 
 import { useState } from "react"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Slider } from "@/components/ui/slider"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { HelpCircle, Target, Brain } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { useSubscription } from '@/modules/auth'
+import { SUBSCRIPTION_PLANS } from '@/app/dashboard/subscription/components/subscription-plans'
 
 interface DocumentQuizOptionsProps {
   onOptionsChange: (options: DocumentQuizOptions) => void
@@ -37,6 +39,12 @@ export function DocumentQuizOptions({ onOptionsChange, disabled = false }: Docum
     difficulty: 50,
   })
 
+  // Get subscription details to enforce per-plan limits
+  const { subscription } = useSubscription()
+  // Derive maxQuestions from the canonical SUBSCRIPTION_PLANS config
+  const currentPlanConfig = SUBSCRIPTION_PLANS.find((p) => p.id === (subscription?.plan || 'FREE'))
+  const maxQuestions = currentPlanConfig?.limits?.maxQuestionsPerQuiz || 20
+
   const handleChange = (key: keyof DocumentQuizOptions, value: number) => {
     const newOptions = { ...options, [key]: value }
     setOptions(newOptions)
@@ -67,32 +75,31 @@ export function DocumentQuizOptions({ onOptionsChange, disabled = false }: Docum
             </TooltipProvider>
           </div>
 
-          <Select
-            value={options.numberOfQuestions.toString()}
-            onValueChange={(value) => handleChange("numberOfQuestions", Number.parseInt(value))}
-            disabled={disabled}
-          >
-            <SelectTrigger className="w-full h-12">
-              <SelectValue placeholder="Select number of questions" />
-            </SelectTrigger>
-            <SelectContent>
-              {questionOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value.toString()}>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{option.label}</span>
-                    <span className="text-xs text-muted-foreground">{option.description}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium">{options.numberOfQuestions} questions</div>
+              <div className="text-xs text-muted-foreground">{selectedQuestionCount?.description}</div>
+            </div>
 
-          {selectedQuestionCount && (
-            <p className="text-xs text-muted-foreground">
-              {selectedQuestionCount.description} • Estimated processing time:{" "}
-              {Math.ceil(options.numberOfQuestions / 5)} minute(s)
-            </p>
-          )}
+            <Slider
+              id="document-question-count"
+              min={1}
+              max={maxQuestions}
+              step={1}
+              value={[options.numberOfQuestions]}
+              onValueChange={(values) => handleChange("numberOfQuestions", values[0] ?? 1)}
+              className="w-full h-8"
+              aria-label="Number of questions"
+              disabled={disabled}
+            />
+
+            <div className="flex justify-between items-center text-sm text-muted-foreground">
+              <span>1</span>
+              <span>{maxQuestions}</span>
+            </div>
+
+            <p className="text-xs text-muted-foreground">Estimated processing time: {Math.ceil(options.numberOfQuestions / 5)} minute(s)</p>
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -113,29 +120,33 @@ export function DocumentQuizOptions({ onOptionsChange, disabled = false }: Docum
             </TooltipProvider>
           </div>
 
-          <Select
-            value={options.difficulty.toString()}
-            onValueChange={(value) => handleChange("difficulty", Number.parseInt(value))}
-            disabled={disabled}
-          >
-            <SelectTrigger className="w-full h-12">
-              <SelectValue placeholder="Select difficulty level" />
-            </SelectTrigger>
-            <SelectContent>
-              {difficultyOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value.toString()}>
-                  <div className="flex flex-col">
-                    <span className={`font-medium ${option.color}`}>{option.label}</span>
-                    <span className="text-xs text-muted-foreground">{option.description}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium">Difficulty: {selectedDifficulty?.label}</div>
+              <div className="text-xs text-muted-foreground">{selectedDifficulty?.description}</div>
+            </div>
 
-          {selectedDifficulty && (
-            <p className={`text-xs ${selectedDifficulty.color}`}>{selectedDifficulty.description}</p>
-          )}
+            <Slider
+              id="document-difficulty"
+              min={25}
+              max={75}
+              step={25}
+              value={[options.difficulty]}
+              onValueChange={(values) => handleChange("difficulty", values[0] ?? 50)}
+              className="w-full h-8"
+              aria-label="Difficulty"
+              disabled={disabled}
+            />
+
+            <div className="flex justify-between items-center text-sm text-muted-foreground">
+              <span>Easy</span>
+              <span>Hard</span>
+            </div>
+
+            {selectedDifficulty && (
+              <p className={`text-xs ${selectedDifficulty.color}`}>{selectedDifficulty.description}</p>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

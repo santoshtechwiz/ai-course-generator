@@ -6,6 +6,8 @@
     "validate-styles": "node scripts/validate-styles.js",
     "dev": "cross-env WATCHPACK_POLLING=true next dev",
     "build": "next build",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
     "start": "next start",
     "lint": "next lint",
     "server": "node server",
@@ -187,6 +189,8 @@
     "tailwindcss": "3.4.13",
     "ts-node": "^10.9.2",
     "unused": "0.2.1"
+    ,
+    "vitest": "^1.0.0"
   },
   "overrides": {
     "prettier": "3.5.3",

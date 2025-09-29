@@ -131,7 +131,7 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isLoading && onCancel()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {hasError ? (
@@ -186,12 +186,12 @@ export function ConfirmDialog({
                   </div>
                 )}
 
-                {quizInfo.estimatedCredits && (
+                {typeof quizInfo.estimatedCredits === 'number' && (
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Credits Required:</span>
                     <div className="flex items-center gap-1">
                       <Zap className="h-3 w-3 text-amber-500" />
-                      <span className="font-medium">{quizInfo.estimatedCredits}</span>
+                      <span className="font-medium">{quizInfo.estimatedCredits <= 1 ? '1 token' : `${quizInfo.estimatedCredits} tokens`}</span>
                     </div>
                   </div>
                 )}

@@ -22,6 +22,9 @@ import DocumentQuizDisplay from "./components/DocumentQuizDisplay"
 import { PDFDownloadButton } from "./components/DocumentQuizPdf"
 import EnhancedPDFDownloadButton from "./components/EnhancedPDFDownloadButton"
 
+// Simple fallback generator: produce N naive questions by splitting the document into sentences
+// (removed) fallback generator helper
+
 interface QuizOptionsType {
   numberOfQuestions: number
   difficulty: number
@@ -157,7 +160,77 @@ export default function DocumentQuizPage() {
         throw new Error("Failed to generate quiz")
       }
 
-      const quizData: LocalQuestion[] = (await response.json()).map((q: any, index: number) => ({
+  const payload = await response.json()
+  // (previously stored payload for verification) - removed to revert temporary debugging additions
+
+      // Support two response shapes:
+      // 1) { questions: [...] , creditsRemaining: number }
+      // 2) [...] (legacy/raw array)
+      let rawQuestions: any[] = []
+      if (Array.isArray(payload)) {
+        rawQuestions = payload
+      } else if (payload && Array.isArray((payload as any).questions)) {
+        rawQuestions = (payload as any).questions
+      } else {
+        console.error('[Document API] Unexpected response payload:', payload)
+        throw new Error('Invalid response from server')
+      }
+
+      // Validate AI response shape and contents before applying (inlined)
+      function validateQuizArray(items: any[], expectedCount: number) {
+        const errors: string[] = []
+        const warnings: string[] = []
+
+        if (!Array.isArray(items)) {
+          errors.push('Response is not an array.')
+          return { valid: false, errors, warnings }
+        }
+
+        if (items.length === 0) {
+          errors.push('No questions were returned by the AI.')
+        }
+
+        if (expectedCount && items.length !== expectedCount) {
+          warnings.push(`Requested ${expectedCount} questions but received ${items.length}.`)
+        }
+
+        items.forEach((q: any, i: number) => {
+          if (!q || typeof q !== 'object') {
+            errors.push(`Item at index ${i} is not an object.`)
+            return
+          }
+          if (!q.question || typeof q.question !== 'string' || !q.question.trim()) {
+            errors.push(`Question at index ${i} is missing text.`)
+          }
+          if (!Array.isArray(q.options) || q.options.length < 2) {
+            errors.push(`Question at index ${i} must have at least 2 options.`)
+          } else {
+            q.options.forEach((opt: any, oi: number) => {
+              if (typeof opt !== 'string') errors.push(`Option ${oi} for question ${i} is not a string.`)
+            })
+          }
+          if (q.correctAnswer == null) {
+            warnings.push(`Question at index ${i} has no explicit correctAnswer. Defaulting to 0.`)
+          } else if (typeof q.correctAnswer !== 'number' || q.correctAnswer < 0 || (Array.isArray(q.options) && q.correctAnswer >= q.options.length)) {
+            errors.push(`correctAnswer for question ${i} is invalid.`)
+          }
+        })
+
+        return { valid: errors.length === 0, errors, warnings }
+      }
+
+      const validation = validateQuizArray(rawQuestions, quizOptions.numberOfQuestions)
+      if (!validation.valid) {
+        const details = validation.errors.concat(validation.warnings).join(' | ')
+        const attempted = `${file?.name || 'uploaded file'} — ${quizOptions.numberOfQuestions} questions • ${quizOptions.difficulty <= 33 ? 'Easy' : quizOptions.difficulty <= 66 ? 'Medium' : 'Hard'} difficulty`
+        const message = `Invalid response from document API. ${details}. Attempted: ${attempted}`
+        console.error('[Document API] Validation failed:', { payload, validation })
+        setSubmitError(message)
+        // keep dialog open so user can read error and adjust options
+        return
+      }
+
+      const quizData: LocalQuestion[] = rawQuestions.map((q: any, index: number) => ({
         id: q.id ?? `generated-${index}`,
         question: String(q.question ?? ""),
         options: Array.isArray(q.options) ? q.options.map((o: string) => String(o)) : [],
@@ -169,10 +242,15 @@ export default function DocumentQuizPage() {
       // Close the confirm dialog first
       setIsConfirmDialogOpen(false)
 
+      // Include creditsRemaining in the success toast when present
+      const creditsRemaining = payload && typeof (payload as any).creditsRemaining === 'number' ? (payload as any).creditsRemaining : null
+
       toast({
         title: "Quiz Generated Successfully! ✨",
-        description: `Generated ${quizData.length} questions from your document. You can now edit and save the quiz.`,
+        description: `Generated ${quizData.length} questions from your document.${creditsRemaining !== null ? ` Credits remaining: ${creditsRemaining}.` : ''}`,
       })
+
+      // remove temporary verification helper
 
       // Switch to quiz tab and scroll to it
       setActiveTab("quiz")
@@ -417,7 +495,7 @@ export default function DocumentQuizPage() {
                         <PlanAwareButton
                           onClick={handleGenerateQuiz}
                           disabled={isLoading || !file}
-                          hasCredits={(session?.user?.credits ?? 0) > 0}
+                          creditsRequired={1}
                           isLoggedIn={!!session?.user}
                           loadingLabel="Generating Quiz..."
                           label="Generate Quiz with AI"
@@ -779,17 +857,17 @@ export default function DocumentQuizPage() {
         status={isLoading ? "loading" : submitError ? "error" : undefined}
         errorMessage={submitError || undefined}
         creditUsage={{
-          used: Math.max(0, quizPlan.maxQuestions - quizPlan.credits),
-          available: quizPlan.maxQuestions,
-          remaining: quizPlan.credits,
-          percentage: (Math.max(0, quizPlan.maxQuestions - quizPlan.credits) / quizPlan.maxQuestions) * 100,
+          used: 0, // Not relevant for single credit deduction
+          available: 1,
+          remaining: 1,
+          percentage: 100, // Always 100% for single credit
         }}
         quizInfo={{
           type: "Document Quiz",
           count: quizOptions.numberOfQuestions,
           topic: file?.name || "Uploaded document",
           difficulty: quizOptions.difficulty <= 33 ? "easy" : quizOptions.difficulty <= 66 ? "medium" : "hard",
-          estimatedCredits: Math.min(quizOptions.numberOfQuestions || 1, 5) * 100 + (file?.size || 0) / 100,
+          estimatedCredits: 1,
         }}
       >
         <div className="py-4 space-y-3">

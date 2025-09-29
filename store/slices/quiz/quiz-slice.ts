@@ -361,11 +361,13 @@ export const submitQuiz = createAsyncThunk(
 
       for (const question of questions) {
         // answers keys are stored as strings (see saveAnswer) so normalize id to string
-        const answer = answers[String(question.id)]
-        let isCorrect = false
+  const answer = answers[String(question.id)]
+  let isCorrect = false
         let correctAnswer = ''
         let userAnswer: string | null = null
-        const skipped = !answer || (!answer.selectedOptionId && !answer.userAnswer)
+  // Consider answer skipped if no answer object or none of the known answer fields are present
+  const aCheck: any = answer ?? {}
+  const skipped = !answer || (!aCheck.selectedOptionId && !aCheck.userAnswer && !aCheck.code)
 
   // Derive question-level metadata (use any casts to handle union shapes)
   const qAny: any = question as any
@@ -378,8 +380,10 @@ export const submitQuiz = createAsyncThunk(
               // For MCQ we usually have a selectedOptionId; for Code we usually have userAnswer/code text.
               // Accept either selectedOptionId or a userAnswer (or code) string.
               correctAnswer = String(question.answer ?? '').trim()
-              const aAny: any = answer as any
-              const selectedOrText = String(aAny.selectedOptionId ?? aAny.userAnswer ?? aAny.code ?? '').trim()
+              const aAny: any = answer ?? {}
+              const selectedOrText = String(
+                (aAny && (aAny.selectedOptionId ?? aAny.userAnswer ?? aAny.code)) ?? ''
+              ).trim()
               // Try to map selected value to a human-friendly label when options are provided
               let selectedOptionLabel: string | null = null
               let selectedOptionIndex: number | null = null
@@ -412,7 +416,7 @@ export const submitQuiz = createAsyncThunk(
 
               userAnswer = selectedOrText || null
               // Coerce to boolean to avoid mixed-type issues
-              isCorrect = Boolean(aAny.isCorrect === true || (selectedOrText && selectedOrText === qCorrect))
+              isCorrect = Boolean((aAny && aAny.isCorrect === true) || (selectedOrText && selectedOrText === qCorrect))
 
               // Prefer explicit userAnswer/code if present for API payload
               const apiAnswer = (typeof aAny.userAnswer === 'string' && aAny.userAnswer.trim() !== '')
@@ -423,7 +427,7 @@ export const submitQuiz = createAsyncThunk(
               answersForAPI.push({
                 questionId: String(question.id),
                 answer: apiAnswer,
-                timeSpent: answer?.timeSpent || 0,
+                timeSpent: aAny.timeSpent || 0,
                 isCorrect: isCorrect,
                 // include label/index for clarity
                 selectedOptionLabel: selectedOptionLabel,
@@ -434,9 +438,10 @@ export const submitQuiz = createAsyncThunk(
               break
             }
 
-          case 'blanks': {
+            case 'blanks': {
             correctAnswer = String(question.answer ?? '').trim().toLowerCase()
-            const filled = String(answer?.userAnswer ?? '').trim().toLowerCase()
+            const aAny: any = answer ?? {}
+            const filled = String(aAny.userAnswer ?? '').trim().toLowerCase()
             userAnswer = filled || null
             isCorrect = filled === correctAnswer
 
@@ -450,10 +455,11 @@ export const submitQuiz = createAsyncThunk(
             break
           }
 
-          case 'openended': {
+            case 'openended': {
             correctAnswer = String(question.answer ?? '')
-            userAnswer = answer?.userAnswer ?? null
-            isCorrect = answer?.isCorrect === true
+            const aAny: any = answer ?? {}
+            userAnswer = aAny.userAnswer ?? null
+            isCorrect = aAny.isCorrect === true
 
             // Format for API
             answersForAPI.push({
@@ -465,15 +471,16 @@ export const submitQuiz = createAsyncThunk(
             break
           }
 
-          case 'flashcard': {
+            case 'flashcard': {
             // For flashcards, we track time spent and basic correctness
-            isCorrect = answer?.isCorrect === true
-            userAnswer = answer?.userAnswer || null
+            const aAny: any = answer ?? {}
+            isCorrect = aAny.isCorrect === true
+            userAnswer = aAny.userAnswer || null
 
             answersForAPI.push({
               questionId: String(question.id),
               answer: userAnswer || '',
-              timeSpent: answer?.timeSpent || 0,
+              timeSpent: aAny.timeSpent || 0,
               isCorrect: isCorrect
             })
             break
@@ -760,11 +767,11 @@ export const saveQuizResultsToDB = createAsyncThunk(
       const { slug, quizType, answers, totalTime, score, maxScore } = results
 
       // Prepare answers for API submission
-      const answersForAPI: any[] = answers.map(answer => ({
+      const answersForAPI: any[] = answers.map((answer: any) => ({
         questionId: answer.questionId,
-        answer: answer.selectedOptionId || answer.userAnswer || '',
-        timeSpent: answer.timeSpent || 0,
-        isCorrect: answer.isCorrect
+        answer: (answer && (answer.selectedOptionId || answer.userAnswer)) || '',
+        timeSpent: (answer && answer.timeSpent) || 0,
+        isCorrect: Boolean(answer && answer.isCorrect)
       }))
 
       const response = await fetch(`/api/quizzes/${quizType}/${slug}/submit`, {
@@ -834,9 +841,9 @@ export const loadTempResultsAndSave = createAsyncThunk(
 
       const answersForAPI: any[] = answers.map((answer: any) => ({
         questionId: answer.questionId,
-        answer: answer.selectedOptionId || answer.userAnswer || '',
-        timeSpent: answer.timeSpent || 0,
-        isCorrect: answer.isCorrect
+        answer: (answer && (answer.selectedOptionId || answer.userAnswer)) || '',
+        timeSpent: (answer && answer.timeSpent) || 0,
+        isCorrect: Boolean(answer && answer.isCorrect)
       }))
 
       const response = await fetch(`/api/quizzes/${quizType}/${slug}/submit`, {
