@@ -8,8 +8,10 @@ import { getAuthSession } from "@/lib/auth"
 
 const QuestionSchema = z.object({
   question: z.string(),
-  options: z.array(z.string()).length(4),
-  correctAnswer: z.number().int().min(0).max(3),
+  // Allow variable number of options (minimum 2) to be more tolerant with model output
+  options: z.array(z.string()).min(2),
+  // correctAnswer may be omitted by the model; keep it optional and validate client-side
+  correctAnswer: z.number().int().min(0).optional(),
 })
 
 const QuizSchema = z.object({
@@ -103,7 +105,7 @@ export async function POST(req: NextRequest) {
 
     // Log token estimation for debugging
 
-    try {
+      try {
       const result = await generateObject({
         model: openai("gpt-4o"),
         messages: [
@@ -129,8 +131,7 @@ export async function POST(req: NextRequest) {
         schema: QuizSchema,
       })
 
-      // NOTE: Credits already deducted atomically above - no need to call updateUserCredits
-
+      // NOTE: Credits already deducted atomically above
       console.log(`[Document API] Successfully generated quiz for user ${session.user.id}. Credits remaining: ${creditResult.newBalance}`)
 
       return NextResponse.json({
@@ -139,6 +140,19 @@ export async function POST(req: NextRequest) {
       })
     } catch (aiError) {
       console.error("Error generating quiz with AI:", aiError)
+      // Attempt to refund the deducted credits if deduction succeeded
+      try {
+        if (creditResult && creditResult.success) {
+          await creditService.addCredits(session.user.id, creditDeduction, CreditOperationType.REFUND, {
+            description: `Refund for failed document generation: ${file?.name || 'uploaded file'}`,
+            originalTransactionId: creditResult.transactionId,
+          })
+          console.log(`[Document API] Refunded ${creditDeduction} credit(s) to user ${session.user.id} after AI failure.`)
+        }
+      } catch (refundError) {
+        console.error('[Document API] Failed to refund credits after AI error:', refundError)
+      }
+
       return NextResponse.json(
         {
           error: "Failed to generate quiz with AI",

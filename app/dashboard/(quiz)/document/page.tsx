@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { toast } from "@/components/ui/use-toast"
@@ -69,6 +69,13 @@ export default function DocumentQuizPage() {
   const [editingQuizId, setEditingQuizId] = useState<string | null>(null)
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [confirmCreditUsage, setConfirmCreditUsage] = useState<{
+    used: number
+    available: number
+    remaining: number
+    percentage: number
+  } | null>(null)
+  const currentRequestControllerRef = useRef<AbortController | null>(null)
 
   const { data: session } = useSession()
   const quizPlan = useQuizPlan()
@@ -136,6 +143,19 @@ export default function DocumentQuizPage() {
       })
       return
     }
+    // Fetch client credit details to show accurate usage in the confirm dialog
+    try {
+      const clientCredits = await (await import('@/services/client-credit-service')).ClientCreditService.getCreditDetails()
+      setConfirmCreditUsage?.({
+        used: clientCredits.details.used,
+        available: clientCredits.details.totalCredits,
+        remaining: clientCredits.details.remaining,
+        percentage: Math.round((clientCredits.details.used / Math.max(1, clientCredits.details.totalCredits)) * 100),
+      })
+    } catch (err) {
+      console.warn('[DocumentPage] Failed to load client credit details for confirm dialog', err)
+    }
+
     setIsConfirmDialogOpen(true)
   }
 
@@ -150,10 +170,18 @@ export default function DocumentQuizPage() {
     formData.append("numberOfQuestions", quizOptions.numberOfQuestions.toString())
     formData.append("difficulty", quizOptions.difficulty.toString())
 
+  // Use AbortController so the request can be canceled if the dialog is closed
+  const controller = new AbortController()
+  const signal = controller.signal
+
+  // Keep reference for possible cancellation on unmount or dialog cancel
+  currentRequestControllerRef.current = controller
+
     try {
       const response = await fetch("/api/document", {
         method: "POST",
         body: formData,
+        signal,
       })
 
       if (!response.ok) {
@@ -230,12 +258,21 @@ export default function DocumentQuizPage() {
         return
       }
 
-      const quizData: LocalQuestion[] = rawQuestions.map((q: any, index: number) => ({
-        id: q.id ?? `generated-${index}`,
-        question: String(q.question ?? ""),
-        options: Array.isArray(q.options) ? q.options.map((o: string) => String(o)) : [],
-        correctAnswer: typeof q.correctAnswer === "number" ? q.correctAnswer : 0,
-      }))
+      const quizData: LocalQuestion[] = rawQuestions.map((q: any, index: number) => {
+        // Normalize options: support strings or objects with `.text` or `.label`
+        const options = Array.isArray(q.options)
+          ? q.options.map((o: any) => (typeof o === 'string' ? o : (o?.text ?? o?.label ?? String(o))))
+          : []
+
+        const correctAnswer = typeof q.correctAnswer === 'number' ? q.correctAnswer : 0
+
+        return {
+          id: q.id ?? `generated-${index}`,
+          question: String(q.question ?? ""),
+          options,
+          correctAnswer,
+        }
+      })
 
       setQuiz(quizData)
 
@@ -272,6 +309,10 @@ export default function DocumentQuizPage() {
       })
     } finally {
       setIsLoading(false)
+      // clear controller ref
+      if (currentRequestControllerRef.current) {
+        currentRequestControllerRef.current = null
+      }
     }
   }
 
@@ -848,6 +889,15 @@ export default function DocumentQuizPage() {
         onCancel={() => {
           setIsConfirmDialogOpen(false)
           setIsLoading(false)
+          // abort any in-flight generation request
+          if (currentRequestControllerRef.current) {
+            try {
+              currentRequestControllerRef.current.abort()
+            } catch (err) {
+              /* ignore */
+            }
+            currentRequestControllerRef.current = null
+          }
         }}
         title="Generate Document Quiz"
         description="You are about to use AI to generate a quiz from your document. This will use credits from your account."
@@ -856,7 +906,7 @@ export default function DocumentQuizPage() {
         showCreditUsage={true}
         status={isLoading ? "loading" : submitError ? "error" : undefined}
         errorMessage={submitError || undefined}
-        creditUsage={{
+        creditUsage={confirmCreditUsage ?? {
           used: 0, // Not relevant for single credit deduction
           available: 1,
           remaining: 1,
