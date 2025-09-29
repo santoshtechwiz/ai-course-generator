@@ -57,12 +57,12 @@ export function BestGuess({
       }
     } else if (similarity >= 0.7) {
       return {
-        color: isDark ? "text-blue-400" : "text-blue-600",
+        color: isDark ? "text-blue-400" : "text-blue-700",
         bgColor: isDark ? "bg-blue-950/40" : "bg-blue-50",
-        borderColor: isDark ? "border-blue-800" : "border-blue-200",
-        icon: <CheckIcon className="h-4 w-4 text-blue-500" />,
+        borderColor: isDark ? "border-blue-800" : "border-blue-100",
+        icon: <CheckIcon className="h-4 w-4 text-blue-600" />,
         label: "Almost Correct",
-        progressColor: "bg-blue-500",
+        progressColor: "bg-blue-600",
       }
     } else if (similarity >= 0.5) {
       return {
@@ -93,7 +93,7 @@ export function BestGuess({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: animationDelay }}
-      className={cn("rounded-md border p-4 mb-4", borderColor, bgColor, className)}
+    className={cn("rounded-lg border p-4 mb-4", borderColor, bgColor, className)}
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center">

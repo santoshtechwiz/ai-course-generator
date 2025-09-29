@@ -110,12 +110,14 @@ export interface CourseCompletedEvent extends BaseProgressEvent {
 
 export interface VideoWatchedEvent extends BaseProgressEvent {
   type: ProgressEventType.VIDEO_WATCHED;
-  entityType: 'chapter';
+  entityType: 'video';
   metadata: {
-    courseId: string;
+    courseId: string | number;
+    chapterId: string | number;
     progress: number;
     playedSeconds: number;
     duration: number;
+    timestamp: number;
   };
 }
 

@@ -14,22 +14,22 @@ import {
   Target,
   BookOpen,
   Brain,
-  MoreHorizontal,
-  Edit3,
-  Trash2,
   ExternalLink,
 } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import type { QuizType } from "@/app/types/quiz-types"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+// ...existing code...
 
 interface QuizCardProps {
   title: string
   description: string
   questionCount: number
   isPublic?: boolean
+  onTypeClick?: (type: QuizType) => void
+  selectedTypes?: QuizType[]
+  activeFilter?: string
   slug: string
   quizType: QuizType
   estimatedTime: string
@@ -83,6 +83,10 @@ function QuizCardComponent({
   title,
   description,
   questionCount,
+  isPublic = true,
+  onTypeClick,
+  selectedTypes = [],
+  activeFilter,
   slug,
   quizType,
   estimatedTime,
@@ -95,8 +99,10 @@ function QuizCardComponent({
 }: QuizCardProps) {
   const [isHovered, setIsHovered] = useState(false)
 
-  const config = quizTypeConfig[quizType] || quizTypeConfig.mcq
+  const config = quizTypeConfig[quizType as keyof typeof quizTypeConfig] || quizTypeConfig.mcq
   const QuizTypeIcon = config.icon
+
+  const isTypeActive = (selectedTypes && selectedTypes.includes(quizType)) || activeFilter === quizType
 
   const handleMouseEnter = useCallback(() => setIsHovered(true), [])
   const handleMouseLeave = useCallback(() => setIsHovered(false), [])
@@ -137,31 +143,32 @@ function QuizCardComponent({
                 <QuizTypeIcon className={cn("h-5 w-5", config.color)} />
               </div>
             </div>
-            <div className="absolute top-4 right-4">
-              {canShowActions && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 bg-background/80 backdrop-blur-sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40">
-                    <DropdownMenuItem>
-                      <Edit3 className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleDelete} className="text-destructive">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+            {/* Centered contextual faded icon for quick visual scanning */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <QuizTypeIcon className={cn("w-20 h-20 opacity-10", config.color)} />
             </div>
             <div className="absolute bottom-4 left-4">
-              <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm text-xs">
-                {config.label}
-              </Badge>
+              {/* Quiz type badge uses the quizTypeConfig accent colors and is clickable to filter */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
+                  onTypeClick?.(quizType)
+                }}
+                aria-label={`Filter by ${config.label}`}
+                className={cn(
+                  "text-xs py-1 px-2 rounded-md backdrop-blur-sm cursor-pointer transition-shadow",
+                  config.bg,
+                  isTypeActive ? "ring-2 ring-offset-1 shadow-md" : "",
+                )}
+              >
+                <Badge
+                  variant="secondary"
+                  className={cn("p-0", config.color, isTypeActive ? "font-semibold text-primary" : "")}
+                >
+                  {config.label}
+                </Badge>
+              </button>
             </div>
           </div>
 
@@ -207,10 +214,17 @@ function QuizCardComponent({
 
             <div className="flex items-center justify-between pt-2">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
-                  <span className="text-[10px] font-medium">V</span>
-                </div>
-                <span>Vercel</span>
+                {/* Visibility badge: green for public, gray for private */}
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "text-xs py-1 px-2 rounded-md",
+                    isPublic ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-700",
+                  )}
+                  aria-label={isPublic ? "Public quiz" : "Private quiz"}
+                >
+                  {isPublic ? "Public" : "Private"}
+                </Badge>
               </div>
               <Button
                 variant="ghost"
@@ -228,4 +242,4 @@ function QuizCardComponent({
   )
 }
 
-export const QuizCard = memo(QuizCardComponent)
+export const QuizCard = memo(QuizCardComponent) as React.NamedExoticComponent<QuizCardProps>

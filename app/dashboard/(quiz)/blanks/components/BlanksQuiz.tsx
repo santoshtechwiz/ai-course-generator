@@ -13,10 +13,10 @@ import { HintSystem } from "@/components/quiz/HintSystem"
 import { useOptionalQuizState } from "@/components/quiz/QuizStateProvider"
 import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
 import { generateBlanksHints } from "@/lib/utils/hint-system"
-import type { BlankQuizQuestion } from "@/app/types/quiz-types"
+import type { QuizQuestion } from "@/app/types/quiz-types"
 
 interface BlanksQuizProps {
-  question: BlankQuizQuestion
+  question: any
   questionNumber: number
   totalQuestions: number
   existingAnswer?: string

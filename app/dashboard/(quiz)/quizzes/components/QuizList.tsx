@@ -39,6 +39,10 @@ interface QuizListProps {
   currentUserId?: string
   showActions?: boolean
   onQuizDeleted?: () => void
+  onTypeClick?: (type: QuizType) => void
+  search?: string
+  selectedTypes?: QuizType[]
+  showPublicOnly?: boolean
 }
 
 const containerVariants = {
@@ -74,6 +78,10 @@ function QuizListComponent({
   currentUserId,
   showActions = false,
   onQuizDeleted,
+  onTypeClick,
+  search = "",
+  selectedTypes = [],
+  showPublicOnly = false,
 }: QuizListProps) {
   const [endMessageRef, endMessageInView] = useInView({
     triggerOnce: true,
@@ -100,10 +108,32 @@ function QuizListComponent({
     return `${minutes} min`
   }
 
-  const filteredQuizzes = useMemo(
-    () => (activeFilter === "all" ? quizzes : quizzes.filter((quiz) => quiz.quizType === activeFilter)),
-    [quizzes, activeFilter],
-  )
+  const filteredQuizzes = useMemo(() => {
+    let list = quizzes || []
+
+    // Sidebar-selected types filter (checkboxes)
+    if (selectedTypes && selectedTypes.length > 0) {
+      list = list.filter((quiz) => selectedTypes.includes(quiz.quizType))
+    }
+
+    // Search term filter
+    if (search && search.trim() !== "") {
+      const term = search.trim().toLowerCase()
+      list = list.filter((quiz) => quiz.title.toLowerCase().includes(term))
+    }
+
+    // Public only filter
+    if (showPublicOnly) {
+      list = list.filter((quiz) => quiz.isPublic)
+    }
+
+    // Active tab filter (keeps compatibility with tab-based filtering)
+    if (activeFilter && activeFilter !== "all") {
+      list = list.filter((quiz) => quiz.quizType === activeFilter)
+    }
+
+    return list
+  }, [quizzes, selectedTypes, search, showPublicOnly, activeFilter])
 
   const handleDeleteQuiz = (slug: string, quizType: QuizType) => {
     const quiz = quizzes.find((q) => q.slug === slug)
@@ -250,6 +280,9 @@ function QuizListComponent({
                   currentUserId={currentUserId}
                   showActions={showActions}
                   onDelete={handleDeleteQuiz}
+                  onTypeClick={onTypeClick}
+                  selectedTypes={selectedTypes}
+                  activeFilter={activeFilter}
                 />
               </motion.div>
             ))}
@@ -261,8 +294,8 @@ function QuizListComponent({
       {isFetchingNextPage && (
         <div className="flex justify-center py-8">
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <div className="w-4 h-4 border-2 border-primary border-r-transparent rounded-full animate-spin" />
-            Loading more templates...
+            <div className="w-4 h-4 border-2 border-primary border-r-transparent rounded-full animate-spin" aria-hidden="true" />
+            <span className="sr-only">Loading more quizzes</span>
           </div>
         </div>
       )}

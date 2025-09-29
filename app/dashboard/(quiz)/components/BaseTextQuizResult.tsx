@@ -68,6 +68,7 @@ interface QuizResultBase {
   score?: number
   percentage?: number
   completedAt?: string
+  totalTime?: number
   slug?: string
   quizId?: string
   questionResults?: QuestionResult[]
@@ -80,6 +81,15 @@ interface QuizResultsProps {
   onRetake?: () => void
   slug: string
   quizType: "open-ended" | "blanks"
+}
+
+interface PerformanceInfo {
+  level: string
+  emoji: string
+  color: string
+  bgColor: string
+  borderColor: string
+  message: string
 }
 
 export function BaseQuizResults({ result, onRetake, slug, quizType }: QuizResultsProps) {
@@ -159,7 +169,23 @@ export function BaseQuizResults({ result, onRetake, slug, quizType }: QuizResult
     }
   }, [enhancedResults, result])
 
-  const performance = useMemo(() => getPerformanceLevel(percentage), [percentage])
+  // getPerformanceLevel returns a simple level string; map it to a richer object used by the UI
+  const perfLevel = useMemo(() => getPerformanceLevel(percentage), [percentage])
+
+  const mapPerformance = (level: "excellent" | "good" | "average" | "poor"): PerformanceInfo => {
+    switch (level) {
+      case 'excellent':
+        return { level: 'Excellent', emoji: '🏆', color: 'text-emerald-600', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200', message: 'Excellent performance! You mastered this topic.' }
+      case 'good':
+        return { level: 'Good', emoji: '🎖️', color: 'text-blue-600', bgColor: 'bg-blue-50', borderColor: 'border-blue-200', message: 'Good work! You have a solid understanding.' }
+      case 'average':
+        return { level: 'Average', emoji: '✨', color: 'text-amber-600', bgColor: 'bg-amber-50', borderColor: 'border-amber-200', message: 'Average performance. Consider reviewing the material.' }
+      default:
+        return { level: 'Needs Improvement', emoji: '🔧', color: 'text-rose-600', bgColor: 'bg-rose-50', borderColor: 'border-rose-200', message: 'Keep practicing! Review the concepts and try again.' }
+    }
+  }
+
+  const performance: PerformanceInfo = useMemo(() => mapPerformance(perfLevel), [perfLevel])
 
   // Statistics
   const stats = useMemo(() => {
@@ -218,17 +244,17 @@ export function BaseQuizResults({ result, onRetake, slug, quizType }: QuizResult
       setIsSaving(true)
 
       const path = window.location.pathname
-      let quizType = "openended"
-      if (path.includes("/blanks/")) quizType = "blanks"
+      let qType = "openended"
+      if (path.includes("/blanks/")) qType = "blanks"
 
-      const quizSlug = result.slug || path.split('/').pop()
+      const quizSlug = result?.slug || path.split('/').pop()
 
       const answersToSubmit = Array.isArray(enhancedResults) && enhancedResults.length > 0 ? enhancedResults : []
 
-      const resp = await fetch(`/api/quizzes/${quizType}/${quizSlug}/submit`, {
+      const resp = await fetch(`/api/quizzes/${qType}/${quizSlug}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quizId: quizSlug, score: percentage, answers: answersToSubmit, totalTime: stats.totalTime || 0, type: quizType, completedAt: result.completedAt || new Date().toISOString() })
+        body: JSON.stringify({ quizId: quizSlug, score: percentage, answers: answersToSubmit, totalTime: result?.totalTime || 0, type: qType, completedAt: result?.completedAt || new Date().toISOString() })
       })
 
       if (!resp.ok) {
@@ -249,7 +275,7 @@ export function BaseQuizResults({ result, onRetake, slug, quizType }: QuizResult
     try {
       const shareData = {
         title: `${result?.title || "Quiz"} - Results`,
-        text: `I scored ${percentage}% (${performance}) on the ${result?.title || "Quiz"} ${quizType} quiz! ${performance.emoji}`,
+        text: `I scored ${percentage}% (${performance.level}) on the ${result?.title || "Quiz"} ${quizType} quiz! ${performance.emoji}`,
         url: window.location.href,
       }
 
@@ -314,21 +340,20 @@ export function BaseQuizResults({ result, onRetake, slug, quizType }: QuizResult
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
-          <motion.div
-            className="space-y-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-          >
-            {/* Header */}
-            <QuizHeader
-              title={result.title || `${quizType === "open-ended" ? "Open-Ended" : "Fill in the Blanks"} Quiz Results`}
-              completedAt={result.completedAt}
-              performance={performance}
-              quizType={quizType}
-            />
+      <div className="w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-10">
+        <motion.div
+          className="space-y-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
+          {/* Header */}
+          <QuizHeader
+            title={result.title || `${quizType === "open-ended" ? "Open-Ended" : "Fill in the Blanks"} Quiz Results`}
+            completedAt={result.completedAt}
+            performance={performance}
+            quizType={quizType}
+          />
 
             {/* Score Overview */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -355,8 +380,7 @@ export function BaseQuizResults({ result, onRetake, slug, quizType }: QuizResult
         </div>
 
         {showConfetti && <Confetti isActive={showConfetti} />}
-      </div>
-    </TooltipProvider>
+      </TooltipProvider>
   )
 }
 
@@ -369,10 +393,12 @@ function QuizHeader({
 }: {
   title: string
   completedAt?: string
-  performance: ReturnType<typeof getPerformanceLevel>
+  performance: PerformanceInfo
   quizType: "open-ended" | "blanks"
 }) {
-  const getPerformanceGradient = () => {
+  const getPerformanceGradient = (qt?: string) => {
+    // Special pink gradient for blanks quizzes to match screenshot
+    if (qt === 'blanks') return 'from-pink-50 via-pink-100 to-pink-50'
     switch (performance.level) {
       case "Excellent":
         return "from-emerald-500/20 via-green-500/20 to-teal-500/20"
@@ -385,7 +411,8 @@ function QuizHeader({
     }
   }
 
-  const getPerformanceBorder = () => {
+  const getPerformanceBorder = (qt?: string) => {
+    if (qt === 'blanks') return 'border-pink-200 dark:border-pink-800'
     switch (performance.level) {
       case "Excellent":
         return "border-emerald-200 dark:border-emerald-800"
@@ -400,10 +427,10 @@ function QuizHeader({
 
   return (
     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-      <Card className={cn("relative overflow-hidden border-2 shadow-xl", getPerformanceBorder())}>
-        <div className={cn("absolute inset-0 bg-gradient-to-br opacity-50", getPerformanceGradient())} />
+      <Card className={cn("relative overflow-hidden border-2 shadow-xl rounded-2xl", getPerformanceBorder())}>
+        <div className={cn("absolute inset-0 bg-gradient-to-br opacity-50", getPerformanceGradient(quizType))} />
 
-        <CardHeader className="relative z-10 text-center pb-8 pt-8">
+        <CardHeader className="relative z-10 text-center py-8">
           <div className="flex items-center justify-center mb-6">
             <motion.div
               className="p-4 rounded-2xl bg-background/80 backdrop-blur-sm shadow-lg border"
@@ -420,7 +447,13 @@ function QuizHeader({
             </CardTitle>
 
             <div className="flex items-center justify-center gap-3 mb-4">
-              <Badge variant="secondary" className="text-sm px-3 py-1">
+              <Badge
+                variant="secondary"
+                className={cn(
+                  "text-sm px-3 py-1 font-semibold",
+                  quizType === 'blanks' ? 'bg-violet-600 text-white border-transparent' : ''
+                )}
+              >
                 {quizType === "open-ended" ? "Open-Ended" : "Fill in the Blanks"}
               </Badge>
               <Badge
@@ -467,7 +500,7 @@ function ScoreOverview({
   percentage: number
   correctCount: number
   totalQuestions: number
-  performance: ReturnType<typeof getPerformanceLevel>
+  performance: PerformanceInfo
   stats: any
 }) {
   return (
@@ -476,7 +509,7 @@ function ScoreOverview({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.6, delay: 0.1 }}
     >
-      <Card className="shadow-xl border-2">
+          <Card className="shadow-xl border-2">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -501,7 +534,7 @@ function ScoreOverview({
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-6">
+          <CardContent className="space-y-6">
           {/* Progress Bar */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
@@ -772,19 +805,11 @@ function QuestionItem({
                     {question.isCorrect ? "Correct" : "Incorrect"}
                   </Badge>
 
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Badge
-                        variant="outline"
-                        className={cn("text-xs font-mono", getSimilarityColor(question.similarity || 0))}
-                      >
-                        {similarityPercentage}% match
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Text similarity score: {question.similarityLabel}</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  <div className="ml-2">
+                    <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium border border-blue-100">
+                      {similarityPercentage}% match
+                    </span>
+                  </div>
                 </div>
 
                 <div className="text-sm text-muted-foreground">
@@ -826,7 +851,9 @@ function QuestionItem({
                   </Badge>
                 </div>
 
-                <Progress value={similarityPercentage} className="h-2 mb-2" />
+                <Progress value={similarityPercentage} className="h-2 mb-2 bg-purple-50">
+                  <div className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded" style={{ width: `${similarityPercentage}%` }} />
+                </Progress>
 
                 <p className={cn("text-xs", getSimilarityColor(question.similarity || 0))}>
                   {getSimilarityFeedback(question.similarity || 0)}

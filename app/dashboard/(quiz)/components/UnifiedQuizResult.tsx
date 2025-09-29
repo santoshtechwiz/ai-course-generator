@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useMemo } from "react"
+import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { useRouter, usePathname } from "next/navigation"
 import { useDispatch } from "react-redux"
@@ -22,6 +23,8 @@ import { resetQuiz } from "@/store/slices/quiz"
 import { useAuth } from "@/modules/auth"
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
 import { UnifiedLoader } from "@/components/loaders"
+import BlankQuizResults from "../blanks/components/BlankQuizResults"
+import OpenEndedQuizResults from "../openended/components/QuizResultsOpenEnded"
 
 // ...existing code...
 
@@ -124,6 +127,30 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
     )
   }
 
+  // Delegate to specialized text-result components for blanks / open-ended quizzes
+  // This reuses the existing BaseTextQuizResult logic (similarity scoring, insights, etc.)
+  if (quizType === 'blanks') {
+    return (
+      <BlankQuizResults
+        result={result}
+        onRetake={() => (onRetake ? onRetake() : handleRetake())}
+        isAuthenticated={isAuthenticated}
+        slug={slug}
+      />
+    )
+  }
+
+  if (quizType === 'openended' || quizType === 'open-ended') {
+    return (
+      <OpenEndedQuizResults
+        result={result}
+        onRetake={() => (onRetake ? onRetake() : handleRetake())}
+        isAuthenticated={isAuthenticated}
+        slug={slug}
+      />
+    )
+  }
+
   const pathname = usePathname?.() ?? ''
 
   const handleShare = async () => {
@@ -155,7 +182,23 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
 
     // Calculate correct answers from results array
     const resultsArray = result?.questionResults?.length ? result.questionResults : result?.results || []
-    const correctAnswers = resultsArray.filter((r: any) => r.isCorrect === true).length
+    const isTextQuiz = quizType === 'blanks' || quizType === 'openended' || quizType === 'open-ended'
+    const correctAnswers = resultsArray.filter((r: any) => {
+      if (r?.isCorrect === true) return true
+      if (isTextQuiz) {
+        // similarity may be 0..1 or 0..100 depending on source
+        const simCandidates = [r?.similarity, r?.similarityScore, r?.similarityPercent]
+        for (const raw of simCandidates) {
+          if (typeof raw === 'number') {
+            if (raw >= 0.8 || raw >= 80) return true
+          } else if (typeof raw === 'string') {
+            const p = parseFloat(raw)
+            if (!isNaN(p) && (p >= 0.8 || p >= 80)) return true
+          }
+        }
+      }
+      return false
+    }).length
     const totalQuestions = result.totalQuestions ?? result.maxScore ?? resultsArray.length ?? 0
     const percentage = result.percentage ?? (totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0)
     const timeSpent = result.totalTime ?? result.timeSpent
@@ -212,39 +255,39 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
   }, [metrics.correctAnswers, metrics.totalQuestions, result?.topicPerformance])
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* Top header */}
+    <div className="w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-10">
+      {/* Top header - harmonized with BaseTextQuizResult */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-semibold text-foreground">Quiz Results</h1>
-            <p className="mt-1 text-sm text-muted-foreground max-w-2xl">{getEnhancedTitle(result, slug, quizType)}</p>
-          </div>
+        <Card className={cn('relative overflow-hidden border-2 shadow-xl rounded-2xl', quizType === 'blanks' ? 'border-pink-200' : '')}>
+          <div className={cn('absolute inset-0 bg-gradient-to-br opacity-50', quizType === 'blanks' ? 'from-pink-50 via-pink-100 to-pink-50' : '')} />
+          <CardHeader className="relative z-10 text-center py-8">
+            <div className="flex items-center justify-center mb-6">
+              <div className="p-4 rounded-2xl bg-background/80 backdrop-blur-sm shadow-lg border">
+                <Trophy className="w-8 h-8 text-primary" />
+              </div>
+            </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleShare}>
-              <Share2 className="w-4 h-4" /> Share
-            </Button>
-            <Button variant="ghost" onClick={() => { /* placeholder for export */ }}>
-              <Download className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+            <div>
+              <CardTitle className="text-3xl md:text-4xl font-bold mb-2">{getEnhancedTitle(result, slug, quizType)}</CardTitle>
+              <p className="text-sm text-muted-foreground">Completed on {result?.completedAt ? new Date(result.completedAt).toLocaleString() : ''}</p>
+            </div>
+          </CardHeader>
+        </Card>
 
         {/* Metric cards row */}
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="bg-card rounded-lg p-3 shadow-sm">
+          <Card className="p-3">
             <div className="text-sm text-muted-foreground">Score</div>
             <div className="text-2xl font-semibold text-primary mt-1">{Math.round(metrics.percentage)}%</div>
-          </div>
-          <div className="bg-card rounded-lg p-3 shadow-sm">
+          </Card>
+          <Card className="p-3">
             <div className="text-sm text-muted-foreground">Completion Time</div>
             <div className="text-xl font-semibold mt-1">{metrics.timeSpent ? formatTime(metrics.timeSpent) : (result?.totalTime ? formatTime(result.totalTime) : '-')}</div>
-          </div>
-          <div className="bg-card rounded-lg p-3 shadow-sm">
+          </Card>
+          <Card className="p-3">
             <div className="text-sm text-muted-foreground">Status</div>
             <div className="text-xl font-semibold mt-1 text-green-600">{metrics.percentage >= 60 ? 'Passed' : 'Failed'}</div>
-          </div>
+          </Card>
         </div>
       </motion.div>
 
@@ -320,7 +363,26 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
             <CardContent>
               <Accordion type="single" collapsible defaultValue={undefined}>
                 {questionResults.map((q: any, idx: number) => {
-                  const isCorrect = q?.correct ?? q?.isCorrect ?? q?.status === 'correct'
+                  const baseCorrect = q?.correct ?? q?.isCorrect ?? q?.status === 'correct'
+                  const isTextQuiz = quizType === 'blanks' || quizType === 'openended' || quizType === 'open-ended'
+                  let isCorrect = Boolean(baseCorrect)
+                  if (!isCorrect && isTextQuiz) {
+                    const simCandidates = [q?.similarity, q?.similarityScore, q?.similarityPercent]
+                    for (const raw of simCandidates) {
+                      if (typeof raw === 'number') {
+                        if (raw >= 0.8 || raw >= 80) {
+                          isCorrect = true
+                          break
+                        }
+                      } else if (typeof raw === 'string') {
+                        const p = parseFloat(raw)
+                        if (!isNaN(p) && (p >= 0.8 || p >= 80)) {
+                          isCorrect = true
+                          break
+                        }
+                      }
+                    }
+                  }
                   return (
                     <AccordionItem value={`q-${idx}`} key={idx}>
                         <AccordionTrigger className="w-full flex items-center justify-between px-3 py-2">

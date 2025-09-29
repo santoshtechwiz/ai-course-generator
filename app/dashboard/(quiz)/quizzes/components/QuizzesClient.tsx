@@ -188,6 +188,14 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     setSelectedTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]))
   }, [])
 
+  // Set a single quiz type filter (clicking a badge sets that type alone; clicking again clears it)
+  const setSingleQuizType = useCallback((type: QuizType) => {
+    setSelectedTypes((prev) => {
+      if (prev.length === 1 && prev[0] === type) return []
+      return [type]
+    })
+  }, [])
+
   const handleTabChange = useCallback((value: string) => {
     setActiveTab(value || "all")
   }, [])
@@ -313,6 +321,10 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
                   currentUserId={userId}
                   showActions={true}
                   onQuizDeleted={handleQuizDeleted}
+                  onTypeClick={setSingleQuizType}
+                  search={search}
+                  selectedTypes={selectedTypes}
+                  showPublicOnly={showPublicOnly}
                 />
                 <div ref={ref} className="h-20 flex items-center justify-center">
                   {isFetchingNextPage && (

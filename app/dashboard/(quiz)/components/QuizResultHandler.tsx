@@ -2,7 +2,8 @@
 
 import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
+import { useAppDispatch } from '@/store'
 import { AnimatePresence, motion } from 'framer-motion'
 import { RefreshCw } from 'lucide-react'
 import { createMachine } from 'xstate'
@@ -120,7 +121,7 @@ const quizResultMachine = createMachine({
 });
 
 export default function GenericQuizResultHandler({ slug, quizType, children }: Props) {
-  const dispatch = useDispatch<AppDispatch>()
+  const dispatch = useAppDispatch()
   const router = useRouter()
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth()
 

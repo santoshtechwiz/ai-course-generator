@@ -5,6 +5,8 @@ import { use } from 'react'
 import { useRouter } from 'next/navigation'
 import QuizResultHandler from '../../../components/QuizResultHandler'
 import QuizResultLayout from '../../../components/layouts/QuizResultLayout'
+import BlankQuizResults from '../../../blanks/components/BlankQuizResults'
+import OpenEndedQuizResults from '../../../openended/components/QuizResultsOpenEnded'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
@@ -41,6 +43,17 @@ export default function ReviewPage({ params }: Props) {
       <QuizResultHandler slug={slug} quizType={quizType as any}>
         {(props: { result: any }) => {
           const { result } = props
+
+          // For blanks and openended quizzes use the specialized result components
+          if (quizType === 'blanks') {
+            return <BlankQuizResults result={result} onRetake={() => router.push(`/dashboard/${quizType}/${slug}`)} slug={slug} />
+          }
+
+          if (quizType === 'openended' || quizType === 'open-ended') {
+            return <OpenEndedQuizResults result={result} onRetake={() => router.push(`/dashboard/${quizType}/${slug}`)} slug={slug} />
+          }
+
+          // Fallback: existing accordion-based review for MCQ / code / others
           const questionResults = result?.questionResults?.length ? result.questionResults : result?.results || []
           return (
             <div className="container max-w-5xl py-8">
