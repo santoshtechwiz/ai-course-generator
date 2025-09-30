@@ -146,11 +146,12 @@ export default function DocumentQuizPage() {
     // Fetch client credit details to show accurate usage in the confirm dialog
     try {
       const clientCredits = await (await import('@/services/client-credit-service')).ClientCreditService.getCreditDetails()
-      setConfirmCreditUsage?.({
-        used: clientCredits.details.used,
-        available: clientCredits.details.totalCredits,
-        remaining: clientCredits.details.remaining,
-        percentage: Math.round((clientCredits.details.used / Math.max(1, clientCredits.details.totalCredits)) * 100),
+      // ClientCreditService returns ClientCreditInfo with simple fields
+      setConfirmCreditUsage({
+        used: (clientCredits as any).usedCredits ?? 0,
+        available: (clientCredits as any).totalCredits ?? 0,
+        remaining: (clientCredits as any).remainingCredits ?? 0,
+        percentage: Math.round(((clientCredits as any).usedCredits ?? 0) / Math.max(1, (clientCredits as any).totalCredits ?? 1) * 100),
       })
     } catch (err) {
       console.warn('[DocumentPage] Failed to load client credit details for confirm dialog', err)
@@ -764,7 +765,8 @@ export default function DocumentQuizPage() {
 
       {/* Enhanced Share Dialog */}
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent className="sm:max-w-lg">
+        {/* Increase max width and allow the content to take full width to avoid overflow issues on medium screens */}
+        <DialogContent className="sm:max-w-xl w-full">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -789,7 +791,8 @@ export default function DocumentQuizPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
+                /* Force this row to span the available width so the right-side icon doesn't overflow */
+                className="w-full flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
@@ -817,18 +820,19 @@ export default function DocumentQuizPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="space-y-2"
+                className="space-y-2 w-full"
               >
                 <label className="text-sm font-medium text-muted-foreground">Share Link</label>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 w-full">
+                  {/* Make input flexible inside the flex row and allow it to truncate instead of pushing the button out */}
                   <Input
                     value={shareUrl}
                     readOnly
                     onClick={(e) => e.currentTarget.select()}
-                    className="font-mono text-sm bg-muted/50"
+                    className="flex-1 min-w-0 font-mono text-sm bg-muted/50"
                     aria-label="Quiz share link"
                   />
-                  <Button onClick={copyShareLink} variant="secondary" size="sm" className="shrink-0">
+                  <Button onClick={copyShareLink} variant="secondary" size="sm">
                     <motion.div whileTap={{ scale: 0.95 }} className="flex items-center gap-1">
                       📋 Copy
                     </motion.div>
@@ -841,7 +845,8 @@ export default function DocumentQuizPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="flex flex-col sm:flex-row gap-3"
+                /* Ensure buttons take the available width and wrap gracefully */
+                className="w-full flex flex-col sm:flex-row gap-3"
               >
                 <Button onClick={() => setShowShareDialog(false)} variant="outline" className="flex-1">
                   Close

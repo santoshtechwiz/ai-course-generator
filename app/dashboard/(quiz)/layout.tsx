@@ -1,6 +1,8 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
+import { getServerAuthSession } from "@/lib/server-auth"
+import { Chatbot } from "@/components/Chatbot"
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "Interactive Quizzes – Master Your Knowledge | CourseAI",
@@ -34,17 +36,21 @@ export const metadata: Metadata = generateSEOMetadata({
  * - Uses full-viewport flex container so children can occupy full width/height
  * - Keeps markup intentionally minimal to avoid layout constraints
  */
-export default function QuizLayout({
+export default async function QuizLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const session = await getServerAuthSession()
+
   return (
     <div className="min-h-screen w-full flex flex-col">
       {/* main acts as the flexible container so children can grow/shrink */}
       <main className="flex-1 w-full min-h-0">
         {children}
       </main>
+      {/* Include Chatbot for authenticated users */}
+      {session?.user?.id && <Chatbot userId={session.user.id} />}
     </div>
   )
 }

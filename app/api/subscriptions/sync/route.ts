@@ -12,7 +12,7 @@ if (!stripeSecretKey) {
 }
 
 const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2024-10-28.acacia',
+  apiVersion: '2025-02-24.acacia',
 })
 
 export async function POST(req: NextRequest) {
@@ -85,6 +85,15 @@ export async function POST(req: NextRequest) {
           currentPeriodStart: new Date(),
           currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
         },
+      })
+
+      // Update user to reflect active free subscription
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          userType: "FREE",
+          isActive: true
+        }
       })
 
       return NextResponse.json({
@@ -248,8 +257,9 @@ export async function POST(req: NextRequest) {
           await tx.userSubscription.update({
             where: { id: userSubscription.id },
             data: {
-              status: correctStatus,
-              planId: correctPlanId,
+              // cast to any to avoid strict enum mismatch between runtime values and Prisma generated types
+              status: correctStatus as any,
+              planId: correctPlanId as any,
               currentPeriodEnd,
               currentPeriodStart: stripeSubscription 
                 ? new Date(stripeSubscription.current_period_start * 1000)
@@ -259,9 +269,14 @@ export async function POST(req: NextRequest) {
           
           // Ensure user type matches subscription for consistency
           const effectiveUserType = correctStatus === "ACTIVE" ? correctPlanId : "FREE"
+          const effectiveSubscriptionActive = correctStatus === "ACTIVE"
+          
           await tx.user.update({
             where: { id: userId },
-            data: { userType: effectiveUserType }
+            data: { 
+              userType: effectiveUserType,
+              isActive: effectiveSubscriptionActive
+            }
           })
         })
         

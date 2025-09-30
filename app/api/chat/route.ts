@@ -1,49 +1,24 @@
-// app/api/chat/route.ts
 import type { NextRequest } from 'next/server'
-import path from 'path'
-import { fileURLToPath } from 'url'
-
-import { prisma } from '@/lib/db'
 import { getAuthSession } from '@/lib/auth'
 import { logger } from '@/lib/logger'
 import { ChatMemoryManager } from '@/app/aimodel/chat/memory-manager'
-import { ContextBuilder } from '@/app/aimodel/chat/context-builder'
 import { EmbeddingManager } from '@/app/aimodel/core/embedding-manager'
 
-/**
- * Production-ready chat POST handler.
- *
- * - Ensures DB-only answers or constructive suggestions.
- * - Rate-limits free users (env controlled).
- * - Spam prevention: identical user message within 5 minutes returns cached assistant reply.
- * - Persistence of messages into Prisma, and memory manager caching.
- */
+// Vector-only chat POST handler
 
-/* ---------- Setup / singletons ---------- */
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
-let contextBuilder: ContextBuilder | null = null
 const memoryManagers: Map<string, ChatMemoryManager> = new Map()
 
-function getContextBuilder(): ContextBuilder {
-  if (!contextBuilder) contextBuilder = new ContextBuilder()
-  return contextBuilder
-}
-
 function getMemoryManager(userId: string): ChatMemoryManager {
-  if (!memoryManagers.has(userId)) {
-    memoryManagers.set(userId, new ChatMemoryManager(userId))
-  }
+  if (!memoryManagers.has(userId)) memoryManagers.set(userId, new ChatMemoryManager(userId))
   return memoryManagers.get(userId)!
 }
 
-/* ---------- Helpers ---------- */
 function sanitizeHeaderValue(text?: string, maxLen = 200): string | undefined {
   if (!text) return undefined
   try {
     let s = String(text).replace(/\r?\n|\r/g, ' ')
     s = s.replace(/\s+/g, ' ').trim()
-    s = s.replace(/[^\x20-\x7E]/g, '') // keep printable ASCII
+    s = s.replace(/[^\x20-\x7E]/g, '')
     if (s.length === 0) return undefined
     if (s.length > maxLen) s = s.slice(0, maxLen - 3).trim() + '...'
     return s
@@ -61,315 +36,277 @@ function makeJsonResponse(obj: any, status = 200) {
   return new Response(body, { status, headers })
 }
 
-/* ---------- Intent detectors ---------- */
-const detectGenericSiteIntent = (text: string) => {
-  const t = (text || '').toLowerCase()
-  if (/enroll|enrol|sign up|how do i enroll|how to enroll|register/i.test(t)) return 'enroll'
-  if (/payment|pay|pricing|price|cost|subscribe|subscription/i.test(t)) return 'payment'
-  if (/refund|cancel order|cancel subscription/i.test(t)) return 'refund'
-  if (/account|profile|login|sign in|sign-in|logout/i.test(t)) return 'account'
-  if (/contact|support|help/i.test(t)) return 'contact'
-  return null
-}
-
-const detectQuizIntent = (text: string) => {
-  if (!text) return null
-  let m = text.match(/(?:do you have|have you|is there|any)\s+(?:a\s+)?quiz\s+(?:on|about)\s+(.+)\??/i)
-  if (m) return m[1].trim()
-  m = text.match(/quiz\s*(?:on|:)\s*(.+)/i)
-  if (m) return m[1].trim()
-  return null
-}
-
-const detectCourseIntent = (text: string) =>
-  /(?:course|courses|any course|courses on|find a course|do you have a course|course on)\b/i.test(text || '')
-
-/* ---------- Environment config ---------- */
-const FREE_USER_LIMIT = Number(process.env.FREE_USER_CHAT_LIMIT || '5') // per HOUR
-const FREE_USER_WINDOW_MS = Number(process.env.FREE_USER_WINDOW_MS || String(60 * 60 * 1000)) // 1 hour default
-const SPAM_DEDUP_WINDOW_MS = Number(process.env.SPAM_DEDUP_WINDOW_MS || String(5 * 60 * 1000)) // 5 minutes
-
-/* ---------- POST handler ---------- */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}))
     const incomingMessages = body?.messages || body?.msgs || null
     const singleQuestion = body?.question || body?.message || ''
 
-    // Auth
     const authSession = await getAuthSession()
     const userId = authSession?.user?.id
     const isDevelopment = process.env.NODE_ENV === 'development'
-    if (!userId && !isDevelopment) {
-      return new Response('Unauthorized', { status: 401 })
-    }
+    if (!userId && !isDevelopment) return new Response('Unauthorized', { status: 401 })
     const effectiveUserId = userId || 'test-user-dev'
     const sessionId = `user_${effectiveUserId}`
 
-    // Extract user message
     let userMessage = ''
     if (incomingMessages && Array.isArray(incomingMessages) && incomingMessages.length > 0) {
-      // find last user role message
       const lastUser = [...incomingMessages].slice().reverse().find((m: any) => m && (m.role === 'user' || m.role === 'User'))
       userMessage = lastUser?.content || ''
     } else {
       userMessage = String(singleQuestion || '').trim()
     }
-    if (!userMessage || !userMessage.trim()) {
-      return makeJsonResponse({ assistant: 'Please provide a question.' }, 400)
-    }
+    if (!userMessage || !userMessage.trim()) return makeJsonResponse({ assistant: 'Please provide a question.' }, 400)
 
-    // memory manager instance
     const memoryMgr = getMemoryManager(effectiveUserId)
 
-    // Generic site intents (quick replies)
-    const genericIntent = detectGenericSiteIntent(userMessage)
-    if (genericIntent) {
-      let assistant = ''
-      switch (genericIntent) {
-        case 'enroll':
-          assistant = `To enroll in a course on this site:\n1) Sign in to your account (/profile).\n2) Visit the course page (e.g. /course/<slug>) and click Enroll / Purchase.\n3) Follow the payment flow (Stripe) if required.\nIf you share the course title or slug I can provide a direct link.`
-          break
-        case 'payment':
-          assistant = `For payments and billing: visit /account/billing-history or your Subscription page. You can find invoices and receipts there or contact support via /contact.`
-          break
-        case 'refund':
-          assistant = `Refunds and cancellations are handled from your billing history or subscription page. Please provide order details on /contact if you need assistance.`
-          break
-        case 'account':
-          assistant = `Account help: sign in at /auth. From /profile you can manage subscriptions and enrolled courses. If you cannot sign in, try password reset or contact support.`
-          break
-        case 'contact':
-          assistant = `You can contact support via the Contact page (/contact). Provide details about your issue and we will respond.`
-          break
-        default:
-          assistant = ''
-      }
+    const similarityThreshold = Number(process.env.EMBEDDING_SIMILARITY_THRESHOLD || '0.1')
+    const similarityTopK = Number(process.env.EMBEDDING_TOP_K || '12')
+    const enableDebug = Boolean(process.env.EMBEDDING_DEBUG === '1' || process.env.NODE_ENV !== 'production')
 
-      if (assistant) {
-        // persist assistant message & memory
-        try {
-          await memoryMgr.addMessage(sessionId, { role: 'assistant', content: assistant, id: `msg_${Date.now()}`, timestamp: Date.now() })
-          await prisma.chatMessage.create({
-            data: { userId: effectiveUserId, sessionId, role: 'assistant', content: assistant, metadata: { genericIntent }, count: 0 },
+    try {
+      const embMgr = new EmbeddingManager()
+      await embMgr.initialize()
+
+      const docs = await embMgr.similaritySearch(userMessage, { limit: similarityTopK, threshold: similarityThreshold })
+
+      if (docs && docs.length > 0) {
+        const grouped = {
+          courses: docs.filter((d: any) => d.metadata?.type === 'course'),
+          chapters: docs.filter((d: any) => d.metadata?.type === 'chapter'),
+          flashcards: docs.filter((d: any) => d.metadata?.type === 'flashcard'),
+          quizzes: docs.filter((d: any) => d.metadata?.type === 'quiz')
+        }
+
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
+        let assistantText = ''
+        let hasRelevantInfo = false
+
+        // Build contextual response based on found content
+        if (grouped.courses.length) {
+          hasRelevantInfo = true
+          assistantText += `I found ${grouped.courses.length} course${grouped.courses.length > 1 ? 's' : ''} related to your question:\n\n`
+          grouped.courses.slice(0, 3).forEach((c: any, i: number) => {
+            const title = c.metadata?.title || 'Untitled Course'
+            const description = c.metadata?.description || c.content || 'No description available'
+            const slug = c.metadata?.slug
+            const link = slug ? `${siteUrl}/courses/${slug}` : `${siteUrl}/courses`
+            assistantText += `**${title}**\n${description.slice(0, 150)}...\n[View Course](${link})\n\n`
           })
-        } catch (err) {
-          logger.warn('Failed to persist generic intent assistant message', { error: err })
         }
-        return makeJsonResponse({ assistant }, 200)
-      }
-    }
 
-    /* ---------- Rate limiting (free users) ---------- */
-    if (!isDevelopment) {
-      try {
-        const windowStart = new Date(Date.now() - FREE_USER_WINDOW_MS)
-        const count = await prisma.chatMessage.count({
-          where: { userId: effectiveUserId, role: 'user', createdAt: { gte: windowStart } },
-        })
-        const user = await prisma.user.findUnique({ where: { id: effectiveUserId }, include: { subscription: true } })
-        const isSubscriber = !!user?.subscription
-        if (!isSubscriber && count >= FREE_USER_LIMIT) {
-          const msg = `You have reached the free limit of ${FREE_USER_LIMIT} questions per hour. Please upgrade for more.`
-          await memoryMgr.addMessage(sessionId, { role: 'assistant', content: msg, id: `msg_${Date.now()}`, timestamp: Date.now() })
-          await prisma.chatMessage.create({ data: { userId: effectiveUserId, sessionId, role: 'assistant', content: msg, metadata: { rateLimit: true }, count: 0 } })
-          return makeJsonResponse({ assistant: msg }, 200)
+        if (grouped.chapters.length) {
+          hasRelevantInfo = true
+          if (!assistantText) assistantText += `Here are learning materials related to your query:\n\n`
+          assistantText += `**Related Chapters:**\n`
+          grouped.chapters.slice(0, 3).forEach((c: any, i: number) => {
+            const title = c.metadata?.title || 'Untitled Chapter'
+            const content = c.content || 'No content available'
+            const unitId = c.metadata?.unitId
+            const link = unitId ? `${siteUrl}/courses/unit/${unitId}` : `${siteUrl}/courses`
+            assistantText += `• **${title}**: ${content.slice(0, 120)}...\n[Study Chapter](${link})\n`
+          })
+          assistantText += '\n'
         }
-      } catch (err) {
-        // don't block user if rate-limit check fails
-        logger.error('Rate-limit check error', { error: err })
-      }
-    }
 
-    /* ---------- Spam deduplication (IDENTICAL question within short window) ---------- */
-    try {
-      const recentUser = await prisma.chatMessage.findFirst({
-        where: { userId: effectiveUserId, role: 'user', content: userMessage, createdAt: { gte: new Date(Date.now() - SPAM_DEDUP_WINDOW_MS) } },
-        orderBy: { createdAt: 'desc' },
-      })
+        if (grouped.quizzes.length) {
+          hasRelevantInfo = true
+          if (!assistantText) assistantText += `I found assessment materials for your topic:\n\n`
+          assistantText += `**Practice Quizzes:**\n`
+          grouped.quizzes.slice(0, 3).forEach((c: any, i: number) => {
+            const title = c.metadata?.title || 'Untitled Quiz'
+            const description = c.metadata?.description || 'Test your knowledge'
+            const slug = c.metadata?.slug
+            const link = slug ? `${siteUrl}/quizzes/${slug}` : `${siteUrl}/quizzes`
+            assistantText += `• **${title}**: ${description}\n[Take Quiz](${link})\n`
+          })
+          assistantText += '\n'
+        }
 
-      // If we find a previous identical user question within the dedup window,
-      // return the most recent assistant reply for that session (if any).
-      if (recentUser) {
-        const cachedAssistant = await prisma.chatMessage.findFirst({
-          where: { userId: effectiveUserId, sessionId, role: 'assistant' },
-          orderBy: { createdAt: 'desc' },
-        })
-        if (cachedAssistant) {
-          const reply = cachedAssistant.content
-          // If the previous assistant reply included structured metadata (e.g. matches), return it too
-          let extra: any = {}
-          try {
-            const md = (cachedAssistant as any).metadata || {}
-            if (md && md.matches) extra.matches = md.matches
-          } catch (e) {
-            // ignore metadata parsing errors
+        if (grouped.flashcards.length) {
+          hasRelevantInfo = true
+          if (!assistantText) assistantText += `Here are key concepts related to your question:\n\n`
+          assistantText += `**Key Concepts:**\n`
+          grouped.flashcards.slice(0, 4).forEach((c: any, i: number) => {
+            const content = String(c.content).slice(0, 200)
+            assistantText += `• ${content}\n`
+          })
+          assistantText += '\n'
+        }
+
+        if (hasRelevantInfo) {
+          // Add contextual suggestion based on content type distribution
+          const totalItems = grouped.courses.length + grouped.chapters.length + grouped.quizzes.length + grouped.flashcards.length
+          
+          if (grouped.quizzes.length > grouped.courses.length) {
+            assistantText += `Based on your question, practice might help reinforce these concepts. `
+          } else if (grouped.courses.length > 0) {
+            assistantText += `The courses above provide comprehensive coverage of this topic. `
           }
-          await memoryMgr.addMessage(sessionId, { role: 'assistant', content: reply, id: `msg_${Date.now()}`, timestamp: Date.now() })
-          return makeJsonResponse(Object.assign({ assistant: reply, cached: true }, extra), 200)
+          
+          assistantText += `Would you like me to help you create additional learning materials for this subject?`
         }
+
+        const matches = docs.map((d: any) => ({
+          id: d.id,
+          type: d.metadata?.type,
+          title: d.metadata?.title,
+          description: d.metadata?.description,
+          slug: d.metadata?.slug,
+          link: d.metadata?.type === 'course' && d.metadata?.slug ? `${siteUrl}/courses/${d.metadata.slug}` :
+                d.metadata?.type === 'quiz' && d.metadata?.slug ? `${siteUrl}/quizzes/${d.metadata.slug}` :
+                d.metadata?.type === 'chapter' && d.metadata?.unitId ? `${siteUrl}/courses/unit/${d.metadata.unitId}` : null,
+          similarity: d.similarity,
+          contentPreview: d.content?.slice(0, 100) + '...'
+        }))
+        
+        try { 
+          await memoryMgr.addMessage(sessionId, { 
+            role: 'assistant', 
+            content: assistantText, 
+            id: `msg_${Date.now()}`, 
+            timestamp: Date.now() 
+          }) 
+        } catch {}
+        
+        if (enableDebug) {
+          return makeJsonResponse({ 
+            assistant: assistantText, 
+            matches, 
+            debug: { 
+              thresholdUsed: similarityThreshold, 
+              topK: similarityTopK,
+              totalMatches: docs.length,
+              contentTypes: Object.keys(grouped).reduce((acc, key) => {
+                acc[key] = grouped[key as keyof typeof grouped].length
+                return acc
+              }, {} as Record<string, number>)
+            } 
+          }, 200)
+        }
+        return makeJsonResponse({ assistant: assistantText, matches }, 200)
       }
-    } catch (err) {
-      logger.warn('Spam deduplication lookup failed', { error: err })
-    }
 
-    /* ---------- Persist user message (after dedup check) ---------- */
-    try {
-      // Best-effort add to in-memory chat history and DB (do not fail request if DB persist fails)
-      void memoryMgr.addMessage(sessionId, { role: 'user', content: userMessage, id: `msg_${Date.now()}`, timestamp: Date.now() })
-      await prisma.chatMessage.create({ data: { userId: effectiveUserId, sessionId, role: 'user', content: userMessage, metadata: {}, count: 0 } })
-    } catch (err) {
-      logger.warn('Failed to persist user message', { error: err })
-    }
-
-    /* ---------- Quiz intent handling ---------- */
-    const quizTopicRaw = detectQuizIntent(userMessage)
-    if (quizTopicRaw) {
-      const topic = quizTopicRaw.toLowerCase()
+      // No results found - try relaxed search
+      const relaxedThreshold = Math.max(0.35, similarityThreshold - 0.2)
+      const relaxedTopK = Math.min(50, similarityTopK * 2)
+      
       try {
-        // Parallelize independent queries and include related records to avoid N+1
-        const [courseQuizzes, userQuizzes] = await Promise.all([
-          prisma.courseQuiz.findMany({
-            where: { question: { contains: topic, mode: 'insensitive' } },
-            take: 20,
-            // include chapter -> unit -> course to avoid per-item queries
-            include: { chapter: { include: { unit: { include: { course: true } } } } },
-          }),
-          prisma.userQuiz.findMany({
-            where: {
-              OR: [
-                { title: { contains: topic, mode: 'insensitive' } },
-                { description: { contains: topic, mode: 'insensitive' } },
-              ],
-            },
-            take: 20,
-            // the relation name on UserQuiz for questions is `questions`
-            include: { _count: { select: { questions: true } } },
-          }),
-        ])
+        const relaxedDocs = await embMgr.similaritySearch(userMessage, { 
+          limit: relaxedTopK, 
+          threshold: relaxedThreshold 
+        })
 
-        if ((courseQuizzes?.length || 0) + (userQuizzes?.length || 0) > 0) {
-          const matches: any[] = []
-          // For course-bound quizzes, include a link to the course/chapter where they belong
-          for (const cq of courseQuizzes) {
-            // Chapter and course unit were included above to avoid per-item queries
-            let courseLink = null
-            const chapter = (cq as any).chapter
-            if (chapter?.course) {
-              courseLink = `/dashboard/course/${chapter.course.slug}#chapter-${chapter.id}`
-            } else if (chapter) {
-              courseLink = `/dashboard/course/${chapter.id}`
-            }
-            matches.push({ source: 'course', id: cq.id, title: `Quiz from chapter ${cq.chapterId}`, link: courseLink, snippet: cq.question })
-          }
-
-          // For user-created quizzes use slug-based dashboard links
-          for (const uq of userQuizzes) {
-            // We included a question count above to avoid per-item question queries
-            const link = uq.slug ? `/dashboard/quiz/${uq.slug}` : null
-            const questionCount = (uq as any)?._count?.questions ?? null
-            matches.push({ source: 'user', id: uq.id, title: uq.title, quizType: uq.quizType, link, questionCount })
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
+        
+        if (relaxedDocs && relaxedDocs.length > 0) {
+          // Found some content with relaxed parameters
+          const relaxedGrouped = {
+            courses: relaxedDocs.filter((d: any) => d.metadata?.type === 'course'),
+            quizzes: relaxedDocs.filter((d: any) => d.metadata?.type === 'quiz'),
+            chapters: relaxedDocs.filter((d: any) => d.metadata?.type === 'chapter')
           }
 
-          const assistant = `Found ${matches.length} matching quiz(es) for "${quizTopicRaw}". I can open any of these for you:`
-          await memoryMgr.addMessage(sessionId, { role: 'assistant', content: assistant, id: `msg_${Date.now()}`, timestamp: Date.now() })
-          await prisma.chatMessage.create({ data: { userId: effectiveUserId, sessionId, role: 'assistant', content: assistant, metadata: { quizSearch: true, matches }, count: 0 } })
-          return makeJsonResponse({ assistant, matches }, 200)
-        }
+          let assistantText = `I found some potentially related content that might help with "${userMessage}":\n\n`
 
-        // No quizzes found — suggest formats and offer to generate templates
-        const suggestions = `I couldn't find an existing quiz on "${quizTopicRaw}" in our database. Suggested quiz formats:\n- Multiple-choice (MCQ)\n- Coding exercise (with unit tests)\n- Fill-in-the-blank\n- True/False\n- Short answer / open-ended\n\nIf you'd like, I can generate a template quiz in one of these formats and store it for you.`
-        await memoryMgr.addMessage(sessionId, { role: 'assistant', content: suggestions, id: `msg_${Date.now()}`, timestamp: Date.now() })
-        await prisma.chatMessage.create({ data: { userId: effectiveUserId, sessionId, role: 'assistant', content: suggestions, metadata: { suggestion: true }, count: 0 } })
-        return makeJsonResponse({ assistant: suggestions }, 200)
-      } catch (err) {
-        logger.error('Quiz lookup failed', { error: err })
-        // fall through to general DB search fallback below
-      }
-    }
+          if (relaxedGrouped.courses.length > 0) {
+            assistantText += `**Related Courses:**\n`
+            relaxedGrouped.courses.slice(0, 2).forEach((c: any) => {
+              const title = c.metadata?.title || 'Untitled Course'
+              const slug = c.metadata?.slug
+              const link = slug ? `${siteUrl}/courses/${slug}` : `${siteUrl}/courses`
+              assistantText += `• [${title}](${link})\n`
+            })
+            assistantText += '\n'
+          }
 
-    /* ---------- Course-specific quick search ---------- */
-    if (detectCourseIntent(userMessage)) {
-      try {
-        const q = userMessage
-        const courses = await prisma.course.findMany({
-          where: {
-            OR: [
-              { title: { contains: q, mode: 'insensitive' } },
-              { description: { contains: q, mode: 'insensitive' } },
-            ],
-          },
-          take: 10,
-        })
-        if (courses && courses.length > 0) {
-          const results = { courses: courses.map((c: any) => ({ id: c.id, title: c.title, slug: c.slug, description: c.description })) }
-          const assistant = `I found the following courses related to "${userMessage}":\n\n${JSON.stringify(results, null, 2)}`
-          await memoryMgr.addMessage(sessionId, { role: 'assistant', content: assistant, id: `msg_${Date.now()}`, timestamp: Date.now() })
-          await prisma.chatMessage.create({ data: { userId: effectiveUserId, sessionId, role: 'assistant', content: assistant, metadata: { courseSearch: true }, count: 0 } })
-          return makeJsonResponse({ assistant, results }, 200)
-        }
-        // else continue to embedding/text fallback
-      } catch (err) {
-        logger.warn('Course search failed', { error: err })
-      }
-    }
+          if (relaxedGrouped.quizzes.length > 0) {
+            assistantText += `**Related Quizzes:**\n`
+            relaxedGrouped.quizzes.slice(0, 2).forEach((c: any) => {
+              const title = c.metadata?.title || 'Untitled Quiz'
+              const slug = c.metadata?.slug
+              const link = slug ? `${siteUrl}/quizzes/${slug}` : `${siteUrl}/quizzes`
+              assistantText += `• [${title}](${link})\n`
+            })
+            assistantText += '\n'
+          }
 
-    /* ---------- Embedding vector search (optional) ---------- */
-    const useEmbeddings = process.env.ENABLE_EMBEDDINGS === '1' || process.env.ENABLE_EMBEDDINGS === 'true'
-    const similarityThreshold = Number(process.env.EMBEDDING_SIMILARITY_THRESHOLD || '0.6')
-    const similarityTopK = Number(process.env.EMBEDDING_TOP_K || '8')
+          assistantText += `If this doesn't address your question, you might consider creating custom learning materials for this topic.`
 
-    if (useEmbeddings) {
-      try {
-        const embMgr = new EmbeddingManager()
-        await embMgr.initialize()
-        const docs = await embMgr.similaritySearch(userMessage, { limit: similarityTopK, threshold: similarityThreshold })
-        if (docs && docs.length > 0) {
-          const matches = docs.map(d => ({ id: d.id, type: d.metadata?.type || d.metadata?.contentType || 'unknown', content: d.content, similarity: d.similarity, title: d.metadata?.title, slug: d.metadata?.slug }))
-          const assistant = `Relevant content from database:\n\n${matches.map(m => `- [${m.type}] score=${(m.similarity || 0).toFixed(3)} ${m.title ? `title=${m.title}` : ''} ${m.slug ? `slug=${m.slug}` : ''} ${String(m.content).slice(0, 300)}`).join('\n')}`
-          await memoryMgr.addMessage(sessionId, { role: 'assistant', content: assistant, id: `msg_${Date.now()}`, timestamp: Date.now() })
-          await prisma.chatMessage.create({ data: { userId: effectiveUserId, sessionId, role: 'assistant', content: assistant, metadata: { vectorMatch: true }, count: 0 } })
-          return makeJsonResponse({ assistant, matches }, 200)
+          const relaxedMatches = relaxedDocs.map((d: any) => ({
+            id: d.id,
+            type: d.metadata?.type,
+            title: d.metadata?.title,
+            similarity: d.similarity
+          }))
+          
+          try { 
+            await memoryMgr.addMessage(sessionId, { 
+              role: 'assistant', 
+              content: assistantText, 
+              id: `msg_${Date.now()}`, 
+              timestamp: Date.now() 
+            }) 
+          } catch {}
+          
+          if (enableDebug) {
+            return makeJsonResponse({ 
+              assistant: assistantText, 
+              matches: relaxedMatches, 
+              debug: { 
+                thresholdUsed: similarityThreshold, 
+                relaxedThreshold, 
+                relaxedTopK 
+              } 
+            }, 200)
+          }
+          return makeJsonResponse({ assistant: assistantText, matches: relaxedMatches }, 200)
         }
       } catch (err) {
-        logger.warn('Embedding manager search failed, falling back to text search', { error: err })
-      }
-    }
-
-    /* ---------- Generic DB text search fallback ---------- */
-    try {
-      const q = userMessage
-      const [courses, chapters, flashcards] = await Promise.all([
-        prisma.course.findMany({ where: { OR: [{ title: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] }, take: 5 }),
-        prisma.chapter.findMany({ where: { title: { contains: q, mode: 'insensitive' } }, take: 5 }),
-        prisma.flashCard.findMany({ where: { question: { contains: q, mode: 'insensitive' } }, take: 5 }),
-      ])
-
-      const results = {
-        courses: (courses || []).map((c: any) => ({ id: c.id, title: c.title, slug: c.slug })),
-        chapters: (chapters || []).map((ch: any) => ({ id: ch.id, title: ch.title, unitId: ch.unitId })),
-        flashcards: (flashcards || []).map((f: any) => ({ id: f.id, question: f.question, answer: f.answer })),
+        logger.warn('Relaxed vector search failed', { error: err })
       }
 
-      let assistant = ''
-      if (results.courses.length || results.chapters.length || results.flashcards.length) {
-        assistant = `I found the following items in the site database related to "${userMessage}":\n\n`
-        if (results.courses.length) assistant += `Courses:\n${results.courses.map(c => `- ${c.title}: /course/${c.slug}`).join('\n')}\n\n`
-        if (results.chapters.length) assistant += `Chapters:\n${results.chapters.map(ch => `- ${ch.title} (Unit ${ch.unitId})`).join('\n')}\n\n`
-        if (results.flashcards.length) assistant += `Flashcards:\n${results.flashcards.map(f => `- ${f.question}`).join('\n')}\n\n`
-      } else {
-        assistant = `I can only answer using content from this site's database. I couldn't find anything matching "${userMessage}".\n\nWould you like to create a course or quiz on this topic? Visit /create-course or /create-quiz to get started.`
-      }
+      // Final fallback - no content found at all
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
+      let assistantText = `I searched our learning materials but couldn't find specific content about "${userMessage}".\n\n`
+      assistantText += `This appears to be a topic we haven't covered yet. Would you like to help build our knowledge base?\n\n`
+      assistantText += `You can:\n`
+      assistantText += `• [Create a Quiz](${siteUrl}/quizzes/create) to test knowledge on this topic\n`
+      assistantText += `• [Create a Course](${siteUrl}/courses/create) to teach others about "${userMessage}"\n\n`
+      assistantText += `Or try rephrasing your question to see if we have related materials.`
 
-      await memoryMgr.addMessage(sessionId, { role: 'assistant', content: assistant, id: `msg_${Date.now()}`, timestamp: Date.now() })
-      await prisma.chatMessage.create({ data: { userId: effectiveUserId, sessionId, role: 'assistant', content: assistant, metadata: {}, count: 0 } })
-      return makeJsonResponse({ assistant, results }, 200)
+      try { 
+        await memoryMgr.addMessage(sessionId, { 
+          role: 'assistant', 
+          content: assistantText, 
+          id: `msg_${Date.now()}`, 
+          timestamp: Date.now() 
+        }) 
+      } catch {}
+      
+      return makeJsonResponse({ assistant: assistantText }, 200)
+
     } catch (err) {
-      logger.error('DB search failed', { error: err })
-      if (process.env.NODE_ENV !== 'production') {
-        return new Response(JSON.stringify({ error: String((err as any)?.message || err), stack: (err as any)?.stack || null }, null, 2), { status: 500, headers: { 'Content-Type': 'application/json' } })
-      }
-      return new Response('Internal DB search error', { status: 500 })
+      logger.error('Vector search failed', { error: err })
+      
+      // Fallback when vector search completely fails
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
+      let assistantText = `I encountered a technical issue while searching for "${userMessage}".\n\n`
+      assistantText += `In the meantime, you might want to:\n`
+      assistantText += `• [Browse Existing Courses](${siteUrl}/courses)\n`
+      assistantText += `• [Create Your Own Content](${siteUrl}/courses/create)\n\n`
+      assistantText += `Please try again in a moment.`
+
+      try { 
+        await memoryMgr.addMessage(sessionId, { 
+          role: 'assistant', 
+          content: assistantText, 
+          id: `msg_${Date.now()}`, 
+          timestamp: Date.now() 
+        }) 
+      } catch {}
+      
+      return makeJsonResponse({ assistant: assistantText }, 200)
     }
   } catch (error) {
     logger.error('Chat API error', { error })
@@ -380,4 +317,3 @@ export async function POST(req: NextRequest) {
     return new Response('Internal Server Error', { status: 500 })
   }
 }
-export default POST

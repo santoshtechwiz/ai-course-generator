@@ -44,6 +44,7 @@ export class EmbeddingManager {
   private memoryStore: any = null
   private inMemoryDocuments: Map<string, EmbeddingDocument> = new Map()
   private storageMode: 'postgres' | 'memory' | 'auto' = 'auto'
+  private preferPersistJson: boolean = false
 
   constructor(config?: Partial<EmbeddingConfig>) {
     this.config = {
@@ -66,6 +67,13 @@ export class EmbeddingManager {
     } else if (mode) {
       logger.warn(`Invalid EMBEDDING_STORAGE_MODE: ${mode}. Using 'auto' mode.`)
     }
+
+    // Option to prefer persisting embeddings into the DB JSON field instead of
+    // initializing an in-memory vector store when pgvector is not available.
+    // This allows generating and storing embeddings in the database (embeddingJson)
+    // even if the database doesn't have a vector column. Set EMBEDDING_PERSIST_JSON=1
+    // to enable this behavior.
+    this.preferPersistJson = Boolean(process.env.EMBEDDING_PERSIST_JSON && process.env.EMBEDDING_PERSIST_JSON !== '0')
   }
 
   /**
@@ -86,11 +94,23 @@ export class EmbeddingManager {
           throw new Error('PostgreSQL with pgvector is required but not available. Please ensure pgvector extension is installed.')
         }
       } else {
-        // Auto mode: try pgvector first, fallback to memory
+        // Auto mode: try pgvector first
         await this.tryInitializePgVector()
-        
+
+        // If pgvector is not available, we normally fall back to an in-memory
+        // vector store. However, in some deployments you may prefer to persist
+        // embeddings into the DB's JSON column (embeddingJson) instead of
+        // using an ephemeral memory store. The environment variable
+        // EMBEDDING_PERSIST_JSON=1 enables that behavior and prevents the
+        // memory store from being initialized so addDocuments/processBatch
+        // will upsert to the Embedding model (embeddingJson) instead.
         if (!this.isPgVectorAvailable) {
-          await this.initializeMemoryStore()
+          if (this.preferPersistJson) {
+            logger.info('Pgvector not available; EMBEDDING_PERSIST_JSON set - will persist embeddings to DB (embeddingJson)')
+            // leave memoryStore null so DB upsert path is used
+          } else {
+            await this.initializeMemoryStore()
+          }
         }
       }
       
@@ -487,7 +507,10 @@ export class EmbeddingManager {
       select: {
         id: true,
         content: true,
+        // embedding may be stored as vector/json/string; embeddingJson was used by persistence
+        // when pgvector wasn't available. Select both to handle either case.
         embedding: true,
+        embeddingJson: true,
         type: true,
         metadata: true
       }
@@ -496,17 +519,25 @@ export class EmbeddingManager {
     // Calculate cosine similarity for each embedding
     const similarities = allEmbeddings.map(doc => {
       try {
-        // Try to parse as JSON first (fallback for string storage)
-        let docEmbedding: number[]
-        if (typeof doc.embedding === 'string') {
+        // Prefer embeddingJson (we persist embeddings there when pgvector not available)
+        let docEmbedding: number[] | null = null
+
+        if (doc.embeddingJson && Array.isArray(doc.embeddingJson)) {
+          docEmbedding = doc.embeddingJson as any
+        } else if (doc.embedding && typeof doc.embedding === 'string') {
+          // embedding stored as JSON string
           docEmbedding = JSON.parse(doc.embedding)
-        } else {
-          // Assume it's already an array from pgvector
+        } else if (doc.embedding && Array.isArray(doc.embedding)) {
           docEmbedding = doc.embedding as any
         }
-        
+
+        if (!docEmbedding || !Array.isArray(docEmbedding)) {
+          logger.warn('No usable embedding found for document', { docId: doc.id })
+          return null
+        }
+
         const similarity = this.calculateCosineSimilarity(queryEmbedding, docEmbedding)
-        
+
         return {
           id: doc.id,
           content: doc.content,
@@ -514,7 +545,7 @@ export class EmbeddingManager {
           similarity
         }
       } catch (error) {
-        logger.warn('Failed to parse embedding for similarity calculation', { docId: doc.id })
+        logger.warn('Failed to parse embedding for similarity calculation', { docId: doc.id, error: String(error) })
         return null
       }
     }).filter((doc): doc is NonNullable<typeof doc> => doc !== null)

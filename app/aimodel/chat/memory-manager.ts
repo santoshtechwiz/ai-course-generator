@@ -9,7 +9,6 @@
  */
 
 import { ChatMessage } from "./chat-service"
-import { prisma } from "@/lib/db"
 import { logger } from "@/lib/logger"
 
 export interface MemoryConfig {
@@ -49,8 +48,14 @@ export class ChatMemoryManager {
       
       this.memoryCache.set(sessionId, sessionMessages)
 
-      // Persist to database
-      await this.persistMessage(sessionId, message)
+      // Persist to database - DISABLED: keep in-memory only for performance
+      // (previously this.persistMessage wrote to Prisma). We intentionally
+      // avoid any DB calls here to prevent latency and growth of chat tables.
+      try {
+        await this.persistMessage(sessionId, message)
+      } catch (err) {
+        // persistMessage is intentionally a no-op; keep silent on errors
+      }
 
       // Check if compression is needed
       if (sessionMessages.length > this.config.compressionThreshold) {
@@ -96,16 +101,8 @@ export class ChatMemoryManager {
     try {
       // Clear from cache
       this.memoryCache.delete(sessionId)
-
-      // Clear from database using Prisma model
-      await prisma.chatMessage.deleteMany({
-        where: {
-          userId: this.userId,
-          sessionId: sessionId
-        }
-      })
-
-      logger.info(`Cleared session ${sessionId}`)
+      // Database persistence disabled: only clear in-memory cache
+      logger.info(`Cleared in-memory session ${sessionId}`)
     } catch (error) {
       logger.error('Failed to clear session', { error, sessionId })
       throw error
@@ -140,38 +137,19 @@ export class ChatMemoryManager {
    */
   private async persistMessage(sessionId: string, message: ChatMessage): Promise<void> {
     try {
-      // Use Prisma model instead of raw SQL
-      await prisma.chatMessage.create({
-        data: {
-          sessionId: sessionId,
-          role: message.role,
-          content: message.content,
-          metadata: message.metadata || {},
-          createdAt: new Date(message.timestamp || Date.now()),
-          user: {
-            connectOrCreate: {
-              where: { id: this.userId },
-              create: {
-                id: this.userId,
-                email: `${this.userId}@test.local`,
-                name: `Test User ${this.userId}`,
-                credits: 100,
-                creditsUsed: 0,
-                // Prisma schema defines default userType values like "FREE"
-                userType: "FREE",
-                isAdmin: false,
-              }
-            }
-          }
-        }
-      })
+      // NO-OP: DB persistence disabled. Keep messages in-memory only.
+      // This prevents inserting chat data into the database and improves
+      // performance when embeddings are used as the primary source of truth.
+      if (process.env.NODE_ENV === 'development') {
+        logger.debug('persistMessage skipped (DB persistence disabled)', { sessionId, messageId: message.id })
+      }
     } catch (error) {
       // If database operation fails, log but don't throw to keep chat working
-      logger.error('Failed to persist message to database', { 
-        error, 
-        sessionId, 
+      logger.error('persistMessage encountered an error (ignored)', {
+        error,
+        sessionId,
         messageId: message.id,
-        userId: this.userId 
+        userId: this.userId,
       })
       // Chat will continue to work with in-memory storage only
     }
@@ -182,28 +160,10 @@ export class ChatMemoryManager {
    */
   private async loadMessagesFromDB(sessionId: string): Promise<ChatMessage[]> {
     try {
-      // Use Prisma model to fetch messages
-      const results = await prisma.chatMessage.findMany({
-        where: {
-          userId: this.userId,
-          sessionId: sessionId,
-          createdAt: {
-            gte: new Date(Date.now() - this.config.sessionTimeoutHours * 60 * 60 * 1000)
-          }
-        },
-        orderBy: {
-          createdAt: 'asc'
-        },
-        take: this.config.maxMessagesPerSession
-      })
-
-      return results.map(row => ({
-        id: `msg_${row.id}`,
-        role: row.role as 'user' | 'assistant' | 'system',
-        content: row.content,
-        metadata: (row.metadata as object) || {},
-        timestamp: row.createdAt.getTime()
-      }))
+      // DB reads disabled: start with an empty message list and rely on
+      // in-memory cache for conversation history. Embeddings should be
+      // used for cross-session or global knowledge instead of chat logs.
+      return []
     } catch (error) {
       logger.error('Failed to load messages from database', { error, sessionId })
       return []
@@ -300,18 +260,9 @@ export class ChatMemoryManager {
    */
   private async replaceSessionMessages(sessionId: string, messages: ChatMessage[]): Promise<void> {
     try {
-      // Delete old messages using Prisma API (avoid raw SQL table name mismatches)
-      await prisma.chatMessage.deleteMany({
-        where: {
-          userId: this.userId,
-          sessionId: sessionId,
-        },
-      })
-
-      // Insert new messages
-      for (const message of messages) {
-        await this.persistMessage(sessionId, message)
-      }
+      // Replace session messages in-memory only. Database persistence is
+      // disabled, so we update the cache and skip any Prisma operations.
+      this.memoryCache.set(sessionId, messages)
     } catch (error) {
       logger.error('Failed to replace session messages', { error, sessionId })
     }
@@ -323,14 +274,11 @@ export class ChatMemoryManager {
   async cleanupExpiredSessions(): Promise<void> {
     try {
       // Use Prisma to delete expired messages; convert interval calculation to JS Date
-      const cutoff = new Date(Date.now() - this.config.sessionTimeoutHours * 2 * 60 * 60 * 1000)
-      await prisma.chatMessage.deleteMany({
-        where: {
-          createdAt: { lt: cutoff }
-        }
-      })
+      // Database cleanup disabled: only clean up in-memory cache
+      // const cutoff = new Date(Date.now() - this.config.sessionTimeoutHours * 2 * 60 * 60 * 1000)
+      // await prisma.chatMessage.deleteMany({ where: { createdAt: { lt: cutoff } } })
 
-      // Also clean up cache
+      // Clean up cache
       const expiredSessions: string[] = []
       this.memoryCache.forEach((messages, sessionId) => {
         const lastMessage = messages[messages.length - 1]

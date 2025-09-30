@@ -37,6 +37,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
+    // Block inactive users from saving quizzes (use isActive flag)
+    if ((user as any).isActive === false) {
+      return NextResponse.json({ error: "Account inactive. Reactivate to continue." }, { status: 403 })
+    }
+
     // Parse the request body
     const body: SaveQuizRequest = await req.json()
     const { quiz, title, quizType = "MCQ", difficulty = "Medium", isPublic = false } = body

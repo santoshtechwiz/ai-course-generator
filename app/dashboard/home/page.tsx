@@ -193,7 +193,8 @@ export default function DashboardPage() {
           </div>
         )}
       >
-        {children}
+        {/* No children to render here; the error boundary will display the fallback when used in this return path */}
+        <></>
       </DashboardErrorBoundary>
     )
   }

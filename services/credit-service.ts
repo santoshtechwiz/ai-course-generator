@@ -359,6 +359,31 @@ class CreditService {
     operation: CreditOperationType,
     metadata?: Record<string, any>
   ): Promise<CreditOperationResult> {
+    // Ensure user is active before any credit operations (defensive check)
+    try {
+      // Fetch typed isActive first
+      const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { isActive: true } })
+      if (!dbUser) {
+        return { success: false, newBalance: 0, error: 'User not found' }
+      }
+      if (dbUser.isActive === false) {
+        return { success: false, newBalance: 0, error: 'Account inactive' }
+      }
+
+      // Use typed isActive flag on User model for account/subscription checks
+      try {
+        const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { isActive: true } })
+        if (dbUser && dbUser.isActive === false) {
+          return { success: false, newBalance: 0, error: 'Subscription inactive' }
+        }
+      } catch (e) {
+        // If user read fails, continue; higher-level checks will catch missing user
+      }
+    } catch (err) {
+      console.error('[CreditService] Failed to verify user active status', err)
+      return { success: false, newBalance: 0, error: 'Failed to verify user status' }
+    }
+
     // First validate credits are available
     const validation = await this.validateCredits(userId, requiredCredits);
     

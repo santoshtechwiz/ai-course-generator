@@ -18,7 +18,10 @@ async function main() {
     prisma.course.findMany({ select: { id: true, title: true, slug: true, description: true }, where: { isPublic: true } }),
     prisma.chapter.findMany({ select: { id: true, unitId: true, title: true, summary: true }, where: {} , take: 1000}),
     prisma.flashCard.findMany({ select: { id: true, question: true, answer: true }, where: {} , take: 5000}),
-    prisma.userQuiz.findMany({ select: { id: true, title: true, slug: true, description: true }, where: { isPublic: true }, take: 200 }),
+    // Include user quizzes. By default we embed public quizzes only. Set
+    // EMBEDDING_INCLUDE_PRIVATE_QUIZZES=1 to include private/user-specific quizzes
+    // in the embedding generation.
+    prisma.userQuiz.findMany({ select: { id: true, title: true, slug: true, description: true }, where: (process.env.EMBEDDING_INCLUDE_PRIVATE_QUIZZES === '1') ? {} : { isPublic: true }, take: 200 }),
   ])
 
   const documents: EmbeddingDocument[] = []

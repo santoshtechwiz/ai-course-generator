@@ -86,6 +86,7 @@ model User {
   @@index([userType])
   @@index([createdAt])
   @@index([isAdmin])
+  SubscriptionEvent SubscriptionEvent[]
 }
 
 model Account {
@@ -710,6 +711,7 @@ model UserSubscription {
   @@index([stripeCustomerId])
   @@index([stripeStatus])
   @@index([canceledAt])
+  SubscriptionEvent SubscriptionEvent[]
 }
 
 model ContactSubmission {
@@ -885,3 +887,24 @@ model ChatMessage {
   }
 
 
+// Log of status transitions for UserSubscription to keep an immutable history
+model SubscriptionEvent {
+  id                 String    @id @default(cuid())
+  userSubscriptionId String?   // optional if event recorded before subscription row exists
+  userId             String
+  previousStatus     String?
+  newStatus          String
+  reason             String?
+  source             String?   @default("SYSTEM") // 'STRIPE' | 'MANUAL' | 'SYSTEM' | 'BACKFILL'
+  stripeEventId      String?   @unique
+  metadata           Json?
+  effectiveAt        DateTime  @default(now())
+  createdAt          DateTime  @default(now())
+
+  userSubscription   UserSubscription? @relation(fields: [userSubscriptionId], references: [id], onDelete: Cascade)
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userSubscriptionId])
+  @@index([effectiveAt])
+}

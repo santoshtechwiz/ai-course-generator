@@ -1,6 +1,5 @@
 "use client"
 
-import { use } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,12 +9,10 @@ import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import { useSelector } from "react-redux"
 
 interface CodeQuizClientProps {
-  params: Promise<{ slug: string }>
+  slug: string
 }
 
-export default function CodeQuizClient({ params }: CodeQuizClientProps) {
-  // Properly unwrap the params Promise once at the top level
-  const { slug } = use(params);
+export default function CodeQuizClient({ slug }: CodeQuizClientProps) {
   const router = useRouter();
   
   // Get quiz state from Redux for layout purposes

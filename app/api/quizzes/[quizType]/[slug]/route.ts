@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { QuizServiceFactory } from "@/app/services/quiz-service-factory"
 import { getAuthSession } from "@/lib/auth"
 import { createCacheManager } from "@/app/services/cache/cache-manager"
-import { validateSubscriptionServer } from "@/lib/subscription-validation"
-import { validateSubscriptionServer } from "@/lib/subscription-validation"
+import { prisma } from "@/lib/db"
+import { createQuizForType } from "@/app/api/quizzes/_helpers/create-quiz"
 
 const cache = createCacheManager()
 
@@ -83,6 +83,20 @@ export async function PATCH(
     const session = await getAuthSession()
     if (!session?.user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    }
+
+    // Block inactive users from updating quizzes (consistent server-side guard)
+    try {
+      // Get the typed isActive flag first
+      const dbUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { isActive: true } })
+      if (dbUser && dbUser.isActive === false) {
+        console.warn(`[Quiz API] Blocked inactive user ${session.user.id} from updating quiz ${quizType}/${slug}`)
+        return NextResponse.json({ error: "Account inactive. Reactivate to continue." }, { status: 403 })
+      }
+
+      // Rely on typed isActive flag; raw SQL checks for legacy subscriptionActive column removed
+    } catch (err) {
+      console.error('[Quiz API] Failed to verify user status', err)
     }
     
     // Get the request body with update parameters
@@ -175,20 +189,9 @@ export async function POST(
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
 
-    // Get the request body with quiz data
-    const body = await req.json()
-
-    // Use the factory to get the appropriate quiz service
-    const quizService = QuizServiceFactory.getQuizService(quizType)
-
-    if (!quizService) {
-      return NextResponse.json({ error: `Unsupported quiz type: ${quizType}` }, { status: 400 })
-    }
-
-    // Create the quiz using the appropriate service
-    const newQuiz = await quizService.createQuiz(slug, session.user.id, body)
-
-    return NextResponse.json(newQuiz)
+    // Delegate to the central create handler which handles credits, subscription checks and backfill
+    // The helper will perform the proper credit deduction and creation flow.
+    return await createQuizForType(req, quizType)
   } catch (error) {
     // Await params before using its properties in error logging
     let quizType = "unknown"

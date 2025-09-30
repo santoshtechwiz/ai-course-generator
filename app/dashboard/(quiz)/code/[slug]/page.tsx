@@ -54,11 +54,9 @@ export default function CodeQuizPage({ params }: CodeQuizPageProps) {
       <>
         <QuizJsonLd slug={slug} title={title} />
         <QuizSEOClient />
-        <CodeQuizClient params={params} />
+        <CodeQuizClient slug={slug} />
       </>
     )
   }
-  // @ts-expect-error Async Server Component
-  // @ts-expect-error Async Server Component
   return <ClientWithJsonLd />
 }

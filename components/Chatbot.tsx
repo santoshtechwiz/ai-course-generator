@@ -115,90 +115,69 @@ export function Chatbot({ userId }: ChatbotProps) {
   const [showTooltip, setShowTooltip] = useState(false)
   const { toast } = useToast()
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error, setMessages } = useChat({
-    api: "/api/chat",
-    body: { userId },
-    onFinish: (message) => {
-      // Message completed successfully
-      setRemainingQuestions((prev) => Math.max(0, prev - 1))
-      setLastQuestionTime(Date.now())
-    },
-    onResponse: (response) => {
-      // Check if the response is valid
-      if (response.ok) {
-        // Response is good, but let's validate the content type
-        const contentType = response.headers.get('content-type')
-        if (!contentType?.includes('text/event-stream')) {
-          console.warn("Unexpected content type:", contentType)
-          // fallback: attempt to fetch full non-streaming response
-          (async () => {
-            try {
-              const fallbackRes = await fetch('/api/chat/sync', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: [{ role: 'user', content: input }] }),
-              })
-              if (fallbackRes.ok) {
-                const data = await fallbackRes.json()
-                if (data?.assistant) {
-                  setMessages((prev) => [...prev, { id: `msg_${Date.now()}`, role: 'assistant', content: data.assistant }])
-                }
-              }
-            } catch (e) {
-              console.warn('Fallback sync failed', e)
-            }
-          })()
-        }
-      } else {
-        console.error("Chat response error:", response.statusText)
-        toast({
-          title: "Error sending message",
-          description: "There was a problem processing your request. Please try again.",
-          variant: "destructive",
-          duration: 3000,
-        })
-      }
-    },
-    onError: (err) => {
-      console.error("Chat error:", err)
-      
-      // Add a fallback message when streaming fails and attempt sync fallback
-      if (err.message?.includes("Failed to parse stream")) {
-        (async () => {
-          try {
-            const fallbackRes = await fetch('/api/chat/sync', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ messages: [{ role: 'user', content: input }] }),
-            })
-            if (fallbackRes.ok) {
-              const data = await fallbackRes.json()
-              if (data?.assistant) {
-                setMessages((prev) => [...prev, { id: `msg_${Date.now()}`, role: 'assistant', content: data.assistant }])
-                return
-              }
-            }
-          } catch (e) {
-            console.warn('Fallback sync failed', e)
-          }
+  // Initialize the chat hook and provide guarded fallbacks so the component
+  // works whether the hook provides helpers or not.
+  // Cast useChat to any to avoid tight typing from the external SDK. We handle safety below.
+  const chatAny = (useChat as any)({ api: "/api/chat", body: { userId }, onFinish: (message: any) => {
+    setRemainingQuestions((prev) => Math.max(0, prev - 1))
+    setLastQuestionTime(Date.now())
+  } }) as any
 
-          const errorMessage = {
-            id: `error-${Date.now()}`,
-            role: 'assistant' as const,
-            content: "I apologize, but I encountered an error while processing your request. Please try asking again."
-          }
-          setMessages((prev) => [...prev, errorMessage])
-        })()
+  // Local fallbacks
+  const [localInput, setLocalInput] = useState("")
+  const [localMessages, setLocalMessages] = useState<any[]>([])
+  const [localIsLoading, setLocalIsLoading] = useState(false)
+  const [localError, setLocalError] = useState<any>(null)
+
+  // Derive safe helpers (prefer hook-provided helpers when available)
+  const messages = chatAny?.messages ?? localMessages
+  const inputFromHook = typeof chatAny?.input === 'string' ? chatAny.input : undefined
+  const safeInput = typeof inputFromHook === 'string' ? inputFromHook : localInput
+  const handleInputChange = typeof chatAny?.handleInputChange === 'function' ? chatAny.handleInputChange : (e: any) => setLocalInput(e?.target?.value ?? '')
+  const handleSubmit = typeof chatAny?.handleSubmit === 'function' ? chatAny.handleSubmit : undefined
+  const isLoading = chatAny?.isLoading ?? localIsLoading
+  const error = chatAny?.error ?? localError
+  const setMessages = typeof chatAny?.setMessages === 'function' ? chatAny.setMessages : setLocalMessages
+
+  // Ref to track message count before submitting so we can detect if the hook produced a reply.
+  const prevMsgCountRef = useRef<number>(0)
+  const fallbackTimerRef = useRef<number | null>(null)
+
+  // Clear fallback timer if messages update (means the hook delivered a reply)
+  useEffect(() => {
+    if (fallbackTimerRef.current != null) {
+      // If messages length increased compared to previous, clear the fallback
+      if (messages.length !== prevMsgCountRef.current) {
+        window.clearTimeout(fallbackTimerRef.current)
+        fallbackTimerRef.current = null
+        prevMsgCountRef.current = messages.length
       }
-      
-      toast({
-        title: "Connection error",
-        description: "Failed to connect to the chat service. Please try again later.",
-        variant: "destructive",
-        duration: 3000,
-      })
     }
-  })
+    return () => {
+      if (fallbackTimerRef.current != null) {
+        window.clearTimeout(fallbackTimerRef.current)
+        fallbackTimerRef.current = null
+      }
+    }
+  }, [messages.length])
+
+  // Fallback direct sender used when hook helpers aren't available
+  const sendMessageDirect = async (text: string) => {
+    if (!text || !text.trim()) return
+    setMessages((prev: any[]) => [...prev, { id: `msg_${Date.now()}`, role: 'user', content: text }])
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: text, siteContext: true }),
+      })
+      const data = await res.json()
+      const assistantText = data?.assistant || data?.message || 'No reply'
+      setMessages((prev: any[]) => [...prev, { id: `msg_${Date.now()}_a`, role: 'assistant', content: assistantText }])
+    } catch (err) {
+      setMessages((prev: any[]) => [...prev, { id: `err_${Date.now()}`, role: 'assistant', content: "I couldn't reach the chat service right now." }])
+    }
+  }
 
   // Focus input when chat opens
   useEffect(() => {
@@ -253,11 +232,40 @@ export function Chatbot({ userId }: ChatbotProps) {
   const handleChatSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault()
-      if (canUseChat() && input.trim()) {
-        handleSubmit(e)
+      if (!canUseChat() || !safeInput.trim()) return
+      const textToSend = safeInput
+
+      // If hook provides handleSubmit, attempt to use it but fall back to direct send
+      if (typeof handleSubmit === 'function') {
+        try {
+          // capture previous message count
+          prevMsgCountRef.current = messages.length
+          // call the hook submit
+          handleSubmit(e)
+
+          // Set a short fallback timer: if the hook doesn't append any messages, call the JSON API
+          if (fallbackTimerRef.current) {
+            window.clearTimeout(fallbackTimerRef.current)
+            fallbackTimerRef.current = null
+          }
+          // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+          fallbackTimerRef.current = window.setTimeout(() => {
+            if (messages.length === prevMsgCountRef.current) {
+              // No new messages from hook -> fallback
+              void sendMessageDirect(textToSend)
+            }
+          }, 2500)
+        } catch (err) {
+          // If hook threw synchronously, fallback immediately
+          void sendMessageDirect(textToSend)
+        }
+        return
       }
+
+      // Fallback: direct send if hook doesn't provide handleSubmit
+      void sendMessageDirect(textToSend)
     },
-    [canUseChat, handleSubmit, input],
+    [canUseChat, handleSubmit, safeInput, messages.length],
   )
 
   const toggleChat = () => setIsOpen(!isOpen)
@@ -272,10 +280,21 @@ export function Chatbot({ userId }: ChatbotProps) {
 
   // Handle suggestion click
   const handleSuggestionClick = (suggestion: string) => {
-    handleInputChange({ target: { value: suggestion } } as React.ChangeEvent<HTMLInputElement>)
-    if (inputRef.current) {
-      inputRef.current.focus()
+    // If the useChat hook provides handleInputChange, use it
+    if (typeof handleInputChange === 'function') {
+      handleInputChange({ target: { value: suggestion } } as React.ChangeEvent<HTMLInputElement>)
+      if (inputRef.current) inputRef.current.focus()
+      // submit if hook provides handleSubmit
+      if (typeof handleSubmit === 'function') setTimeout(() => handleSubmit?.({} as any), 120)
+      return
     }
+
+    // Otherwise use local input state and fallback sender
+    setLocalInput(suggestion)
+    if (inputRef.current) inputRef.current.focus()
+    setTimeout(() => {
+      void sendMessageDirect(suggestion)
+    }, 120)
   }
 
   // Format time remaining until reset
@@ -399,7 +418,7 @@ export function Chatbot({ userId }: ChatbotProps) {
                     </motion.div>
                   ) : (
                     <div className="space-y-4 pt-4 pb-4">
-                      {messages.map((m, index) => (
+                      {messages.map((m: any, index: number) => (
                         <motion.div
                           key={m.id}
                           custom={index}
@@ -431,12 +450,15 @@ export function Chatbot({ userId }: ChatbotProps) {
                                 m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
                               )}
                             >
-                              {m.content && (
+                              {Array.isArray((m as any).parts) && (m as any).parts.length > 0 ? (
                                 <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none">
-                                  {m.content}
+                                  {(m as any).parts.map((p: any) => (p.type === 'text' ? p.text : '')).join('')}
                                 </ReactMarkdown>
-                              )}
-                              {!m.content && (
+                              ) : (m as any).content ? (
+                                <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none">
+                                  {(m as any).content}
+                                </ReactMarkdown>
+                              ) : (
                                 <div className="text-red-500 italic text-xs">
                                   Message could not be displayed. Please try again.
                                 </div>
@@ -525,7 +547,7 @@ export function Chatbot({ userId }: ChatbotProps) {
                 <form onSubmit={handleChatSubmit} className="flex w-full items-center space-x-2">
                   <Input
                     ref={inputRef}
-                    value={input}
+                    value={safeInput}
                     onChange={handleInputChange}
                     placeholder={canUseChat() ? "Ask a question..." : "Chatbot unavailable"}
                     disabled={isLoading || !canUseChat()}
@@ -533,7 +555,7 @@ export function Chatbot({ userId }: ChatbotProps) {
                   />
                   <Button
                     type="submit"
-                    disabled={isLoading || !input.trim() || !canUseChat()}
+                    disabled={isLoading || !safeInput.trim() || !canUseChat()}
                     size="icon"
                     className="shrink-0 h-9 w-9 rounded-full transition-all"
                   >
@@ -580,3 +602,6 @@ export function Chatbot({ userId }: ChatbotProps) {
     </div>
   )
 }
+
+// Provide a default export to support default-importing call sites
+export default Chatbot

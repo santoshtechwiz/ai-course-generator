@@ -1,14 +1,14 @@
 import { Sparkles } from "lucide-react"
 import type { SUBSCRIPTION_PLANS } from "../subscription-plans"
-import { calculateSavings } from "../../utils/subscription-utils"
+import { calculateSavings } from "@/types/subscription/utils"
 
 // Redesigned SavingsHighlight component
 export default function SavingsHighlight({
   plan,
   duration,
 }: { plan: (typeof SUBSCRIPTION_PLANS)[0]; duration: 1 | 6 }) {
-  const monthlyPrice = plan.options.find((o) => o.duration === 1)?.price || 0
-  const biAnnualPrice = plan.options.find((o) => o.duration === 6)?.price || 0
+  const monthlyPrice = plan.options.find((o: any) => o.duration === 1)?.price || 0
+  const biAnnualPrice = plan.options.find((o: any) => o.duration === 6)?.price || 0
   const savings = calculateSavings(monthlyPrice, biAnnualPrice, 12)
 
   if (duration === 1 || plan.name === "FREE" || savings <= 0) return null

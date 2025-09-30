@@ -316,6 +316,82 @@ export class SubscriptionService {
   }
 
   /**
+   * Create checkout session for subscription
+   */
+  static async createCheckoutSession(
+    userId: string,
+    planId: string,
+    duration: number,
+    options?: any
+  ): Promise<any> {
+    try {
+      // For FREE plans, handle directly without Stripe
+      if (planId === 'FREE') {
+        // Activate free plan directly
+        await this.activateFreePlan(userId)
+        return {
+          success: true,
+          message: 'Free plan activated successfully',
+          redirect: '/dashboard/subscription?activated=true'
+        }
+      }
+
+      // For paid plans, delegate to Stripe gateway
+      const response = await fetch(this.getUrl('/create'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, duration, userId, ...options }),
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session')
+      }
+
+      const data = await response.json()
+      return data
+    } catch (error: any) {
+      logger.error(
+        `Error creating checkout session for user ${SecurityService.maskSensitiveString(userId)}:`,
+        SecurityService.sanitizeError(error)
+      )
+      throw error
+    }
+  }
+
+  /**
+   * Activate free plan for a user
+   */
+  static async activateFreePlan(userId: string): Promise<SubscriptionResponse> {
+    try {
+      const response = await fetch(this.getUrl('/activate-free'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmed: true }),
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to activate free plan')
+      }
+
+      const data: ApiResponse<SubscriptionData> = await response.json()
+
+      if (!isSubscriptionResponse(data)) {
+        throw new Error('Invalid subscription data received')
+      }
+
+      return data
+    } catch (error: any) {
+      logger.error(
+        `Error activating free plan for user ${SecurityService.maskSensitiveString(userId)}:`,
+        SecurityService.sanitizeError(error)
+      )
+      throw error
+    }
+  }
+
+  /**
    * Verify payment success for a given session/payment id
    * Returns a normalized object with important subscription details
    */

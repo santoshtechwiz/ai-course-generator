@@ -30,7 +30,7 @@ interface PricingPageProps {
   onManageSubscription?: () => void
   isMobile?: boolean
 }
-import { calculateSavings } from "../utils/subscription-utils"
+import { calculateSavings } from "@/types/subscription/utils"
 import { CancellationDialog } from "./cancellation-dialog"
 import FeatureComparison from "./FeatureComparison"
 import { SUBSCRIPTION_PLANS } from "./subscription-plans"
@@ -39,7 +39,7 @@ import FAQSection from "./subscription-status/FaqSection"
 import PlanCards from "./subscription-status/PlanCard"
 import TokenUsageExplanation from "./subscription-status/TokenUsageExplanation"
 import { useRouter } from "next/navigation"
-import { useAppDispatch, useAppSelector } from "@/store"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { selectSubscriptionData, fetchSubscription, selectHadPreviousPaidPlan } from "@/store/slices/subscription-slice"
 
 export function PricingPage({

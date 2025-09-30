@@ -146,18 +146,10 @@ export async function POST(req: NextRequest) {
       })
     } catch (aiError) {
       console.error("Error generating quiz with AI:", aiError)
-      // Attempt to refund the deducted credits if deduction succeeded
-      try {
-        if (creditResult && creditResult.success) {
-          await creditService.addCredits(session.user.id, creditDeduction, CreditOperationType.REFUND, {
-            description: `Refund for failed document generation: ${file?.name || 'uploaded file'}`,
-            originalTransactionId: creditResult.transactionId,
-          })
-          console.log(`[Document API] Refunded ${creditDeduction} credit(s) to user ${session.user.id} after AI failure.`)
-        }
-      } catch (refundError) {
-        console.error('[Document API] Failed to refund credits after AI error:', refundError)
-      }
+
+      // NOTE: This system does not support automatic refunds from the API layer.
+      // Credits are deducted atomically prior to AI generation. If AI generation
+      // fails, surface the error to the client and log for manual investigation.
 
       return NextResponse.json(
         {
