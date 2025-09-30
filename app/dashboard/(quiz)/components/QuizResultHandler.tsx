@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSelector } from 'react-redux'
-import useAppDispatch from '@/store'
+import { useAppDispatch } from '@/store'
 import { AnimatePresence, motion } from 'framer-motion'
 import { RefreshCw } from 'lucide-react'
 import { createMachine } from 'xstate'
@@ -403,12 +403,18 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
       handleRetake();
     }
   }, [state.value, isRedirecting]); // eslint-disable-line react-hooks/exhaustive-deps// Render loading or redirecting states with a single consistent loader
-    // If the machine is still in 'loading' but we already have matching results in Redux,
-    // transition the machine immediately to avoid a stuck "Loading" UI (common after submit).
+  // If the machine is still in 'loading' but we already have matching results in Redux,
+  // transition the machine after render to avoid setState-in-render errors.
+  useEffect(() => {
     if (state.matches('loading') && hasResults) {
-      if (isAuthenticated) send({ type: 'RESULTS_LOADED_WITH_AUTH' })
-      else send({ type: 'RESULTS_LOADED_NO_AUTH' })
+      if (isAuthenticated) {
+        send({ type: 'RESULTS_LOADED_WITH_AUTH' })
+      } else {
+        send({ type: 'RESULTS_LOADED_NO_AUTH' })
+      }
     }
+    // We intentionally depend on state.value (primitive) and stable refs
+  }, [state.value, hasResults, isAuthenticated, send]);
 
     if (isLoading || state.matches('loading') || isRedirecting) {
     const isRedirectingToQuiz = isRedirecting;

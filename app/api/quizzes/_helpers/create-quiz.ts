@@ -32,6 +32,11 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
 
+    // Block inactive users from performing credit-consuming actions
+    if (session.user?.isActive === false) {
+      return NextResponse.json({ error: "Account inactive. Reactivate to continue." }, { status: 403 })
+    }
+
     // Parse body safely once
     let body: any
     try {

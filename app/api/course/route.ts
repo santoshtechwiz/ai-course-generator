@@ -70,6 +70,12 @@ export async function POST(req: Request) {
       return new NextResponse("unauthorised", { status: 401 })
     }
 
+    // Prevent inactive users from creating courses
+    if (session.user.isActive === false) {
+      console.warn(`[Course API] Blocked inactive user ${session.user.id} from creating a course`)
+      return NextResponse.json({ error: "Account inactive. Please contact support to re-activate." }, { status: 403 })
+    }
+
     // Parse request body
     const data = await req.json()
     const parsedData = createChaptersSchema.parse(data)

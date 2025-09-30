@@ -22,6 +22,11 @@ export async function POST(req: Request) {
     if (!userId) {
       return NextResponse.json({ error: "User not authenticated" }, { status: 401 })
     }
+
+    // Block inactive users from performing credit-consuming actions
+    if (session.user?.isActive === false) {
+      return NextResponse.json({ error: "Account inactive. Reactivate to continue." }, { status: 403 })
+    }
     
     const creditDeduction = amount > 5 ? 2 : 1
 

@@ -67,6 +67,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
 
+    // Prevent inactive users from creating quizzes or consuming credits
+    if (session.user.isActive === false) {
+      console.warn(`[Document API] Blocked inactive user ${session.user.id} from generating quiz`)
+      return NextResponse.json({ error: "Account inactive. Please contact support to re-activate." }, { status: 403 })
+    }
+
     // SECURE: Atomic credit validation and deduction to prevent race conditions
     const creditDeduction = 1 // Standard 1 credit for document quiz generation
     const creditResult = await creditService.executeCreditsOperation(

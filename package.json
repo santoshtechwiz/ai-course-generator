@@ -190,7 +190,8 @@
     "ts-node": "^10.9.2",
     "unused": "0.2.1"
     ,
-    "vitest": "^1.0.0"
+    "vitest": "^1.0.0",
+    "jsdom": "^21.1.0"
   },
   "overrides": {
     "prettier": "3.5.3",

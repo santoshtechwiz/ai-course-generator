@@ -133,6 +133,10 @@ const nextConfig = {
         __dirname,
         "src/shims/js-tiktoken-shim.cjs"
       ),
+      // Provide a small shim for the next-flight loader used by some Next internals
+      // This avoids "Can't resolve 'next-flight-client-entry-loader'" on some setups
+      // and is a safe no-op when RSC flight entry behavior is not required in this app.
+      "next-flight-client-entry-loader": path.resolve(__dirname, "src/shims/next-flight-client-entry-loader.cjs"),
     };
 
     return config;

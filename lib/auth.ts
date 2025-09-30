@@ -14,6 +14,7 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string
+      isActive?: boolean
       credits: number
       creditsUsed: number
       accessToken: string
@@ -26,10 +27,9 @@ declare module "next-auth" {
   }
 
   interface User extends DefaultUser {
-    credits: number
+  
     creditsUsed: number
-    isAdmin: boolean
-    userType: string
+
   }
 }
 
@@ -92,6 +92,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.credits = user.credits || 0
         token.creditsUsed = user.creditsUsed || 0
+        token.isActive = (user as any).isActive ?? true
         token.isAdmin = user.isAdmin || false
         token.userType = user.userType || "FREE"
         token.updatedAt = Date.now()
@@ -133,6 +134,7 @@ export const authOptions: NextAuthOptions = {
             token.credits = dbUser.credits
             token.creditsUsed = dbUser.creditsUsed
             token.isAdmin = dbUser.isAdmin
+            token.isActive = dbUser.isActive
             token.userType = dbUser.userType
             token.subscriptionPlan = dbUser.subscription?.planId || null
             token.subscriptionStatus = dbUser.subscription?.status || null
@@ -147,6 +149,7 @@ export const authOptions: NextAuthOptions = {
     },    async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id
+        session.user.isActive = Boolean((token as any).isActive)
         session.user.credits = token.credits || 0
         session.user.creditsUsed = token.creditsUsed || 0
         session.user.isAdmin = token.isAdmin || false
