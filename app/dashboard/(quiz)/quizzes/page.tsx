@@ -6,12 +6,12 @@ import ClientOnly from "@/components/ClientOnly"
 import { SuspenseGlobalFallback } from "../../../../components/loaders"
 import { JsonLD } from "@/lib/seo"
 import { generateMetadata } from "@/lib/seo"
-import { QuizzesClient } from "./components/QuizzesClient"
+import { EnhancedQuizzesClient } from "./components/QuizzesClient"
 
 export const metadata: Metadata = generateMetadata({
-  title: "Interactive Quizzes – Master Your Knowledge | CourseAI",
+  title: "Explore Interactive Quizzes – Master Your Knowledge | CourseAI",
   description:
-    "Discover our comprehensive collection of interactive quizzes including multiple choice, coding challenges, flashcards, and more. Test your knowledge and enhance your learning journey.",
+    "Discover our comprehensive collection of interactive quizzes including multiple choice, coding challenges, flashcards, and more. Advanced filtering, search, and personalized recommendations to enhance your learning journey.",
   keywords: [
     "interactive quizzes",
     "knowledge testing",
@@ -23,6 +23,8 @@ export const metadata: Metadata = generateMetadata({
     "learning platform",
     "quiz collection",
     "study tools",
+    "personalized learning",
+    "adaptive quizzes",
   ],
 })
 
@@ -31,21 +33,29 @@ export const dynamic = "force-dynamic"
 const Page = async () => {
   const session = await getAuthSession()
   const userId = session?.user?.id
-  const quizzesData = await getQuizzes({
-    page: 1,
-    limit: 12,
-    searchTerm: "",
-    userId: userId,
-    quizTypes: [],
-  })
+  
+  // Enhanced initial data fetching with better error handling
+  let quizzesData
+  try {
+    quizzesData = await getQuizzes({
+      page: 1,
+      limit: 12,
+      searchTerm: "",
+      userId: userId,
+      quizTypes: []
+    })
+  } catch (error) {
+    console.error("Failed to fetch initial quizzes:", error)
+    quizzesData = { quizzes: [], nextCursor: null }
+  }
 
   const initialQuizzesData = {
-    quizzes: quizzesData.quizzes as QuizListItem[],
-    nextCursor: quizzesData.nextCursor,
+    quizzes: (quizzesData?.quizzes as QuizListItem[]) || [],
+    nextCursor: quizzesData?.nextCursor || null,
   }
 
   return (
-    <div className="min-h-screen bg-background grid-pattern">
+    <div className="min-h-screen bg-background">
       <JsonLD
         type="default"
         data={{
@@ -53,20 +63,36 @@ const Page = async () => {
           "@type": "WebPage",
           name: "Interactive Quizzes",
           description:
-            "Comprehensive collection of interactive educational quizzes including multiple choice, coding challenges, flashcards, and open-ended questions.",
+            "Comprehensive collection of interactive educational quizzes including multiple choice, coding challenges, flashcards, and open-ended questions with advanced filtering and personalized recommendations.",
           url: "https://courseai.io/dashboard/quizzes",
           mainEntity: {
             "@type": "ItemList",
             name: "Educational Quiz Collection",
             description: "Collection of interactive educational quizzes for skill development and knowledge testing",
-            numberOfItems: quizzesData.quizzes.length,
+            numberOfItems: initialQuizzesData.quizzes.length,
+            itemListElement: initialQuizzesData.quizzes.slice(0, 5).map((quiz, index) => ({
+              "@type": "CreativeWork",
+              name: quiz.title,
+              description: (quiz as any).description || '',
+              position: index + 1,
+              educationalLevel: 'Intermediate',
+              timeRequired: `PT${Math.max(Math.ceil((quiz.questionCount || 10) * 0.5), 1)}M`,
+            })),
+          },
+          potentialAction: {
+            "@type": "SearchAction",
+            target: "https://courseai.io/dashboard/quizzes?search={search_term}",
+            "query-input": "required name=search_term",
           },
         }}
       />
 
       <ClientOnly>
-        <Suspense fallback={<SuspenseGlobalFallback text="Loading quizzes…" />}>
-          <QuizzesClient initialQuizzesData={initialQuizzesData} userId={userId} />
+        <Suspense fallback={<SuspenseGlobalFallback text="Loading amazing quizzes…" />}>
+          <EnhancedQuizzesClient 
+            initialQuizzesData={initialQuizzesData} 
+            userId={userId} 
+          />
         </Suspense>
       </ClientOnly>
     </div>

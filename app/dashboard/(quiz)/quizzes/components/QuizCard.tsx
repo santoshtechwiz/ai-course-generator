@@ -15,6 +15,8 @@ import {
   BookOpen,
   Brain,
   ExternalLink,
+  Loader2,
+  Play,
 } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from "next/link"
@@ -39,6 +41,8 @@ interface QuizCardProps {
   currentUserId?: string
   onDelete?: (slug: string, quizType: QuizType) => void
   showActions?: boolean
+  isNavigating?: boolean
+  onNavigationChange?: (loading: boolean) => void
 }
 
 const quizTypeConfig = {
@@ -96,13 +100,34 @@ function QuizCardComponent({
   currentUserId,
   onDelete,
   showActions = false,
+  isNavigating = false,
+  onNavigationChange,
 }: QuizCardProps) {
   const [isHovered, setIsHovered] = useState(false)
+  const [localLoading, setLocalLoading] = useState(false)
 
   const config = quizTypeConfig[quizType as keyof typeof quizTypeConfig] || quizTypeConfig.mcq
   const QuizTypeIcon = config.icon
 
   const isTypeActive = (selectedTypes && selectedTypes.includes(quizType)) || activeFilter === quizType
+  const loading = isNavigating || localLoading
+
+  const handleQuizClick = useCallback(async () => {
+    if (loading) return
+    
+    setLocalLoading(true)
+    onNavigationChange?.(true)
+    
+    // Add a small delay to show loading state
+    await new Promise(resolve => setTimeout(resolve, 300))
+    
+    // Navigation will be handled by Link component
+    // Reset loading state after navigation
+    setTimeout(() => {
+      setLocalLoading(false)
+      onNavigationChange?.(false)
+    }, 1000)
+  }, [loading, onNavigationChange])
 
   const handleMouseEnter = useCallback(() => setIsHovered(true), [])
   const handleMouseLeave = useCallback(() => setIsHovered(false), [])
@@ -125,19 +150,34 @@ function QuizCardComponent({
       className="h-full group block focus:outline-none focus-ring"
       tabIndex={0}
       aria-label={`Open quiz: ${title}`}
+      onClick={handleQuizClick}
     >
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -2 }}
+        whileHover={{ y: loading ? 0 : -2 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
         className="h-full"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <Card className="h-full overflow-hidden bg-card border-border/50 hover:border-border transition-all duration-200 card-hover">
+        <Card className={cn(
+          "h-full overflow-hidden bg-card border-border/50 hover:border-border transition-all duration-200 card-hover",
+          loading && "opacity-70 cursor-not-allowed"
+        )}>
           <div className="aspect-video bg-gradient-to-br from-muted/50 to-muted/20 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/10" />
+            
+            {/* Loading overlay */}
+            {loading && (
+              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
+                <div className="flex items-center gap-2 text-sm text-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Starting Quiz...</span>
+                </div>
+              </div>
+            )}
+            
             <div className="absolute top-4 left-4">
               <div className={cn("p-2 rounded-lg", config.bg, config.border, "border")}>
                 <QuizTypeIcon className={cn("h-5 w-5", config.color)} />
@@ -231,8 +271,9 @@ function QuizCardComponent({
                 size="sm"
                 className="gap-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                 tabIndex={-1}
+                disabled={loading}
               >
-                <ExternalLink className="w-3 h-3" />
+                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ExternalLink className="w-3 h-3" />}
               </Button>
             </div>
           </CardContent>

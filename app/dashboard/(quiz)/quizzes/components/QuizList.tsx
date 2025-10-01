@@ -3,10 +3,18 @@
 import { memo, useMemo, useState } from "react"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
 import { useInView } from "react-intersection-observer"
-import { AlertCircle, FileQuestion, Search, Plus, RefreshCw, Grid3X3, List, Sparkles } from "lucide-react"
+import { AlertCircle, FileQuestion, Search, Plus, RefreshCw, Grid3X3, List, Sparkles, Loader2, Play, Filter, Target, Code2, Brain, FileText, ChevronDown, SlidersHorizontal, Calendar, Star, BookOpen, TrendingUp, X } from "lucide-react"
 import { QuizCard } from "./QuizCard"
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import type { QuizListItem } from "@/app/actions/getQuizes"
 import type { QuizType } from "@/app/types/quiz-types"
@@ -14,6 +22,32 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Card, CardContent } from "@/components/ui/card"
 import { useDeleteQuiz } from "@/hooks/use-delete-quiz"
 import { ConfirmDeleteDialog } from "@/components/common/ConfirmDeleteDialog"
+
+// SVG Background Component
+const BackgroundSVG = () => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <svg 
+      className="absolute top-0 left-0 w-full h-full opacity-[0.02] dark:opacity-[0.05]" 
+      viewBox="0 0 100 100" 
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <pattern id="quiz-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+          <circle cx="10" cy="10" r="1.5" fill="currentColor" />
+          <rect x="5" y="5" width="2" height="2" fill="currentColor" opacity="0.3" />
+          <rect x="13" y="13" width="2" height="2" fill="currentColor" opacity="0.3" />
+        </pattern>
+      </defs>
+      <rect width="100" height="100" fill="url(#quiz-pattern)" />
+    </svg>
+    
+    {/* Floating geometric shapes */}
+    <div className="absolute top-20 left-1/4 w-2 h-2 bg-blue-200 dark:bg-blue-900 rounded-full animate-pulse" />
+    <div className="absolute top-40 right-1/3 w-3 h-3 bg-purple-200 dark:bg-purple-900 rounded-sm animate-pulse delay-1000" />
+    <div className="absolute bottom-32 left-1/3 w-2 h-2 bg-green-200 dark:bg-green-900 rounded-full animate-pulse delay-2000" />
+    <div className="absolute bottom-20 right-1/4 w-3 h-3 bg-orange-200 dark:bg-orange-900 rounded-sm animate-pulse delay-3000" />
+  </div>
+)
 
 interface QuizListProps {
   quizzes: QuizListItem[]
@@ -26,7 +60,7 @@ interface QuizListProps {
   onCreateQuiz?: () => void
   activeFilter?: string
   onFilterChange?: (filter: string) => void
-  quizCounts: {
+  quizCounts?: {
     all: number
     mcq: number
     openended: number
@@ -92,6 +126,59 @@ function QuizListComponent({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [quizToDelete, setQuizToDelete] = useState<{ slug: string; title: string; quizType: QuizType } | null>(null)
 
+  // Local filter state (when external state is not provided)
+  const [localSearch, setLocalSearch] = useState("")
+  const [localSelectedTypes, setLocalSelectedTypes] = useState<QuizType[]>([])
+  // Local sort (limited to title for now to avoid relying on non-existent fields)
+  const [sortBy, setSortBy] = useState<'title' | 'default'>('default')
+
+  // Quiz type configurations for filters
+  const QUIZ_TYPE_CONFIG = {
+    MCQ: {
+      label: "Multiple Choice",
+      icon: Target,
+      color: "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300",
+    },
+    CODE: {
+      label: "Code Challenge", 
+      icon: Code2,
+      color: "bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-950 dark:border-purple-800 dark:text-purple-300",
+    },
+    FLASHCARD: {
+      label: "Flash Cards",
+      icon: Brain,
+      color: "bg-green-50 border-green-200 text-green-700 dark:bg-green-950 dark:border-green-800 dark:text-green-300",
+    },
+    OPEN_ENDED: {
+      label: "Open Ended",
+      icon: FileText,
+      color: "bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-950 dark:border-orange-800 dark:text-orange-300",
+    },
+  } as const
+
+  // Use external state if provided, otherwise use local state
+  const currentSearch = search || localSearch
+  const currentSelectedTypes = selectedTypes.length > 0 ? selectedTypes : localSelectedTypes
+
+  // Filter handlers
+  const handleSearchChange = (value: string) => {
+    setLocalSearch(value)
+  }
+
+  const toggleQuizType = (type: QuizType) => {
+    const newTypes = localSelectedTypes.includes(type)
+      ? localSelectedTypes.filter(t => t !== type)
+      : [...localSelectedTypes, type]
+    setLocalSelectedTypes(newTypes)
+    onTypeClick?.(type)
+  }
+
+  const clearFilters = () => {
+    setLocalSearch("")
+    setLocalSelectedTypes([])
+  setSortBy('default')
+  }
+
   const deleteQuizMutation = useDeleteQuiz({
     onSuccess: () => {
       setDeleteDialogOpen(false)
@@ -111,15 +198,18 @@ function QuizListComponent({
   const filteredQuizzes = useMemo(() => {
     let list = quizzes || []
 
-    // Sidebar-selected types filter (checkboxes)
-    if (selectedTypes && selectedTypes.length > 0) {
-      list = list.filter((quiz) => selectedTypes.includes(quiz.quizType))
+    // Search term filter
+    if (currentSearch && currentSearch.trim() !== "") {
+      const term = currentSearch.trim().toLowerCase()
+      list = list.filter((quiz) => 
+        quiz.title.toLowerCase().includes(term) ||
+        ((quiz as any).description && (quiz as any).description.toLowerCase().includes(term))
+      )
     }
 
-    // Search term filter
-    if (search && search.trim() !== "") {
-      const term = search.trim().toLowerCase()
-      list = list.filter((quiz) => quiz.title.toLowerCase().includes(term))
+    // Type filter - use current selected types
+    if (currentSelectedTypes && currentSelectedTypes.length > 0) {
+      list = list.filter((quiz) => currentSelectedTypes.includes(quiz.quizType as QuizType))
     }
 
     // Public only filter
@@ -132,8 +222,13 @@ function QuizListComponent({
       list = list.filter((quiz) => quiz.quizType === activeFilter)
     }
 
+    // Sort the results
+    if (sortBy === 'title') {
+      list.sort((a, b) => a.title.localeCompare(b.title))
+    }
+
     return list
-  }, [quizzes, selectedTypes, search, showPublicOnly, activeFilter])
+  }, [quizzes, currentSelectedTypes, currentSearch, showPublicOnly, activeFilter, sortBy])
 
   const handleDeleteQuiz = (slug: string, quizType: QuizType) => {
     const quiz = quizzes.find((q) => q.slug === slug)
@@ -216,31 +311,128 @@ function QuizListComponent({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="relative space-y-8">
+      {/* SVG Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <svg 
+          className="absolute top-0 left-0 w-full h-full opacity-[0.02] dark:opacity-[0.05]" 
+          viewBox="0 0 100 100" 
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <pattern id="quiz-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+              <circle cx="10" cy="10" r="1.5" fill="currentColor" />
+              <rect x="5" y="5" width="2" height="2" fill="currentColor" opacity="0.3" />
+              <rect x="13" y="13" width="2" height="2" fill="currentColor" opacity="0.3" />
+            </pattern>
+          </defs>
+          <rect width="100" height="100" fill="url(#quiz-pattern)" />
+        </svg>
+        
+        {/* Floating geometric shapes */}
+        <div className="absolute top-20 left-1/4 w-2 h-2 bg-blue-200 dark:bg-blue-900 rounded-full animate-pulse" />
+        <div className="absolute top-40 right-1/3 w-3 h-3 bg-purple-200 dark:bg-purple-900 rounded-sm animate-pulse delay-1000" />
+        <div className="absolute bottom-32 left-1/3 w-2 h-2 bg-green-200 dark:bg-green-900 rounded-full animate-pulse delay-2000" />
+        <div className="absolute bottom-20 right-1/4 w-3 h-3 bg-orange-200 dark:bg-orange-900 rounded-sm animate-pulse delay-3000" />
+      </div>
+      
+      <div className="relative">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h2 className="text-2xl font-bold text-foreground">
-            {activeFilter === "all" ? "All Quzzez" : `${activeFilter.toUpperCase()} Quizzes`}
+            Discover Quizzes
           </h2>
           <p className="text-sm text-muted-foreground">
             {filteredQuizzes.length} quizzes{filteredQuizzes.length !== 1 ? "s" : ""} available
           </p>
         </div>
 
-        {onViewModeChange && (
-          <ToggleGroup
-            type="single"
-            value={viewMode}
-            onValueChange={onViewModeChange}
-            className="bg-card border border-border/50"
-          >
-            <ToggleGroupItem value="grid" aria-label="Grid view" className="data-[state=on]:bg-muted">
-              <Grid3X3 className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="list" aria-label="List view" className="data-[state=on]:bg-muted">
-              <List className="h-4 w-4" />
-            </ToggleGroupItem>
-          </ToggleGroup>
+        <div className="flex items-center gap-3">
+          {onViewModeChange && (
+            <ToggleGroup
+              type="single"
+              value={viewMode}
+              onValueChange={onViewModeChange}
+              className="bg-card border border-border/50"
+            >
+              <ToggleGroupItem value="grid" aria-label="Grid view" className="data-[state=on]:bg-muted">
+                <Grid3X3 className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="List view" className="data-[state=on]:bg-muted">
+                <List className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          )}
+          
+          {onCreateQuiz && (
+            <Button onClick={onCreateQuiz} className="bg-primary hover:bg-primary/90">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Quiz
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Enhanced Filter Section */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* Search Bar */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search quizzes..."
+            value={currentSearch}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="pl-10 bg-background/50 backdrop-blur-sm"
+          />
+          {currentSearch && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleSearchChange("")}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+
+        {/* Quiz Type Filters */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {Object.entries(QUIZ_TYPE_CONFIG).map(([type, config]) => {
+            const IconComponent = config.icon
+            const isSelected = currentSelectedTypes.includes(type as QuizType)
+            return (
+              <Button
+                key={type}
+                variant={isSelected ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleQuizType(type as QuizType)}
+                className={cn(
+                  "transition-all",
+                  isSelected && config.color
+                )}
+              >
+                <IconComponent className="mr-2 h-4 w-4" />
+                {config.label}
+              </Button>
+            )
+          })}
+        </div>
+
+        {/* Simple sort toggle */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setSortBy(prev => prev === 'title' ? 'default' : 'title')}
+        >
+          {sortBy === 'title' ? 'Clear Sort' : 'Sort A-Z'}
+        </Button>
+
+        {/* Clear Filters */}
+        {(currentSearch || currentSelectedTypes.length > 0 || sortBy !== 'default') && (
+          <Button variant="ghost" size="sm" onClick={clearFilters}>
+            Clear
+          </Button>
         )}
       </div>
 
@@ -315,6 +507,7 @@ function QuizListComponent({
           </div>
         </motion.div>
       )}
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDeleteDialog

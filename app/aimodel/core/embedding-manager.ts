@@ -44,6 +44,7 @@ export class EmbeddingManager {
   private memoryStore: any = null
   private inMemoryDocuments: Map<string, EmbeddingDocument> = new Map()
   private storageMode: 'postgres' | 'memory' | 'auto' = 'auto'
+  private embeddingStoredAsJson: boolean = false
   private preferPersistJson: boolean = false
 
   constructor(config?: Partial<EmbeddingConfig>) {
@@ -153,14 +154,39 @@ export class EmbeddingManager {
           
           if (!isVectorColumn) {
             logger.warn('PgVector extension is available but embedding column is not vector type');
+            // If embedding column is not vector, check whether we have a JSON/jsonb
+            // embedding column (embeddingJson) that contains numeric arrays. If so,
+            // we can still use pgvector by casting the stored JSON to a vector at
+            // query time (attempted). Mark embeddingStoredAsJson = true when a
+            // suitable sample is found.
+            try {
+              const sample = await prisma.$queryRaw`
+                SELECT "embeddingJson" FROM "Embedding" WHERE "embeddingJson" IS NOT NULL LIMIT 1
+              `
+
+              const sampleVal = Array.isArray(sample) && sample.length > 0 ? (sample[0] as any).embeddingJson : null
+              if (Array.isArray(sampleVal) && sampleVal.length > 0 && typeof sampleVal[0] === 'number') {
+                this.embeddingStoredAsJson = true
+                logger.info('Found numeric embeddingJson sample - will attempt pgvector operations by casting embeddingJson to vector')
+              } else {
+                logger.info('No usable embeddingJson sample found; will not attempt pgvector operations on JSON embeddings')
+              }
+            } catch (e) {
+              logger.warn('Failed to sample embeddingJson column to detect JSON-stored embeddings', { error: String(e) })
+            }
           }
         } catch (error) {
           logger.warn('Failed to check column type, assuming not vector type', { error });
           isVectorColumn = false;
         }
       }
-      
-      this.isPgVectorAvailable = pgVectorEnabled && isVectorColumn;
+
+      // Consider pgvector available if the column is vector OR if we have
+      // numeric embeddings stored in embeddingJson and the pgvector
+      // extension is installed (we can attempt to cast JSON -> vector at
+      // query time). This makes the manager able to use DB-side similarity
+      // even when the main 'embedding' column isn't typed as vector.
+      this.isPgVectorAvailable = pgVectorEnabled && (isVectorColumn || this.embeddingStoredAsJson);
       logger.info(`Embedding manager initialized successfully (${this.isPgVectorAvailable ? 'with pgvector' : 'standard mode'})`)
     } catch (error) {
       logger.warn('Database embedding not available, falling back to memory store', { error })
@@ -431,7 +457,10 @@ export class EmbeddingManager {
       logger.info(`Embedding column type: ${columnType}`);
       
       // If not vector type, fall back to in-memory search
-      if (columnType !== 'vector') {
+      // If not vector type, see if embeddings are stored as JSON arrays and
+      // attempt to use them by casting JSON -> vector at query time.
+      const useJsonCast = columnType !== 'vector' && this.embeddingStoredAsJson
+      if (columnType !== 'vector' && !useJsonCast) {
         logger.info('Database not using vector type, falling back to in-memory search');
         return await this.inMemorySimilaritySearch(queryEmbedding, options);
       }
@@ -446,21 +475,30 @@ export class EmbeddingManager {
         paramIndex++
       }
 
-      // Build the WHERE condition for threshold
-      const thresholdCondition = `1 - (embedding <=> $1::vector) > $${paramIndex}`
+      // Build query that either uses the native embedding vector column or
+      // casts embeddingJson (jsonb array of numbers) to a vector for distance
+      // calculations. The casting path uses "embeddingJson"::jsonb -> text
+      // manipulation to form a vector literal. If your Postgres/pgvector
+      // supports creating vectors from arrays directly, adjust accordingly.
+      const vectorExpr = useJsonCast
+        ? `(${/* cast embeddingJson to text then to vector */''}regexp_replace("embeddingJson"::text, '[\\[\\] ]', '', 'g'))::vector`
+        : 'embedding'
+
+      // Build the WHERE condition for threshold using the same vectorExpr
+      const thresholdCondition = `1 - (${vectorExpr} <=> $1::vector) > $${paramIndex}`
       const whereKeyword = whereClause ? 'AND' : 'WHERE'
-      
+
       const query = `
         SELECT 
           id,
           content,
           metadata,
           type,
-          1 - (embedding <=> $1::vector) as similarity
+          1 - (${vectorExpr} <=> $1::vector) as similarity
         FROM "Embedding"
         ${whereClause}
         ${whereKeyword} ${thresholdCondition}
-        ORDER BY embedding <=> $1::vector
+        ORDER BY ${vectorExpr} <=> $1::vector
         LIMIT $${paramIndex + 1}
       `
       

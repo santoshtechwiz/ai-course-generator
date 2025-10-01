@@ -160,7 +160,31 @@ export class PaymentWebhookHandler {
     headers: Record<string, string>
   ): Promise<WebhookEvent | null> {
     try {
-      const parsedPayload = JSON.parse(payload)
+      // Guard: empty or malformed payload
+      if (!payload || !payload.trim()) {
+        logger.error('Webhook payload empty')
+        return null
+      }
+
+      let parsedPayload: any
+      try {
+        parsedPayload = JSON.parse(payload)
+      } catch (jsonErr) {
+        // Some providers (or misconfigured clients) may send already-object-like values or invalid JSON
+        logger.error('Raw webhook JSON parse failed', { error: jsonErr instanceof Error ? jsonErr.message : jsonErr })
+        // Attempt minimal salvage for Stripe if headers indicate stripe-signature and we can extract id/type heuristically
+        if (provider === PaymentProvider.STRIPE) {
+          const idMatch = payload.match(/"id"\s*:\s*"([^"]+)"/)
+          const typeMatch = payload.match(/"type"\s*:\s*"([^"]+)"/)
+          if (idMatch && typeMatch) {
+            parsedPayload = { id: idMatch[1], type: typeMatch[1], data: { object: {} }, created: Math.floor(Date.now()/1000) }
+          } else {
+            return null
+          }
+        } else {
+          return null
+        }
+      }
 
       switch (provider) {
         case PaymentProvider.STRIPE:
