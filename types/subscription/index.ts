@@ -1,63 +1,31 @@
-// Core subscription types and interfaces
+// Core subscription types and interfaces - UNIFIED MODULE
 export * from './api-types'
 export * from './subscription-types'
 export * from './utils'
 
-export interface SubscriptionFetchOptions {
-  forceRefresh?: boolean
-  signal?: AbortSignal
-  isBackground?: boolean
-  cacheKey?: string
+// Re-export core types for backwards compatibility
+export type { SubscriptionData, SubscriptionResponse } from './subscription-types'
+
+// Consolidated subscription hook options
+export interface UseSubscriptionOptions {
+  allowPlanChanges?: boolean
+  allowDowngrades?: boolean
+  onSubscriptionSuccess?: (result: SubscriptionResult) => void
+  onSubscriptionError?: (error: SubscriptionResult) => void
+  skipInitialFetch?: boolean
+  lazyLoad?: boolean
+  validateOnMount?: boolean
 }
 
-export interface SubscriptionMetadata {
-  source?: string
-  lastUpdated?: string
-  cacheStatus?: 'fresh' | 'stale' | 'expired'
-  clientId?: string
-  timestamp: string
-  requestId?: string
+// Subscription operation result
+export interface SubscriptionResult {
+  success: boolean
+  message?: string
+  redirectUrl?: string
+  data?: any
 }
 
-export interface SubscriptionData {
-  credits: number
-  tokensUsed: number
-  isSubscribed: boolean
-  subscriptionPlan: string
-  // compatibility alias - some session objects use `plan` while backend uses `subscriptionPlan`
-  plan?: string
-  expirationDate: string | null
-  status: SubscriptionStatusType
-  cancelAtPeriodEnd: boolean
-  subscriptionId: string
-  timestamp?: number
-  metadata?: SubscriptionMetadata
-}
-
-export interface SubscriptionResponse extends ApiResponse<SubscriptionData> {
-  metadata: SubscriptionMetadata
-}
-
-export interface SubscriptionState {
-  currentSubscription: SubscriptionData | null
-  isLoading: boolean
-  isFetching: boolean
-  error: string | null
-  lastSync: number
-  cacheStatus: 'fresh' | 'stale' | 'empty' | 'error'
-}
-
-export type SubscriptionStatusType = 'ACTIVE' | 'INACTIVE' | 'CANCELLED' | 'TRIAL'
-// Canonical plan identifiers used throughout the application
-export type SubscriptionPlanType = 'FREE' | 'BASIC' | 'PREMIUM' | 'ULTIMATE'
-
-// Subscription service types
-export interface SubscriptionService {
-  getSubscriptionStatus: (userId: string) => Promise<SubscriptionData | null>
-  refreshSubscription: (userId: string, force?: boolean) => Promise<SubscriptionResponse>
-  cancelSubscription: (subscriptionId: string) => Promise<boolean>
-  updateSubscription: (subscriptionId: string, data: Partial<SubscriptionData>) => Promise<SubscriptionResponse>
-}
+// Subscription service types - moved to subscription-types.ts for consolidation
 
 // Generic API response type
 export interface ApiResponse<T = any> {
@@ -74,33 +42,4 @@ export interface ApiResponse<T = any> {
   }
 }
 
-// Cache configuration
-export const SUBSCRIPTION_CACHE_CONFIG = {
-  staleTime: 30_000, // 30 seconds
-  cacheTime: 5 * 60 * 1000, // 5 minutes
-  retryDelay: 1000,
-  maxRetries: 3
-} as const
-
-// Helper type guards
-export function isSubscriptionResponse(response: any): response is SubscriptionResponse {
-  return (
-    response &&
-    typeof response === 'object' &&
-    'success' in response &&
-    'data' in response &&
-    response.data &&
-    'subscriptionPlan' in response.data
-  )
-}
-
-export function isSubscriptionData(data: any): data is SubscriptionData {
-  return (
-    data &&
-    typeof data === 'object' &&
-    'credits' in data &&
-    'tokensUsed' in data &&
-    'subscriptionPlan' in data &&
-    'status' in data
-  )
-}
+// Cache configuration and helper functions are exported from subscription-types.ts

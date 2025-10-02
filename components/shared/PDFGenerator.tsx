@@ -2,7 +2,7 @@
 import React from "react"
 import UnifiedPdfGenerator from "./UnifiedPdfGenerator"
 import type { PdfData, PdfConfig } from "./UnifiedPdfGenerator"
-import { useSubscription } from "@/modules/auth/hooks/useSubscription"
+import { useSubscription } from "@/modules/subscriptions/client"
 
 interface PDFGeneratorProps {
   markdown: string

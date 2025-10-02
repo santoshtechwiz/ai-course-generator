@@ -8,7 +8,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 
 
-import { SubscriptionService } from "@/services/subscription/subscription-service"
+import { SubscriptionService } from "@/modules/subscriptions"
 import { authOptions } from "@/lib/auth"
 
 export async function POST(req: NextRequest) {

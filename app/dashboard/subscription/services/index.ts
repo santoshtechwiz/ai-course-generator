@@ -57,11 +57,8 @@ export type {
 } from "./payment-webhook-handler"
 
 // Main services
-export { SubscriptionService } from "../../../../services/subscription/subscription-service"
+export { SubscriptionService } from "@/modules/subscriptions"
 export { TokenService } from "./token-service"
-
-// API client
-export { subscriptionApiClient } from "./subscription-api-client"
 
 // Utilities and constants
 export { SUBSCRIPTION_PLANS } from "../components/subscription-plans"

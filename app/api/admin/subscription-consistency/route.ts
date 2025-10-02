@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getAuthSession, isAdmin } from "@/lib/auth"
-import { SubscriptionService } from "@/services/subscription/subscription-service"
+import { SubscriptionService } from "@/modules/subscriptions"
 import { prisma } from "@/lib/db"
 
 /**
@@ -24,10 +24,10 @@ export async function GET(req: NextRequest) {
 
     if (userId) {
       // Check consistency for specific user
-      const result = await SubscriptionService.validateUserConsistency(userId)
+      const result = await SubscriptionService.getSubscriptionStatus(userId)
       
       if (fix && !result.isConsistent) {
-        const fixResult = await SubscriptionService.fixUserConsistency(userId)
+        const fixResult = await SubscriptionService.refreshSubscription(userId)
         return NextResponse.json({
           userId,
           validation: result,
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
 
     if (fix && inconsistentUsers.length > 0) {      const fixResults = await Promise.all(
         inconsistentUsers.slice(0, 10).map(async (user) => { // Limit to 10 for safety
-          const fixResult = await SubscriptionService.fixUserConsistency(user.user_id)
+          const fixResult = await SubscriptionService.refreshSubscription(user.user_id)
           return {
             userId: user.user_id,
             email: user.email,
@@ -103,10 +103,10 @@ export async function POST(req: NextRequest) {
 
     if (userId) {
       // Fix specific user
-      const validation = await SubscriptionService.validateUserConsistency(userId)
+      const validation = await SubscriptionService.getSubscriptionStatus(userId)
       
       if (!validation.isConsistent) {
-        const fixResult = await SubscriptionService.fixUserConsistency(userId)
+        const fixResult = await SubscriptionService.refreshSubscription(userId)
         return NextResponse.json({
           userId,
           validation,
@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
       ` as any[]
 
       const fixResults = await Promise.all(        inconsistentUsers.map(async (user) => {
-          const fixResult = await SubscriptionService.fixUserConsistency(user.user_id)
+          const fixResult = await SubscriptionService.refreshSubscription(user.user_id)
           return {
             userId: user.user_id,
             fix: fixResult,

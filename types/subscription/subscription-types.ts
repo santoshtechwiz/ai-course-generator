@@ -9,7 +9,7 @@ import { ApiResponse } from './api-types'
  */
 // Keep the canonical plan ids in sync with UI and plan configuration
 export type SubscriptionPlanType = 'FREE' | 'BASIC' | 'PREMIUM' | 'ULTIMATE'
-export type SubscriptionStatusType = 'ACTIVE' | 'INACTIVE' | 'CANCELLED' | 'TRIAL'
+export type SubscriptionStatusType = 'ACTIVE' | 'INACTIVE' | 'CANCELLED' | 'TRIAL' | 'EXPIRED' | 'CANCELED' | 'PAST_DUE'
 
 /**
  * Metadata for subscription operations
@@ -29,6 +29,7 @@ export interface SubscriptionMetadata {
 export interface SubscriptionData {
   id: string
   userId: string
+  subscriptionId: string // Add the missing subscriptionId field  
   credits: number
   tokensUsed: number
   isSubscribed: boolean
@@ -36,6 +37,7 @@ export interface SubscriptionData {
   // alias for compatibility with session/user objects that use `plan`
   plan?: SubscriptionPlanType
   expirationDate: string | null
+  trialEndsAt?: string | null
   status: SubscriptionStatusType
   cancelAtPeriodEnd: boolean
   nextBillingDate?: string | null
@@ -89,6 +91,7 @@ export const SUBSCRIPTION_CACHE_CONFIG = {
 export const DEFAULT_FREE_SUBSCRIPTION: SubscriptionData = {
   id: 'free',
   userId: '',
+  subscriptionId: 'free',
   credits: 0,
   tokensUsed: 0,
   isSubscribed: false,

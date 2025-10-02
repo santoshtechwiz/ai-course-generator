@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import SavingsHighlight from "./SavingsHighlight"
 import { Badge } from "@/components/ui/badge"
 import { FeatureCategoryList } from "../FeatureComparison"
-import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription"
+import type { SubscriptionPlanType, SubscriptionStatusType } from "@/types/subscription"
 import type { SUBSCRIPTION_PLANS as SubscriptionPlansType } from "../subscription-plans"
 import { motion } from "framer-motion"
 
@@ -64,7 +64,7 @@ export default function PlanCards({
   hadPreviousPaidPlan?: boolean
 }) {
   const bestPlan = plans.find((plan) => plan.name === "PREMIUM")
-  const normalizedStatus = subscriptionStatus?.toUpperCase() || null
+  const normalizedStatus = subscriptionStatus ? subscriptionStatus.toUpperCase().replace('CANCELLED','CANCELED') : null
 
   // Animation variants for cards
   const cardVariants = {
@@ -83,7 +83,7 @@ export default function PlanCards({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
       {plans.map((plan, index) => {
-        const priceOption = plan.options.find((o) => o.duration === duration) || plan.options[0]
+        const priceOption = plan.options.find((o: any) => o.duration === duration) || plan.options[0]
         const isPlanActive = currentPlan === plan.id
         const isBestValue = plan.name === bestPlan?.name
         const isCurrentActivePlan = isSubscribed && currentPlan === plan.id
@@ -105,6 +105,14 @@ export default function PlanCards({
           
           // Special case for FREE plan - disable if user is currently on free plan
           if (plan.id === "FREE" && currentPlan === "FREE" && normalizedStatus === "ACTIVE") {
+            return true
+          }
+          // Block free plan if user ever had a paid plan before
+          if (plan.id === 'FREE' && hadPreviousPaidPlan) {
+            return true
+          }
+          // Block selecting a different paid plan while active subscription exists
+          if (hasAnyPaidPlan && normalizedStatus === 'ACTIVE' && plan.id !== currentPlan) {
             return true
           }
           

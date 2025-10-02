@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Toaster } from "@/components/ui/toaster"
 import { ReduxErrorBoundary } from "@/components/ui/error-boundary"
-import { Chatbot } from "@/components/Chatbot"
+import Chatbot from "@/components/Chatbot"
 import CourseAIState from "@/components/development/CourseAIState"
 import { MainNavbar } from "@/components/layout/navigation/MainNavbar"
 import { cn } from "@/lib/utils"

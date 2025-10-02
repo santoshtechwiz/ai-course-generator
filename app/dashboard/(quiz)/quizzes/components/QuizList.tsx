@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useMemo, useState } from "react"
+import { memo, useMemo, useState, useCallback, useEffect } from "react"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
 import { useInView } from "react-intersection-observer"
 import { AlertCircle, FileQuestion, Search, Plus, RefreshCw, Grid3X3, List, Sparkles, Loader2, Play, Filter, Target, Code2, Brain, FileText, ChevronDown, SlidersHorizontal, Calendar, Star, BookOpen, TrendingUp, X } from "lucide-react"
@@ -15,10 +15,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import type { QuizListItem } from "@/app/actions/getQuizes"
 import type { QuizType } from "@/app/types/quiz-types"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { QUIZ_TYPE_CONFIG } from "./quizTypeConfig"
 import { Card, CardContent } from "@/components/ui/card"
 import { useDeleteQuiz } from "@/hooks/use-delete-quiz"
 import { ConfirmDeleteDialog } from "@/components/common/ConfirmDeleteDialog"
@@ -131,53 +138,40 @@ function QuizListComponent({
   const [localSelectedTypes, setLocalSelectedTypes] = useState<QuizType[]>([])
   // Local sort (limited to title for now to avoid relying on non-existent fields)
   const [sortBy, setSortBy] = useState<'title' | 'default'>('default')
+  // Debounced search
+  const [debouncedSearch, setDebouncedSearch] = useState("")
 
   // Quiz type configurations for filters
-  const QUIZ_TYPE_CONFIG = {
-    MCQ: {
-      label: "Multiple Choice",
-      icon: Target,
-      color: "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300",
-    },
-    CODE: {
-      label: "Code Challenge", 
-      icon: Code2,
-      color: "bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-950 dark:border-purple-800 dark:text-purple-300",
-    },
-    FLASHCARD: {
-      label: "Flash Cards",
-      icon: Brain,
-      color: "bg-green-50 border-green-200 text-green-700 dark:bg-green-950 dark:border-green-800 dark:text-green-300",
-    },
-    OPEN_ENDED: {
-      label: "Open Ended",
-      icon: FileText,
-      color: "bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-950 dark:border-orange-800 dark:text-orange-300",
-    },
-  } as const
+  // Using shared QUIZ_TYPE_CONFIG imported above
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(localSearch)
+    }, 300) // 300ms debounce
+
+    return () => clearTimeout(timer)
+  }, [localSearch])
 
   // Use external state if provided, otherwise use local state
-  const currentSearch = search || localSearch
+  const currentSearch = search || debouncedSearch
   const currentSelectedTypes = selectedTypes.length > 0 ? selectedTypes : localSelectedTypes
 
   // Filter handlers
-  const handleSearchChange = (value: string) => {
+  const handleSearchChange = useCallback((value: string) => {
     setLocalSearch(value)
-  }
+  }, [])
 
-  const toggleQuizType = (type: QuizType) => {
-    const newTypes = localSelectedTypes.includes(type)
-      ? localSelectedTypes.filter(t => t !== type)
-      : [...localSelectedTypes, type]
-    setLocalSelectedTypes(newTypes)
+  const toggleQuizType = useCallback((type: QuizType) => {
+    setLocalSelectedTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type])
     onTypeClick?.(type)
-  }
+  }, [onTypeClick])
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setLocalSearch("")
     setLocalSelectedTypes([])
-  setSortBy('default')
-  }
+    setSortBy('default')
+  }, [])
 
   const deleteQuizMutation = useDeleteQuiz({
     onSuccess: () => {
@@ -219,7 +213,7 @@ function QuizListComponent({
 
     // Active tab filter (keeps compatibility with tab-based filtering)
     if (activeFilter && activeFilter !== "all") {
-      list = list.filter((quiz) => quiz.quizType === activeFilter)
+      list = list.filter((quiz) => quiz.quizType?.toLowerCase() === activeFilter.toLowerCase())
     }
 
     // Sort the results
@@ -278,30 +272,87 @@ function QuizListComponent({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className="border-dashed border-border/50">
-          <CardContent className="flex flex-col items-center justify-center p-12 text-center">
+        <Card className="border-dashed border-border/50 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
+          <CardContent className="flex flex-col items-center justify-center p-12 text-center relative">
             {isSearching ? (
               <>
-                <Search className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="font-semibold text-xl mb-2">No quizzes found</h3>
-                <p className="text-muted-foreground mb-6 max-w-md">
-                  No matches found. Try different keywords or filters.
-                </p>
-                <Button variant="outline" onClick={() => window.location.reload()}>
-                  Clear Filters
-                </Button>
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring" }}
+                  className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mb-6"
+                >
+                  <Search className="h-10 w-10 text-muted-foreground" />
+                </motion.div>
+                <motion.h3
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="font-semibold text-xl mb-2"
+                >
+                  No quizzes found
+                </motion.h3>
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-muted-foreground mb-6 max-w-md"
+                >
+                  Try adjusting your search terms or filters to discover more quizzes.
+                </motion.p>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <Button variant="outline" onClick={() => window.location.reload()}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Clear Filters
+                  </Button>
+                </motion.div>
               </>
             ) : (
               <>
-                <FileQuestion className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="font-semibold text-xl mb-2">Ready to start?</h3>
-                <p className="text-muted-foreground mb-6 max-w-md">
-                  Create your first quiz to test knowledge and skills.
-                </p>
-                <Button onClick={onCreateQuiz} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Your First Quiz
-                </Button>
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                  className="w-24 h-24 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center mb-6"
+                >
+                  <Sparkles className="h-12 w-12 text-primary" />
+                </motion.div>
+                <motion.h3
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="font-semibold text-2xl mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"
+                >
+                  Ready to start learning?
+                </motion.h3>
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-muted-foreground mb-8 max-w-md"
+                >
+                  Create your first quiz and begin your journey of knowledge discovery.
+                </motion.p>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="flex flex-col sm:flex-row gap-3"
+                >
+                  <Button onClick={onCreateQuiz} className="gap-2 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90">
+                    <Plus className="h-4 w-4" />
+                    Create Your First Quiz
+                  </Button>
+                  <Button variant="outline" onClick={() => window.location.reload()}>
+                    <TrendingUp className="mr-2 h-4 w-4" />
+                    Explore Quizzes
+                  </Button>
+                </motion.div>
               </>
             )}
           </CardContent>
@@ -397,36 +448,129 @@ function QuizListComponent({
         </div>
 
         {/* Quiz Type Filters */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {Object.entries(QUIZ_TYPE_CONFIG).map(([type, config]) => {
-            const IconComponent = config.icon
-            const isSelected = currentSelectedTypes.includes(type as QuizType)
-            return (
-              <Button
-                key={type}
-                variant={isSelected ? "default" : "outline"}
-                size="sm"
-                onClick={() => toggleQuizType(type as QuizType)}
-                className={cn(
-                  "transition-all",
-                  isSelected && config.color
-                )}
-              >
-                <IconComponent className="mr-2 h-4 w-4" />
-                {config.label}
-              </Button>
-            )
-          })}
-        </div>
+        <TooltipProvider>
+          <div className="flex items-center gap-2 flex-wrap">
+            {Object.entries(QUIZ_TYPE_CONFIG).map(([type, config]) => {
+              const IconComponent = config.icon
+              const normalizedType = type as QuizType
+              const isSelected = currentSelectedTypes.includes(normalizedType)
+              const count = quizCounts ? (quizCounts as any)[type] : undefined
+              return (
+                <Tooltip key={type}>
+                  <TooltipTrigger asChild>
+                    <motion.button
+                      type="button"
+                      onClick={() => toggleQuizType(normalizedType)}
+                      className={cn(
+                        "flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/40 relative overflow-hidden",
+                        config.pill,
+                        isSelected ? "ring-2 ring-primary/60 shadow-sm" : "hover:bg-muted/40"
+                      )}
+                      aria-pressed={isSelected}
+                      whileHover={{ scale: 1.05, y: -1 }}
+                      whileTap={{ scale: 0.95 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    >
+                      {/* Animated background on hover */}
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10 opacity-0"
+                        whileHover={{ opacity: 1 }}
+                        transition={{ duration: 0.2 }}
+                      />
+                      
+                      <motion.div
+                        className="relative flex items-center gap-2"
+                        animate={{ 
+                          color: isSelected ? config.color : undefined 
+                        }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <motion.div
+                          animate={{ 
+                            rotate: isSelected ? 360 : 0,
+                            scale: isSelected ? 1.1 : 1
+                          }}
+                          transition={{ 
+                            rotate: { duration: 0.3, ease: "easeInOut" },
+                            scale: { duration: 0.2 }
+                          }}
+                        >
+                          <IconComponent className={cn("h-4 w-4", config.color)} />
+                        </motion.div>
+                        <span className="whitespace-nowrap flex items-center gap-1">
+                          {config.label}
+                          {typeof count === 'number' && (
+                            <motion.span 
+                              className="inline-flex items-center justify-center rounded-full bg-background/70 px-1.5 text-[10px] font-semibold border border-border/40"
+                              animate={{ 
+                                scale: isSelected ? 1.1 : 1,
+                                backgroundColor: isSelected ? "hsl(var(--primary) / 0.1)" : undefined
+                              }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              {count}
+                            </motion.span>
+                          )}
+                        </span>
+                        <AnimatePresence>
+                          {isSelected && (
+                            <motion.span 
+                              className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground"
+                              initial={{ scale: 0, rotate: -180 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              exit={{ scale: 0, rotate: 180 }}
+                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            >
+                              ✓
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    </motion.button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <div className="text-center">
+                      <p className="font-medium">{config.label} Quizzes</p>
+                      <p className="text-xs text-muted-foreground mt-1">{config.description}</p>
+                      {typeof count === 'number' && (
+                        <p className="text-xs text-muted-foreground mt-1">{count} available</p>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              )
+            })}
+          </div>
+        </TooltipProvider>
 
-        {/* Simple sort toggle */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setSortBy(prev => prev === 'title' ? 'default' : 'title')}
-        >
-          {sortBy === 'title' ? 'Clear Sort' : 'Sort A-Z'}
-        </Button>
+        {/* Enhanced Sort Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button variant="outline" size="sm" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Sort
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </motion.div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem 
+              onClick={() => setSortBy('default')}
+              className={cn(sortBy === 'default' && "bg-muted")}
+            >
+              <Star className="mr-2 h-4 w-4" />
+              Default Order
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => setSortBy('title')}
+              className={cn(sortBy === 'title' && "bg-muted")}
+            >
+              <BookOpen className="mr-2 h-4 w-4" />
+              Alphabetical (A-Z)
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Clear Filters */}
         {(currentSearch || currentSelectedTypes.length > 0 || sortBy !== 'default') && (

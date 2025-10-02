@@ -6,9 +6,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertTriangle, Info, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ReferralBanner } from "@/components/ReferralBanner"
-import { useSubscription } from "@/modules/auth"
-import { useAppDispatch, useAppSelector } from "@/store"
-import { forceSyncSubscription, selectIsSubscriptionLoading } from "@/store/slices/subscription-slice"
+import { useSubscription } from "@/modules/subscriptions/client"
+import { useAuth } from "@/modules/auth"
 import { progressApi } from "@/components/loaders/progress-api"
 import { migratedStorage } from "@/lib/storage"
 
@@ -17,7 +16,8 @@ import { LoginModal } from "@/app/auth/signin/components/LoginModal"
 import { CancellationDialog } from "./cancellation-dialog"
 import { useMediaQuery } from "@/hooks"
 import TrialModal from "@/components/features/subscription/TrialModal"
-import { SubscriptionPlanType } from "@/app/types/subscription"
+// Using plan type string union directly to avoid missing local type import
+type SubscriptionPlanType = 'FREE' | 'BASIC' | 'PREMIUM' | 'ULTIMATE'
 import SubscriptionSkeleton from "./SubscriptionSkeleton"
 
 
@@ -38,29 +38,29 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   const [timedOut, setTimedOut] = useState(false)
 
   // Use the unified subscription hook
-  const subscriptionState: any = useSubscription() // legacy shape casting
-  const subscription = subscriptionState?.subscription || subscriptionState
-  const isAuthenticated = !!subscriptionState?.isAuthenticated || !!subscriptionState?.user
-  const user = subscriptionState?.user || null
-  const dispatch = useAppDispatch()
-  const isLoading = useAppSelector(selectIsSubscriptionLoading as any) as boolean
-  // Force fresh sync on mount for subscription page
+  const subscriptionState = useSubscription()
+  const subscription = subscriptionState.subscription
+  const { forceRefresh, isLoading, isRefreshing } = subscriptionState
+  
+  // Get authentication state from auth module
+  const { user, isAuthenticated: authIsAuthenticated } = useAuth()
+  const userId = user?.id
+  const isAuthenticated = authIsAuthenticated && !!user
+  // Force fresh sync on mount for subscription page using unified hook
   useEffect(() => {
     let active = true
     const sync = async () => {
       try {
         if (!progressApi.isStarted()) progressApi.start()
-        await dispatch(forceSyncSubscription()).unwrap()
+        await forceRefresh()
       } catch (error) {
-        // Log the error for debugging but don't crash the app
-        console.warn('Subscription sync failed in SubscriptionPage, continuing with cached data:', error)
+        console.warn('Subscription sync failed in SubscriptionPage (unified hook):', error)
       } finally {
         if (active) progressApi.done()
       }
     }
     sync()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [forceRefresh])
   const error = undefined
 
   // Log subscription errors for debugging
@@ -72,7 +72,8 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   }, [error])
 
   const isProd = process.env.NODE_ENV === "production"
-  const userId = user?.id ?? null
+  // userId removed (unified hook does not expose it); keep variable for existing logic
+  // const userId = null
   const router = useRouter()
   const searchParams = useSearchParams()
   const isMobile = useMediaQuery("(max-width: 768px)")
@@ -80,16 +81,13 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   // Derived subscription state
   const isSubscribed = subscription?.isSubscribed || false
   const isCancelled = subscription?.cancelAtPeriodEnd || false
-  const subscriptionPlan = subscription?.plan || 'FREE'
+  const subscriptionPlan = subscription?.subscriptionPlan || 'FREE'
   
   // Check if subscription is expired
-  const isExpired = subscription?.status === 'EXPIRED' || 
-    (subscription?.expirationDate && new Date(subscription.expirationDate) < new Date())
+  const isExpired = subscriptionState.isExpired
   
   // Check if user had a paid plan before
-  const hadPaidPlan = subscription?.subscriptionPlan && 
-    subscription.subscriptionPlan !== 'FREE' && 
-    (isExpired || isCancelled)
+  const hadPaidPlan = subscription?.subscriptionPlan !== 'FREE' && (isExpired || isCancelled)
 
   // Scroll to plans section for resubscription
   const handleResubscribe = useCallback(() => {
@@ -130,8 +128,16 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   // Handle subscription button click for unauthenticated users
   const handleUnauthenticatedSubscribe = useCallback(
     (planName: SubscriptionPlanType, duration: number, promoCode?: string, promoDiscount?: number) => {
+      console.log('[SubscriptionPageClient] handleUnauthenticatedSubscribe called:', {
+        planName,
+        duration,
+        isAuthenticated,
+        isLoading,
+        userId
+      })
+      
       // Only show login modal if user is definitely not authenticated
-      if (!isLoading && !isAuthenticated) {
+      if (!isAuthenticated && !isLoading) {
         const subscriptionData = {
           planName,
           duration,
@@ -141,9 +147,11 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         }
         setPendingSubscriptionData(subscriptionData)
         setShowLoginModal(true)
+      } else if (isAuthenticated) {
+        console.warn('[SubscriptionPageClient] User is already authenticated, should not call handleUnauthenticatedSubscribe')
       }
     },
-    [referralCode, isLoading, isAuthenticated],
+    [referralCode, isLoading, isAuthenticated, userId],
   )
 
   const handleManageSubscription = useCallback(() => {
@@ -171,7 +179,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
 
   const renderContent = () => {
     // Show skeleton during initial loading
-    if ((isLoading && !subscription) && !timedOut) {
+  if (((isLoading || isRefreshing) && !subscription) && !timedOut) {
       return <SubscriptionSkeleton />
     }
     // Show error if loading timed out
@@ -223,7 +231,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
           <ReferralBanner referralCode={referralCode} onDismiss={() => setShowReferralBanner(false)} />
         )}
 
-        {pendingSubscriptionData && userId && (
+  {pendingSubscriptionData && (
           <Alert className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 animate-in fade-in slide-in-from-top-5 duration-300">
             <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             <AlertTitle>Pending Subscription</AlertTitle>
@@ -234,7 +242,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
           </Alert>
         )}
 
-        {userId && (
+  {isAuthenticated && (
           <Alert className="mb-6 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 animate-in fade-in slide-in-from-top-5 duration-300">
             <Info className="h-5 w-5 text-slate-600 dark:text-slate-400" />
             <AlertTitle>Manage Your Subscription</AlertTitle>
@@ -317,7 +325,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
           setShowCancellationDialog(false)
           return Promise.resolve()
         }}
-        expirationDate={subscription?.currentPeriodEnd || null}
+  expirationDate={subscription?.expirationDate || null}
         planName={subscription?.plan || ""}
       />
     </div>

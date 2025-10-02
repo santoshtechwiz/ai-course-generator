@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from 'next/server'
 import { AuthService } from "./auth-service"
 import { SecurityService } from "./security-service"
 import { ApiResponseHandler } from "./api-response-handler"
@@ -36,20 +36,27 @@ export abstract class BaseApiRoute {
   }
 
   /**
-   * Parse request body
+   * Parse request body based on content type and HTTP method.
+   * Skips body parsing for safe/read-only HTTP methods (GET, HEAD, OPTIONS).
    */
   private async parseBody(req: NextRequest): Promise<any> {
     try {
-      const contentType = req.headers.get("content-type")
-      
-      if (contentType?.includes("application/json")) {
+      // Do not attempt to read a body for GET/HEAD/OPTIONS requests
+      if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+        return {}
+      }
+
+      const contentType = req.headers.get('content-type')
+
+      if (contentType?.includes('application/json')) {
         return await req.json()
       }
-      
+
+      // Add support for other content types as needed (form, multipart, etc.)
       return {}
     } catch (error) {
-      logger.warn("Failed to parse request body:", SecurityService.sanitizeError(error))
-      throw ApiResponseHandler.validationError("Invalid request body")
+      logger.warn('Failed to parse request body:', SecurityService.sanitizeError(error))
+      throw ApiResponseHandler.validationError('Invalid request body')
     }
   }
 
@@ -87,6 +94,13 @@ export abstract class BaseApiRoute {
    */
   protected success<T>(data: T, metadata?: Record<string, any>): NextResponse {
     return ApiResponseHandler.success(data, metadata)
+  }
+
+  /**
+   * Create standardized error response (helper for route implementations)
+   */
+  protected error(message: string, status = 500, code: string = 'ERROR', details?: any): NextResponse {
+    return ApiResponseHandler.error({ code, message, details }, status)
   }
 }
 

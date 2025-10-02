@@ -2,7 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
 import { getServerAuthSession } from "@/lib/server-auth"
-import { Chatbot } from "@/components/Chatbot"
+import Chatbot from "@/components/Chatbot"
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "Interactive Quizzes – Master Your Knowledge | CourseAI",

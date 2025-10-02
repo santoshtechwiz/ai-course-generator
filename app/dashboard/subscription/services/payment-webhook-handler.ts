@@ -9,7 +9,7 @@ import type { PaymentGateway } from "./payment-gateway-interface"
 import { PaymentProvider, PaymentStatus } from "./payment-gateway-interface"
 import { getPaymentGateway } from "./payment-gateway-factory"
 import { PaymentSecurityUtils } from "./payment-config-manager"
-import { SubscriptionService } from "../../../../services/subscription/subscription-service"
+import { SubscriptionService } from "@/modules/subscriptions"
 import { logger } from "@/lib/logger"
 
 /**
@@ -640,20 +640,18 @@ export class PaymentWebhookHandler {
       }
 
       // Use consistent subscription service
-      const result = await SubscriptionService.updateUserSubscription(
+      const result = await SubscriptionService.updateSubscription(
         userSubscription.userId,
         {
-          planId: userSubscription.planId as any,
+          subscriptionPlan: userSubscription.planId as any,
           status: status as any,
-          currentPeriodStart: new Date(subscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-          stripeSubscriptionId: subscription.id,
-          stripeCustomerId: subscription.customer as string,
+          expirationDate: new Date(subscription.current_period_end * 1000).toISOString(),
+          updatedAt: new Date().toISOString()
         }
       )
 
       if (!result.success) {
-        logger.error(`Failed to update subscription status for user ${userSubscription.userId}: ${result.message}`)
+        logger.error(`Failed to update subscription status for user ${userSubscription.userId}`)
       } else {
         logger.info(`Successfully updated subscription status for user ${userSubscription.userId} to ${status}`)
       }
@@ -681,8 +679,8 @@ export class PaymentWebhookHandler {
       // Use consistent subscription service to cancel
       const result = await SubscriptionService.cancelSubscription(userSubscription.userId)
       
-      if (!result.success) {
-        logger.error(`Failed to cancel subscription for user ${userSubscription.userId}: ${result.message}`)
+      if (!result) {
+        logger.error(`Failed to cancel subscription for user ${userSubscription.userId}`)
       } else {
         logger.info(`Successfully canceled subscription for user ${userSubscription.userId}`)
       }
@@ -714,21 +712,19 @@ export class PaymentWebhookHandler {
       // If this is a subscription checkout
       if (session.mode === "subscription" && session.subscription) {
         // Use the consistent subscription service for guaranteed data consistency
-        const result = await SubscriptionService.updateUserSubscription(
+        const result = await SubscriptionService.updateSubscription(
           userId,
           {
-            planId: (planId || "FREE") as any,
+            subscriptionPlan: (planId || "FREE") as any,
             status: "ACTIVE",
-            currentPeriodStart: new Date(session.current_period_start * 1000),
-            currentPeriodEnd: new Date(session.current_period_end * 1000),
-            stripeSubscriptionId: typeof session.subscription === "string" ? session.subscription : null,
-            stripeCustomerId: session.customer as string,
-          },
-          tokensToAdd
+            expirationDate: new Date(session.current_period_end * 1000).toISOString(),
+            credits: tokensToAdd,
+            updatedAt: new Date().toISOString()
+          }
         )
 
         if (!result.success) {
-          logger.error(`Failed to update subscription for user ${userId}: ${result.message}`)
+          logger.error(`Failed to update subscription for user ${userId}`)
           return
         }
 

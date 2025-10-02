@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth/next"
 import { NextResponse } from "next/server"
 import { authOptions } from "@/lib/auth"
-import { SubscriptionService } from "@/services/subscription/subscription-service"
+import { SubscriptionService } from "@/modules/subscriptions"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -15,13 +15,24 @@ export async function GET() {
   try {
     // Fetch subscription data
     const status = await SubscriptionService.getSubscriptionStatus(userId)
-    const tokensUsed = await SubscriptionService.getTokensUsed(userId)
+
+    if (!status) {
+      return NextResponse.json({
+        credits: 0,
+        isSubscribed: false,
+        subscriptionPlan: "FREE",
+        expirationDate: null,
+      })
+    }
 
     return NextResponse.json({
-      credits: tokensUsed,
-      isSubscribed: status.isActive ? true : false,
+      credits: status.credits || 0,
+      tokensUsed: status.tokensUsed || 0,
+      isSubscribed: status.isSubscribed,
       subscriptionPlan: status.subscriptionPlan || "FREE",
-      expirationDate: status.expirationDate instanceof Date ? status.expirationDate.toISOString() : undefined,
+      expirationDate: status.expirationDate,
+      status: status.status,
+      cancelAtPeriodEnd: status.cancelAtPeriodEnd
     })
   } catch (error) {
     console.error("Error fetching subscription data:", error)

@@ -4,7 +4,7 @@ import { z } from "zod"
 
 import { prisma } from "@/lib/db"
 import { authOptions } from "@/lib/auth"
-import { SubscriptionService } from "@/services/subscription/subscription-service"
+import { SubscriptionService } from "@/modules/subscriptions"
 import StripeGateway from "@/app/dashboard/subscription/services/stripe-gateway"
 
 // Define validation schema for request body with improved type checking
@@ -63,22 +63,57 @@ export async function POST(req: NextRequest) {
       )
     }    const userId = session.user.id
 
-    // Check if user already has an active subscription
-    const existingSubscription = await prisma.userSubscription.findUnique({
-      where: { userId },
-    })
+    // Fetch existing subscription & persistent flags
+    const [existingSubscription, userFlags] = await Promise.all([
+      prisma.userSubscription.findUnique({ where: { userId } }),
+      prisma.user.findUnique({ where: { id: userId }, select: { hadPreviousPaidPlan: true, hasUsedFreePlan: true } })
+    ])
+    const existingPlan = existingSubscription?.planId
+    const existingStatus = existingSubscription?.status?.toUpperCase()
 
-    // If user has an active subscription, they can't change plans until it expires
-    if (existingSubscription && existingSubscription.status === "ACTIVE" && existingSubscription.planId !== "FREE") {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Subscription Change Restricted",
-          message: "You cannot change your subscription until your current plan expires",
-          errorType: "PLAN_CHANGE_RESTRICTED",
-        },
-        { status: 200 },
-      )
+    const isActivePaid = existingSubscription && existingSubscription.status === 'ACTIVE' && existingPlan !== 'FREE'
+    // Use persistent flag
+    let hadPreviousPaidPlan = userFlags?.hadPreviousPaidPlan || false
+
+    // 1. Block plan change while active paid subscription
+    if (isActivePaid && existingPlan !== validatedData.planId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Subscription Change Restricted',
+        message: 'You cannot change your subscription until your current plan expires',
+        errorType: 'PLAN_CHANGE_RESTRICTED'
+      }, { status: 200 })
+    }
+
+    // 2. Block downgrade to FREE if user had paid plan and it has not yet expired
+    if (validatedData.planId === 'FREE' && hadPreviousPaidPlan && existingStatus === 'ACTIVE') {
+      return NextResponse.json({
+        success: false,
+        error: 'DOWNGRADE_BLOCKED',
+        message: 'You can switch to the free plan only after your current subscription expires.',
+        errorType: 'DOWNGRADE_BLOCKED'
+      }, { status: 200 })
+    }
+
+    // 3. Prevent re-subscribing to same active plan
+    if (isActivePaid && existingPlan === validatedData.planId) {
+      return NextResponse.json({
+        success: false,
+        error: 'ALREADY_SUBSCRIBED',
+        message: 'This plan is already active for your account.',
+        errorType: 'ALREADY_SUBSCRIBED'
+      }, { status: 200 })
+    }
+
+    // 4. If user is moving to a paid plan and has not yet had a paid plan, persist the flag now
+    if (validatedData.planId !== 'FREE' && !hadPreviousPaidPlan) {
+      try {
+        await prisma.user.update({ where: { id: userId }, data: { hadPreviousPaidPlan: true } })
+        hadPreviousPaidPlan = true
+      } catch (e) {
+        // Non-fatal; log server-side if necessary
+        console.error('Failed to persist hadPreviousPaidPlan flag', e)
+      }
     }
 
     // Check if user has a recent pending subscription to prevent double-processing
@@ -105,40 +140,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check if referral code is valid if provided
-    if (validatedData.referralCode) {
-      const isValidReferral = await SubscriptionService.validatePromoCode(validatedData.referralCode)
-      if (!isValidReferral) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Invalid Referral",
-            message: "The provided referral code is invalid or expired",
-            errorType: "INVALID_REFERRAL",
-          },
-          { status: 400 },
-        )
-      }
+    // TODO: Implement real referral / promo validation services.
+    // For now, accept referral/promo values only if present and sanitize discount bounds.
+    if (validatedData.promoDiscount && validatedData.promoDiscount > 100) {
+      validatedData.promoDiscount = 100
     }
-
-    // Validate promo code if provided
-    if (validatedData.promoCode) {
-      const promoValidation = await SubscriptionService.validatePromoCode(validatedData.promoCode)
-      if (!promoValidation.valid) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Invalid Promo Code",
-            message: "The provided promo code is invalid or expired",
-            errorType: "INVALID_PROMO",
-          },
-          { status: 400 },
-        )
-      }
-
-      // Use the validated discount percentage from the service
-      validatedData.promoDiscount = promoValidation.discount||0;
-    }    // Create or update pending subscription record before redirecting to payment
+    if (validatedData.promoDiscount && validatedData.promoDiscount < 0) {
+      validatedData.promoDiscount = 0
+    }
+    // Create or update pending subscription record before redirecting to payment
     try {
       // Clean up any existing pending subscriptions for this user (including old ones)
       await prisma.pendingSubscription.deleteMany({
@@ -176,7 +186,7 @@ export async function POST(req: NextRequest) {
       // Continue with checkout even if recording fails
     }
 
-    // Create checkout session
+  // Create checkout session (always for non-FREE plans handled by gateway)
     try {
       const stripeGateway = new StripeGateway()
       const result = await stripeGateway.createCheckoutSession(

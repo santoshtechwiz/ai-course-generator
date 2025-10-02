@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth/next"
 import { NextResponse } from "next/server"
 import { authOptions } from "@/lib/auth"
-import { SubscriptionService } from "@/services/subscription/subscription-service"
+import { SubscriptionService } from "@/modules/subscriptions"
 
 export async function GET() {
   const session = await getServerSession(authOptions)

@@ -480,9 +480,9 @@ export default function ImprovedContactForm() {
                 <Button 
                   type="submit" 
                   disabled={isPending} 
-                  className="w-full h-12 text-base font-medium transition-all duration-300 hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full h-14 text-lg font-medium transition-all duration-300 hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Send className="mr-2 h-4 w-4" />
+                  <Send className="mr-2 h-5 w-5" />
                   Send Message
                 </Button>
               </form>

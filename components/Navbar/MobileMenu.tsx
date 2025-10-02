@@ -26,8 +26,8 @@ const MobileMenu = () => {
           whileTap={{ scale: 0.9 }}
           transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
-          <Button variant="ghost" size="icon" className="md:hidden" aria-label="Toggle menu">
-            <Menu className="h-5 w-5" />
+          <Button variant="ghost" size="icon" className="md:hidden min-h-[44px] min-w-[44px]" aria-label="Toggle menu">
+            <Menu className="h-6 w-6" />
           </Button>
         </motion.div>
       </SheetTrigger>
@@ -39,8 +39,8 @@ const MobileMenu = () => {
             whileTap={{ scale: 0.9 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Close menu" className="h-8 w-8 sm:h-9 sm:w-9">
-              <X className="h-4 w-4 sm:h-5 sm:w-5" />
+            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Close menu" className="min-h-[44px] min-w-[44px]">
+              <X className="h-5 w-5" />
             </Button>
           </motion.div>
         </SheetHeader>
@@ -62,7 +62,7 @@ const MobileMenu = () => {
               >
                 <Button
                   variant={pathname === item.href ? "default" : "ghost"}
-                  className={`w-full justify-start rounded-lg transition-all duration-300 h-10 sm:h-11 text-sm sm:text-base ${
+                  className={`w-full justify-start rounded-lg transition-all duration-300 min-h-[48px] text-base ${
                     pathname === item.href
                       ? "bg-primary text-primary-foreground"
                       : "hover:bg-muted/80 hover:translate-x-1"
@@ -74,7 +74,7 @@ const MobileMenu = () => {
                     whileHover={{ x: 2 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   >
-                    <item.icon className="mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                    <item.icon className="mr-2 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">{item.name}</span>
                   </motion.div>
                 </Button>

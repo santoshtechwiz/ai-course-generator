@@ -679,6 +679,56 @@ class StorageManager {
     const key = `${STORAGE_PREFIXES.QUIZ_PROGRESS}events_${userId}`
     this.safeRemoveItem(key)
   }
+
+  // Chat History Management
+  saveChatHistory(userId: string, data: {
+    messages: Array<{ id: string; role: string; content: string; timestamp: number }>
+    lastQuestionTime: number
+    remainingQuestions: number
+  }): boolean {
+    const key = `chat_history_${userId}`
+    return this.safeSetItem(key, JSON.stringify({
+      ...data,
+      lastUpdated: Date.now(),
+      version: 1
+    }))
+  }
+
+  getChatHistory(userId: string): {
+    messages: Array<{ id: string; role: string; content: string; timestamp: number }>
+    lastQuestionTime: number
+    remainingQuestions: number
+  } | null {
+    const key = `chat_history_${userId}`
+    const data = this.safeGetItem(key)
+
+    if (!data) return null
+
+    try {
+      const parsed = JSON.parse(data)
+
+      // Check if data is expired (7 days for chat history)
+      if (Date.now() - parsed.lastUpdated > 7 * 24 * 60 * 60 * 1000) {
+        this.safeRemoveItem(key)
+        return null
+      }
+
+      return {
+        messages: parsed.messages || [],
+        lastQuestionTime: parsed.lastQuestionTime || Date.now(),
+        remainingQuestions: parsed.remainingQuestions || 5
+      }
+    } catch (error) {
+      console.warn('Failed to parse chat history:', error)
+      this.safeRemoveItem(key)
+      return null
+    }
+  }
+
+  clearChatHistory(userId: string): void {
+    const key = `chat_history_${userId}`
+    this.safeRemoveItem(key)
+  }
 }
 
 // Export singleton instance

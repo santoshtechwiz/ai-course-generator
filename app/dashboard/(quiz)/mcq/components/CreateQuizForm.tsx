@@ -10,8 +10,7 @@ import { api } from "@/lib/api-helper"
 import { signIn, useSession } from "next-auth/react"
 import { HelpCircle, Timer, Sparkles, Check, Lightbulb } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { useAppDispatch } from "@/store"
-import { forceSyncSubscription } from "@/store/slices/subscription-slice"
+// Removed redux subscription sync imports
 import { ClientCreditService } from "@/services/client-credit-service"
 
 import { Button } from "@/components/ui/button"
@@ -25,7 +24,7 @@ import { ConfirmDialog } from "../../components/ConfirmDialog"
 import { quizSchema } from "@/schema/schema"
 import { usePersistentState } from "@/lib/storage"
 import { cn } from "@/lib/utils"
-import { useSubscription } from "@/modules/auth"
+import { useSubscription } from "@/modules/subscriptions/client"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
@@ -136,7 +135,8 @@ export default function CreateQuizForm({
       setValue("topic", params.topic)
     }
     if (params?.suggestedPrompt) {
-      setValue("prompt", params.suggestedPrompt)
+      const prompt = Array.isArray(params.suggestedPrompt) ? params.suggestedPrompt[0] : params.suggestedPrompt
+      setValue("prompt", prompt)
     }
   }, [params?.title, params?.amount, params?.difficulty, params?.topic, params?.suggestedPrompt, maxQuestions, setValue])
 
@@ -145,7 +145,6 @@ export default function CreateQuizForm({
     return () => subscription.unsubscribe()
   }, [watch, setFormData])
 
-  const dispatch = useAppDispatch()
   const { mutateAsync: createQuizMutation } = useMutation({
     mutationFn: async (data: QuizFormData) => {
       const response = await api.post(`/api/quizzes/mcq/create`, data)
@@ -238,7 +237,7 @@ export default function CreateQuizForm({
         title: "Success!",
         description: "Your quiz has been created.",
       })
-      try { await dispatch(forceSyncSubscription()).unwrap() } catch {/* ignore */}
+  try { await subscription.forceRefresh?.() } catch {/* ignore */}
       router.push(`/dashboard/mcq/${slug}`)
     } catch (error: any) {
       console.error("Quiz creation error:", error)
@@ -270,7 +269,7 @@ export default function CreateQuizForm({
     } finally {
       setIsLoading(false)
     }
-  }, [createQuizMutation, watch, toast, router, dispatch, setIsConfirmDialogOpen, setSubmissionError, setIsSuccess])
+  }, [createQuizMutation, watch, toast, router, setIsConfirmDialogOpen, setSubmissionError, setIsSuccess])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")

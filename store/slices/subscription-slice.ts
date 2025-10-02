@@ -17,7 +17,30 @@ import {
   type PayloadAction,
 } from "@reduxjs/toolkit"
 
+// Utility function for fetch with timeout
+const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout: number = 10000) => {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeout)
+  
+  try {
+    const signal = controller.signal
+    const response = await fetch(url, {
+      ...options,
+      signal,
+    })
+    return response
+  } catch (error) {
+    logger.error('Fetch error:', error)
+    return null
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
 const DEFAULT_FREE_SUBSCRIPTION: SubscriptionData = {
+  id: 'free',
+  userId: '',
+  subscriptionId: '',
   credits: 0,
   tokensUsed: 0,
   isSubscribed: false,
@@ -25,7 +48,8 @@ const DEFAULT_FREE_SUBSCRIPTION: SubscriptionData = {
   status: "INACTIVE",
   expirationDate: null,
   cancelAtPeriodEnd: false,
-  subscriptionId: "",
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
   metadata: {
     source: "default_plan",
     timestamp: new Date().toISOString()
@@ -51,7 +75,11 @@ const getFetchInterval = (subscription: SubscriptionData | null): number => {
     return SUBSCRIPTION_CACHE_CONFIG.staleTime // Use shorter stale time for active subscribers
   }
   
-  if (subscription.status === "EXPIRED" || subscription.status === "CANCELED") {
+  // Handle various status types including non-standard ones that might come from API
+  if (subscription.status === "CANCELLED" || 
+      subscription.status === "INACTIVE" || 
+      subscription.status as string === "EXPIRED" || 
+      subscription.status as string === "CANCELED") {
     return 1800000 // 30 minutes for expired/canceled
   }
   
@@ -89,13 +117,22 @@ export const fetchSubscription = createAsyncThunk<
 
     // Transform the response to match our SubscriptionData interface
     const transformed: SubscriptionData = {
+      id: data.id || 'free',
+      userId: data.userId || '',
+      subscriptionId: data.subscriptionId || data.id || 'free',
       credits: Math.max(0, data.credits || 0), // Ensure non-negative
       tokensUsed: Math.max(0, data.tokensUsed || 0), // Ensure non-negative
       isSubscribed: Boolean(data.isSubscribed),
       subscriptionPlan: data.subscriptionPlan || "FREE",
-      expirationDate: data.expirationDate,
-      trialEndsAt: data.trialEndsAt,
-      status: data.status || "INACTIVE",
+      expirationDate: data.expirationDate || null,
+      status: (data.status as SubscriptionStatusType) || "INACTIVE",
+      cancelAtPeriodEnd: Boolean(data.cancelAtPeriodEnd),
+      createdAt: data.createdAt || new Date().toISOString(),
+      updatedAt: data.updatedAt || new Date().toISOString(),
+      metadata: data.metadata || {
+        source: "api_fetch",
+        timestamp: new Date().toISOString()
+      }
     }
 
     // Additional validation
@@ -302,7 +339,7 @@ export const forceSyncSubscription = createAsyncThunk<
   SubscriptionData,
   void,
   { state: RootState; rejectValue: string }
->("subscription/forceSync", async (_, { rejectWithValue }) => {
+>("subscription/forceSync", async (_, { rejectWithValue, getState }) => {
   try {
     // Check if we're in development and server might not be running
     const isDevelopment = process.env.NODE_ENV === 'development'
@@ -316,11 +353,15 @@ export const forceSyncSubscription = createAsyncThunk<
         })
         if (!healthCheck.ok) {
           logger.warn("Server health check failed, skipping subscription sync")
-          return DEFAULT_FREE_SUBSCRIPTION
+          // Return the current subscription state rather than a default FREE subscription
+          const currentState = getState().subscription.currentSubscription
+          return currentState || DEFAULT_FREE_SUBSCRIPTION
         }
       } catch (healthError) {
         logger.warn("Server not available for subscription sync, continuing with cached data")
-        return DEFAULT_FREE_SUBSCRIPTION
+        // Return the current subscription state rather than a default FREE subscription
+        const currentState = getState().subscription.currentSubscription
+        return currentState || DEFAULT_FREE_SUBSCRIPTION
       }
     }
 
@@ -344,18 +385,35 @@ export const forceSyncSubscription = createAsyncThunk<
 
     if (res.status === 401) {
       logger.warn("User not authenticated for force sync")
-      return DEFAULT_FREE_SUBSCRIPTION
+      // Return the current subscription state if possible, fallback to FREE
+      const currentState = getState().subscription.currentSubscription
+      return currentState || DEFAULT_FREE_SUBSCRIPTION
     }
 
     if (!res.ok) {
       const status = res.status
       const statusText = res.statusText || "Unknown"
       logger.warn(`Force sync warning: ${status} - ${statusText}`)
-      return DEFAULT_FREE_SUBSCRIPTION
+      
+      // Handle specific error cases
+      if (status === 429) {
+        // Rate limited, pass through the error
+        return rejectWithValue("Too many requests. Please try again later.")
+      }
+      
+      // For other errors, use current state or default to FREE
+      const currentState = getState().subscription.currentSubscription
+      return currentState || DEFAULT_FREE_SUBSCRIPTION
     }
 
     const syncResult = await res.json()
-    logger.info("Force sync completed", syncResult)
+    
+    if (!syncResult || !syncResult.subscription) {
+      logger.error("Invalid sync response format", syncResult)
+      return rejectWithValue("Invalid response from subscription service")
+    }
+    
+    logger.info("Force sync completed successfully")
 
     return syncResult.subscription
   } catch (error) {
@@ -365,7 +423,8 @@ export const forceSyncSubscription = createAsyncThunk<
     // In development, network errors are expected if server isn't running
     if (isDevelopment && errorMessage.includes('Failed to fetch')) {
       logger.warn("Network error during development (server may not be running)", errorMessage)
-      return DEFAULT_FREE_SUBSCRIPTION
+      const currentState = getState().subscription.currentSubscription
+      return currentState || DEFAULT_FREE_SUBSCRIPTION
     }
 
     logger.error("Force sync failed", error)
@@ -380,7 +439,7 @@ export const subscriptionSlice = createSlice({
     resetSubscriptionState: () => initialState,
     setSubscriptionData: (state, action: PayloadAction<SubscriptionData>) => {
       state.currentSubscription = action.payload
-      state.lastFetched = Date.now()
+      state.lastSync = Date.now()
     },
     clearSubscriptionError: (state) => {
       state.error = null
@@ -395,13 +454,35 @@ export const subscriptionSlice = createSlice({
       .addCase(fetchSubscription.fulfilled, (state, action) => {
         state.currentSubscription = action.payload
         state.isFetching = false
-        state.lastFetched = Date.now()
-        state.lastRefreshed = Date.now()
+        state.lastSync = Date.now()
+        state.cacheStatus = 'fresh'
         state.error = null // Clear any existing errors on success
       })
       .addCase(fetchSubscription.rejected, (state, action) => {
         state.isFetching = false
         state.error = action.payload || "Failed to fetch subscription"
+        // Keep last known good state if available
+        if (!state.currentSubscription) {
+          state.currentSubscription = DEFAULT_FREE_SUBSCRIPTION
+        }
+      })
+      .addCase(forceSyncSubscription.pending, (state) => {
+        state.isLoading = true
+        state.isFetching = true
+        state.error = null
+      })
+      .addCase(forceSyncSubscription.fulfilled, (state, action) => {
+        state.currentSubscription = action.payload
+        state.isLoading = false
+        state.isFetching = false
+        state.lastSync = Date.now()
+        state.cacheStatus = 'fresh'
+        state.error = null
+      })
+      .addCase(forceSyncSubscription.rejected, (state, action) => {
+        state.isLoading = false
+        state.isFetching = false
+        state.error = action.payload || "Forced sync failed"
         // Keep last known good state if available
         if (!state.currentSubscription) {
           state.currentSubscription = DEFAULT_FREE_SUBSCRIPTION
@@ -414,7 +495,7 @@ export const subscriptionSlice = createSlice({
       .addCase(subscribeToplan.fulfilled, (state, action) => {
         state.currentSubscription = action.payload
         state.isLoading = false
-        state.lastFetched = Date.now()
+        state.lastSync = Date.now()
         state.error = null
       })
       .addCase(subscribeToplan.rejected, (state, action) => {
@@ -431,7 +512,7 @@ export const {
 } = subscriptionSlice.actions
 
 // Selectors with memoization
-export const selectSubscription = (state: RootState): NormalizedSubscriptionState =>
+export const selectSubscription = (state: RootState): SubscriptionState =>
   state.subscription
 
 export const selectSubscriptionData = (state: RootState) =>
@@ -472,8 +553,18 @@ export const selectHasCredits = createSelector(
 
 export const selectCanCreateQuizOrCourse = createSelector(
   [selectHasActiveSubscription, selectHasCredits],
-  (hasActiveSubscription, hasCredits): boolean => {
-    return hasActiveSubscription || hasCredits
+  (hasActiveSubscription, hasCredits, state?: any): boolean => {
+    // If user has an active subscription allow.
+    if (hasActiveSubscription) return true
+    // Extract current plan/status to apply stricter rule: if user HAD a paid plan but it's inactive, block creation even if credits remain.
+    // (Prevents downgraded / canceled users from using leftover paid credits beyond expiry.)
+    const subscription = (state as RootState | undefined)?.subscription?.currentSubscription
+    const plan = subscription?.subscriptionPlan
+    const status = subscription?.status?.toUpperCase?.() || 'INACTIVE'
+    const hadPaidButInactive = plan && plan !== 'FREE' && status !== 'ACTIVE'
+    if (hadPaidButInactive) return false
+    // Otherwise (never subscribed) allow if free credits exist.
+    return hasCredits
   }
 )
 

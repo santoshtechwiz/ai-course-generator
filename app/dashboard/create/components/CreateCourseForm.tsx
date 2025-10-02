@@ -24,8 +24,7 @@ import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
 import type { QueryParams } from "@/app/types/types"
 import { useEffect } from "react"
 import { useAuth } from "@/modules/auth"
-import { useAppDispatch } from "@/store"
-import { forceSyncSubscription } from "@/store/slices/subscription-slice"
+import { useSubscription } from "@/modules/subscriptions/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
@@ -36,13 +35,14 @@ export default function CourseCreationForm({ maxQuestions, params }: {
   const [step, setStep] = React.useState(1)
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false)
   const totalSteps = 3
-  const { subscription, user, refreshSubscription } = useAuth()
+  const { user, refreshUserData } = useAuth() as any
+  const unifiedSub = useSubscription()
+  const { forceRefresh: forceSubRefresh } = unifiedSub
   const router = useRouter()
   const { toast } = useToast()
   
-  const isSubscribed = subscription?.isActive || false
-  const dispatch = useAppDispatch()
-  const availableCredits = user?.credits || 0
+  const isSubscribed = unifiedSub.isSubscribed || false
+  const availableCredits = unifiedSub.remainingCredits || user?.credits || 0
 
   const {
     control,
@@ -81,8 +81,8 @@ export default function CourseCreationForm({ maxQuestions, params }: {
         title: "Success",
         description: "Course created successfully",
       })
-      try { await dispatch(forceSyncSubscription()).unwrap() } catch {/* ignore */}
-      refreshSubscription()
+  try { await forceSubRefresh() } catch {/* ignore */}
+  try { await refreshUserData?.() } catch {/* ignore */}
 
       // Extract slug from response
       const slug = data?.slug

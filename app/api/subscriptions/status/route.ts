@@ -1,72 +1,146 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { AuthenticatedApiRoute } from "@/services/base-api-route"
-import { z } from "zod"
-
+import { getServerAuthSession } from "@/lib/server-auth"
 import { logger } from "@/lib/logger"
-import { userRepository } from "@/app/repositories/user.repository"
+import { SubscriptionService } from "@/modules/subscriptions"
+import { prisma } from "@/lib/db"
+import { DEFAULT_FREE_SUBSCRIPTION } from "@/types/subscription"
 
 /**
- * Subscription Status Route Handler
+ * Subscription Status Route - Simplified and Production Ready
  * Returns the current subscription status for authenticated users
  */
-class SubscriptionStatusRoute extends AuthenticatedApiRoute {
-  protected schema = z.object({}).strict()
-
-  protected async handle(
-    req: NextRequest,
-    _data: any,
-    { session }: { session: import('next-auth').Session }
-  ): Promise<NextResponse> {
-    try {
-      // Get subscription status using direct database access
-      const subscriptionData = await userRepository.getUserSubscriptionData(session.user.id)
-
-      if (!subscriptionData) {
-        logger.warn(`No subscription data found for user ${session.user.id}`)
-        
-        // Return default FREE subscription data
-        return this.success({
-          credits: 0,
-          tokensUsed: 0,
-          isSubscribed: false,
-          subscriptionPlan: "FREE",
-          expirationDate: null,
-          status: "INACTIVE",
-          cancelAtPeriodEnd: false,
-          subscriptionId: "",
-          metadata: {
-            source: "default_plan"
-          }
-        })
-      }
-
-      const response = {
-        credits: subscriptionData.credits || 0,
-        tokensUsed: subscriptionData.tokensUsed || 0,
-        isSubscribed: subscriptionData.isSubscribed || false,
-        subscriptionPlan: subscriptionData.subscriptionPlan || "FREE",
-        expirationDate: subscriptionData.expirationDate?.toISOString(),
-        status: subscriptionData.status || "INACTIVE",
-        cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd || false,
-        subscriptionId: subscriptionData.subscriptionId || "",
-        metadata: {
-          source: "subscription_service",
-          lastUpdated: new Date().toISOString()
-        }
-      }
-
-      return this.success(response)
-    } catch (error) {
-      logger.error("Error fetching subscription status:", error)
-      return this.handleError(error)
-    }
-  }
-
-}
-
-// Export HTTP method handlers
-const subscriptionStatusRoute = new SubscriptionStatusRoute()
-
 export async function GET(req: NextRequest) {
-  return subscriptionStatusRoute.process(req)
+  try {
+    const session = await getServerAuthSession()
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const userId = session.user.id
+    
+    import { type NextRequest, NextResponse } from 'next/server'
+import { getServerAuthSession } from '@/lib/server-auth'
+import { SubscriptionService } from '@/modules/subscriptions'
+import { logger } from '@/lib/logger'
+import { SecurityService } from '@/services/security-service'
+
+/**
+ * Subscription Status API Route
+ * 
+ * Returns current subscription status for authenticated users.
+ */
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getServerAuthSession()
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Authentication required'
+        }, 
+        { status: 401 }
+      )
+    }
+
+    const userId = session.user.id
+    
+    // Get subscription data
+    const subscriptionData = await SubscriptionService.getSubscriptionStatus(userId)
+    
+    if (!subscriptionData) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Unable to retrieve subscription status'
+        }, 
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      subscription: subscriptionData
+    })
+    
+  } catch (error: any) {
+    logger.error('Subscription status API error:', SecurityService.sanitizeError(error))
+    
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Internal server error'
+      }, 
+      { status: 500 }
+    )
+  }
+}
+    const subscriptionData = await SubscriptionService.getSubscriptionStatus(userId)
+
+    // Get user flags for business logic
+    const userFlags = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { 
+        hadPreviousPaidPlan: true, 
+        hasUsedFreePlan: true,
+        credits: true,
+        creditsUsed: true
+      }
+    })
+
+    if (!subscriptionData) {
+      logger.warn(`No subscription data found for user ${userId}`)
+      return NextResponse.json({
+        ...DEFAULT_FREE_SUBSCRIPTION,
+        credits: userFlags?.credits || 0,
+        tokensUsed: userFlags?.creditsUsed || 0,
+        metadata: {
+          source: "default_plan",
+          timestamp: new Date().toISOString()
+        }
+      })
+    }
+
+    // Update flags if needed
+    const plan = subscriptionData.subscriptionPlan
+    const tokensUsed = subscriptionData.tokensUsed || 0
+    let hadPreviousPaidPlan = userFlags?.hadPreviousPaidPlan || false
+    let hasUsedFreePlan = userFlags?.hasUsedFreePlan || false
+
+    // Update flags asynchronously if needed
+    if (plan && plan !== 'FREE' && !hadPreviousPaidPlan) {
+      hadPreviousPaidPlan = true
+      prisma.user.update({
+        where: { id: userId },
+        data: { hadPreviousPaidPlan: true }
+      }).catch(err => logger.warn('Failed to update hadPreviousPaidPlan flag:', err))
+    }
+
+    if (plan === 'FREE' && tokensUsed > 0 && !hasUsedFreePlan) {
+      hasUsedFreePlan = true
+      prisma.user.update({
+        where: { id: userId },
+        data: { hasUsedFreePlan: true }
+      }).catch(err => logger.warn('Failed to update hasUsedFreePlan flag:', err))
+    }
+
+    // Return formatted response
+    return NextResponse.json({
+      ...subscriptionData,
+      hasUsedFreePlan,
+      hadPreviousPaidPlan,
+      tokensUsed: Math.min(subscriptionData.tokensUsed || 0, subscriptionData.credits || 0),
+      metadata: {
+        source: "subscription_service",
+        timestamp: new Date().toISOString()
+      }
+    })
+  } catch (error) {
+    logger.error("Error fetching subscription status:", error)
+    return NextResponse.json(
+      { error: "Internal server error" }, 
+      { status: 500 }
+    )
+  }
 }

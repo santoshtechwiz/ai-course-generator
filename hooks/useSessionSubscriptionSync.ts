@@ -13,13 +13,20 @@
 
 import { useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
-import { useAppDispatch, useAppSelector } from '@/store'
+import { useDispatch, useSelector } from 'react-redux'
+import store from '@/store'
 import { 
   fetchSubscription, 
   forceSyncSubscription,
   selectSubscription, 
   setSubscriptionData
 } from '@/store/slices/subscription-slice'
+
+// Define typed hooks
+type RootState = ReturnType<typeof store.getState>
+type AppDispatch = typeof store.dispatch
+const useAppDispatch = () => useDispatch<AppDispatch>()
+const useAppSelector = useSelector as <T>(selector: (state: RootState) => T) => T
 import { logger } from '@/lib/logger'
 import type { SubscriptionData } from '@/types/subscription'
 
@@ -96,8 +103,14 @@ export function useSessionSubscriptionSync(options: SessionSyncOptions = {}) {
       } else {
         await dispatch(fetchSubscription({ forceRefresh: false })).unwrap()
       }
+      // Success - keep the lastSyncRef as it was set above
     } catch (error) {
-      logger.warn('Subscription sync failed')
+      // On failure, reset lastSyncRef to allow retrying sooner
+      lastSyncRef.current = lastSyncRef.current - (config.minSyncInterval / 2)
+      logger.warn('Subscription sync failed', error)
+    } finally {
+      // Always reset sync in progress flag
+      syncInProgressRef.current = false
     }
   }, [dispatch, session?.user?.id, status, config.minSyncInterval])
   // Track subscription state to avoid circular dependencies
@@ -115,14 +128,22 @@ export function useSessionSubscriptionSync(options: SessionSyncOptions = {}) {
     if (status === 'unauthenticated') {
       // User logged out - clear subscription data immediately
       dispatch(setSubscriptionData({
+        id: 'free',
+        userId: '',
+        subscriptionId: '',
         credits: 0,
         tokensUsed: 0,
         isSubscribed: false,
         subscriptionPlan: "FREE",
         status: "INACTIVE",
         cancelAtPeriodEnd: false,
-        subscriptionId: "",
         expirationDate: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        metadata: {
+          source: "logout",
+          timestamp: new Date().toISOString()
+        }
       }))
       sessionIdRef.current = null
       hasSubscriptionDataRef.current = false

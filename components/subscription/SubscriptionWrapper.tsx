@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useMemo } from 'react'
-import { useSubscription, useSubscriptionPermissions } from '@/modules/auth'
+import { useSubscription, useSubscriptionPermissions } from '@/modules/subscriptions/client'
 import { useToast } from '@/hooks'
 
 interface SubscriptionWrapperProps {

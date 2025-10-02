@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
-import { useAuth, useSubscription } from "@/modules/auth"
+import { useAuth } from "@/modules/auth"
+import { useSubscription } from "@/modules/subscriptions/client"
 import { ClientCreditService } from "@/services/client-credit-service"
 
 interface NotificationsMenuProps {

@@ -96,7 +96,6 @@ export class UserRepository extends BaseRepository<any> {
         credits: true,
         userType: true,
         isAdmin: true,
-        lastLogin: true,
         createdAt: true,
         subscription: {
           select: {

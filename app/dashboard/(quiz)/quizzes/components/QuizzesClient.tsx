@@ -169,7 +169,9 @@ function EnhancedQuizzesClientComponent({ initialQuizzesData, userId }: Enhanced
           nextCursor: result?.nextCursor ?? null,
         }
       } catch (err) {
-        console.error("Failed to fetch quizzes:", err)
+        if (process.env.NODE_ENV === 'development') {
+          console.error("Failed to fetch quizzes:", err)
+        }
         throw err
       }
     },

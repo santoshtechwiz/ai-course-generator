@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useSubscription, useSubscriptionPermissions } from '@/modules/subscriptions/client'
+import { useAuth } from '@/modules/auth'
 import {
   X,
   Sparkles,
@@ -17,7 +19,6 @@ import { migratedStorage } from "@/lib/storage"
 import { useMediaQuery, useToast } from "@/hooks"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
-import { useSubscription, useSubscriptionPermissions } from "@/modules/auth"
 import {
   SubscriptionPlanType,
   SubscriptionStatusType,
@@ -31,7 +32,6 @@ interface PricingPageProps {
   isMobile?: boolean
 }
 import { calculateSavings } from "@/types/subscription/utils"
-import { CancellationDialog } from "./cancellation-dialog"
 import FeatureComparison from "./FeatureComparison"
 import { SUBSCRIPTION_PLANS } from "./subscription-plans"
 import DevModeBanner from "./subscription-status/DevModeBanner"
@@ -52,7 +52,11 @@ export function PricingPage({
   const dispatch = useAppDispatch()
   const { toast } = useToast()
   const isMobile = propIsMobile || useMediaQuery("(max-width: 768px)")
-  const isAuthenticated = !!userId
+  
+  // Get authentication state from auth module
+  const { user, isAuthenticated: authIsAuthenticated } = useAuth()
+  const isAuthenticated = authIsAuthenticated && !!user
+  const currentUserId = userId || user?.id
 
   const [loading, setLoading] = useState<SubscriptionPlanType | null>(null)
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null)
@@ -62,7 +66,7 @@ export function PricingPage({
   const [promoDiscount, setPromoDiscount] = useState<number>(0)
   const [isApplyingPromo, setIsApplyingPromo] = useState<boolean>(false)
   const [showPromotion, setShowPromotion] = useState(true)
-  const [showCancellationDialog, setShowCancellationDialog] = useState(false)
+  // Removed internal cancellation dialog usage; cancellation handled at higher-level page component
   const router = useRouter();
   
   const { subscription, hasActiveSubscription, isExpired } = useSubscription();
@@ -73,44 +77,71 @@ export function PricingPage({
   } = useSubscriptionPermissions();
 
   const subscriptionData = subscription;
-  const currentPlan = subscriptionData?.plan || "FREE"
-  const normalizedStatus = subscriptionData?.status?.toUpperCase() as SubscriptionStatusType || "INACTIVE"
+  const currentPlan = (subscriptionData?.subscriptionPlan || "FREE") as SubscriptionPlanType
+  const normalizedStatus = (subscriptionData?.status?.toUpperCase() || "INACTIVE").replace("CANCELLED","CANCELED") as SubscriptionStatusType
   const isSubscribed = currentPlan !== "FREE" && normalizedStatus === "ACTIVE"
-  const expirationDate = subscriptionData?.currentPeriodEnd
-    ? new Date(subscriptionData.currentPeriodEnd).toLocaleDateString()
+  const expirationDate = subscriptionData?.expirationDate
+    ? new Date(subscriptionData.expirationDate).toLocaleDateString()
     : null
   const cancelAtPeriodEnd = subscriptionData?.cancelAtPeriodEnd ?? false
-  const tokensUsed = subscriptionData?.tokensUsed ?? 0
-  const credits = subscriptionData?.credits ?? 0
 
-  const hasAnyPaidPlan = !subscriptionData?.isFree
-  const hasAllPlans = false // This seems unused, setting to false
+  const hasAnyPaidPlan = currentPlan !== 'FREE'
+  const hasAllPlans = false // Placeholder for potential multi-plan support
 
   const handleSubscribe = async (planName: SubscriptionPlanType, duration: number) => {
+    console.log('[PricingPage] handleSubscribe called:', {
+      planName,
+      duration,
+      isAuthenticated,
+      userId: currentUserId,
+      hasUser: !!user
+    })
+    
     setLoading(planName)
     setSubscriptionError(null)
     
     try {
       const promoArgs = isPromoValid ? { promoCode, promoDiscount } : {}
       
-      if (!isAuthenticated) {
+      // Check authentication status before proceeding
+      if (!isAuthenticated || !user) {
+        console.log('[PricingPage] User not authenticated, calling onUnauthenticatedSubscribe')
         onUnauthenticatedSubscribe?.(planName, duration, promoArgs.promoCode, promoArgs.promoDiscount)
         migratedStorage.setItem("pendingSubscription", { planName, duration, ...promoArgs }, { secure: true })
-          // Removed sign in message toast
-        
-        window.location.href = "/api/auth/signin"
+        // Auth flow handled by parent (login modal) – no forced redirect here
+        return
+      }
+      
+      console.log('[PricingPage] User authenticated, proceeding with subscription')
+
+      // Enforce stricter rules:
+      // 1. User cannot start FREE plan again after any paid plan (hadPreviousPaidPlan)
+      // 2. User cannot change plan while active (must cancel and wait for expiration)
+      // 3. Downgrade to FREE blocked until expiration (cancelAtPeriodEnd true + not expired)
+      const hadPaidPlanBefore = hasAnyPaidPlan // User currently has or had a paid plan
+      if (planName === 'FREE' && hadPaidPlanBefore) {
+        toast({
+          title: 'Downgrade Blocked',
+          description: 'You can switch to the free plan only after your current subscription expires.',
+          variant: 'destructive'
+        })
         return
       }
 
-      // Simple subscription validation - user can subscribe if they don't have active subscription
-      const canSubscribe = !hasActiveSubscription || currentPlan === "FREE"
-      const reason = canSubscribe ? '' : 'You already have an active subscription'
-      
-      if (!canSubscribe) {
+      if (hasActiveSubscription && currentPlan !== planName) {
         toast({
-          title: "Plan Not Available",
-          description: reason || "You cannot subscribe to this plan right now.",
-          variant: "destructive",
+          title: 'Plan Change Restricted',
+          description: 'You already have an active subscription. You can change plans after it expires.',
+          variant: 'destructive'
+        })
+        return
+      }
+
+      if (planName === currentPlan && hasActiveSubscription) {
+        toast({
+          title: 'Already Active',
+          description: 'This plan is already active for your account.',
+          variant: 'default'
         })
         return
       }
@@ -136,7 +167,8 @@ export function PricingPage({
           variant: "default",
         });
         return;
-      }      if (!result.success) {
+      }
+      if (!result.success) {
         // Show user-friendly error messages based on error type
         let errorTitle = "Subscription Failed"
         let errorDescription = result.message
@@ -200,15 +232,11 @@ export function PricingPage({
     [isPromoValid, promoDiscount],
   );
 
-  useEffect(() => {
-    // Removed: subscription fetching is now handled globally by AuthProvider
-    // if (isAuthenticated && !subscriptionData) {
-    //   dispatch(fetchSubscription())
-    // }
-  }, [isAuthenticated, subscriptionData, dispatch]);
+  // Removed legacy per-component subscription fetch; AuthProvider handles sync
+  useEffect(() => {}, [])
     
-  const daysUntilExpiration = expirationDate
-    ? Math.ceil((new Date(subscriptionData!.currentPeriodEnd!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  const daysUntilExpiration = subscriptionData?.expirationDate
+    ? Math.ceil((new Date(subscriptionData.expirationDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null
 
   return (
@@ -354,23 +382,7 @@ export function PricingPage({
 
       <TokenUsageExplanation />
       <FeatureComparison />
-      <FAQSection />      <CancellationDialog
-        isOpen={showCancellationDialog}
-        onClose={() => setShowCancellationDialog(false)}
-        onConfirm={async (reason: string) => {
-          // Handle cancellation logic here
-          try {
-            // Call your cancellation API
-            console.log('Cancelling subscription with reason:', reason)
-            dispatch(fetchSubscription())
-            setShowCancellationDialog(false)
-          } catch (error) {
-            console.error('Failed to cancel subscription:', error)
-          }
-        }}
-        expirationDate={subscriptionData?.currentPeriodEnd || null}
-        planName={subscriptionData?.plan || 'FREE'}
-      />
+      <FAQSection />
     </div>
   )
 }

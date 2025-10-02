@@ -17,7 +17,7 @@ import { migratedStorage } from "@/lib/storage"
 import { toast } from "@/hooks/use-toast"
 
 import { useSession } from "next-auth/react"
-import { useSubscription } from "@/modules/auth/hooks/useSubscription"
+import { useSubscription } from "@/modules/subscriptions/client"
 
 
 export default function TrialModal() {

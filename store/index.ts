@@ -188,5 +188,16 @@ export type AppDispatch = typeof store.dispatch
 export const useAppDispatch: () => AppDispatch = useDispatch
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
 
-// Named exports and a default export for compatibility with existing imports
+// Preserve default export (store) for legacy default imports while also exposing hooks as named exports.
+// Attach hooks for legacy patterns that did: import store from '@/store'; store.useAppSelector(...)
+;(store as any).useAppDispatch = useAppDispatch
+;(store as any).useAppSelector = useAppSelector
+
+// Dedicated named re-export object for clarity
+export const reduxToolkit = {
+  store,
+  useAppDispatch,
+  useAppSelector,
+}
+
 export { store as default }

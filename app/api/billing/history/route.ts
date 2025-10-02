@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerAuthSession } from "@/lib/server-auth"
-import { SubscriptionService } from "@/services/subscription/subscription-service"
+import { SubscriptionService } from "@/modules/subscriptions"
 
 /**
  * Billing History API endpoint
@@ -15,16 +15,11 @@ export async function GET(req: NextRequest) {
     }
 
     // Get billing history from SubscriptionService (which uses Stripe)
-    const result = await SubscriptionService.getBillingHistory(session.user.id)
+    const history = await SubscriptionService.getBillingHistory(session.user.id)
 
-    if (!result.success) {
-      return NextResponse.json({ 
-        error: result.error || "Failed to retrieve billing history" 
-      }, { status: 500 })
-    }
     return NextResponse.json({
       success: true,
-      history: result.history || [],
+      history: history || [],
     })
   } catch (error) {
     console.error("Billing history API error:", error)

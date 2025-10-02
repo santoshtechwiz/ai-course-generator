@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { SubscriptionService } from '@/services/subscription/subscription-service'
+import { SubscriptionService } from '@/modules/subscriptions'
 import { CreditOperationType } from '@/services/credit-service'
 
 // Mock global fetch

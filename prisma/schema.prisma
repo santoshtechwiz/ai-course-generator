@@ -52,6 +52,8 @@ model User {
   currentPlanId       String?
   metadata            Json?
   lastActiveAt        DateTime              @default(now())
+  hadPreviousPaidPlan Boolean               @default(false) // Added: persistent flag (safe additive)
+  hasUsedFreePlan     Boolean               @default(false) // Added: persistent flag (safe additive)
   accounts            Account[]
   bookmarks           Bookmark[]
   Certificate         Certificate[]
@@ -81,12 +83,14 @@ model User {
   learningEvents      LearningEvent[]
   chapterProgresses   ChapterProgress[]
   chatMessages        ChatMessage[]
+  SubscriptionEvent   SubscriptionEvent[]
 
   @@index([email])
   @@index([userType])
   @@index([createdAt])
   @@index([isAdmin])
-  SubscriptionEvent SubscriptionEvent[]
+  @@index([hadPreviousPaidPlan])
+  @@index([hasUsedFreePlan])
 }
 
 model Account {

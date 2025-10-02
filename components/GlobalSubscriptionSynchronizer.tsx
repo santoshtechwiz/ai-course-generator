@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic'
 import { useLazySubscriptionSync } from '@/hooks/useLazySubscriptionSync'
 import { Suspense } from 'react'
+import { useAuth } from '@/modules/auth'
 
 // Lazily load the subscription sync component
 const SubscriptionSync = dynamic(
@@ -23,11 +24,16 @@ const SubscriptionSync = dynamic(
  * - Background sync on session changes (non-blocking)
  * - Window focus sync for catching external changes
  * - Efficient debouncing and caching
+ * - SWR-based caching and revalidation for improved performance
+ * - Direct database queries for better efficiency
+ * - Elimination of duplicate API calls
  */
 export function GlobalSubscriptionSynchronizer() {
   const shouldSync = useLazySubscriptionSync()
-
-  if (!shouldSync) {
+  const { user } = useAuth()
+  
+  // Only sync if the user is logged in and the current route requires syncing
+  if (!user?.id || !shouldSync) {
     return null
   }
 

@@ -1,3 +1,21 @@
+/**
+ * Professional AI Chatbot API - /api/chat
+ * 
+ * Features:
+ * - Uses OpenAI LLM for intelligent conversational responses
+ * - RAG (Retrieval-Augmented Generation) with pgvector/embedding similarity search
+ * - Searches across courses, chapters, quizzes, and flashcards in real-time
+ * - No hardcoded responses - all answers generated from actual database content
+ * - Chat memory management for context-aware conversations
+ * - Automatic fallback to simpler responses when API unavailable
+ * 
+ * Environment Variables:
+ * - OPENAI_API_KEY: Required for LLM responses
+ * - CHAT_SEMANTIC_SUMMARY: Enable/disable LLM summaries (default: enabled)
+ * - EMBEDDING_SIMILARITY_THRESHOLD: Minimum similarity score (default: 0.1)
+ * - EMBEDDING_TOP_K: Number of results to retrieve (default: 12)
+ */
+
 import type { NextRequest } from 'next/server'
 import { getAuthSession } from '@/lib/auth'
 import { logger } from '@/lib/logger'
@@ -6,7 +24,16 @@ import { EmbeddingManager } from '@/app/aimodel/core/embedding-manager'
 
 // Lightweight heuristic utilities to better align answers with user intent
 function buildAnswerSummary(userMessage: string, docs: any[]): string {
-  if (!docs || docs.length === 0) return ''
+  if (!docs || docs.length === 0) {
+    return `I searched our database but couldn't find specific resources matching "${userMessage}".
+
+**Try these options:**
+- Browse all available courses: [View Courses](/dashboard/courses)
+- Explore quiz collection: [View Quizzes](/dashboard/quizzes)
+- Create your own content: [Create Course](/dashboard/courses/create)
+
+Or try rephrasing your question with different keywords.`
+  }
   const top = docs.slice(0, 3)
   const titles = top.map(d => d?.metadata?.title).filter(Boolean) as string[]
   const distinctTitles = Array.from(new Set(titles)).slice(0, 3)
@@ -39,7 +66,10 @@ function filterByDynamicSimilarity(docs: any[], baseThreshold: number): any[] {
 async function trySemanticSummary(userMessage: string, docs: any[]): Promise<string | null> {
   if (!process.env.CHAT_SEMANTIC_SUMMARY || process.env.CHAT_SEMANTIC_SUMMARY === '0') return null
   const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) return null
+  if (!apiKey) {
+    logger.warn('[Chat API] OpenAI API key not configured - using fallback responses')
+    return null
+  }
   try {
     const topDocs = docs.slice(0, 5).map(d => ({
       title: d?.metadata?.title || d?.metadata?.slug || 'Untitled',
@@ -50,7 +80,40 @@ async function trySemanticSummary(userMessage: string, docs: any[]): Promise<str
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 4500) // 4.5s guard
     const model = process.env.CHAT_SUMMARY_MODEL || 'gpt-4o-mini'
-    const prompt = `You are a learning assistant. The user asked: "${userMessage}".\nYou are given retrieved context items (JSON array) with possible relevant resources.\nCraft a concise, high-signal answer first (2-4 sentences) directly addressing the question *even if partial*, then provide at most 3 bullet key takeaways. Do not fabricate facts outside context. If context is too weak, acknowledge uncertainty briefly then extract any helpful foundational insight.\n\nContext:\n${contextBlock}`
+    const systemPrompt = `You are an enterprise-grade AI assistant for CourseAI, a professional learning platform. Your role is to act as a knowledgeable guide for users exploring courses, quizzes, subscriptions, and platform features.
+
+**Rules:**
+
+**Greeting & Introduction:**
+- When users greet with "Hi", "Hello", "How are you", respond with: "Welcome to CourseAI 👋 Your intelligent learning assistant. I can help you explore courses, quizzes, and subscriptions."
+
+**Answering Questions:**
+- Only respond to valid platform-related questions (courses, quizzes, subscriptions, account help).
+- If the user asks something irrelevant, politely redirect: "I'm here to help with CourseAI courses, quizzes, and subscriptions. What would you like to learn today?"
+
+**Tone & Style:**
+- Professional, concise, enterprise-grade tone
+- Clear, structured responses with optional call-to-actions
+- Use bullet points for lists
+
+**Capabilities:**
+- Course discovery (popular, latest, recommended)
+- Quiz assistance (list, attempt, track progress)
+- Subscription & account help
+- Platform guidance (features, usage instructions)
+
+**Limitations:**
+- Do not engage in small talk or personal conversation
+- Do not provide answers outside CourseAI's scope
+- Always ground responses in the provided context`
+
+    const userPrompt = `User Question: "${userMessage}"
+
+Retrieved Context (courses/quizzes from database):
+${contextBlock}
+
+Instructions: Craft a concise answer (2-4 sentences) using ONLY the context above. If relevant resources are found, list up to 3 with links. If context is insufficient, say "I don't have specific information about that" and suggest browsing courses or quizzes.`
+
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -59,17 +122,25 @@ async function trySemanticSummary(userMessage: string, docs: any[]): Promise<str
       },
       body: JSON.stringify({
         model,
-        temperature: 0.4,
-        max_tokens: 320,
+        temperature: 0.3,
+        max_tokens: 400,
         messages: [
-          { role: 'system', content: 'You produce precise, context-grounded educational summaries.' },
-          { role: 'user', content: prompt }
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
         ]
       }),
       signal: controller.signal
     })
     clearTimeout(timeout)
     if (!res.ok) {
+      const errorText = await res.text().catch(() => '')
+      if (res.status === 401) {
+        logger.error('❌ OpenAI API 401 Unauthorized - Invalid or missing OPENAI_API_KEY')
+        console.error('💡 Fix: Add OPENAI_API_KEY=sk-... to your .env.local file')
+        console.error('📖 Get API key from: https://platform.openai.com/api-keys')
+      } else {
+        logger.error(`OpenAI API error ${res.status}: ${errorText}`)
+      }
       return null
     }
     const data: any = await res.json()

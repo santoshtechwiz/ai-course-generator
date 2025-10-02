@@ -10,8 +10,9 @@ import { syncUserCredits } from "@/lib/db"
 import { AlertTriangle } from "lucide-react"
 import SubscriptionDetails from "./component/SubscriptionDetails"
 import { AccountOverview } from "./component/AccountOverview"
-import { SubscriptionService } from "../../../services/subscription/subscription-service"
+import { SubscriptionService } from "@/modules/subscriptions"
 import { BillingHistory } from "./component/BillingHistory"
+import { PaymentMethodsView } from "./component/PaymentMethodsView"
 import { PageWrapper, PageHeader } from "@/components/layout/PageWrapper"
 
 export default async function SubscriptionAccountPage() {
@@ -94,9 +95,10 @@ export default async function SubscriptionAccountPage() {
   <PageHeader title="Account Management" description="Manage your account, subscription, and billing information">
   {/* Description now passed via PageHeader prop */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6 sm:mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-6 sm:mb-8">
             <TabsTrigger value="overview">Account Overview</TabsTrigger>
             <TabsTrigger value="subscription">Subscription</TabsTrigger>
+            <TabsTrigger value="payment">Payment Methods</TabsTrigger>
             <TabsTrigger value="billing">Billing History</TabsTrigger>
           </TabsList>
 
@@ -109,6 +111,12 @@ export default async function SubscriptionAccountPage() {
           <TabsContent value="subscription" className="animate-in fade-in-50 slide-in-from-left-5">
             <Suspense fallback={<SubscriptionDetailsSkeleton />}>
               <SubscriptionDetails userId={userId} subscriptionData={subscriptionData} />
+            </Suspense>
+          </TabsContent>
+
+          <TabsContent value="payment" className="animate-in fade-in-50 slide-in-from-left-5">
+            <Suspense fallback={<SubscriptionDetailsSkeleton />}>
+              <PaymentMethodsView userId={userId} />
             </Suspense>
           </TabsContent>
 

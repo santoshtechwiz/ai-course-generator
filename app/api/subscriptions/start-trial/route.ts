@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerAuthSession } from '@/lib/server-auth'
-import { SubscriptionService } from '@/services/subscription/subscription-service'
+import { SubscriptionService } from '@/modules/subscriptions'
 import { logger } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
 
@@ -50,16 +50,16 @@ export async function POST(req: NextRequest) {
       logger.info(`Successfully activated trial for user ${userId}`)
       return NextResponse.json({
         success: true,
-        message: result.message || 'Trial activated successfully',
+        message: 'Trial activated successfully',
         planId,
         trialDays: 30,
-        credits: 5
+        credits: result.data?.credits || 0
       })
     } else {
-      logger.warn(`Failed to activate trial for user ${userId}: ${result.message}`)
+      logger.warn(`Failed to activate trial for user ${userId}`)
       return NextResponse.json({
         success: false,
-        error: result.message || 'Failed to activate trial'
+        error: 'Failed to activate trial'
       }, { status: 400 })
     }
 

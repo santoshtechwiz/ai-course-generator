@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, memo, useCallback } from "react"
+import { useState, memo, useCallback, useMemo, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -21,6 +21,7 @@ import {
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { QUIZ_TYPE_CONFIG } from "./quizTypeConfig"
 import type { QuizType } from "@/app/types/quiz-types"
 // ...existing code...
 
@@ -45,43 +46,7 @@ interface QuizCardProps {
   onNavigationChange?: (loading: boolean) => void
 }
 
-const quizTypeConfig = {
-  mcq: {
-    label: "Multiple Choice",
-    icon: Target,
-    color: "text-blue-400",
-    bg: "bg-blue-500/10",
-    border: "border-blue-500/20",
-  },
-  openended: {
-    label: "Open Ended",
-    icon: Brain,
-    color: "text-purple-400",
-    bg: "bg-purple-500/10",
-    border: "border-purple-500/20",
-  },
-  code: {
-    label: "Code Challenge",
-    icon: Code,
-    color: "text-green-400",
-    bg: "bg-green-500/10",
-    border: "border-green-500/20",
-  },
-  blanks: {
-    label: "Fill Blanks",
-    icon: PenTool,
-    color: "text-orange-400",
-    bg: "bg-orange-500/10",
-    border: "border-orange-500/20",
-  },
-  flashcard: {
-    label: "Flash Cards",
-    icon: Flashlight,
-    color: "text-yellow-400",
-    bg: "bg-yellow-500/10",
-    border: "border-yellow-500/20",
-  },
-} as const
+// Using centralized QUIZ_TYPE_CONFIG for consistency
 
 function QuizCardComponent({
   title,
@@ -105,28 +70,37 @@ function QuizCardComponent({
 }: QuizCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [localLoading, setLocalLoading] = useState(false)
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const config = quizTypeConfig[quizType as keyof typeof quizTypeConfig] || quizTypeConfig.mcq
+  const normalizedType = (quizType || 'mcq').toLowerCase() as keyof typeof QUIZ_TYPE_CONFIG
+  const config = QUIZ_TYPE_CONFIG[normalizedType] || QUIZ_TYPE_CONFIG.mcq
   const QuizTypeIcon = config.icon
+  // Derive background & border utility classes from pill when needed
+  const pillParts = config.pill.split(" ")
+  const derivedBg = pillParts.find(p => p.startsWith('bg-')) || 'bg-muted'
+  const derivedBorder = pillParts.find(p => p.startsWith('border-')) || 'border-border/50'
 
-  const isTypeActive = (selectedTypes && selectedTypes.includes(quizType)) || activeFilter === quizType
+  const isTypeActive = useMemo(() => (selectedTypes && selectedTypes.includes(quizType)) || activeFilter === quizType, [selectedTypes, activeFilter, quizType])
   const loading = isNavigating || localLoading
+
+  // Cleanup loading timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const handleQuizClick = useCallback(async () => {
     if (loading) return
-    
     setLocalLoading(true)
     onNavigationChange?.(true)
-    
-    // Add a small delay to show loading state
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    // Navigation will be handled by Link component
-    // Reset loading state after navigation
-    setTimeout(() => {
+    // Safety timeout to clear loading if navigation is interrupted
+    loadingTimeoutRef.current = setTimeout(() => {
       setLocalLoading(false)
       onNavigationChange?.(false)
-    }, 1000)
+    }, 4000)
   }, [loading, onNavigationChange])
 
   const handleMouseEnter = useCallback(() => setIsHovered(true), [])
@@ -162,24 +136,49 @@ function QuizCardComponent({
         onMouseLeave={handleMouseLeave}
       >
         <Card className={cn(
-          "h-full overflow-hidden bg-card border-border/50 hover:border-border transition-all duration-200 card-hover",
-          loading && "opacity-70 cursor-not-allowed"
-        )}>
+          "h-full overflow-hidden bg-card border-border/50 hover:border-primary/40 transition-all duration-200 card-hover relative",
+          loading && "opacity-70 cursor-progress"
+        )} aria-busy={loading} aria-live="polite">
           <div className="aspect-video bg-gradient-to-br from-muted/50 to-muted/20 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/10" />
             
             {/* Loading overlay */}
             {loading && (
-              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
-                <div className="flex items-center gap-2 text-sm text-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Starting Quiz...</span>
-                </div>
-              </div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-lg"
+              >
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+                  className="flex flex-col items-center gap-3"
+                >
+                  <div className="relative">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <motion.div
+                      className="absolute inset-0 rounded-full border-2 border-primary/30"
+                      initial={{ scale: 1, opacity: 0.5 }}
+                      animate={{ scale: 1.5, opacity: 0 }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                    />
+                  </div>
+                  <motion.span
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-sm font-medium text-muted-foreground"
+                  >
+                    Starting quiz…
+                  </motion.span>
+                </motion.div>
+              </motion.div>
             )}
             
             <div className="absolute top-4 left-4">
-              <div className={cn("p-2 rounded-lg", config.bg, config.border, "border")}>
+              <div className={cn("p-2 rounded-lg border", derivedBg, derivedBorder)}>
                 <QuizTypeIcon className={cn("h-5 w-5", config.color)} />
               </div>
             </div>
@@ -198,7 +197,7 @@ function QuizCardComponent({
                 aria-label={`Filter by ${config.label}`}
                 className={cn(
                   "text-xs py-1 px-2 rounded-md backdrop-blur-sm cursor-pointer transition-shadow",
-                  config.bg,
+                  derivedBg,
                   isTypeActive ? "ring-2 ring-offset-1 shadow-md" : "",
                 )}
               >
