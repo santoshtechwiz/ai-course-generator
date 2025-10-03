@@ -7,9 +7,9 @@ import { authOptions } from "@/lib/auth"
 import { SubscriptionService } from "@/modules/subscriptions"
 import StripeGateway from "@/app/dashboard/subscription/services/stripe-gateway"
 
-// Define validation schema for request body with improved type checking
+// Define validation schema for request body with trial support
 const subscriptionSchema = z.object({
-  planId: z.enum(["FREE", "BASIC", "PREMIUM", "ULTIMATE"]),
+  planId: z.enum(["FREE", "free_trial", "BASIC", "PREMIUM", "ULTIMATE"]),
   duration: z.number().int().positive().lte(12),
   referralCode: z.string().optional(),
   promoCode: z.string().optional(),
@@ -71,11 +71,30 @@ export async function POST(req: NextRequest) {
     const existingPlan = existingSubscription?.planId
     const existingStatus = existingSubscription?.status?.toUpperCase()
 
-    const isActivePaid = existingSubscription && existingSubscription.status === 'ACTIVE' && existingPlan !== 'FREE'
+    const isActivePaid = existingSubscription && existingSubscription.status === 'ACTIVE' && existingPlan !== 'FREE' && existingPlan !== 'free_trial'
     // Use persistent flag
     let hadPreviousPaidPlan = userFlags?.hadPreviousPaidPlan || false
 
-    // 1. Block plan change while active paid subscription
+    // NEW: Trial flow validation - block if user already used trial
+    if (validatedData.planId === 'free_trial') {
+      const previousTrial = await prisma.userSubscription.findFirst({
+        where: { 
+          userId,
+          planId: 'free_trial'
+        }
+      })
+      
+      if (previousTrial) {
+        return NextResponse.json({
+          success: false,
+          error: 'TRIAL_ALREADY_USED',
+          message: 'You have already used your free trial. Please choose a paid plan to continue.',
+          errorType: 'TRIAL_ALREADY_USED'
+        }, { status: 200 })
+      }
+    }
+
+    // 1. Block plan change while active paid subscription (allow free to paid upgrades)
     if (isActivePaid && existingPlan !== validatedData.planId) {
       return NextResponse.json({
         success: false,
@@ -85,12 +104,16 @@ export async function POST(req: NextRequest) {
       }, { status: 200 })
     }
 
-    // 2. Block downgrade to FREE if user had paid plan and it has not yet expired
-    if (validatedData.planId === 'FREE' && hadPreviousPaidPlan && existingStatus === 'ACTIVE') {
+    // 2. NEW: Block downgrades using plan hierarchy  
+    const planHierarchy = ['FREE', 'free_trial', 'BASIC', 'PREMIUM', 'ULTIMATE']
+    const currentIndex = planHierarchy.indexOf(existingPlan || 'FREE')
+    const newIndex = planHierarchy.indexOf(validatedData.planId)
+    
+    if (currentIndex > newIndex && existingStatus === 'ACTIVE') {
       return NextResponse.json({
         success: false,
         error: 'DOWNGRADE_BLOCKED',
-        message: 'You can switch to the free plan only after your current subscription expires.',
+        message: `Downgrade from ${existingPlan} to ${validatedData.planId} is not allowed. Please wait for your current subscription to expire.`,
         errorType: 'DOWNGRADE_BLOCKED'
       }, { status: 200 })
     }
@@ -148,6 +171,37 @@ export async function POST(req: NextRequest) {
     if (validatedData.promoDiscount && validatedData.promoDiscount < 0) {
       validatedData.promoDiscount = 0
     }
+
+    // NEW: Handle free trial activation directly (no Stripe needed)
+    if (validatedData.planId === 'free_trial') {
+      try {
+        const result = await SubscriptionService.activateFreeTrial(userId)
+        
+        if (result.success) {
+          return NextResponse.json({
+            success: true,
+            message: result.metadata?.message || 'Free trial activated successfully',
+            data: result.data
+          })
+        } else {
+          return NextResponse.json({
+            success: false,
+            error: 'TRIAL_ACTIVATION_FAILED',
+            message: result.error?.message || 'Failed to activate free trial',
+            errorType: 'TRIAL_ACTIVATION_FAILED'
+          }, { status: 400 })
+        }
+      } catch (error: any) {
+        return NextResponse.json({
+          success: false,
+          error: 'TRIAL_ACTIVATION_ERROR',
+          message: error.message || 'Error during trial activation',
+          errorType: 'TRIAL_ACTIVATION_ERROR'
+        }, { status: 500 })
+      }
+    }
+
+    // For paid plans, continue with Stripe checkout process
     // Create or update pending subscription record before redirecting to payment
     try {
       // Clean up any existing pending subscriptions for this user (including old ones)

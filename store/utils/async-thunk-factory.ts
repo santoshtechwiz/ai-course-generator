@@ -104,7 +104,11 @@ export function createFetchThunk<T, K = void>(
       const controller = new AbortController()
       
       // Set up timeout
-      const timeoutId = setTimeout(() => controller.abort(), timeout)
+      const timeoutId = setTimeout(() => {
+        if (!controller.signal.aborted) {
+          controller.abort()
+        }
+      }, timeout)
       
       // Combine signals if provided
       if (signal?.aborted) {

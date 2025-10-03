@@ -14,8 +14,22 @@ export const metadata = {
 export default async function UsersPage() {
   const session = await getServerSession(authOptions)
 
-  // If no session or user is not an admin, redirect to the homepage
-  if (!session || !session.user || session.user.isAdmin !== true) {
+  console.log('[AdminUsersPage] Session check:', {
+    hasSession: !!session,
+    hasUser: !!session?.user,
+    isAdmin: session?.user?.isAdmin,
+    userEmail: session?.user?.email
+  })
+
+  // If no session, redirect to login
+  if (!session || !session.user) {
+    console.log('[AdminUsersPage] No session found, redirecting to login')
+    redirect("/api/auth/signin?callbackUrl=/dashboard/admin/users")
+  }
+
+  // If user is not an admin, redirect to the homepage
+  if (session.user.isAdmin !== true) {
+    console.log('[AdminUsersPage] User is not admin, redirecting to homepage')
     redirect("/")
   }
   return (

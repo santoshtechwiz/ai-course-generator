@@ -4,7 +4,11 @@ export const fetchWithTimeout = async (
   timeoutMs = 10000
 ): Promise<Response | undefined> => {
   const controller = new AbortController()
-  const id = setTimeout(() => controller.abort(), timeoutMs)
+  const id = setTimeout(() => {
+    if (!controller.signal.aborted) {
+      controller.abort()
+    }
+  }, timeoutMs)
   try {
     const response = await fetch(input, { ...init, signal: controller.signal })
     return response

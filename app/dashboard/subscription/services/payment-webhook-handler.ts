@@ -140,13 +140,26 @@ export class PaymentWebhookHandler {
     try {
       // Check if gateway supports webhook validation
       if (!gateway.validateWebhook) {
-        logger.warn('Gateway does not support webhook validation')
+        logger.warn('Gateway does not support webhook validation', {
+          provider: gateway.getProvider()
+        })
         return true // Allow processing but log the warning
       }
 
-      return await gateway.validateWebhook(payload, signature)
+      const isValid = await gateway.validateWebhook(payload, signature)
+      if (!isValid) {
+        logger.error('Webhook signature validation failed', {
+          provider: gateway.getProvider(),
+          signatureLength: signature?.length || 0
+        })
+      }
+      
+      return isValid
     } catch (error) {
-      logger.error('Error validating webhook signature:', error)
+      logger.error('Error validating webhook signature:', {
+        error: error instanceof Error ? error.message : String(error),
+        provider: gateway.getProvider()
+      })
       return false
     }
   }
@@ -160,6 +173,11 @@ export class PaymentWebhookHandler {
     headers: Record<string, string>
   ): Promise<WebhookEvent | null> {
     try {
+      logger.info(`Parsing webhook event for provider: ${provider}`, {
+        payloadLength: payload.length,
+        payloadPreview: payload.substring(0, 200)
+      })
+
       // Guard: empty or malformed payload
       if (!payload || !payload.trim()) {
         logger.error('Webhook payload empty')
@@ -170,21 +188,37 @@ export class PaymentWebhookHandler {
       try {
         parsedPayload = JSON.parse(payload)
       } catch (jsonErr) {
-        // Some providers (or misconfigured clients) may send already-object-like values or invalid JSON
-        logger.error('Raw webhook JSON parse failed', { error: jsonErr instanceof Error ? jsonErr.message : jsonErr })
-        // Attempt minimal salvage for Stripe if headers indicate stripe-signature and we can extract id/type heuristically
-        if (provider === PaymentProvider.STRIPE) {
-          const idMatch = payload.match(/"id"\s*:\s*"([^"]+)"/)
-          const typeMatch = payload.match(/"type"\s*:\s*"([^"]+)"/)
-          if (idMatch && typeMatch) {
-            parsedPayload = { id: idMatch[1], type: typeMatch[1], data: { object: {} }, created: Math.floor(Date.now()/1000) }
-          } else {
-            return null
-          }
-        } else {
-          return null
-        }
+        logger.error('Failed to parse webhook JSON payload', { 
+          error: jsonErr instanceof Error ? jsonErr.message : jsonErr,
+          provider,
+          payloadLength: payload.length,
+          payloadStart: payload.substring(0, 100)
+        })
+        return null
       }
+
+      // Validate required fields
+      if (!parsedPayload || typeof parsedPayload !== 'object') {
+        logger.error('Webhook payload is not a valid object', { provider })
+        return null
+      }
+
+      if (!parsedPayload.id || !parsedPayload.type) {
+        logger.error('Webhook payload missing required id or type fields', { 
+          provider, 
+          hasId: !!parsedPayload.id, 
+          hasType: !!parsedPayload.type,
+          actualType: parsedPayload.type,
+          keys: Object.keys(parsedPayload)
+        })
+        return null
+      }
+
+      logger.info(`Successfully parsed webhook payload`, {
+        provider,
+        eventId: parsedPayload.id,
+        eventType: parsedPayload.type
+      })
 
       switch (provider) {
         case PaymentProvider.STRIPE:
@@ -204,7 +238,11 @@ export class PaymentWebhookHandler {
           return null
       }
     } catch (error) {
-      logger.error('Error parsing webhook payload:', error)
+      logger.error('Error parsing webhook payload:', {
+        error: error instanceof Error ? error.message : String(error),
+        provider,
+        stack: error instanceof Error ? error.stack?.split('\n').slice(0, 3).join('\n') : undefined
+      })
       return null
     }
   }
@@ -222,15 +260,26 @@ export class PaymentWebhookHandler {
         'customer.subscription.updated': WebhookEventType.SUBSCRIPTION_UPDATED,
         'customer.subscription.deleted': WebhookEventType.SUBSCRIPTION_CANCELED,
         'invoice.paid': WebhookEventType.INVOICE_PAID,
+        'invoice.payment_succeeded': WebhookEventType.INVOICE_PAID,
+        'invoice_payment.paid': WebhookEventType.INVOICE_PAID, // Alternative format
         'invoice.payment_failed': WebhookEventType.INVOICE_FAILED,
+        'invoice.payment_action_required': WebhookEventType.INVOICE_FAILED,
         'customer.updated': WebhookEventType.CUSTOMER_UPDATED,
       }
 
       const eventType = eventTypeMap[payload.type]
       if (!eventType) {
-        logger.info(`Ignoring Stripe event type: ${payload.type}`)
+        logger.info(`Ignoring Stripe event type: ${payload.type}`, {
+          eventId: payload.id,
+          availableTypes: Object.keys(eventTypeMap)
+        })
         return null
       }
+
+      logger.info(`Processing Stripe event: ${payload.type}`, {
+        eventId: payload.id,
+        mappedTo: eventType
+      })
 
       return {
         id: payload.id,
@@ -293,6 +342,50 @@ export class PaymentWebhookHandler {
    */
   private static markEventAsProcessing(eventId: string): void {
     this.processingCache.set(eventId, new Date())
+  }
+
+  /**
+   * Get processing statistics for monitoring
+   */
+  static getProcessingStats() {
+    return {
+      eventsInProgress: this.processingCache.size,
+      cacheSize: this.processingCache.size,
+      lastCleaned: new Date().toISOString()
+    }
+  }
+
+  /**
+   * Get diagnostic information for webhook debugging
+   */
+  static getDiagnosticInfo(): {
+    environmentCheck: any;
+    supportedEvents: string[];
+    lastProcessed: string[];
+  } {
+    const supportedEvents = [
+      'checkout.session.completed',
+      'payment_intent.succeeded', 
+      'payment_intent.payment_failed',
+      'customer.subscription.created',
+      'customer.subscription.updated',
+      'customer.subscription.deleted',
+      'invoice.paid',
+      'invoice.payment_succeeded',
+      'invoice_payment.paid',
+      'invoice.payment_failed',
+      'customer.updated'
+    ]
+
+    return {
+      environmentCheck: {
+        hasStripeSecret: !!process.env.STRIPE_SECRET_KEY,
+        hasWebhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
+        nodeEnv: process.env.NODE_ENV
+      },
+      supportedEvents,
+      lastProcessed: Array.from(this.processingCache.keys()).slice(-10)
+    }
   }
 
   /**
@@ -694,7 +787,6 @@ export class PaymentWebhookHandler {
    */
   private static async handleStripeCheckoutSessionCompleted(session: any): Promise<void> {
     const { prisma } = await import("@/lib/db")
-    const { SUBSCRIPTION_PLANS } = await import("../components/subscription-plans")
 
     if (!session.metadata?.userId) {
       logger.error("No user ID in session metadata")
@@ -702,41 +794,46 @@ export class PaymentWebhookHandler {
     }
 
     const userId = session.metadata.userId
-    const planId = session.metadata.planName
-
-    // Find the plan to get the correct token amount
-    const plan = SUBSCRIPTION_PLANS.find((p: any) => p.id === planId)
-    const tokensToAdd = plan ? plan.tokens : Number.parseInt(session.metadata.tokens || "0", 10)
+    const planId = session.metadata.planName || session.metadata.planId
 
     try {
       // If this is a subscription checkout
       if (session.mode === "subscription" && session.subscription) {
-        // Use the consistent subscription service for guaranteed data consistency
-        const result = await SubscriptionService.updateSubscription(
+        logger.info(`Processing subscription checkout for user ${userId}, plan ${planId}`)
+        
+        // Use activatePaidPlan which handles credits properly
+        const result = await SubscriptionService.activatePaidPlan(
           userId,
-          {
-            subscriptionPlan: (planId || "FREE") as any,
-            status: "ACTIVE",
-            expirationDate: new Date(session.current_period_end * 1000).toISOString(),
-            credits: tokensToAdd,
-            updatedAt: new Date().toISOString()
-          }
+          planId as any,
+          session.subscription
         )
 
         if (!result.success) {
-          logger.error(`Failed to update subscription for user ${userId}`)
-          return
+          logger.error(`Failed to activate paid plan for user ${userId}: ${result.error || 'Unknown error'}`)
+          throw new Error(`Plan activation failed: ${result.error || 'Unknown error'}`)
         }
 
-        logger.info(`Successfully updated subscription for user ${userId} to plan ${planId} with ${tokensToAdd} tokens`)
+        logger.info(`Successfully activated ${planId} plan for user ${userId} with credits`)
 
         // Process referral if applicable
         if (session.metadata.referralUseId || session.metadata.referralCode) {
           await this.processStripeReferralBenefits(session)
         }
+      } else if (session.mode === "payment") {
+        // Handle one-time payments (if applicable)
+        logger.info(`Processing one-time payment for user ${userId}`)
+        
+        // For one-time payments, we might still want to add credits
+        const tokensToAdd = Number.parseInt(session.metadata.tokens || "0", 10)
+        if (tokensToAdd > 0) {
+          await SubscriptionService.addCreditsToUser(userId, tokensToAdd, "One-time payment")
+          logger.info(`Added ${tokensToAdd} credits to user ${userId} from one-time payment`)
+        }
       }
     } catch (error) {
       logger.error("Error processing Stripe checkout session:", error)
+      // Re-throw to trigger webhook retry
+      throw error
     }
   }
 

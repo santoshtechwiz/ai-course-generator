@@ -252,3 +252,68 @@ export async function fetchQuizWithCache(quizId: string): Promise<Quiz | null> {
 
   return quiz
 }
+
+export async function getQuizCountsByType(userId?: string): Promise<Record<string, number>> {
+  try {
+    const cacheKey = `quiz_counts_${userId || 'public'}`
+
+    const cachedCounts = quizCache.get<Record<string, number>>(cacheKey)
+    if (cachedCounts) {
+      return cachedCounts
+    }
+
+    // Build where clause for available quizzes
+    const where: Record<string, unknown> = {}
+
+    if (userId) {
+      where.OR = [{ userId }, { isPublic: true }]
+    } else {
+      where.isPublic = true
+    }
+
+    // Get counts for each quiz type
+    const counts = await prisma.userQuiz.groupBy({
+      by: ['quizType'],
+      where,
+      _count: {
+        quizType: true,
+      },
+    })
+
+    // Transform to UI config keys
+    const result: Record<string, number> = {
+      mcq: 0,
+      code: 0,
+      flashcard: 0,
+      openended: 0,
+      blanks: 0,
+    }
+
+    counts.forEach((count) => {
+      const quizType = count.quizType
+      if (quizType === 'mcq') {
+        result.mcq = count._count.quizType
+      } else if (quizType === 'code') {
+        result.code = count._count.quizType
+      } else if (quizType === 'flashcard') {
+        result.flashcard = count._count.quizType
+      } else if (quizType === 'openended') {
+        result.openended = count._count.quizType
+      } else if (quizType === 'blanks' || quizType === 'fill-blanks') {
+        result.blanks = count._count.quizType
+      }
+    })
+
+    quizCache.set(cacheKey, result)
+    return result
+  } catch (error: any) {
+    console.error("Error fetching quiz counts:", error)
+    return {
+      mcq: 0,
+      code: 0,
+      flashcard: 0,
+      openended: 0,
+      blanks: 0,
+    }
+  }
+}

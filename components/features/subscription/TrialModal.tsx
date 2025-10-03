@@ -60,7 +60,11 @@ export default function TrialModal() {
       
       // Create AbortController for request cancellation
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+      const timeoutId = setTimeout(() => {
+        if (!controller.signal.aborted) {
+          controller.abort()
+        }
+      }, 15000) // 15 second timeout
       
       // Call the API to start trial
       const response = await fetch('/api/subscriptions/start-trial', {

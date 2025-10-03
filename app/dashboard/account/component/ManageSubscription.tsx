@@ -26,16 +26,25 @@ import { PaymentMethodForm } from "./PaymentMethod"
 import { StatusBadge } from "./status-badge"
 import { useSubscription } from "@/modules/auth"
 
+interface PlanFeature {
+  name: string
+  available: boolean
+  category?: string
+}
+
 interface ManageSubscriptionProps {
   userId: string
   subscriptionData: {
     currentPlan: string
     subscriptionStatus: string
+    isSubscribed?: boolean // BUG FIX: Add isSubscribed flag
     endDate: Date | null
     tokensUsed: number
     billingHistory: any[]
     paymentMethods: any[]
-    totalTokens: number
+    // Standardize naming: accept either tokensTotal (page) or totalTokens (legacy)
+    tokensTotal?: number
+    totalTokens?: number
   }
 }
 
@@ -45,9 +54,12 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
   const { toast } = useToast()
   const router = useRouter()
   const session = useSession()
-  const { currentPlan, subscriptionStatus, endDate, tokensUsed, paymentMethods = [], totalTokens } = subscriptionData
+  const { currentPlan, subscriptionStatus, endDate, tokensUsed, paymentMethods = [], tokensTotal, totalTokens, isSubscribed: isSubscribedProp } = subscriptionData
   // Use unified auth for subscription data
   const subscription = useSubscription()
+  
+  // BUG FIX: Use isSubscribed flag if available (considers tokens), otherwise fall back to status check
+  const isSubscribedFromData = isSubscribedProp !== undefined ? isSubscribedProp : (subscriptionStatus === "ACTIVE")
   
   // Extract token usage information from subscription
   const tokenUsage = {
@@ -67,24 +79,26 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
   const { tokenUsagePercentage, isActive, isCancelled, isPastDue, isInactive, isFree, hasExceededLimit } =
     useMemo(() => {
       // Fix token usage percentage calculation to handle edge cases
-      const maxTokens = totalTokens || 1 // Prevent division by zero
+      const effectiveTotal = (typeof totalTokens === 'number' ? totalTokens : tokensTotal) || 0
+      const maxTokens = effectiveTotal || 1 // Prevent division by zero
       const tokenUsagePercentage = Math.min(
-        (tokensUsed / maxTokens) * 100,
+        maxTokens === 0 ? 0 : (tokensUsed / maxTokens) * 100,
         100, // Cap at 100% to prevent overflow
       )
 
-      const isActive = subscriptionStatus === "ACTIVE"
+      // BUG FIX: Use isSubscribed flag which considers tokens, not just status
+      const isActive = isSubscribedFromData
       const isCancelled = subscriptionStatus === "CANCELED"
       const isPastDue = subscriptionStatus === "PAST_DUE"
-      const isInactive = subscriptionStatus === "INACTIVE"
+      const isInactive = !isSubscribedFromData && subscriptionStatus === "INACTIVE"
       const isFree = currentPlan === "FREE"
 
       // Only show the warning if tokens have actually been used AND they exceed the limit
       // This is the key fix - we're checking if tokens have actually been used
-      const hasExceededLimit = tokensUsed > 0 && tokensUsed > totalTokens
+      const hasExceededLimit = tokensUsed > 0 && effectiveTotal > 0 && tokensUsed > effectiveTotal
 
       return { tokenUsagePercentage, isActive, isCancelled, isPastDue, isInactive, isFree, hasExceededLimit }
-    }, [subscriptionStatus, currentPlan, tokensUsed, totalTokens])
+    }, [subscriptionStatus, currentPlan, tokensUsed, totalTokens, tokensTotal, isSubscribedFromData])
   // Use useCallback for event handlers to prevent unnecessary re-renders
   const handleResumeSubscription = useCallback(async () => {
     setIsLoading(true)
@@ -308,8 +322,8 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
                   </h4>
                   <ul className="space-y-3">
                     {planDetails.features
-                      .filter((f) => f.available)
-                      .map((feature, index) => (
+                      .filter((f: PlanFeature) => f.available)
+                      .map((feature: PlanFeature, index: number) => (
                         <li key={index} className="flex items-start">
                           <div className="bg-green-100 dark:bg-green-900/30 p-1 rounded-full mr-3 mt-0.5">
                             <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />

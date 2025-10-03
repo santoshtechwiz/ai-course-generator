@@ -9,8 +9,8 @@ import type {
   SubscriptionData,
   SubscriptionPlanType,
   SubscriptionStatusType,
-  TokenUsageResponse,
-} from "../../../types/subscription"
+} from "@/types/subscription"
+import { validateSubscriptionPlan } from "@/types/subscription/utils"
 
 /**
  * Validates and transforms a raw subscription response into a properly typed SubscriptionData object
@@ -42,18 +42,24 @@ export function validateSubscriptionResponse(data: any): SubscriptionData {
     // Extract cancel at period end flag
     const cancelAtPeriodEnd = !!data.cancelAtPeriodEnd
 
-    // Extract features if available
-    const features = Array.isArray(data.features) ? data.features : undefined
-
     return {
+      // Fill minimal required fields for SubscriptionData defined in types
+      id: data.id || "",
+      userId: data.userId || data.user || "",
+      subscriptionId: data.subscriptionId || data.id || "",
       credits,
       tokensUsed,
       isSubscribed,
       subscriptionPlan,
+      plan: subscriptionPlan,
+      expirationDate: expirationDate || null,
+      trialEndsAt: data.trialEndsAt || null,
       status,
-      expirationDate,
       cancelAtPeriodEnd,
-      features,
+      nextBillingDate: data.nextBillingDate || null,
+      createdAt: data.createdAt || new Date().toISOString(),
+      updatedAt: data.updatedAt || new Date().toISOString(),
+      metadata: data.metadata || undefined,
     }
   } catch (error) {
     console.error("Error validating subscription response:", error)
@@ -65,47 +71,30 @@ export function validateSubscriptionResponse(data: any): SubscriptionData {
  * Validates and normalizes a subscription status value
  */
 export function validateSubscriptionStatus(status: any): SubscriptionStatusType {
-  if (!status) return "NONE"
+  // Map incoming status values to the canonical SubscriptionStatusType union
+  if (!status) return "INACTIVE"
 
   const normalizedStatus = String(status).toUpperCase()
 
-  // Check if the status is one of the valid status types
-  const validStatuses: SubscriptionStatusType[] = ["ACTIVE", "CANCELED", "PAST_DUE", "UNPAID", "TRIAL", "NONE"]
-
-  if (validStatuses.includes(normalizedStatus as SubscriptionStatusType)) {
-    return normalizedStatus as SubscriptionStatusType
+  switch (normalizedStatus) {
+    case "ACTIVE":
+    case "CURRENT":
+      return "ACTIVE"
+    case "CANCELLED":
+    case "CANCELED":
+    case "CANCELED":
+      return "CANCELLED"
+    case "PAST_DUE":
+    case "UNPAID":
+      return "PAST_DUE"
+    case "TRIAL":
+    case "TRIAL_ACTIVE":
+      return "TRIAL"
+    case "EXPIRED":
+      return "EXPIRED"
+    default:
+      return "INACTIVE"
   }
-
-  // Map common alternative status values
-  if (normalizedStatus === "ACTIVE" || normalizedStatus === "CURRENT") return "ACTIVE"
-  if (normalizedStatus === "CANCELLED" || normalizedStatus === "CANCELED") return "CANCELED"
-  if (normalizedStatus === "TRIAL_ACTIVE") return "TRIAL"
-
-  // Default to NONE for unrecognized status values
-  return "NONE"
-}
-
-/**
- * Validates and normalizes a subscription plan value
- */
-export function validateSubscriptionPlan(plan: any): SubscriptionPlanType {
-  if (!plan) return "FREE"
-
-  const normalizedPlan = String(plan).toUpperCase()
-
-  // Check if the plan is one of the valid plan types
-  const validPlans: SubscriptionPlanType[] = ["FREE", "BASIC", "PREMIUM", "ULTIMATE"]
-
-  if (validPlans.includes(normalizedPlan as SubscriptionPlanType)) {
-    return normalizedPlan as SubscriptionPlanType
-  }
-
-  // Map common alternative plan values
-  if (normalizedPlan === "PREMIUM") return "PREMIUM"
-  if (normalizedPlan === "ENTERPRISE") return "ULTIMATE"
-
-  // Default to FREE for unrecognized plan values
-  return "FREE"
 }
 
 /**
@@ -113,18 +102,29 @@ export function validateSubscriptionPlan(plan: any): SubscriptionPlanType {
  */
 export function createDefaultSubscriptionData(): SubscriptionData {
   return {
+    id: "free",
+    userId: "",
+    subscriptionId: "free",
     credits: 0,
     tokensUsed: 0,
     isSubscribed: false,
     subscriptionPlan: "FREE",
-    status: "NONE",
+    plan: "FREE",
+    expirationDate: null,
+    trialEndsAt: null,
+    status: "INACTIVE",
+    cancelAtPeriodEnd: false,
+    nextBillingDate: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    metadata: undefined,
   }
 }
 
 /**
  * Validates token usage data
  */
-export function validateTokenUsage(data: any): TokenUsageResponse {
+export function validateTokenUsage(data: any): { used: number; total: number } {
   if (!data) {
     return { used: 0, total: 0 }
   }

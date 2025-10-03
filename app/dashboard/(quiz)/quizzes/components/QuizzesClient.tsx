@@ -3,14 +3,14 @@
 import type React from "react"
 import { useState, useCallback, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { useInfiniteQuery } from "@tanstack/react-query"
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/useDebounce"
 import { useInView } from "react-intersection-observer"
 import { ErrorBoundary } from "react-error-boundary"
 import { AlertCircle, RefreshCw, Sparkles, Zap } from "lucide-react"
 import type { QuizType } from "@/app/types/quiz-types"
 import type { QuizListItem } from "@/app/actions/getQuizes"
-import { getQuizzes } from "@/app/actions/getQuizes"
+import { getQuizzes, getQuizCountsByType } from "@/app/actions/getQuizes"
 import { QuizList } from "./QuizList"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -189,6 +189,14 @@ function EnhancedQuizzesClientComponent({ initialQuizzesData, userId }: Enhanced
     },
   })
 
+  // Query for total quiz counts by type
+  const { data: quizCountsData } = useQuery({
+    queryKey: ['quiz-counts', userId],
+    queryFn: () => getQuizCountsByType(userId),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
+  })
+
   // Enhanced deduplication
   const dedupeById = useCallback((items: QuizListItem[]) => {
     const seen = new Set<string>()
@@ -308,12 +316,12 @@ function EnhancedQuizzesClientComponent({ initialQuizzesData, userId }: Enhanced
             currentUserId={userId}
             onQuizDeleted={handleQuizDeleted}
             quizCounts={{
-              all: quizzes.length,
-              mcq: quizzes.filter(q => q.quizType === 'mcq').length,
-              openended: quizzes.filter(q => q.quizType === 'openended').length,
-              code: quizzes.filter(q => q.quizType === 'code').length,
-              blanks: quizzes.filter(q => q.quizType === 'blanks').length,
-              flashcard: quizzes.filter(q => q.quizType === 'flashcard').length,
+              all: quizCountsData ? Object.values(quizCountsData).reduce((sum, count) => sum + count, 0) : 0,
+              mcq: quizCountsData?.mcq || 0,
+              openended: quizCountsData?.openended || 0,
+              code: quizCountsData?.code || 0,
+              blanks: quizCountsData?.blanks || 0,
+              flashcard: quizCountsData?.flashcard || 0,
             }}
           />
           

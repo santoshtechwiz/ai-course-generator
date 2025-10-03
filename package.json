@@ -189,10 +189,12 @@
     "recoil": "^0.7.7",
     "tailwindcss": "3.4.13",
     "ts-node": "^10.9.2",
-    "unused": "0.2.1"
-    ,
+    "unused": "0.2.1",
     "vitest": "^1.0.0",
-    "jsdom": "^21.1.0"
+    "jsdom": "^21.1.0",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/dom": "^10.0.0",
+    "@testing-library/jest-dom": "^6.4.0"
   },
   "overrides": {
     "prettier": "3.5.3",

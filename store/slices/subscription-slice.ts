@@ -20,7 +20,11 @@ import {
 // Utility function for fetch with timeout
 const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout: number = 10000) => {
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeout)
+  const timeoutId = setTimeout(() => {
+    if (!controller.signal.aborted) {
+      controller.abort()
+    }
+  }, timeout)
   
   try {
     const signal = controller.signal
@@ -28,12 +32,15 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout:
       ...options,
       signal,
     })
+    clearTimeout(timeoutId)
     return response
   } catch (error) {
-    logger.error('Fetch error:', error)
-    return null
-  } finally {
     clearTimeout(timeoutId)
+    // Don't log AbortError as it's expected behavior
+    if (error instanceof Error && error.name !== 'AbortError') {
+      logger.error('Fetch error:', error)
+    }
+    return null
   }
 }
 

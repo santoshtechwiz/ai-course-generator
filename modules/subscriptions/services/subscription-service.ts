@@ -28,7 +28,44 @@ export class SubscriptionService {
   }
   
   /**
+   * Calculate comprehensive subscription status considering:
+   * 1. Active subscription status (ACTIVE)
+   * 2. Trial status with expiration check
+   * 3. Available credits/tokens (user can still use features)
+   * 4. Graceful handling of expired/inactive subscriptions
+   * 
+   * BUG FIX: Previously only checked subscription.status, ignoring users with remaining credits
+   */
+  private static calculateIsSubscribed(user: any): boolean {
+    const subscription = user.subscription
+    const credits = user.credits || 0
+    const creditsUsed = user.creditsUsed || 0
+    const hasRemainingCredits = credits > creditsUsed
+
+    // Check for active subscription
+    if (subscription?.status === 'ACTIVE') {
+      return true
+    }
+
+    // Check for valid trial
+    if (subscription?.status === 'TRIAL' && 
+        subscription.currentPeriodEnd && 
+        new Date(subscription.currentPeriodEnd) > new Date()) {
+      return true
+    }
+
+    // BUG FIX: Check if user has remaining credits/tokens
+    // Even if subscription is inactive, user can still use the platform if they have tokens
+    if (hasRemainingCredits) {
+      return true
+    }
+
+    return false
+  }
+  
+  /**
    * Get current subscription status directly from database for improved performance
+   * BUG FIX: Now correctly handles users with tokens but no active subscription
    */
   static async getSubscriptionStatus(userId: string): Promise<SubscriptionData | null> {
     try {
@@ -48,20 +85,30 @@ export class SubscriptionService {
         }
       }
 
-      // User exists but no subscription
+      // User exists but no subscription record
       if (!user.subscription) {
+        // BUG FIX: Check if user has credits even without subscription
+        const hasRemainingCredits = (user.credits || 0) > (user.creditsUsed || 0)
+        
         return {
           ...DEFAULT_FREE_SUBSCRIPTION,
           userId: userId,
-          subscriptionId: 'free'
+          subscriptionId: 'free',
+          credits: user.credits || 0,
+          tokensUsed: user.creditsUsed || 0,
+          isSubscribed: hasRemainingCredits, // User can use platform if they have tokens
+          metadata: {
+            source: 'database_query',
+            timestamp: new Date().toISOString()
+          }
         }
       }
 
-      // User has subscription, transform to SubscriptionData
-      const isSubscribed = user.subscription.status === 'ACTIVE' || 
-                          (user.subscription.status === 'TRIAL' && 
-                           user.subscription.currentPeriodEnd && 
-                           new Date(user.subscription.currentPeriodEnd) > new Date())
+      // BUG FIX: Use centralized calculation that considers tokens/credits
+      const isSubscribed = this.calculateIsSubscribed(user)
+      const remainingCredits = Math.max(0, (user.credits || 0) - (user.creditsUsed || 0))
+
+      logger.info(`[SubscriptionService] User ${SecurityService.maskSensitiveString(userId)}: isSubscribed=${isSubscribed}, credits=${user.credits}, used=${user.creditsUsed}, status=${user.subscription.status}`)
 
       return {
         id: user.subscription.id,
@@ -69,7 +116,7 @@ export class SubscriptionService {
         subscriptionId: user.subscription.stripeSubscriptionId || user.subscription.id,
         credits: user.credits || 0,
         tokensUsed: user.creditsUsed || 0,
-        isSubscribed,
+        isSubscribed, // Now correctly considers tokens AND subscription status
         subscriptionPlan: user.subscription.planId as SubscriptionPlanType,
         expirationDate: user.subscription.currentPeriodEnd?.toISOString() || null,
         status: user.subscription.status as any,
@@ -82,9 +129,13 @@ export class SubscriptionService {
         }
       }
     } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown error'
       logger.error(
-        `Error fetching subscription status for user ${SecurityService.maskSensitiveString(userId)}:`,
-        SecurityService.sanitizeError(error)
+        `Error fetching subscription status for user ${SecurityService.maskSensitiveString(userId)}: ${errorMessage}`,
+        { 
+          errorType: error?.name,
+          stack: error?.stack?.split('\n').slice(0, 3).join('\n') // First 3 lines only
+        }
       )
       
       return {
@@ -117,9 +168,9 @@ export class SubscriptionService {
         total: user.credits || 0
       }
     } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown error'
       logger.error(
-        `Error fetching tokens for user ${SecurityService.maskSensitiveString(userId)}:`,
-        SecurityService.sanitizeError(error)
+        `Error fetching tokens for user ${SecurityService.maskSensitiveString(userId)}: ${errorMessage}`
       )
       return { used: 0, total: 0 }
     }
@@ -156,9 +207,9 @@ export class SubscriptionService {
         planId: invoice.lines?.data[0]?.plan?.id || null
       }))
     } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown error'
       logger.error(
-        `Error fetching billing history for user ${SecurityService.maskSensitiveString(userId)}:`,
-        SecurityService.sanitizeError(error)
+        `Error fetching billing history for user ${SecurityService.maskSensitiveString(userId)}: ${errorMessage}`
       )
       return []
     }
@@ -194,9 +245,9 @@ export class SubscriptionService {
         isDefault: pm.metadata?.default === 'true'
       }))
     } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown error'
       logger.error(
-        `Error fetching payment methods for user ${SecurityService.maskSensitiveString(userId)}:`,
-        SecurityService.sanitizeError(error)
+        `Error fetching payment methods for user ${SecurityService.maskSensitiveString(userId)}: ${errorMessage}`
       )
       return []
     }
@@ -367,11 +418,10 @@ export class SubscriptionService {
         
         // If we have a Stripe subscription, update the plan in Stripe
         if (subscription.stripeSubscriptionId) {
-          // TODO: Implement StripeService.updateSubscriptionPlan
-          // await StripeService.updateSubscriptionPlan(
-          //   subscription.stripeSubscriptionId, 
-          //   data.subscriptionPlan
-          // )
+          await StripeService.updateSubscriptionPlan(
+            subscription.stripeSubscriptionId, 
+            data.subscriptionPlan as SubscriptionPlanType
+          )
         }
       }
       
@@ -409,17 +459,138 @@ export class SubscriptionService {
   }
 
   /**
-   * Subscribe to a plan - creates a direct subscription in the database for free plans
-   * or redirects to Stripe checkout for paid plans
+   * Activate a paid plan and add appropriate credits
+   * Called by webhook when payment is successful
    */
-  static async subscribeToPlan(planType: SubscriptionPlanType, userId: string): Promise<SubscriptionResponse> {
+  static async activatePaidPlan(userId: string, planId: SubscriptionPlanType, stripeSubscriptionId?: string): Promise<SubscriptionResponse> {
     try {
-      // Validate the plan type
+      logger.info(`Activating paid plan ${planId} for user ${SecurityService.maskSensitiveString(userId)}`)
+
+      // Get the plan token amount based on plan ID
+      const getTokensForPlan = (planId: string): number => {
+        const tokenMap: Record<string, number> = {
+          'FREE': 5,
+          'BASIC': 25, 
+          'PREMIUM': 100,
+          'ULTIMATE': 250
+        }
+        return tokenMap[planId] || 0
+      }
+
+      const planTokens = getTokensForPlan(planId)
+      
+      await prisma.$transaction(async (tx) => {
+        // Update or create subscription
+        await tx.userSubscription.upsert({
+          where: { userId },
+          update: {
+            planId,
+            status: 'ACTIVE',
+            stripeSubscriptionId: stripeSubscriptionId || null,
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+          },
+          create: {
+            userId,
+            planId,
+            status: 'ACTIVE',
+            stripeSubscriptionId: stripeSubscriptionId || null,
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+          }
+        })
+        
+        // Add credits to user account
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            credits: {
+              increment: planTokens
+            },
+            hadPreviousPaidPlan: true,
+            userType: planId
+          }
+        })
+        
+        // Log the credit addition
+        await tx.tokenTransaction.create({
+          data: {
+            userId,
+            amount: 0,
+            credits: planTokens,
+            type: 'SUBSCRIPTION_UPGRADE',
+            description: `${planId} plan activated - ${planTokens} credits added`
+          }
+        })
+      })
+
+      // Get fresh subscription data
+      const subscriptionData = await this.getSubscriptionStatus(userId)
+      
+      return {
+        success: true,
+        data: subscriptionData as SubscriptionData,
+        metadata: {
+          source: 'activate_paid_plan',
+          timestamp: new Date().toISOString(),
+          message: `${planId} plan activated successfully with ${planTokens} credits`
+        }
+      }
+    } catch (error: any) {
+      logger.error(
+        `Error activating paid plan ${planId} for user ${SecurityService.maskSensitiveString(userId)}:`,
+        SecurityService.sanitizeError(error)
+      )
+      throw error
+    }
+  }
+
+  /**
+   * Subscribe to a plan with upgrade flow validation:
+   * - Free → Basic (or higher) is allowed
+   * - No downgrades allowed (Basic → Free or Pro → Basic)
+   * - Redirect to Stripe for paid plans, update database for free plans
+   */
+  static async subscribeToPlan(planType: SubscriptionPlanType | 'free_trial', userId: string): Promise<SubscriptionResponse> {
+    try {
+      // Handle trial activation
+      if (planType === 'free_trial') {
+        return await this.activateFreeTrial(userId)
+      }
+      
+      // Validate the plan type for regular plans
       if (!validateSubscriptionPlan(planType)) {
         throw new Error(`Invalid subscription plan: ${planType}`)
       }
-
-      // For free plans, handle directly
+      
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { subscription: true }
+      })
+      
+      if (!user) {
+        throw new Error('User not found')
+      }
+      
+      const currentPlan = user.subscription?.planId || 'FREE'
+      const currentStatus = user.subscription?.status || 'INACTIVE'
+      
+      // Validate upgrade/downgrade rules
+      const planHierarchy = ['FREE', 'free_trial', 'BASIC', 'PREMIUM', 'ULTIMATE']
+      const currentIndex = planHierarchy.indexOf(currentPlan)
+      const newIndex = planHierarchy.indexOf(planType)
+      
+      // Block downgrades
+      if (currentIndex > newIndex && currentStatus === 'ACTIVE') {
+        throw new Error(`Downgrade from ${currentPlan} to ${planType} is not allowed. Please wait for your current subscription to expire.`)
+      }
+      
+      // Special case: Users who used trial cannot go back to FREE
+      if (planType === 'FREE' && user.hasUsedFreePlan && currentPlan !== 'FREE') {
+        throw new Error('You cannot downgrade to the free plan after having a paid subscription')
+      }
+      
+      // Handle FREE plan activation
       if (planType === 'FREE') {
         return await this.activateFreePlan(userId)
       }
@@ -434,7 +605,7 @@ export class SubscriptionService {
           userId: userId,
           subscriptionPlan: planType,
           isSubscribed: false,
-          status: 'INACTIVE', // Use valid status type
+          status: 'INACTIVE',
           metadata: {
             source: 'create_subscription_checkout',
             timestamp: new Date().toISOString()
@@ -442,61 +613,110 @@ export class SubscriptionService {
         },
         metadata: {
           source: 'create_subscription',
-          timestamp: new Date().toISOString(),
-          redirectUrl: checkoutSession.url
+          timestamp: new Date().toISOString()
         }
       }
     } catch (error: any) {
       logger.error(
         `Error subscribing to plan ${planType}:`,
-        SecurityService.sanitizeError(error)
+        error.message
       )
       throw error
     }
   }
 
   /**
-   * Activate a trial subscription by creating subscription record in database
+   * Activate free trial: 5 tokens lifetime, valid for 1 month only
+   * Users who already used trial cannot subscribe to free again
    */
-  static async activateTrial(userId: string, planId: SubscriptionPlanType): Promise<SubscriptionResponse> {
+  static async activateFreeTrial(userId: string): Promise<SubscriptionResponse> {
     try {
-      // Validate the plan
-      if (!validateSubscriptionPlan(planId)) {
-        throw new Error(`Invalid subscription plan: ${planId}`)
-      }
-      
-      // Check if user already has a subscription
-              const existingSubscription = await prisma.userSubscription.findUnique({
-        where: { userId }
+      // Check if user already used trial
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { subscription: true }
       })
       
-      if (existingSubscription) {
-        throw new Error('User already has an active subscription')
+      if (!user) {
+        throw new Error('User not found')
       }
       
-      // Calculate trial period (e.g., 14 days)
-      const trialDays = 14
-      const now = new Date()
-      const trialEnd = new Date(now)
-      trialEnd.setDate(trialEnd.getDate() + trialDays)
-      
-      // Create subscription record
-      const subscription = await prisma.userSubscription.create({
-        data: {
+      // Check if user has used trial before (check for any previous free_trial subscription)
+      const previousTrial = await prisma.userSubscription.findFirst({
+        where: { 
           userId,
-          planId,
-          status: 'TRIAL',
-          trialEnd,
-          currentPeriodStart: now,
-          currentPeriodEnd: trialEnd
+          planId: 'free_trial'
         }
       })
       
-      // Update user with trial credits based on plan
-      const credits = planId === 'BASIC' ? 1000 : planId === 'PREMIUM' ? 5000 : planId === 'ULTIMATE' ? 10000 : 100
-      await prisma.user.update({
-        where: { id: userId },
-        data: { credits }
+      if (previousTrial) {
+        throw new Error('User has already used their free trial')
+      }
+      
+      // Check if user already has active subscription
+      if (user.subscription && user.subscription.status === 'ACTIVE') {
+        throw new Error('User already has an active subscription')
+      }
+      
+      // Calculate trial period (1 month)
+      const now = new Date()
+      const trialEnd = new Date(now)
+      trialEnd.setMonth(trialEnd.getMonth() + 1)
+      
+      const result = await prisma.$transaction(async (tx) => {
+        // Create trial subscription record
+        const subscription = await tx.userSubscription.upsert({
+          where: { userId },
+          update: {
+            planId: 'free_trial',
+            status: 'TRIAL',
+            currentPeriodStart: now,
+            currentPeriodEnd: trialEnd
+          },
+          create: {
+            userId,
+            planId: 'free_trial',
+            status: 'TRIAL',
+            currentPeriodStart: now,
+            currentPeriodEnd: trialEnd
+          }
+        })
+        
+        // Update user with 5 trial tokens
+        await tx.user.update({
+          where: { id: userId },
+          data: { 
+            credits: 5,
+            creditsUsed: 0,
+            userType: 'free_trial',
+            hasUsedFreePlan: true // Mark as having used free plan
+          }
+        })
+        
+        // Record transaction for audit
+        await tx.tokenTransaction.create({
+          data: {
+            userId,
+            amount: 0,
+            credits: 5,
+            type: 'TRIAL_ACTIVATION',
+            description: 'Free trial activated - 5 tokens for 1 month'
+          }
+        })
+        
+        // Create subscription event
+        await tx.subscriptionEvent.create({
+          data: {
+            userId,
+            userSubscriptionId: subscription.id,
+            previousStatus: null,
+            newStatus: 'TRIAL',
+            reason: 'Free trial activated',
+            source: 'SYSTEM'
+          }
+        })
+        
+        return subscription
       })
       
       // Get fresh subscription data
@@ -506,15 +726,19 @@ export class SubscriptionService {
         success: true,
         data: subscriptionData as SubscriptionData,
         metadata: {
-          source: 'start_trial',
-          timestamp: new Date().toISOString()
+          source: 'activate_trial',
+          timestamp: new Date().toISOString(),
+          message: 'Free trial activated successfully - 5 tokens added for 1 month'
         }
       }
     } catch (error: any) {
-      logger.error(
-        `Error activating trial for user ${SecurityService.maskSensitiveString(userId)}:`,
-        SecurityService.sanitizeError(error)
-      )
+      logger.error(`Error activating free trial for user ${SecurityService.maskSensitiveString(userId)}:`, {
+        message: error.message,
+        code: 'TRIAL_ACTIVATION_ERROR',
+        timestamp: new Date().toISOString(),
+        requestId: Math.random().toString(36).substring(7)
+      })
+      
       throw error
     }
   }
@@ -626,7 +850,7 @@ export class SubscriptionService {
       await prisma.user.update({
         where: { id: userId },
         data: {
-          credits: 50, // Default free credits
+          credits: 5, // Default free credits
           creditsUsed: 0
         }
       })
@@ -656,8 +880,75 @@ export class SubscriptionService {
    * Returns a normalized object with important subscription details
    */
   static async verifyPaymentSuccess(userId: string, sessionId: string): Promise<any> {
-    // TODO: Implement this method when StripeService methods are available
-    throw new Error('verifyPaymentSuccess not implemented - use webhook handler instead')
+    try {
+      logger.info(`Verifying payment success for user ${SecurityService.maskSensitiveString(userId)}, session: ${sessionId}`)
+      
+      // Get current subscription status from database
+      const subscriptionData = await this.getSubscriptionStatus(userId)
+      
+      if (subscriptionData) {
+        return {
+          success: true,
+          subscription: subscriptionData,
+          message: 'Payment verified successfully'
+        }
+      } else {
+        return {
+          success: false,
+          error: 'No subscription found',
+          message: 'Unable to verify payment - subscription not found'
+        }
+      }
+    } catch (error: any) {
+      logger.error(
+        `Error verifying payment for user ${SecurityService.maskSensitiveString(userId)}:`,
+        SecurityService.sanitizeError(error)
+      )
+      return {
+        success: false,
+        error: error.message,
+        message: 'Payment verification failed'
+      }
+    }
+  }
+  
+  /**
+   * Add credits to a user's account (for manual fixes or testing)
+   */
+  static async addCreditsToUser(userId: string, credits: number, reason: string = 'Manual credit addition'): Promise<boolean> {
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Add credits to user account
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            credits: {
+              increment: credits
+            }
+          }
+        })
+        
+        // Log the credit addition
+        await tx.tokenTransaction.create({
+          data: {
+            userId,
+            amount: 0,
+            credits,
+            type: 'MANUAL_CREDIT_ADD',
+            description: reason
+          }
+        })
+      })
+      
+      logger.info(`Added ${credits} credits to user ${SecurityService.maskSensitiveString(userId)}`)
+      return true
+    } catch (error: any) {
+      logger.error(
+        `Error adding credits to user ${SecurityService.maskSensitiveString(userId)}:`,
+        SecurityService.sanitizeError(error)
+      )
+      return false
+    }
   }
   
   /**

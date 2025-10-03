@@ -78,7 +78,11 @@ async function trySemanticSummary(userMessage: string, docs: any[]): Promise<str
     }))
     const contextBlock = JSON.stringify(topDocs, null, 2)
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 4500) // 4.5s guard
+    const timeout = setTimeout(() => {
+      if (!controller.signal.aborted) {
+        controller.abort()
+      }
+    }, 4500) // 4.5s guard
     const model = process.env.CHAT_SUMMARY_MODEL || 'gpt-4o-mini'
     const systemPrompt = `You are an enterprise-grade AI assistant for CourseAI, a professional learning platform. Your role is to act as a knowledgeable guide for users exploring courses, quizzes, subscriptions, and platform features.
 

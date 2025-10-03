@@ -1,6 +1,6 @@
 import useSWR from 'swr'
 import { useCallback, useMemo } from 'react'
-import { SubscriptionService } from '../services/subscription-service'
+// NOTE: Avoid importing server-only SubscriptionService here to prevent Prisma from bundling into client
 import { useAuth } from '@/modules/auth'
 import { type SubscriptionData, DEFAULT_FREE_SUBSCRIPTION } from '@/types/subscription'
 
@@ -19,17 +19,34 @@ export const useSubscription = () => {
 
   const fetchSubscription = useCallback(async () => {
     if (!userId) return { ...DEFAULT_FREE_SUBSCRIPTION }
+    const controller = new AbortController()
     try {
-      const data = await SubscriptionService.getSubscriptionStatus(userId)
-      const normalized = { ...(data || DEFAULT_FREE_SUBSCRIPTION) }
-      normalized.credits = Math.max(0, normalized.credits || 0)
-      normalized.tokensUsed = Math.max(0, normalized.tokensUsed || 0)
+      const res = await fetch('/api/subscriptions/status', {
+        method: 'GET',
+        credentials: 'include',
+        signal: controller.signal,
+        headers: { 'Accept': 'application/json' }
+      })
+      if (!res.ok) throw new Error(`Failed to fetch subscription status (${res.status})`)
+      const raw = await res.json()
+      // API returns a flattened object already similar to SubscriptionData
+      const normalized: any = {
+        ...DEFAULT_FREE_SUBSCRIPTION,
+        ...raw,
+        // Ensure field name alignment
+        subscriptionPlan: raw.subscriptionPlan || raw.plan || raw.currentPlan || 'FREE',
+        status: raw.status || raw.subscriptionStatus || 'INACTIVE',
+        credits: Math.max(0, raw.credits || 0),
+        tokensUsed: Math.max(0, raw.tokensUsed || 0),
+        isSubscribed: Boolean(raw.isSubscribed)
+      }
       if (normalized.tokensUsed > normalized.credits) {
+        // Cap tokensUsed if not truly active to avoid negative remaining
         if (normalized.subscriptionPlan === 'FREE' || normalized.status !== 'ACTIVE') {
           normalized.tokensUsed = normalized.credits
         }
       }
-      return normalized
+      return normalized as SubscriptionData
     } catch (error) {
       console.error('[useSubscription] fetch error', error)
       throw error
@@ -79,17 +96,22 @@ export const useSubscription = () => {
   const shouldRefresh = cacheStatus === 'stale'
 
   const refreshSubscription = useCallback(async (opts?: { force?: boolean }) => {
-    if (opts?.force && userId) {
-      await SubscriptionService.refreshSubscription(userId, true)
+    try {
+      if (userId) {
+        const url = opts?.force ? '/api/subscriptions/status?force=1' : '/api/subscriptions/status'
+        await fetch(url, { method: 'GET', credentials: 'include', cache: 'no-store' })
+      }
+    } catch (e) {
+      // Non-fatal
     }
     return mutate()
   }, [mutate, userId])
 
   const forceRefresh = useCallback(async () => {
     if (!userId) return null
-    const resp = await SubscriptionService.refreshSubscription(userId, true)
-    await mutate()
-    return resp.data
+    await fetch('/api/subscriptions/status?force=1', { method: 'GET', credentials: 'include', cache: 'no-store' })
+    const updated = await mutate()
+    return updated
   }, [userId, mutate])
 
   const onSubscriptionChanged = useCallback(async () => {

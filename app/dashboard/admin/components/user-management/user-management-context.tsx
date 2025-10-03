@@ -31,7 +31,11 @@ export function UserManagementProvider({ children }: { children: ReactNode }) {
       const controller = new AbortController()
 
       try {
-        const timeoutId = setTimeout(() => controller.abort(), 10000)
+        const timeoutId = setTimeout(() => {
+          if (!controller.signal.aborted) {
+            controller.abort()
+          }
+        }, 10000)
 
         const response = await fetch(`/api/users/${userId}`, {
           signal: controller.signal,

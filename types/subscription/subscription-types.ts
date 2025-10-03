@@ -21,6 +21,7 @@ export interface SubscriptionMetadata {
   clientId?: string
   timestamp: string
   requestId?: string
+  message?: string // Add message for success/error messages
 }
 
 /**

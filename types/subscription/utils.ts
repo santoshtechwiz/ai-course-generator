@@ -22,14 +22,23 @@ export function validateSubscriptionStatus(status: any): SubscriptionStatusType 
  * Validates and normalizes a subscription plan value
  */
 export function validateSubscriptionPlan(plan: any): SubscriptionPlanType {
-  if (typeof plan !== 'string') {
-    return 'FREE'
+  if (!plan) return "FREE"
+
+  const normalizedPlan = String(plan).toUpperCase()
+
+  // Check if the plan is one of the valid plan types
+  const validPlans: SubscriptionPlanType[] = ["FREE", "BASIC", "PREMIUM", "ULTIMATE"]
+
+  if (validPlans.includes(normalizedPlan as SubscriptionPlanType)) {
+    return normalizedPlan as SubscriptionPlanType
   }
 
-  const normalizedPlan = plan.toUpperCase() as SubscriptionPlanType
-  const validPlans: SubscriptionPlanType[] = ['FREE', 'PRO', 'ENTERPRISE', 'CUSTOM']
-  
-  return validPlans.includes(normalizedPlan) ? normalizedPlan : 'FREE'
+  // Map common alternative plan values
+  if (normalizedPlan === "PRO") return "PREMIUM"
+  if (normalizedPlan === "ENTERPRISE") return "ULTIMATE"
+
+  // Default to FREE for unrecognized plan values
+  return "FREE"
 }
 
 /**

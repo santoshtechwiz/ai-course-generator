@@ -226,10 +226,10 @@ export default function PlanCards({
                   </div>
                   {isPlanActive && isAuthenticated && (
                     <Badge
-                      variant={normalizedStatus === "ACTIVE" ? "default" : "destructive"}
+                      variant={isSubscribed ? "default" : "destructive"}
                       className="whitespace-nowrap mt-2 sm:mt-0"
                     >
-                      {cancelAtPeriodEnd ? "Cancelling" : normalizedStatus === "ACTIVE" ? "Active" : "Inactive"}
+                      {cancelAtPeriodEnd ? "Cancelling" : isSubscribed ? "Active" : "Inactive"}
                     </Badge>
                   )}
                 </div>

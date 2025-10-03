@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react"
 import { Search, Plus, User, RefreshCw, Shield, MoreHorizontal, Edit, Trash, RotateCcw, Mail } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
+import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -23,10 +24,10 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CreateUserDialog } from "../components/user-dialog/create-user-dialog"
-import { UserEditDialog } from "../components/user-dialog/user-edit-dialog"
 import { ResetSubscriptionDialog } from "../components/subscription-management/reset-subscription-dialog"
+import ClientOnly from "@/components/ClientOnly"
 
-import type { UserType } from "@/app/types/types"
+import type { UserType } from "@/app/types/user-types"
 import { useRouter } from "next/navigation"
 
 interface UserInterface {
@@ -42,7 +43,6 @@ interface UserInterface {
 const USER_TYPES = [
   { value: "FREE", label: "Free" },
   { value: "BASIC", label: "Basic" },
-  { value: "PREMIUM", label: "PREMIUM" },
   { value: "PREMIUM", label: "Premium" },
   { value: "ULTIMATE", label: "Ultimate" },
 ] as const
@@ -64,7 +64,7 @@ const LoadingSkeleton = () => (
   </div>
 )
 
-const ErrorMessage = ({ onRetry }: { onRetry: () => void }) => (
+const ErrorMessage = ({ error, onRetry }: { error?: Error; onRetry: () => void }) => (
   <div className="flex flex-col items-center justify-center py-12 px-4">
     <div className="text-destructive rounded-full bg-destructive/10 p-3 mb-4">
       <svg
@@ -84,6 +84,11 @@ const ErrorMessage = ({ onRetry }: { onRetry: () => void }) => (
       </svg>
     </div>
     <h3 className="text-xl font-medium">Failed to load users</h3>
+    {error && (
+      <p className="text-sm text-muted-foreground mt-2 text-center max-w-md">
+        {error.message}
+      </p>
+    )}
     <Button onClick={onRetry} variant="outline" className="mt-4">
       Try Again
     </Button>
@@ -103,6 +108,31 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
 
 export const UserManagement = () => {
   const { toast } = useToast()
+  const { data: session, status } = useSession()
+  const [isMounted, setIsMounted] = useState(false)
+
+  // Prevent hydration mismatch by ensuring client-side rendering
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Debug: fetch server-side session snapshot to compare with client session
+  useEffect(() => {
+    if (!isMounted) return
+
+    ;(async () => {
+      try {
+        const res = await fetch('/api/auth/check', { credentials: 'include' })
+        const json = await res.json()
+        console.log('[UserManagement][AuthCheck] server /api/auth/check ->', json)
+      } catch (err) {
+        console.error('[UserManagement][AuthCheck] failed to call /api/auth/check', err)
+      }
+    })()
+  }, [isMounted])
+
+  console.log('[UserManagement] Component mounting/re-rendering...')
+  console.log('[UserManagement] Session status:', status, 'isAdmin:', session?.user?.isAdmin)
 
   // State
   const [searchQuery, setSearchQuery] = useState("")
@@ -117,51 +147,90 @@ export const UserManagement = () => {
   const [activeTab, setActiveTab] = useState("all")
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
 
-  // Fetch users
-  const { data, isLoading, isError, refetch } = useQuery<{ users: UserInterface[]; totalCount: number }>({
-    queryKey: ["users"],
+  // Fetch users (server-side pagination + filtering)
+  const { data, isLoading, isError, refetch, error } = useQuery<{ users: UserInterface[]; totalCount: number }, Error>({
+    queryKey: [
+      "users",
+      {
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchQuery,
+        userTypes: userTypeFilter,
+        tab: activeTab,
+      },
+    ],
     queryFn: async () => {
-      const response = await fetch("/api/users")
-      if (!response.ok) throw new Error("Failed to fetch users")
-      return response.json()
+      console.log('[UserManagement] Fetching users...')
+
+      // Don't fetch if component not mounted (prevent SSR fetch)
+      if (!isMounted) {
+        throw new Error('Component not mounted')
+      }
+
+        if (status === 'loading') {
+          throw new Error('Session still loading')
+        }
+
+        if (status === 'unauthenticated') {
+          throw new Error('User not authenticated')
+        }
+
+      // Build query params
+      const params = new URLSearchParams()
+      params.set('page', String(currentPage))
+      params.set('limit', String(itemsPerPage))
+      if (searchQuery) params.set('search', searchQuery)
+
+      // Include user types from explicit filter
+      userTypeFilter.forEach((t) => params.append('userTypes', t))
+
+      // Respect tab selection
+      if (activeTab === 'free') {
+        params.append('userTypes', 'FREE')
+      } else if (activeTab === 'paid') {
+        // Request paid users by excluding FREE on the server - pass known paid types if available
+        params.append('userTypes', 'BASIC')
+        params.append('userTypes', 'PREMIUM')
+        params.append('userTypes', 'ULTIMATE')
+      }
+
+      const url = `/api/users?${params.toString()}`
+
+      const response = await fetch(url, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      console.log('[UserManagement] Response status:', response.status)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[UserManagement] API Error:', response.status, errorText)
+        throw new Error(`Failed to fetch users: ${response.status} ${errorText}`)
+      }
+
+      const result = await response.json()
+      console.log('[UserManagement] Fetched users successfully:', result.users?.length || 0, 'users')
+      return result
     },
+  enabled: isMounted && status === 'authenticated',
+    retry: 2,
+    retryDelay: 1000,
   })
 
   const users = data?.users || []
   const totalCount = data?.totalCount || 0
 
-  // Reset selected users when users change
+  // Reset selected users when users or filters change
   useEffect(() => {
     setSelectedUsers([])
-  }, [userTypeFilter, activeTab])
+    // Reset to first page whenever search/filter/tab changes
+    setCurrentPage(1)
+  }, [userTypeFilter, activeTab, searchQuery, itemsPerPage])
 
-  // Filter users based on search, type filters, and active tab
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      const matchesSearch =
-        searchQuery === "" ||
-        user.name?.toLowerCase().includes(searchQuery?.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchQuery?.toLowerCase())
-
-      const matchesType = userTypeFilter.length === 0 || userTypeFilter.includes(user.userType)
-
-      // Filter by tab
-      const matchesTab =
-        activeTab === "all" ||
-        (activeTab === "free" && user.userType === "FREE") ||
-        (activeTab === "paid" && user.userType !== "FREE")
-
-      return matchesSearch && matchesType && matchesTab
-    })
-  }, [users, searchQuery, userTypeFilter, activeTab])
-
-  // Pagination
-  const paginatedUsers = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage
-    return filteredUsers.slice(startIndex, startIndex + itemsPerPage)
-  }, [filteredUsers, currentPage, itemsPerPage])
-
-  const totalPages = useMemo(() => Math.ceil(filteredUsers.length / itemsPerPage), [filteredUsers.length, itemsPerPage])
+  // Server side pagination
+  const totalPages = useMemo(() => Math.ceil(totalCount / itemsPerPage), [totalCount, itemsPerPage])
 
   // Handlers
   const handleEdit = useCallback((userId: string) => {
@@ -186,12 +255,12 @@ export const UserManagement = () => {
   }, [])
 
   const toggleSelectAll = useCallback(() => {
-    if (selectedUsers.length === paginatedUsers.length) {
+    if (selectedUsers.length === users.length) {
       setSelectedUsers([])
     } else {
-      setSelectedUsers(paginatedUsers.map((user) => user.id))
+      setSelectedUsers(users.map((user) => user.id))
     }
-  }, [paginatedUsers, selectedUsers.length])
+  }, [users, selectedUsers.length])
 
   const router = useRouter()
   const handleSendEmail = useCallback(() => {
@@ -270,9 +339,40 @@ export const UserManagement = () => {
 
   // Render user list
   const renderUserList = () => {
+    // Prevent hydration mismatch - show loading until component is mounted
+    if (!isMounted) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 px-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      )
+    }
+
+    // Show loading while session is being verified
+    if (status === 'loading') {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 px-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+          <p className="text-muted-foreground">Verifying authentication...</p>
+        </div>
+      )
+    }
+    
+    // Show authentication error if not authenticated. Admin check is enforced server-side.
+    if (status === 'unauthenticated') {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 px-4">
+          <Shield className="h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-xl font-medium">Access Denied</h3>
+          <p className="text-sm text-muted-foreground mt-2">Admin privileges required to view this page.</p>
+        </div>
+      )
+    }
+    
     if (isLoading) return <LoadingSkeleton />
-    if (isError) return <ErrorMessage onRetry={refetch} />
-    if (!filteredUsers.length) return <EmptyState onCreate={() => setIsCreateDialogOpen(true)} />
+    if (isError) return <ErrorMessage error={error as Error} onRetry={refetch} />
+  if (users.length === 0) return <EmptyState onCreate={() => setIsCreateDialogOpen(true)} />
 
     return (
       <div className="space-y-4">
@@ -281,7 +381,7 @@ export const UserManagement = () => {
           <div className="grid grid-cols-12 gap-2 p-3 bg-muted/30 border-b text-sm font-medium">
             <div className="col-span-1 flex items-center justify-center">
               <Checkbox
-                checked={selectedUsers.length > 0 && selectedUsers.length === paginatedUsers.length}
+                checked={selectedUsers.length > 0 && selectedUsers.length === users.length}
                 onCheckedChange={toggleSelectAll}
                 aria-label="Select all users"
               />
@@ -295,7 +395,7 @@ export const UserManagement = () => {
 
           {/* Table Rows */}
           <div className="divide-y">
-            {paginatedUsers.map((user) => (
+            {users.map((user) => (
               <div
                 key={user.id}
                 className="grid grid-cols-12 gap-2 p-3 items-center hover:bg-muted/20 transition-colors"
@@ -374,8 +474,7 @@ export const UserManagement = () => {
           {/* Pagination */}
           <div className="flex items-center justify-between p-3 border-t">
             <div className="text-sm text-muted-foreground">
-              Showing {Math.min(filteredUsers.length, (currentPage - 1) * itemsPerPage + 1)} to{" "}
-              {Math.min(filteredUsers.length, currentPage * itemsPerPage)} of {filteredUsers.length} users
+              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(totalCount, currentPage * itemsPerPage)} of {totalCount} users
             </div>
             <div className="flex items-center gap-1">
               <Button
@@ -543,12 +642,15 @@ export const UserManagement = () => {
       {/* Dialogs */}
       <CreateUserDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} onSuccess={refetch} />
 
-      <UserEditDialog
+      {/* TODO: Fix UserEditDialog props compatibility */}
+      {/* <UserEditDialog
         open={!!editingUserId}
-        onOpenChange={(open) => !open && setEditingUserId(null)}
-        userId={editingUserId || ""}
-        onSuccess={refetch}
-      />
+        setOpen={(open: boolean) => !open && setEditingUserId(null)}
+        onSave={() => {
+          refetch()
+          setEditingUserId(null)
+        }}
+      /> */}
 
       <ResetSubscriptionDialog
         open={!!resettingUserId}

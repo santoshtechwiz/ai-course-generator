@@ -79,7 +79,15 @@ export function PricingPage({
   const subscriptionData = subscription;
   const currentPlan = (subscriptionData?.subscriptionPlan || "FREE") as SubscriptionPlanType
   const normalizedStatus = (subscriptionData?.status?.toUpperCase() || "INACTIVE").replace("CANCELLED","CANCELED") as SubscriptionStatusType
-  const isSubscribed = currentPlan !== "FREE" && normalizedStatus === "ACTIVE"
+  
+  // BUG FIX: Use isSubscribed flag from service instead of recalculating
+  // The service now correctly considers tokens/credits, not just subscription status
+  const isSubscribed = subscriptionData?.isSubscribed || false
+  const remainingCredits = Math.max(0, (subscriptionData?.credits || 0) - (subscriptionData?.tokensUsed || 0))
+  const hasCreditsAvailable = remainingCredits > 0
+  
+  // (Debug log removed after verification phase)
+  
   const expirationDate = subscriptionData?.expirationDate
     ? new Date(subscriptionData.expirationDate).toLocaleDateString()
     : null
@@ -114,11 +122,10 @@ export function PricingPage({
       
       console.log('[PricingPage] User authenticated, proceeding with subscription')
 
-      // Enforce stricter rules:
-      // 1. User cannot start FREE plan again after any paid plan (hadPreviousPaidPlan)
-      // 2. User cannot change plan while active (must cancel and wait for expiration)
-      // 3. Downgrade to FREE blocked until expiration (cancelAtPeriodEnd true + not expired)
-      const hadPaidPlanBefore = hasAnyPaidPlan // User currently has or had a paid plan
+      // NEW: Enhanced upgrade flow validation with better messaging
+      const hadPaidPlanBefore = hasAnyPaidPlan
+      
+      // Block downgrades with specific messages
       if (planName === 'FREE' && hadPaidPlanBefore) {
         toast({
           title: 'Downgrade Blocked',
@@ -128,10 +135,15 @@ export function PricingPage({
         return
       }
 
-      if (hasActiveSubscription && currentPlan !== planName) {
+      // Block trial if user already used it (handled by backend)
+      // Note: 'free_trial' is handled as a special case, not a regular plan type
+      
+      // Allow FREE and trial users to upgrade to paid plans
+      if (hasActiveSubscription && currentPlan !== planName && 
+          currentPlan !== 'FREE') {
         toast({
           title: 'Plan Change Restricted',
-          description: 'You already have an active subscription. You can change plans after it expires.',
+          description: 'You already have an active paid subscription. You can change plans after it expires.',
           variant: 'destructive'
         })
         return
@@ -154,6 +166,12 @@ export function PricingPage({
       });
       const result = await response.json();
       
+      // Handle Stripe checkout redirect for paid plans
+      if (result?.url) {
+        window.location.href = result.url;
+        return;
+      }
+      
       // Handle redirects directly if not handled by callback
       if (result?.redirectUrl) {
         router.push(result.redirectUrl);
@@ -161,19 +179,41 @@ export function PricingPage({
       }
       
       if (result?.success) {
+        // Enhanced success messages based on plan type
+        let successTitle = "Success!"
+        let successDescription = result.message || "Plan updated successfully."
+        
+        // Handle trial activation (if planName is 'free_trial', it's a special API call)
+        if (planName === 'FREE') {
+          successTitle = "Free Plan Activated!"
+          successDescription = "You're now on the free plan."
+        } else {
+          successTitle = "Subscription Upgraded!"
+          successDescription = `You've successfully upgraded to the ${planName} plan.`
+        }
+        
         toast({
-          title: "You're Subscribed!",
-          description: result.message || "Plan updated successfully.",
+          title: successTitle,
+          description: successDescription,
           variant: "default",
         });
         return;
       }
       if (!result.success) {
-        // Show user-friendly error messages based on error type
+        // Enhanced error messages with trial-specific handling
         let errorTitle = "Subscription Failed"
         let errorDescription = result.message
 
-        if (result.error === "SUBSCRIPTION_IN_PROGRESS") {
+        if (result.error === "TRIAL_ALREADY_USED") {
+          errorTitle = "Trial Not Available"
+          errorDescription = "You have already used your free trial. Please choose a paid plan to continue."
+        } else if (result.error === "TRIAL_ACTIVATION_FAILED") {
+          errorTitle = "Trial Activation Failed"
+          errorDescription = "Unable to activate your free trial. Please try again or contact support."
+        } else if (result.error === "DOWNGRADE_BLOCKED") {
+          errorTitle = "Downgrade Not Allowed"
+          errorDescription = result.message || "Downgrades are not permitted. Please wait for your current subscription to expire."
+        } else if (result.error === "SUBSCRIPTION_IN_PROGRESS") {
           errorTitle = "Subscription In Progress"
           errorDescription = "You already have a subscription request being processed. Please wait a few minutes before trying again."
         } else if (result.error === "PLAN_CHANGE_RESTRICTED") {

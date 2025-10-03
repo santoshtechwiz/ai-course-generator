@@ -62,6 +62,45 @@ export class StripeGateway implements PaymentGateway {
   }
 
   /**
+   * Validate webhook signature
+   */
+  async validateWebhook(payload: string, signature: string): Promise<boolean> {
+    try {
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+      if (!webhookSecret) {
+        logger.warn('STRIPE_WEBHOOK_SECRET not configured, skipping webhook validation', {
+          environment: process.env.NODE_ENV,
+          suggestion: 'Set STRIPE_WEBHOOK_SECRET in your environment variables for secure webhook processing'
+        })
+        return true // Allow processing but log warning
+      }
+
+      if (!signature) {
+        logger.error('No webhook signature provided', {
+          environment: process.env.NODE_ENV
+        })
+        return false
+      }
+
+      // Construct the event using Stripe's webhook signature verification
+      const event = stripe.webhooks.constructEvent(payload, signature, webhookSecret)
+      logger.info('Stripe webhook signature validated successfully', {
+        eventId: event.id,
+        eventType: event.type
+      })
+      return true
+    } catch (error) {
+      logger.error('Stripe webhook signature validation failed:', {
+        error: error instanceof Error ? error.message : String(error),
+        hasSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
+        hasSignature: !!signature,
+        signatureLength: signature?.length || 0
+      })
+      return false
+    }
+  }
+
+  /**
    * Get payment status (alias for verifyPaymentStatus for interface compatibility)
    */
   async getPaymentStatus(sessionId: string): Promise<PaymentStatusResult> {

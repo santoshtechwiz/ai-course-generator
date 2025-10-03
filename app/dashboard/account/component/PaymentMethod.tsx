@@ -61,7 +61,11 @@ function PaymentMethodFormContent({ onSuccess }: PaymentMethodFormProps) {
 
       // Add a timeout to prevent hanging requests
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+      const timeoutId = setTimeout(() => {
+        if (!controller.signal.aborted) {
+          controller.abort()
+        }
+      }, 15000) // 15 second timeout
 
       // Send the payment method to your server
       const response = await fetch("/api/subscriptions/payment-methods", {

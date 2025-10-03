@@ -66,7 +66,10 @@ export default async function SubscriptionAccountPage() {
 
     subscriptionData = {
       currentPlan: subscriptionStatus.subscriptionPlan,
-      subscriptionStatus: subscriptionStatus.isSubscribed ? "ACTIVE" : "INACTIVE",
+      // BUG FIX: Use actual status from service, not derived
+      subscriptionStatus: subscriptionStatus.status || "INACTIVE",
+      // Also pass isSubscribed flag for accurate determination
+      isSubscribed: subscriptionStatus.isSubscribed || false,
       endDate:
         "expirationDate" in subscriptionStatus && subscriptionStatus.expirationDate
           ? new Date(subscriptionStatus.expirationDate)

@@ -28,19 +28,33 @@ export default function SubscriptionStatus() {
     )
   }
 
-  if (!subscription || subscription.plan === "FREE") {
+  // BUG FIX: Check isSubscribed flag which now considers tokens/credits
+  const hasSubscriptionOrCredits = subscription?.isSubscribed || false
+  const remainingCredits = Math.max(0, (subscription?.credits || 0) - (subscription?.tokensUsed || 0))
+
+  if (!hasSubscriptionOrCredits || subscription?.plan === "FREE") {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Subscription</span>
-            <Badge variant="destructive">Inactive</Badge>
+            <Badge variant={remainingCredits > 0 ? "secondary" : "destructive"}>
+              {remainingCredits > 0 ? "Credits Available" : "Inactive"}
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">No active subscription found</p>
+          {remainingCredits > 0 ? (
+            <p className="text-sm text-muted-foreground">
+              You have {remainingCredits} tokens remaining
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">No active subscription found</p>
+          )}
           <Button asChild className="w-full">
-            <Link href="/dashboard/subscription">Subscribe Now</Link>
+            <Link href="/dashboard/subscription">
+              {remainingCredits > 0 ? "Upgrade Plan" : "Subscribe Now"}
+            </Link>
           </Button>
         </CardContent>
       </Card>
@@ -48,8 +62,9 @@ export default function SubscriptionStatus() {
   }
 
   const isActive = subscription.status === "ACTIVE"
-  const timeUntilExpiry = subscription.currentPeriodEnd
-    ? formatDistanceToNow(new Date(subscription.currentPeriodEnd), { addSuffix: true })
+  const expiryDate = subscription.expirationDate
+  const timeUntilExpiry = expiryDate
+    ? formatDistanceToNow(new Date(expiryDate), { addSuffix: true })
     : "Unknown"
 
   return (

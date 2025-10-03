@@ -188,7 +188,11 @@ export const fetchQuiz = createAsyncThunk<
 
       // Make API request with timeout
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+      const timeoutId = setTimeout(() => {
+        if (!controller.signal.aborted) {
+          controller.abort()
+        }
+      }, 30000) // 30 second timeout
 
       const response = await fetch(url, {
         signal: controller.signal,
