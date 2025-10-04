@@ -90,6 +90,9 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-geist-sans)", "Inter", "system-ui", "sans-serif"],
         mono: ["var(--font-geist-mono)", "Fira Code", "monospace"],
+        heading: ["var(--font-heading)", "var(--font-poppins)", "Inter", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "var(--font-poppins)", "Inter", "system-ui", "sans-serif"],
+        body: ["var(--font-open-sans)", "var(--font-sans)", "Inter", "system-ui", "sans-serif"],
       },
       // Core Animations - mobile optimized, removed unused
       animation: {
