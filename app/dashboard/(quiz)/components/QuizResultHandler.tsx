@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSelector } from 'react-redux'
-import { useAppDispatch } from '@/store'
+import useAppDispatch from '@/store'
 import { AnimatePresence, motion } from 'framer-motion'
 import { RefreshCw } from 'lucide-react'
 import { createMachine } from 'xstate'
