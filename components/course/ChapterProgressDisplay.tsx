@@ -248,7 +248,7 @@ export function CourseProgressSummary({
           </div>
           
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t">
             <div className="text-center space-y-1">
               <div className="flex items-center justify-center gap-1">
                 <CheckCircle className="h-4 w-4 text-emerald-500" />

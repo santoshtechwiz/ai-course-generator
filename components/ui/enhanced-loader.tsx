@@ -156,7 +156,7 @@ interface PageLoaderProps {
 
 export function PageLoader({ message, showProgress = false, progress }: PageLoaderProps) {
   return (
-    <div className="flex min-h-[50vh] items-center justify-center">
+    <div className="flex min-h-[40vh] sm:min-h-[50vh] items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardContent className="p-8">
           <EnhancedLoader
@@ -241,7 +241,7 @@ export function FullScreenLoader({ message, showProgress, progress }: FullScreen
         transition={{ delay: 0.1 }}
       >
         <Card className="w-full max-w-sm">
-          <CardContent className="p-8 text-center">
+          <CardContent className="p-4 sm:p-6 md:p-8 text-center">
             <EnhancedLoader
               state="loading"
               message={message || "Loading..."}

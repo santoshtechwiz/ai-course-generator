@@ -195,11 +195,11 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
         <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors duration-500" />
 
         {/* Action buttons */}
-        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex gap-1 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex gap-2 sm:gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <Button
             variant="secondary"
             size="sm"
-            className="h-8 w-8 sm:h-9 sm:w-9 p-0 bg-card/90 hover:bg-card shadow-sm touch-manipulation"
+            className="h-11 w-11 sm:h-10 sm:w-10 p-0 bg-card/90 hover:bg-card shadow-sm touch-manipulation min-h-[44px] min-w-[44px]"
             onClick={handleFavoriteClick}
           >
             <Heart className={cn("h-3 w-3 sm:h-4 sm:w-4", isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground")} />
@@ -207,7 +207,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
           <Button
             variant="secondary"
             size="sm"
-            className="h-8 w-8 sm:h-9 sm:w-9 p-0 bg-card/90 hover:bg-card shadow-sm touch-manipulation"
+            className="h-11 w-11 sm:h-10 sm:w-10 p-0 bg-card/90 hover:bg-card shadow-sm touch-manipulation min-h-[44px] min-w-[44px]"
             onClick={handleBookmarkClick}
           >
             <Bookmark className={cn("h-3 w-3 sm:h-4 sm:w-4", isBookmarked ? "fill-primary text-primary" : "text-muted-foreground")} />
@@ -289,7 +289,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
         </div>
 
         {/* Course stats */}
-        <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
           <div className="flex flex-col items-center p-2 bg-muted/30 rounded-md hover:bg-muted/50 transition-colors">
             <div className="text-sm sm:text-base font-bold text-foreground">{typeof unitCount === 'number' && unitCount > 0 ? unitCount : 'N/A'}</div>
             <div className="text-xs text-muted-foreground">Chapters</div>

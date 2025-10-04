@@ -63,7 +63,7 @@ export function FlashcardSkeleton() {
       </div>
       
       {/* Card */}
-      <div className="bg-white rounded-lg shadow-lg p-8 min-h-64 space-y-6">
+      <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8 min-h-[200px] sm:min-h-[240px] md:min-h-[280px] space-y-4 sm:space-y-6">
         <Skeleton className="h-6 w-full" />
         <Skeleton className="h-4 w-5/6" />
         <Skeleton className="h-4 w-4/6" />

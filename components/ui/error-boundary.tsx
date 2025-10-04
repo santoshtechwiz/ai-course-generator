@@ -81,7 +81,7 @@ export function ReduxErrorBoundary({
         }
         
         // Call custom error handler
-        onError?.(error, errorInfo)
+        onError?.(error, { componentStack: errorInfo.componentStack || '' })
       }}
       onReset={() => {
         // Clear any request cache on reset
@@ -106,7 +106,7 @@ interface QuizErrorFallbackProps extends ErrorFallbackProps {
 
 function QuizErrorFallback({ error, resetErrorBoundary, quizType, slug }: QuizErrorFallbackProps) {
   return (
-    <div className="flex items-center justify-center min-h-64 bg-gray-50 rounded-lg">
+    <div className="flex items-center justify-center min-h-[200px] sm:min-h-[240px] md:min-h-[280px] bg-gray-50 rounded-lg p-4">
       <div className="text-center p-6">
         <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
           <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

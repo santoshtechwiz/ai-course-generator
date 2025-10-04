@@ -105,7 +105,7 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-80 rounded-xl p-2 shadow-lg border border-border/50 backdrop-blur-sm bg-background/95"
+        className="w-full max-w-sm sm:max-w-md md:max-w-lg rounded-xl p-3 sm:p-4 shadow-lg border border-border/50 backdrop-blur-sm bg-background/95"
       >        <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium">Credit Usage</p>
@@ -115,7 +115,7 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer flex flex-col items-start p-3 hover:bg-accent rounded-lg transition-colors duration-200">
+        <DropdownMenuItem className="cursor-pointer flex flex-col items-start p-4 sm:p-3 min-h-[44px] hover:bg-accent rounded-lg transition-colors duration-200 touch-manipulation">
           <div className="flex w-full justify-between items-center">
             <span className="font-medium">Subscription Status</span>
             <Badge variant="outline" className="ml-2">

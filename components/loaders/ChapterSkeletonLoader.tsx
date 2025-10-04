@@ -45,7 +45,7 @@ export function ChapterSkeletonLoader({
 
       {/* Sidebar */}
       {showSidebar && (
-        <div className="w-80 border-l border-border p-4 space-y-4">
+        <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:w-80 border-l border-border p-3 sm:p-4 space-y-3 sm:space-y-4">
           <div className="space-y-2">
             <div className="h-8 bg-muted rounded animate-pulse" />
             <div className="h-4 bg-muted rounded w-1/2 animate-pulse" />

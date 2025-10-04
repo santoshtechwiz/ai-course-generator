@@ -255,7 +255,7 @@ const VideoSection = () => {
 
       {/* Background decorative elements */}
       <div className="absolute top-1/4 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -z-10" />
-      <div className="absolute bottom-1/4 left-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl -z-10" />
+      <div className="absolute bottom-1/4 left-0 w-40 h-40 sm:w-60 sm:h-60 md:w-80 md:h-80 bg-primary/5 rounded-full blur-3xl -z-10" />
     </div>
   )
 }

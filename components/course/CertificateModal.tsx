@@ -107,7 +107,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
                   </p>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4 text-center text-sm mt-12">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-center text-sm mt-8 sm:mt-12">
                   <div>
                     <p className="text-muted-foreground">Completion Date</p>
                     <p className="font-medium">{formatDate(completionDate)}</p>

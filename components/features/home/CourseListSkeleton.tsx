@@ -51,7 +51,7 @@ const CourseListSkeleton = () => {
                   </div>
                   <Skeleton className="h-4 w-24 rounded" />
                 </div>
-                <div className="grid grid-cols-2 gap-4 p-4 bg-muted/60 rounded-lg">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3 sm:p-4 bg-muted/60 rounded-lg">
                   {[...Array(4)].map((_, j) => (
                     <div key={j} className="flex items-center gap-3">
                       <Skeleton className="w-10 h-10 rounded-full" />

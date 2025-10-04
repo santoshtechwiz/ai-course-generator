@@ -560,7 +560,7 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
       
       <DropdownMenuContent
         align="end"
-        className="w-96 rounded-xl p-2 shadow-lg border border-border/50 backdrop-blur-sm bg-background/95"
+        className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl rounded-xl p-3 sm:p-4 shadow-lg border border-border/50 backdrop-blur-sm bg-background/95"
       >
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
@@ -614,7 +614,7 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
               }}
             />
           ) : (
-            <div className="max-h-80 overflow-y-auto space-y-1">
+            <div className="max-h-[60vh] sm:max-h-[70vh] md:max-h-80 overflow-y-auto space-y-1 px-2">
               {notifications.map((notification, index) => (
                 <motion.div
                   key={notification.id}

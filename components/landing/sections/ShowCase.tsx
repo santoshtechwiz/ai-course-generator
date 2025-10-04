@@ -407,8 +407,8 @@ const ProductGallery = () => {
 }
 
 const ErrorState = ({ error, onRetry }: { error: string; onRetry: () => void }) => (
-  <div className="flex items-center justify-center h-80 bg-card/30 backdrop-blur-sm rounded-2xl border border-border/10">
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center max-w-md p-6">
+  <div className="flex items-center justify-center h-48 sm:h-64 md:h-80 bg-card/30 backdrop-blur-sm rounded-2xl border border-border/10 p-4">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center max-w-md p-4 sm:p-6">
       <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
       <p className="text-muted-foreground mb-4">{error}</p>
       <FeedbackButton
@@ -430,8 +430,8 @@ const ErrorState = ({ error, onRetry }: { error: string; onRetry: () => void }) 
 )
 
 const EmptyState = ({ onReset }: { onReset: () => void }) => (
-  <div className="flex items-center justify-center h-80 bg-card/30 backdrop-blur-sm rounded-2xl border border-border/10">
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center max-w-md p-6">
+  <div className="flex items-center justify-center h-48 sm:h-64 md:h-80 bg-card/30 backdrop-blur-sm rounded-2xl border border-border/10 p-4">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center max-w-md p-4 sm:p-6">
       <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
       <p className="text-muted-foreground mb-4">No AI content found matching your filter.</p>
       <FeedbackButton
