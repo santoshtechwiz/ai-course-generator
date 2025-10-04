@@ -256,17 +256,17 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
           <h3
             className={cn(
               "font-bold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors duration-300",
-              variant === "list" ? "text-base" : "text-lg",
+              variant === "list" ? "text-sm sm:text-base" : "text-base sm:text-lg",
             )}
           >
             {title}
           </h3>
-          <p className="text-sm text-muted-foreground font-medium">{instructor}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground font-medium">{instructor}</p>
         </div>
 
         {/* Description - show on both grid and list so home cards display content */}
         {description && (
-          <p className="text-sm text-muted-foreground line-clamp-3 mb-3">
+          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-3 mb-3 leading-relaxed">
             {description}
           </p>
         )}
@@ -291,15 +291,15 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
         {/* Course stats */}
         <div className="grid grid-cols-3 gap-2 mb-3">
           <div className="flex flex-col items-center p-2 bg-muted/30 rounded-md hover:bg-muted/50 transition-colors">
-            <div className="text-sm font-bold text-foreground">{typeof unitCount === 'number' && unitCount > 0 ? unitCount : 'N/A'}</div>
+            <div className="text-sm sm:text-base font-bold text-foreground">{typeof unitCount === 'number' && unitCount > 0 ? unitCount : 'N/A'}</div>
             <div className="text-xs text-muted-foreground">Chapters</div>
           </div>
           <div className="flex flex-col items-center p-2 bg-muted/30 rounded-md hover:bg-muted/50 transition-colors">
-            <div className="text-sm font-bold text-foreground">{typeof lessonCount === 'number' && lessonCount > 0 ? lessonCount : 'N/A'}</div>
+            <div className="text-sm sm:text-base font-bold text-foreground">{typeof lessonCount === 'number' && lessonCount > 0 ? lessonCount : 'N/A'}</div>
             <div className="text-xs text-muted-foreground">Lessons</div>
           </div>
           <div className="flex flex-col items-center p-2 bg-muted/30 rounded-md hover:bg-muted/50 transition-colors">
-            <div className="text-sm font-bold text-foreground">{typeof quizCount === 'number' && quizCount > 0 ? quizCount : 'N/A'}</div>
+            <div className="text-sm sm:text-base font-bold text-foreground">{typeof quizCount === 'number' && quizCount > 0 ? quizCount : 'N/A'}</div>
             <div className="text-xs text-muted-foreground">Quizzes</div>
           </div>
         </div>
