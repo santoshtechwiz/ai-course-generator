@@ -255,10 +255,10 @@ export default function QuizPlayLayout({
   quizData = null,
   timeSpent = 0,
 }: QuizPlayLayoutProps) {
-  const isMobile = useMediaQuery("(max-width: 768px)")
+  const isMobile = useMediaQuery("(max-width: 767px)") // Use standardized mobile breakpoint
   const pathname = usePathname()
   const [isLoaded, setIsLoaded] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile) // Close sidebar by default on mobile
+  const [sidebarOpen, setSidebarOpen] = useState(false) // Always closed by default on mobile
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isFocusMode, setIsFocusMode] = useState(false)
   const [showEngage, setShowEngage] = useState(false)
@@ -397,10 +397,10 @@ export default function QuizPlayLayout({
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <div className={cn(
-          "mx-auto w-full py-4 transition-all duration-300",
+          "mx-auto w-full py-3 sm:py-4 transition-all duration-300",
           isFullscreen 
             ? "max-w-none px-2 sm:px-4" 
-            : "max-w-screen-2xl px-4 sm:px-6 lg:px-8"
+            : "max-w-screen-2xl px-3 sm:px-4 lg:px-6"
         )}>
           <div className="flex items-center justify-between gap-4">
             <motion.div 

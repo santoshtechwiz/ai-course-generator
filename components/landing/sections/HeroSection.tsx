@@ -65,7 +65,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
       />
 
       {/* Content */}
-      <div className="container max-w-6xl mx-auto px-4 md:px-6 z-10 text-center">
+      <div className="container max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 z-10 text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{
@@ -95,7 +95,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
 
         {/* Main heading - More impactful like n8n */}
         <motion.h1
-          className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 max-w-4xl mx-auto leading-tight"
+          className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight mb-4 sm:mb-6 max-w-4xl mx-auto leading-tight"
           initial={{ opacity: 0, y: 15 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
           transition={{ duration: 0.7, delay: 0.3, ease: APPLE_EASING }}
@@ -111,7 +111,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
         </motion.h1>
 
         <motion.span
-          className="inline-block text-xl md:text-2xl font-semibold mb-8 text-gray-600 dark:text-gray-400"
+          className="inline-block text-lg sm:text-xl md:text-2xl font-semibold mb-6 sm:mb-8 text-gray-600 dark:text-gray-400"
           initial={{ opacity: 0, y: 15 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
           transition={{ duration: 0.7, delay: 0.4, ease: APPLE_EASING }}
@@ -120,7 +120,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
         </motion.span>
 
         <motion.p
-          className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-12 leading-relaxed"
+          className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-8 sm:mb-12 leading-relaxed"
           initial={{ opacity: 0, y: 15 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
           transition={{ duration: 0.7, delay: 0.5, ease: APPLE_EASING }}
@@ -132,14 +132,14 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
         </motion.p>
 
         <motion.div
-          className="flex flex-col sm:flex-row items-center justify-center gap-6"
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 lg:gap-6"
           initial={{ opacity: 0, y: 15 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
           transition={{ duration: 0.7, delay: 0.6, ease: APPLE_EASING }}
         >
           <FeedbackButton
             size="lg"
-            className="px-8 py-4 text-lg rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl hover:translate-y-[-2px] active:translate-y-[1px] font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 transition-all duration-200"
+            className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl hover:translate-y-[-2px] active:translate-y-[1px] font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 transition-all duration-200 w-full sm:w-auto"
             loadingText="Creating your experience..."
             successText="Welcome to CourseAI"
             onClickAsync={async () => {
@@ -164,7 +164,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           <FeedbackButton
             size="lg"
             variant="outline"
-            className="px-8 py-4 text-lg rounded-full flex items-center hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:shadow-md hover:translate-y-[-2px] active:translate-y-[1px] transition-all duration-200 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2"
+            className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg rounded-full flex items-center hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:shadow-md hover:translate-y-[-2px] active:translate-y-[1px] transition-all duration-200 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 w-full sm:w-auto justify-center"
             loadingText="Preparing demo..."
             successText="Demo loaded"
             onClickAsync={async () => {
@@ -193,7 +193,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           className="mt-16 space-y-8"
         >
           {/* Social proof stats */}
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 lg:gap-8 text-sm text-gray-600 dark:text-gray-400">
             <div className="flex items-center gap-2" role="text">
               <div className="w-2 h-2 rounded-full bg-green-500" aria-hidden="true"></div>
               <span>10,000+ courses created</span>
@@ -211,7 +211,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           {/* Company logos or trust indicators */}
           <div className="text-center">
             <p className="text-sm text-gray-500 dark:text-gray-500 mb-4">Trusted by educators and organizations worldwide</p>
-            <div className="flex flex-wrap items-center justify-center gap-8 opacity-60">
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 lg:gap-8 opacity-60">
               {/* Placeholder for company logos - you can add actual logos here */}
               <div className="text-gray-400 font-semibold">Universities</div>
               <div className="text-gray-400 font-semibold">Corporate Training</div>
@@ -228,7 +228,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
         transition={{ duration: 0.8, delay: 0.8, ease: APPLE_EASING }}
         style={{ y, opacity }}
-        className="w-full max-w-4xl mx-auto mt-16 px-4 relative z-0"
+        className="w-full max-w-4xl mx-auto mt-8 sm:mt-12 lg:mt-16 px-3 sm:px-4 relative z-0"
       >
         <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           {/* Clean mockup */}

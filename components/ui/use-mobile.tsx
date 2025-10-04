@@ -1,5 +1,6 @@
 import * as React from "react"
 
+// Use standardized mobile breakpoint (below md: 768px)
 const MOBILE_BREAKPOINT = 768
 
 export function useIsMobile() {
@@ -17,3 +18,6 @@ export function useIsMobile() {
 
   return !!isMobile
 }
+
+// Alias for consistency
+export const useMobile = useIsMobile

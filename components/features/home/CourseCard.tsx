@@ -147,9 +147,9 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
       onClick={handleCardClick}
       className={cn(
         "group relative overflow-hidden border-0 bg-card shadow-sm hover:shadow-lg transition-all duration-500 cursor-pointer",
-        "hover:-translate-y-2 focus-visible:ring-2 focus-visible:ring-primary/60",
+        "hover:-translate-y-1 sm:hover:-translate-y-2 focus-visible:ring-2 focus-visible:ring-primary/60",
         isNavigating && "opacity-75 scale-95",
-        variant === "list" && "md:flex md:flex-row md:h-32",
+        variant === "list" && "flex flex-col sm:flex-row sm:h-32",
         variant === "grid" && "flex flex-col",
         className,
       )}
@@ -167,8 +167,8 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
       <div
         className={cn(
           "relative overflow-hidden bg-muted",
-          variant === "list" && "md:w-48 md:h-full md:shrink-0",
-          variant === "grid" && "w-full h-48",
+          variant === "list" && "w-full h-48 sm:w-48 sm:h-full sm:shrink-0",
+          variant === "grid" && "w-full h-40 sm:h-48",
         )}
       >
   {/* Course image or generic placeholder */}
@@ -195,22 +195,22 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
         <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors duration-500" />
 
         {/* Action buttons */}
-        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex gap-1 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <Button
             variant="secondary"
             size="sm"
-            className="h-8 w-8 p-0 bg-card/90 hover:bg-card shadow-sm"
+            className="h-8 w-8 sm:h-9 sm:w-9 p-0 bg-card/90 hover:bg-card shadow-sm touch-manipulation"
             onClick={handleFavoriteClick}
           >
-            <Heart className={cn("h-4 w-4", isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground")} />
+            <Heart className={cn("h-3 w-3 sm:h-4 sm:w-4", isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground")} />
           </Button>
           <Button
             variant="secondary"
             size="sm"
-            className="h-8 w-8 p-0 bg-card/90 hover:bg-card shadow-sm"
+            className="h-8 w-8 sm:h-9 sm:w-9 p-0 bg-card/90 hover:bg-card shadow-sm touch-manipulation"
             onClick={handleBookmarkClick}
           >
-            <Bookmark className={cn("h-4 w-4", isBookmarked ? "fill-primary text-primary" : "text-muted-foreground")} />
+            <Bookmark className={cn("h-3 w-3 sm:h-4 sm:w-4", isBookmarked ? "fill-primary text-primary" : "text-muted-foreground")} />
           </Button>
         </div>
 
@@ -227,12 +227,12 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
       <CardContent
         className={cn(
           "flex flex-col justify-between bg-card",
-          variant === "list" && "md:flex-row md:items-center md:p-6 gap-6",
-          variant === "grid" && "p-6 flex-1",
+          variant === "list" && "sm:flex-row sm:items-center p-4 sm:p-6 gap-3 sm:gap-6",
+          variant === "grid" && "p-4 sm:p-6 flex-1",
         )}
       >
         {/* Header with category and difficulty */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div className="flex items-center gap-3">
             <Badge
               variant="secondary"
@@ -242,7 +242,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
             </Badge>
             {price !== undefined && (
               <div className="text-right">
-                <span className="font-bold text-foreground text-lg">${price}</span>
+                <span className="font-bold text-foreground text-base sm:text-lg">${price}</span>
                 {originalPrice && originalPrice > price && (
                   <div className="text-xs text-muted-foreground line-through">${originalPrice}</div>
                 )}

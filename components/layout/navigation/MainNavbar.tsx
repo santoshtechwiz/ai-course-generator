@@ -160,14 +160,14 @@ export function MainNavbar() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="container flex h-16 items-center justify-between px-3 sm:px-4 lg:px-6 max-w-7xl mx-auto">
           {/* Logo */}
           <Link href="/" aria-label="Home">
             <Logo />
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center space-x-1">
+          <nav className="hidden lg:flex items-center space-x-1">
             {navItems.map((item) => {
               const active = pathname === item.href
               return (
@@ -186,7 +186,7 @@ export function MainNavbar() {
           </nav>
 
           {/* Right side */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             <CreditsDisplay
               availableCredits={availableCredits}
               subscriptionPlan={subscriptionPlan}
@@ -229,11 +229,11 @@ export function MainNavbar() {
             {/* Mobile Menu */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden rounded-xl">
+                <Button variant="ghost" size="icon" className="lg:hidden rounded-xl">
                   {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-72 sm:w-80 p-0 bg-background">
+              <SheetContent side="right" className="w-80 p-0 bg-background">
                 <div className="h-full flex flex-col">
                   <div className="p-4 border-b flex items-center justify-between">
                     <Logo />
@@ -248,7 +248,7 @@ export function MainNavbar() {
                           href={item.href}
                           onClick={() => setIsMobileMenuOpen(false)}
                           className={cn(
-                            "block px-3 py-2 rounded-lg",
+                            "block px-3 py-2 rounded-lg min-h-[44px] flex items-center", // 44px touch target
                             active ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
                           )}
                         >
@@ -265,18 +265,20 @@ export function MainNavbar() {
                             <CreditCard className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm font-medium">Credits</span>
                           </div>
-                          <span className="text-sm font-medium tabular-nums">
-                            {availableCredits.toLocaleString()}
-                          </span>
-                          {subscriptionPlan !== "FREE" && (
-                            <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
-                              {subscriptionPlan}
-                            </Badge>
-                          )}
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium tabular-nums">
+                              {availableCredits.toLocaleString()}
+                            </span>
+                            {subscriptionPlan !== "FREE" && (
+                              <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                                {subscriptionPlan}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       )
                     ) : (
-                      <Button className="w-full" onClick={handleSignIn}>
+                      <Button className="w-full min-h-[44px]" onClick={handleSignIn}>
                         Sign in
                       </Button>
                     )}
