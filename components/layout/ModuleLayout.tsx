@@ -24,8 +24,8 @@ export function ModuleLayout({
     <div
       className={cn(
         "w-full min-h-screen",
-        variant === "default" && "px-4 sm:px-6 lg:px-8 py-6",
-        variant === "contained" && "px-4 sm:px-6 lg:px-8 py-6 border rounded-lg shadow-sm max-w-7xl mx-auto",
+        variant === "default" && "px-3 sm:px-4 lg:px-6 py-4 sm:py-6",
+        variant === "contained" && "px-3 sm:px-4 lg:px-6 py-4 sm:py-6 border rounded-lg shadow-sm max-w-7xl mx-auto",
         variant === "default" && "max-w-7xl mx-auto",
         className
       )}

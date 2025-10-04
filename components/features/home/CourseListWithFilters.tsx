@@ -31,23 +31,23 @@ export default function CourseListWithFilters({ url, userId }: CourseListWithFil
     <div className="min-h-screen bg-gray-50">
       {/* Header Section */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
             {/* Title */}
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Courses</h1>
-              <p className="text-gray-600 mt-1">Expand your knowledge with our expert-led courses</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Courses</h1>
+              <p className="text-gray-600 mt-1 text-sm sm:text-base">Expand your knowledge with our expert-led courses</p>
             </div>
 
             {/* Search Bar */}
             <div className="flex-1 max-w-md lg:max-w-sm">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
                 <Input
                   placeholder="Search courses..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="pl-9 sm:pl-10 pr-4 py-2 sm:py-3 w-full border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
                 />
               </div>
             </div>
@@ -58,7 +58,7 @@ export default function CourseListWithFilters({ url, userId }: CourseListWithFil
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
         <CourseList
           url={url}
           userId={userId}

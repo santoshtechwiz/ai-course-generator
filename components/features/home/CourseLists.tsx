@@ -284,7 +284,7 @@ export default function CoursesClient({
       <div className="w-full space-y-6">
         {/* Controls skeleton */}
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Skeleton className="h-10 w-32 rounded-lg" />
               <Skeleton className="h-10 w-32 rounded-lg" />
@@ -297,7 +297,7 @@ export default function CoursesClient({
           </div>
         </div>
 
-        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
           {[...Array(12)].map((_, i) => (
             <CourseCard
               key={i}
@@ -570,10 +570,10 @@ export default function CoursesClient({
 
       <motion.div
         className={cn(
-          "grid gap-6",
-          // fewer columns at larger breakpoints to make cards larger
-          viewMode === "grid" && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3",
-          viewMode === "list" && "grid-cols-1 max-w-4xl gap-4",
+          "grid gap-4 sm:gap-6",
+          // Mobile-first responsive grid
+          viewMode === "grid" && "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3",
+          viewMode === "list" && "grid-cols-1 max-w-4xl gap-3 sm:gap-4",
         )}
         variants={{
           hidden: { opacity: 0 },
