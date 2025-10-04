@@ -128,9 +128,9 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
 
   if (loading) {
     return (
-      <Card className="w-full overflow-hidden animate-pulse border-0 shadow-sm">
+      <Card className="w-full overflow-hidden animate-pulse rounded-xl bg-card shadow-sm border border-border/50">
         <div className="h-48 bg-muted" />
-        <CardContent className="p-6 space-y-4">
+        <CardContent className="p-4 sm:p-6 space-y-4">
           <div className="h-4 bg-muted rounded-md w-3/4" />
           <div className="h-3 bg-muted rounded-md w-1/2" />
           <div className="flex gap-2">
@@ -146,7 +146,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
     <Card
       onClick={handleCardClick}
       className={cn(
-        "group relative overflow-hidden border-0 bg-card shadow-sm hover:shadow-lg transition-all duration-500 cursor-pointer",
+        "group relative overflow-hidden rounded-xl bg-card shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border border-border/50",
         "hover:-translate-y-1 sm:hover:-translate-y-2 focus-visible:ring-2 focus-visible:ring-primary/60",
         isNavigating && "opacity-75 scale-95",
         variant === "list" && "flex flex-col sm:flex-row sm:h-32",

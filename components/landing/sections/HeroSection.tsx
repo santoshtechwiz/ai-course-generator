@@ -139,7 +139,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
         >
           <FeedbackButton
             size="lg"
-            className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl hover:translate-y-[-2px] active:translate-y-[1px] font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 transition-all duration-200 w-full sm:w-auto"
+            className="h-12 px-6 py-3 text-base sm:text-lg min-h-[48px] rounded-xl bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-xl hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all duration-200 w-full sm:w-auto font-semibold"
             loadingText="Creating your experience..."
             successText="Welcome to CourseAI"
             onClickAsync={async () => {
@@ -164,7 +164,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           <FeedbackButton
             size="lg"
             variant="outline"
-            className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg rounded-full flex items-center hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:shadow-md hover:translate-y-[-2px] active:translate-y-[1px] transition-all duration-200 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 w-full sm:w-auto justify-center"
+            className="h-12 px-6 py-3 text-base sm:text-lg min-h-[48px] rounded-xl border border-input bg-background hover:bg-accent hover:text-accent-foreground hover:shadow-md hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all duration-200 w-full sm:w-auto justify-center font-medium"
             loadingText="Preparing demo..."
             successText="Demo loaded"
             onClickAsync={async () => {

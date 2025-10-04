@@ -226,7 +226,7 @@ function RecommendationsWidgetWithErrorBoundary() {
     <EnhancedErrorBoundary
       fallback={
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="text-center text-muted-foreground">
               <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Unable to load recommendations</p>

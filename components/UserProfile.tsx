@@ -22,7 +22,7 @@ export default function UserProfile({ user }: UserProfileProps) {
       <CardHeader className="bg-muted/50 pb-4">
         <CardTitle>Profile</CardTitle>
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
           <Avatar className="h-24 w-24 border-4 border-background">
             <AvatarImage src={user.image || ""} alt={user.name} />

@@ -23,7 +23,7 @@ function ErrorFallback({ error, resetErrorBoundary, errorInfo }: ErrorFallbackPr
             </svg>
           </div>
           <div className="ml-3">
-            <h2 className="text-base sm:text-lg font-medium text-gray-900">Something went wrong</h2>
+            <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 mb-2">Something went wrong</h2>
           </div>
         </div>
         

@@ -30,7 +30,7 @@ const CourseListSkeleton = () => {
                 <Skeleton className="h-6 w-16 rounded-full" />
               </div>
             </div>
-            <CardContent className="p-8 space-y-6 flex-1 flex flex-col justify-between">
+            <CardContent className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1 flex flex-col justify-between">
               <div className="space-y-4">
                 <div className="space-y-3">
                   <Skeleton className="h-5 w-20 rounded-full" />
