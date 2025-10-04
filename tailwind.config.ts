@@ -198,37 +198,20 @@ const config: Config = {
         'glow-lg': '0 0 40px rgba(var(--primary-rgb), 0.4)',
         'neural': '0 0 20px rgba(var(--primary-rgb), 0.3), 0 0 40px rgba(var(--primary-rgb), 0.2), 0 0 60px rgba(var(--primary-rgb), 0.1)',
       },
-      // Enhanced Animations
+      // Core Animations - mobile optimized
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
         "slide-up": "slide-up 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
         "slide-down": "slide-down 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
-        "slide-left": "slide-left 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
-        "slide-right": "slide-right 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
         "scale-in": "scale-in 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
-        "scale-out": "scale-out 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
-        "rotate-in": "rotate-in 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
-        "bounce-gentle": "bounce-gentle 2s infinite",
         "pulse-gentle": "pulse-gentle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "shimmer": "shimmer 2s linear infinite",
-        "gradient-shift": "gradient-shift 5s ease infinite",
-        "neural-pulse": "neural-pulse 3s ease-in-out infinite",
-        "holographic": "holographic 6s ease-in-out infinite",
-        "data-flow": "data-flow 2s linear infinite",
-        "quantum-rotate": "quantum-rotate 4s linear infinite",
-        "ai-spin": "ai-spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite",
-        "neon-pulse": "neon-pulse 2s ease-in-out infinite alternate",
-        "glitch": "glitch 2s infinite",
-        "ai-glow": "ai-glow 3s ease-in-out infinite",
-        "scan-line": "scan-line 3s linear infinite",
         "float": "float 6s ease-in-out infinite",
         "wiggle": "wiggle 1s ease-in-out infinite",
-        "heartbeat": "heartbeat 1.5s ease-in-out infinite",
-        "typewriter": "typewriter 3s steps(40, end) infinite",
       },
-      // Enhanced Keyframes
+      // Core Keyframes - mobile optimized
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -250,29 +233,9 @@ const config: Config = {
           "0%": { opacity: "0", transform: "translateY(-30px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
-        "slide-left": {
-          "0%": { opacity: "0", transform: "translateX(30px)" },
-          "100%": { opacity: "1", transform: "translateX(0)" },
-        },
-        "slide-right": {
-          "0%": { opacity: "0", transform: "translateX(-30px)" },
-          "100%": { opacity: "1", transform: "translateX(0)" },
-        },
         "scale-in": {
           "0%": { opacity: "0", transform: "scale(0.9)" },
           "100%": { opacity: "1", transform: "scale(1)" },
-        },
-        "scale-out": {
-          "0%": { opacity: "1", transform: "scale(1)" },
-          "100%": { opacity: "0", transform: "scale(0.9)" },
-        },
-        "rotate-in": {
-          "0%": { opacity: "0", transform: "rotate(-10deg) scale(0.9)" },
-          "100%": { opacity: "1", transform: "rotate(0deg) scale(1)" },
-        },
-        "bounce-gentle": {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-10px)" },
         },
         "pulse-gentle": {
           "0%, 100%": { opacity: "1" },
@@ -282,56 +245,6 @@ const config: Config = {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
-        "gradient-shift": {
-          "0%, 100%": { backgroundPosition: "0% 50%" },
-          "50%": { backgroundPosition: "100% 50%" },
-        },
-        "neural-pulse": {
-          "0%, 100%": {
-            boxShadow: "0 0 20px rgba(var(--primary-rgb), 0.3), 0 0 40px rgba(var(--primary-rgb), 0.2), 0 0 60px rgba(var(--primary-rgb), 0.1)"
-          },
-          "50%": {
-            boxShadow: "0 0 30px rgba(var(--primary-rgb), 0.5), 0 0 60px rgba(var(--primary-rgb), 0.3), 0 0 90px rgba(var(--primary-rgb), 0.2)"
-          },
-        },
-        "holographic": {
-          "0%, 100%": { backgroundPosition: "0% 50%" },
-          "25%": { backgroundPosition: "100% 0%" },
-          "50%": { backgroundPosition: "100% 100%" },
-          "75%": { backgroundPosition: "0% 100%" },
-        },
-        "data-flow": {
-          "0%": { transform: "translateY(-100%)" },
-          "100%": { transform: "translateY(200%)" },
-        },
-        "quantum-rotate": {
-          "0%": { backgroundPosition: "0% 50%" },
-          "100%": { backgroundPosition: "400% 50%" },
-        },
-        "ai-spin": {
-          "0%": { transform: "rotate(0deg) scale(1)" },
-          "50%": { transform: "rotate(180deg) scale(1.1)" },
-          "100%": { transform: "rotate(360deg) scale(1)" },
-        },
-        "neon-pulse": {
-          "from": { boxShadow: "0 0 10px rgba(var(--primary-rgb), 0.5), inset 0 0 10px rgba(var(--primary-rgb), 0.1)" },
-          "to": { boxShadow: "0 0 20px rgba(var(--primary-rgb), 0.8), inset 0 0 20px rgba(var(--primary-rgb), 0.2)" },
-        },
-        "glitch": {
-          "0%, 100%": { transform: "translate(0)" },
-          "20%": { transform: "translate(-2px, 2px)" },
-          "40%": { transform: "translate(-2px, -2px)" },
-          "60%": { transform: "translate(2px, 2px)" },
-          "80%": { transform: "translate(2px, -2px)" },
-        },
-        "ai-glow": {
-          "0%, 100%": { boxShadow: "0 0 20px rgba(var(--primary-rgb), 0.3)" },
-          "50%": { boxShadow: "0 0 40px rgba(var(--primary-rgb), 0.6)" },
-        },
-        "scan-line": {
-          "0%": { transform: "translateX(-100%)" },
-          "100%": { transform: "translateX(100%)" },
-        },
         "float": {
           "0%, 100%": { transform: "translateY(0px)" },
           "50%": { transform: "translateY(-20px)" },
@@ -339,14 +252,6 @@ const config: Config = {
         "wiggle": {
           "0%, 100%": { transform: "rotate(-3deg)" },
           "50%": { transform: "rotate(3deg)" },
-        },
-        "heartbeat": {
-          "0%, 100%": { transform: "scale(1)" },
-          "50%": { transform: "scale(1.05)" },
-        },
-        "typewriter": {
-          "0%": { width: "0" },
-          "100%": { width: "100%" },
         },
       },
       // Enhanced Backdrop Blur
@@ -400,28 +305,23 @@ const config: Config = {
         '1': '1deg',
         '2': '2deg',
         '3': '3deg',
-        '15': '15deg',
-        '30': '30deg',
-        '60': '60deg',
-        '135': '135deg',
-        '270': '270deg',
+        '6': '6deg',
+        '12': '12deg',
+        '45': '45deg',
+        '90': '90deg',
+        '180': '180deg',
       },
-      // Enhanced Transitions
+      // Simplified Transitions
       transitionDuration: {
         '0': '0ms',
         '75': '75ms',
         '100': '100ms',
+        '150': '150ms',
         '200': '200ms',
-        '250': '250ms',
-        '400': '400ms',
+        '300': '300ms',
         '500': '500ms',
-        '600': '600ms',
         '700': '700ms',
-        '800': '800ms',
-        '900': '900ms',
         '1000': '1000ms',
-        '1500': '1500ms',
-        '2000': '2000ms',
       },
       transitionTimingFunction: {
         'bounce-in': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
