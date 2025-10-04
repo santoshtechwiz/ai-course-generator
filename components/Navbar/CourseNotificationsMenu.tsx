@@ -35,6 +35,187 @@ interface CourseNotification {
   priority: 'high' | 'medium' | 'low'
 }
 
+// Component to show the last activity when there are no pending notifications
+interface LastActivityCardProps {
+  courseProgress: Record<string, any> // Redux state object, not array
+  courseData: any[]
+  incompleteQuizzes: any[]
+  onContinue: (type: 'course' | 'quiz', courseSlug?: string, chapterId?: string) => void
+}
+
+function LastActivityCard({ courseProgress, courseData, incompleteQuizzes, onContinue }: LastActivityCardProps) {
+  // Find the most recent activity from all sources
+  const lastActivity = useMemo(() => {
+    const activities: Array<{
+      type: 'course' | 'quiz'
+      title: string
+      description: string
+      courseSlug?: string
+      chapterId?: string
+      lastAccessed: Date
+      progress?: number
+    }> = []
+
+    // Add course progress activities from Redux state
+    if (courseProgress && typeof courseProgress === 'object') {
+      Object.entries(courseProgress).forEach(([courseId, progress]) => {
+        if (progress?.videoProgress?.lastAccessedAt) {
+          const course = courseData?.find(c => c.id === courseId || c.slug === courseId)
+          if (course) {
+            const progressPercent = (progress.videoProgress.progressPercentage || 0)
+            activities.push({
+              type: 'course',
+              title: course.title,
+              description: progress.videoProgress.isCompleted 
+                ? 'Course completed - review or continue learning!'
+                : `${Math.round(progressPercent)}% complete - continue where you left off`,
+              courseSlug: course.slug,
+              chapterId: progress.videoProgress.currentChapterId?.toString(),
+              lastAccessed: new Date(progress.videoProgress.lastAccessedAt),
+              progress: progressPercent
+            })
+          }
+        }
+      })
+    }
+
+    // Add incomplete quiz activities
+    if (incompleteQuizzes && Array.isArray(incompleteQuizzes)) {
+      incompleteQuizzes.forEach(quiz => {
+        if (quiz.lastUpdated) {
+          const course = courseData?.find(c => c.id === quiz.courseId)
+          if (course) {
+            activities.push({
+              type: 'quiz',
+              title: `Resume Quiz: ${course.title}`,
+              description: `Continue from question ${quiz.currentQuestionIndex + 1} of ${quiz.totalQuestions || 10}`,
+              courseSlug: course.slug,
+              chapterId: quiz.chapterId?.toString(),
+              lastAccessed: new Date(quiz.lastUpdated),
+              progress: ((quiz.currentQuestionIndex || 0) / (quiz.totalQuestions || 10)) * 100
+            })
+          }
+        }
+      })
+    }
+
+    // Sort by most recent and return the latest activity
+    activities.sort((a, b) => b.lastAccessed.getTime() - a.lastAccessed.getTime())
+    return activities[0] || null
+  }, [courseProgress, courseData, incompleteQuizzes])
+
+  // Format time ago helper
+  const formatTimeAgo = (date: Date) => {
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffMinutes = Math.floor(diffMs / (1000 * 60))
+
+    if (diffDays > 0) {
+      return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`
+    } else if (diffHours > 0) {
+      return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`
+    } else if (diffMinutes > 0) {
+      return diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`
+    } else {
+      return 'Just now'
+    }
+  }
+
+  if (!lastActivity) {
+    // Fallback to the original empty state
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="p-4 text-center"
+      >
+        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+          <CheckCircle className="h-6 w-6 text-muted-foreground" />
+        </div>
+        <p className="text-sm font-medium text-foreground">All caught up!</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Ready to start a new learning journey?
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-3"
+          onClick={() => onContinue('course')}
+        >
+          <BookOpen className="h-4 w-4 mr-2" />
+          Browse Courses
+        </Button>
+      </motion.div>
+    )
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="p-4"
+    >
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+          {lastActivity.type === 'course' ? (
+            <BookOpen className="h-5 w-5 text-white" />
+          ) : (
+            <Play className="h-5 w-5 text-white" />
+          )}
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-1">
+            <h4 className="text-sm font-medium text-foreground line-clamp-1">
+              Continue Learning
+            </h4>
+            <span className="text-xs text-muted-foreground">
+              {formatTimeAgo(lastActivity.lastAccessed)}
+            </span>
+          </div>
+          
+          <p className="text-sm font-medium text-foreground mb-1 line-clamp-1">
+            {lastActivity.title}
+          </p>
+          
+          <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+            {lastActivity.description}
+          </p>
+          
+          {typeof lastActivity.progress === 'number' && (
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-blue-500 to-purple-600"
+                  style={{ width: `${lastActivity.progress}%` }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${lastActivity.progress}%` }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground font-medium">
+                {Math.round(lastActivity.progress)}%
+              </span>
+            </div>
+          )}
+          
+          <Button
+            variant="default"
+            size="sm"
+            className="w-full"
+            onClick={() => onContinue(lastActivity.type, lastActivity.courseSlug, lastActivity.chapterId)}
+          >
+            <ArrowRight className="h-4 w-4 mr-2" />
+            Continue Learning
+          </Button>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
 interface CourseData {
   id: string
   slug: string
@@ -415,19 +596,23 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
               </p>
             </motion.div>
           ) : notifications.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-4 text-center"
-            >
-              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
-                <CheckCircle className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <p className="text-sm font-medium text-foreground">All caught up!</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                No pending courses or quizzes
-              </p>
-            </motion.div>
+            <LastActivityCard 
+              courseProgress={memoizedCourseProgress}
+              courseData={memoizedCourseData}
+              incompleteQuizzes={incompleteQuizzes}
+              onContinue={(type, courseSlug, chapterId) => {
+                setIsOpen(false)
+                if (type === 'course' && courseSlug) {
+                  if (chapterId) {
+                    router.push(`/dashboard/course/${courseSlug}?chapter=${chapterId}`)
+                  } else {
+                    router.push(`/dashboard/course/${courseSlug}`)
+                  }
+                } else {
+                  router.push('/dashboard/courses')
+                }
+              }}
+            />
           ) : (
             <div className="max-h-80 overflow-y-auto space-y-1">
               {notifications.map((notification, index) => (

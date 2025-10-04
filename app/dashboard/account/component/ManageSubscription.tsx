@@ -24,7 +24,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@radix-ui/react-tabs"
 import { PlanBadge } from "../../subscription/components/subscription-status/plan-badge"
 import { PaymentMethodForm } from "./PaymentMethod"
 import { StatusBadge } from "./status-badge"
-import { useSubscription } from "@/modules/auth"
+import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 
 interface PlanFeature {
   name: string
@@ -55,19 +55,19 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
   const router = useRouter()
   const session = useSession()
   const { currentPlan, subscriptionStatus, endDate, tokensUsed, paymentMethods = [], tokensTotal, totalTokens, isSubscribed: isSubscribedProp } = subscriptionData
-  // Use unified auth for subscription data
-  const subscription = useSubscription()
+  // Use unified subscription hook
+  const { subscription } = useUnifiedSubscription()
   
-  // BUG FIX: Use isSubscribed flag if available (considers tokens), otherwise fall back to status check
+  // Use isSubscribed flag if available (considers tokens), otherwise fall back to status check
   const isSubscribedFromData = isSubscribedProp !== undefined ? isSubscribedProp : (subscriptionStatus === "ACTIVE")
   
   // Extract token usage information from subscription
   const tokenUsage = {
-  tokensUsed: subscription?.subscription?.tokensUsed || 0,
-  total: subscription?.subscription?.credits || 0,
-  remaining: Math.max((subscription?.subscription?.credits || 0) - (subscription?.subscription?.tokensUsed || 0), 0),
-  percentage: subscription?.subscription?.credits ? Math.min((subscription.subscription.tokensUsed || 0) / subscription.subscription.credits * 100, 100) : 0,
-  hasExceededLimit: (subscription?.subscription?.tokensUsed || 0) > (subscription?.subscription?.credits || 0)
+    tokensUsed: subscription?.tokensUsed || 0,
+    total: subscription?.credits || 0,
+    remaining: Math.max((subscription?.credits || 0) - (subscription?.tokensUsed || 0), 0),
+    percentage: subscription?.credits ? Math.min((subscription.tokensUsed || 0) / subscription.credits * 100, 100) : 0,
+    hasExceededLimit: (subscription?.tokensUsed || 0) > (subscription?.credits || 0)
   }
 
   // Memoize plan details to avoid recalculation on every render
@@ -233,7 +233,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
                   <div className="flex justify-between text-sm">
                     <span className="font-medium">Token Usage</span>
                     <span className="font-medium">
-                      {tokensUsed} / {session?.data?.user.credits}
+                      {tokenUsage.tokensUsed} / {tokenUsage.total}
                     </span>
                   </div>
                   <div className="relative h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useCallback, useMemo, memo } from "react"
+import React, { useState, useCallback, useMemo, memo, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { CheckCircle2, Target, Loader2, AlertCircle, Lightbulb, FileText, BookOpen } from "lucide-react"
@@ -189,11 +189,9 @@ const MCQOption = memo(({
       custom={index}
       variants={optionVariants}
       initial="hidden"
-      animate="visible"
       exit="exit"
       whileHover={!isDisabled ? "hover" : undefined}
       whileTap={!isDisabled ? "tap" : undefined}
-      animate={isSelected ? "selected" : "visible"}
       onHoverStart={() => !isDisabled && onHover(option.id)}
       onHoverEnd={() => onHover(null)}
       className="group relative"
@@ -318,10 +316,15 @@ function UnifiedQuizQuestionComponent({
   const [hintsUsed, setHintsUsed] = useState(0)
   const [showHints, setShowHints] = useState(false)
 
-  // Memoized progress calculation
-  const progressPercentage = useMemo(() => {
-    return Math.round(((questionNumber - 1) / totalQuestions) * 100)
-  }, [questionNumber, totalQuestions])
+  // Reset state when question changes
+  useEffect(() => {
+    setSelectedAnswer(existingAnswer || '');
+    setIsAnswering(false);
+    setHoveredOption(null);
+    setFocusedOption(null);
+    setHintsUsed(0);
+    setShowHints(false);
+  }, [question.id, existingAnswer]);
 
   // Memoized question text
   const questionText = useMemo(() => 

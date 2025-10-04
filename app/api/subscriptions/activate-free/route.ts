@@ -7,7 +7,7 @@
 import { NextRequest } from "next/server"
 import { ApiResponseHandler } from "@/services/api-response-handler"
 import { withAuth } from "@/middlewares/auth-middleware"
-import { SubscriptionService } from "@/modules/subscriptions"
+import { SubscriptionService } from '@/services/subscription-services'
 import { prisma } from "@/lib/db"
 import { logger } from "@/lib/logger"
 

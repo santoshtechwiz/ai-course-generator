@@ -11,7 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Button } from "@/components/ui/button"
 import { MessageSquare, X, BrainCircuit, AlertCircle, RotateCcw, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useSubscription } from "@/modules/subscriptions/client"
+import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
 import { useChatStore } from "@/hooks/useChatStore"
 import { storageManager } from "@/utils/storage-manager"
 import { MessageList } from "@/components/chat/MessageList"
@@ -54,7 +54,7 @@ export function Chatbot({ userId }: ChatbotProps) {
   const [showTooltip, setShowTooltip] = useState(false)
 
   const scrollAreaRef = useRef<HTMLDivElement>(null)
-  const { subscription } = useSubscription()
+  const { subscription } = useUnifiedSubscription()
   const { toast } = useToast()
 
   // Use the chat store hook

@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react'
 import { signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, CheckCircle } from 'lucide-react'
-import { useAppDispatch } from '@/store'
-import { resetSubscriptionState } from '@/store/slices/subscription-slice'
 
 /**
  * Clean SignOut Page
@@ -22,7 +20,6 @@ export default function SignOutPage() {  const [isLoading, setIsLoading] = useSt
   const [isComplete, setIsComplete] = useState(false)
   const searchParams = useSearchParams()
   const router = useRouter()
-  const dispatch = useAppDispatch()
   const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard/explore' // Default to /explore
   // Helper to clear all application state
   const clearAllClientStorage = () => {
@@ -87,8 +84,8 @@ export default function SignOutPage() {  const [isLoading, setIsLoading] = useSt
   useEffect(() => {
     const completeSignOut = async () => {
       try {
-        // 1. Clear Redux state (subscription only, auth is session-based now)
-        dispatch(resetSubscriptionState())
+        // 1. Clear client storage first
+        clearAllClientStorage()
         
         // 2. Clear all client-side storage
         clearAllClientStorage()
@@ -114,7 +111,7 @@ export default function SignOutPage() {  const [isLoading, setIsLoading] = useSt
     }
 
     completeSignOut()
-  }, [callbackUrl, dispatch])
+  }, [callbackUrl])
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background">
       <div className="p-8 bg-card rounded-lg shadow-lg text-center border border-border">

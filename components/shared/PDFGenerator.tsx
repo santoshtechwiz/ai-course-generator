@@ -2,7 +2,7 @@
 import React from "react"
 import UnifiedPdfGenerator from "./UnifiedPdfGenerator"
 import type { PdfData, PdfConfig } from "./UnifiedPdfGenerator"
-import { useSubscription } from "@/modules/subscriptions/client"
+import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
 
 interface PDFGeneratorProps {
   markdown: string
@@ -11,7 +11,7 @@ interface PDFGeneratorProps {
 }
 
 const PDFGenerator: React.FC<PDFGeneratorProps> = ({ markdown, chapterName, isOwner = false }) => {
-  const { subscription } = useSubscription()
+  const { subscription } = useUnifiedSubscription()
 
   const pdfData: PdfData = {
     title: chapterName,

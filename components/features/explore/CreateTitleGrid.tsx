@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useSubscription } from "@/modules/subscriptions/client";
+import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription';
 
 // Enhanced color system with glassmorphism
 const getColorClasses = (color: string, isPremium: boolean) => {

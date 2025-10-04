@@ -1,11 +1,8 @@
 "use client"
 
 import { useEffect } from 'react'
-import { useSubscription } from '@/modules/subscriptions/client'
-import { useAppDispatch } from '@/store/hooks'
+import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
 import { useAuth } from '@/modules/auth'
-import { useSessionSubscriptionSync } from '@/hooks/useSessionSubscriptionSync'
-import { setSubscriptionData } from '@/store/slices/subscription-slice'
 
 /**
  * Core subscription sync functionality.
@@ -15,30 +12,21 @@ import { setSubscriptionData } from '@/store/slices/subscription-slice'
  * - Uses SWR for efficient caching and revalidation
  * - Directly queries database for better performance
  * - Prevents duplicate API calls with deduplication
- * - Immediate UI feedback via Redux state updates
+ * - Immediate UI feedback via SWR cache updates
  */
 export function SubscriptionSyncCore() {
-  const dispatch = useAppDispatch()
   const { user } = useAuth()
-  const { subscription, isLoading, error } = useSubscription()
-
-  // Legacy sync for backwards compatibility
-  useSessionSubscriptionSync({
-    enableAutoSync: false, // Disable legacy auto sync
-    syncOnFocus: false,    // We'll handle this with SWR
-    syncOnVisibilityChange: false,
-    minSyncInterval: 300000, // 5 minutes as backup
-  })
-
-  // Sync subscription data to Redux store whenever it changes
+  const { subscription, isLoading, error, refreshSubscription } = useUnifiedSubscription()
+  // Subscription data is automatically cached and synchronized via SWR
+  // No additional sync logic needed - SWR handles revalidation automatically
   useEffect(() => {
-    if (!user?.id || isLoading || error) return
+    if (!user?.id) return
     
-    // Only update if we have valid subscription data
-    if (subscription) {
-      dispatch(setSubscriptionData(subscription))
+    // Trigger initial subscription fetch if needed
+    if (!subscription && !isLoading && !error) {
+      refreshSubscription()
     }
-  }, [subscription, isLoading, error, dispatch, user?.id])
+  }, [user?.id, subscription, isLoading, error, refreshSubscription])
 
   return null // This component doesn't render anything
 }

@@ -24,7 +24,7 @@ import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
 import type { QueryParams } from "@/app/types/types"
 import { useEffect } from "react"
 import { useAuth } from "@/modules/auth"
-import { useSubscription } from "@/modules/subscriptions/client"
+import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
@@ -36,7 +36,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false)
   const totalSteps = 3
   const { user, refreshUserData } = useAuth() as any
-  const unifiedSub = useSubscription()
+  const unifiedSub = useUnifiedSubscription()
   const { forceRefresh: forceSubRefresh } = unifiedSub
   const router = useRouter()
   const { toast } = useToast()

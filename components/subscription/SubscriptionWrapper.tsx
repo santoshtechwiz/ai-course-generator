@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useMemo } from 'react'
-import { useSubscription, useSubscriptionPermissions } from '@/modules/subscriptions/client'
+import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
 import { useToast } from '@/hooks'
 
 interface SubscriptionWrapperProps {
@@ -27,8 +27,9 @@ export default function SubscriptionWrapper({
   onAccessDenied,
   showUpgradePrompt = true,
 }: SubscriptionWrapperProps) {
-  const { subscription, hasActiveSubscription, hasCredits, canCreateQuizOrCourse } = useSubscription()
-  const { needsSubscriptionUpgrade, needsCredits } = useSubscriptionPermissions()
+  const { subscription, hasActiveSubscription, hasCredits, canCreateQuizOrCourse, needsUpgrade } = useUnifiedSubscription()
+  const needsSubscriptionUpgrade = needsUpgrade;
+  const needsCredits = !hasCredits;
   const { toast } = useToast()
 
   // Check if user meets all requirements
@@ -166,7 +167,7 @@ export function useSubscriptionAccess({
   requireActiveSubscription?: boolean
   requireCredits?: boolean
 } = {}) {
-  const { subscription, hasActiveSubscription, hasCredits } = useSubscription()
+  const { subscription, hasActiveSubscription, hasCredits } = useUnifiedSubscription()
 
   return useMemo(() => {
     // Plan requirement check

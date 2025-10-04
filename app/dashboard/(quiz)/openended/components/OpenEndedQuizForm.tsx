@@ -25,7 +25,7 @@ import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
-import { ClientCreditService } from "@/services/client-credit-service"
+import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 
 import type { QueryParams } from "@/app/types/types"
 import PlanAwareButton from "@/components/quiz/PlanAwareButton"
@@ -152,6 +152,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
   const { toast } = useToast()
+  const { subscription } = useUnifiedSubscription()
 
   // Credit information state for consistent display
   const [creditInfo, setCreditInfo] = useState({
@@ -161,30 +162,28 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
     usedCredits: 0
   })
 
-  // Fetch detailed credit information for consistent display
+  // Use unified subscription as single source of truth - fixes sync issues
   useEffect(() => {
-    if (isLoggedIn) {
-      ClientCreditService.getCreditDetails()
-        .then(details => {
-          setCreditInfo({
-            hasCredits: details.hasCredits,
-            remainingCredits: details.remainingCredits,
-            totalCredits: details.totalCredits,
-            usedCredits: details.usedCredits
-          })
-        })
-        .catch(error => {
-          console.error('[OpenEndedQuizForm] Failed to fetch credit details:', error)
-          // Fallback to props
-          setCreditInfo({
-            hasCredits: credits > 0,
-            remainingCredits: credits,
-            totalCredits: credits,
-            usedCredits: 0
-          })
-        })
+    if (subscription) {
+      const totalCredits = subscription.credits || 0
+      const usedCredits = subscription.tokensUsed || 0
+      const remainingCredits = Math.max(0, totalCredits - usedCredits)
+      
+      setCreditInfo({
+        hasCredits: remainingCredits > 0,
+        remainingCredits: remainingCredits,
+        totalCredits: totalCredits,
+        usedCredits: usedCredits
+      })
+    } else {
+      setCreditInfo({
+        hasCredits: false,
+        remainingCredits: 0,
+        totalCredits: 0,
+        usedCredits: 0
+      })
     }
-  }, [isLoggedIn, credits])
+  }, [subscription])
 
   const {
     control,

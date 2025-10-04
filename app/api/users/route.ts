@@ -156,20 +156,19 @@ export const POST = withAdminAuth(async (req: NextRequest) => {
         userType: userType || "FREE",
         emailVerified: new Date(), // Auto-verify for admin created users
       },
-    })
+    });
 
-    const response: CreateUserResponse = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      credits: user.credits,
-      isAdmin: user.isAdmin,
-      userType: user.userType,
-    }
-
-    return ApiResponseHandler.success(response)
+    return ApiResponseHandler.success({
+      data: user,
+      message: "User created successfully",
+      status: 201,
+    });
   } catch (error) {
     console.error('[UsersAPI] Error creating user:', error)
-    return ApiResponseHandler.error(error || "Failed to create user")
+    return ApiResponseHandler.error({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "An unexpected error occurred.",
+      status: 500,
+    });
   }
-})
+});

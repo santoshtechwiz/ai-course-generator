@@ -1,11 +1,10 @@
 "use client"
 
 import React, { useEffect, Suspense } from "react";
-import { store } from "@/store";
+import store from "@/store";
 import { Provider } from "react-redux";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
-import { GlobalSubscriptionSynchronizer } from "@/components/GlobalSubscriptionSynchronizer";
 import { ModuleLoadingSkeleton } from "./shared/ModuleLoadingSkeleton";
 
 interface ClientLayoutWrapperProps {
@@ -88,7 +87,7 @@ export function ClientLayoutWrapper({
       refetchOnWindowFocus={false}
     >
       <Provider store={store}>
-        {withSubscriptionSync && <GlobalSubscriptionSynchronizer />}
+        {/* Subscription sync is now handled automatically by useUnifiedSubscription hook */}
         <Suspense fallback={<ModuleLoadingSkeleton />}>
           {children}
         </Suspense>

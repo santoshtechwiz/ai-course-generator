@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+
 import { Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,8 +14,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/modules/auth"
-import { useSubscription } from "@/modules/subscriptions/client"
-import { ClientCreditService } from "@/services/client-credit-service"
+import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
+import { useState, useEffect } from "react"
 
 interface NotificationsMenuProps {
   refreshCredits?: () => void
@@ -38,29 +38,21 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
   })
   
   const { user } = useAuth()
-  const { subscription } = useSubscription()
+  const { subscription } = useUnifiedSubscription()
 
-  // SECURE: Get credit information from API for consistency
+  // Use unified subscription as single source of truth - fixes sync issues
   useEffect(() => {
-    if (user?.id) {
-      ClientCreditService.getCreditDetails()
-        .then(details => {
-          setCreditInfo({
-            hasCredits: details.hasCredits,
-            remainingCredits: details.remainingCredits,
-            totalCredits: details.totalCredits,
-            usedCredits: details.usedCredits
-          })
-        })
-        .catch(error => {
-          console.error('[NotificationsMenu] Failed to fetch credit details:', error)
-          setCreditInfo({
-            hasCredits: false,
-            remainingCredits: 0,
-            totalCredits: 0,
-            usedCredits: 0
-          })
-        })
+    if (subscription) {
+      const totalCredits = subscription.credits || 0
+      const usedCredits = subscription.tokensUsed || 0
+      const remainingCredits = Math.max(0, totalCredits - usedCredits)
+      
+      setCreditInfo({
+        hasCredits: remainingCredits > 0,
+        remainingCredits: remainingCredits,
+        totalCredits: totalCredits,
+        usedCredits: usedCredits
+      })
     } else {
       setCreditInfo({
         hasCredits: false,
@@ -69,7 +61,7 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
         usedCredits: 0
       })
     }
-  }, [user?.id])
+  }, [subscription?.credits, subscription?.tokensUsed, subscription?.id])
 
   const handleOpen = (open: boolean) => {
     setIsOpen(open)

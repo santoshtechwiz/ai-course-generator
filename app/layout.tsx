@@ -16,6 +16,7 @@ import BProgressProvider from "./providers"
 import { MotionProvider } from "@/components/MotionProvider"
 import Footer from "@/components/shared/Footer"
 import { Toaster } from "@/components/ui/toaster"
+import SubscriptionDebugPanel from "@/components/debug/SubscriptionDebugPanel"
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
@@ -133,6 +134,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Suspense>
             <DefaultSEO enableFAQ={false} />
             <Toaster />
+            
+            {/* Debug Panel (Development Only) */}
+            <SubscriptionDebugPanel />
           </Providers>
         </BProgressProvider>
       </body>

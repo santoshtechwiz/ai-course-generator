@@ -9,9 +9,9 @@ import { quizReducer, setCurrentQuestionIndex } from "./slices/quiz"
 import flashcardReducer from "./slices/flashcard-slice"
 import courseReducer from "./slices/course-slice"
 import certificateReducer from "./slices/certificate-slice"
-import { subscriptionSlice } from "./slices/subscription-slice"
 import courseProgressReducer from "./slices/courseProgress-slice"
 import progressEventsReducer from "./slices/progress-events-slice"
+import subscriptionReducer from "./slices/subscriptionSlice"
 
 // Storage with fallback
 const createStorage = () => {
@@ -92,9 +92,9 @@ const rootReducer = combineReducers({
   flashcard: persistReducer(flashcardPersistConfig, flashcardReducer),
   course: persistReducer(coursePersistConfig, courseReducer),
   certificate: certificateReducer,
-  subscription: subscriptionSlice.reducer,
   courseProgress: courseProgressReducer,
   progressEvents: progressEventsReducer,
+  subscription: subscriptionReducer, // Redux single source of truth
 })
 
 // ---------------------

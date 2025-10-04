@@ -27,7 +27,8 @@ import { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
-import { useSubscription } from "@/modules/auth"
+import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
+import { useAuth } from "@/modules/auth"
 import PlanAwareButton from "@/components/quiz/PlanAwareButton"
 import { calculateCreditInfo } from "@/utils/credit-utils"
 
@@ -51,13 +52,14 @@ interface FlashCardCreateProps {
 export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params }: FlashCardCreateProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { user } = useAuth()
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
   const [submissionError, setSubmissionError] = React.useState<string | null>(null)
   const [isSuccess, setIsSuccess] = React.useState(false)
 
   // Get subscription data from the unified auth system
-  const { subscription: subscriptionData, user } = useSubscription()
+  const { subscription: subscriptionData } = useUnifiedSubscription()
 
   // Calculate accurate credit information
   const creditInfo = calculateCreditInfo(

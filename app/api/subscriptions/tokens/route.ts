@@ -3,7 +3,7 @@ import { AuthenticatedApiRoute } from "@/services/base-api-route"
 import { z } from "zod"
 import { logger } from "@/lib/logger"
 // Updated to use the consolidated subscriptions module (server-safe exports)
-import { TokenUsageService } from "@/modules/subscriptions"
+import { TokenUsageService } from '@/services/subscription-services'
 
 /**
  * Token Usage API Route

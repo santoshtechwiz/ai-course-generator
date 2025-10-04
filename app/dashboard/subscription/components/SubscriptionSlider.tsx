@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Lock, Unlock } from "lucide-react"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
 import type { SubscriptionPlanType } from "@/types/subscription"
-import { useSubscription } from "@/modules/auth"
+import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 
 interface SubscriptionSliderProps {
   value: number
@@ -21,10 +21,10 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
   value,
   onValueChange,
   ariaLabel = "Select number of questions",
-}) => {  // Use unified auth to get subscription data
-  const { subscription } = useSubscription()
+}) => {  // Use unified subscription hook to get subscription data
+  const { subscription } = useUnifiedSubscription()
   const currentPlan =
-    SUBSCRIPTION_PLANS.find((plan) => plan.id === subscription?.plan) || SUBSCRIPTION_PLANS[0]
+    SUBSCRIPTION_PLANS.find((plan) => plan.id === subscription?.subscriptionPlan) || SUBSCRIPTION_PLANS[0]
   const maxQuestions = currentPlan?.limits?.maxQuestionsPerQuiz || 5 // Default to 5 for FREE plan
   const isMaxPlan = currentPlan.name === "ULTIMATE"
   

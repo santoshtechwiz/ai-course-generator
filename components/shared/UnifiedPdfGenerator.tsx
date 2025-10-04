@@ -5,7 +5,7 @@ import { Document, Page, Text, View, StyleSheet, Font, pdf, PDFDownloadLink } fr
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Download, Lock, Loader2 } from "lucide-react"
-import { useSubscription } from "@/modules/subscriptions/client"
+import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
 import { marked } from "marked"
 
 // Note: Using system fonts to avoid CSP issues with external font loading
@@ -502,7 +502,7 @@ const UnifiedPdfGenerator: React.FC<UnifiedPdfGeneratorProps> = ({
 }) => {
   const [isDownloading, setIsDownloading] = useState(false)
   const [isClient, setIsClient] = useState(false)
-  const { hasActiveSubscription } = useSubscription()
+  const { hasActiveSubscription } = useUnifiedSubscription()
   
   React.useEffect(() => {
     setIsClient(true)

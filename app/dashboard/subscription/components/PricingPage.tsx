@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useSubscription, useSubscriptionPermissions } from '@/modules/subscriptions/client'
+import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
 import { useAuth } from '@/modules/auth'
 import {
   X,
@@ -39,8 +39,6 @@ import FAQSection from "./subscription-status/FaqSection"
 import PlanCards from "./subscription-status/PlanCard"
 import TokenUsageExplanation from "./subscription-status/TokenUsageExplanation"
 import { useRouter } from "next/navigation"
-import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { selectSubscriptionData, fetchSubscription, selectHadPreviousPaidPlan } from "@/store/slices/subscription-slice"
 
 export function PricingPage({
   userId,
@@ -49,7 +47,6 @@ export function PricingPage({
   onManageSubscription,
   isMobile: propIsMobile,
 }: PricingPageProps) {
-  const dispatch = useAppDispatch()
   const { toast } = useToast()
   const isMobile = propIsMobile || useMediaQuery("(max-width: 768px)")
   
@@ -69,19 +66,27 @@ export function PricingPage({
   // Removed internal cancellation dialog usage; cancellation handled at higher-level page component
   const router = useRouter();
   
-  const { subscription, hasActiveSubscription, isExpired } = useSubscription();
   const { 
-    canUsePremiumFeatures,
-    needsSubscriptionUpgrade,
-    hasAvailableCredits,
-  } = useSubscriptionPermissions();
+    subscription,
+    plan,
+    hasActiveSubscription, 
+    isExpired,
+    canUseFeatures,
+    needsUpgrade,
+    hasCredits
+  } = useUnifiedSubscription();
+  
+  // Inline permissions logic
+  const canUsePremiumFeatures = canUseFeatures;
+  const needsSubscriptionUpgrade = needsUpgrade;
+  const hasAvailableCredits = hasCredits;
 
   const subscriptionData = subscription;
-  const currentPlan = (subscriptionData?.subscriptionPlan || "FREE") as SubscriptionPlanType
+  // Use plan directly from unified hook (session-authoritative)
+  const currentPlan = (plan || "FREE") as SubscriptionPlanType
   const normalizedStatus = (subscriptionData?.status?.toUpperCase() || "INACTIVE").replace("CANCELLED","CANCELED") as SubscriptionStatusType
   
-  // BUG FIX: Use isSubscribed flag from service instead of recalculating
-  // The service now correctly considers tokens/credits, not just subscription status
+  // Use isSubscribed flag from unified hook
   const isSubscribed = subscriptionData?.isSubscribed || false
   const remainingCredits = Math.max(0, (subscriptionData?.credits || 0) - (subscriptionData?.tokensUsed || 0))
   const hasCreditsAvailable = remainingCredits > 0
@@ -122,15 +127,37 @@ export function PricingPage({
       
       console.log('[PricingPage] User authenticated, proceeding with subscription')
 
-      // NEW: Enhanced upgrade flow validation with better messaging
+      // Enhanced upgrade flow validation with better UX messaging
       const hadPaidPlanBefore = hasAnyPaidPlan
+      const isCurrentPlan = planName === currentPlan
+      
+      // Improved messaging for current plan subscribers
+      if (isCurrentPlan && hasActiveSubscription) {
+        const planDisplayNames = {
+          'FREE': 'Free Plan',
+          'BASIC': 'Basic Plan', 
+          'PREMIUM': 'Premium Plan',
+          'ULTIMATE': 'Ultimate Plan',
+          'ENTERPRISE': 'Enterprise Plan'
+        }
+        
+        const currentPlanName = planDisplayNames[currentPlan] || currentPlan
+        
+        toast({
+          title: `You're Already on ${currentPlanName}! 🎉`,
+          description: `You already have access to all ${currentPlanName} features. Enjoy your subscription!`,
+          duration: 4000,
+        })
+        return
+      }
       
       // Block downgrades with specific messages
       if (planName === 'FREE' && hadPaidPlanBefore) {
         toast({
-          title: 'Downgrade Blocked',
-          description: 'You can switch to the free plan only after your current subscription expires.',
-          variant: 'destructive'
+          title: 'Downgrade Blocked 🚫',
+          description: 'You can switch to the free plan only after your current subscription expires. Contact support if you need assistance.',
+          variant: 'destructive',
+          duration: 6000
         })
         return
       }
@@ -138,13 +165,17 @@ export function PricingPage({
       // Block trial if user already used it (handled by backend)
       // Note: 'free_trial' is handled as a special case, not a regular plan type
       
-      // Allow FREE and trial users to upgrade to paid plans
+      // Improved plan change restrictions with better UX
       if (hasActiveSubscription && currentPlan !== planName && 
           currentPlan !== 'FREE') {
+        const currentPlanName = currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()
+        const targetPlanName = planName.charAt(0) + planName.slice(1).toLowerCase()
+        
         toast({
-          title: 'Plan Change Restricted',
-          description: 'You already have an active paid subscription. You can change plans after it expires.',
-          variant: 'destructive'
+          title: `Plan Change Currently Restricted 📋`,
+          description: `You're currently on the ${currentPlanName} plan. You can upgrade to ${targetPlanName} plan after your current subscription period ends, or contact support for immediate changes.`,
+          variant: 'destructive',
+          duration: 6000
         })
         return
       }
@@ -279,6 +310,14 @@ export function PricingPage({
     ? Math.ceil((new Date(subscriptionData.expirationDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null
 
+  const planOrder = ["FREE", "BASIC", "PREMIUM", "ULTIMATE"];
+  const currentPlanIndex = planOrder.indexOf(currentPlan);
+
+  const availablePlans = SUBSCRIPTION_PLANS.filter((plan) => {
+    const planIndex = planOrder.indexOf(plan.id as SubscriptionPlanType);
+    return planIndex >= currentPlanIndex;
+  });
+
   return (
     <div className="container max-w-6xl space-y-10 px-4 sm:px-6 animate-in fade-in duration-500">
       {!isProd && <DevModeBanner />}
@@ -358,7 +397,7 @@ export function PricingPage({
 
       {isMobile ? (
         <div className="space-y-6">
-          {SUBSCRIPTION_PLANS.map((plan) => {
+          {availablePlans.map((plan) => {
             const option = plan.options.find((o: any) => o.duration === selectedDuration)!
             const price = getDiscountedPrice(option.price)
             return (
@@ -392,7 +431,7 @@ export function PricingPage({
           getDiscountedPrice={getDiscountedPrice}
           isPlanAvailable={(p) => {
             // Always allow subscription for expired, canceled, or free users
-            if (isExpired || normalizedStatus === "CANCELLED" || currentPlan === "FREE") {
+            if (isExpired || normalizedStatus === "CANCELED" || currentPlan === "FREE") {
               return true;
             }
             
@@ -403,7 +442,7 @@ export function PricingPage({
             if (isExpired) {
               return undefined; // No restriction for expired users
             }
-            if (normalizedStatus === "CANCELLED") {
+            if (normalizedStatus === "CANCELED") {
               return undefined; // No restriction for canceled users
             }
             

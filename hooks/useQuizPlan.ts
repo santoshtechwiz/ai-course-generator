@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react"
 import { useAuth } from "@/modules/auth"
-import { ClientCreditService } from "@/services/client-credit-service"
+import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
 
 export type PlanType = "FREE" | "BASIC" | "PREMIUM" | "ULTIMATE"
@@ -52,29 +52,25 @@ const FEATURE_PLAN_REQUIREMENTS: Record<string, PlanType> = {
 }
 
 export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPlanConfig>): QuizPlanData {
-  const { user, subscription, isAuthenticated, isLoading } = useAuth()
+  const { user, isAuthenticated, isLoading } = useAuth()
+  const { subscription } = useUnifiedSubscription()
   const [credits, setCredits] = useState(0)
   const [creditLoading, setCreditLoading] = useState(true)
   
-  // Fetch current credit information from ClientCreditService for consistency
+  // Use unified subscription as single source of truth - fixes sync issues
   useEffect(() => {
-    if (isAuthenticated && user?.id) {
-      setCreditLoading(true)
-      ClientCreditService.getCreditDetails()
-        .then(creditInfo => {
-          setCredits(creditInfo.remainingCredits)
-          setCreditLoading(false)
-        })
-        .catch(error => {
-          console.error('[useQuizPlan] Failed to fetch credit details:', error)
-          setCredits(0)
-          setCreditLoading(false)
-        })
+    if (subscription) {
+      const totalCredits = subscription.credits || 0
+      const usedCredits = subscription.tokensUsed || 0
+      const remainingCredits = Math.max(0, totalCredits - usedCredits)
+      
+      setCredits(remainingCredits)
+      setCreditLoading(false)
     } else {
       setCredits(0)
       setCreditLoading(false)
     }
-  }, [isAuthenticated, user?.id])
+  }, [subscription])
   
   const mergedConfig = useMemo(() => ({
     ...DEFAULT_CONFIG,
@@ -82,8 +78,8 @@ export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPl
   }), [config])
   
   return useMemo(() => {
-    const currentPlan = (subscription?.plan as PlanType) || "FREE"
-    const isSubscribed = subscription?.status === 'active' || false
+    const currentPlan = (subscription?.subscriptionPlan as PlanType) || "FREE"
+    const isSubscribed = subscription?.status === 'ACTIVE' || false
     const hasCredits = credits >= requiredCredits
 
     const maxQuestions = mergedConfig.maxQuestions[currentPlan] || DEFAULT_CONFIG.maxQuestions.FREE

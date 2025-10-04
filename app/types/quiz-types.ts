@@ -1,5 +1,6 @@
 // Unified quiz types for the entire application
 export type QuizType = 'blanks' | 'openended' | 'mcq' | 'code' | 'flashcard';
+export type QuestionType = 'mcq' | 'blanks' | 'openended' | 'code';
 
 // Base question interface that all quiz question types extend
 export interface BaseQuestion {
@@ -71,6 +72,25 @@ export interface QuizData {
 
 // Union type for all question types
 export type QuizQuestion = BlankQuizQuestion | OpenEndedQuestion | McqQuestion | CodeQuizQuestion;
+
+// UnifiedQuizQuestion component props
+export interface UnifiedQuizQuestionProps {
+  question: QuizQuestion;
+  questionNumber: number;
+  totalQuestions: number;
+  existingAnswer?: string;
+  onAnswer: (answer: string, similarity?: number, hintsUsed?: number) => boolean;
+  onNext?: () => void;
+  onPrevious?: () => void;
+  onSubmit?: () => void;
+  canGoNext?: boolean;
+  canGoPrevious?: boolean;
+  isLastQuestion?: boolean;
+  isSubmitting?: boolean;
+  showRetake?: boolean;
+  timeSpent?: number;
+  className?: string;
+}
 
 // Answer types
 export interface BaseAnswer {

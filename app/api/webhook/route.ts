@@ -194,7 +194,7 @@ async function handleCheckoutCompleted(data: any) {
     }
 
     // Use the subscription service to properly activate the paid plan with credits
-    const { SubscriptionService } = await import('@/modules/subscriptions/services/subscription-service')
+    const { SubscriptionService } = await import('@/services/subscription-services')
     
     const result = await SubscriptionService.activatePaidPlan(
       userSubscription.userId, 
@@ -203,8 +203,9 @@ async function handleCheckoutCompleted(data: any) {
     )
     
     if (!result.success) {
-      logger.error(`Failed to activate plan for user ${userSubscription.userId}: ${result.error || 'Unknown error'}`)
-      throw new Error(`Plan activation failed: ${result.error || 'Unknown error'}`)
+      const errorMessage = (result as any)?.message || 'Unknown error'
+      logger.error(`Failed to activate plan for user ${userSubscription.userId}: ${errorMessage}`)
+      throw new Error(`Plan activation failed: ${errorMessage}`)
     }
     
     // Log subscription event for audit trail

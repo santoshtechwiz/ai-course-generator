@@ -26,14 +26,14 @@ export default function ReviewsSection({ slug }: ReviewsSectionProps) {
         {[1,2,3,4,5].map((i) => (
           <button
             key={i}
-            className={cn("p-1 rounded", (hover ?? status.rating) >= i && "text-amber-500")}
+            className={cn("p-1 rounded", (hover ?? status.rating ?? 0) >= i && "text-amber-500")}
             onMouseEnter={() => setHover(i)}
             onMouseLeave={() => setHover(null)}
             onClick={() => handleRating(i)}
             aria-label={`Rate ${i} star`}
             disabled={loading === "rating"}
           >
-            <Star className={cn("h-5 w-5", (hover ?? status.rating) >= i ? "fill-current" : "")} />
+            <Star className={cn("h-5 w-5", (hover ?? status.rating ?? 0) >= i ? "fill-current" : "")} />
           </button>
         ))}
       </div>

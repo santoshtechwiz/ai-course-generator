@@ -6,7 +6,7 @@ import { Slider } from "@/components/ui/slider"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { HelpCircle, Target, Brain } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { useSubscription } from '@/modules/auth'
+import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
 import { SUBSCRIPTION_PLANS } from '@/app/dashboard/subscription/components/subscription-plans'
 
 interface DocumentQuizOptionsProps {
@@ -40,7 +40,7 @@ export function DocumentQuizOptions({ onOptionsChange, disabled = false }: Docum
   })
 
   // Get subscription details to enforce per-plan limits
-  const { subscription } = useSubscription()
+  const { subscription } = useUnifiedSubscription()
   // Derive maxQuestions from the canonical SUBSCRIPTION_PLANS config
   const currentPlanConfig = SUBSCRIPTION_PLANS.find((p) => p.id === (subscription?.plan || 'FREE'))
   const maxQuestions = currentPlanConfig?.limits?.maxQuestionsPerQuiz || 20

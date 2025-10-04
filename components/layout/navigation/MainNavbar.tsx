@@ -15,8 +15,8 @@ import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 import { useAuth } from "@/modules/auth"
-import { useAppDispatch, useAppSelector } from "@/store"
-import { fetchSubscription, selectTokenUsage, selectSubscriptionData } from "@/store/slices/subscription-slice"
+import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
+import { useSession } from 'next-auth/react'
 import { progressApi } from "@/components/loaders/progress-api"
 import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
 import CourseNotificationsMenu from "@/components/Navbar/CourseNotificationsMenu"
@@ -30,11 +30,17 @@ export function MainNavbar() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, isAuthenticated, refreshUserData } = useAuth()
-  const dispatch = useAppDispatch()
+  const { data: session, update: updateSession } = useSession()
+  const { 
+    subscription, 
+    credits: sessionCredits,
+    tokensUsed: sessionTokensUsed,
+    plan: sessionPlan,
+    refreshSubscription, 
+    loading, 
+    debugInfo 
+  } = useUnifiedSubscription()
   
-  // Use Redux selectors directly for more reliable data
-  const subscriptionData = useAppSelector(selectSubscriptionData)
-  const tokenUsage = useAppSelector(selectTokenUsage)
   const syncedOnceRef = useRef(false)
 
   useEffect(() => {
@@ -43,8 +49,13 @@ export function MainNavbar() {
     const run = async () => {
       try {
         if (!progressApi?.isStarted?.()) progressApi?.start?.()
+        // Force session refresh to get updated credits/plan from database
+        if (isAuthenticated && updateSession) {
+          await updateSession()
+        }
+        
         // Force refresh to get latest data from database
-        await dispatch(fetchSubscription({ forceRefresh: true })).unwrap()
+        await refreshSubscription()
         
         // Also refresh user data to ensure credits are up to date
         if (isAuthenticated && refreshUserData) {
@@ -55,12 +66,29 @@ export function MainNavbar() {
       }
     }
     run()
-  }, [dispatch, isAuthenticated, refreshUserData])
+  }, [refreshSubscription, isAuthenticated, refreshUserData, updateSession])
 
-  // Get token data directly from Redux store - prioritize subscription data over user session
-  const totalTokens = subscriptionData?.credits || user?.credits || 0
-  const tokensUsed = subscriptionData?.tokensUsed || user?.creditsUsed || 0
-  const subscriptionPlan = subscriptionData?.subscriptionPlan || "FREE"
+  // Use session-authoritative data directly from unified hook
+  const totalTokens = sessionCredits || 0
+  const tokensUsed = sessionTokensUsed || 0  
+  const subscriptionPlan = sessionPlan || "FREE"
+  
+  // Session sync is handled by useUnifiedSubscription; additional mismatch logging removed for production stability.
+  
+  // Debug logging in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[MainNavbar] Credit calculation:', {
+      credits: totalTokens,
+      used: tokensUsed,
+      available: Math.max(0, totalTokens - tokensUsed),
+      plan: subscriptionPlan,
+      sessionRaw: {
+        credits: user?.credits,
+        creditsUsed: user?.creditsUsed,
+        userType: user?.userType
+      }
+    })
+  }
 
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -77,25 +105,23 @@ export function MainNavbar() {
     const used = tokensUsed
     const available = Math.max(0, credits - used)
     
-    // Debug logging in development
+    // Credits are now session-authoritative, no sync issues expected
     if (process.env.NODE_ENV === 'development') {
-      console.log('Credits calculation MainNavbar:', {
-        totalTokens,
-        userCredits: user?.credits,
-        userCreditsUsed: user?.creditsUsed,
-        subscriptionCredits: subscriptionData?.credits,
-        subscriptionTokensUsed: subscriptionData?.tokensUsed,
-        credits,
-        tokensUsed: used,
-        availableCredits: available,
-        subscriptionData,
-        tokenUsage,
-        subscriptionPlan
+      console.log('[MainNavbar] Credit calculation:', {
+        credits: totalTokens,
+        used: tokensUsed,
+        available,
+        plan: subscriptionPlan,
+        sessionRaw: {
+          credits: session?.user?.credits,
+          creditsUsed: session?.user?.creditsUsed,
+          userType: session?.user?.userType
+        }
       })
     }
     
     return available
-  }, [totalTokens, tokensUsed, user?.credits, user?.creditsUsed, subscriptionData, tokenUsage, subscriptionPlan])
+  }, [sessionCredits, sessionTokensUsed, sessionPlan, session?.user])
 
   const userInitials = useMemo(() => {
     const name = user?.name || ""

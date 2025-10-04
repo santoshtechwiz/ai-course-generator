@@ -1,14 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerAuthSession } from "@/lib/server-auth"
 import { logger } from "@/lib/logger"
-import { SubscriptionService } from "@/modules/subscriptions"
 import { prisma } from "@/lib/db"
-import { DEFAULT_FREE_SUBSCRIPTION } from "@/types/subscription"
-import { SecurityService } from '@/services/security-service'
 
 /**
- * Subscription Status Route - Simplified and Production Ready
- * Returns the current subscription status for authenticated users
+ * Subscription Status Route - Simplified Session-Based Approach
+ * Returns subscription data based on session information for consistency
  */
 export async function GET(req: NextRequest) {
   try {
@@ -20,79 +17,59 @@ export async function GET(req: NextRequest) {
 
     const userId = session.user.id
     
-    // Get subscription data
-    const subscriptionData = await SubscriptionService.getSubscriptionStatus(userId)
-
-    // Get user flags for business logic
-    const userFlags = await prisma.user.findUnique({
+    // Get user data from database
+    const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { 
-        hadPreviousPaidPlan: true, 
-        hasUsedFreePlan: true,
+        id: true,
         credits: true,
-        creditsUsed: true
+        creditsUsed: true,
+        userType: true
       }
     })
 
-    if (!subscriptionData) {
-      logger.warn(`No subscription data found for user ${userId}`)
-      return NextResponse.json({
-        ...DEFAULT_FREE_SUBSCRIPTION,
-        credits: userFlags?.credits || 0,
-        tokensUsed: userFlags?.creditsUsed || 0,
-        metadata: {
-          source: "default_plan",
-          timestamp: new Date().toISOString()
-        }
-      })
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Update flags if needed
-    const plan = subscriptionData.subscriptionPlan
-    const tokensUsed = subscriptionData.tokensUsed || 0
-    let hadPreviousPaidPlan = userFlags?.hadPreviousPaidPlan || false
-    let hasUsedFreePlan = userFlags?.hasUsedFreePlan || false
+    // Session-authoritative approach - use session data as primary source
+    const sessionCredits = session.user.credits || 0;
+    const sessionUsed = session.user.creditsUsed || 0;
+    const sessionPlan = (session.user as any)?.plan || 
+                       (session.user as any)?.subscriptionPlan || 
+                       (session.user as any)?.userType || 
+                       user.userType || 'FREE';
 
-    // Update flags asynchronously if needed
-    if (plan && plan !== 'FREE' && !hadPreviousPaidPlan) {
-      hadPreviousPaidPlan = true
-      prisma.user.update({
-        where: { id: userId },
-        data: { hadPreviousPaidPlan: true }
-      }).catch(err => logger.warn('Failed to update hadPreviousPaidPlan flag:', err))
-    }
-
-    if (plan === 'FREE' && tokensUsed > 0 && !hasUsedFreePlan) {
-      hasUsedFreePlan = true
-      prisma.user.update({
-        where: { id: userId },
-        data: { hasUsedFreePlan: true }
-      }).catch(err => logger.warn('Failed to update hasUsedFreePlan flag:', err))
-    }
-
-    // Return formatted response - BUG FIX: Ensure isSubscribed is preserved
+    // Build response with session as authority
     const response = {
-      ...subscriptionData,
-      hasUsedFreePlan,
-      hadPreviousPaidPlan,
-      tokensUsed: Math.min(subscriptionData.tokensUsed || 0, subscriptionData.credits || 0),
-      // Explicitly include isSubscribed to ensure it's not lost
-      isSubscribed: subscriptionData.isSubscribed,
+      id: user.id,
+      userId: user.id,
+      subscriptionId: '',
+      credits: sessionCredits,
+      tokensUsed: sessionUsed, // Use session creditsUsed for consistency
+      isSubscribed: true,
+      subscriptionPlan: sessionPlan.toUpperCase(),
+      status: 'ACTIVE',
+      cancelAtPeriodEnd: false,
+      expirationDate: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       metadata: {
-        source: "subscription_service",
-        timestamp: new Date().toISOString()
+        source: "session_authoritative_api",
+        timestamp: new Date().toISOString(),
+        sessionCredits,
+        sessionUsed,
+        sessionPlan,
+        dbCreditsUsed: user.creditsUsed
       }
     }
     
-    logger.info(`[API] Returning subscription for user ${SecurityService.maskSensitiveString(userId)}: isSubscribed=${response.isSubscribed}, plan=${response.subscriptionPlan}`)
+    logger.info(`[API] Session-authoritative subscription for user ${userId}: plan=${response.subscriptionPlan}, credits=${response.credits}`)
     
     return NextResponse.json(response)
   } catch (error: any) {
     const errorMessage = error?.message || 'Unknown error'
-    logger.error(`Error fetching subscription status: ${errorMessage}`, {
-      errorType: error?.name,
-      stack: error?.stack?.split('\n').slice(0, 3).join('\n')
-    })
+    logger.error(`Error fetching subscription status: ${errorMessage}`)
     return NextResponse.json(
       { error: "Internal server error" }, 
       { status: 500 }

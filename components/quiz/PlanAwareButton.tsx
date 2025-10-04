@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils"
 import { Loader2, Check, Lock, AlertCircle, Sparkles } from "lucide-react"
 // Update the import path to the correct location of PlanType
 import type { PlanType } from "@/hooks/useQuizPlan"
-// ✅ UNIFIED: Using unified auth system
-import { useAuth, useSubscription, useSubscriptionPermissions } from "@/modules/auth"
-import { ClientCreditService, type ClientCreditInfo } from "@/services/client-credit-service"
+// ✅ UNIFIED: Using unified subscription system
+import { useAuth } from "@/modules/auth"
+import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
 
 interface CustomButtonStates {
   default?: {
@@ -93,33 +93,32 @@ export default function PlanAwareButton({
   const { toast } = useToast()
   const router = useRouter()
 
-  // ✅ UNIFIED: Get subscription details from unified auth system
+  // ✅ UNIFIED: Get subscription details from unified subscription hook
   const { isAuthenticated, user } = useAuth()
-  const { subscription, isExpired } = useSubscription()
-  const { canCreateQuiz, canCreateCourse, needsSubscriptionUpgrade } = useSubscriptionPermissions()
+  const { subscription, isExpired, hasCredits: subscriptionHasCredits, needsUpgrade, plan } = useUnifiedSubscription()
+  const canCreateQuiz = subscriptionHasCredits;
+  const canCreateCourse = subscriptionHasCredits;
+  const needsSubscriptionUpgrade = needsUpgrade;
 
   // Auto-detect authentication - prioritize internal auth state over prop
   const effectiveIsLoggedIn = isAuthenticated || (user?.id ? true : false)
 
-  // SECURE: Get credit information from ClientCreditService for consistency
+  // Use unified subscription as single source of truth - fixes sync issues
   useEffect(() => {
-    if (user?.id) {
-      ClientCreditService.getCreditDetails()
-        .then((details: ClientCreditInfo) => {
-          setCreditInfo({
-            hasCredits: details.hasCredits,
-            remainingCredits: details.remainingCredits,
-            hasEnoughCredits: (required: number) => details.remainingCredits >= required
-          })
-        })
-        .catch((error: any) => {
-          console.error('[PlanAwareButton] Failed to fetch credit details:', error)
-          setCreditInfo({ hasCredits: false, remainingCredits: 0, hasEnoughCredits: () => false })
-        })
+    if (subscription) {
+      const totalCredits = subscription.credits || 0
+      const usedCredits = subscription.tokensUsed || 0
+      const remainingCredits = Math.max(0, totalCredits - usedCredits)
+      
+      setCreditInfo({
+        hasCredits: remainingCredits > 0,
+        remainingCredits: remainingCredits,
+        hasEnoughCredits: (required: number) => remainingCredits >= required
+      })
     } else {
       setCreditInfo({ hasCredits: false, remainingCredits: 0, hasEnoughCredits: () => false })
     }
-  }, [user?.id])
+  }, [subscription])
 
   // Debug logging in development
   if (process.env.NODE_ENV === 'development') {
@@ -146,8 +145,21 @@ export default function PlanAwareButton({
   })()
 
   // Use provided plan or get from unified auth state if not provided
-  const effectivePlan = currentPlan || subscription?.plan || "FREE"
+  const effectivePlan = currentPlan || subscription?.plan || user?.subscriptionPlan || "FREE"
   const isAlreadySubscribed = subscription?.status === "ACTIVE" || false
+  
+  // Debug logging for plan detection issues
+  if (process.env.NODE_ENV === 'development') {
+    console.log('PlanAwareButton Plan Detection:', {
+      currentPlan,
+      subscriptionPlan: subscription?.plan,
+      userSubscriptionPlan: user?.subscriptionPlan,
+      effectivePlan,
+      subscriptionStatus: subscription?.status,
+      isAlreadySubscribed,
+      requiredPlan
+    })
+  }
   
   // Enhanced subscription state checking
   const hasExpiredSubscription = isExpired || 
@@ -309,10 +321,32 @@ export default function PlanAwareButton({
         }
       }
 
+      // Find the next higher plan that the user should upgrade to
+      const planHierarchy: PlanType[] = ["FREE", "BASIC", "PREMIUM", "ULTIMATE"]
+      const currentPlanIndex = planHierarchy.indexOf(effectivePlan as PlanType)
+      const requiredPlanIndex = planHierarchy.indexOf(requiredPlan)
+      
+      // Get the appropriate upgrade target
+      // If user is already on the required plan or higher, suggest next tier
+      // Otherwise, suggest the required plan
+      let upgradeTarget: PlanType
+      if (currentPlanIndex >= requiredPlanIndex) {
+        // User is on required plan or higher, but still doesn't meet requirements
+        // This could happen if subscription is inactive - suggest reactivation of current plan
+        upgradeTarget = effectivePlan as PlanType
+      } else {
+        // User needs to upgrade to the required plan
+        upgradeTarget = requiredPlan
+      }
+
       const insufficientPlanState = customStates?.insufficientPlan ?? {}
+      const upgradeLabel = currentPlanIndex >= requiredPlanIndex 
+        ? `Reactivate ${upgradeTarget}` 
+        : `Upgrade to ${upgradeTarget}`
+      
       return {
-        label: insufficientPlanState.label ?? "Upgrade plan",
-        tooltip: insufficientPlanState.tooltip ?? `This feature requires the ${requiredPlan} plan or higher`,
+        label: insufficientPlanState.label ?? upgradeLabel,
+        tooltip: insufficientPlanState.tooltip ?? `This feature requires the ${requiredPlan} plan or higher. Current plan: ${effectivePlan}`,
         disabled: false,
         icon: <Lock className="h-4 w-4" />,
         variant: "outline" as const,
@@ -323,7 +357,7 @@ export default function PlanAwareButton({
           } else {
             toast({
               title: "Plan Upgrade Required",
-              description: `This feature requires the ${requiredPlan} plan or higher`,
+              description: `This feature requires the ${requiredPlan} plan or higher. Current plan: ${effectivePlan}`,
               variant: "destructive",
             })
             router.push(fallbackHref)

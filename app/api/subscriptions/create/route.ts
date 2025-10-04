@@ -4,7 +4,7 @@ import { z } from "zod"
 
 import { prisma } from "@/lib/db"
 import { authOptions } from "@/lib/auth"
-import { SubscriptionService } from "@/modules/subscriptions"
+import { SubscriptionService } from '@/services/subscription-services'
 import StripeGateway from "@/app/dashboard/subscription/services/stripe-gateway"
 
 // Define validation schema for request body with trial support

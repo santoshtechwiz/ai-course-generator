@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getAuthSession, isAdmin } from "@/lib/auth"
-import { SubscriptionService } from "@/modules/subscriptions"
+import { SubscriptionService } from '@/services/subscription-services'
 import { prisma } from "@/lib/db"
 
 /**

@@ -17,8 +17,8 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { useAuth, useSubscription } from "@/modules/auth"
-import { ClientCreditService } from "@/services/client-credit-service"
+import { useAuth } from "@/modules/auth"
+import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { useState, useCallback, useEffect } from "react"
 
 interface CreditInfo {
@@ -30,7 +30,7 @@ interface CreditInfo {
 
 export function UserMenu() {
   const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth()
-  const { subscription } = useSubscription()
+  const { subscription, plan } = useUnifiedSubscription()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [creditInfo, setCreditInfo] = useState<CreditInfo>({
     hasCredits: false,
@@ -40,36 +40,30 @@ export function UserMenu() {
   })
   const router = useRouter()
 
-  // SECURE: Get credit information from ClientCreditService for consistency
+  // Use unified subscription as single source of truth - fixes sync issues
   useEffect(() => {
-    if (user?.id) {
-      ClientCreditService.getCreditDetails()
-        .then(details => {
-          setCreditInfo({
-            hasCredits: details.hasCredits,
-            remainingCredits: details.remainingCredits,
-            totalCredits: details.totalCredits,
-            usedCredits: details.usedCredits
-          })
-        })
-        .catch(error => {
-          console.error('[UserMenu] Failed to fetch credit details:', error)
-          setCreditInfo({
-            hasCredits: false,
-            remainingCredits: 0,
-            totalCredits: 0,
-            usedCredits: 0
-          })
-        })
-    } else {
-      setCreditInfo({
-        hasCredits: false,
-        remainingCredits: 0,
-        totalCredits: 0,
-        usedCredits: 0
-      })
-    }
-  }, [user?.id])
+    // Derive primitives so effect only runs when meaningful values change
+    const totalCredits = subscription?.credits ?? 0;
+    const usedCredits = subscription?.tokensUsed ?? 0;
+    const remainingCredits = Math.max(0, totalCredits - usedCredits);
+
+    setCreditInfo(prev => {
+      // Avoid state update if nothing actually changed
+      if (
+        prev.totalCredits === totalCredits &&
+        prev.usedCredits === usedCredits &&
+        prev.remainingCredits === remainingCredits
+      ) {
+        return prev;
+      }
+      return {
+        hasCredits: remainingCredits > 0,
+        remainingCredits,
+        totalCredits,
+        usedCredits
+      };
+    });
+  }, [subscription?.credits, subscription?.tokensUsed])
 
   const handleSignIn = useCallback(() => {
     const currentPath = typeof window !== "undefined" ? window.location.pathname : "/"
@@ -115,7 +109,7 @@ export function UserMenu() {
 
   if (!user) return null
 
-  const subscriptionPlan = subscription?.plan || "FREE"
+  const subscriptionPlan = plan || "FREE"
   const isPremium = subscriptionPlan !== "FREE"
 
   return (

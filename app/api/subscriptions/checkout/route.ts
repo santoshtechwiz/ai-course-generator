@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerAuthSession } from '@/lib/server-auth'
-import { SubscriptionService } from '@/modules/subscriptions'
+import { SubscriptionService } from '@/services/subscription-services'
 import { logger } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
 

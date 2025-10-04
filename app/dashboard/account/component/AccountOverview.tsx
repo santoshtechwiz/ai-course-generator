@@ -12,14 +12,15 @@ import { ReferralSystem } from "./ReferralSystem"
 import { CreditCard, User, Mail } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { PlanBadge } from "../../subscription/components/subscription-status/plan-badge"
-import { useSubscription, useAuth } from "@/modules/auth"
+import { useAuth } from "@/modules/auth"
+import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { PageWrapper } from "@/components/layout/PageWrapper"
 import { Section } from "@/components/layout"
 
 
 export function AccountOverview({ userId }: { userId: string }) {
   const { data: session, status } = useSession()
-  const subscription = useSubscription()
+  const { subscription, loading: subscriptionLoading } = useUnifiedSubscription()
   const { user, isLoading } = useAuth()
   const router = useRouter()
 
@@ -34,7 +35,7 @@ export function AccountOverview({ userId }: { userId: string }) {
     router.push("/dashboard/subscription")
   }
 
-  if (isLoading || subscription.isLoading) {
+  if (isLoading || subscriptionLoading) {
     return (
       <PageWrapper>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -47,20 +48,16 @@ export function AccountOverview({ userId }: { userId: string }) {
         </div>
       </PageWrapper>
     )
-  }  // Get token usage from session (most reliable) and fallback to subscription hook
-  const sessionTokensUsed = session?.user?.creditsUsed || 0
-  const sessionTokenLimit = session?.user?.credits || 0
-  
-  // Use session data as primary source, fallback to subscription hook
-  const tokenUsage = sessionTokensUsed || subscription.subscription?.tokensUsed || 0
-  const tokenLimit = sessionTokenLimit || subscription.subscription?.credits || user?.credits || 0
+  }  // Use subscription data as single source of truth to prevent sync issues
+  const tokenUsage = subscription.tokensUsed || 0
+  const tokenLimit = subscription.credits || 0
   const tokenRemaining = Math.max(tokenLimit - tokenUsage, 0)
   const tokenUsagePercentage = tokenLimit > 0 ? Math.round((tokenUsage / tokenLimit) * 100) : 0
   
 
 
-  const formattedExpirationDate = subscription.subscription?.currentPeriodEnd
-    ? new Date(subscription.subscription.currentPeriodEnd).toLocaleDateString("en-US", {
+  const formattedExpirationDate = subscription.expirationDate
+    ? new Date(subscription.expirationDate).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long", 
         day: "numeric",
@@ -116,14 +113,14 @@ export function AccountOverview({ userId }: { userId: string }) {
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-semibold">Subscription</h3>
-                    <PlanBadge plan={subscription.subscription?.plan || "FREE"} />
+                    <PlanBadge plan={subscription.subscriptionPlan || "FREE"} />
                   </div>
                   <div className="bg-muted/50 rounded-xl p-6">
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center">
-                        <StatusBadge status={subscription.subscription?.status || "INACTIVE"} />
+                        <StatusBadge status={subscription.status || "INACTIVE"} />
                         <span className="ml-2">
-                          {subscription.subscription?.isActive ? "Active Subscription" : "No Active Subscription"}
+                          {subscription.status === 'ACTIVE' ? "Active Subscription" : "No Active Subscription"}
                         </span>
                       </div>
                       <Button variant="outline" size="sm" onClick={handleManageSubscription}>
@@ -132,17 +129,17 @@ export function AccountOverview({ userId }: { userId: string }) {
                       </Button>
                     </div>
                     {/* Subscription Details */}
-                    {subscription.subscription?.isActive && (
+                    {subscription.status === 'ACTIVE' && (
                       <div className="mt-3 space-y-2 text-sm text-muted-foreground">
                         <div className="flex justify-between">
                           <span>Plan:</span>
-                          <span className="font-medium">{subscription.subscription.plan}</span>
+                          <span className="font-medium">{subscription.subscriptionPlan}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Status:</span>
-                          <span className="font-medium">{subscription.subscription.status}</span>
+                          <span className="font-medium">{subscription.status}</span>
                         </div>
-                        {subscription.subscription.currentPeriodEnd && (
+                        {subscription.expirationDate && (
                           <div className="flex justify-between">
                             <span>Next billing:</span>
                             <span className="font-medium">{formattedExpirationDate}</span>

@@ -31,7 +31,7 @@ import { ConfirmDialog } from "../../components/ConfirmDialog"
 import PlanAwareButton from "@/components/quiz/PlanAwareButton"
 import FormContainer from "@/app/dashboard/FormContainer"
 import { useToast } from "@/components/ui/use-toast"
-import { ClientCreditService } from "@/services/client-credit-service"
+import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 
 
 type BlankQuizFormData = z.infer<typeof blanksQuizSchema> & {}
@@ -49,6 +49,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
   const [isLoading, setIsLoading] = React.useState(false)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
   const { toast } = useToast()
+  const { subscription } = useUnifiedSubscription()
 
   // Credit information state for consistent display
   const [creditInfo, setCreditInfo] = React.useState({
@@ -58,30 +59,28 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
     usedCredits: 0
   })
 
-  // Fetch detailed credit information for consistent display
+  // Use unified subscription as single source of truth - fixes sync issues
   React.useEffect(() => {
-    if (isLoggedIn) {
-      ClientCreditService.getCreditDetails()
-        .then(details => {
-          setCreditInfo({
-            hasCredits: details.hasCredits,
-            remainingCredits: details.remainingCredits,
-            totalCredits: details.totalCredits,
-            usedCredits: details.usedCredits
-          })
-        })
-        .catch(error => {
-          console.error('[BlankQuizForm] Failed to fetch credit details:', error)
-          // Fallback to props
-          setCreditInfo({
-            hasCredits: credits > 0,
-            remainingCredits: credits,
-            totalCredits: credits,
-            usedCredits: 0
-          })
-        })
+    if (subscription) {
+      const totalCredits = subscription.credits || 0
+      const usedCredits = subscription.tokensUsed || 0
+      const remainingCredits = Math.max(0, totalCredits - usedCredits)
+      
+      setCreditInfo({
+        hasCredits: remainingCredits > 0,
+        remainingCredits: remainingCredits,
+        totalCredits: totalCredits,
+        usedCredits: usedCredits
+      })
+    } else {
+      setCreditInfo({
+        hasCredits: false,
+        remainingCredits: 0,
+        totalCredits: 0,
+        usedCredits: 0
+      })
     }
-  }, [isLoggedIn, credits])
+  }, [subscription])
 
   const [formData, setFormData] = usePersistentState<BlankQuizFormData>("blankQuizFormData", {
     title: params?.title || "",

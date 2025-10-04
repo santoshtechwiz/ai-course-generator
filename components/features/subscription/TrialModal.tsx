@@ -17,7 +17,7 @@ import { migratedStorage } from "@/lib/storage"
 import { toast } from "@/hooks/use-toast"
 
 import { useSession } from "next-auth/react"
-import { useSubscription } from "@/modules/subscriptions/client"
+import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
 
 
 export default function TrialModal() {
@@ -29,7 +29,7 @@ export default function TrialModal() {
     subscription,
     hasActiveSubscription,
     refreshSubscription,
-  } = useSubscription()
+  } = useUnifiedSubscription()
   const router = useRouter()
   const currentMonth = new Date().toLocaleString("default", { month: "long" })
 

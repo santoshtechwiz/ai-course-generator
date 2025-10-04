@@ -6,18 +6,17 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertTriangle, Info, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ReferralBanner } from "@/components/ReferralBanner"
-import { useSubscription } from "@/modules/subscriptions/client"
+import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { useAuth } from "@/modules/auth"
 import { progressApi } from "@/components/loaders/progress-api"
 import { migratedStorage } from "@/lib/storage"
 
 import { LoginModal } from "@/app/auth/signin/components/LoginModal"
+import type { SubscriptionPlanType } from '@/types/subscription'
 
 import { CancellationDialog } from "./cancellation-dialog"
 import { useMediaQuery } from "@/hooks"
 import TrialModal from "@/components/features/subscription/TrialModal"
-// Using plan type string union directly to avoid missing local type import
-type SubscriptionPlanType = 'FREE' | 'BASIC' | 'PREMIUM' | 'ULTIMATE'
 import SubscriptionSkeleton from "./SubscriptionSkeleton"
 
 
@@ -38,9 +37,9 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   const [timedOut, setTimedOut] = useState(false)
 
   // Use the unified subscription hook
-  const subscriptionState = useSubscription()
+  const subscriptionState = useUnifiedSubscription()
   const subscription = subscriptionState.subscription
-  const { forceRefresh, isLoading, isRefreshing } = subscriptionState
+  const { forceRefresh, isLoading } = subscriptionState
   
   // Get authentication state from auth module
   const { user, isAuthenticated: authIsAuthenticated } = useAuth()
@@ -81,7 +80,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   // Derived subscription state
   const isSubscribed = subscription?.isSubscribed || false
   const isCancelled = subscription?.cancelAtPeriodEnd || false
-  const subscriptionPlan = subscription?.subscriptionPlan || 'FREE'
+  const subscriptionPlan = subscriptionState.plan || 'FREE'
   
   // Check if subscription is expired
   const isExpired = subscriptionState.isExpired
@@ -179,7 +178,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
 
   const renderContent = () => {
     // Show skeleton during initial loading
-  if (((isLoading || isRefreshing) && !subscription) && !timedOut) {
+  if ((isLoading && !subscription) && !timedOut) {
       return <SubscriptionSkeleton />
     }
     // Show error if loading timed out

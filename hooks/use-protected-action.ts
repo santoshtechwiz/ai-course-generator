@@ -2,7 +2,8 @@
 
 import { useCallback } from 'react';
 import { useToast } from '@/hooks';
-import { useSubscription } from '@/modules/auth';
+import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription';
+import { useAuth } from '@/modules/auth';
 import { PROTECTED_ACTIONS } from '@/config/subscription-routes';
 
 export interface UseProtectedActionOptions {
@@ -12,7 +13,8 @@ export interface UseProtectedActionOptions {
 }
 
 export function useProtectedAction() {
-  const { hasActiveSubscription, hasCredits, isAuthenticated } = useSubscription();
+  const { hasActiveSubscription, hasCredits } = useUnifiedSubscription();
+  const { isAuthenticated } = useAuth();
   const { toast } = useToast();
 
   const executeProtectedAction = useCallback(async <T,>(
@@ -74,7 +76,7 @@ export function useProtectedAction() {
 }
 
 export function useSubscriptionGuard() {
-  const { hasActiveSubscription, hasCredits } = useSubscription();
+  const { hasActiveSubscription, hasCredits } = useUnifiedSubscription();
   const { toast } = useToast();
 
   const checkAccess = useCallback((

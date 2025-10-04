@@ -69,7 +69,9 @@ export async function GET(req: NextRequest) {
           ...aq,
           question: {
             ...aq.question,
-            options: aq.question.options ? JSON.parse(aq.question.options) : null
+            options: typeof aq.question.options === "string"
+              ? JSON.parse(aq.question.options as string)
+              : (typeof aq.question.options === "object" ? aq.question.options : null)
           }
         }))
       }

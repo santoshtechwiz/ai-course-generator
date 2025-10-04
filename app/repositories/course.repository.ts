@@ -548,6 +548,52 @@ export class CourseRepository extends BaseRepository<any> {
 
     return uniqueData;
   }
+
+  /**
+   * Upsert a course rating (create or update)
+   */
+  async upsertCourseRating(courseId: number, userId: string, rating: number) {
+    return prisma.courseRating.upsert({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId
+        }
+      },
+      create: {
+        courseId,
+        userId,
+        rating
+      },
+      update: {
+        rating,
+        updatedAt: new Date()
+      }
+    });
+  }
+
+  /**
+   * Get user's rating for a course
+   */
+  async getUserCourseRating(courseId: number, userId: string) {
+    return prisma.courseRating.findUnique({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId
+        }
+      }
+    });
+  }
+
+  /**
+   * Get course by slug
+   */
+  async getCourseBySlug(slug: string) {
+    return prisma.course.findUnique({
+      where: { slug }
+    });
+  }
 }
 
 export const courseRepository = new CourseRepository();

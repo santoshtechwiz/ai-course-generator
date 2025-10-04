@@ -70,6 +70,7 @@ export interface ChapterVideoUpdateResult {
 export interface CourseStatusResult {
   isPublic: boolean;
   isFavorite: boolean;
+  rating: number | null;
 }
 
 /**
@@ -433,9 +434,13 @@ export class CourseService {
       throw new Error("Forbidden");
     }
 
+    // Get user's rating for this course
+    const userRating = await this.getUserCourseRating(slug, userId);
+
     return {
       isPublic: course.isPublic || false,
       isFavorite: false, // Note: Favorites functionality needs to be implemented separately
+      rating: userRating,
     };
   }
 
@@ -480,6 +485,53 @@ export class CourseService {
           console.error(`Error updating chapter status to error: ${updateError}`);
         }
       }    }, processingTime);
+  }
+
+  /**
+   * Rate a course
+   */
+  async rateCourse(slug: string, userId: string, rating: number): Promise<{ success: boolean; userRating: number }> {
+    try {
+      // Validate rating
+      if (rating < 1 || rating > 5) {
+        throw new Error("Rating must be between 1 and 5");
+      }
+
+      // Get course by slug
+      const course = await courseRepository.getCourseBySlug(slug);
+      if (!course) {
+        throw new Error("Course not found");
+      }
+
+      // Upsert rating (create or update)
+      const courseRating = await courseRepository.upsertCourseRating(course.id, userId, rating);
+
+      return {
+        success: true,
+        userRating: courseRating.rating
+      };
+    } catch (error) {
+      console.error("Error rating course:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user's rating for a course
+   */
+  async getUserCourseRating(slug: string, userId: string): Promise<number | null> {
+    try {
+      const course = await courseRepository.getCourseBySlug(slug);
+      if (!course) {
+        return null;
+      }
+
+      const rating = await courseRepository.getUserCourseRating(course.id, userId);
+      return rating?.rating || null;
+    } catch (error) {
+      console.error("Error getting user course rating:", error);
+      return null;
+    }
   }
 
   /**

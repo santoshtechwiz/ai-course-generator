@@ -36,7 +36,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import RecommendedSection from "@/components/shared/RecommendedSection"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/modules/auth"
-import { useSessionSubscriptionSync } from "@/hooks/useSessionSubscriptionSync"
+import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { QuizActions } from "@/components/quiz/QuizActions"
 
 // Removed force-dynamic; let Next.js infer rendering strategy
@@ -290,7 +290,7 @@ export default function QuizPlayLayout({
   // Session and subscription management
  
   const { user: authUser } = useAuth()
-  const { subscription } = useSessionSubscriptionSync()
+  const { subscription } = useUnifiedSubscription()
 
   // Determine ownership and subscription status
   const isOwner = useMemo((): boolean => {
@@ -581,7 +581,7 @@ export default function QuizPlayLayout({
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-6">
             This quiz is private and can only be viewed by its owner.
           </p>
-          {!session?.user && (
+          {!authUser && (
             <p className="text-sm text-gray-500 dark:text-gray-500 mb-4">
               Please log in to access private quizzes.
             </p>

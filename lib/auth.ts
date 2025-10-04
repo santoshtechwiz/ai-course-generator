@@ -90,8 +90,8 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account, trigger }) {      // Initial sign in
       if (user) {
         token.id = user.id
-        token.credits = user.credits || 0
-        token.creditsUsed = user.creditsUsed || 0
+        token.credits = typeof user.credits === 'number' ? user.credits : 3
+        token.creditsUsed = typeof user.creditsUsed === 'number' ? user.creditsUsed : 0
         token.isActive = (user as any).isActive ?? true
         token.isAdmin = user.isAdmin || false
         token.userType = user.userType || "FREE"
@@ -131,11 +131,11 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (dbUser) {
-            token.credits = dbUser.credits
-            token.creditsUsed = dbUser.creditsUsed
-            token.isAdmin = dbUser.isAdmin
-            token.isActive = dbUser.isActive
-            token.userType = dbUser.userType
+            token.credits = typeof dbUser.credits === 'number' ? dbUser.credits : 3
+            token.creditsUsed = typeof dbUser.creditsUsed === 'number' ? dbUser.creditsUsed : 0
+            token.isAdmin = Boolean(dbUser.isAdmin)
+            token.isActive = Boolean(dbUser.isActive ?? true)
+            token.userType = dbUser.userType || "FREE"
             token.subscriptionPlan = dbUser.subscription?.planId || null
             token.subscriptionStatus = dbUser.subscription?.status || null
             token.updatedAt = now
@@ -149,13 +149,28 @@ export const authOptions: NextAuthOptions = {
     },    async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id
-        session.user.isActive = Boolean((token as any).isActive)
-        session.user.credits = token.credits || 0
-        session.user.creditsUsed = token.creditsUsed || 0
-        session.user.isAdmin = token.isAdmin || false
+        session.user.isActive = Boolean((token as any).isActive ?? true)
+        session.user.credits = typeof token.credits === 'number' ? token.credits : 3
+        session.user.creditsUsed = typeof token.creditsUsed === 'number' ? token.creditsUsed : 0
+        session.user.isAdmin = Boolean(token.isAdmin)
         session.user.userType = token.userType || "FREE"
         session.user.subscriptionPlan = token.subscriptionPlan || null
         session.user.subscriptionStatus = token.subscriptionStatus || null
+        
+        // Debug log for development
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[NextAuth Session] User data:', {
+            id: session.user.id,
+            credits: session.user.credits,
+            creditsUsed: session.user.creditsUsed,
+            userType: session.user.userType,
+            tokenData: {
+              credits: token.credits,
+              creditsUsed: token.creditsUsed,
+              userType: token.userType
+            }
+          })
+        }
       }
       
       return session
@@ -187,7 +202,8 @@ export const authOptions: NextAuthOptions = {
             where: { id: user.id },
             data: {
               userType: "FREE",
-              credits: 0, // Start with 0 credits - only add when subscribing
+              credits: 3, // FREE users start with 3 credits
+              creditsUsed: 0,
               isAdmin: false,
             },
           })
@@ -249,7 +265,7 @@ export const authOptions: NextAuthOptions = {
         name: profile.name,
         email: profile.email,
         image: profile.picture,
-        credits: 0, 
+        credits: 3, // FREE users start with 3 credits
         creditsUsed: 0,
         isAdmin: false, 
         userType: "FREE", 

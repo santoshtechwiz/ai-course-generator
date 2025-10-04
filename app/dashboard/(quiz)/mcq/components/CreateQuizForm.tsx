@@ -11,7 +11,6 @@ import { signIn, useSession } from "next-auth/react"
 import { HelpCircle, Timer, Sparkles, Check, Lightbulb } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 // Removed redux subscription sync imports
-import { ClientCreditService } from "@/services/client-credit-service"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,7 +23,7 @@ import { ConfirmDialog } from "../../components/ConfirmDialog"
 import { quizSchema } from "@/schema/schema"
 import { usePersistentState } from "@/lib/storage"
 import { cn } from "@/lib/utils"
-import { useSubscription } from "@/modules/subscriptions/client"
+import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
@@ -62,7 +61,7 @@ export default function CreateQuizForm({
   const [isSuccess, setIsSuccess] = React.useState(false)
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null)
   const { data: session } = useSession()
-  const subscription = useSubscription()
+  const subscription = useUnifiedSubscription()
   const subscriptionData = subscription
 
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
@@ -80,30 +79,28 @@ export default function CreateQuizForm({
     usedCredits: 0
   })
 
-  // Fetch detailed credit information for consistent display
+  // Use unified subscription as single source of truth - fixes sync issues
   React.useEffect(() => {
-    if (isLoggedIn) {
-      ClientCreditService.getCreditDetails()
-        .then(details => {
-          setCreditInfo({
-            hasCredits: details.hasCredits,
-            remainingCredits: details.remainingCredits,
-            totalCredits: details.totalCredits,
-            usedCredits: details.usedCredits
-          })
-        })
-        .catch(error => {
-          console.error('[CreateQuizForm] Failed to fetch credit details:', error)
-          // Fallback to props
-          setCreditInfo({
-            hasCredits: credits > 0,
-            remainingCredits: credits,
-            totalCredits: credits,
-            usedCredits: 0
-          })
-        })
+    if (subscription?.subscription) {
+      const totalCredits = subscription.subscription.credits || 0
+      const usedCredits = subscription.subscription.tokensUsed || 0
+      const remainingCredits = Math.max(0, totalCredits - usedCredits)
+      
+      setCreditInfo({
+        hasCredits: remainingCredits > 0,
+        remainingCredits: remainingCredits,
+        totalCredits: totalCredits,
+        usedCredits: usedCredits
+      })
+    } else {
+      setCreditInfo({
+        hasCredits: false,
+        remainingCredits: 0,
+        totalCredits: 0,
+        usedCredits: 0
+      })
     }
-  }, [isLoggedIn, credits])
+  }, [subscription])
 
   const {
     control,

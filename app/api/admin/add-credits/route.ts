@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthSession } from "@/lib/auth"
-import { SubscriptionService } from "@/modules/subscriptions/services/subscription-service"
+import { SubscriptionService } from '@/services/subscription-services'
 import { logger } from "@/lib/logger"
 
 /**

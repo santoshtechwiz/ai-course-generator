@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server"
 
 import { z } from "zod"
 import { authOptions } from "@/lib/auth"
-import { SubscriptionService } from "@/modules/subscriptions"
+import { SubscriptionService } from '@/services/subscription-services'
 
 // Define cache control constants for better performance
 const CACHE_CONTROL = {

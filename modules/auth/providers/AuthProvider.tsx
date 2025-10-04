@@ -1,5 +1,3 @@
-"use client";
-
 import {
   createContext,
   useContext,
@@ -9,12 +7,6 @@ import {
   type ReactNode,
 } from "react";
 import { useSession } from "next-auth/react";
-import { useAppDispatch, useAppSelector } from "@/store";
-import {
-  fetchSubscription,
-  forceSyncSubscription,
-  selectSubscriptionData,
-} from "@/store/slices/subscription-slice";
 import { usePathname } from "next/navigation";
 
 // Types
@@ -58,28 +50,7 @@ const AuthContext = createContext<AuthState | undefined>(undefined);
 // Provider
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: session, status, update } = useSession();
-  const dispatch = useAppDispatch();
-  const reduxSubscription = useAppSelector(selectSubscriptionData);
   const pathname = usePathname();
-
-  const shouldSyncSubscription = (path: string | null | undefined): boolean => {
-    if (!path) return false;
-    // Limit subscription auto-fetch to subscription-relevant areas
-    return (
-      path.startsWith("/dashboard/account") ||
-      path.startsWith("/dashboard/(quiz)") ||
-      path.startsWith("/dashboard/course") ||
-      path.startsWith("/dashboard/subscription")
-    );
-  };
-
-  // Load fresh subscription on session load - non-blocking background fetch
-  useEffect(() => {
-    if (session?.user?.id && status === 'authenticated' && shouldSyncSubscription(pathname)) {
-      // Use background fetch to avoid blocking render
-      dispatch(fetchSubscription({ forceRefresh: true, isBackground: true }));
-    }
-  }, [session?.user?.id, status, dispatch, pathname]); // More specific dependencies
 
   const refreshUserData = useCallback(async () => {
     try {
@@ -91,21 +62,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshSubscription = useCallback(async () => {
     try {
-      // Use background fetch to avoid blocking UI
-      await dispatch(fetchSubscription({ forceRefresh: true, isBackground: true })).unwrap();
+      // This will be handled by the unified subscription hook
+      // Just refresh the session data
+      await update();
     } catch (error) {
       console.error("Failed to refresh subscription data:", error);
     }
-  }, [dispatch]);
+  }, [update]);
 
   const syncWithBackend = useCallback(async () => {
     try {
-      await dispatch(forceSyncSubscription()).unwrap();
+      // Just refresh session data - subscription sync handled separately
       await update();
     } catch (error) {
       console.error("Failed to sync with backend:", error);
     }
-  }, [dispatch, update]);
+  }, [update]);
 
   const user: User | null = useMemo(() => {
     if (!session?.user) return null;
@@ -119,26 +91,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       creditsUsed: session.user.creditsUsed || 0,
       isAdmin: session.user.isAdmin || false,
       userType: session.user.userType || "FREE",
-      subscriptionPlan:
-        reduxSubscription?.subscriptionPlan || session.user.subscriptionPlan,
-      subscriptionStatus:
-        reduxSubscription?.status || session.user.subscriptionStatus,
+      subscriptionPlan: session.user.subscriptionPlan,
+      subscriptionStatus: session.user.subscriptionStatus,
     };
-  }, [session?.user, reduxSubscription?.subscriptionPlan, reduxSubscription?.status]);
+  }, [session?.user]);
 
-  const subscription: Subscription | null = useMemo(() => {
-    if (!reduxSubscription) return null;
-    
-    return {
-      plan: reduxSubscription.subscriptionPlan ?? "",
-      status: reduxSubscription.status ?? "",
-      isActive: reduxSubscription.status === "ACTIVE",
-      credits: reduxSubscription.credits ?? 0,
-      tokensUsed: reduxSubscription.tokensUsed ?? 0,
-      currentPeriodEnd: reduxSubscription.expirationDate ?? null,
-      cancelAtPeriodEnd: reduxSubscription.cancelAtPeriodEnd ?? false,
-    };
-  }, [reduxSubscription]);
+  // Note: Subscription data is now handled by useUnifiedSubscription hook
+  // This prevents circular dependencies and provides better separation of concerns
+  const subscription: Subscription | null = null;
 
   const authState: AuthState = useMemo(() => ({
     user,
@@ -168,8 +128,11 @@ export function useUser(): User | null {
   return useAuth().user;
 }
 
+// Note: For subscription data, use useUnifiedSubscription from @/hooks/useUnifiedSubscription
+// This prevents circular dependencies
 export function useSubscription(): Subscription | null {
-  return useAuth().subscription;
+  console.warn('useSubscription from AuthProvider is deprecated. Use useUnifiedSubscription instead.')
+  return null; // Return null to prevent breaking existing code
 }
 
 export function useAuthStatus(): {

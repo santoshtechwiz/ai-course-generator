@@ -25,6 +25,34 @@ export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
   const [selectedAttempt, setSelectedAttempt] = useState<string>("")
   const isMobile = useMediaQuery("(max-width: 640px)")
 
+  // Helper function to calculate score with fallback
+  const calculateScore = (attempt: UserQuizAttempt): number => {
+    // If score is already calculated and valid, use it
+    if (attempt.score != null && attempt.score >= 0) {
+      return attempt.score
+    }
+    
+    // Fallback: calculate from attempt questions
+    const questions = attempt.attemptQuestions || []
+    const totalQuestions = questions.length
+    const correctAnswers = questions.filter(q => q.isCorrect).length
+    
+    if (totalQuestions === 0) return 0
+    
+    return Math.round((correctAnswers / totalQuestions) * 100)
+  }
+
+  // Helper function to calculate accuracy with fallback
+  const calculateAccuracy = (attempt: UserQuizAttempt): number => {
+    // If accuracy is already calculated and valid, use it  
+    if (attempt.accuracy != null && attempt.accuracy >= 0) {
+      return attempt.accuracy
+    }
+    
+    // Fallback: accuracy is the same as score for most cases
+    return calculateScore(attempt)
+  }
+
   if (!quizAttempts || quizAttempts.length === 0) {
     return (
       <Card className="w-full bg-card">
@@ -44,9 +72,9 @@ export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
     )
   }
 
-  const getScoreVariant = (score: number) => {
+  const getScoreVariant = (score: number): "success" | "destructive" | "secondary" => {
     if (score >= 80) return "success"
-    if (score >= 60) return "warning"
+    if (score >= 60) return "secondary" // Changed from "warning" to "secondary"
     return "destructive"
   }
 
@@ -78,7 +106,11 @@ export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
             value={selectedAttempt}
             onValueChange={setSelectedAttempt}
           >
-            {quizAttempts.map((attempt, index) => (
+            {quizAttempts.map((attempt, index) => {
+              const displayScore = calculateScore(attempt)
+              const displayAccuracy = calculateAccuracy(attempt)
+              
+              return (
               <AccordionItem key={attempt.id} value={`item-${index}`} className="border-b last:border-0 border-border">
                 <AccordionTrigger className="px-4 py-3 sm:px-6 hover:bg-muted/50 transition-colors">
                   <div className="flex justify-between items-center w-full gap-2">
@@ -96,9 +128,9 @@ export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
                       </div>
                     </div>
                     <motion.div className="flex items-center" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Badge variant={getScoreVariant(attempt.score ?? 0)} className="text-xs px-2 py-1">
+                      <Badge variant={getScoreVariant(displayScore)} className="text-xs px-2 py-1">
                         <BarChart className="w-3 h-3 mr-1" />
-                        {attempt.score}%
+                        {displayScore}%
                       </Badge>
                     </motion.div>
                   </div>
@@ -120,7 +152,7 @@ export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
                                 <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
                                 Accuracy
                               </div>
-                              <p className="text-xl font-bold text-foreground">{(attempt.accuracy || 0).toFixed(1)}%</p>
+                              <p className="text-xl font-bold text-foreground">{displayAccuracy.toFixed(1)}%</p>
                             </CardContent>
                           </Card>
                           <Card className="bg-muted/50 border-border overflow-hidden">
@@ -163,9 +195,9 @@ export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
                           <ScrollArea className="max-h-[300px] pr-4 -mr-4">
                             <div className="space-y-2">
                               {attempt.attemptQuestions.map((question, qIndex) => {
-                                const correctAnswer = attempt.userQuiz.questions.find(
+                                const correctAnswer = attempt.userQuiz.questions?.find(
                                   (q) => q.id === question.questionId,
-                                )?.answer
+                                )?.answer || null
                                 const isCorrect =
                                   question.userAnswer?.toLowerCase().trim() === correctAnswer?.toLowerCase().trim()
                                 return (
@@ -197,7 +229,7 @@ export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
                                           <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
                                         )}
                                         <span className="text-sm font-medium text-foreground line-clamp-1 max-w-[150px] sm:max-w-[250px]">
-                                          {attempt.userQuiz.questions.find((q) => q.id === question.questionId)?.text ||
+                                          {attempt.userQuiz.questions?.find((q) => q.id === question.questionId)?.text ||
                                             `Question ${qIndex + 1}`}
                                         </span>
                                       </div>
@@ -222,7 +254,7 @@ export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
                                               <div>
                                                 <h3 className="font-medium text-foreground mb-2">Question:</h3>
                                                 <div className="p-3 rounded-lg bg-muted text-foreground text-sm">
-                                                  {attempt.userQuiz.questions.find((q) => q.id === question.questionId)
+                                                  {attempt.userQuiz.questions?.find((q) => q.id === question.questionId)
                                                     ?.question || "Question not available"}
                                                 </div>
                                               </div>
@@ -273,7 +305,7 @@ export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
                   )}
                 </AnimatePresence>
               </AccordionItem>
-            ))}
+            )})}
           </Accordion>
         </CardContent>
       </Card>

@@ -42,7 +42,7 @@ import type { z } from "zod"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import { ClientCreditService } from "@/services/client-credit-service"
 import type { QueryParams } from "@/app/types/types"
-import { useSubscription } from "@/modules/auth"
+import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import PlanAwareButton from "@/components/quiz/PlanAwareButton"
 import FormContainer from "@/app/dashboard/FormContainer"
@@ -170,10 +170,7 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
   const [submitError, setSubmitError] = React.useState<string | null>(null)
   const { data: session, status } = useSession()
 
-  const { data: subscriptionData } = useSubscription() as {
-    data?: Subscription
-    status?: string
-  }
+  const { subscription: subscriptionData } = useUnifiedSubscription()
 
   const { toast } = useToast()
 
@@ -185,30 +182,28 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
     usedCredits: 0
   })
 
-  // Fetch detailed credit information for consistent display
+  // Use unified subscription as single source of truth - fixes sync issues
   React.useEffect(() => {
-    if (isLoggedIn) {
-      ClientCreditService.getCreditDetails()
-        .then(details => {
-          setCreditInfo({
-            hasCredits: details.hasCredits,
-            remainingCredits: details.remainingCredits,
-            totalCredits: details.totalCredits,
-            usedCredits: details.usedCredits
-          })
-        })
-        .catch(error => {
-          console.error('[CodeQuizForm] Failed to fetch credit details:', error)
-          // Fallback to props
-          setCreditInfo({
-            hasCredits: credits > 0,
-            remainingCredits: credits,
-            totalCredits: credits,
-            usedCredits: 0
-          })
-        })
+    if (subscriptionData) {
+      const totalCredits = subscriptionData.credits || 0
+      const usedCredits = subscriptionData.tokensUsed || 0
+      const remainingCredits = Math.max(0, totalCredits - usedCredits)
+      
+      setCreditInfo({
+        hasCredits: remainingCredits > 0,
+        remainingCredits: remainingCredits,
+        totalCredits: totalCredits,
+        usedCredits: usedCredits
+      })
+    } else {
+      setCreditInfo({
+        hasCredits: false,
+        remainingCredits: 0,
+        totalCredits: 0,
+        usedCredits: 0
+      })
     }
-  }, [isLoggedIn, credits])
+  }, [subscriptionData])
 
   const [selectedLanguageGroup, setSelectedLanguageGroup] = React.useState<string>("Popular")
   const [showCustomLanguage, setShowCustomLanguage] = React.useState(false)
