@@ -2,6 +2,7 @@
 
 import React from "react"
 import { useState, useEffect } from "react"
+import Image from 'next/image'
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, ChevronRight, RotateCcw, Award, Download, Check, AlertCircle, X, BookOpen, TrendingUp, Users, Clock, Play } from "lucide-react"
@@ -512,12 +513,14 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
                             transition={{ delay: 1.0 + idx * 0.1 }}
                           >
                             <div className="flex items-start gap-3">
-                              <div className="w-12 h-8 bg-purple-600/50 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
+                              <div className="relative w-12 h-8 bg-purple-600/50 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
                                 {rec.image ? (
-                                  <img 
+                                  <Image 
                                     src={rec.image} 
                                     alt={rec.title} 
-                                    className="w-full h-full object-cover rounded"
+                                    fill
+                                    className="object-cover rounded"
+                                    sizes="48px"
                                     onError={(e) => {
                                       // Fallback to icon if image fails to load
                                       const target = e.target as HTMLImageElement

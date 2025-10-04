@@ -1,9 +1,20 @@
-// Auth Module Exports
-export { AuthProvider, useAuth, useUser, useAuthStatus } from './providers/AuthProvider'
+// ============= Auth Module Exports =============
+
+// Providers
+export { AuthProvider } from './providers/AuthProvider'
+
+// Primary Hooks (use these!)
+export { useAuth, useUser, useAuthStatus } from './hooks'
+
+// Components
 export { LoginButton } from './components/LoginButton'
 export { LogoutButton } from './components/LogoutButton'
 export { AuthButtons } from './components/AuthButtons'
+
+// Other hooks
 export { useQuizPlan } from './hooks/useQuizPlan'
 
-export type { User, Subscription, AuthState } from './providers/AuthProvider'
+// Types
+export type { User } from './providers/AuthProvider'
+export type { UnifiedAuthState } from './hooks/useAuth'
 export type { PlanType, QuizPlanData } from './hooks/useQuizPlan'

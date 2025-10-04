@@ -156,21 +156,6 @@ export const authOptions: NextAuthOptions = {
         session.user.userType = token.userType || "FREE"
         session.user.subscriptionPlan = token.subscriptionPlan || null
         session.user.subscriptionStatus = token.subscriptionStatus || null
-        
-        // Debug log for development
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[NextAuth Session] User data:', {
-            id: session.user.id,
-            credits: session.user.credits,
-            creditsUsed: session.user.creditsUsed,
-            userType: session.user.userType,
-            tokenData: {
-              credits: token.credits,
-              creditsUsed: token.creditsUsed,
-              userType: token.userType
-            }
-          })
-        }
       }
       
       return session

@@ -1,92 +1,65 @@
 "use client"
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Search, Menu, X, CreditCard } from "lucide-react"
+import { Search, Menu, X, CreditCard, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 
 import { navItems } from "@/constants/navItems"
 import { ThemeToggle } from "@/components/layout/navigation/ThemeToggle"
 import { UserMenu } from "@/components/layout/navigation/UserMenu"
-import SearchModal from "@/components/layout/navigation/SearchModal"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 import { useAuth } from "@/modules/auth"
-import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
-import { useSession } from 'next-auth/react'
-import { progressApi } from "@/components/loaders/progress-api"
-import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
-import CourseNotificationsMenu from "@/components/Navbar/CourseNotificationsMenu"
 import { cn } from "@/lib/utils"
 import Logo from "@/components/shared/Logo"
-import type { User } from "@/types/auth"
 import { CreditsDisplay } from "./CreditsDisplay"
 import { UserAvatar } from "./UserAvatar"
 
+// ⚡ PERFORMANCE: Lazy load heavy components to reduce initial bundle
+const SearchModal = lazy(() => import("@/components/layout/navigation/SearchModal"))
+const NotificationsMenu = lazy(() => import("@/components/Navbar/NotificationsMenu"))
+const CourseNotificationsMenu = lazy(() => import("@/components/Navbar/CourseNotificationsMenu"))
+
+/**
+ * MainNavbar - Single source of truth using useAuth
+ * 
+ * ✅ Uses unified useAuth hook only (no dual hooks)
+ * ✅ All data comes from one place
+ * ✅ No manual session sync needed
+ * ✅ Clean and maintainable
+ */
 export function MainNavbar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, isAuthenticated, refreshUserData } = useAuth()
-  const { data: session, update: updateSession } = useSession()
-  const { 
-    subscription, 
-    credits: sessionCredits,
-    tokensUsed: sessionTokensUsed,
-    plan: sessionPlan,
-    refreshSubscription, 
-    loading, 
-    debugInfo 
-  } = useUnifiedSubscription()
   
-  const syncedOnceRef = useRef(false)
+  // ✅ Single source of truth - useAuth provides everything
+  const {
+    user,
+    isAuthenticated,
+    credits,
+    tokensUsed,
+    remainingCredits,
+    plan,
+    isLoading,
+  } = useAuth()
 
-  useEffect(() => {
-    if (syncedOnceRef.current) return
-    syncedOnceRef.current = true
-    const run = async () => {
-      try {
-        if (!progressApi?.isStarted?.()) progressApi?.start?.()
-        // Force session refresh to get updated credits/plan from database
-        if (isAuthenticated && updateSession) {
-          await updateSession()
-        }
-        
-        // Force refresh to get latest data from database
-        await refreshSubscription()
-        
-        // Also refresh user data to ensure credits are up to date
-        if (isAuthenticated && refreshUserData) {
-          await refreshUserData()
-        }
-      } finally {
-        progressApi?.done?.()
-      }
-    }
-    run()
-  }, [refreshSubscription, isAuthenticated, refreshUserData, updateSession])
-
-  // Use session-authoritative data directly from unified hook
-  const totalTokens = sessionCredits || 0
-  const tokensUsed = sessionTokensUsed || 0  
-  const subscriptionPlan = sessionPlan || "FREE"
-  
-  // Session sync is handled by useUnifiedSubscription; additional mismatch logging removed for production stability.
+  // Compute available credits (already computed in useAuth, but keeping for compatibility)
+  const totalTokens = credits || 0
+  const subscriptionPlan = plan || "FREE"
   
   // Debug logging in development
   if (process.env.NODE_ENV === 'development') {
-    console.log('[MainNavbar] Credit calculation:', {
+    console.log('[MainNavbar] Single source state:', {
       credits: totalTokens,
       used: tokensUsed,
-      available: Math.max(0, totalTokens - tokensUsed),
+      remaining: remainingCredits,
       plan: subscriptionPlan,
-      sessionRaw: {
-        credits: user?.credits,
-        creditsUsed: user?.creditsUsed,
-        userType: user?.userType
-      }
+      isAuthenticated,
+      isLoading,
     })
   }
 
@@ -100,28 +73,8 @@ export function MainNavbar() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  const availableCredits = useMemo(() => {
-    const credits = totalTokens
-    const used = tokensUsed
-    const available = Math.max(0, credits - used)
-    
-    // Credits are now session-authoritative, no sync issues expected
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[MainNavbar] Credit calculation:', {
-        credits: totalTokens,
-        used: tokensUsed,
-        available,
-        plan: subscriptionPlan,
-        sessionRaw: {
-          credits: session?.user?.credits,
-          creditsUsed: session?.user?.creditsUsed,
-          userType: session?.user?.userType
-        }
-      })
-    }
-    
-    return available
-  }, [sessionCredits, sessionTokensUsed, sessionPlan, session?.user])
+  // Use pre-computed remainingCredits from useAuth (already memoized)
+  const availableCredits = remainingCredits ?? 0
 
   const userInitials = useMemo(() => {
     const name = user?.name || ""
@@ -187,12 +140,15 @@ export function MainNavbar() {
 
           {/* Right side */}
           <div className="flex items-center space-x-2 sm:space-x-3">
-            <CreditsDisplay
-              availableCredits={availableCredits}
-              subscriptionPlan={subscriptionPlan}
-              isPremium={subscriptionPlan !== "FREE"}
-              prefersReducedMotion={false}
-            />
+            {/* Only show credits when authenticated and not loading */}
+            {isAuthenticated && !isLoading && (
+              <CreditsDisplay
+                availableCredits={availableCredits}
+                subscriptionPlan={subscriptionPlan}
+                isPremium={subscriptionPlan !== "FREE"}
+                prefersReducedMotion={false}
+              />
+            )}
 
             {/* Search */}
             <Button
@@ -210,8 +166,10 @@ export function MainNavbar() {
             {/* Auth */}
             {isAuthenticated ? (
               <div className="flex items-center space-x-2">
-                <CourseNotificationsMenu />
-                <NotificationsMenu />
+                <Suspense fallback={<Loader2 className="h-5 w-5 animate-spin" />}>
+                  <CourseNotificationsMenu />
+                  <NotificationsMenu />
+                </Suspense>
                 <UserMenu
                  
                 />
@@ -290,11 +248,13 @@ export function MainNavbar() {
         </div>
       </motion.header>
 
-      <SearchModal
-        isOpen={isSearchModalOpen}
-        setIsOpen={setIsSearchModalOpen}
-        onResultClick={handleSearchResult}
-      />
+      <Suspense fallback={null}>
+        <SearchModal
+          isOpen={isSearchModalOpen}
+          setIsOpen={setIsSearchModalOpen}
+          onResultClick={handleSearchResult}
+        />
+      </Suspense>
     </>
   )
 }

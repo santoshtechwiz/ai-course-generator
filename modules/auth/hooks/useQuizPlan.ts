@@ -1,6 +1,6 @@
 'use client'
 import { useMemo } from "react"
-import { useAuth } from "../providers/AuthProvider"
+import { useAuth } from "./useAuth"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
 
 export type PlanType = "FREE" | "BASIC" | "PREMIUM" | "ULTIMATE"
@@ -57,7 +57,7 @@ const FEATURE_PLAN_REQUIREMENTS: Record<string, PlanType> = {
 }
 
 export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPlanConfig>): QuizPlanData {
-  const { user, subscription, isAuthenticated, isLoading } = useAuth() || {}
+  const { user, plan, credits, hasActiveSubscription, isAuthenticated, isLoading } = useAuth() || {}
 
   // Defensive: fallback to empty object if undefined
   const mergedConfig = useMemo(() => {
@@ -74,16 +74,12 @@ export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPl
   }, [config])
 
   return useMemo(() => {
-    const currentPlan: PlanType = (subscription?.plan && ["FREE","BASIC","PREMIUM","ULTIMATE"].includes(subscription.plan))
-      ? subscription.plan as PlanType
+    const currentPlan: PlanType = (plan && ["FREE","BASIC","PREMIUM","ULTIMATE"].includes(plan))
+      ? plan as PlanType
       : "FREE"
-    // Use subscription.status or similar property if isSubscribed does not exist
-    // Fallback: treat as subscribed if plan is not FREE
-    const isSubscribed: boolean = typeof subscription?.isSubscribed === 'boolean'
-      ? subscription.isSubscribed
-      : !!(subscription?.plan && subscription.plan !== 'FREE')
-    const credits = typeof user?.credits === 'number' ? user.credits : (typeof subscription?.credits === 'number' ? subscription.credits : 0)
-    const hasCredits = credits >= requiredCredits
+    const isSubscribed: boolean = hasActiveSubscription || false
+    const userCredits = typeof credits === 'number' ? credits : 0
+    const hasCredits = userCredits >= requiredCredits
 
     const maxQuestions = mergedConfig.maxQuestions[currentPlan] ?? DEFAULT_CONFIG.maxQuestions.FREE
     const maxQuizzes = mergedConfig.maxQuizzes[currentPlan] ?? DEFAULT_CONFIG.maxQuizzes.FREE
@@ -122,7 +118,7 @@ export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPl
       isLoading: !!isLoading,
       currentPlan,
       isSubscribed,
-      credits,
+      credits: userCredits,
       hasCredits,
       maxQuestions,
       maxQuizzes,
@@ -132,7 +128,7 @@ export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPl
       meetsPlanRequirement,
       availableFeatures,
     }
-  }, [isAuthenticated, isLoading, subscription, user, requiredCredits, mergedConfig])
+  }, [isAuthenticated, isLoading, plan, credits, hasActiveSubscription, requiredCredits, mergedConfig])
 }
 
 export default useQuizPlan

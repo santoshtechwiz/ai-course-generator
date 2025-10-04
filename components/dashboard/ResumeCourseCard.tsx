@@ -1,6 +1,7 @@
 "use client"
 
 import React from 'react'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -81,10 +82,12 @@ export default function ResumeCourseCard({
                 transition={{ duration: 0.2 }}
               >
                 {courseImageUrl ? (
-                  <img
+                  <Image
                     src={courseImageUrl}
                     alt={courseTitle}
-                    className="w-full h-full object-cover rounded-lg group-hover:scale-110 transition-transform duration-300"
+                    fill
+                    className="object-cover rounded-lg group-hover:scale-110 transition-transform duration-300"
+                    sizes="(max-width: 768px) 80px, 112px"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
                       // On error, use an improved course SVG fallback

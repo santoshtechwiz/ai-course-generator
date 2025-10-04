@@ -10,18 +10,48 @@ interface ApiOptions extends RequestInit {
 }
 
 /**
+ * Session cache to prevent excessive getSession() calls
+ * Cache for 30 seconds to balance freshness vs performance
+ */
+let sessionCache: { session: any; timestamp: number } | null = null;
+const SESSION_CACHE_TTL = 30 * 1000; // 30 seconds
+
+async function getCachedSession() {
+  const now = Date.now();
+  
+  // Return cached session if still valid
+  if (sessionCache && (now - sessionCache.timestamp) < SESSION_CACHE_TTL) {
+    return sessionCache.session;
+  }
+  
+  // Fetch fresh session
+  const session = await getSession();
+  sessionCache = { session, timestamp: now };
+  
+  return session;
+}
+
+/**
+ * Invalidate the session cache (call after login/logout/session updates)
+ */
+export function invalidateSessionCache() {
+  sessionCache = null;
+}
+
+/**
  * API client that handles authentication checks before making requests
+ * Uses session caching to prevent excessive API calls
  */
 export const apiClient = {
   /**
    * Make a GET request if authenticated, otherwise return null without error
    */
   async get<T = any>(url: string, options: ApiOptions = {}): Promise<T | null> {
-    const session = await getSession();
+    const session = await getCachedSession();
     
     if (!session?.user) {
       console.log(`User not authenticated, skipping API call to: ${url}`);
-     
+      return null;
     }
     
     // Add query parameters if provided
@@ -57,7 +87,7 @@ export const apiClient = {
    * Make a POST request if authenticated, otherwise return null without error
    */
   async post<T = any>(url: string, data?: any, options: ApiOptions = {}): Promise<T | null> {
-    const session = await getSession();
+    const session = await getCachedSession();
     
     if (!session?.user) {
       console.log(`User not authenticated, skipping API call to: ${url}`);
@@ -110,7 +140,7 @@ export const apiClient = {
     };
     
     if (!options.skipCsrfProtection) {
-      const session = await getSession();
+      const session = await getCachedSession();
       if (session?.user) {
         headers['x-csrf-token'] = `${session.user.id?.substring(0, 8)}-${Math.floor(Date.now() / 1000)}`;
       }
@@ -141,19 +171,17 @@ export const apiClient = {
     };
     
     if (!options.skipCsrfProtection) {
-      const session = await getSession();
+      const session = await getCachedSession();
       if (session?.user) {
         headers['x-csrf-token'] = `${session.user.id?.substring(0, 8)}-${Math.floor(Date.now() / 1000)}`;
       }
     }
-    
+
     const response = await fetch(url, {
       ...options,
       method: 'DELETE',
       headers,
-    });
-    
-    if (!response.ok) {
+    });    if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: `HTTP error ${response.status}` }));
       throw new Error(errorData.message || errorData.error || `API error: ${response.status}`);
     }

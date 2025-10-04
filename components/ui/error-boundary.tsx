@@ -3,7 +3,7 @@
  * Prevents blank screens and provides fallback UI
  */
 
-import React, { Component, ReactNode } from 'react'
+import React, { Component, ReactNode, ErrorInfo } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
 
 interface ErrorFallbackProps {
@@ -62,7 +62,7 @@ function ErrorFallback({ error, resetErrorBoundary, errorInfo }: ErrorFallbackPr
 interface ReduxErrorBoundaryProps {
   children: ReactNode
   fallback?: React.ComponentType<ErrorFallbackProps>
-  onError?: (error: Error, errorInfo: { componentStack: string }) => void
+  onError?: (error: Error, errorInfo: { componentStack: string | null | undefined }) => void
 }
 
 export function ReduxErrorBoundary({ 
@@ -74,11 +74,14 @@ export function ReduxErrorBoundary({
     <ErrorBoundary
       FallbackComponent={Fallback}
       onError={(error, errorInfo) => {
-        // Log to console in development
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Redux Error Boundary caught an error:', error)
-          console.error('Error info:', errorInfo)
-        }
+        // Enhanced error logging
+        console.group('🚨 Error Boundary Caught Error');
+        console.error('Error:', error);
+        console.error('Error name:', error?.name);
+        console.error('Error message:', error?.message);
+        console.error('Error stack:', error?.stack);
+        console.error('Component stack:', errorInfo?.componentStack);
+        console.groupEnd();
         
         // Call custom error handler
         onError?.(error, { componentStack: errorInfo.componentStack || '' })
@@ -139,7 +142,7 @@ export function QuizErrorBoundary({
   children: ReactNode
   quizType?: string
   slug?: string
-  onError?: (error: Error, errorInfo: { componentStack: string }) => void
+  onError?: (error: Error, errorInfo: ErrorInfo) => void
 }) {
   return (
     <ErrorBoundary

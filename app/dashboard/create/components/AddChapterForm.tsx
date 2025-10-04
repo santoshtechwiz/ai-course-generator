@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
+import Image from 'next/image'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -60,11 +61,13 @@ const AddChapterForm: React.FC<AddChapterFormProps> = ({
           {validatedId && (
             <div className="mt-2 border rounded-md p-2">
               <p className="text-xs text-green-500 mb-1">Video ID validated: {validatedId}</p>
-              <div className="aspect-video bg-muted rounded-md">
-                <img
+              <div className="relative aspect-video bg-muted rounded-md">
+                <Image
                   src={`https://img.youtube.com/vi/${validatedId}/hqdefault.jpg`}
                   alt="Video thumbnail"
-                  className="w-full h-full object-cover rounded-md"
+                  fill
+                  className="object-cover rounded-md"
+                  sizes="100vw"
                 />
               </div>
             </div>

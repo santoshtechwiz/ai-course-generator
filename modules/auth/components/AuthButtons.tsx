@@ -2,7 +2,7 @@
 
 import { LoginButton } from "./LoginButton"
 import { LogoutButton } from "./LogoutButton"
-import { useAuth } from "../providers/AuthProvider"
+import { useAuth } from "../hooks/useAuth"
 
 interface AuthButtonsProps {
   className?: string

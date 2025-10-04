@@ -45,21 +45,12 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   const { user, isAuthenticated: authIsAuthenticated } = useAuth()
   const userId = user?.id
   const isAuthenticated = authIsAuthenticated && !!user
-  // Force fresh sync on mount for subscription page using unified hook
-  useEffect(() => {
-    let active = true
-    const sync = async () => {
-      try {
-        if (!progressApi.isStarted()) progressApi.start()
-        await forceRefresh()
-      } catch (error) {
-        console.warn('Subscription sync failed in SubscriptionPage (unified hook):', error)
-      } finally {
-        if (active) progressApi.done()
-      }
-    }
-    sync()
-  }, [forceRefresh])
+  
+  // ✅ No manual refresh needed - single source of truth!
+  // Session is already loaded by SessionProvider
+  // SubscriptionProvider automatically syncs session → Redux
+  // Components just consume the data via useAuth()
+  
   const error = undefined
 
   // Log subscription errors for debugging
@@ -287,7 +278,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
             Debug: Subscription State
           </h3>
           <p className="text-xs text-yellow-700 dark:text-yellow-300 mb-3">
-            Current: Plan {subscription?.plan || 'UNKNOWN'}, Status {subscription?.status || 'UNKNOWN'}          </p>
+            Current: Plan {subscription?.subscriptionPlan || 'UNKNOWN'}, Status {subscription?.status || 'UNKNOWN'}          </p>
           <p className="text-xs text-yellow-700 dark:text-yellow-300">
             Sync Status: Session-driven (automatic)
           </p>
@@ -325,7 +316,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
           return Promise.resolve()
         }}
   expirationDate={subscription?.expirationDate || null}
-        planName={subscription?.plan || ""}
+        planName={subscription?.subscriptionPlan || ""}
       />
     </div>
   )

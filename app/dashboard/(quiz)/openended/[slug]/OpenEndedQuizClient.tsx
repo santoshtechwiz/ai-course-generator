@@ -1,12 +1,15 @@
 "use client"
 
-import { use } from "react"
+import { use, Suspense, lazy } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
 import { useSelector } from "react-redux"
-import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import { PageLoader } from "@/components/loaders"
+
+// ⚡ PERFORMANCE: Lazy load heavy components with framer-motion
+const OpenEndedQuizWrapper = lazy(() => import("../components/OpenEndedQuizWrapper"))
+const QuizPlayLayout = lazy(() => import("../../components/layouts/QuizPlayLayout"))
 
 interface OpenEndedQuizClientProps {
   params: Promise<{ slug: string }>
@@ -37,15 +40,17 @@ export default function OpenEndedQuizClient({ params }: OpenEndedQuizClientProps
   }
 
   return (
-    <QuizPlayLayout 
-      quizSlug={slug} 
-      quizType="openended"
-      quizData={quizData || null}
-      quizId={slug}
-      isPublic={true} 
-      isFavorite={false}
-    >
-      <OpenEndedQuizWrapper slug={slug} />
-    </QuizPlayLayout>
+    <Suspense fallback={<PageLoader message="Loading quiz..." />}>
+      <QuizPlayLayout 
+        quizSlug={slug} 
+        quizType="openended"
+        quizData={quizData || null}
+        quizId={slug}
+        isPublic={true} 
+        isFavorite={false}
+      >
+        <OpenEndedQuizWrapper slug={slug} />
+      </QuizPlayLayout>
+    </Suspense>
   );
 }

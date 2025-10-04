@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from "react"
+import Image from 'next/image'
 import { CheckCircle, Clock, Play, Lock, Video, VideoOff, ChevronDown, ChevronRight, Trophy, Target, BookOpen, Zap, Star, Loader2 } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
@@ -583,11 +584,12 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                     <div className="flex-shrink-0 relative">
                                       {safeChapter.thumbnail && hasVideo ? (
                                                       <div className="w-28 h-20 rounded-xl overflow-hidden border border-border/50 relative group shadow-sm hover:shadow-md transition-shadow duration-300 flex-shrink-0">
-                                          <img
+                                          <Image
                                             src={safeChapter.thumbnail}
                                             alt={safeChapter.title}
-                                            className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
-                                            loading="lazy"
+                                            fill
+                                            className="object-cover transition-all duration-300 group-hover:scale-105"
+                                            sizes="112px"
                                             onError={(e) => {
                                               // Fallback to default thumbnail on error
                                               const target = e.target as HTMLImageElement;

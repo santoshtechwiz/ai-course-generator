@@ -163,6 +163,9 @@
   "devDependencies": {
     "@next/bundle-analyzer": "15.5.3",
     "@tailwindcss/typography": "0.5.10",
+    "@testing-library/dom": "^10.0.0",
+    "@testing-library/jest-dom": "^6.4.0",
+    "@testing-library/react": "^16.0.0",
     "@types/canvas-confetti": "^1.9.0",
     "@types/lodash": "^4.17.13",
     "@types/lodash.debounce": "4.0.9",
@@ -180,6 +183,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "^15.4.5",
     "eslint-plugin-unused-imports": "4.2.0",
+    "jsdom": "^21.1.0",
     "postcss": "8.5.6",
     "postcss-import": "16.1.1",
     "postcss-nesting": "13.0.2",
@@ -190,11 +194,7 @@
     "tailwindcss": "3.4.13",
     "ts-node": "^10.9.2",
     "unused": "0.2.1",
-    "vitest": "^1.0.0",
-    "jsdom": "^21.1.0",
-    "@testing-library/react": "^16.0.0",
-    "@testing-library/dom": "^10.0.0",
-    "@testing-library/jest-dom": "^6.4.0"
+    "vitest": "^1.0.0"
   },
   "overrides": {
     "prettier": "3.5.3",

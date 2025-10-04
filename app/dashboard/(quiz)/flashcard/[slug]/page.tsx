@@ -58,6 +58,5 @@ export default function FlashcardQuizPage({ params }: FlashcardQuizPageProps) {
       </>
     )
   }
-  // @ts-expect-error Async Server Component
   return <ClientWithJsonLd />
 }

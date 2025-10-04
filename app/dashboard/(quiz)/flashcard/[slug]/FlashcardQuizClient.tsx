@@ -1,17 +1,19 @@
 "use client"
 
-import { use } from "react"
+import { use, Suspense, lazy } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import { useSelector } from "react-redux"
 import { RootState } from "@/store"
 import { NoResults } from "@/components/ui/no-results"
 import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
-
-import FlashcardQuizWrapper from "../components/FlashcardQuizWrapper"
+import { PageLoader } from "@/components/loaders"
 import { useAuth } from "@/hooks"
+
+// ⚡ PERFORMANCE: Lazy load heavy components with framer-motion
+const FlashcardQuizWrapper = lazy(() => import("../components/FlashcardQuizWrapper"))
+const QuizPlayLayout = lazy(() => import("../../components/layouts/QuizPlayLayout"))
 
 interface FlashcardQuizClientProps {
   params: Promise<{ slug: string }>
@@ -81,18 +83,20 @@ export default function FlashcardQuizClient({ params }: FlashcardQuizClientProps
   }
 
   return (
-    <QuizPlayLayout
-      quizSlug={slug}
-      quizType="flashcard"
-      quizId={slug}
-      isPublic={true}
-      isFavorite={false}
-      quizData={quizData}
-    >
-      <FlashcardQuizWrapper
-        slug={slug}
-        title={quizTitle}
-      />
-    </QuizPlayLayout>
+    <Suspense fallback={<PageLoader message="Loading flashcard quiz..." />}>
+      <QuizPlayLayout
+        quizSlug={slug}
+        quizType="flashcard"
+        quizId={slug}
+        isPublic={true}
+        isFavorite={false}
+        quizData={quizData}
+      >
+        <FlashcardQuizWrapper
+          slug={slug}
+          title={quizTitle}
+        />
+      </QuizPlayLayout>
+    </Suspense>
   )
 }

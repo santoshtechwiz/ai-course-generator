@@ -1,8 +1,15 @@
 
 import path from "path";
 import { fileURLToPath } from "url";
+import withBundleAnalyzer from "@next/bundle-analyzer";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Configure bundle analyzer (enabled with ANALYZE=true)
+const bundleAnalyzer = withBundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+  openAnalyzer: true,
+});
 
 /**
  * Production-ready Next.js config
@@ -80,11 +87,37 @@ const nextConfig = {
   experimental: {
     // optimizeCss: false, // off by default
     // serverSourceMaps: true, // disable for faster builds
-    optimizePackageImports: ["lucide-react", "recharts", "@radix-ui/react-icons"],
+    optimizePackageImports: [
+      "lucide-react", 
+      "recharts", 
+      "@radix-ui/react-icons",
+      "framer-motion", // CRITICAL: Tree-shake framer-motion (major bundle size savings)
+      "date-fns",
+      "lodash"
+    ],
+    // Incremental compilation for faster rebuilds
+    incrementalCacheHandlerPath: undefined,
+    // Turbopack for faster dev compilation (Next.js 13+)
+    // Enable if using Next.js 14+: turbo: {},
   },
 
   // Webpack config
   webpack: (config, { dev, isServer }) => {
+    // ⚡ CRITICAL: Enable aggressive caching in dev mode
+    if (dev) {
+      config.cache = {
+        type: 'filesystem',
+        buildDependencies: {
+          config: [fileURLToPath(import.meta.url)],
+        },
+      };
+      
+      // Optimize module resolution
+      config.snapshot = {
+        managedPaths: [path.resolve(__dirname, 'node_modules')],
+      };
+    }
+
     // Optimize client dev build
     if (dev && !isServer) {
       config.optimization = {
@@ -92,16 +125,13 @@ const nextConfig = {
         moduleIds: "named",
         chunkIds: "named",
         runtimeChunk: "single",
-        splitChunks: {
-          cacheGroups: {
-            styles: {
-              name: "styles",
-              type: "css/mini-extract",
-              chunks: "all",
-              enforce: true,
-            },
-          },
-        },
+        removeAvailableModules: false,
+        removeEmptyChunks: false,
+        splitChunks: false, // Disable in dev for faster compilation
+        // Prevent duplicate module compilation
+        concatenateModules: true,
+        // NOTE: usedExports removed - conflicts with Next.js cacheUnaffected
+        // Tree-shaking still works via optimizePackageImports in experimental
       };
     }
 
@@ -143,5 +173,5 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default bundleAnalyzer(nextConfig);
 

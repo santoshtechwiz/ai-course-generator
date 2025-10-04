@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useAuth } from "../providers/AuthProvider"
+import { signOut } from "next-auth/react"
 import { useToast } from "@/hooks"
 
 interface LogoutButtonProps {
@@ -22,7 +22,6 @@ export function LogoutButton({
   redirectTo = "/auth/signin"
 }: LogoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const { signOut } = useAuth()
   const { toast } = useToast()
 
   const handleSignOut = async () => {

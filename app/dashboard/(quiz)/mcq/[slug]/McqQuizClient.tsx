@@ -1,14 +1,16 @@
 "use client"
 
-import { use } from "react"
+import { use, Suspense, lazy } from "react"
 import { useRouter } from "next/navigation"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import McqQuizWrapper from "../components/McqQuizWrapper"
-
-import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import { PageLoader } from "@/components/loaders"
 import { useSelector } from "react-redux"
+
+// ⚡ PERFORMANCE: Lazy load heavy components with framer-motion
+const McqQuizWrapper = lazy(() => import("../components/McqQuizWrapper"))
+const QuizPlayLayout = lazy(() => import("../../components/layouts/QuizPlayLayout"))
 
 interface McqQuizClientProps {
   params: Promise<{ slug: string }>
@@ -39,15 +41,17 @@ export default function McqQuizClient({ params }: McqQuizClientProps) {
   }
 
   return (
-    <QuizPlayLayout
-      quizSlug={slug}
-      quizType="mcq"
-      quizId={slug}
-      isPublic={true}
-      isFavorite={false}
-      quizData={quizData || null}
-    >
-      <McqQuizWrapper slug={slug} />
-    </QuizPlayLayout>
+    <Suspense fallback={<PageLoader message="Loading quiz..." />}>
+      <QuizPlayLayout
+        quizSlug={slug}
+        quizType="mcq"
+        quizId={slug}
+        isPublic={true}
+        isFavorite={false}
+        quizData={quizData || null}
+      >
+        <McqQuizWrapper slug={slug} />
+      </QuizPlayLayout>
+    </Suspense>
   )
 }

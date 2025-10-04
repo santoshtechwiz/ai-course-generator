@@ -70,8 +70,8 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
     }
   }
   
-  const subscriptionPlan = subscription?.plan || "FREE"
-  const isSubscribed = subscription?.isActive || false
+  const subscriptionPlan = subscription?.subscriptionPlan || "FREE"
+  const isSubscribed = subscription?.isSubscribed || false
   const subscriptionStatus = subscription?.status || "INACTIVE"
 
   return (

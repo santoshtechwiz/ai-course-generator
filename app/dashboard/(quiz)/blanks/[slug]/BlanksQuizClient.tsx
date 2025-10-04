@@ -1,14 +1,17 @@
 "use client"
 
-import { use } from "react"
+import { use, Suspense, lazy } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import BlanksQuizWrapper from "../components/BlanksQuizWrapper"
-import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import { useSelector } from "react-redux"
 import { NoResults } from "@/components/ui/no-results"
 import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
+import { PageLoader } from "@/components/loaders"
+
+// ⚡ PERFORMANCE: Lazy load heavy components with framer-motion
+const BlanksQuizWrapper = lazy(() => import("../components/BlanksQuizWrapper"))
+const QuizPlayLayout = lazy(() => import("../../components/layouts/QuizPlayLayout"))
 
 interface BlanksQuizClientProps {
   params: Promise<{ slug: string }>
@@ -68,15 +71,17 @@ export default function BlanksQuizClient({ params }: BlanksQuizClientProps) {
   }
 
   return (
-    <QuizPlayLayout
-      quizSlug={slug}
-      quizType="blanks"
-      quizId={slug}
-      isPublic={true}
-      isFavorite={false}
-      quizData={quizData || null}
-    >
-      <BlanksQuizWrapper slug={slug} title="Fill in the Blanks Quiz" />
-    </QuizPlayLayout>
+    <Suspense fallback={<PageLoader message="Loading quiz..." />}>
+      <QuizPlayLayout
+        quizSlug={slug}
+        quizType="blanks"
+        quizId={slug}
+        isPublic={true}
+        isFavorite={false}
+        quizData={quizData || null}
+      >
+        <BlanksQuizWrapper slug={slug} title="Fill in the Blanks Quiz" />
+      </QuizPlayLayout>
+    </Suspense>
   )
 }

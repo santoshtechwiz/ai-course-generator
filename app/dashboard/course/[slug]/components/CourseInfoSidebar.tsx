@@ -1,6 +1,7 @@
 "use client"
 
 import React from 'react'
+import Image from 'next/image'
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -135,11 +136,13 @@ export function CourseInfoSidebar({
                 <p className="text-muted-foreground">Instructor</p>
                 <div className="flex items-center">
                   {instructor.image ? (
-                    <div className="h-10 w-10 rounded-full overflow-hidden bg-muted mr-3">
-                      <img 
+                    <div className="relative h-10 w-10 rounded-full overflow-hidden bg-muted mr-3">
+                      <Image 
                         src={instructor.image} 
                         alt={instructor.name} 
-                        className="h-full w-full object-cover" 
+                        fill
+                        className="object-cover"
+                        sizes="40px"
                       />
                     </div>
                   ) : (

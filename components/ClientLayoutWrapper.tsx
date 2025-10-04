@@ -3,7 +3,6 @@
 import React, { useEffect, Suspense } from "react";
 import store from "@/store";
 import { Provider } from "react-redux";
-import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { ModuleLoadingSkeleton } from "./shared/ModuleLoadingSkeleton";
 
@@ -80,19 +79,15 @@ export function ClientLayoutWrapper({
   }, []);
 
   // Build the provider stack
+  // Note: SessionProvider is already provided by AppProviders - DO NOT wrap again
+  // Duplicate SessionProviders cause excessive API calls
   let content = (
-    <SessionProvider 
-      session={session}
-      refetchInterval={5 * 60} // 5 minutes
-      refetchOnWindowFocus={false}
-    >
-      <Provider store={store}>
-        {/* Subscription sync is now handled automatically by useUnifiedSubscription hook */}
-        <Suspense fallback={<ModuleLoadingSkeleton />}>
-          {children}
-        </Suspense>
-      </Provider>
-    </SessionProvider>
+    <Provider store={store}>
+      {/* Subscription sync is now handled automatically by SubscriptionProvider */}
+      <Suspense fallback={<ModuleLoadingSkeleton />}>
+        {children}
+      </Suspense>
+    </Provider>
   );
 
   // Wrap with theme provider if requested

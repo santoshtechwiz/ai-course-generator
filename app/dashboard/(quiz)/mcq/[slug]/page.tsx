@@ -68,6 +68,5 @@ export default function McqQuizPage({ params }: McqQuizPageProps) {
       </>
     )
   }
-  // @ts-expect-error Async Server Component
   return <ClientWithJsonLd />
 }

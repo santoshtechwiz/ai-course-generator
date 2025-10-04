@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
+import Image from 'next/image'
 import { motion } from "framer-motion"
 import { BookOpen, Play, Star, Users, Clock, Heart } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -92,12 +93,13 @@ const RelatedCourseCard: React.FC<RelatedCourseCardProps> = ({ course, index, on
 
           {/* Course image */}
           {course.image && !imageError ? (
-            <img
+            <Image
               src={course.image || "/api/placeholder"}
               alt={course.title || "Course"}
-              className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+              fill
+              className="object-cover transition-all duration-700 group-hover:scale-110"
               style={{ opacity: imageLoaded ? 1 : 0 }}
-              loading="lazy"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               onError={handleImageError}
               onLoad={handleImageLoad}
             />
