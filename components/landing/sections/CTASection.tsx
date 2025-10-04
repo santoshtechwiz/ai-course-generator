@@ -67,7 +67,7 @@ const CTASection = () => {
               </MaskReveal>
 
               <MaskReveal direction="left" delay={0.3}>
-                <p className="text-xl text-muted-foreground mb-8">
+                <p className="text-lg sm:text-xl text-muted-foreground mb-6 sm:mb-8">
                   CourseAI helps you create structured courses from any topic in seconds. Generate quizzes automatically
                   or build your own using MCQs, coding questions, fill-in-the-blanks, and open-ended types. Track
                   progress, and even create private courses for your audience.
@@ -94,7 +94,7 @@ const CTASection = () => {
               <MaskReveal direction="left" delay={0.5}>
                 <FeedbackButton
                   size="lg"
-                  className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
+                  className="px-6 sm:px-8 py-4 sm:py-6 text-base sm:text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
                   loadingText="Redirecting..."
                   successText="Redirected!"
                   errorText="Please try again"

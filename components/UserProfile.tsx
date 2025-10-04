@@ -30,7 +30,7 @@ export default function UserProfile({ user }: UserProfileProps) {
           </Avatar>
           <div className="space-y-3 text-center sm:text-left flex-1">
             <div>
-              <h3 className="text-xl font-semibold">{user.name}</h3>
+              <h3 className="text-lg sm:text-xl font-semibold">{user.name}</h3>
               <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
             <Badge variant="secondary" className="text-xs px-2 py-1">

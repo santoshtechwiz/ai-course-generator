@@ -101,7 +101,7 @@ const VideoSection = () => {
           </RevealAnimation>
 
           <RevealAnimation delay={0.1}>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
               AI-generated coding questions to level up your skills — instantly.
             </p>
           </RevealAnimation>
@@ -217,7 +217,7 @@ const VideoSection = () => {
                       </div>
 
                       <div>
-                        <h3 className="text-lg font-semibold mb-1">{feature.title}</h3>
+                        <h3 className="text-base sm:text-lg font-semibold mb-1">{feature.title}</h3>
                         <p className="text-base font-medium mb-2">{feature.description}</p>
                         <p className="text-sm text-muted-foreground">{feature.subtext}</p>
 

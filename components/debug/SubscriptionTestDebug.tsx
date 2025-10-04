@@ -7,7 +7,7 @@ export default function SubscriptionTestDebug() {
 
   return (
     <div className="p-4 border border-green-500 bg-green-50 rounded-lg">
-      <h3 className="text-lg font-semibold text-green-800 mb-4">
+      <h3 className="text-base sm:text-lg font-semibold text-green-800 mb-4">
         🎯 Redux Subscription Test (Single Source of Truth)
       </h3>
       

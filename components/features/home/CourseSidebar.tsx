@@ -111,7 +111,7 @@ export function CourseSidebar({
             variants={contentVariants}
             className="flex items-center justify-between mb-3"
           >
-            <h3 className="text-lg font-semibold flex items-center gap-2">
+            <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
               <Search className="h-5 w-5 text-primary" />
               Search Courses
             </h3>
@@ -175,7 +175,7 @@ export function CourseSidebar({
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-center">
                   <div>
-                    <div className="text-lg font-bold text-primary">{displayCategories.length}</div>
+                    <div className="text-base sm:text-lg font-bold text-primary">{displayCategories.length}</div>
                     <div className="text-xs text-muted-foreground">Categories</div>
                   </div>
                   <div>
@@ -257,7 +257,7 @@ export function CourseSidebar({
           {!isCollapsed && (
             <motion.h3 
               variants={contentVariants}
-              className="text-lg font-semibold flex items-center gap-2"
+              className="text-base sm:text-lg font-semibold flex items-center gap-2"
             >
               <BookOpen className="h-5 w-5 text-primary" />
               Categories

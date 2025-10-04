@@ -234,7 +234,7 @@ export function CourseProgressSummary({
         <div className="space-y-6">
           {/* Header */}
           <div className="text-center space-y-2">
-            <h3 className="text-2xl font-bold">{progressPercentage}%</h3>
+            <h3 className="text-xl sm:text-2xl font-bold">{progressPercentage}%</h3>
             <p className="text-sm text-muted-foreground">Course Complete</p>
           </div>
           
@@ -252,7 +252,7 @@ export function CourseProgressSummary({
             <div className="text-center space-y-1">
               <div className="flex items-center justify-center gap-1">
                 <CheckCircle className="h-4 w-4 text-emerald-500" />
-                <span className="text-lg font-semibold text-emerald-600">{completedCount}</span>
+                <span className="text-base sm:text-lg font-semibold text-emerald-600">{completedCount}</span>
               </div>
               <p className="text-xs text-muted-foreground">Completed</p>
             </div>
@@ -260,7 +260,7 @@ export function CourseProgressSummary({
             <div className="text-center space-y-1">
               <div className="flex items-center justify-center gap-1">
                 <PlayCircle className="h-4 w-4 text-blue-500" />
-                <span className="text-lg font-semibold text-blue-600">{remainingCount}</span>
+                <span className="text-base sm:text-lg font-semibold text-blue-600">{remainingCount}</span>
               </div>
               <p className="text-xs text-muted-foreground">Remaining</p>
             </div>

@@ -23,7 +23,7 @@ function ErrorFallback({ error, resetErrorBoundary, errorInfo }: ErrorFallbackPr
             </svg>
           </div>
           <div className="ml-3">
-            <h2 className="text-lg font-medium text-gray-900">Something went wrong</h2>
+            <h2 className="text-base sm:text-lg font-medium text-gray-900">Something went wrong</h2>
           </div>
         </div>
         
@@ -113,7 +113,7 @@ function QuizErrorFallback({ error, resetErrorBoundary, quizType, slug }: QuizEr
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01" />
           </svg>
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
+        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
           Failed to load {quizType || 'content'}
         </h3>
         <p className="text-sm text-gray-600 mb-4">

@@ -274,7 +274,7 @@ const ProductGallery = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8"
+          className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-6 sm:mb-8"
         >
           Discover how our AI transforms videos into interactive courses and adaptive quizzes tailored to your specific
           learning objectives
@@ -637,7 +637,7 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
 
           <h3 className="text-2xl md:text-3xl font-bold mb-3 line-clamp-2">{product.name}</h3>
 
-          <p className="text-lg text-primary/80 italic mb-4 line-clamp-2">{product.tagline}</p>
+          <p className="text-base sm:text-lg text-primary/80 italic mb-3 sm:mb-4 line-clamp-2">{product.tagline}</p>
 
           <p className="text-muted-foreground mb-6 line-clamp-3">{product.description}</p>
 

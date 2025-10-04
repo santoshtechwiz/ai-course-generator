@@ -48,7 +48,7 @@ function QuizRecommendationsContent() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />
             Recommended Quizzes
           </CardTitle>
@@ -175,7 +175,7 @@ function QuizRecommendationsContent() {
 function QuizRecommendationsWidget() {
   return (
     <EnhancedErrorBoundary
-      fallback={
+      fallback={(error, reset) => (
         <Card>
           <CardContent className="p-6">
             <div className="text-center text-muted-foreground">
@@ -185,7 +185,7 @@ function QuizRecommendationsWidget() {
             </div>
           </CardContent>
         </Card>
-      }
+      )}
     >
       <QuizRecommendationsContent />
     </EnhancedErrorBoundary>

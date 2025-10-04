@@ -20,7 +20,7 @@ export function ErrorDisplay({
   return (
     <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900/50 p-6 flex flex-col items-center text-center max-w-md mx-auto my-8">
       <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
         {title}
       </h3>
       <p className="text-gray-600 dark:text-gray-400 mb-6">
@@ -90,9 +90,9 @@ export function EmptyDisplay({
   return (
     <div className="rounded-lg border border-gray-200 bg-gray-50 dark:bg-gray-900/20 dark:border-gray-800 p-4 sm:p-6 md:p-8 flex flex-col items-center text-center max-w-md mx-auto my-6 sm:my-8">
       {icon || <div className="h-16 w-16 rounded-full bg-gray-200 dark:bg-gray-800 mb-4 flex items-center justify-center">
-        <span className="text-2xl text-gray-400">?</span>
+        <span className="text-xl sm:text-2xl text-gray-400">?</span>
       </div>}
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
         {title}
       </h3>
       <p className="text-gray-600 dark:text-gray-400 mb-6">

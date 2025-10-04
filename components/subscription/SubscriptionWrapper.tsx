@@ -118,7 +118,7 @@ export default function SubscriptionWrapper({
     return (
       <div className="p-6 text-center">
         <div className="max-w-md mx-auto">
-          <h3 className="text-lg font-semibold mb-2">Access Restricted</h3>
+          <h3 className="text-base sm:text-lg font-semibold mb-2">Access Restricted</h3>
           <p className="text-muted-foreground mb-4">
             {needsSubscriptionUpgrade 
               ? `This feature requires the ${requiredPlan} plan or higher.`
