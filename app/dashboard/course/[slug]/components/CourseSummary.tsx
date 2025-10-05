@@ -12,28 +12,27 @@ import { toast } from "sonner"
 import { useAuth } from "@/hooks"
 import { AdminSummaryPanel } from "./AdminSummaryPanel"
 import { NoResults } from "@/components/ui/no-results"
-import { AccessControl } from "@/components/ui/access-control"
 import { MarkdownRenderer } from "./markdownUtils"
+import { useFeatureAccess } from "@/hooks/useFeatureAccess"
+import { SignInPrompt, SubscriptionUpgrade } from "@/components/shared"
+import { Lock } from "lucide-react"
+import { motion } from "framer-motion"
 
 interface CourseSummaryProps {
   chapterId: number | string
   name: string
-  isPremium?: boolean // Keep original prop for backward compatibility
   isAdmin?: boolean
   existingSummary: string | null
-  hasAccess?: boolean // New prop for access control
 }
 
 const CourseAISummary: React.FC<CourseSummaryProps> = ({
   chapterId,
   name,
-  isPremium = false,
   isAdmin = false,
   existingSummary = null,
-  hasAccess = false, // Default to false for safety
 }) => {
-  // Use isPremium for backwards compatibility
-  const hasSummaryAccess = hasAccess || isPremium
+  // Use centralized feature access system
+  const { canAccess: hasSummaryAccess, reason: accessDenialReason, requiredPlan } = useFeatureAccess('course-videos')
 
   // Convert chapterId to number if it's a string
   const normalizedChapterId = typeof chapterId === "string" ? Number.parseInt(chapterId, 10) : chapterId
@@ -205,22 +204,100 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
     </Card>
   )
 
-  // Render the AccessControl component with proper brackets
-  return (
-    <AccessControl
-      hasAccess={hasSummaryAccess}
-      featureTitle="Premium Summary Feature"
-      showPreview={!!summary && summary.length > 0}
-      previewContent={
-        summary ? (
-          <div className="prose prose-sm max-w-none opacity-70">
-            <MarkdownRenderer content={summary.substring(0, 150) + "..."} />
-          </div>
-        ) : null
-      }
-    >
-      {summaryContent}
-    </AccessControl>
-  )
+  // Handle access denial with appropriate prompts
+  if (!hasSummaryAccess) {
+    if (accessDenialReason === 'auth') {
+      // Show sign-in prompt for unauthenticated users
+      return (
+        <Card className="w-full shadow-md rounded-lg border">
+          <CardContent className="p-6">
+            <SignInPrompt
+              variant="inline"
+              context="course"
+              feature="course-videos"
+              customMessage="Sign in to view AI-generated summaries"
+              showBenefits={true}
+              className="max-w-2xl mx-auto"
+            />
+          </CardContent>
+        </Card>
+      )
+    }
+    
+    if (accessDenialReason === 'subscription' || accessDenialReason === 'expired') {
+      // Show partial content with upgrade prompt
+      return (
+        <Card className="w-full shadow-md rounded-lg border relative">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center gap-2 text-2xl font-semibold">
+                <BookOpen className="h-6 w-6 text-primary" />
+                <span>{name} Summary</span>
+              </CardTitle>
+              <CardDescription>
+                AI-generated summary of the chapter content
+              </CardDescription>
+            </div>
+          </CardHeader>
+
+          <CardContent className="pt-4 p-6 relative">
+            {/* Partial content preview */}
+            {summary && summary.length > 0 ? (
+              <div className="relative">
+                <div className="prose prose-sm max-w-none opacity-50 blur-sm pointer-events-none">
+                  <MarkdownRenderer content={summary.substring(0, 200) + "..."} />
+                </div>
+                
+                {/* Lock overlay */}
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background flex items-center justify-center">
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="bg-card/95 backdrop-blur-sm border-2 border-primary/20 rounded-xl p-6 shadow-2xl max-w-md"
+                  >
+                    <div className="flex flex-col items-center text-center gap-4">
+                      <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
+                        <Lock className="h-8 w-8 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold mb-2">Unlock Full Summary</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Upgrade to {requiredPlan || 'BASIC'} to access AI-generated chapter summaries
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              </div>
+            ) : (
+              <NoResults
+                variant="empty"
+                title="No Summary Available"
+                description="No summary available for this chapter yet"
+                minimal={true}
+                className="bg-transparent"
+              />
+            )}
+            
+            {/* Upgrade prompt */}
+            <div className="mt-6">
+              <SubscriptionUpgrade
+                variant="inline"
+                feature="course-videos"
+                requiredPlan={requiredPlan || 'BASIC'}
+                customMessage="Unlock AI Summaries"
+                showFeatureList={false}
+                className=""
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )
+    }
+  }
+
+  // User has access - show full content
+  return summaryContent
 }
 export default CourseAISummary

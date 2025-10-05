@@ -3,7 +3,18 @@
  * 
  * Production-ready type definitions for subscription system.
  * Covers all subscription plans, statuses, API responses, and business logic types.
+ * 
+ * NOTE: Plan configurations moved to subscription-plans.ts for unified feature management.
  */
+
+import SUBSCRIPTION_PLANS_DATA, { 
+  getPlanConfig,
+  PRICING,
+  type PlanConfig 
+} from './subscription-plans'
+
+// Use clean structure directly
+export const UNIFIED_SUBSCRIPTION_PLANS = SUBSCRIPTION_PLANS_DATA
 
 // ============= Core Subscription Types =============
 
@@ -188,56 +199,77 @@ export interface SubscriptionCacheEntry {
 
 // ============= Constants and Defaults =============
 
+/**
+ * @deprecated Use UNIFIED_SUBSCRIPTION_PLANS from './subscription-plans' instead.
+ * 
+ * This constant is kept for backward compatibility but maps to the new unified structure.
+ * The unified structure provides:
+ * - Detailed feature limits (quiz questions, course limits, etc.)
+ * - Quiz type restrictions per plan
+ * - Support levels and AI accuracy tiers
+ * - Complete feature gate configuration
+ * 
+ * Migration: Replace `SUBSCRIPTION_PLANS[plan].features.credits`
+ * with `UNIFIED_SUBSCRIPTION_PLANS[plan].features.monthlyCredits`
+ */
 export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, PlanConfiguration> = {
   FREE: {
     id: "FREE",
-    name: "Free Plan",
-    price: 0,
+    name: UNIFIED_SUBSCRIPTION_PLANS.FREE.name,
+    price: UNIFIED_SUBSCRIPTION_PLANS.FREE.price,
     duration: "forever",
     features: {
-      credits: 3,
+      credits: UNIFIED_SUBSCRIPTION_PLANS.FREE.monthlyCredits,
       apiAccess: false,
       prioritySupport: false
     }
   },
   BASIC: {
     id: "BASIC",
-    name: "Basic Plan",
-    price: 9.99,
+    name: UNIFIED_SUBSCRIPTION_PLANS.BASIC.name,
+    price: UNIFIED_SUBSCRIPTION_PLANS.BASIC.price,
     duration: "monthly",
     features: {
-      credits: 100,
+      credits: UNIFIED_SUBSCRIPTION_PLANS.BASIC.monthlyCredits,
       maxProjects: 10,
-      apiAccess: true,
+      apiAccess: false,
       prioritySupport: false
     }
   },
   PREMIUM: {
     id: "PREMIUM",
-    name: "Premium Plan",
-    price: 19.99,
+    name: UNIFIED_SUBSCRIPTION_PLANS.PREMIUM.name,
+    price: UNIFIED_SUBSCRIPTION_PLANS.PREMIUM.price,
     duration: "monthly",
     features: {
-      credits: 500,
+      credits: UNIFIED_SUBSCRIPTION_PLANS.PREMIUM.monthlyCredits,
       maxProjects: 50,
-      apiAccess: true,
+      apiAccess: false,
       prioritySupport: true,
-      customBranding: true
+      customBranding: false
     }
   },
   ENTERPRISE: {
     id: "ENTERPRISE",
-    name: "Enterprise Plan",
-    price: 49.99,
+    name: UNIFIED_SUBSCRIPTION_PLANS.ENTERPRISE.name,
+    price: UNIFIED_SUBSCRIPTION_PLANS.ENTERPRISE.price,
     duration: "monthly",
     features: {
-      credits: 2000,
-      apiAccess: true,
+      credits: UNIFIED_SUBSCRIPTION_PLANS.ENTERPRISE.monthlyCredits,
+      apiAccess: false,
       prioritySupport: true,
-      customBranding: true,
-      analyticsAccess: true
+      customBranding: false,
+      analyticsAccess: false
     }
   }
+}
+
+/**
+ * Get unified plan configuration with all features
+ * @preferred Use this instead of SUBSCRIPTION_PLANS for new code
+ */
+export function getUnifiedPlanConfig(plan: SubscriptionPlanType): PlanConfig {
+  return UNIFIED_SUBSCRIPTION_PLANS[plan]
 }
 
 export const SUBSCRIPTION_CACHE_CONFIG: CacheConfiguration = {

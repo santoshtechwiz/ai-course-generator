@@ -8,7 +8,7 @@
  * - Context window management
  */
 
-import { ChatMessage } from "./chat-service"
+import type { ChatMessage } from "./types"
 import { logger } from "@/lib/logger"
 
 export interface MemoryConfig {

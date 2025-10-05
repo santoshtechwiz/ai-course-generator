@@ -17,4 +17,4 @@ export { useQuizPlan } from './hooks/useQuizPlan'
 // Types
 export type { User } from './providers/AuthProvider'
 export type { UnifiedAuthState } from './hooks/useAuth'
-export type { PlanType, QuizPlanData } from './hooks/useQuizPlan'
+export type { QuizPlanData } from './hooks/useQuizPlan'

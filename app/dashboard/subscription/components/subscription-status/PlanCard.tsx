@@ -16,8 +16,9 @@ import SavingsHighlight from "./SavingsHighlight"
 import { Badge } from "@/components/ui/badge"
 import { FeatureCategoryList } from "../FeatureComparison"
 import type { SubscriptionPlanType, SubscriptionStatusType } from "@/types/subscription"
-import type { SUBSCRIPTION_PLANS as SubscriptionPlansType } from "../subscription-plans"
+import { getPlanConfig } from "@/types/subscription-plans"
 import { motion } from "framer-motion"
+import { getPlanButtonConfig, getPlanStatus, getPriceDisplay } from "@/utils/subscription-ui-helpers"
 
 // Redesigned PlanCards component with reduced animations
 export default function PlanCards({
@@ -42,7 +43,7 @@ export default function PlanCards({
   userId = null,
   hadPreviousPaidPlan = false,
 }: {
-  plans: typeof SubscriptionPlansType
+  plans: any[]
   currentPlan: SubscriptionPlanType | null
   subscriptionStatus: SubscriptionStatusType | null
   loading: SubscriptionPlanType | null
@@ -63,7 +64,7 @@ export default function PlanCards({
   userId?: string | null
   hadPreviousPaidPlan?: boolean
 }) {
-  const bestPlan = plans.find((plan) => plan.name === "PREMIUM")
+  const bestPlan = plans.find((plan: any) => plan.name === "PREMIUM")
   const normalizedStatus = subscriptionStatus ? subscriptionStatus.toUpperCase().replace('CANCELLED','CANCELED') : null
 
   // Animation variants for cards
@@ -82,7 +83,7 @@ export default function PlanCards({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-      {plans.map((plan, index) => {
+      {plans.map((plan: any, index: number) => {
         const priceOption = plan.options.find((o: any) => o.duration === duration) || plan.options[0]
         const isPlanActive = currentPlan === plan.id
         const isBestValue = plan.name === bestPlan?.name
@@ -124,68 +125,40 @@ export default function PlanCards({
           ? getPlanUnavailableReason?.(plan.id as SubscriptionPlanType)
           : undefined
 
-        // Determine button text and state with enhanced messaging
-        const buttonText = (() => {
-          if (loading === plan.id) return "Processing..."
-          if (isAuthenticated) {
-            // Current active plan messaging
-            if (isCurrentActivePlan) {
-              if (plan.id === "FREE") {
-                return "Current Free Plan"
-              }
-              return cancelAtPeriodEnd ? "Cancels Soon" : "Current Plan"
-            }
-            
-            if (hasAllPlans) return "All Plans Active"
-            
-            // Special handling for FREE plan
-            if (plan.id === "FREE") {
-              // If user currently has an active free plan
-              if (currentPlan === "FREE" && normalizedStatus === "ACTIVE") {
-                return "Current Free Plan"
-              }
-              // If user has any paid plan active
-              if (hasAnyPaidPlan) {
-                return "Downgrade to Free"
-              }
-              // If user has used free plan before but can't use it again
-              if (!isPlanAvailable(plan.id as SubscriptionPlanType)) {
-                return "Free Plan Used"
-              }
-            }
-            
-            // Special messaging for expired/canceled users
-            if (normalizedStatus === "EXPIRED" || normalizedStatus === "CANCELED") {
-              if (plan.id === "FREE") {
-                // Check if user can downgrade to free
-                return hadPreviousPaidPlan ? "Downgrade to Free" : "Free Plan Used"
-              }
-              return hadPreviousPaidPlan ? "Reactivate Plan" : "Subscribe Now"
-            }
-            
-            // Enhanced unavailable messaging for other plans
-            if (!isPlanAvailable(plan.id as SubscriptionPlanType)) {
-              return "Unavailable"
-            }
-          }
-          // For unauthenticated users
-          if (plan.id === "FREE") return "Start for Free"
-          return "Subscribe Now"
-        })()
+        // Use helpers for button and status configuration
+        const buttonConfig = getPlanButtonConfig({
+          planId: plan.id as SubscriptionPlanType,
+          currentPlan,
+          status: subscriptionStatus,
+          isAuthenticated,
+          isSubscribed,
+          hasAnyPaidPlan,
+          hasAllPlans,
+          cancelAtPeriodEnd,
+          hadPreviousPaidPlan,
+          isLoading: loading === plan.id,
+          isPlanAvailable: isPlanAvailable(plan.id as SubscriptionPlanType)
+        })
 
-        // Determine card highlight style
-        const cardHighlightClass = (() => {
-          if (isAuthenticated && isPlanActive && normalizedStatus === "ACTIVE") {
-            return cancelAtPeriodEnd
-              ? "border-2 border-amber-500 dark:border-amber-400"
-              : "border-2 border-green-500 dark:border-green-400"
-          }
-          if (isAuthenticated && isPlanActive && normalizedStatus === "CANCELED") {
-            return "border-2 border-amber-500 dark:border-amber-400"
-          }
-          if (isBestValue) return "shadow-lg ring-1 ring-purple-500"
-          return "shadow-sm"
-        })()
+        const statusConfig = getPlanStatus({
+          planId: plan.id as SubscriptionPlanType,
+          currentPlan,
+          status: subscriptionStatus,
+          isSubscribed,
+          cancelAtPeriodEnd,
+          isBestValue,
+          isAuthenticated
+        })
+
+        const priceDisplay = getPriceDisplay(
+          getPlanConfig(plan.id as SubscriptionPlanType),
+          isPromoValid,
+          promoDiscount
+        )
+
+        // Keep legacy variables for compatibility
+        const buttonText = buttonConfig.text
+        const cardHighlightClass = statusConfig.cardClass
 
         // Get the icon component for the plan
         const PlanIcon = plan.icon
@@ -204,18 +177,9 @@ export default function PlanCards({
                 cardHighlightClass
               } ${isPlanDisabled ? "opacity-75" : ""}`}
             >
-              {isBestValue && (
-                <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-center py-1.5 text-sm font-medium">
-                  Most Popular
-                </div>
-              )}
-              {isCurrentActivePlan && (
-                <div
-                  className={`${
-                    cancelAtPeriodEnd ? "bg-amber-500" : "bg-green-500"
-                  } text-white text-center py-1.5 text-sm font-medium`}
-                >
-                  {cancelAtPeriodEnd ? "Cancels at Period End" : "Current Plan"}
+              {statusConfig.bannerText && (
+                <div className={`${statusConfig.bannerClass} text-white text-center py-1.5 text-sm font-medium`}>
+                  {statusConfig.bannerText}
                 </div>
               )}
               <CardHeader className={`${isBestValue ? "pb-4" : "pb-2"}`}>
@@ -224,29 +188,29 @@ export default function PlanCards({
                     {PlanIcon && <PlanIcon className="h-5 w-5 mr-2" />}
                     <CardTitle className="text-xl">{plan.name}</CardTitle>
                   </div>
-                  {isPlanActive && isAuthenticated && (
+                  {statusConfig.badge && isAuthenticated && (
                     <Badge
-                      variant={isSubscribed ? "default" : "destructive"}
+                      variant={statusConfig.badge.variant}
                       className="whitespace-nowrap mt-2 sm:mt-0"
                     >
-                      {cancelAtPeriodEnd ? "Cancelling" : isSubscribed ? "Active" : "Inactive"}
+                      {statusConfig.badge.text}
                     </Badge>
                   )}
                 </div>
                 <CardDescription className="min-h-[32px] sm:min-h-[40px] text-center sm:text-left text-xs sm:text-sm">{plan.description}</CardDescription>
                 <div className="mt-4 text-center sm:text-left">
                   <div className="flex items-baseline justify-center sm:justify-start">
-                    {isPromoValid && promoDiscount > 0 ? (
+                    {priceDisplay.hasDiscount ? (
                       <>
                         <span className="text-2xl font-bold line-through text-muted-foreground">
-                          ${priceOption.price}
+                          {priceDisplay.originalPrice}
                         </span>
                         <span className="text-3xl font-bold ml-2 text-green-600 dark:text-green-400">
-                          ${discountedPrice}
+                          {priceDisplay.displayPrice}
                         </span>
                       </>
                     ) : (
-                      <span className="text-3xl font-bold">${priceOption.price}</span>
+                      <span className="text-3xl font-bold">{priceDisplay.displayPrice}</span>
                     )}
                     <span className="text-sm ml-1 text-muted-foreground">/{duration === 1 ? "month" : "6 months"}</span>
                   </div>
@@ -277,7 +241,11 @@ export default function PlanCards({
                   </div>
                   <div className="mt-2 text-center sm:text-left">
                     <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                      Up to {plan.limits.maxQuestionsPerQuiz} questions per quiz
+                      Up to {(() => {
+                        const planConfig = getPlanConfig(plan.id as SubscriptionPlanType)
+                        const maxQuestions = planConfig.maxQuestionsPerQuiz
+                        return maxQuestions === 'unlimited' ? '∞' : maxQuestions
+                      })()} questions per quiz
                     </span>
                   </div>
                 </div>

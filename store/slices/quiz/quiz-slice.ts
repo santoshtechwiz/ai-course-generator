@@ -3,14 +3,7 @@ import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@r
 import type { RootState } from '@/store'
 import { API_ENDPOINTS } from './quiz-helpers'
 import { QuizQuestion, QuizResults, QuizState, QuestionResult, QuizType } from './quiz-types'
-import { STORAGE_KEYS } from '@/constants/global'
-import { 
-  shouldUpdateState, 
-  createPendingUpdate, 
-  createFulfilledUpdate, 
-  createRejectedUpdate,
-  getErrorMessage
-} from '../../utils/async-state'
+
 import { storageManager, QuizProgress } from '@/utils/storage-manager'
 
 const QUIZ_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
@@ -43,42 +36,9 @@ function setCachedQuiz(type: QuizType | null, slug: string | null, data: any): v
   }
 }
 
-function persistProgress(slug: string | null, quizType: QuizType | null, currentQuestionIndex: number) {
-  if (typeof window === 'undefined' || !slug || !quizType) return
-  try {
-    // Use StorageManager for quiz progress
-    const progress: QuizProgress = {
-      courseId: slug, // Assuming slug is courseId
-      chapterId: `${quizType}_${slug}`, // Create a unique chapter identifier
-      currentQuestionIndex,
-      answers: {},
-      timeSpent: 0,
-      lastUpdated: Date.now(),
-      isCompleted: false
-    }
-    storageManager.saveQuizProgress(progress)
-  } catch (error) {
-    console.warn('Failed to persist quiz progress:', error)
-  }
-}
 
-function loadPersistedProgress(slug: string | null, quizType: QuizType | null): number | null {
-  if (typeof window === 'undefined' || !slug || !quizType) return null
-  try {
-    // Use StorageManager for quiz progress
-    const progress = storageManager.getQuizProgress(slug, `${quizType}_${slug}`)
-    if (!progress) return null
 
-    // Check if data is recent (within 24 hours)
-    if (Date.now() - progress.lastUpdated > 24 * 60 * 60 * 1000) {
-      return null
-    }
-    return progress.currentQuestionIndex || 0
-  } catch (error) {
-    console.warn('Failed to load persisted quiz progress:', error)
-    return null
-  }
-}
+
 
 /**
  * fetchQuiz with error handling and cancellation

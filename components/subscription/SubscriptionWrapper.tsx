@@ -3,10 +3,11 @@
 import React, { useEffect, useMemo } from 'react'
 import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
 import { useToast } from '@/hooks'
+import type { SubscriptionPlanType } from '@/types/subscription'
 
 interface SubscriptionWrapperProps {
   children: React.ReactNode
-  requiredPlan?: 'FREE' | 'BASIC' | 'PREMIUM' | 'ULTIMATE'
+  requiredPlan?: SubscriptionPlanType
   requireActiveSubscription?: boolean
   requireCredits?: boolean
   fallback?: React.ReactNode
@@ -39,10 +40,10 @@ export default function SubscriptionWrapper({
       FREE: 0,
       BASIC: 1,
       PREMIUM: 2,
-      ULTIMATE: 3,
+      ENTERPRISE: 3,
     }
     
-    const currentPlanLevel = planHierarchy[subscription?.plan || 'FREE'] || 0
+    const currentPlanLevel = planHierarchy[subscription?.subscriptionPlan || 'FREE'] || 0
     const requiredPlanLevel = planHierarchy[requiredPlan] || 0
     const meetsPlanRequirement = currentPlanLevel >= requiredPlanLevel
 
@@ -53,7 +54,7 @@ export default function SubscriptionWrapper({
     const meetsCreditsRequirement = !requireCredits || hasCredits
 
     return meetsPlanRequirement && meetsSubscriptionRequirement && meetsCreditsRequirement
-  }, [subscription?.plan, requiredPlan, requireActiveSubscription, hasActiveSubscription, requireCredits, hasCredits])
+  }, [subscription?.subscriptionPlan, requiredPlan, requireActiveSubscription, hasActiveSubscription, requireCredits, hasCredits])
 
   // Check for duplicate subscription attempts
   const isDuplicateSubscription = useMemo(() => {
@@ -64,14 +65,14 @@ export default function SubscriptionWrapper({
       FREE: 0,
       BASIC: 1,
       PREMIUM: 2,
-      ULTIMATE: 3,
+      ENTERPRISE: 3,
     }
     
-    const currentPlanLevel = planHierarchy[subscription?.plan || 'FREE'] || 0
+    const currentPlanLevel = planHierarchy[subscription?.subscriptionPlan || 'FREE'] || 0
     const requiredPlanLevel = planHierarchy[requiredPlan] || 0
     
     return currentPlanLevel >= requiredPlanLevel && subscription?.isSubscribed
-  }, [subscription?.plan, subscription?.isSubscribed, requiredPlan])
+  }, [subscription?.subscriptionPlan, subscription?.isSubscribed, requiredPlan])
 
   // Handle access denied
   useEffect(() => {
@@ -104,7 +105,7 @@ export default function SubscriptionWrapper({
     return (
       <div className="p-4 text-center text-muted-foreground">
         <p>You are already subscribed to a plan that includes this feature.</p>
-        <p className="text-sm mt-2">Current plan: {subscription?.plan}</p>
+        <p className="text-sm mt-2">Current plan: {subscription?.subscriptionPlan}</p>
       </div>
     )
   }
@@ -163,7 +164,7 @@ export function useSubscriptionAccess({
   requireActiveSubscription = false,
   requireCredits = false,
 }: {
-  requiredPlan?: 'FREE' | 'BASIC' | 'PREMIUM' | 'ULTIMATE'
+  requiredPlan?: SubscriptionPlanType
   requireActiveSubscription?: boolean
   requireCredits?: boolean
 } = {}) {
@@ -175,10 +176,10 @@ export function useSubscriptionAccess({
       FREE: 0,
       BASIC: 1,
       PREMIUM: 2,
-      ULTIMATE: 3,
+      ENTERPRISE: 3,
     }
     
-    const currentPlanLevel = planHierarchy[subscription?.plan || 'FREE'] || 0
+    const currentPlanLevel = planHierarchy[subscription?.subscriptionPlan || 'FREE'] || 0
     const requiredPlanLevel = planHierarchy[requiredPlan] || 0
     const meetsPlanRequirement = currentPlanLevel >= requiredPlanLevel
 
@@ -195,11 +196,11 @@ export function useSubscriptionAccess({
       meetsPlanRequirement,
       meetsSubscriptionRequirement,
       meetsCreditsRequirement,
-      currentPlan: subscription?.plan || 'FREE',
+      currentPlan: subscription?.subscriptionPlan || 'FREE',
       requiredPlan,
       needsUpgrade: !meetsPlanRequirement,
       needsCredits: !meetsCreditsRequirement,
       needsActiveSubscription: !meetsSubscriptionRequirement,
     }
-  }, [subscription?.plan, requiredPlan, requireActiveSubscription, hasActiveSubscription, requireCredits, hasCredits])
+  }, [subscription?.subscriptionPlan, requiredPlan, requireActiveSubscription, hasActiveSubscription, requireCredits, hasCredits])
 }

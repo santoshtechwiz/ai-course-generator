@@ -4,7 +4,7 @@ import { useEffect, useCallback, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { useAuth } from "@/modules/auth"
-import type { AppDispatch } from "@/store"
+
 import {
   selectQuizQuestions,
   selectQuizAnswers,
@@ -31,8 +31,9 @@ import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { AlertCircle } from "lucide-react"
+import { SignInPrompt } from "@/components/shared"
 
-
+ 
 interface McqQuizWrapperProps {
   slug: string
   title?: string
@@ -214,27 +215,14 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   if (quizStatus === 'requires-auth') {
     return (
       <div className="min-h-[60vh] flex items-center justify-center p-6">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-              <AlertCircle className="h-6 w-6 text-blue-600" />
-            </div>
-            <CardTitle className="text-blue-600">Sign In Required</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <p className="text-muted-foreground">
-              You need to sign in to submit quiz results and save your progress.
-            </p>
-            <div className="flex gap-3 justify-center">
-              <Button onClick={() => router.push(redirectAfterLogin || '/auth/signin')} className="flex items-center gap-2">
-                Sign In
-              </Button>
-              <Button onClick={() => router.back()} variant="ghost">
-                Go Back
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <SignInPrompt
+          variant="card"
+          context="quiz"
+          feature="quiz-access"
+          callbackUrl={redirectAfterLogin || `/dashboard/mcq/${slug}`}
+          customMessage="Sign in to submit quiz results and save your progress"
+          className="max-w-md"
+        />
       </div>
     )
   }

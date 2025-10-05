@@ -129,7 +129,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       subscriptionPlan: sessionPlan as SubscriptionPlanType,
       status: (session.user.subscriptionStatus?.toUpperCase() || 'ACTIVE') as SubscriptionStatusType,
       cancelAtPeriodEnd: false, // Not in session type
-      expirationDate: session.user.subscriptionExpirationDate || null,
+      expirationDate: null, // Not available in session
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       metadata: {
@@ -156,7 +156,6 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     session?.user?.creditsUsed,
     session?.user?.userType,
     session?.user?.subscriptionStatus,
-    session?.user?.subscriptionExpirationDate,
     status,
     dispatch,
     // ⚠️ DO NOT add reduxState.data here - causes infinite loop!

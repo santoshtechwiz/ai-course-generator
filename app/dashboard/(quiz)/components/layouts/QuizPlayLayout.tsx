@@ -95,10 +95,12 @@ const QuizSkeleton = () => (
 
 const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) => {
   const formatTime = (s: number) => {
-    if (!s || s < 0) return "0:00"
-    if (s < 60) return `0:${s.toString().padStart(2, "0")}`
-    const m = Math.floor(s / 60)
-    const rem = s % 60
+    // Ensure s is a valid number and not negative
+    const safeSeconds = Math.max(0, Math.floor(s || 0))
+    if (safeSeconds === 0) return "0:00"
+    if (safeSeconds < 60) return `0:${safeSeconds.toString().padStart(2, "0")}`
+    const m = Math.floor(safeSeconds / 60)
+    const rem = safeSeconds % 60
     return `${m}:${rem.toString().padStart(2, "0")}`
   }
 
@@ -289,7 +291,7 @@ export default function QuizPlayLayout({
 
   // Session and subscription management
  
-  const { user: authUser } = useAuth()
+  const { user: authUser, } = useAuth()
   const { subscription } = useUnifiedSubscription()
 
   // Determine ownership and subscription status
@@ -312,29 +314,31 @@ export default function QuizPlayLayout({
   }, [subscription?.isSubscribed])
 
   const subscriptionExpired = useMemo(() => {
-    if (!subscription?.expirationDate && !subscription?.currentPeriodEnd) return false
-    const endDate = subscription.expirationDate || subscription.currentPeriodEnd
-    return endDate ? new Date(endDate) < new Date() : false
-  }, [subscription?.expirationDate, subscription?.currentPeriodEnd])
+    if (!subscription?.expirationDate) return false
+    return new Date(subscription.expirationDate) < new Date()
+  }, [subscription?.expirationDate])
 
   // Auto-increment timer when not provided
   const [elapsed, setElapsed] = useState(0)
   useEffect(() => {
     setIsLoaded(true)
+    // Only start local timer if no timeSpent prop is provided
+    if (timeSpent > 0) return
+    
     const interval = setInterval(() => {
       if (!isPaused) {
-        setElapsed((e) => e + 1)
+        setElapsed((e) => Math.max(0, e + 1))
       }
     }, 1000)
     return () => clearInterval(interval)
-  }, [isPaused])
+  }, [isPaused, timeSpent])
 
   // Engagement modal: show once per slug
   useEffect(() => {
     if (!quizSlug) return
     const key = `ai_quiz_engagement_${quizSlug}`
-    const seen = typeof window !== 'undefined' ? localStorage.getItem(key) : '1'
-    if (!seen) {
+    const seen = typeof window !== 'undefined' ? localStorage.getItem(key) : null
+    if (seen === null) {
       const t = setTimeout(() => setShowEngage(true), 2000)
       return () => clearTimeout(t)
     }
@@ -342,10 +346,17 @@ export default function QuizPlayLayout({
 
   const title = quizData?.title || "Untitled Quiz"
   const difficulty = quizData?.difficulty || "medium"
-  const totalQuestions = Math.max(1, quizData?.questions?.length || 1)
+  // Ensure totalQuestions is always at least 1 to prevent division by zero
+  const totalQuestions = Math.max(1, Array.isArray(quizData?.questions) ? quizData.questions.length : 1)
+  // Ensure questionNumber is within valid bounds [1, totalQuestions]
   const questionNumber = Math.max(
     1,
-    Math.min(quizData?.currentQuestionIndex !== undefined ? quizData.currentQuestionIndex + 1 : 1, totalQuestions),
+    Math.min(
+      quizData?.currentQuestionIndex !== undefined && typeof quizData.currentQuestionIndex === 'number' 
+        ? quizData.currentQuestionIndex + 1 
+        : 1, 
+      totalQuestions
+    )
   )
 
   const toggleSidebar = useCallback(() => {
@@ -544,16 +555,23 @@ export default function QuizPlayLayout({
 
   const canResume = questionNumber > 1
 
-  // Handle responsive sidebar behavior
+  // Handle responsive sidebar behavior - only on mount and when switching between mobile/desktop
+  const prevIsMobileRef = useRef<boolean | null>(null)
   useEffect(() => {
-    if (isMobile && sidebarOpen) {
-      // Close sidebar on mobile to prevent auto-opening
-      setSidebarOpen(false)
-    } else if (!isMobile && !sidebarOpen) {
-      // Optionally open sidebar on desktop if it was closed
-      // setSidebarOpen(true) // Uncomment if you want to auto-open on desktop
+    // Skip on initial mount
+    if (prevIsMobileRef.current === null) {
+      prevIsMobileRef.current = isMobile
+      return
     }
-  }, [isMobile, sidebarOpen])
+    
+    // Only act when transitioning between mobile and desktop
+    if (prevIsMobileRef.current !== isMobile) {
+      if (isMobile && sidebarOpen) {
+        setSidebarOpen(false)
+      }
+      prevIsMobileRef.current = isMobile
+    }
+  }, [isMobile])
 
   // Check if quiz should be visible to current user
   const canViewQuiz = useMemo(() => {
@@ -593,7 +611,8 @@ export default function QuizPlayLayout({
 
   if (!isLoaded) return null
 
-  const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
+  // Ensure displaySeconds is always a valid positive number
+  const displaySeconds = Math.max(0, timeSpent > 0 ? timeSpent : elapsed)
 
   return (
     <div className={cn(
@@ -692,7 +711,7 @@ export default function QuizPlayLayout({
                           canDelete={isOwner}
                           showPdfGeneration={true}
                           variant="compact"
-                          userId={authUser?.id}
+                          userId={quizData?.userId}
                           onVisibilityChange={handleVisibilityChange}
                           onFavoriteChange={handleFavoriteChange}
                           onDelete={handleDelete}
@@ -824,7 +843,7 @@ export default function QuizPlayLayout({
                     canDelete={isOwner}
                     showPdfGeneration={true}
                     variant="compact"
-                    userId={authUser?.id}
+                    userId={quizData?.userId}
                     onVisibilityChange={handleVisibilityChange}
                     onFavoriteChange={handleFavoriteChange}
                     onDelete={handleDelete}

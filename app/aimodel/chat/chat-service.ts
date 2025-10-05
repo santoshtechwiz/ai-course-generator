@@ -17,35 +17,10 @@ import { streamText, generateText } from "ai"
 import { type CoreMessage } from "ai"
 import { prisma } from "@/lib/db"
 import { logger } from "@/lib/logger"
+import type { ChatMessage, ChatRequest, ChatResponse, ChatStreamResponse } from "./types"
 
-export interface ChatMessage {
-  role: 'user' | 'assistant' | 'system'
-  content: string
-  id: string
-  timestamp?: number
-  metadata?: Record<string, any>
-}
-
-export interface ChatRequest {
-  message: string
-  sessionId?: string
-  includeContext?: boolean
-  maxContextItems?: number
-}
-
-export interface ChatResponse {
-  message: string
-  messageId: string
-  sessionId: string
-  context?: EmbeddingDocument[]
-  tokensUsed?: number
-  processingTime?: number
-}
-
-export interface ChatStreamResponse {
-  stream: ReadableStream
-  sessionId: string
-}
+// Re-export types for backward compatibility
+export type { ChatMessage, ChatRequest, ChatResponse, ChatStreamResponse }
 
 export class ChatService extends BaseAIService {
   private embeddingManager: EmbeddingManager

@@ -33,12 +33,14 @@ interface PricingPageProps {
 }
 import { calculateSavings } from "@/types/subscription/utils"
 import FeatureComparison from "./FeatureComparison"
-import { SUBSCRIPTION_PLANS } from "./subscription-plans"
+import { SUBSCRIPTION_PLANS as UNIFIED_SUBSCRIPTION_PLANS, getPlanConfig, PRICING } from "@/types/subscription-plans"
 import DevModeBanner from "./subscription-status/DevModeBanner"
-import FAQSection from "./subscription-status/FaqSection"
+import { buildFeatureList } from "@/utils/subscription-ui-helpers"
 import PlanCards from "./subscription-status/PlanCard"
-import TokenUsageExplanation from "./subscription-status/TokenUsageExplanation"
 import { useRouter } from "next/navigation"
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
+import { Check, Zap } from "lucide-react"
+import { motion } from "framer-motion"
 
 export function PricingPage({
   userId,
@@ -310,13 +312,35 @@ export function PricingPage({
     ? Math.ceil((new Date(subscriptionData.expirationDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null
 
-  const planOrder = ["FREE", "BASIC", "PREMIUM", "ULTIMATE"];
+  const planOrder: SubscriptionPlanType[] = ["FREE", "BASIC", "PREMIUM", "ENTERPRISE"];
   const currentPlanIndex = planOrder.indexOf(currentPlan);
 
-  const availablePlans = SUBSCRIPTION_PLANS.filter((plan) => {
-    const planIndex = planOrder.indexOf(plan.id as SubscriptionPlanType);
-    return planIndex >= currentPlanIndex;
-  });
+  // Convert plans to array format  
+  const availablePlans = planOrder
+    .map(planId => {
+      const config = getPlanConfig(planId)
+      const yearlyPrice = config.price * 12
+      
+      // Build features list using helper (replaces 15+ lines of manual building)
+      const features = buildFeatureList(config) as string[]
+      
+      return {
+        id: planId,
+        name: config.name,
+        description: `${config.name} Plan - ${config.popular ? 'Most Popular!' : 'Get started'}`,
+        monthlyPrice: config.price,
+        yearlyPrice: yearlyPrice,
+        features,
+        limitations: [],
+        tokens: config.monthlyCredits,
+        limits: { maxQuestionsPerQuiz: config.maxQuestionsPerQuiz },
+        options: [
+          { duration: 1, price: config.price },
+          { duration: 6, price: yearlyPrice / 2 }
+        ]
+      }
+    })
+    .filter((_, index) => index >= currentPlanIndex);
 
   return (
     <div className="container max-w-6xl space-y-10 px-4 sm:px-6 animate-in fade-in duration-500">
@@ -384,13 +408,7 @@ export function PricingPage({
         <Label htmlFor="billing-toggle">
           6 Months{" "}
           <Badge variant="outline">
-            Save{" "}
-            {calculateSavings(
-              SUBSCRIPTION_PLANS[2].options[0].price,
-              SUBSCRIPTION_PLANS[2].options[1].price,
-              12,
-            )}
-            %
+            Save 17%
           </Badge>
         </Label>
       </div>
@@ -400,10 +418,19 @@ export function PricingPage({
           {availablePlans.map((plan) => {
             const option = plan.options.find((o: any) => o.duration === selectedDuration)!
             const price = getDiscountedPrice(option.price)
+            const planConfig = getPlanConfig(plan.id as SubscriptionPlanType)
             return (
               <div key={plan.id} className="p-4 border rounded-xl shadow-sm">
-                <h3 className="font-semibold text-lg">{plan.name}</h3>
+                <h3 className="font-semibold text-lg">{planConfig.name}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
                 <div className="text-2xl font-bold mt-2">${price}</div>
+                <ul className="text-xs mt-3 space-y-1">
+                  {plan.features.slice(0, 3).map((benefit: string, i: number) => (
+                    <li key={i} className="flex items-center gap-1">
+                      <span className="text-green-500">✓</span> {benefit}
+                    </li>
+                  ))}
+                </ul>
                 <Button
                   className="mt-4 w-full"
                   onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, selectedDuration)}
@@ -418,7 +445,7 @@ export function PricingPage({
         </div>
       ) : (
         <PlanCards
-          plans={SUBSCRIPTION_PLANS}
+          plans={availablePlans}
           currentPlan={currentPlan}
           subscriptionStatus={normalizedStatus}
           loading={loading}
@@ -459,9 +486,107 @@ export function PricingPage({
         />
       )}
 
-      <TokenUsageExplanation />
+      {/* Token Usage Explanation - Inline */}
+      <motion.div
+        className="mt-12 p-8 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-md"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "-100px" }}
+      >
+        <div className="flex flex-col md:flex-row gap-6 items-center">
+          <div className="md:w-1/4 flex justify-center">
+            <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-6 rounded-full shadow-lg transform hover:scale-105 transition-transform duration-300">
+              <Zap className="h-12 w-12 text-white" />
+            </div>
+          </div>
+          <div className="md:w-3/4 text-left">
+            <h3 className="text-2xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+              Understanding Token Usage
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              Tokens are used to generate quizzes and access various features on our platform. Each quiz you generate
+              consumes a certain number of tokens based on the complexity and type of questions.
+            </p>
+            <ul className="space-y-2 mb-4">
+              <li className="flex items-start">
+                <Check className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
+                <span>Generating multiple-choice quizzes consumes fewer tokens</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
+                <span>Creating open-ended or code-based quizzes may require more tokens</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
+                <span>Downloading quizzes in PDF format also consumes tokens</span>
+              </li>
+            </ul>
+            <p className="text-muted-foreground">
+              You can purchase additional tokens at any time to continue using our services.
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
       <FeatureComparison />
-      <FAQSection />
+
+      {/* FAQ Section - Inline */}
+      <div className="mt-12">
+        <h2 className="text-2xl font-bold mb-6 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+          Frequently Asked Questions
+        </h2>
+        <Accordion type="single" collapsible className="w-full space-y-4">
+          <AccordionItem value="item-0" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+            <AccordionTrigger className="text-left text-base font-medium px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
+              What payment methods do you accept?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground px-4 pb-4 pt-2 bg-slate-50/50 dark:bg-slate-800/50">
+              We accept all major credit cards (Visa, MasterCard, American Express) and PayPal for your convenience.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-1" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+            <AccordionTrigger className="text-left text-base font-medium px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
+              Can I cancel my subscription at any time?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground px-4 pb-4 pt-2 bg-slate-50/50 dark:bg-slate-800/50">
+              Yes, you can cancel your subscription at any time. Your access will continue until the end of your current billing period.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-2" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+            <AccordionTrigger className="text-left text-base font-medium px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
+              What happens to my data if I cancel?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground px-4 pb-4 pt-2 bg-slate-50/50 dark:bg-slate-800/50">
+              Your data remains accessible for 30 days after cancellation. After that, it will be permanently deleted.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-3" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+            <AccordionTrigger className="text-left text-base font-medium px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
+              Do you offer refunds?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground px-4 pb-4 pt-2 bg-slate-50/50 dark:bg-slate-800/50">
+              We offer a 14-day money-back guarantee on all paid plans. Contact support for a full refund within this period.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-4" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+            <AccordionTrigger className="text-left text-base font-medium px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
+              Can I upgrade or downgrade my plan?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground px-4 pb-4 pt-2 bg-slate-50/50 dark:bg-slate-800/50">
+              Yes, you can upgrade at any time. Downgrades take effect at the end of your current billing period.
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+        <div className="mt-8 text-center">
+          <Button
+            variant="outline"
+            onClick={() => (window.location.href = "/contact")}
+            className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300"
+          >
+            Contact Support
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }

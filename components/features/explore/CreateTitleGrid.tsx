@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   FileQuestion,
@@ -13,13 +14,15 @@ import {
   FileText,
   Brain,
   Sparkles,
-  Clock,
   Target,
   CheckCircle,
   ArrowRight,
   Star,
   Zap,
   BookMarked,
+  Lock,
+  Crown,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,60 +47,62 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription';
+import { getPlanConfig, isQuizTypeAvailable } from '@/types/subscription-plans';
+import type { SubscriptionPlanType } from '@/types/subscription';
+import { useToast } from '@/hooks/use-toast';
 
 // Enhanced color system with glassmorphism
-const getColorClasses = (color: string, isPremium: boolean) => {
+const getColorClasses = (color: string, isLocked: boolean) => {
   const colorMap = {
     blue: {
-      card: isPremium
-        ? "backdrop-blur-sm bg-gradient-to-br from-amber-50/80 via-orange-50/80 to-yellow-50/80 hover:from-amber-100/90 hover:via-orange-100/90 hover:to-yellow-100/90 dark:from-amber-950/80 dark:via-orange-950/80 dark:to-yellow-950/80 dark:hover:from-amber-900/90 dark:hover:via-orange-900/90 dark:hover:to-yellow-900/90 border-amber-200/50 dark:border-amber-700/50"
+      card: isLocked
+        ? "backdrop-blur-sm bg-gradient-to-br from-gray-50/80 via-slate-50/80 to-gray-50/80 hover:from-gray-100/90 hover:via-slate-100/90 hover:to-gray-100/90 dark:from-gray-950/80 dark:via-slate-950/80 dark:to-gray-950/80 dark:hover:from-gray-900/90 dark:hover:via-slate-900/90 dark:hover:to-gray-900/90 border-gray-200/50 dark:border-gray-700/50 opacity-75"
         : "backdrop-blur-sm bg-gradient-to-br from-blue-50/80 via-indigo-50/80 to-purple-50/80 hover:from-blue-100/90 hover:via-indigo-100/90 hover:to-purple-100/90 dark:from-blue-950/80 dark:via-indigo-950/80 dark:to-purple-950/80 dark:hover:from-blue-900/90 dark:hover:via-indigo-900/90 dark:hover:to-purple-900/90 border-blue-200/50 dark:border-blue-700/50",
-      icon: isPremium ? "text-amber-600 dark:text-amber-400" : "text-blue-600 dark:text-blue-400",
-      button: isPremium ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600" : "bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-blue-600 dark:text-blue-400",
+      button: isLocked ? "bg-gradient-to-r from-gray-400 to-gray-500" : "bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
     },
     green: {
-      card: isPremium
-        ? "backdrop-blur-sm bg-gradient-to-br from-amber-50/80 via-orange-50/80 to-yellow-50/80 hover:from-amber-100/90 hover:via-orange-100/90 hover:to-yellow-100/90 dark:from-amber-950/80 dark:via-orange-950/80 dark:to-yellow-950/80 dark:hover:from-amber-900/90 dark:hover:via-orange-900/90 dark:hover:to-yellow-900/90 border-amber-200/50 dark:border-amber-700/50"
+      card: isLocked
+        ? "backdrop-blur-sm bg-gradient-to-br from-gray-50/80 via-slate-50/80 to-gray-50/80 hover:from-gray-100/90 hover:via-slate-100/90 hover:to-gray-100/90 dark:from-gray-950/80 dark:via-slate-950/80 dark:to-gray-950/80 dark:hover:from-gray-900/90 dark:hover:via-slate-900/90 dark:hover:to-gray-900/90 border-gray-200/50 dark:border-gray-700/50 opacity-75"
         : "backdrop-blur-sm bg-gradient-to-br from-green-50/80 via-emerald-50/80 to-teal-50/80 hover:from-green-100/90 hover:via-emerald-100/90 hover:to-teal-100/90 dark:from-green-950/80 dark:via-emerald-950/80 dark:to-teal-950/80 dark:hover:from-green-900/90 dark:hover:via-emerald-900/90 dark:hover:to-teal-900/90 border-green-200/50 dark:border-green-700/50",
-      icon: isPremium ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400",
-      button: isPremium ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600" : "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-green-600 dark:text-green-400",
+      button: isLocked ? "bg-gradient-to-r from-gray-400 to-gray-500" : "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
     },
     purple: {
-      card: isPremium
-        ? "backdrop-blur-sm bg-gradient-to-br from-amber-50/80 via-orange-50/80 to-yellow-50/80 hover:from-amber-100/90 hover:via-orange-100/90 hover:to-yellow-100/90 dark:from-amber-950/80 dark:via-orange-950/80 dark:to-yellow-950/80 dark:hover:from-amber-900/90 dark:hover:via-orange-900/90 dark:hover:to-yellow-900/90 border-amber-200/50 dark:border-amber-700/50"
+      card: isLocked
+        ? "backdrop-blur-sm bg-gradient-to-br from-gray-50/80 via-slate-50/80 to-gray-50/80 hover:from-gray-100/90 hover:via-slate-100/90 hover:to-gray-100/90 dark:from-gray-950/80 dark:via-slate-950/80 dark:to-gray-950/80 dark:hover:from-gray-900/90 dark:hover:via-slate-900/90 dark:hover:to-gray-900/90 border-gray-200/50 dark:border-gray-700/50 opacity-75"
         : "backdrop-blur-sm bg-gradient-to-br from-purple-50/80 via-violet-50/80 to-fuchsia-50/80 hover:from-purple-100/90 hover:via-violet-100/90 hover:to-fuchsia-100/90 dark:from-purple-950/80 dark:via-violet-950/80 dark:to-fuchsia-950/80 dark:hover:from-purple-900/90 dark:hover:via-violet-900/90 dark:hover:to-fuchsia-900/90 border-purple-200/50 dark:border-purple-700/50",
-      icon: isPremium ? "text-amber-600 dark:text-amber-400" : "text-purple-600 dark:text-purple-400",
-      button: isPremium ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600" : "bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600"
+      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-purple-600 dark:text-purple-400",
+      button: isLocked ? "bg-gradient-to-r from-gray-400 to-gray-500" : "bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600"
     },
     orange: {
-      card: isPremium
-        ? "backdrop-blur-sm bg-gradient-to-br from-amber-50/80 via-orange-50/80 to-yellow-50/80 hover:from-amber-100/90 hover:via-orange-100/90 hover:to-yellow-100/90 dark:from-amber-950/80 dark:via-orange-950/80 dark:to-yellow-950/80 dark:hover:from-amber-900/90 dark:hover:via-orange-900/90 dark:hover:to-yellow-900/90 border-amber-200/50 dark:border-amber-700/50"
+      card: isLocked
+        ? "backdrop-blur-sm bg-gradient-to-br from-gray-50/80 via-slate-50/80 to-gray-50/80 hover:from-gray-100/90 hover:via-slate-100/90 hover:to-gray-100/90 dark:from-gray-950/80 dark:via-slate-950/80 dark:to-gray-950/80 dark:hover:from-gray-900/90 dark:hover:via-slate-900/90 dark:hover:to-gray-900/90 border-gray-200/50 dark:border-gray-700/50 opacity-75"
         : "backdrop-blur-sm bg-gradient-to-br from-orange-50/80 via-red-50/80 to-pink-50/80 hover:from-orange-100/90 hover:via-red-100/90 hover:to-pink-100/90 dark:from-orange-950/80 dark:via-red-950/80 dark:to-pink-950/80 dark:hover:from-orange-900/90 dark:hover:via-red-900/90 dark:hover:to-pink-900/90 border-orange-200/50 dark:border-orange-700/50",
-      icon: isPremium ? "text-amber-600 dark:text-amber-400" : "text-orange-600 dark:text-orange-400",
-      button: isPremium ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600" : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-orange-600 dark:text-orange-400",
+      button: isLocked ? "bg-gradient-to-r from-gray-400 to-gray-500" : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
     },
     teal: {
-      card: isPremium
-        ? "backdrop-blur-sm bg-gradient-to-br from-amber-50/80 via-orange-50/80 to-yellow-50/80 hover:from-amber-100/90 hover:via-orange-100/90 hover:to-yellow-100/90 dark:from-amber-950/80 dark:via-orange-950/80 dark:to-yellow-950/80 dark:hover:from-amber-900/90 dark:hover:via-orange-900/90 dark:hover:to-yellow-900/90 border-amber-200/50 dark:border-amber-700/50"
+      card: isLocked
+        ? "backdrop-blur-sm bg-gradient-to-br from-gray-50/80 via-slate-50/80 to-gray-50/80 hover:from-gray-100/90 hover:via-slate-100/90 hover:to-gray-100/90 dark:from-gray-950/80 dark:via-slate-950/80 dark:to-gray-950/80 dark:hover:from-gray-900/90 dark:hover:via-slate-900/90 dark:hover:to-gray-900/90 border-gray-200/50 dark:border-gray-700/50 opacity-75"
         : "backdrop-blur-sm bg-gradient-to-br from-teal-50/80 via-cyan-50/80 to-sky-50/80 hover:from-teal-100/90 hover:via-cyan-100/90 hover:to-sky-100/90 dark:from-teal-950/80 dark:via-cyan-950/80 dark:to-sky-950/80 dark:hover:from-teal-900/90 dark:hover:via-cyan-900/90 dark:hover:to-sky-900/90 border-teal-200/50 dark:border-teal-700/50",
-      icon: isPremium ? "text-amber-600 dark:text-amber-400" : "text-teal-600 dark:text-teal-400",
-      button: isPremium ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600" : "bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
+      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-teal-600 dark:text-teal-400",
+      button: isLocked ? "bg-gradient-to-r from-gray-400 to-gray-500" : "bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
     },
     indigo: {
-      card: isPremium
-        ? "backdrop-blur-sm bg-gradient-to-br from-amber-50/80 via-orange-50/80 to-yellow-50/80 hover:from-amber-100/90 hover:via-orange-100/90 hover:to-yellow-100/90 dark:from-amber-950/80 dark:via-orange-950/80 dark:to-yellow-950/80 dark:hover:from-amber-900/90 dark:hover:via-orange-900/90 dark:hover:to-yellow-900/90 border-amber-200/50 dark:border-amber-700/50"
+      card: isLocked
+        ? "backdrop-blur-sm bg-gradient-to-br from-gray-50/80 via-slate-50/80 to-gray-50/80 hover:from-gray-100/90 hover:via-slate-100/90 hover:to-gray-100/90 dark:from-gray-950/80 dark:via-slate-950/80 dark:to-gray-950/80 dark:hover:from-gray-900/90 dark:hover:via-slate-900/90 dark:hover:to-gray-900/90 border-gray-200/50 dark:border-gray-700/50 opacity-75"
         : "backdrop-blur-sm bg-gradient-to-br from-indigo-50/80 via-blue-50/80 to-cyan-50/80 hover:from-indigo-100/90 hover:via-blue-100/90 hover:to-cyan-100/90 dark:from-indigo-950/80 dark:via-blue-950/80 dark:to-cyan-950/80 dark:hover:from-indigo-900/90 dark:hover:via-blue-900/90 dark:hover:to-cyan-900/90 border-indigo-200/50 dark:border-indigo-700/50",
-      icon: isPremium ? "text-amber-600 dark:text-amber-400" : "text-indigo-600 dark:text-indigo-400",
-      button: isPremium ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600" : "bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600"
+      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-indigo-600 dark:text-indigo-400",
+      button: isLocked ? "bg-gradient-to-r from-gray-400 to-gray-500" : "bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600"
     },
     rose: {
-      card: isPremium
-        ? "backdrop-blur-sm bg-gradient-to-br from-amber-50/80 via-orange-50/80 to-yellow-50/80 hover:from-amber-100/90 hover:via-orange-100/90 hover:to-yellow-100/90 dark:from-amber-950/80 dark:via-orange-950/80 dark:to-yellow-950/80 dark:hover:from-amber-900/90 dark:hover:via-orange-900/90 dark:hover:to-yellow-900/90 border-amber-200/50 dark:border-amber-700/50"
+      card: isLocked
+        ? "backdrop-blur-sm bg-gradient-to-br from-gray-50/80 via-slate-50/80 to-gray-50/80 hover:from-gray-100/90 hover:via-slate-100/90 hover:to-gray-100/90 dark:from-gray-950/80 dark:via-slate-950/80 dark:to-gray-950/80 dark:hover:from-gray-900/90 dark:hover:via-slate-900/90 dark:hover:to-gray-900/90 border-gray-200/50 dark:border-gray-700/50 opacity-75"
         : "backdrop-blur-sm bg-gradient-to-br from-rose-50/80 via-pink-50/80 to-purple-50/80 hover:from-rose-100/90 hover:via-pink-100/90 hover:to-purple-100/90 dark:from-rose-950/80 dark:via-pink-950/80 dark:to-purple-950/80 dark:hover:from-rose-900/90 dark:hover:via-pink-900/90 dark:hover:to-purple-900/90 border-rose-200/50 dark:border-rose-700/50",
-      icon: isPremium ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400",
-      button: isPremium ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600" : "bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600"
+      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-rose-600 dark:text-rose-400",
+      button: isLocked ? "bg-gradient-to-r from-gray-400 to-gray-500" : "bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600"
     }
   };
   
@@ -113,165 +118,158 @@ interface CreateTileGridProps {
   taglines: string[];
   color: string;
   category: string;
-  isPremium: boolean;
+  requiredPlan: SubscriptionPlanType;
   benefits?: string[];
-  timeToCreate?: string;
   difficulty?: "Easy" | "Medium" | "Advanced";
+  quizType?: 'mcq' | 'fill-blanks' | 'open-ended' | 'code-quiz' | 'video-quiz';
 }
 
 const tiles = [
   {
     icon: FileQuestion,
     title: "Quiz Maker",
-    description: "Make fun quizzes in seconds. Perfect for testing what you know.",
+    description: "Create multiple-choice quizzes with AI-generated questions.",
     url: "/dashboard/mcq",
     color: "blue",
     category: "assessment",
+    quizType: 'mcq' as const,
+    requiredPlan: 'FREE' as SubscriptionPlanType,
     taglines: [
       "Create quizzes for any subject",
-     
-      "Customize question types",
+      "AI-powered question generation",
       "Track learning progress"
     ],
-    isPremium: false,
-    timeToCreate: "2 minutes",
     difficulty: "Easy" as const,
     benefits: [
-      "Quick quiz creation",
-      "Adjustable difficulty",
-      "Performance tracking"
+      "Multiple-choice format",
+      "Instant AI generation",
+      "Free tier available"
     ],
   },
   {
     icon: FileText,
     title: "Document Quiz",
-    description: "Turn any PDF or document into a quiz instantly. Great for study materials.",
+    description: "Upload PDFs and documents to generate quizzes automatically.",
     url: "/dashboard/document",
     color: "orange",
     category: "assessment",
+    quizType: 'mcq' as const,
+    requiredPlan: 'BASIC' as SubscriptionPlanType,
     taglines: [
-      "Turn documents into quizzes",
-      "Perfect for study materials",
-      "Generate questions from content",
-      "Works with PDFs and documents"
+      "Upload PDF or document",
+      "AI extracts key concepts",
+      "Generate quizzes instantly"
     ],
-    isPremium: false,
-    timeToCreate: "1 minute",
     difficulty: "Easy" as const,
     benefits: [
-      "Convert documents to quizzes",
-      "Extract key information",
-      "Multiple file formats"
+      "PDF & document support",
+      "Auto-extract questions",
+      "Requires Basic plan"
     ],
   },
   {
     icon: PenTool,
     title: "Essay Questions",
-    description: "Create thoughtful essay questions that make you think deeper about topics.",
+    description: "Generate open-ended essay questions for deeper learning.",
     url: "/dashboard/openended",
     color: "green",
     category: "assessment",
+    quizType: 'open-ended' as const,
+    requiredPlan: 'BASIC' as SubscriptionPlanType,
     taglines: [
-      "Build questions that make you think",
-      "Perfect for deeper learning",
-    
-      "Great for any subject level"
+      "Open-ended questions",
+      "Critical thinking focus",
+      "AI-generated prompts"
     ],
-    isPremium: false,
-    timeToCreate: "3 minutes",
     difficulty: "Medium" as const,
     benefits: [
-      "Encourages deep thinking",
-      "Writing practice",
-      "Flexible for any subject"
+      "Essay-style questions",
+      "Deeper understanding",
+      "Any subject supported"
     ],
   },
   {
     icon: AlignLeft,
     title: "Fill the Blanks",
-    description: "Create gap-fill exercises to practice vocabulary and key concepts.",
+    description: "Create fill-in-the-blank exercises for vocabulary practice.",
     url: "/dashboard/blanks",
     color: "rose",
     category: "assessment",
+    quizType: 'fill-blanks' as const,
+    requiredPlan: 'PREMIUM' as SubscriptionPlanType,
     taglines: [
-      "Master vocabulary with fun exercises",
-      "Focus on the most important terms",
-      "Adjust difficulty as you learn",
-      "Perfect for language learning"
+      "Fill-in-the-blank format",
+      "Vocabulary reinforcement",
+      "AI identifies key terms"
     ],
-    isPremium: false,
-    timeToCreate: "2 minutes",
     difficulty: "Easy" as const,
     benefits: [
-      "Practice vocabulary",
-      "Reinforce key concepts",
-      "Adjustable difficulty"
+      "Gap-fill exercises",
+      "Vocabulary focus",
+      "Premium feature"
     ],
   },
   {
     icon: BookOpen,
     title: "Course Builder",
-    description: "Build complete courses with lessons, quizzes, and everything organized perfectly.",
+    description: "Build structured courses with AI-generated chapters and content.",
     url: "/dashboard/create",
     color: "purple",
     category: "creation",
+    quizType: 'video-quiz' as const,
+    requiredPlan: 'PREMIUM' as SubscriptionPlanType,
     taglines: [
-      "Build complete courses",
-      "Organize lessons and quizzes",
-      "Add various content types",
-      "Track student progress"
+      "Full course creation",
+      "AI-generated chapters",
+      "Structured learning paths"
     ],
-    isPremium: false,
-    timeToCreate: "30 minutes",
     difficulty: "Advanced" as const,
     benefits: [
-      "Organized course structure",
-      "Multiple content types",
-      "Progress tracking"
+      "Complete course structure",
+      "Video & text content",
+      "Progress tracking included"
     ],
   },
   {
     icon: Code,
     title: "Coding Practice",
-    description: "Create coding challenges that test real programming skills with instant feedback.",
+    description: "Generate coding challenges with AI for programming practice.",
     url: "/dashboard/code",
     color: "teal",
     category: "creation",
+    quizType: 'code-quiz' as const,
+    requiredPlan: 'ENTERPRISE' as SubscriptionPlanType,
     taglines: [
-      "Practice coding with real challenges",
-      "Get instant feedback on your code",
-      "Learn any programming language",
-      "From beginner to expert level"
+      "Coding challenge generation",
+      "Multiple languages supported",
+      "Enterprise-level feature"
     ],
-    isPremium: false,
-    timeToCreate: "5 minutes",
     difficulty: "Medium" as const,
     benefits: [
-      "Multiple languages",
-      "Code testing",
-      "Realistic challenges"
+      "Programming exercises",
+      "Multi-language support",
+      "Enterprise plan required"
     ],
   },
   {
     icon: Brain,
     title: "Smart Flashcards",
-    description: "Create flashcards that learn with you and focus on what you need most.",
+    description: "AI-powered flashcards for effective memorization and review.",
     url: "/dashboard/flashcard",
     color: "indigo",
     category: "study",
+    quizType: 'mcq' as const,
+    requiredPlan: 'BASIC' as SubscriptionPlanType,
     taglines: [
-      "Create effective flashcards",
-      "Focus on what you need",
-      "Better memorization",
-      "Track your progress"
+      "AI-generated flashcards",
+      "Spaced repetition system",
+      "Quick memorization"
     ],
-    isPremium: false,
-    timeToCreate: "3 minutes",
     difficulty: "Easy" as const,
     benefits: [
-      "Spaced repetition",
-      "Focus on weak areas",
-      "Create from notes"
+      "Flashcard format",
+      "AI content generation",
+      "Study mode included"
     ],
   },
 ];
@@ -328,14 +326,32 @@ function Tile({
   index,
   taglines,
   color,
-  isPremium,
+  requiredPlan,
   benefits,
-  timeToCreate,
   difficulty,
+  quizType,
 }: CreateTileGridProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentTagline, setCurrentTagline] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+  
+  const { subscription, isLoading } = useUnifiedSubscription();
+  const userPlan = (subscription?.subscriptionPlan || 'FREE') as SubscriptionPlanType;
+  
+  // Check if user has access to this quiz type
+  const hasAccess = useMemo(() => {
+    if (quizType) {
+      return isQuizTypeAvailable(userPlan, quizType);
+    }
+    // For non-quiz features, use plan hierarchy
+    const planHierarchy = { FREE: 0, BASIC: 1, PREMIUM: 2, ENTERPRISE: 3 };
+    return planHierarchy[userPlan] >= planHierarchy[requiredPlan];
+  }, [userPlan, requiredPlan, quizType]);
+
+  const isLocked = !hasAccess;
+  const requiredPlanConfig = getPlanConfig(requiredPlan);
 
   const taglineInterval = useMemo(() => {
     if (isOpen) {
@@ -352,7 +368,20 @@ function Tile({
     };
   }, [taglineInterval]);
 
-  const colorClasses = getColorClasses(color, isPremium);
+  const colorClasses = getColorClasses(color, isLocked);
+
+  const handleAccess = () => {
+    if (isLocked) {
+      toast({
+        title: "Upgrade Required",
+        description: `This feature requires ${requiredPlanConfig.name} plan or higher. Upgrade to unlock!`,
+        variant: "destructive",
+      });
+      router.push('/dashboard/subscription');
+    } else {
+      router.push(url);
+    }
+  };
 
   return (
     <>
@@ -368,9 +397,30 @@ function Tile({
           className="h-full"
         >
           <Card
-            className={`h-full flex flex-col justify-between transition-all duration-500 border-2 ${colorClasses.card} cursor-pointer hover:shadow-2xl hover:shadow-black/10 relative overflow-hidden group`}
-            onClick={() => setIsOpen(true)}
+            className={`h-full flex flex-col justify-between transition-all duration-500 border-2 ${colorClasses.card} ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer'} hover:shadow-2xl hover:shadow-black/10 relative overflow-hidden group`}
+            onClick={(e) => {
+              if (isLocked) {
+                e.preventDefault();
+                handleAccess();
+              } else {
+                setIsOpen(true);
+              }
+            }}
           >
+            {/* Lock overlay */}
+            {isLocked && (
+              <div className="absolute inset-0 bg-black/5 dark:bg-black/20 backdrop-blur-[2px] z-10 flex items-center justify-center pointer-events-none">
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ duration: 0.5, type: "spring" }}
+                  className="bg-white/90 dark:bg-gray-900/90 rounded-full p-4 shadow-2xl"
+                >
+                  <Lock className="h-10 w-10 text-gray-600 dark:text-gray-400" />
+                </motion.div>
+              </div>
+            )}
+
             {/* Floating elements background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
               <motion.div
@@ -429,21 +479,33 @@ function Tile({
                 </div>
                 
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {isPremium && (
+                  {isLocked ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <motion.div
-                          whileHover={{ scale: 1.1, rotate: 5 }}
+                          whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.95 }}
                         >
-                          <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-300 font-semibold text-xs">
-                            <Sparkles className="h-3 w-3 mr-1" />
-                            Pro
+                          <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/50 dark:to-yellow-900/50 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700 font-semibold text-xs">
+                            <Crown className="h-3 w-3 mr-1" />
+                            {requiredPlanConfig.name}
                           </Badge>
                         </motion.div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Premium feature - upgrade to unlock</p>
+                        <p>Requires {requiredPlanConfig.name} plan - Upgrade to unlock!</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : requiredPlan !== 'FREE' && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Unlocked
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>You have access to this feature!</p>
                       </TooltipContent>
                     </Tooltip>
                   )}
@@ -452,14 +514,6 @@ function Tile({
               
               {/* Metadata */}
               <div className="flex items-center gap-3 mt-2">
-                <motion.div
-                  className="flex items-center gap-1 text-xs text-muted-foreground"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <Clock className="h-3 w-3" />
-                  {timeToCreate}
-                </motion.div>
-
                 <motion.div whileHover={{ scale: 1.05 }}>
                   <Badge variant="outline" className={`text-xs ${getDifficultyColor(difficulty!)}`}>
                     <Target className="h-3 w-3 mr-1" />
@@ -481,11 +535,26 @@ function Tile({
             </CardContent>
 
             <CardFooter className="pt-4">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full">
-                <Button className={`w-full transition-all duration-300 font-semibold ${colorClasses.button} text-white shadow-lg hover:shadow-xl group`}>
+              <motion.div whileHover={{ scale: isLocked ? 1 : 1.05 }} whileTap={{ scale: isLocked ? 1 : 0.95 }} className="w-full">
+                <Button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAccess();
+                  }}
+                  className={`w-full transition-all duration-300 font-semibold ${colorClasses.button} text-white shadow-lg hover:shadow-xl group`}
+                >
                   <span className="flex items-center justify-center">
-                    Get Started
-                    <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                    {isLocked ? (
+                      <>
+                        <Lock className="h-4 w-4 mr-2" />
+                        Upgrade to Unlock
+                      </>
+                    ) : (
+                      <>
+                        Get Started
+                        <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                      </>
+                    )}
                   </span>
                 </Button>
               </motion.div>
@@ -519,10 +588,15 @@ function Tile({
                   </div>
 
                   <div className="flex items-center gap-3">
-                    {isPremium && (
-                      <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-300">
-                        <Sparkles className="h-3 w-3 mr-1" />
-                        Premium
+                    {isLocked ? (
+                      <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/50 dark:to-yellow-900/50 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700">
+                        <Crown className="h-3 w-3 mr-1" />
+                        {requiredPlanConfig.name} Required
+                      </Badge>
+                    ) : requiredPlan !== 'FREE' && (
+                      <Badge className="bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/50 dark:to-emerald-900/50 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Unlocked
                       </Badge>
                     )}
                     <Badge variant="outline" className={getDifficultyColor(difficulty!)}>
@@ -591,13 +665,8 @@ function Tile({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-4"
                 >
-                  <div className="text-center p-4 rounded-lg bg-muted/30 border">
-                    <Clock className={`h-8 w-8 mx-auto mb-2 ${colorClasses.icon}`} />
-                    <div className="font-semibold">{timeToCreate}</div>
-                    <div className="text-sm text-muted-foreground">Time to Create</div>
-                  </div>
                   <div className="text-center p-4 rounded-lg bg-muted/30 border">
                     <Target className={`h-8 w-8 mx-auto mb-2 ${colorClasses.icon}`} />
                     <div className="font-semibold">{difficulty}</div>
@@ -606,7 +675,7 @@ function Tile({
                   <div className="text-center p-4 rounded-lg bg-muted/30 border">
                     <Zap className={`h-8 w-8 mx-auto mb-2 ${colorClasses.icon}`} />
                     <div className="font-semibold">AI Powered</div>
-                    <div className="text-sm text-muted-foreground">Smart Creation</div>
+                    <div className="text-sm text-muted-foreground">Instant Generation</div>
                   </div>
                 </motion.div>
 
@@ -656,9 +725,9 @@ function Tile({
                   </h3>
                   <div className="grid gap-4">
                     {[
-                      "Pick your settings and difficulty",
-                      "Click create and watch the magic",
-                      "Share or use in your learning"
+                      "Enter your topic or upload content",
+                      "AI generates questions instantly",
+                      "Review and use your creation"
                     ].map((step, i) => (
                       <motion.div
                         key={i}
@@ -684,24 +753,39 @@ function Tile({
 
           <DialogFooter className="flex-col sm:flex-row gap-3 p-6 border-t bg-muted/20 flex-shrink-0">
             <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: isLocked ? 1 : 1.02 }}
+              whileTap={{ scale: isLocked ? 1 : 0.98 }}
               className="w-full"
             >
-              <Button
-                asChild
-                className={`w-full h-12 font-bold text-lg ${colorClasses.button} text-white shadow-xl hover:shadow-2xl transition-all duration-300 group`}
-              >
-                <Link href={url}>
+              {isLocked ? (
+                <Button
+                  onClick={handleAccess}
+                  className={`w-full h-12 font-bold text-lg ${colorClasses.button} text-white shadow-xl hover:shadow-2xl transition-all duration-300 group`}
+                >
                   <motion.span
                     className="flex items-center justify-center"
-                    whileHover={{ x: 5 }}
                   >
-                    Start Creating Now
-                    <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                    <Lock className="h-5 w-5 mr-2" />
+                    Upgrade to {requiredPlanConfig.name}
+                    <Crown className="h-5 w-5 ml-2" />
                   </motion.span>
-                </Link>
-              </Button>
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  className={`w-full h-12 font-bold text-lg ${colorClasses.button} text-white shadow-xl hover:shadow-2xl transition-all duration-300 group`}
+                >
+                  <Link href={url}>
+                    <motion.span
+                      className="flex items-center justify-center"
+                      whileHover={{ x: 5 }}
+                    >
+                      Start Creating Now
+                      <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </motion.span>
+                  </Link>
+                </Button>
+              )}
             </motion.div>
           </DialogFooter>
         </DialogContent>

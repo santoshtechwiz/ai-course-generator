@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback, useMemo, useRef, useReducer } from "react"
+import React, { useState, useEffect, useCallback, useMemo, useReducer } from "react"
 import { useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { selectCourseProgressById } from "@/store/slices/courseProgress-slice"
@@ -8,34 +8,22 @@ import { markChapterCompleted } from "@/store/slices/courseProgress-slice"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { 
-  Lock, 
-  User as UserIcon, 
   Play, 
   ChevronLeft,
   ChevronRight,
-  Star,
-  Clock,
-  Users,
-  GraduationCap,
-  Calendar,
   CheckCircle,
   Menu,
   X,
   BookOpen,
-  Award,
-  BarChart3,
   Zap,
-  ChevronDown,
-  ChevronUp,
   Loader2
 } from "lucide-react"
-import store from "@/store"
 import { setCurrentVideoApi } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
-import CourseDetailsTabs, { AccessLevels } from "./CourseDetailsTabs"
+import CourseDetailsTabs from "./CourseDetailsTabs"
 import { formatDuration } from "../utils/formatUtils"
 import { VideoDebug } from "./video/components/VideoDebug"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { AnimatePresence, motion } from "framer-motion"
@@ -44,11 +32,10 @@ import ActionButtons from "./ActionButtons"
 import ReviewsSection from "./ReviewsSection"
 import { cn } from "@/lib/utils"
 import type { BookmarkData } from "./video/types"
-import { isClient } from "@/lib/seo/core-utils"
 import { useCourseProgressSync } from "@/hooks/useCourseProgressSync"
-import { fetchPersonalizedRecommendations } from "@/app/services/recommendationsService"
 import { useVideoState } from "./video/hooks/useVideoState"
-import { enqueueProgress, useProgressMutation, useChapterProgress } from "@/services/enhanced-progress/client"
+import { useProgressMutation, useChapterProgress } from "@/services/enhanced-progress/client"
+import { SignInPrompt, SubscriptionUpgrade } from "@/components/shared"
 import { migratedStorage } from "@/lib/storage"
 import VideoGenerationSection from "./VideoGenerationSection"
 import MobilePlaylistCount from "@/components/course/MobilePlaylistCount"
@@ -917,13 +904,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // Access levels
-  const accessLevels: AccessLevels = useMemo(() => ({
-    isSubscribed: !!userSubscription,
-    isAdmin: !!user?.isAdmin,
-    isAuthenticated: !!user,
-  }), [userSubscription, user])
-
   // Sidebar course data
   const sidebarCourse = useMemo(() => ({
     id: String(course.id),
@@ -953,44 +933,17 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-md"
       >
-        <Card className="border shadow-lg">
-          <CardContent className="p-8 text-center space-y-6">
-            <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-              <Lock className="h-8 w-8 text-primary" />
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold mb-2">Unlock This Lesson</h3>
-              <p className="text-muted-foreground text-sm">
-                Subscribe to access all course content and premium features.
-              </p>
-            </div>
-            <div className="space-y-3">
-              <Button 
-                onClick={() => (window.location.href = "/dashboard/subscription")} 
-                className="w-full" 
-                size="lg"
-              >
-                <Zap className="h-4 w-4 mr-2" />
-                Subscribe Now
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => (window.location.href = "/api/auth/signin")} 
-                className="w-full"
-              >
-                <UserIcon className="h-4 w-4 mr-2" />
-                Sign In
-              </Button>
-              <Button 
-                variant="ghost" 
-                onClick={() => dispatch2({ type: 'SET_AUTH_PROMPT', payload: false })} 
-                className="w-full"
-              >
-                Back to Course
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {!user ? (
+          <SignInPrompt
+            variant="card"
+            context="course"
+            feature="course-videos"
+            callbackUrl={typeof window !== 'undefined' ? window.location.href : undefined}
+            onClose={() => dispatch2({ type: 'SET_AUTH_PROMPT', payload: false })}
+          />
+        ) : (
+          <></>
+        )}
       </motion.div>
     </div>
   ) : null
@@ -1297,7 +1250,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                       <MemoizedCourseDetailsTabs
                         course={course}
                         currentChapter={currentChapter}
-                        accessLevels={accessLevels}
                         onSeekToBookmark={handleSeekToBookmark}
                         completedChapters={completedChapters}
                       />

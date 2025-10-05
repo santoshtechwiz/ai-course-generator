@@ -247,36 +247,15 @@ export default function FlashcardQuizWrapper({
   if (requiresAuth && !isAuthenticated && !isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-6 max-w-md">
-          <div className="text-6xl">🔒</div>
-          <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-gray-900">Sign in required</h3>
-            <p className="text-gray-600">Please sign in to access this flashcard quiz</p>
-          </div>
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={() =>
-                router.push(
-                  `/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/flashcard/${slug}`)}`
-                )
-              }
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => {
-                dispatch(clearQuizState());
-                router.push(`/dashboard/flashcard/${slug}?reset=true`);
-              }}
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
+        <SignInPrompt
+          context="quiz"
+          feature="quiz-access"
+          callbackUrl={`/dashboard/flashcard/${slug}`}
+          customMessage="Sign in to access this flashcard quiz"
+          className="max-w-md mx-auto"
+        />
       </div>
-    );
+    )
   }
 
   // Empty Review State

@@ -2,6 +2,7 @@
 
 import React from "react"
 import { useState, useCallback, useMemo, memo } from "react"
+import { createPortal } from "react-dom"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -29,6 +30,8 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { useAuth } from "@/modules/auth"
 import { useDeleteQuiz } from "@/hooks/use-delete-quiz"
+import { useFeatureAccess } from "@/hooks/useFeatureAccess"
+import { SubscriptionUpgradeModal } from "@/components/shared"
 
 // Types
 interface QuizActionsProps {
@@ -61,6 +64,7 @@ interface ActionState {
 const useQuizActions = (props: QuizActionsProps) => {
   const { isAuthenticated, user } = useAuth()
   const router = useRouter()
+  const { canAccess: canGeneratePdf, reason: pdfDenialReason, requiredPlan } = useFeatureAccess('pdf-generation')
   const [actionState, setActionState] = useState<ActionState>({
     isSharing: false,
     isFavoriting: false,
@@ -69,6 +73,7 @@ const useQuizActions = (props: QuizActionsProps) => {
     isGeneratingPdf: false,
   })
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showPdfUpgradePrompt, setShowPdfUpgradePrompt] = useState(false)
 
   // Check if user is the owner
   const isOwner = user?.id && props.userId && String(user.id) === String(props.userId)
@@ -80,7 +85,12 @@ const useQuizActions = (props: QuizActionsProps) => {
     propsUserIdType: typeof props.userId,
     isOwner,
     isAuthenticated,
-    userExists: !!user
+    userExists: !!user,
+    // PDF Access Debug
+    canGeneratePdf,
+    pdfDenialReason,
+    requiredPlan,
+    showPdfUpgradePrompt
   })
 
   // Use the mutation hook for deletion
@@ -236,8 +246,25 @@ const useQuizActions = (props: QuizActionsProps) => {
   }, [canPerformAction, deleteQuizMutation, props.quizSlug, props.quizType])
 
   const handlePdfGeneration = useCallback(async () => {
+    // ✅ STEP 1: Check authentication
     if (!isAuthenticated) {
       toast.error("Please sign in to generate PDF")
+      return
+    }
+
+    // ✅ STEP 2: Check subscription access (CRITICAL FIX)
+    if (!canGeneratePdf) {
+      if (pdfDenialReason === 'subscription') {
+        setShowPdfUpgradePrompt(true)
+        toast.error(`PDF generation requires ${requiredPlan || 'a paid'} subscription`, {
+          action: {
+            label: 'Upgrade',
+            onClick: () => router.push('/dashboard/subscription')
+          }
+        })
+        return
+      }
+      toast.error("You don't have access to PDF generation")
       return
     }
 
@@ -369,7 +396,7 @@ const useQuizActions = (props: QuizActionsProps) => {
     } finally {
       updateActionState("isGeneratingPdf", false)
     }
-  }, [isAuthenticated, props.quizType, props.quizSlug, props.title, updateActionState])
+  }, [isAuthenticated, canGeneratePdf, pdfDenialReason, requiredPlan, props.quizType, props.quizSlug, props.title, updateActionState, router])
 
   return {
     actionState: {
@@ -378,6 +405,8 @@ const useQuizActions = (props: QuizActionsProps) => {
     },
     showDeleteDialog,
     setShowDeleteDialog,
+    showPdfUpgradePrompt,
+    setShowPdfUpgradePrompt,
     handleShare,
     handleFavorite,
     handleVisibilityToggle,
@@ -385,7 +414,9 @@ const useQuizActions = (props: QuizActionsProps) => {
     handlePdfGeneration,
     canPerformAction,
     isAuthenticated,
-    isOwner
+    isOwner,
+    canGeneratePdf,
+    requiredPlan
   }
 }
 
@@ -502,6 +533,8 @@ const QuizActions = memo(
       actionState,
       showDeleteDialog,
       setShowDeleteDialog,
+      showPdfUpgradePrompt,
+      setShowPdfUpgradePrompt,
       handleShare,
       handleFavorite,
       handleVisibilityToggle,
@@ -509,7 +542,9 @@ const QuizActions = memo(
       handlePdfGeneration,
       canPerformAction,
       isAuthenticated,
-      isOwner
+      isOwner,
+      canGeneratePdf,
+      requiredPlan
     } = useQuizActions({
       quizId,
       quizSlug,
@@ -619,37 +654,49 @@ const QuizActions = memo(
 
     if (variant === "minimal") {
       return (
-        <div className={cn("flex items-center gap-1 flex-wrap", className)}>
-          <ActionButton 
-            icon={Share2} 
-            label="Share" 
-            onClick={handleShare} 
-            loading={actionState.isSharing} 
-            variant="ghost"
-          />
-          {isAuthenticated && (
-            <>
-              <ActionButton
-                icon={Heart}
-                label={isFavorite ? "Unfavorite" : "Favorite"}
-                onClick={handleFavorite}
-                loading={actionState.isFavoriting}
-                className={isFavorite ? "text-red-500 hover:text-red-600 fill-current" : "hover:text-red-500"}
-                variant="ghost"
-              />
-              {canEdit && (
+        <>
+          <div className={cn("flex items-center gap-1 flex-wrap", className)}>
+            <ActionButton 
+              icon={Share2} 
+              label="Share" 
+              onClick={handleShare} 
+              loading={actionState.isSharing} 
+              variant="ghost"
+            />
+            {isAuthenticated && (
+              <>
                 <ActionButton
-                  icon={isPublic ? Globe : Lock}
-                  label={isPublic ? "Make Private" : "Make Public"}
-                  onClick={handleVisibilityToggle}
-                  loading={actionState.isTogglingVisibility}
-                  className={isPublic ? "text-green-600 hover:text-green-700" : "text-gray-500 hover:text-gray-600"}
+                  icon={Heart}
+                  label={isFavorite ? "Unfavorite" : "Favorite"}
+                  onClick={handleFavorite}
+                  loading={actionState.isFavoriting}
+                  className={isFavorite ? "text-red-500 hover:text-red-600 fill-current" : "hover:text-red-500"}
                   variant="ghost"
                 />
-              )}
-            </>
+                {canEdit && (
+                  <ActionButton
+                    icon={isPublic ? Globe : Lock}
+                    label={isPublic ? "Make Private" : "Make Public"}
+                    onClick={handleVisibilityToggle}
+                    loading={actionState.isTogglingVisibility}
+                    className={isPublic ? "text-green-600 hover:text-green-700" : "text-gray-500 hover:text-gray-600"}
+                    variant="ghost"
+                  />
+                )}
+              </>
+            )}
+          </div>
+          {/* PDF Generation Upgrade Prompt */}
+          {showPdfUpgradePrompt && typeof document !== 'undefined' && createPortal(
+            <SubscriptionUpgradeModal
+              feature="pdf-generation"
+              requiredPlan={requiredPlan || 'BASIC'}
+              onClose={() => setShowPdfUpgradePrompt(false)}
+              customMessage="Unlock PDF Generation"
+            />,
+            document.body
           )}
-        </div>
+        </>
       )
     }
 
@@ -752,6 +799,17 @@ const QuizActions = memo(
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
+          {/* PDF Generation Upgrade Prompt */}
+          {showPdfUpgradePrompt && typeof document !== 'undefined' && createPortal(
+            <SubscriptionUpgradeModal
+              feature="pdf-generation"
+              requiredPlan={requiredPlan || 'BASIC'}
+              onClose={() => setShowPdfUpgradePrompt(false)}
+              customMessage="Unlock PDF Generation"
+            />,
+            document.body
+          )}
         </div>
       )
     }
@@ -847,6 +905,17 @@ const QuizActions = memo(
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* PDF Generation Upgrade Prompt */}
+        {showPdfUpgradePrompt && typeof document !== 'undefined' && createPortal(
+          <SubscriptionUpgradeModal
+            feature="pdf-generation"
+            requiredPlan={requiredPlan || 'BASIC'}
+            onClose={() => setShowPdfUpgradePrompt(false)}
+            customMessage="Unlock PDF Generation"
+          />,
+          document.body
+        )}
       </motion.div>
     )
   },

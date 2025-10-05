@@ -1,135 +1,83 @@
-import { useMemo, useState, useEffect } from "react"
+import { useMemo } from "react"
 import { useAuth } from "@/modules/auth"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
-import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
+import { getPlanConfig, type SubscriptionPlanType } from "@/types/subscription-plans"
 
-export type PlanType = "FREE" | "BASIC" | "PREMIUM" | "ULTIMATE"
-
-interface QuizPlanConfig {
-  maxQuestions: Record<PlanType, number>
-  maxQuizzes: Record<PlanType, number>
-}
-
-const DEFAULT_CONFIG: QuizPlanConfig = {
-  maxQuestions: {
-    FREE: SUBSCRIPTION_PLANS.find(plan => plan.id === "FREE")?.limits.maxQuestionsPerQuiz || 10,
-    BASIC: SUBSCRIPTION_PLANS.find(plan => plan.id === "BASIC")?.limits.maxQuestionsPerQuiz || 15,
-    PREMIUM: SUBSCRIPTION_PLANS.find(plan => plan.id === "PREMIUM")?.limits.maxQuestionsPerQuiz || 30,
-    ULTIMATE: SUBSCRIPTION_PLANS.find(plan => plan.id === "ULTIMATE")?.limits.maxQuestionsPerQuiz || 50,
-  },
-  maxQuizzes: {
-    FREE: SUBSCRIPTION_PLANS.find(plan => plan.id === "FREE")?.limits.maxCoursesPerMonth || 2,
-    BASIC: SUBSCRIPTION_PLANS.find(plan => plan.id === "BASIC")?.limits.maxCoursesPerMonth || 10,
-    PREMIUM: SUBSCRIPTION_PLANS.find(plan => plan.id === "PREMIUM")?.limits.maxCoursesPerMonth || 30,
-    ULTIMATE: SUBSCRIPTION_PLANS.find(plan => plan.id === "ULTIMATE")?.limits.maxCoursesPerMonth || 100,
-  },
-}
+/**
+ * Clean Quiz Plan Hook - Uses centralized subscription data
+ * No duplicate logic, single source of truth
+ */
 
 export interface QuizPlanData {
   isLoggedIn: boolean
   isLoading: boolean
-  currentPlan: PlanType
+  currentPlan: SubscriptionPlanType
   isSubscribed: boolean
   credits: number
   hasCredits: boolean
-  maxQuestions: number
-  maxQuizzes: number
+  maxQuestions: number | 'unlimited'
   planName: string
   canCreateQuiz: boolean
-  getRequiredPlanForAction: (action: 'create' | 'edit' | 'advanced') => PlanType
-  meetsPlanRequirement: (requiredPlan: PlanType) => boolean
-  availableFeatures: string[]
+  // Feature checks - directly from plan config
+  canUseMCQ: boolean
+  canUseFillBlanks: boolean
+  canUseOpenEnded: boolean
+  canUseCodeQuiz: boolean
+  canUseVideoQuiz: boolean
+  canDownloadPDF: boolean
+  hasPrioritySupport: boolean
 }
 
-const FEATURE_PLAN_REQUIREMENTS: Record<string, PlanType> = {
-  'mcq-generator': 'FREE',
-  'blanks': 'FREE',
-  'open-ended': 'BASIC',
-  'code-quiz': 'BASIC',
-  'video-quiz': 'PREMIUM',
-  'pdf-downloads': 'FREE',
-  'ai-accuracy': 'PREMIUM',
-}
-
-export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPlanConfig>): QuizPlanData {
-  const { user, isAuthenticated, isLoading } = useAuth()
-  const { subscription } = useUnifiedSubscription()
-  const [credits, setCredits] = useState(0)
-  const [creditLoading, setCreditLoading] = useState(true)
-  
-  // Use unified subscription as single source of truth - fixes sync issues
-  useEffect(() => {
-    if (subscription) {
-      const totalCredits = subscription.credits || 0
-      const usedCredits = subscription.tokensUsed || 0
-      const remainingCredits = Math.max(0, totalCredits - usedCredits)
-      
-      setCredits(remainingCredits)
-      setCreditLoading(false)
-    } else {
-      setCredits(0)
-      setCreditLoading(false)
-    }
-  }, [subscription])
-  
-  const mergedConfig = useMemo(() => ({
-    ...DEFAULT_CONFIG,
-    ...config,
-  }), [config])
+export function useQuizPlan(requiredCredits: number = 1): QuizPlanData {
+  const { isAuthenticated, isLoading } = useAuth()
+  const { 
+    subscription, 
+    plan, 
+    hasCredits: hasEnoughCredits,
+    isExpired 
+  } = useUnifiedSubscription()
   
   return useMemo(() => {
-    const currentPlan = (subscription?.subscriptionPlan as PlanType) || "FREE"
-    const isSubscribed = subscription?.status === 'ACTIVE' || false
+    // Get current plan (defaults to FREE)
+    const currentPlan = (plan || "FREE") as SubscriptionPlanType
+    const planConfig = getPlanConfig(currentPlan)
+    
+    // Get subscription status
+    const isSubscribed = subscription?.isSubscribed || false
+    const credits = Math.max(0, (subscription?.credits || 0) - (subscription?.tokensUsed || 0))
     const hasCredits = credits >= requiredCredits
-
-    const maxQuestions = mergedConfig.maxQuestions[currentPlan] || DEFAULT_CONFIG.maxQuestions.FREE
-    const maxQuizzes = mergedConfig.maxQuizzes[currentPlan] || DEFAULT_CONFIG.maxQuizzes.FREE
-
-    const planHierarchy: Record<PlanType, number> = {
-      FREE: 0,
-      BASIC: 1,
-      PREMIUM: 2,
-      ULTIMATE: 3,
-    }
-
-    const availableFeatures = Object.entries(FEATURE_PLAN_REQUIREMENTS)
-      .filter(([_, requiredPlan]) => planHierarchy[currentPlan] >= planHierarchy[requiredPlan])
-      .map(([featureId, _]) => featureId)
-
-    const canCreateQuiz = isAuthenticated && hasCredits && !isLoading && !creditLoading
-
-    const getRequiredPlanForAction = (action: 'create' | 'edit' | 'advanced'): PlanType => {
-      switch (action) {
-        case 'advanced':
-          return 'PREMIUM'
-        case 'edit':
-          return 'BASIC'
-        case 'create':
-        default:
-          return 'FREE'
-      }
-    }
-
-    const meetsPlanRequirement = (requiredPlan: PlanType): boolean => {
-      return planHierarchy[currentPlan] >= planHierarchy[requiredPlan]
-    }
+    
+    // Check if user can create quiz
+    const canCreateQuiz = isAuthenticated && hasCredits && !isLoading && !isExpired
 
     return {
+      // Auth & Status
       isLoggedIn: isAuthenticated,
-      isLoading: isLoading || creditLoading,
+      isLoading,
       currentPlan,
       isSubscribed,
       credits,
       hasCredits,
-      maxQuestions,
-      maxQuizzes,
-      planName: currentPlan,
+      
+      // Limits
+      maxQuestions: planConfig.maxQuestionsPerQuiz,
+      
+      // Display
+      planName: planConfig.name,
+      
+      // Actions
       canCreateQuiz,
-      getRequiredPlanForAction,
-      meetsPlanRequirement,
-      availableFeatures,
+      
+      // Feature Flags - directly from plan config (no duplication!)
+      canUseMCQ: planConfig.mcqGenerator,
+      canUseFillBlanks: planConfig.fillInBlanks,
+      canUseOpenEnded: planConfig.openEndedQuestions,
+      canUseCodeQuiz: planConfig.codeQuiz,
+      canUseVideoQuiz: planConfig.videoQuiz,
+      canDownloadPDF: planConfig.pdfDownloads,
+      hasPrioritySupport: planConfig.prioritySupport,
     }
-  }, [isAuthenticated, isLoading, creditLoading, subscription, credits, requiredCredits, mergedConfig])
+  }, [isAuthenticated, isLoading, subscription, plan, requiredCredits, hasEnoughCredits, isExpired])
 }
 
 export default useQuizPlan

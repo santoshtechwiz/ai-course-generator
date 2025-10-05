@@ -16,7 +16,6 @@ import type { SubscriptionPlanType } from '@/types/subscription'
 
 import { CancellationDialog } from "./cancellation-dialog"
 import { useMediaQuery } from "@/hooks"
-import TrialModal from "@/components/features/subscription/TrialModal"
 import SubscriptionSkeleton from "./SubscriptionSkeleton"
 
 
@@ -285,11 +284,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         </div>
       )}
 
-  {subscription && (
-        <Suspense fallback={null}>
-          <TrialModal />
-        </Suspense>
-      )}      {/* Only show login modal if user is definitely unauthenticated */}
+      {/* Only show login modal if user is definitely unauthenticated */}
   {!isAuthenticated && (
         <LoginModal
           isOpen={showLoginModal}
