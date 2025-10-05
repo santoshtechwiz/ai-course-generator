@@ -5,9 +5,7 @@ import { Button } from "@/components/ui/button"
 import { FullCourseType } from "@/app/types/types"
 import dynamic from "next/dynamic"
 import { cn } from "@/lib/utils"
-import { ModuleLayout } from "@/components/layout/ModuleLayout"
 import { motion, AnimatePresence } from "framer-motion"
-import { Badge } from "@/components/ui/badge"
 import { JsonLD } from "@/lib/seo"
 import { ErrorBoundary } from "react-error-boundary"
 import { ModuleLoadingSkeleton } from "@/components/shared/ModuleLoadingSkeleton"
@@ -66,112 +64,101 @@ const CourseLayout: React.FC<CourseLayoutProps> = ({
       isFullscreen && "bg-black"
     )}>
       {/* Header - only show when not in fullscreen */}
-      <AnimatePresence>
         {!isFullscreen && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="bg-background/95 backdrop-blur-sm border-b border-border/40 shadow-sm"
           >
-            {/* Enhanced breadcrumb navigation with better alignment */}
-            <div className="bg-background/95 backdrop-blur-sm border-b border-border/40 shadow-sm">
-              <div className="max-w-screen-2xl mx-auto px-2 sm:px-3 md:px-4 lg:px-4 xl:px-4 2xl:px-4 py-2 sm:py-3">
-                <Breadcrumb>
-                  <BreadcrumbList className="gap-3">
-                    <BreadcrumbItem>
-                      <BreadcrumbLink
-                        href="/dashboard"
-                        className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 flex items-center gap-2"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        Dashboard
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="text-muted-foreground/60" />
-                    <BreadcrumbItem>
-                      <BreadcrumbLink
-                        href="/dashboard/course"
-                        className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
-                      >
-                        Courses
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="text-muted-foreground/60" />
-                    <BreadcrumbItem>
-                      <span className="text-sm font-medium text-foreground line-clamp-1 max-w-xs">
-                        {course.title}
-                      </span>
-                    </BreadcrumbItem>
-                  </BreadcrumbList>
-                </Breadcrumb>
-              </div>
+            <div className="max-w-screen-2xl mx-auto px-1 sm:px-2 py-0.5">
+              <Breadcrumb>
+                <BreadcrumbList className="gap-1">
+                  <BreadcrumbItem>
+                    <BreadcrumbLink
+                      href="/dashboard"
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 flex items-center gap-0.5"
+                    >
+                      <ChevronLeft className="h-3 w-3" />
+                      Dashboard
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-muted-foreground/60" />
+                  <BreadcrumbItem>
+                    <BreadcrumbLink
+                      href="/dashboard"
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
+                    >
+                      Courses
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-muted-foreground/60" />
+                  <BreadcrumbItem>
+                    <span className="text-sm font-medium text-foreground line-clamp-1 max-w-xs">
+                      {course.title}
+                    </span>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
 
-      {/* Main Content Area with enhanced alignment for wider video */}
+      {/* Main Content Area */}
       <div className={cn(
         "flex-1 transition-all duration-300",
         isFullscreen && "bg-black"
       )}>
-        <div className={cn(
-          "w-full mx-auto flex flex-col transition-all duration-300",
-          isFullscreen
-            ? "px-0 py-0 max-w-none"
-            : "max-w-screen-2xl px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 2xl:px-10 py-6 sm:py-7 md:py-8 gap-6 sm:gap-7 md:gap-8"
-        )}>
-          <ErrorBoundary
+        <ErrorBoundary
+          fallback={
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center justify-center min-h-[60vh] p-4"
+            >
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+                  <svg className="w-8 h-8 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold mb-2">Error Loading Course Content</h2>
+                  <p className="text-muted-foreground max-w-md mx-auto text-sm">
+                    There was a problem loading the course content. Please try refreshing the page or contact support if the issue persists.
+                  </p>
+                </div>
+                <div className="flex gap-2 justify-center">
+                  <Button onClick={() => window.location.reload()} size="sm">
+                    Reload Page
+                  </Button>
+                  <Button variant="outline" onClick={() => window.history.back()} size="sm">
+                    Go Back
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          }
+        >
+          <Suspense
             fallback={
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center min-h-[60vh] p-8"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-4"
               >
-                <div className="text-center space-y-6">
-                  <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-                    <svg className="w-10 h-10 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold mb-2">Error Loading Course Content</h2>
-                    <p className="text-muted-foreground max-w-md mx-auto">
-                      There was a problem loading the course content. Please try refreshing the page or contact support if the issue persists.
-                    </p>
-                  </div>
-                  <div className="flex gap-3 justify-center">
-                    <Button onClick={() => window.location.reload()} size="lg">
-                      Reload Page
-                    </Button>
-                    <Button variant="outline" onClick={() => window.history.back()}>
-                      Go Back
-                    </Button>
-                  </div>
-                </div>
+                <ModuleLoadingSkeleton variant="detailed" itemCount={1} />
               </motion.div>
             }
           >
-            <Suspense
-              fallback={
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="space-y-8"
-                >
-                  <ModuleLoadingSkeleton variant="detailed" itemCount={1} />
-                </motion.div>
-              }
-            >
-              <MainContent
-                course={course}
-                initialChapterId={initialChapterId}
-                isFullscreen={isFullscreen}
-              />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
+            <MainContent
+              course={course}
+              initialChapterId={initialChapterId}
+              isFullscreen={isFullscreen}
+            />
+          </Suspense>
+        </ErrorBoundary>
       </div>
 
       {/* Structured data for SEO */}

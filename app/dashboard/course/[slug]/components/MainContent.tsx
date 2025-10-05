@@ -952,52 +952,51 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   return (
     <div className="min-h-screen bg-background relative">
       {authPromptOverlay}
-      {/* Simplified header */}
       <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         className={cn(
           "sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b transition-all duration-300",
-          state.headerCompact ? "py-3" : "py-6"
+          state.headerCompact ? "py-0.5" : "py-1"
         )}
       >
-        <div className="max-w-screen-2xl mx-auto px-4 lg:px-6">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4 min-w-0 flex-1">
+        <div className="max-w-screen-2xl mx-auto px-1 sm:px-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               <div className="min-w-0 flex-1">
                 <h1 className={cn(
                   "font-bold truncate transition-all duration-300",
-                  state.headerCompact ? "text-xl" : "text-2xl lg:text-3xl"
+                  state.headerCompact ? "text-lg" : "text-xl lg:text-2xl"
                 )}>
                   {course.title}
                 </h1>
                 {!state.headerCompact && (
-                  <p className="text-muted-foreground text-sm truncate mt-1">
+                  <p className="text-muted-foreground text-xs truncate mt-0.5">
                     {state.mounted && currentChapter?.title || 'Select a chapter to begin'}
                   </p>
                 )}
               </div>
 
               {/* Progress indicator */}
-              <div className="hidden lg:flex items-center gap-6">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <CheckCircle className="h-4 w-4 text-emerald-500" />
+              <div className="hidden lg:flex items-center gap-3">
+                <div className="flex items-center gap-1.5 text-xs font-medium">
+                  <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
                   <span>
-                    {state.mounted ? `${courseStats.completedCount}/${courseStats.totalChapters}` : `0/${courseStats.totalChapters}`} chapters
+                    {state.mounted ? `${courseStats.completedCount}/${courseStats.totalChapters}` : `0/${courseStats.totalChapters}`}
                   </span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-24">
-                    <Progress value={state.mounted ? courseStats.progressPercentage : 0} className="h-2" />
+                <div className="flex items-center gap-2">
+                  <div className="w-20">
+                    <Progress value={state.mounted ? courseStats.progressPercentage : 0} className="h-1.5" />
                   </div>
-                  <Badge variant="secondary" className="font-semibold bg-primary/10 text-primary px-3 py-1">
+                  <Badge variant="secondary" className="font-semibold bg-primary/10 text-primary px-2 py-0.5 text-xs">
                     {state.mounted ? courseStats.progressPercentage : 0}%
                   </Badge>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button
                 variant="outline"
                 size="sm"
@@ -1099,22 +1098,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       )}>
         <div className={cn(
           "mx-auto transition-all duration-300",
-          state.isTheaterMode ? "max-w-none px-0" : "max-w-[1920px] px-3 sm:px-4 lg:px-6 py-4"
+          state.isTheaterMode ? "max-w-none px-0" : "max-w-[1920px] px-1 sm:px-2 py-0.5"
         )}>
           <div className={cn(
             "transition-all duration-300",
             state.sidebarCollapsed || state.isTheaterMode
               ? "flex flex-col max-w-7xl mx-auto"
-              : "flex flex-col lg:grid lg:grid-cols-[4fr_320px] xl:grid-cols-[4.5fr_320px] 2xl:grid-cols-[5fr_350px] gap-3 lg:gap-3"
+              : "flex flex-col lg:grid lg:grid-cols-[4fr_320px] xl:grid-cols-[4.5fr_320px] 2xl:grid-cols-[5fr_350px] gap-3 lg:gap-4"
           )}>  
             {/* Video and content area */}
-            <div className="space-y-3 min-w-0">
+            <div className="space-y-0.5 min-w-0">
               {/* Progress Stats Bar - Above Video */}
               {!state.isTheaterMode && currentChapter && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center justify-between gap-3 px-3 py-2.5 bg-card/50 backdrop-blur-sm rounded-lg border shadow-sm"
+                  className="flex items-center justify-between gap-2 px-1.5 py-1 bg-card/50 backdrop-blur-sm rounded-lg border shadow-sm"
                 >
                   {/* Progress Info */}
                   <div className="flex items-center gap-3 flex-1 min-w-0">
