@@ -7,7 +7,7 @@
 
 import Stripe from "stripe"
 import { prisma } from "@/lib/db"
-import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
+import SUBSCRIPTION_PLANS, { findPlanById } from "@/types/subscription-plans"
 import type { PaymentGateway, PaymentOptions, CheckoutResult, PaymentStatusResult, PaymentGatewayConfig } from "./payment-gateway-interface"
 import { PaymentProvider, PaymentStatus } from "./payment-gateway-interface"
 import { logger } from "@/lib/logger"
@@ -20,7 +20,7 @@ if (!stripeSecretKey) {
 
 // Initialize Stripe with the API key and proper configuration
 const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: "2024-10-28.acacia",
+  apiVersion: "2025-02-24.acacia",
   timeout: 30000, // 30 second timeout for API requests
   maxNetworkRetries: 3, // Automatically retry failed requests
 })
@@ -137,7 +137,7 @@ export class StripeGateway implements PaymentGateway {
       if (!duration || duration <= 0) throw new Error("Valid duration is required")
 
       // Find the plan in our configuration
-      const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planName)
+      const plan = findPlanById(planName)
       if (!plan) {
         throw new Error(`Invalid plan name: ${planName}`)
       }
@@ -157,11 +157,9 @@ export class StripeGateway implements PaymentGateway {
         throw new Error("User already has an active subscription")
       }
 
-      // Find the price option for the selected duration
-      const priceOption = plan.options.find((o) => o.duration === duration)
-      if (!priceOption) {
-        throw new Error(`Invalid duration ${duration} for the selected plan`)
-      }
+      // TODO: Price options need to be added to PlanConfig interface
+      // For now, use default pricing based on plan
+      let finalAmount = Math.round(plan.price * 100) // Convert to cents
 
       // Get or create a Stripe customer for the user
       const stripeCustomerId = await this.getOrCreateCustomer(user, options)
@@ -170,11 +168,10 @@ export class StripeGateway implements PaymentGateway {
       const referralData = await this.processReferralCode(userId, options?.referralCode)
 
       // Calculate price with discount if promo code is provided
-      let unitAmount = Math.round(priceOption.price * 100)
       let promoCodeApplied = false
 
       if (options?.promoCode && options?.promoDiscount && options.promoDiscount > 0) {
-        unitAmount = Math.round(unitAmount * (1 - options.promoDiscount / 100))
+        finalAmount = Math.round(finalAmount * (1 - options.promoDiscount / 100))
         promoCodeApplied = true
         logger.info(`Applied promo code ${options.promoCode} with ${options.promoDiscount}% discount`)
       }
@@ -183,7 +180,7 @@ export class StripeGateway implements PaymentGateway {
       const metadata: Record<string, string> = {
         userId,
         planName: plan.id,
-        tokens: plan.tokens.toString(),
+        tokens: plan.monthlyCredits.toString(),
         duration: duration.toString(),
       }
 
@@ -218,7 +215,7 @@ export class StripeGateway implements PaymentGateway {
                     ? `Applied discount: ${options?.promoDiscount}% off with code ${options?.promoCode}`
                     : undefined,
                 },
-                unit_amount: unitAmount,
+                unit_amount: finalAmount,
                 recurring: {
                   interval: duration === 1 ? "month" : "year",
                   interval_count: duration === 1 ? 1 : duration / 12,
@@ -246,7 +243,7 @@ export class StripeGateway implements PaymentGateway {
           url: session.url,
           customerId: stripeCustomerId,
           provider: PaymentProvider.STRIPE,
-          amount: session.amount_total || priceOption.price * 100,
+          amount: session.amount_total || finalAmount,
           currency: "usd" as any,
           expiresAt: new Date(session.expires_at * 1000),
           metadata: session.metadata || {},
@@ -516,7 +513,7 @@ export class StripeGateway implements PaymentGateway {
       }
 
       // Find the plan in our configuration
-      const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planName)
+      const plan = findPlanById(planName)
       if (!plan) {
         throw new Error(`Invalid plan name: ${planName}`)
       }
@@ -567,8 +564,8 @@ export class StripeGateway implements PaymentGateway {
       }
 
       // Find the plan to get the correct token amount
-      const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId)
-      const tokensToAdd = plan ? plan.tokens : Number.parseInt(tokensStr, 10)
+      const plan = planId ? findPlanById(planId) : null
+      const tokensToAdd = plan ? plan.monthlyCredits : Number.parseInt(tokensStr, 10)
 
       // Update user tokens
       const user = await prisma.user.findUnique({

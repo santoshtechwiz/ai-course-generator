@@ -61,7 +61,7 @@ export { SubscriptionService } from '@/services/subscription-services'
 export { TokenService } from "./token-service"
 
 // Utilities and constants
-export { SUBSCRIPTION_PLANS } from "../components/subscription-plans"
+export { default as SUBSCRIPTION_PLANS } from "@/types/subscription-plans"
 
 /**
  * Initialize payment gateway services

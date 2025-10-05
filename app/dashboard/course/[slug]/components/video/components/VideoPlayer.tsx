@@ -873,7 +873,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         return
       }
       setOverlayState(prev => ({ ...prev, showBookmarkPanel: !prev.showBookmarkPanel }))
-    }, [isAuthenticated, toast])
+    }, [effectiveIsAuthenticated, toast])
 
     const handleToggleNotesPanel = useCallback(() => {
       if (!effectiveIsAuthenticated) {
@@ -885,7 +885,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         return
       }
       setOverlayState(prev => ({ ...prev, showNotesPanel: !prev.showNotesPanel }))
-    }, [isAuthenticated, toast])
+    }, [effectiveIsAuthenticated, toast])
 
     const handleCreateNote = useCallback(async () => {
       if (!effectiveIsAuthenticated || !courseId || !chapterId) return

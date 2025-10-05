@@ -21,17 +21,14 @@ const fetcher = async (url: string) => {
 }
 
 export function useUserData(userId: string) {
-  console.log('useUserData called with userId:', userId, 'type:', typeof userId)
-
   const { data, error, isLoading, mutate } = useSWR<DashboardUser>(
     userId ? `/api/dashboard/user/${userId}` : null,
     fetcher,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      dedupingInterval: 120000, // 2 minutes (increased from 1)
+      dedupingInterval: 120000, // 2 minutes - prevents duplicate calls
       shouldRetryOnError: false, // Don't retry on auth errors
-      staleTime: 300000, // 5 minutes (added)
       onError: (error) => {
         console.error('useUserData error:', error, 'for userId:', userId)
       }

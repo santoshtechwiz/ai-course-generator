@@ -75,10 +75,11 @@ export function UserMenu() {
     if (isLoggingOut) return
     setIsLoggingOut(true)
     try {
-      await signOut({ callbackUrl: "/", redirect: true })
+      // Redirect to explore page (Quiz/Course page) instead of homepage
+      await signOut({ callbackUrl: "/dashboard/explore", redirect: true })
     } catch {
       if (typeof window !== "undefined") {
-        window.location.href = "/"
+        window.location.href = "/dashboard/explore"
       }
     } finally {
       setIsLoggingOut(false)

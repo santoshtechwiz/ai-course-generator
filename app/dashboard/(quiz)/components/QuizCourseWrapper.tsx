@@ -8,7 +8,7 @@ import CreateQuizForm from "../mcq/components/CreateQuizForm"
 
 import { Loader2 } from "lucide-react"
 import ConsistentCard from "../../../../components/common/ConsistentCard"
-import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
+import SUBSCRIPTION_PLANS from "@/types/subscription-plans"
 import FlashCardCreate from "@/app/dashboard/(quiz)/flashcard/components/FlashCardCreate"
 import FillInTheBlankQuizForm from "@/app/dashboard/(quiz)/blanks/components/BlankQuizForm"
 import CodeQuizForm from "@/app/dashboard/(quiz)/code/components/CodeQuizForm"
@@ -40,11 +40,12 @@ function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps) {
     type: (urlParams.type || queryParams?.type || "mcq") as "mcq" | "open_ended" | "fill_in_the_blanks"
   }
 
-  const subscriptionPlan = user?.subscriptionPlan || "FREE"
-  const plan = SUBSCRIPTION_PLANS.find((plan) => plan.name === subscriptionPlan)
+  const subscriptionPlan = (user?.subscriptionPlan || "FREE") as keyof typeof SUBSCRIPTION_PLANS
+  const plan = SUBSCRIPTION_PLANS[subscriptionPlan]
 
   const getMaxQuestions = () => {
-    return plan?.limits.maxQuestionsPerQuiz || 5 // Default to 5 for FREE plan
+    const maxQuestions = plan?.maxQuestionsPerQuiz
+    return maxQuestions === 'unlimited' ? 999 : (maxQuestions || 5)
   }
   
   // Use unified auth state - no need to pass isLoggedIn since PlanAwareButton auto-detects

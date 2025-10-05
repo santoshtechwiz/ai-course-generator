@@ -51,17 +51,18 @@ export function MainNavbar() {
   const totalTokens = credits || 0
   const subscriptionPlan = plan || "FREE"
   
-  // Debug logging in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[MainNavbar] Single source state:', {
-      credits: totalTokens,
-      used: tokensUsed,
-      remaining: remainingCredits,
-      plan: subscriptionPlan,
-      isAuthenticated,
-      isLoading,
-    })
-  }
+  // Debug logging once on mount or when key values change (not on every render)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[MainNavbar] Auth state changed:', {
+        credits: totalTokens,
+        used: tokensUsed,
+        remaining: remainingCredits,
+        plan: subscriptionPlan,
+        isAuthenticated,
+      })
+    }
+  }, [isAuthenticated, subscriptionPlan]) // Only log when these change
 
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)

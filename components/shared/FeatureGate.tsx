@@ -2,7 +2,7 @@
 
 import React, { ReactNode } from 'react'
 import { motion } from 'framer-motion'
-import { Lock, Crown, CheckCircle2 } from 'lucide-react'
+import { Lock, Crown, Check, CheckCircle2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useFeatureAccess, type FeatureType } from '@/hooks/useFeatureAccess'
 import { SignInPrompt, SubscriptionUpgrade } from '@/components/shared'
@@ -104,24 +104,35 @@ export function FeatureGate({
     // Show partial content with lock overlay
     if (showPartialContent && partialContent) {
       return (
-        <div className={`relative overflow-hidden ${className}`}>
-          {/* Partial content with blur */}
-          <div className={`${blurClass} opacity-50 pointer-events-none select-none`}>
-            {partialContent}
-          </div>
-          
-          {/* Lock overlay */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="absolute inset-0 bg-gradient-to-b from-transparent via-background/60 to-background flex items-center justify-center z-10"
-          >
+        <div className={`relative overflow-hidden w-full ${className}`}>
+          {/* Container with proper stacking - full width */}
+          <div className="relative min-h-[600px] w-full">
+            {/* Top 20% - Clear visible content - z-[10] HIGHEST */}
+            <div className="relative z-[10] w-full" style={{ height: '20%', minHeight: '150px' }}>
+              {partialContent}
+            </div>
+            
+            {/* Bottom 80% - Blurred content with lock overlay */}
+            <div className="relative w-full" style={{ minHeight: '450px' }}>
+              {/* Blurred background - z-[1] */}
+              <div className={`${blurClass} opacity-30 pointer-events-none select-none absolute inset-0 z-[1]`}>
+                <div className="pt-[150px]">
+                  {partialContent}
+                </div>
+              </div>
+              
+              {/* Lock overlay - covers bottom 80% only - z-[5] */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/80 to-background flex items-center justify-center z-[5]"
+              >
             <motion.div
               initial={{ scale: 0.8, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               transition={{ duration: 0.4, type: 'spring' }}
-              className="bg-card/95 backdrop-blur-sm border-2 border-blue-500/30 rounded-xl p-6 shadow-2xl max-w-md mx-4"
+              className="bg-card/95 backdrop-blur-sm border-2 border-blue-500/30 rounded-xl p-4 md:p-6 shadow-2xl max-w-md mx-4 relative z-[3]"
             >
               <div className="flex flex-col items-center text-center gap-4 w-full">
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full flex items-center justify-center">
@@ -161,7 +172,9 @@ export function FeatureGate({
                 </div>
               </div>
             </motion.div>
-          </motion.div>
+              </motion.div>
+            </div>
+          </div>
         </div>
       )
     }

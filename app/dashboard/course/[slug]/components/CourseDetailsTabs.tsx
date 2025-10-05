@@ -629,16 +629,14 @@ export default function CourseDetailsTabs({
             <FileText className="h-4 w-4 md:h-5 md:w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
             <span className="font-semibold">Summary</span>
           </TabsTrigger>
-          {/* Quiz tab - only show if authenticated and subscribed */}
-          {isAuthenticated && isSubscribed && (
-            <TabsTrigger
-              value="quiz"
-              className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
-            >
-              <MessageSquare className="h-4 w-4 md:h-5 md:w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
-              <span className="font-semibold">Quiz</span>
-            </TabsTrigger>
-          )}
+          {/* Quiz tab - always visible, FeatureGate handles access control */}
+          <TabsTrigger
+            value="quiz"
+            className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
+          >
+            <MessageSquare className="h-4 w-4 md:h-5 md:w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
+            <span className="font-semibold">Quiz</span>
+          </TabsTrigger>
           <TabsTrigger
             value="notes"
             className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
@@ -664,50 +662,22 @@ export default function CourseDetailsTabs({
 
         {/* Enhanced tabs content with better spacing */}
         <TabsContent value="summary" className="flex-1 overflow-auto w-full p-0">
-          {/* First check authentication */}
-          {!isAuthenticated ? (
-            <div className="h-full flex items-center justify-center p-6">
-              <Card className="w-full max-w-md mx-auto">
-                <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-                    <FileText className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">Sign In Required</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Please sign in to view AI-generated course summaries.
-                  </p>
-                  <Button onClick={() => window.location.href = "/auth/signin"} className="gap-2">
-                    <FileText className="h-4 w-4" />
-                    Sign In
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          ) : currentChapter ? (
+          {/* FeatureGate handles authentication and subscription internally */}
+          {currentChapter ? (
             <FeatureGate
               feature="course-videos"
-              showPartialContent={true}
-              blurPartialContent={true}
-              blurIntensity={6}
+              showPartialContent={false}
               lockMessage="Unlock Course Summaries"
-              lockDescription="Upgrade to access AI-generated chapter summaries"
-              partialContent={
-                <div className="p-6">
-                  <CourseAISummary
-                    chapterId={currentChapter.id}
-                    name={currentChapter.title || currentChapter.name || "Chapter Summary"}
-                    existingSummary={currentChapter.summary || null}
-                    isAdmin={false}
-                  />
-                </div>
-              }
+              lockDescription="Upgrade to access AI-generated chapter summaries and insights"
             >
-              <CourseAISummary
-                chapterId={currentChapter.id}
-                name={currentChapter.title || currentChapter.name || "Chapter Summary"}
-                existingSummary={currentChapter.summary || null}
-                isAdmin={isAdmin}
-              />
+              <div className="p-4">
+                <CourseAISummary
+                  chapterId={currentChapter.id}
+                  name={currentChapter.title || currentChapter.name || "Chapter Summary"}
+                  existingSummary={currentChapter.summary || null}
+                  isAdmin={isAdmin}
+                />
+              </div>
             </FeatureGate>
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
@@ -731,54 +701,28 @@ export default function CourseDetailsTabs({
         </TabsContent>
 
         <TabsContent value="quiz" className="flex-1 overflow-auto w-full p-0">
-          {/* Quiz with FeatureGate */}
-          {!isAuthenticated ? (
-            <div className="h-full flex items-center justify-center p-6">
-              <SignInPrompt
-                variant="card"
-                context="quiz"
-                feature="quiz-access"
-                callbackUrl={typeof window !== 'undefined' ? window.location.href : undefined}
-                className="max-w-md mx-auto"
-              />
-            </div>
-          ) : currentChapter ? (
+          {/* FeatureGate handles authentication and subscription internally */}
+          {currentChapter ? (
             <FeatureGate
               feature="quiz-access"
-              showPartialContent={true}
-              blurPartialContent={true}
-              blurIntensity={7}
+              showPartialContent={false}
               lockMessage="Unlock Course Quizzes"
               lockDescription="Upgrade to test your knowledge with interactive quizzes"
-              partialContent={
-                <div className="p-6">
-                  <CourseDetailsQuiz
-                    key={currentChapter.id}
-                    course={course}
-                    chapter={currentChapter}
-                    accessLevels={{
-                      isAuthenticated,
-                      isSubscribed: false,
-                      isAdmin
-                    }}
-                    isPublicCourse={course.isPublic || false}
-                    chapterId={currentChapter.id.toString()}
-                  />
-                </div>
-              }
             >
-              <CourseDetailsQuiz
-                key={currentChapter.id}
-                course={course}
-                chapter={currentChapter}
-                accessLevels={{
-                  isAuthenticated,
-                  isSubscribed: Boolean(isSubscribed || (currentChapter as any)?.isFreeQuiz === true),
-                  isAdmin
-                }}
-                isPublicCourse={course.isPublic || false}
-                chapterId={currentChapter.id.toString()}
-              />
+              <div className="p-4">
+                <CourseDetailsQuiz
+                  key={currentChapter.id}
+                  course={course}
+                  chapter={currentChapter}
+                  accessLevels={{
+                    isAuthenticated,
+                    isSubscribed: Boolean(isSubscribed || (currentChapter as any)?.isFreeQuiz === true),
+                    isAdmin
+                  }}
+                  isPublicCourse={course.isPublic || false}
+                  chapterId={currentChapter.id.toString()}
+                />
+              </div>
             </FeatureGate>
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">

@@ -1105,10 +1105,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             "transition-all duration-300",
             state.sidebarCollapsed || state.isTheaterMode
               ? "flex flex-col max-w-7xl mx-auto"
-              : "flex flex-col lg:grid lg:grid-cols-[4fr_360px] xl:grid-cols-[4.5fr_360px] 2xl:grid-cols-[5fr_380px] gap-3 lg:gap-4"
-          )}>
+              : "flex flex-col lg:grid lg:grid-cols-[4fr_320px] xl:grid-cols-[4.5fr_320px] 2xl:grid-cols-[5fr_350px] gap-3 lg:gap-3"
+          )}>  
             {/* Video and content area */}
-            <div className="space-y-4 min-w-0">
+            <div className="space-y-3 min-w-0">
               {/* Progress Stats Bar - Above Video */}
               {!state.isTheaterMode && currentChapter && (
                 <motion.div
@@ -1193,9 +1193,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   </Card>
                 ) : (
                   <Card className={cn(
-                    "overflow-hidden shadow-sm w-full aspect-video max-w-6xl mx-auto",
-                    state.isTheaterMode && "bg-transparent border-0 shadow-none max-w-none"
-                  )}>
+                    "overflow-hidden shadow-sm w-full aspect-video",
+                    state.isTheaterMode && "bg-transparent border-0 shadow-none"
+                  )}>  
                     <div className={cn(
                       "bg-black relative transition-all duration-300 w-full",
                       state.isTheaterMode ? "aspect-[21/9]" : "aspect-video"
@@ -1246,7 +1246,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   transition={{ delay: 0.1 }}
                 >
                   <Card className="shadow-sm hover:shadow-md transition-shadow duration-200">
-                    <CardContent className="p-4">
+                    <CardContent className="p-3">
                       <MemoizedCourseDetailsTabs
                         course={course}
                         currentChapter={currentChapter}
@@ -1266,7 +1266,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   transition={{ delay: 0.2 }}
                 >
                   <Card className="shadow-sm hover:shadow-md transition-shadow duration-200">
-                    <CardContent className="p-4">
+                    <CardContent className="p-3">
                       <ReviewsSection slug={course.slug} />
                     </CardContent>
                   </Card>
@@ -1281,7 +1281,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className="hidden lg:block space-y-4 min-w-0 w-full overflow-y-auto scrollbar-hide"
+                  className="hidden lg:block space-y-3 min-w-0 w-full overflow-y-auto scrollbar-hide"
                 >
                   {/* Sidebar header */}
                   <Card className="shadow-sm hover:shadow-md transition-shadow duration-200">

@@ -14,12 +14,14 @@ interface LogoutButtonProps {
   redirectTo?: string
 }
 
+// Default redirect to explore page (Quiz/Course listings) instead of sign-in
+
 export function LogoutButton({ 
   className = "",
   variant = "outline",
   size = "sm",
   iconOnly = false,
-  redirectTo = "/auth/signin"
+  redirectTo = "/dashboard/explore" // Redirect to explore page with quizzes/courses
 }: LogoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()

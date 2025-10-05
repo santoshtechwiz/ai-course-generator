@@ -152,4 +152,19 @@ export function hasReachedQuestionLimit(planType: SubscriptionPlanType, currentQ
   return currentQuestions >= max
 }
 
+/**
+ * Convert SUBSCRIPTION_PLANS Record to Array for backward compatibility
+ * @deprecated Use SUBSCRIPTION_PLANS directly as a Record instead
+ */
+export function getPlansArray(): PlanConfig[] {
+  return Object.values(SUBSCRIPTION_PLANS)
+}
+
+/**
+ * Find a plan by ID from the Record
+ */
+export function findPlanById(planId: string): PlanConfig | undefined {
+  return SUBSCRIPTION_PLANS[planId as SubscriptionPlanType]
+}
+
 export default SUBSCRIPTION_PLANS

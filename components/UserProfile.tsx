@@ -38,9 +38,9 @@ export default function UserProfile({ user }: UserProfileProps) {
             </Badge>
             <div className="pt-2">
               <Button variant="outline" size="sm" asChild className="gap-2">
-                <Link href="/dashboard/settings">
+                <Link href="/dashboard/account">
                   <Settings className="h-4 w-4" />
-                  Edit Profile
+                  Account Settings
                 </Link>
               </Button>
             </div>

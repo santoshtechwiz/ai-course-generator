@@ -4,6 +4,8 @@ export const routeConfig = {
   redirects: [
     { from: "/course/:id", to: "/course/:slug" },
     { from: "/mcq/:id", to: "/mcq/:slug" },
+    { from: "/dashboard/profile", to: "/dashboard/account" },
+    { from: "/dashboard/settings", to: "/dashboard/account" },
   ],
   authRedirects: {
     signIn: "/api/auth/signin",

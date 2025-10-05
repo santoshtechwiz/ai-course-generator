@@ -76,7 +76,7 @@ const CourseLayout: React.FC<CourseLayoutProps> = ({
           >
             {/* Enhanced breadcrumb navigation with better alignment */}
             <div className="bg-background/95 backdrop-blur-sm border-b border-border/40 shadow-sm">
-              <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 2xl:px-10 py-3 sm:py-4">
+              <div className="max-w-screen-2xl mx-auto px-2 sm:px-3 md:px-4 lg:px-4 xl:px-4 2xl:px-4 py-2 sm:py-3">
                 <Breadcrumb>
                   <BreadcrumbList className="gap-3">
                     <BreadcrumbItem>

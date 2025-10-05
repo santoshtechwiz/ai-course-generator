@@ -17,7 +17,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
+import SUBSCRIPTION_PLANS, { findPlanById } from "@/types/subscription-plans"
+import { buildFeatureList } from "@/utils/subscription-ui-helpers"
 
 import { useSession } from "next-auth/react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@radix-ui/react-tabs"
@@ -72,7 +73,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
 
   // Memoize plan details to avoid recalculation on every render
   const planDetails = useMemo(() => {
-    return SUBSCRIPTION_PLANS.find((plan) => plan.id === currentPlan) || SUBSCRIPTION_PLANS[0]
+    return findPlanById(currentPlan) || SUBSCRIPTION_PLANS.FREE
   }, [currentPlan])
 
   // Memoize derived state values
@@ -321,16 +322,14 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
                     Included Features
                   </h4>
                   <ul className="space-y-3">
-                    {planDetails.features
-                      .filter((f: PlanFeature) => f.available)
-                      .map((feature: PlanFeature, index: number) => (
-                        <li key={index} className="flex items-start">
-                          <div className="bg-green-100 dark:bg-green-900/30 p-1 rounded-full mr-3 mt-0.5">
-                            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                          </div>
-                          <span>{feature.name}</span>
-                        </li>
-                      ))}
+                    {buildFeatureList(planDetails).map((feature, index) => (
+                      <li key={index} className="flex items-start">
+                        <div className="bg-green-100 dark:bg-green-900/30 p-1 rounded-full mr-3 mt-0.5">
+                          <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        </div>
+                        <span>{typeof feature === 'string' ? feature : feature.name}</span>
+                      </li>
+                    ))}
                   </ul>
                 </div>
                 <div className="space-y-4">
@@ -343,7 +342,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
                       <div>
                         <div className="font-medium">Questions per Quiz</div>
                         <div className="text-sm text-muted-foreground">
-                          Up to {planDetails.limits.maxQuestionsPerQuiz} questions
+                          Up to {planDetails.maxQuestionsPerQuiz === 'unlimited' ? 'Unlimited' : planDetails.maxQuestionsPerQuiz} questions
                         </div>
                       </div>
                     </div>
@@ -352,25 +351,12 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
                         <ArrowRight className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div>
-                        <div className="font-medium">Courses per Month</div>
+                        <div className="font-medium">Monthly Credits</div>
                         <div className="text-sm text-muted-foreground">
-                          Up to {planDetails.limits.maxCoursesPerMonth} courses
+                          {planDetails.monthlyCredits.toLocaleString()} credits per month
                         </div>
                       </div>
                     </div>
-                    {planDetails.limits.apiCallsPerDay && (
-                      <div className="flex items-start">
-                        <div className="bg-blue-100 dark:bg-blue-900/30 p-1 rounded-full mr-3 mt-0.5">
-                          <ArrowRight className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div>
-                          <div className="font-medium">API Calls per Day</div>
-                          <div className="text-sm text-muted-foreground">
-                            Up to {planDetails.limits.apiCallsPerDay} calls
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

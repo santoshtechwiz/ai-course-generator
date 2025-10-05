@@ -345,17 +345,6 @@ export class PaymentWebhookHandler {
   }
 
   /**
-   * Get processing statistics for monitoring
-   */
-  static getProcessingStats() {
-    return {
-      eventsInProgress: this.processingCache.size,
-      cacheSize: this.processingCache.size,
-      lastCleaned: new Date().toISOString()
-    }
-  }
-
-  /**
    * Get diagnostic information for webhook debugging
    */
   static getDiagnosticInfo(): {
@@ -633,7 +622,7 @@ export class PaymentWebhookHandler {
    */
   private static async handleStripeInvoicePaid(invoice: any): Promise<void> {
     const { prisma } = await import("@/lib/db")
-    const { SUBSCRIPTION_PLANS } = await import("../components/subscription-plans")
+    const SUBSCRIPTION_PLANS = (await import("@/types/subscription-plans")).default
 
     if (!invoice.subscription || !invoice.customer) {
       return
@@ -809,8 +798,8 @@ export class PaymentWebhookHandler {
         )
 
         if (!result.success) {
-          logger.error(`Failed to activate paid plan for user ${userId}: ${result.error || 'Unknown error'}`)
-          throw new Error(`Plan activation failed: ${result.error || 'Unknown error'}`)
+          logger.error(`Failed to activate paid plan for user ${userId}: ${result.message || 'Unknown error'}`)
+          throw new Error(`Plan activation failed: ${result.message || 'Unknown error'}`)
         }
 
         logger.info(`Successfully activated ${planId} plan for user ${userId} with credits`)

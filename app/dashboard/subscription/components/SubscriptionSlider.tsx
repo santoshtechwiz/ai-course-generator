@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { Lock, Unlock } from "lucide-react"
-import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
+import SUBSCRIPTION_PLANS, { getPlansArray, findPlanById } from "@/types/subscription-plans"
 import type { SubscriptionPlanType } from "@/types/subscription"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 
@@ -24,14 +24,16 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
 }) => {  // Use unified subscription hook to get subscription data
   const { subscription } = useUnifiedSubscription()
   const currentPlan =
-    SUBSCRIPTION_PLANS.find((plan) => plan.id === subscription?.subscriptionPlan) || SUBSCRIPTION_PLANS[0]
-  const maxQuestions = currentPlan?.limits?.maxQuestionsPerQuiz || 5 // Default to 5 for FREE plan
+    findPlanById(subscription?.subscriptionPlan || 'FREE') || SUBSCRIPTION_PLANS.FREE
+  const maxQuestions = typeof currentPlan.maxQuestionsPerQuiz === 'number' 
+    ? currentPlan.maxQuestionsPerQuiz 
+    : 5 // Default to 5 for FREE plan
   const isMaxPlan = currentPlan.name === "ULTIMATE"
   
   // Debug info in development
   if (process.env.NODE_ENV === 'development') {
     console.log('SubscriptionSlider Debug:', {
-      subscriptionPlan: subscription?.plan,
+      subscriptionPlan: subscription?.subscriptionPlan,
       currentPlan: currentPlan?.name,
       maxQuestions,
       isMaxPlan
@@ -39,9 +41,10 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
   }
   
   const getNextPlan = (): string => {
-    const currentIndex = SUBSCRIPTION_PLANS.findIndex((plan) => plan.name === currentPlan.name)
+    const plans = getPlansArray()
+    const currentIndex = plans.findIndex((plan) => plan.name === currentPlan.name)
     // Return the name of the next plan for display purposes
-    return SUBSCRIPTION_PLANS[currentIndex + 1]?.name || currentPlan.name
+    return plans[currentIndex + 1]?.name || currentPlan.name
   }
 
   const nextPlan = getNextPlan()

@@ -7,7 +7,7 @@
 
 import Stripe from "stripe"
 import { prisma } from "@/lib/db"
-import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
+import SUBSCRIPTION_PLANS, { findPlanById } from "@/types/subscription-plans"
 import type { 
   PaymentGateway, 
   PaymentGatewayConfig,
@@ -96,7 +96,7 @@ export class EnhancedStripeGateway implements PaymentGateway {
       this.validateInput({ userId, planName, duration })
 
       // Find the plan in our configuration
-      const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planName)
+      const plan = findPlanById(planName)
       if (!plan) {
         throw new Error(`Invalid plan name: ${planName}`)
       }
@@ -114,15 +114,17 @@ export class EnhancedStripeGateway implements PaymentGateway {
       // Check if user already has an active subscription
       if (user.subscription?.planId !== "FREE" && user.subscription?.status === "ACTIVE") {
         throw new Error("User already has an active subscription")
-      }      // Find the price option for the selected duration
-      const priceOption = plan.options?.find((p: any) => p.duration === duration)
-      if (!priceOption) {
-        throw new Error(`Invalid duration ${duration} for plan ${planName}`)
       }
 
+      // TODO: Price options need to be added to PlanConfig interface
+      // For now, use default pricing based on plan
+      const basePrice = plan.price * 100 // Convert to cents
+
       // Get or create Stripe customer
-      const customerId = await this.getOrCreateCustomer(user, options)      // Calculate final price with discounts (convert to cents for Stripe)
-      const finalPrice = this.calculateFinalPrice(priceOption.price * 100, options)
+      const customerId = await this.getOrCreateCustomer(user, options)
+
+      // Calculate final price with discounts (convert to cents for Stripe)
+      const finalPrice = this.calculateFinalPrice(basePrice, options)
 
       // Create the checkout session
       const sessionData: Stripe.Checkout.SessionCreateParams = {
