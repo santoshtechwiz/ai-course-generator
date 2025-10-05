@@ -21,7 +21,7 @@ import { useAppSelector } from "@/store/hooks"
 import { QuizProgress } from "@/utils/storage-manager"
 
 import type { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
-import type { AccessLevels } from "./CourseDetailsTabs"
+import type { AccessLevels } from "./types"
 
 interface QuizProps {
   chapter: FullChapterType

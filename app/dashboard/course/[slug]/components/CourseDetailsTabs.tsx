@@ -44,6 +44,10 @@ import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import type { RootState } from "@/store"
 import { removeBookmark, type BookmarkItem, type CourseProgress } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
+import type { AccessLevels } from "./types"
+
+// Re-export for backward compatibility
+export type { AccessLevels }
 
 // Lazy load heavy components for better performance
 const CourseDetailsQuiz = dynamic(() => import("./CourseQuiz"), { ssr: false })
@@ -59,12 +63,6 @@ import { useNotes } from "@/hooks/use-notes"
 import { useBookmarks } from "@/hooks/use-bookmarks"
 import type { Bookmark } from "@prisma/client"
 import { ChapterProgressDisplay, CourseProgressSummary } from "@/components/course/ChapterProgressDisplay"
-
-export interface AccessLevels {
-  isSubscribed: boolean
-  isAuthenticated: boolean
-  isAdmin: boolean
-}
 
 interface CourseDetailsTabsProps {
   course: FullCourseType

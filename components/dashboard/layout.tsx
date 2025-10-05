@@ -50,9 +50,9 @@ export function DashboardLayout({
       {userId && <Chatbot userId={userId} />}
 
       {/* Development Tools */}
-      {process.env.NODE_ENV !== "production" && (
+      {/* {process.env.NODE_ENV !== "production" && (
         <CourseAIState />
-      )}
+      )} */}
     </div>
   )
 }

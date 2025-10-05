@@ -306,3 +306,10 @@ export function clearExpiredSessionCache() {
     }
   }
 }
+
+export function isAdmin() {
+  return new Promise<boolean>(async (resolve) => {
+    const session = await getAuthSession()
+    resolve(Boolean(session?.user?.isAdmin))
+  })
+}

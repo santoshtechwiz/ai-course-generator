@@ -11,7 +11,8 @@ import {
   Lock, 
   User as UserIcon, 
   Play, 
-  ChevronLeft, 
+  ChevronLeft,
+  ChevronRight,
   Star,
   Clock,
   Users,
@@ -1145,16 +1146,75 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       )}>
         <div className={cn(
           "mx-auto transition-all duration-300",
-          state.isTheaterMode ? "max-w-none px-0" : "max-w-screen-2xl px-4 sm:px-6 lg:px-10 py-6"
+          state.isTheaterMode ? "max-w-none px-0" : "max-w-[1920px] px-3 sm:px-4 lg:px-6 py-4"
         )}>
           <div className={cn(
             "transition-all duration-300",
             state.sidebarCollapsed || state.isTheaterMode
-              ? "flex flex-col max-w-6xl mx-auto"
-              : "flex flex-col lg:grid lg:grid-cols-[2fr,1fr] gap-4 lg:gap-6"
+              ? "flex flex-col max-w-7xl mx-auto"
+              : "flex flex-col lg:grid lg:grid-cols-[4fr_360px] xl:grid-cols-[4.5fr_360px] 2xl:grid-cols-[5fr_380px] gap-3 lg:gap-4"
           )}>
             {/* Video and content area */}
             <div className="space-y-4 min-w-0">
+              {/* Progress Stats Bar - Above Video */}
+              {!state.isTheaterMode && currentChapter && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center justify-between gap-3 px-3 py-2.5 bg-card/50 backdrop-blur-sm rounded-lg border shadow-sm"
+                >
+                  {/* Progress Info */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <CheckCircle className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold">
+                          {courseStats.completedCount}/{courseStats.totalChapters} Complete
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {courseStats.totalChapters - courseStats.completedCount} remaining
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    <div className="hidden md:flex items-center gap-3 flex-1 max-w-xs">
+                      <Progress value={courseStats.progressPercentage} className="h-2 flex-1" />
+                      <Badge variant="secondary" className="bg-primary/10 text-primary font-semibold shrink-0">
+                        {courseStats.progressPercentage}%
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Sidebar Toggle Button */}
+                  {state.sidebarCollapsed ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => dispatch2({ type: 'SET_SIDEBAR_COLLAPSED', payload: false })}
+                      className="gap-2 shrink-0"
+                      aria-label="Show course content"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span className="hidden sm:inline">Show Chapters</span>
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => dispatch2({ type: 'SET_SIDEBAR_COLLAPSED', payload: true })}
+                      className="gap-2 shrink-0"
+                      aria-label="Hide course content"
+                    >
+                      <span className="hidden sm:inline">Hide</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  )}
+                </motion.div>
+              )}
+
               {/* Video player section */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}

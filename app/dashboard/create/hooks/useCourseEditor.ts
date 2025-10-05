@@ -6,19 +6,15 @@ import { useToast } from "@/hooks"
 import { api } from "@/lib/api-helper"
 import { useRouter } from "next/navigation"
 import type { Course, CourseUnit, Chapter } from "@prisma/client"
-import type { ChapterCardHandler } from "../components/ChapterCard"
+import type { ChapterCardHandler, ChapterStatus, ChapterGenerationStatus } from "../types"
+
+// Re-export for backward compatibility
+export type { ChapterCardHandler, ChapterStatus, ChapterGenerationStatus }
 
 export type CourseWithUnits = Course & {
   units: (CourseUnit & {
     chapters: Chapter[]
   })[]
-}
-
-export type ChapterStatus = "idle" | "processing" | "success" | "error"
-
-export interface ChapterGenerationStatus {
-  status: ChapterStatus
-  message?: string
 }
 
 export function useCourseEditor(initialCourse: CourseWithUnits) {

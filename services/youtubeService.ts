@@ -3,7 +3,8 @@ import { YtTranscript } from "yt-transcript"
 import { Supadata, type TranscriptChunk } from "@supadata/js"
 import pRetry from "p-retry"
 import pTimeout from "p-timeout"
-import { Innertube } from "youtubei.js"
+// Lazy import for youtubei.js to avoid Turbopack circular dependency issues
+// import { Innertube } from "youtubei.js"
 
 export interface YoutubeSearchResponse {
   items: Array<{
@@ -28,7 +29,23 @@ class YoutubeService {
   private static processedVideoIds = new Set<string>()
   private static transcriptCache = new Map<string, string>()
   private static supadata: Supadata
+  private static innertubeInstance: any = null // Cache Innertube instance
   private static currentSupadataKey: string
+
+  /**
+   * Lazy load youtubei.js to avoid Turbopack circular dependency issues
+   * @returns Innertube class from youtubei.js
+   */
+  private static async getInnertubeClass() {
+    try {
+      const { Innertube } = await import('youtubei.js')
+      return Innertube
+    } catch (error) {
+      console.error('[YoutubeService] Failed to load youtubei.js:', error)
+      throw new Error('Failed to load YouTube library')
+    }
+  }
+
   private static youtubeClient = {
     get: async (endpoint: string, options: any) => {
       const url = `https://www.googleapis.com/youtube/v3${endpoint}`
@@ -251,6 +268,7 @@ class YoutubeService {
   // youtubei.js fallback (supports cookie token if provided)
   private static async getYouTubeiTranscript(videoId: string): Promise<string | null> {
     try {
+      const Innertube = await this.getInnertubeClass()
       const yt = await Innertube.create({
         cookie: this.youtubeCookie,
       })

@@ -58,7 +58,7 @@ const nextConfig = {
   compress: true,
 
   // Performance optimizations
-  swcMinify: true,
+  // swcMinify: true, // Removed - SWC is now the default minifier in Next.js 15+
   trailingSlash: false,
   skipTrailingSlashRedirect: true,
   skipMiddlewareUrlNormalize: true,
@@ -104,64 +104,72 @@ const nextConfig = {
       "date-fns",
       "lodash",
       "@react-pdf/renderer",
-      "@langchain/openai",
+      // "@langchain/openai", // Moved to serverExternalPackages to avoid conflicts
       "@langchain/core",
-      "@langchain/community",
-      "youtubei.js",
+      // "@langchain/community", // Moved to serverExternalPackages to avoid conflicts
+      // "youtubei.js", // Removed - causes circular dependency issues in Turbopack
       "@monaco-editor/react",
       "@ai-sdk/openai",
-      "@ai-sdk/react",
       "@google/generative-ai",
       "react-player",
       "react-syntax-highlighter",
       "marked",
-      "prismjs",
-      "highlight.js",
     ],
-    // Enable turbopack/incremental compilation only when you're ready
-    // turbo: {},
   },
 
-  // Webpack customizations for dev & prod (only when not using Turbopack)
-  ...(process.env.TURBOPACK || nextConfig.experimental?.turbo ? {} : {
-    webpack: (config, { dev, isServer }) => {
-      // Aggressive filesystem caching in dev for faster rebuilds
-      if (dev) {
-        config.cache = {
-          type: "filesystem",
-          buildDependencies: {
-            config: [fileURLToPath(import.meta.url)],
-          },
-        }
+  // Turbopack configuration for faster development builds (Next.js 15.5+)
+  turbopack: {
+    rules: {
+      // Configure loaders for specific file types if needed
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
+      },
+    },
+    resolveAlias: {
+      // Add any custom path aliases needed for Turbopack
+      '@': './app',
+      '@/components': './components',
+      '@/lib': './lib',
+      '@/utils': './utils',
+      '@/hooks': './hooks',
+      '@/store': './store',
+      '@/services': './services',
+      '@/types': './types',
+    },
+    // Exclude problematic packages from Turbopack optimization
+    resolveExtensions: ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.json'],
+  },
 
-        // Speed up module resolution in dev
-        config.snapshot = {
-          managedPaths: [path.resolve(__dirname, "node_modules")],
-        }
+  // Server-side external packages (prevents bundling issues)
+  serverExternalPackages: [
+    'youtubei.js',
+    '@langchain/community',
+    '@langchain/openai',
+    'sharp',
+  ],
 
-        // Dev build opts to favor faster iteration over maximal optimization
-        if (!isServer) {
-          config.optimization = {
-            ...config.optimization,
-            moduleIds: "deterministic",
-            chunkIds: "deterministic",
-            runtimeChunk: "single",
-            removeAvailableModules: false,
-            removeEmptyChunks: false,
-            splitChunks: false, // faster dev compilation
-            concatenateModules: true,
-            emitOnErrors: false, // Don't emit assets on errors for faster rebuilds
-          }
-        }
+  // Webpack customizations for production builds (Turbopack is dev-only)
+  webpack: (config, { dev, isServer }) => {
+    // In dev mode with --turbo flag, Turbopack handles everything
+    // This webpack config only applies to production builds or dev without --turbo
+    if (dev) {
+      // Minimal webpack config for dev mode without --turbo
+      return config
+    }
 
-        // Add performance hints for dev
-        config.performance = {
-          hints: false, // Disable performance hints in dev
-        }
-      }
+    // Production-only optimizations below this point
 
-      // Production split-chunk optimizations for smaller client bundles
-      if (!dev && !isServer) {
+    // Externalize problematic server-side packages
+    if (isServer) {
+      config.externals = config.externals || []
+      config.externals.push({
+        'youtubei.js': 'commonjs youtubei.js',
+      })
+    }
+
+    // Production split-chunk optimizations for smaller client bundles
+    if (!isServer) {
         config.optimization = config.optimization || {}
         config.optimization.splitChunks = {
           chunks: "all",
@@ -256,8 +264,7 @@ const nextConfig = {
       }
 
       return config
-    }
-  }),
+    },
 }
 
 export default bundleAnalyzer(nextConfig)

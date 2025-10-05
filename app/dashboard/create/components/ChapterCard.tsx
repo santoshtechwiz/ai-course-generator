@@ -9,7 +9,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Input } from "@/components/ui/input"
 
-import type { ChapterGenerationStatus } from "../hooks/useCourseEditor"
+import type { ChapterGenerationStatus, ChapterCardHandler } from "../types"
 import { Badge } from "@/components/ui/badge"
 import { useChapterProcessing } from "../hooks/useChapterProcessing"
 import { useToast } from "@/hooks"
@@ -31,9 +31,8 @@ type Props = {
   isFree?: boolean // Add this property for first chapters
 }
 
-export type ChapterCardHandler = {
-  triggerLoad: () => Promise<void>
-}
+// Re-export type for backward compatibility
+export type { ChapterCardHandler }
 
 // Status indicator component
 interface StatusIndicatorProps {

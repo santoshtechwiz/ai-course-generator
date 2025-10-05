@@ -324,7 +324,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 p-6 border-b border-border/50"
+          className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 p-4 border-b border-border/50"
         >
           <div className="space-y-4">
             {/* Course Title */}
@@ -413,7 +413,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="p-4"
+            className="p-3"
           >
             {groupedChapters.map((module, moduleIndex) => {
               const isCollapsed = collapsedModules.has(module.title);
@@ -541,8 +541,8 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                     onMouseEnter={() => setHoveredChapter(safeChapter.id)}
                                     onMouseLeave={() => setHoveredChapter(null)}
                                     className={cn(
-                                                    "w-full text-left px-4 py-3 rounded-xl text-sm transition-all duration-300 group relative overflow-hidden",
-                                                     "flex items-start gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                                                    "w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all duration-300 group relative overflow-hidden",
+                                                     "flex items-start gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                                       "border hover:shadow-lg backdrop-blur-sm transform hover:-translate-y-0.5",
                                       isActive ? 
                                         "bg-gradient-to-r from-primary/20 to-primary/10 text-primary font-semibold border-primary/30 shadow-lg shadow-primary/10" : 
@@ -845,7 +845,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-5 border-t border-border/50 bg-gradient-to-r from-primary/8 via-primary/5 to-primary/8 shadow-inner"
+            className="p-4 border-t border-border/50 bg-gradient-to-r from-primary/8 via-primary/5 to-primary/8 shadow-inner"
           >
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0">
