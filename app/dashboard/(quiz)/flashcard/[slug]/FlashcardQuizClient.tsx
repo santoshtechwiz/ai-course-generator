@@ -9,6 +9,7 @@ import { RootState } from "@/store"
 import { NoResults } from "@/components/ui/no-results"
 import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
 import { PageLoader } from "@/components/loaders"
+import { LOADER_MESSAGES } from "@/constants/loader-messages"
 import { useAuth } from "@/hooks"
 
 // ⚡ PERFORMANCE: Lazy load heavy components with framer-motion
@@ -83,7 +84,7 @@ export default function FlashcardQuizClient({ params }: FlashcardQuizClientProps
   }
 
   return (
-    <Suspense fallback={<PageLoader message="Loading flashcard quiz..." />}>
+    <Suspense fallback={<PageLoader message={LOADER_MESSAGES.LOADING_FLASHCARD_QUIZ} />}>
       <QuizPlayLayout
         quizSlug={slug}
         quizType="flashcard"

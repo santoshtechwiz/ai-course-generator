@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useCallback, useRef } from "react"
+import { useEffect, useMemo, useCallback, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { useAuth } from "@/modules/auth"
@@ -28,6 +28,7 @@ import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "@/components/quiz/QuizActions"
 import { UnifiedLoader } from "@/components/loaders"
+import { LOADER_MESSAGES } from "@/constants/loader-messages"
 
 
 interface CodeQuizWrapperProps {
@@ -179,28 +180,34 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     }
   }, [currentQuestionIndex, questions.length, dispatch])
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const handleSubmitQuiz = useCallback(async () => {
     try {
+      setIsSubmitting(true)
       const result = await dispatch(submitQuiz()).unwrap()
+      
       if ('requiresAuth' in result && result.requiresAuth) {
-        toast.info("Please sign in to save your results permanently")
+        toast.info("Quiz submitted! Sign in to save your results.")
       } else {
         toast.success("Quiz submitted successfully!")
       }
 
+      // Brief delay to show calculating state
       setTimeout(() => {
         router.push(`/dashboard/code/${slug}/results`)
-      }, 500)
+      }, 800)
     } catch (err: any) {
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
+      setIsSubmitting(false)
     }
   }, [dispatch, router, slug])
 
 
   const isLoading = quizStatus === "loading" || quizStatus === "idle"
   const hasError = quizStatus === "failed"
-  const isSubmitting = quizStatus === "submitting"
+  const isQuizSubmitting = quizStatus === "submitting"
   const formattedQuestion = useMemo(() => {
     if (!currentQuestion) return null
 
@@ -255,12 +262,33 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
 
   const canGoNext = currentQuestionIndex < questions.length - 1
   const isLastQuestion = currentQuestionIndex === questions.length - 1
+
+  // Show calculating loader during submission
+  if (isSubmitting) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
+        <div className="text-center space-y-4 px-4">
+          <UnifiedLoader
+            state="loading"
+            variant="spinner"
+            size="lg"
+            message={LOADER_MESSAGES.CALCULATING_RESULTS}
+            className="text-center"
+          />
+          <p className="text-sm text-muted-foreground animate-pulse">
+            Please wait while we analyze your answers
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   if (isLoading) {
     return (
       <UnifiedLoader
         state="loading"
         variant="skeleton"
-        message="Loading code quiz..."
+        message={LOADER_MESSAGES.LOADING_CODE}
         size="md"
       />
     )
@@ -283,7 +311,7 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       <UnifiedLoader
         state="loading"
         variant="skeleton"
-        message="Loading quiz..."
+        message={LOADER_MESSAGES.LOADING_QUIZ}
         size="md"
       />
     )

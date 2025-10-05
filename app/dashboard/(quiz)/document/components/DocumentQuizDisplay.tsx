@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/components/ui/use-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion, AnimatePresence } from "framer-motion"
+import { InlineLoader } from "@/components/loaders"
 
 // Lazy load PDF components for better performance
 const EnhancedPDFDownloadButton = lazy(() =>
@@ -224,7 +225,7 @@ const QuestionEditor = ({
                   value={editedQuestion.question}
                   onChange={(e) => setEditedQuestion((prev) => ({ ...prev, question: e.target.value }))}
                   placeholder="Enter your question..."
-                  className="min-h-[80px] resize-none"
+                  className="min-h-[60px] sm:min-h-[80px] resize-none text-sm sm:text-base"
                 />
               </div>
 
@@ -434,11 +435,10 @@ export default function DocumentQuizDisplay({
           )}
           <Suspense
             fallback={
-              <div>
-                <Button variant="outline" size="sm" disabled>
-                  Loading...
-                </Button>
-              </div>
+              <Button variant="outline" size="sm" disabled className="flex items-center gap-2">
+                <InlineLoader size="xs" variant="spinner" />
+                <span>Preparing PDF...</span>
+              </Button>
             }
           >
             <EnhancedPDFDownloadButton
@@ -468,7 +468,7 @@ export default function DocumentQuizDisplay({
 
       {validQuestions.length > 0 && onSave && (
         <div className="flex justify-center pt-4">
-          <Button onClick={() => onSave(validQuestions)} size="lg" className="min-w-[200px]">
+          <Button onClick={() => onSave(validQuestions)} size="lg" className="min-w-[180px] sm:min-w-[200px] min-h-[44px]">
             <Save className="mr-2 h-5 w-5" />
             Save Quiz ({validQuestions.length} questions)
           </Button>

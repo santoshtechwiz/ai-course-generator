@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useCallback, useMemo, useRef } from "react"
+import { useEffect, useCallback, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { useAuth } from "@/modules/auth"
@@ -24,7 +24,8 @@ import {
 
 import { NoResults } from "@/components/ui/no-results"
 import McqQuiz from "./McqQuiz"
-import { UnifiedLoader, PageLoader } from "@/components/loaders"
+import { UnifiedLoader } from "@/components/loaders"
+import { LOADER_MESSAGES } from "@/constants/loader-messages"
 import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -155,28 +156,57 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     }
   }, [currentQuestionIndex, questions.length, dispatch])
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const handleSubmitQuiz = useCallback(async () => {
     try {
-      await dispatch(submitQuiz()).unwrap()
-      toast.success("Quiz submitted successfully!")
-      // Always navigate to results, even if authentication is required
+      setIsSubmitting(true)
+      const result = await dispatch(submitQuiz()).unwrap()
+      
+      // Show success message
+      if (result.requiresAuth) {
+        toast.info("Quiz submitted! Sign in to save your results.")
+      } else {
+        toast.success("Quiz submitted successfully!")
+      }
+      
+      // Brief delay to show calculating state
       setTimeout(() => {
         router.push(`/dashboard/mcq/${slug}/results`)
-      }, 500)
+      }, 800)
     } catch (err: any) {
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
+      setIsSubmitting(false)
     }
   }, [dispatch, router, slug])
+
+  // Show calculating loader during submission
+  if (isSubmitting) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
+        <UnifiedLoader
+          state="loading"
+          variant="spinner"
+          size="lg"
+          message={LOADER_MESSAGES.CALCULATING_RESULTS}
+          className="p-8"
+        />
+      </div>
+    )
+  }
 
   // Loading state with improved handling
   if (quizStatus === 'loading' && !questions.length) {
     return (
-      <PageLoader
-        message="Loading quiz questions..."
-        variant="spinner"
-        size="lg"
-      />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <UnifiedLoader
+          state="loading"
+          variant="spinner"
+          size="lg"
+          message={LOADER_MESSAGES.LOADING_MCQ}
+        />
+      </div>
     )
   }
 
@@ -313,11 +343,13 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
 
   // Fallback loading state
   return (
-    <UnifiedLoader
-      state="loading"
-      message="Loading quiz..."
-      variant="spinner"
-      size="md"
-    />
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <UnifiedLoader
+        state="loading"
+        message={LOADER_MESSAGES.LOADING_QUIZ}
+        variant="spinner"
+        size="lg"
+      />
+    </div>
   )
 }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PageLoader } from "@/components/loaders"
+import { LOADER_MESSAGES } from "@/constants/loader-messages"
 import { useSelector } from "react-redux"
 
 // ⚡ PERFORMANCE: Lazy load heavy components with framer-motion
@@ -41,7 +42,7 @@ export default function McqQuizClient({ params }: McqQuizClientProps) {
   }
 
   return (
-    <Suspense fallback={<PageLoader message="Loading quiz..." />}>
+    <Suspense fallback={<PageLoader message={LOADER_MESSAGES.LOADING_MCQ} />}>
       <QuizPlayLayout
         quizSlug={slug}
         quizType="mcq"

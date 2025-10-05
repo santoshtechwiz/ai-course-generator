@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Home, ArrowLeft } from "lucide-react"
 import { quizStore } from "@/lib/quiz-store"
 import { QuizPlayer } from "../components/QuizPlay"
+import { UnifiedLoader } from "@/components/loaders"
+import { LOADER_MESSAGES } from "@/constants/loader-messages"
 
 interface DocumentQuizClientProps {
   params: Promise<{ quizId: string }>
@@ -49,11 +51,12 @@ export default function DocumentQuizClient({ params }: DocumentQuizClientProps) 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen w-full bg-background">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardContent className="p-6 text-center">
-            <p className="text-lg">Loading quiz...</p>
-          </CardContent>
-        </Card>
+        <UnifiedLoader
+          state="loading"
+          variant="spinner"
+          size="lg"
+          message={LOADER_MESSAGES.LOADING_DOCUMENT_QUIZ}
+        />
       </div>
     )
   }

@@ -35,6 +35,7 @@ import { NoResults } from "@/components/ui/no-results";
 import { useAuth } from "@/modules/auth";
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
 import { UnifiedLoader } from "@/components/loaders";
+import { LOADER_MESSAGES } from "@/constants/loader-messages";
 
 interface FlashcardQuizWrapperProps {
   slug: string;
@@ -203,7 +204,7 @@ export default function FlashcardQuizWrapper({
           state="loading"
           variant="spinner"
           size="lg"
-          message="Loading flashcards..."
+          message={LOADER_MESSAGES.LOADING_FLASHCARDS}
           className="text-center"
         />
       </div>

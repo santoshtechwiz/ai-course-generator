@@ -3,16 +3,14 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSelector } from 'react-redux'
-import useAppDispatch from '@/store'
+import { useAppDispatch } from '@/store/hooks'
 import { AnimatePresence, motion } from 'framer-motion'
 import { RefreshCw } from 'lucide-react'
-import { createMachine } from 'xstate'
-import { useMachine } from '@xstate/react'
 
 import { NoResults } from '@/components/ui/no-results'
 import SignInPrompt from '@/app/auth/signin/components/SignInPrompt'
-import { Progress } from '@/components/ui/progress'
 import { UnifiedLoader } from '@/components/loaders'
+import { LOADER_MESSAGES } from '@/constants/loader-messages'
 
 import { useAuth } from '@/modules/auth'
 import { storageManager } from '@/utils/storage-manager'
@@ -21,7 +19,6 @@ import {
   selectQuizStatus,
   selectQuizQuestions,
   loadQuizResults,
-  clearRequiresAuth,
   loadTempResultsAndSave,
   resetQuiz,
   setQuizResults,
@@ -35,90 +32,7 @@ interface Props {
   children: (props: { result: any }) => React.ReactNode
 }
 
-// AutoRedirect component that automatically triggers a redirect after a delay
-interface AutoRedirectProps {
-  onRedirect: () => void;
-  delay: number;
-}
-
-function AutoRedirect({ onRedirect, delay }: AutoRedirectProps) {
-  const [progress, setProgress] = useState(0);
-  
-  useEffect(() => {
-    // Calculate how often to update progress to create smooth animation
-    const interval = delay / 100;
-    const step = 100 / (delay / interval);
-    
-    // Update progress bar
-    const timer = setInterval(() => {
-      setProgress(prev => {
-        const newProgress = prev + step;
-        return newProgress >= 100 ? 100 : newProgress;
-      });
-    }, interval);
-    
-    // Trigger redirect when complete
-    const redirectTimer = setTimeout(() => {
-      onRedirect();
-    }, delay);
-    
-    return () => {
-      clearInterval(timer);
-      clearTimeout(redirectTimer);
-    };
-  }, [onRedirect, delay]);
-  
-  return (
-    <div className="w-full mt-4">
-      <Progress value={progress} className="h-1" />
-      <p className="text-xs text-center text-muted-foreground mt-2">
-        Redirecting in {Math.ceil((delay / 1000) * (1 - progress/100))} seconds...
-      </p>
-    </div>
-  );
-}
-
-// Define a simplified quiz result state machine with fewer intermediate states
-const quizResultMachine = createMachine({
-  id: 'quizResultMachine',
-  initial: 'loading',
-  states: {
-    loading: {
-      on: {
-        RESULTS_LOADED_WITH_AUTH: 'showResults',
-        RESULTS_LOADED_NO_AUTH: 'showSignin',
-        NO_RESULTS: 'noResults',
-        ERROR: 'error',
-        // Direct transition to quiz without intermediate states
-        RETAKE: 'loading'
-      }
-    },
-    showResults: {
-      on: {
-        REFRESH: 'loading',
-        RETAKE: 'loading'
-      }
-    },
-    showSignin: {
-      on: {
-        SIGN_IN: 'loading',
-        RETAKE: 'loading',
-        RESULTS_LOADED_WITH_AUTH: 'showResults'
-      }
-    },
-    error: {
-      on: {
-        RETRY: 'loading',
-        RETAKE: 'loading'
-      }
-    },
-    noResults: {
-      on: {
-        RETAKE: 'loading'
-      }
-    }
-  }
-});
+type ViewState = 'loading' | 'calculating' | 'showResults' | 'showSignin' | 'error' | 'redirecting'
 
 export default function GenericQuizResultHandler({ slug, quizType, children }: Props) {
   const dispatch = useAppDispatch()
@@ -129,149 +43,26 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   const quizStatus = useSelector(selectQuizStatus)
   const quizQuestions = useSelector(selectQuizQuestions)
   
-  // For storing error message
+  // Simple state management
+  const [viewState, setViewState] = useState<ViewState>('loading')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [isRedirecting, setIsRedirecting] = useState<boolean>(false)
   
-  // Ref to prevent multiple temp result loads
+  // Refs to prevent multiple loads
   const tempResultsLoadedRef = useRef(false)
+  const hasInitialized = useRef(false)
   
-  // Initialize the state machine
-  const [state, send] = useMachine(quizResultMachine);
-  
-  // Check if we have results - use more robust checking
+  // Check if we have valid results
   const hasResults = useMemo(() => {
     return Boolean(
       quizResults &&
       quizResults.slug === slug && 
       (typeof quizResults.percentage === 'number' || 
        typeof quizResults.score === 'number' ||
-       Array.isArray(quizResults.results) && quizResults.results.length > 0 || 
-       Array.isArray(quizResults.answers) && quizResults.answers.length > 0)
+       Array.isArray(quizResults.results) && quizResults.results.length > 0)
     )
   }, [quizResults, slug])
-    // Clear any existing results from different quiz types on component mount
-  useEffect(() => {
-    if (quizResults && quizResults.slug !== slug) {
-      // If current stored results are for a different quiz, clear them
-      dispatch(resetQuiz());
-    }
-  }, [dispatch, quizResults, slug]);
 
-  // Monitor quiz status for authentication requirements
-  useEffect(() => {
-    if (quizStatus === 'requires-auth' && hasResults) {
-      console.log('Quiz requires authentication, showing sign-in prompt with results')
-      send({ type: 'RESULTS_LOADED_NO_AUTH' });
-    }
-  }, [quizStatus, hasResults, send]);
-
-  // Optimized effect for loading results
-  useEffect(() => {
-    if (!slug || isAuthLoading || tempResultsLoadedRef.current) return
-
-    // First, check for temporary results from unauthenticated submission
-    const tempResults = storageManager.getTempQuizResults(slug, quizType)
-    if (tempResults) {
-      tempResultsLoadedRef.current = true
-      if (isAuthenticated) {
-        console.log('Found temporary results, loading and saving to DB...')
-        dispatch(loadTempResultsAndSave({ slug, quizType }))
-          .unwrap()
-          .then(() => {
-            console.log('Successfully loaded and saved temp results')
-            send({ type: 'RESULTS_LOADED_WITH_AUTH' });
-          })
-          .catch((err: any) => {
-            console.error('Failed to load and save temp results:', err)
-            // Clear temp results on failure
-            storageManager.clearTempQuizResults(slug, quizType)
-            handleRetake();
-          });
-      } else {
-        console.log('Found temporary results for unauthenticated user, showing sign-in prompt')
-        // Load temp results into Redux state for display
-        dispatch(setQuizResults(tempResults.results))
-        send({ type: 'RESULTS_LOADED_NO_AUTH' });
-      }
-      return;
-    }
-
-    // Check for direct URL access first
-    try {
-      // Modern approach to detect direct URL access
-      const isDirect = document.referrer === '';
-      const isFromExternalDomain = document.referrer !== '' && 
-        !document.referrer.includes(window.location.hostname);
-        
-      if (isDirect || isFromExternalDomain) {
-        // For direct access, try to load results from API
-        console.log('Direct URL access detected, checking for saved results...')
-        dispatch(clearRequiresAuth())
-        
-        // Check if we have results after clearing auth requirement
-        const hasResults = quizResults && (
-          quizResults.score !== undefined ||
-          quizResults.percentage !== undefined ||
-          quizResults.maxScore !== undefined ||
-          (quizResults.answers && Object.keys(quizResults.answers).length > 0) ||
-          (quizResults.results && quizResults.results.length > 0)
-        )
-
-        if (hasResults) {
-          console.log('Found existing results in state')
-          send({ type: 'RESULTS_LOADED_WITH_AUTH' });
-        } else {
-          console.log('No saved results found, redirecting to quiz')
-          handleRetake();
-        }
-        return;
-      }
-    } catch (e) {
-      // Continue with normal flow if detection fails
-    }
-
-    // Clear any results that don't match the current slug
-    if (quizResults && quizResults.slug !== slug) {
-      dispatch(resetQuiz());
-    }
-
-    // If we already have matching results and user is authenticated, immediately show results
-    if (hasResults && isAuthenticated) {
-      console.log('Found existing results in state, showing immediately')
-      send({ type: 'RESULTS_LOADED_WITH_AUTH' });
-      return;
-    }
-
-    // If user is not authenticated but we have results, show sign-in prompt
-    if (hasResults && !isAuthenticated) {
-      console.log('Have results but user not authenticated, showing sign-in prompt')
-      send({ type: 'RESULTS_LOADED_NO_AUTH' });
-      return;
-    }
-
-    // If no results in state, try to fetch from API
-    if (!hasResults) {
-      console.log('No results in state, attempting to load from API...')
-      dispatch(loadQuizResults())
-        .unwrap()
-        .then(() => {
-          console.log('Successfully loaded results from API')
-          if (isAuthenticated) {
-            send({ type: 'RESULTS_LOADED_WITH_AUTH' });
-          } else {
-            send({ type: 'RESULTS_LOADED_NO_AUTH' });
-          }
-        })
-        .catch((err: any) => {
-          console.log('Failed to load results from API, redirecting to quiz:', err.error)
-          // No results found, redirect to quiz
-          handleRetake();
-        });
-    }
-      
-  }, [slug, isAuthLoading, dispatch, send, hasResults, isAuthenticated, quizResults]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  // Process results for display
   const processedResults = useMemo(() => {
     if (!quizResults) return null
 
@@ -288,18 +79,15 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         const answerDetail = quizResults.answers?.find(
           (answer) => answer.questionId === result.questionId
         )
-
         const questionData = quizQuestions?.find(
           (q) => String(q.id) === result.questionId
         )
-
         return {
           questionId: result.questionId,
           question: questionData?.question || result.questionId,
-          userAnswer:
-            result.userAnswer === null || result.userAnswer === undefined
-              ? '(No answer selected)'
-              : result.userAnswer || '',
+          userAnswer: result.userAnswer === null || result.userAnswer === undefined
+            ? '(No answer selected)'
+            : result.userAnswer || '',
           correctAnswer: result.correctAnswer || questionData?.answer || '',
           isCorrect: result.isCorrect,
           type: answerDetail?.type || 'mcq',
@@ -313,176 +101,247 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     }
   }, [quizResults, quizQuestions, slug])
 
-  const isLoading = quizStatus === 'loading' || isAuthLoading  // Simplified retake function with immediate redirect
-  const handleRetake = () => {
-    // Flag that we're redirecting to prevent other state changes
-    setIsRedirecting(true);
-    
-    // Clear quiz state immediately to prevent issues with shared state
-    dispatch(resetQuiz());
-    
-    // Tell state machine we're taking action
-    send({ type: 'RETAKE' });
-    
-    // Always navigate to the quiz page directly
-    router.push(`/dashboard/${quizType}/${slug}`);
-  }// Simplified retry function with cleaner feedback
-  const handleRetry = () => {
-    // Reset error state
-    setErrorMessage(null);
-    
-    // Clear quiz state to start fresh
-    dispatch(resetQuiz());
-    
-    // Set loading state
-    send({ type: 'RETRY' });
-    
-    // Just refresh the page - simple and effective
-    setTimeout(() => {
-      router.refresh();
-    }, 100);
-    
-    // Set a backup timeout to redirect to quiz if refresh doesn't help
-    setTimeout(() => {
-      if (state.matches('loading') || state.matches('error')) {
-        handleRetake(); // Redirect to quiz if still loading or error
-      }
-    }, 4000);
-  }
-    // Handle sign in action
-  const handleSignIn = () => {
-    send({ type: 'SIGN_IN' })
-    // Redirect to sign-in page with proper callback URL
-    window.location.href = `/api/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/${quizType}/${slug}/results`)}`
-  }
-    // Effect to handle authentication changes
+  // Initialize and load results
   useEffect(() => {
-    // When authentication state changes to authenticated and we have results,
-    // transition to results state regardless of current state
-    if (isAuthenticated && hasResults && !isAuthLoading) {
-      console.log('User authenticated with existing results, showing results')
-      send({ type: 'RESULTS_LOADED_WITH_AUTH' });
+    if (!slug || isAuthLoading) return
+
+    console.log('[QuizResultHandler] Initializing for slug:', slug, 'isAuthenticated:', isAuthenticated)
+
+    // Clear mismatched results
+    if (quizResults && quizResults.slug !== slug) {
+      console.log('[QuizResultHandler] Clearing mismatched results')
+      dispatch(resetQuiz())
+      hasInitialized.current = false
+      tempResultsLoadedRef.current = false
+      return
     }
-    // If user becomes authenticated but no results, try to load them
-    else if (isAuthenticated && !hasResults && !isAuthLoading && slug) {
-      console.log('User authenticated but no results, attempting to load...')
+
+    // Check for temporary results first (from unauthenticated submission)
+    const tempResults = storageManager.getTempQuizResults(slug, quizType)
+    if (tempResults && !tempResultsLoadedRef.current) {
+      tempResultsLoadedRef.current = true
+      console.log('[QuizResultHandler] Found temp results, isAuthenticated:', isAuthenticated)
+      
+      if (isAuthenticated) {
+        console.log('[QuizResultHandler] User is authenticated, saving temp results to DB')
+        setViewState('calculating')
+        dispatch(loadTempResultsAndSave({ slug, quizType }))
+          .unwrap()
+          .then(() => {
+            console.log('[QuizResultHandler] Temp results saved to DB successfully')
+            setViewState('showResults')
+          })
+          .catch((err: any) => {
+            console.error('[QuizResultHandler] Failed to save temp results:', err)
+            // Don't clear temp results on error - user can try again
+            setErrorMessage('Failed to save results. Please try again.')
+            setViewState('error')
+          })
+      } else {
+        console.log('[QuizResultHandler] User not authenticated, loading temp results and showing sign-in prompt')
+        dispatch(setQuizResults(tempResults.results))
+        setViewState('showSignin')
+      }
+      hasInitialized.current = true
+      return
+    }
+
+    // If initialization already completed and we have results
+    if (hasInitialized.current) {
+      if (hasResults) {
+        console.log('[QuizResultHandler] Already initialized with results')
+        if (isAuthenticated && viewState !== 'showResults') {
+          setViewState('showResults')
+        } else if (!isAuthenticated && viewState !== 'showSignin') {
+          setViewState('showSignin')
+        }
+      }
+      return
+    }
+
+    // Mark as initialized
+    hasInitialized.current = true
+
+    // If we already have matching results in Redux state
+    if (hasResults) {
+      console.log('[QuizResultHandler] Found existing results in state')
+      if (isAuthenticated) {
+        setViewState('showResults')
+      } else {
+        setViewState('showSignin')
+      }
+      return
+    }
+
+    // Try to load from API for authenticated users
+    if (isAuthenticated) {
+      console.log('[QuizResultHandler] Attempting to load from API')
       dispatch(loadQuizResults())
         .unwrap()
         .then(() => {
-          send({ type: 'RESULTS_LOADED_WITH_AUTH' });
+          console.log('[QuizResultHandler] Loaded results from API')
+          setViewState('showResults')
         })
-        .catch(() => {
-          // If still no results after authentication, redirect to quiz
-          console.log('No results found after authentication, redirecting to quiz')
-          handleRetake();
-        });
+        .catch((err: any) => {
+          console.log('[QuizResultHandler] No results found in API, redirecting to quiz')
+          handleRetake()
+        })
+    } else {
+      // Unauthenticated user with no temp results - redirect to quiz
+      console.log('[QuizResultHandler] No results found for unauthenticated user, redirecting')
+      handleRetake()
     }
-  }, [isAuthenticated, hasResults, isAuthLoading, send, slug, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
-    // Simplified loading timeout effect that redirects if results can't be loaded
+  }, [slug, isAuthLoading, dispatch, hasResults, isAuthenticated, quizResults, quizType, viewState])
+
+  // Handle authentication changes - specifically for returning from sign-in
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout | null = null;
-    
-    // If in loading state, set a reasonable timeout to prevent infinite loading
-    if (state.matches('loading')) {
-      timeoutId = setTimeout(() => {
-        // If we're still loading after timeout, show error and give option to retry
-        if (!isRedirecting) {
-          send({ type: 'ERROR' });
-          setErrorMessage('Results could not be loaded. Please try again or return to the quiz.');
-        }
-      }, 5000); // 5-second timeout for loading is more reasonable
-    }
-    
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [state.value, isRedirecting]); // eslint-disable-line react-hooks/exhaustive-deps  // Automatic redirection for no results
-  useEffect(() => {
-    // If we're in the noResults state, redirect immediately
-    if (state.matches('noResults') && !isRedirecting) {
-      handleRetake();
-    }
-  }, [state.value, isRedirecting]); // eslint-disable-line react-hooks/exhaustive-deps// Render loading or redirecting states with a single consistent loader
-  // If the machine is still in 'loading' but we already have matching results in Redux,
-  // transition the machine after render to avoid setState-in-render errors.
-  useEffect(() => {
-    if (state.matches('loading') && hasResults) {
-      if (isAuthenticated) {
-        send({ type: 'RESULTS_LOADED_WITH_AUTH' })
-      } else {
-        send({ type: 'RESULTS_LOADED_NO_AUTH' })
+    if (isAuthLoading) return
+
+    // When user becomes authenticated and we have temp results, trigger reload
+    if (isAuthenticated && !hasResults) {
+      const tempResults = storageManager.getTempQuizResults(slug, quizType)
+      if (tempResults && !tempResultsLoadedRef.current) {
+        console.log('[QuizResultHandler] User authenticated with temp results, reloading')
+        hasInitialized.current = false // Reset to trigger reload
+        tempResultsLoadedRef.current = false
       }
     }
-    // We intentionally depend on state.value (primitive) and stable refs
-  }, [state.value, hasResults, isAuthenticated, send]);
+  }, [isAuthenticated, hasResults, isAuthLoading, slug, quizType])
 
-    if (isLoading || state.matches('loading') || isRedirecting) {
-    const isRedirectingToQuiz = isRedirecting;
+  // Show calculating when status changes
+  useEffect(() => {
+    if (quizStatus === 'loading' && hasResults && viewState === 'loading') {
+      setViewState('calculating')
+    }
+  }, [quizStatus, hasResults, viewState])
+
+  // Handlers
+  const handleRetake = () => {
+    console.log('[QuizResultHandler] Retaking quiz')
+    setViewState('redirecting')
+    dispatch(resetQuiz())
+    router.push(`/dashboard/${quizType}/${slug}`)
+  }
+
+  const handleSignIn = () => {
+    console.log('[QuizResultHandler] Redirecting to sign in')
+    window.location.href = `/api/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/${quizType}/${slug}/results`)}`
+  }
+
+  const handleRetry = () => {
+    console.log('[QuizResultHandler] Retrying')
+    setErrorMessage(null)
+    hasInitialized.current = false
+    setViewState('loading')
+    router.refresh()
+  }
+
+  // Render based on state
+  if (viewState === 'calculating') {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
+      <motion.div 
+        key="calculating"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 flex items-center justify-center bg-background z-50"
+      >
+        <div className="text-center space-y-4 px-4">
+          <UnifiedLoader
+            state="loading"
+            variant="spinner"
+            size="lg"
+            message={LOADER_MESSAGES.CALCULATING_RESULTS}
+            className="text-center"
+          />
+          <p className="text-sm text-muted-foreground animate-pulse">
+            Please wait while we analyze your answers
+          </p>
+        </div>
+      </motion.div>
+    )
+  }
+
+  if (viewState === 'loading' || viewState === 'redirecting' || isAuthLoading) {
+    return (
+      <motion.div
+        key="loading"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 flex items-center justify-center bg-background z-50"
+      >
         <UnifiedLoader
           state="loading"
           variant="spinner"
           size="lg"
-          message={isRedirectingToQuiz ? "Redirecting to quiz..." : "Loading quiz results..."}
+          message={viewState === 'redirecting' ? LOADER_MESSAGES.REDIRECTING_TO_QUIZ : LOADER_MESSAGES.LOADING_RESULTS}
           className="text-center"
         />
-      </div>
+      </motion.div>
+    )
+  }
+
+  if (viewState === 'error') {
+    return (
+      <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <NoResults
+          variant="quiz"
+          title="Error Loading Quiz"
+          description={errorMessage || 'Failed to load quiz results. Please try again.'}
+          action={{
+            label: 'Go to Quiz',
+            onClick: handleRetake,
+            icon: <RefreshCw className="h-4 w-4" />,
+            variant: 'default',
+          }}
+          secondaryAction={{
+            label: 'Try Again',
+            onClick: handleRetry,
+            variant: 'outline',
+          }}
+        />
+      </motion.div>
     )
   }
 
   return (
     <AnimatePresence mode="wait" initial={false}>
-      {/* Show results state */}
-      {state.matches('showResults') && (
-        <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      {viewState === 'showResults' && processedResults && (
+        <motion.div 
+          key="results" 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        >
           {children({ result: processedResults })}
         </motion.div>
       )}
 
-      {/* Show sign in prompt state */}
-      {state.matches('showSignin') && (
-        <motion.div key="signin" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      {viewState === 'showSignin' && quizResults && (
+        <motion.div 
+          key="signin" 
+          initial={{ opacity: 0, scale: 0.95 }} 
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        >
           <SignInPrompt
             onSignIn={handleSignIn}
             onRetake={handleRetake}
             quizType={quizType}
-            previewData={
-              quizResults
-                ? {
-                  percentage: quizResults.percentage || 0,
-                  score: quizResults.score || 0,
-                  maxScore: quizResults.maxScore || 0,
-                }
-                : undefined
-            }
-          />
-        </motion.div>
-      )}      {/* Error state - simplified with auto-redirect */}
-      {state.matches('error') && (
-        <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <NoResults
-            variant="quiz"
-            title="Error Loading Quiz"
-            description={`${errorMessage || 'Failed to load quiz results'}. Automatically redirecting to quiz.`}
-            action={{
-              label: 'Go to Quiz Now',
-              onClick: handleRetake,
-              icon: <RefreshCw className="h-4 w-4" />,
-              variant: 'default',
-            }}
-            secondaryAction={{
-              label: 'Try Again',
-              onClick: handleRetry,
-              variant: 'outline',
+            previewData={{
+              percentage: quizResults.percentage || 0,
+              score: quizResults.score || 0,
+              maxScore: quizResults.maxScore || 0,
+              correctAnswers: quizResults.score || 0,
+              totalQuestions: quizResults.maxScore || 0,
+              stillLearningAnswers: (quizResults.maxScore || 0) - (quizResults.score || 0),
+              incorrectAnswers: (quizResults.maxScore || 0) - (quizResults.score || 0),
             }}
           />
-          <AutoRedirect onRedirect={handleRetake} delay={2000} />
         </motion.div>
-      )}
-        {/* No results state - immediate redirect */}
-      {state.matches('noResults') && (
-        <>{handleRetake()}</>
       )}
     </AnimatePresence>
   )

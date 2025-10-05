@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { useAuth } from "@/modules/auth"
-import type { AppDispatch } from "@/store"
+
 import {
   selectQuizQuestions,
   selectQuizAnswers,
@@ -25,8 +25,10 @@ import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import BlanksQuiz from "./BlanksQuiz"
 import { UnifiedLoader } from "@/components/loaders"
-
+import { LOADER_MESSAGES } from "@/constants/loader-messages"
+import { AppDispatch } from "@/store"
 import { BlankQuizQuestion } from "@/app/types/quiz-types"
+
 
 
 interface BlanksQuizWrapperProps {
@@ -156,23 +158,50 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
       dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1))
     }
   }, [currentQuestionIndex, dispatch])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   // Submit quiz and navigate to results
   const handleSubmitQuiz = useCallback(async () => {
     try {
+      setIsSubmitting(true)
       const result = await dispatch(submitQuiz()).unwrap()
+      
       if ('requiresAuth' in result && result.requiresAuth) {
-        toast.info("Sign in to save your results!")
+        toast.info("Quiz submitted! Sign in to save your results.")
       } else {
         toast.success("Quiz submitted successfully!")
       }
-      router.push(`/dashboard/blanks/${slug}/results`)
+      
+      // Brief delay to show calculating state
+      setTimeout(() => {
+        router.push(`/dashboard/blanks/${slug}/results`)
+      }, 800)
     } catch (err: any) {
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
-    } finally {
-  // No global loader; rely on page state
+      setIsSubmitting(false)
     }
   }, [dispatch, slug, router])
+
+  // Show calculating loader during submission
+  if (isSubmitting) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
+        <div className="text-center space-y-4 px-4">
+          <UnifiedLoader
+            state="loading"
+            variant="spinner"
+            size="lg"
+            message={LOADER_MESSAGES.CALCULATING_RESULTS}
+            className="text-center"
+          />
+          <p className="text-sm text-muted-foreground animate-pulse">
+            Please wait while we analyze your answers
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   // Loading & error states
   const isLoading = quizStatus === "loading" || quizStatus === "idle"
@@ -207,7 +236,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
       <UnifiedLoader
         state="loading"
         variant="skeleton"
-        message="Loading fill-in-the-blanks quiz..."
+        message={LOADER_MESSAGES.LOADING_BLANKS}
         size="md"
       />
     )

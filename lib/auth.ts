@@ -87,32 +87,74 @@ export const authOptions: NextAuthOptions = {
     }
   },
   callbacks: {
-    async jwt({ token, user, account, trigger }) {      // Initial sign in
+    async jwt({ token, user, account, trigger }) {
+      // CRITICAL: On initial sign-in, fetch EXISTING data from DB first
       if (user) {
         token.id = user.id
-        token.credits = typeof user.credits === 'number' ? user.credits : 3
-        token.creditsUsed = typeof user.creditsUsed === 'number' ? user.creditsUsed : 0
-        token.isActive = (user as any).isActive ?? true
-        token.isAdmin = user.isAdmin || false
-        token.userType = user.userType || "FREE"
+        
+        // Fetch existing user data from DB to preserve credits
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: {
+              credits: true,
+              creditsUsed: true,
+              isAdmin: true,
+              isActive: true,
+              userType: true,
+              subscription: {
+                select: {
+                  planId: true,
+                  status: true
+                }
+              }
+            },
+          })
+
+          if (dbUser) {
+            // PRESERVE existing DB values - don't use defaults unless NULL
+            token.credits = dbUser.credits ?? 3
+            token.creditsUsed = dbUser.creditsUsed ?? 0
+            token.isAdmin = Boolean(dbUser.isAdmin)
+            token.isActive = Boolean(dbUser.isActive ?? true)
+            token.userType = dbUser.userType || "FREE"
+            token.subscriptionPlan = dbUser.subscription?.planId || null
+            token.subscriptionStatus = dbUser.subscription?.status || null
+          } else {
+            // Fallback only if DB fetch fails
+            token.credits = typeof user.credits === 'number' ? user.credits : 3
+            token.creditsUsed = typeof user.creditsUsed === 'number' ? user.creditsUsed : 0
+            token.isActive = (user as any).isActive ?? true
+            token.isAdmin = user.isAdmin || false
+            token.userType = user.userType || "FREE"
+          }
+        } catch (error) {
+          console.error('[JWT] Error fetching user on sign-in:', error)
+          // Fallback to user object
+          token.credits = typeof user.credits === 'number' ? user.credits : 3
+          token.creditsUsed = typeof user.creditsUsed === 'number' ? user.creditsUsed : 0
+          token.isActive = (user as any).isActive ?? true
+          token.isAdmin = user.isAdmin || false
+          token.userType = user.userType || "FREE"
+        }
+        
         token.updatedAt = Date.now()
         return token
       }
 
-      // Force refresh token on session update, but only if explicitly requested
+      // Force refresh token on session update
       if (trigger === "update") {
         token.updatedAt = 0 // Force refresh by setting updatedAt to 0
       }
 
-      // Only refresh user data when explicitly triggered or token is very old (1 hour)
+      // Refresh user data periodically or when triggered
       const now = Date.now()
       const tokenUpdatedAt = (token.updatedAt as number) || 0
-      const refreshInterval = 60 * 60 * 1000 // 1 hour instead of 15 minutes
+      const refreshInterval = 60 * 60 * 1000 // 1 hour
       const shouldRefreshToken = !tokenUpdatedAt || now - tokenUpdatedAt > refreshInterval
 
       if (token.id && shouldRefreshToken) {
         try {
-          // Simple user query without complex subscription logic
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id },
             select: {
@@ -131,17 +173,18 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (dbUser) {
-            token.credits = typeof dbUser.credits === 'number' ? dbUser.credits : 3
-            token.creditsUsed = typeof dbUser.creditsUsed === 'number' ? dbUser.creditsUsed : 0
+            // CRITICAL: Use null coalescing to preserve 0 values
+            token.credits = dbUser.credits ?? token.credits ?? 3
+            token.creditsUsed = dbUser.creditsUsed ?? token.creditsUsed ?? 0
             token.isAdmin = Boolean(dbUser.isAdmin)
             token.isActive = Boolean(dbUser.isActive ?? true)
-            token.userType = dbUser.userType || "FREE"
+            token.userType = dbUser.userType || token.userType || "FREE"
             token.subscriptionPlan = dbUser.subscription?.planId || null
             token.subscriptionStatus = dbUser.subscription?.status || null
             token.updatedAt = now
           }
         } catch (error) {
-          console.error("Error fetching user data for JWT:", error)
+          console.error("[JWT] Error fetching user data for refresh:", error)
         }
       }
 
@@ -150,8 +193,9 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         session.user.id = token.id
         session.user.isActive = Boolean((token as any).isActive ?? true)
-        session.user.credits = typeof token.credits === 'number' ? token.credits : 3
-        session.user.creditsUsed = typeof token.creditsUsed === 'number' ? token.creditsUsed : 0
+        // CRITICAL: Use ?? (null coalescing) to preserve 0 values
+        session.user.credits = token.credits ?? 3
+        session.user.creditsUsed = token.creditsUsed ?? 0
         session.user.isAdmin = Boolean(token.isAdmin)
         session.user.userType = token.userType || "FREE"
         session.user.subscriptionPlan = token.subscriptionPlan || null
@@ -173,6 +217,17 @@ export const authOptions: NextAuthOptions = {
   events: {
     async signIn({ user, account, isNewUser }) {
       try {
+        // CRITICAL: Check if user already exists before any updates
+        const existingUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: {
+            credits: true,
+            creditsUsed: true,
+            userType: true,
+            isAdmin: true,
+          },
+        })
+
         // Update last login time for all sign-ins
         await prisma.user.update({
           where: { id: user.id },
@@ -181,8 +236,9 @@ export const authOptions: NextAuthOptions = {
           },
         })
 
-        // For new users, set default values
-        if (isNewUser) {
+        // CRITICAL: Only initialize credits for BRAND NEW users
+        // For existing users (even if isNewUser flag is true), preserve their data
+        if (isNewUser && (!existingUser || (existingUser.credits === null && existingUser.creditsUsed === null))) {
           await prisma.user.update({
             where: { id: user.id },
             data: {
@@ -197,6 +253,13 @@ export const authOptions: NextAuthOptions = {
           if (user.email && user.name) {
             await sendEmail(user.email, user.name).catch((err) => console.error("Failed to send welcome email:", err))
           }
+        } else if (existingUser) {
+          // Existing user - preserve their subscription data
+          console.log(`[SignIn] Existing user ${user.id} signed in - preserving credits:`, {
+            credits: existingUser.credits,
+            used: existingUser.creditsUsed,
+            plan: existingUser.userType,
+          })
         }
 
         // Record the sign-in provider for analytics

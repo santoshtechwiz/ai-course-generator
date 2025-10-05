@@ -1,62 +1,56 @@
+// next.config.mjs (ESM) or next.config.js if your package.json has "type": "module"
+import path from "path"
+import { fileURLToPath } from "url"
+import bundleAnalyzerPkg from "@next/bundle-analyzer"
 
-import path from "path";
-import { fileURLToPath } from "url";
-import withBundleAnalyzer from "@next/bundle-analyzer";
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Configure bundle analyzer (enabled with ANALYZE=true)
+// Initialize bundle analyzer wrapper
+const withBundleAnalyzer = bundleAnalyzerPkg.default
+  ? bundleAnalyzerPkg.default
+  : bundleAnalyzerPkg
 const bundleAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
   openAnalyzer: true,
-});
+})
 
 /**
  * Production-ready Next.js config
- * - Optimized for faster builds
- * - Keeps type-checking separate (use `npm run type-check` in CI/dev)
- * - Enables caching and minimal experimental flags
+ * - Optimized for faster builds & smaller bundles
+ * - Keep type-checking & linting separate in CI
+ * - Minimal, safe experimental flags
  */
 const nextConfig = {
-  reactStrictMode: false,
+  reactStrictMode: true,
   distDir: ".next",
   poweredByHeader: false,
-
-  // Render.com static / Docker standalone build support
   output: "standalone",
 
   // Image optimization
   images: {
-    domains: ["localhost"],
+    domains: [
+      "localhost",
+      "img.clerk.com",
+      "placehold.co",
+      "avatars.githubusercontent.com",
+      "img.youtube.com",
+      "images.unsplash.com",
+    ],
     formats: ["image/avif", "image/webp"],
     deviceSizes: [320, 420, 640, 768, 1024, 1280, 1440, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
-    remotePatterns: [
-      { protocol: "https", hostname: "img.clerk.com" },
-      { protocol: "https", hostname: "placehold.co" },
-      { protocol: "https", hostname: "avatars.githubusercontent.com" },
-      { protocol: "https", hostname: "img.youtube.com" },
-      { protocol: "https", hostname: "images.unsplash.com" },
-    ],
     minimumCacheTTL: 600,
   },
 
-  // Build configuration
-  eslint: {
-    ignoreDuringBuilds: true, // run lint separately in CI
-  },
+  // Keep lint & type checks in CI (faster local builds)
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true }, // run `npm run type-check` in CI
 
-  typescript: {
-    ignoreBuildErrors: true, // build won’t block; run `npm run type-check` separately
-  },
-
-  compiler: {
-    removeConsole: process.env.NODE_ENV === "production",
-  },
+  // Compiler transforms (strip console in production)
+  compiler: { removeConsole: process.env.NODE_ENV === "production" },
 
   compress: true,
 
-  // Environment variables (safe for build-time injection)
   env: {
     DISABLE_STATIC_SLUG: process.env.DISABLE_STATIC_SLUG || "no-static",
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
@@ -68,110 +62,108 @@ const nextConfig = {
     STRIPE_ULTIMATE_PRICE_ID: process.env.STRIPE_ULTIMATE_PRICE_ID,
   },
 
-  // URL rewrites
   async rewrites() {
     return [
       { source: "/sitemap.xml", destination: "/api/sitemap" },
       { source: "/rss.xml", destination: "/api/rss" },
-    ];
+    ]
   },
 
-  // Modular imports optimization (tree-shaking)
+  // Modular imports optimization (tree-shaking helpers)
   modularizeImports: {
-    lodash: {
-      transform: "lodash/{{member}}",
-    },
+    lodash: { transform: "lodash/{{member}}" },
   },
 
-  // Minimal experimental features (avoid slowing builds)
+  // Experimental flags (minimal & consolidated)
   experimental: {
-    // optimizeCss: false, // off by default
-    // serverSourceMaps: true, // disable for faster builds
     optimizePackageImports: [
-      "lucide-react", 
-      "recharts", 
+      "lucide-react",
+      "recharts",
       "@radix-ui/react-icons",
-      "framer-motion", // CRITICAL: Tree-shake framer-motion (major bundle size savings)
+      "framer-motion",
       "date-fns",
-      "lodash"
+      "lodash",
+      "@react-pdf/renderer",
+      "@langchain/openai",
+      "@langchain/core",
+      "@langchain/community",
+      "youtubei.js",
+      "@monaco-editor/react",
     ],
-    // Incremental compilation for faster rebuilds
-    incrementalCacheHandlerPath: undefined,
-    // Turbopack for faster dev compilation (Next.js 13+)
-    // Enable if using Next.js 14+: turbo: {},
+    // Enable turbopack/incremental compilation only when you're ready
+    // turbo: {},
   },
 
-  // Webpack config
+  // Webpack customizations for dev & prod
   webpack: (config, { dev, isServer }) => {
-    // ⚡ CRITICAL: Enable aggressive caching in dev mode
+    // Aggressive filesystem caching in dev for faster rebuilds
     if (dev) {
       config.cache = {
-        type: 'filesystem',
+        type: "filesystem",
         buildDependencies: {
           config: [fileURLToPath(import.meta.url)],
         },
-      };
-      
-      // Optimize module resolution
+      }
+
+      // Speed up module resolution in dev
       config.snapshot = {
-        managedPaths: [path.resolve(__dirname, 'node_modules')],
-      };
+        managedPaths: [path.resolve(__dirname, "node_modules")],
+      }
+
+      // Dev build opts to favor faster iteration over maximal optimization
+      if (!isServer) {
+        config.optimization = {
+          ...config.optimization,
+          moduleIds: "named",
+          chunkIds: "named",
+          runtimeChunk: "single",
+          removeAvailableModules: false,
+          removeEmptyChunks: false,
+          splitChunks: false, // faster dev compilation
+          concatenateModules: true,
+        }
+      }
     }
 
-    // Optimize client dev build
-    if (dev && !isServer) {
-      config.optimization = {
-        ...config.optimization,
-        moduleIds: "named",
-        chunkIds: "named",
-        runtimeChunk: "single",
-        removeAvailableModules: false,
-        removeEmptyChunks: false,
-        splitChunks: false, // Disable in dev for faster compilation
-        // Prevent duplicate module compilation
-        concatenateModules: true,
-        // NOTE: usedExports removed - conflicts with Next.js cacheUnaffected
-        // Tree-shaking still works via optimizePackageImports in experimental
-      };
-    }
-
-    // Production optimizations
+    // Production split-chunk optimizations for smaller client bundles
     if (!dev && !isServer) {
+      config.optimization = config.optimization || {}
       config.optimization.splitChunks = {
         chunks: "all",
         cacheGroups: {
-          vendor: {
+          vendors: {
             test: /[\\/]node_modules[\\/]/,
             name: "vendors",
             chunks: "all",
+            priority: 10,
           },
-          common: {
-            name: "common",
+          commons: {
+            name: "commons",
             minChunks: 2,
             chunks: "all",
             enforce: true,
+            priority: 5,
           },
         },
-      };
+      }
     }
 
-    // Alias for js-tiktoken (used by @langchain)
-    config.resolve = config.resolve || {};
+    // Helpful aliases / shims
+    config.resolve = config.resolve || {}
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
       "js-tiktoken/lite": path.resolve(
         __dirname,
         "src/shims/js-tiktoken-shim.cjs"
       ),
-      // Provide a small shim for the next-flight loader used by some Next internals
-      // This avoids "Can't resolve 'next-flight-client-entry-loader'" on some setups
-      // and is a safe no-op when RSC flight entry behavior is not required in this app.
-      "next-flight-client-entry-loader": path.resolve(__dirname, "src/shims/next-flight-client-entry-loader.cjs"),
-    };
+      "next-flight-client-entry-loader": path.resolve(
+        __dirname,
+        "src/shims/next-flight-client-entry-loader.cjs"
+      ),
+    }
 
-    return config;
+    return config
   },
-};
+}
 
-export default bundleAnalyzer(nextConfig);
-
+export default bundleAnalyzer(nextConfig)

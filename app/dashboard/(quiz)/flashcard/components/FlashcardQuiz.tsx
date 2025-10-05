@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { submitFlashCardAnswer, nextFlashCard, setCurrentFlashCard } from "@/store/slices/flashcard-slice"
-import { useAppDispatch, useAppSelector } from "@/store"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 
 // Import the simplified components
 import { FlashcardFront } from "./FlashcardFront"
@@ -16,6 +16,8 @@ import { FlashcardController } from "./FlashcardController"
 
 import { Button } from "@/components/ui/button"
 import { ArrowRight, RotateCcw, Heart, Brain, Target, CheckCircle2 } from "lucide-react"
+import { UnifiedLoader } from "@/components/loaders"
+import { LOADER_MESSAGES } from "@/constants/loader-messages"
 
 interface FlashCard {
   id: string
@@ -260,18 +262,14 @@ export default function FlashCardQuiz({
   // Show completion loader
   if (isFinishing) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] text-center">
-        <div className="space-y-4">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="text-6xl mx-auto"
-          >
-            🎯
-          </motion.div>
-          <h3 className="text-xl font-semibold">Completing Quiz...</h3>
-          <p className="text-gray-600">Calculating your results</p>
-        </div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+        <UnifiedLoader
+          state="loading"
+          variant="spinner"
+          size="lg"
+          message={LOADER_MESSAGES.CALCULATING_RESULTS}
+          className="p-8"
+        />
       </div>
     )
   }
