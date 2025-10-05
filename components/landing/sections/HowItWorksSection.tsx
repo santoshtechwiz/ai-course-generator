@@ -377,7 +377,7 @@ const HowItWorksSection = () => {
                   </motion.div>
                   <span
                     className={cn(
-                      "text-xs md:text-sm font-medium text-center hidden md:block",
+                      "text-xs sm:text-sm font-medium text-center block md:block",
                       index === activeStep ? "text-foreground" : "text-muted-foreground",
                     )}
                   >

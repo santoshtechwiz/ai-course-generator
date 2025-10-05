@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback } from "react"
 import { useRouter, usePathname } from "next/navigation"
-import { useAppDispatch, useAppSelector } from "@/store"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   clearQuizState,
   selectIsQuizComplete,

@@ -6,19 +6,31 @@ import {
   selectCourseProgressById,
 } from "@/store/slices/courseProgress-slice"
 import { useProgressEvents } from "@/utils/progress-events"
+import { useAuth } from "@/modules/auth"
 
 // Utility to fetch course progress from API and sync to Redux
 export function useCourseProgressSync(courseId: string | number) {
   const dispatch = useAppDispatch()
   const courseProgress = useAppSelector((state) => selectCourseProgressById(state, courseId))
   const { dispatchCourseProgressUpdated, dispatchChapterCompleted } = useProgressEvents()
+  const { user, isAuthenticated } = useAuth()
 
-  // Fetch progress from API on mount
+  // Fetch progress from API on mount - ONLY if user is authenticated
   useEffect(() => {
+    // Skip fetching progress if user is not authenticated
+    if (!isAuthenticated || !user?.id) {
+      console.log('[useCourseProgressSync] Skipping progress fetch - user not authenticated')
+      return
+    }
+
     async function fetchProgress() {
       try {
+        console.log(`[useCourseProgressSync] Fetching progress for course ${courseId}`)
         const res = await fetch(`/api/progress/${courseId}`)
-        if (!res.ok) return
+        if (!res.ok) {
+          console.warn(`[useCourseProgressSync] Progress fetch failed with status ${res.status}`)
+          return
+        }
         const { progress } = await res.json()
         if (progress) {
           // Sync video progress to Redux
@@ -67,11 +79,11 @@ export function useCourseProgressSync(courseId: string | number) {
           }
         }
       } catch (err) {
-        // Silent fail
+        console.error('[useCourseProgressSync] Error fetching progress:', err)
       }
     }
     fetchProgress()
-  }, [courseId, dispatch])
+  }, [courseId, dispatch, isAuthenticated, user?.id])
 
   // NOTE: We intentionally do NOT auto-save here when Redux state changes.
   // Progress updates are handled by the queue-based useProgressTracker hook

@@ -314,7 +314,7 @@ export default function OpenEndedQuiz({
               onKeyDown={handleKeyDown}
               placeholder="Share your understanding and reasoning..."
               className={cn(
-                "w-full min-h-[120px] sm:min-h-[140px] resize-y transition-all border-2 bg-background text-base sm:text-lg",
+                "w-full min-h-[120px] sm:min-h-[140px] md:min-h-[160px] resize-y transition-all border-2 bg-background text-sm sm:text-base md:text-lg",
                 "focus:outline-none focus:ring-0 p-4 sm:p-6 rounded-lg", // Larger padding on mobile
                 "min-h-[3rem]", // Ensure minimum touch target when focused
                 isAnswered

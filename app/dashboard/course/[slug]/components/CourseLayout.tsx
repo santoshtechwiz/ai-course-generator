@@ -76,7 +76,7 @@ const CourseLayout: React.FC<CourseLayoutProps> = ({
           >
             {/* Enhanced breadcrumb navigation with better alignment */}
             <div className="bg-background/95 backdrop-blur-sm border-b border-border/40 shadow-sm">
-              <div className="max-w-screen-2xl mx-auto px-4 lg:px-6 py-4">
+              <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 2xl:px-10 py-3 sm:py-4">
                 <Breadcrumb>
                   <BreadcrumbList className="gap-3">
                     <BreadcrumbItem>
@@ -120,7 +120,7 @@ const CourseLayout: React.FC<CourseLayoutProps> = ({
           "w-full mx-auto flex flex-col transition-all duration-300",
           isFullscreen
             ? "px-0 py-0 max-w-none"
-            : "max-w-screen-2xl px-4 lg:px-6 py-8 gap-8"
+            : "max-w-screen-2xl px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 2xl:px-10 py-6 sm:py-7 md:py-8 gap-6 sm:gap-7 md:gap-8"
         )}>
           <ErrorBoundary
             fallback={

@@ -36,7 +36,7 @@ export function DashboardLayout({
       <MainNavbar />
 
       {/* Main Content Area - More spacious like n8n */}
-      <main className="min-h-[calc(100vh-4rem)] pt-16 sm:pt-20">
+      <main className="min-h-[calc(100vh-4rem)] pt-16 sm:pt-20 px-3 sm:px-4 lg:px-6">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
           <ReduxErrorBoundary>
             {children}

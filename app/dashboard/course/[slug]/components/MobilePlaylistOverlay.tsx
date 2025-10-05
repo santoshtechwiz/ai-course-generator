@@ -16,6 +16,7 @@ interface MobilePlaylistOverlayProps {
       title: string;
       videoId?: string;
       duration?: number;
+      isFree?: boolean;
     }[];
   };
   currentChapter: {
@@ -23,10 +24,12 @@ interface MobilePlaylistOverlayProps {
     title: string;
     videoId?: string;
     duration?: number;
+    isFree?: boolean;
   } | null;
   courseId: string;
   currentVideoId: string;
   isAuthenticated: boolean;
+  userSubscription: string | null;
   completedChapters: string[];
   formatDuration: (seconds: number) => string;
   videoDurations: Record<string, number>;
@@ -46,6 +49,7 @@ const MobilePlaylistOverlay: React.FC<MobilePlaylistOverlayProps> = ({
   courseId,
   currentVideoId,
   isAuthenticated,
+  userSubscription,
   completedChapters,
   formatDuration,
   videoDurations,

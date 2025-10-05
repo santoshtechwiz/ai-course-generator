@@ -7,10 +7,9 @@ import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Star, Play, Heart, Bookmark, Clock, Users } from "lucide-react"
+import { Star, Heart, Bookmark, Clock, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Progress } from "@/components/ui/progress"
-import { CourseIcon } from "@/components/icons/CourseIcon"
 import CoursePlaceholder from '@/components/icons/CoursePlaceholder'
 
 export interface CourseCardProps {

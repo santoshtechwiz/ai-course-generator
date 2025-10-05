@@ -138,7 +138,18 @@ export function DashboardErrorBoundary({
   fallback: FallbackComponent,
   onError
 }: DashboardErrorBoundaryProps) {
-  const handleError = (error: Error, errorInfo: { componentStack: string }) => {
+  const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
+    // Filter out AbortErrors - these are expected and shouldn't be logged as errors
+    const isAbortError = error?.name === 'AbortError' ||
+                        error?.message?.includes('signal is aborted') ||
+                        error?.message?.includes('aborted without reason')
+
+    if (isAbortError) {
+      // Just log AbortErrors as info, not errors
+      console.info(`ℹ️ Request cancelled (AbortError)${componentName ? ` in ${componentName}` : ''}:`, error.message)
+      return
+    }
+
     // Log error for monitoring
     console.error(`Dashboard Error Boundary caught an error${componentName ? ` in ${componentName}` : ''}:`, error)
 

@@ -213,22 +213,8 @@
  ****************************************/
 @layer utilities {
 
-  /* Container classes */
-  .container-sm {
-    @apply max-w-screen-sm mx-auto px-4;
-  }
-
-  .container-md {
-    @apply max-w-screen-md mx-auto px-4 md:px-6;
-  }
-
-  .container-lg {
-    @apply max-w-screen-lg mx-auto px-4 md:px-8;
-  }
-
-  .container-xl {
-    @apply max-w-screen-xl mx-auto px-4 md:px-8;
-  }
+  /* Container classes - removed to prevent conflicts with Tailwind container */
+  /* .container-sm, .container-md, .container-lg, .container-xl removed */
 
   /* Stack utilities for vertical rhythm */
   .stack-xs>*+* {

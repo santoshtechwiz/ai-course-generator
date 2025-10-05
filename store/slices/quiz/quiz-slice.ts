@@ -549,21 +549,51 @@ export const submitQuiz = createAsyncThunk(
         })
       }
 
+      // CRITICAL: Validate payload before sending to prevent JSON errors
+      const submissionPayload = {
+        quizId: slug,
+        answers: answersForAPI,
+        totalTime: totalTimeSpent,
+        score: score,
+        type: quizType,
+        totalQuestions: total,
+        correctAnswers: score,
+        completedAt: new Date().toISOString(),
+      }
+
+      // Validate payload structure
+      if (!submissionPayload.quizId || !submissionPayload.type) {
+        throw new Error('Invalid submission: missing quizId or type')
+      }
+
+      if (!Array.isArray(submissionPayload.answers) || submissionPayload.answers.length === 0) {
+        console.warn('No answers to submit, creating dummy answers')
+        submissionPayload.answers = questions.map(q => ({
+          questionId: String(q.id),
+          answer: '',
+          timeSpent: 0,
+          isCorrect: false,
+        }))
+      }
+
+      // Sanitize payload to remove any circular references or invalid JSON
+      const sanitizedPayload = JSON.parse(JSON.stringify(submissionPayload))
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Submitting quiz payload:', {
+          quizId: sanitizedPayload.quizId,
+          type: sanitizedPayload.type,
+          answersCount: sanitizedPayload.answers.length,
+          score: sanitizedPayload.score,
+        })
+      }
+
       const response = await fetch(`/api/quizzes/${quizType}/${slug}/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          quizId: slug,
-          answers: answersForAPI,
-          totalTime: totalTimeSpent,
-          score: score,
-          type: quizType,
-          totalQuestions: total,
-          correctAnswers: score,
-          completedAt: new Date().toISOString(),
-        }),
+        body: JSON.stringify(sanitizedPayload),
       })
 
       if (!response.ok) {

@@ -7,7 +7,19 @@ const config: Config = {
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/**/*.{js,ts,jsx,tsx,mdx}',
-    './styles/**/*.css',
+    './lib/**/*.{js,ts,jsx,tsx}',
+    './hooks/**/*.{js,ts,jsx,tsx}',
+    './utils/**/*.{js,ts,jsx,tsx}',
+    './types/**/*.{js,ts,jsx,tsx}',
+    './store/**/*.{js,ts,jsx,tsx}',
+    './modules/**/*.{js,ts,jsx,tsx}',
+    './services/**/*.{js,ts,jsx,tsx}',
+  ],
+  // Safelist only critical utilities that may be dynamically generated
+  safelist: [
+    'animate-spin',
+    'animate-pulse',
+    'animate-bounce',
   ],
   prefix: "",
   theme: {
@@ -15,19 +27,17 @@ const config: Config = {
       center: true,
       padding: {
         DEFAULT: "1rem",
-        xs: "1.25rem",
         sm: "1.5rem",
         md: "1.75rem",
         lg: "2rem",
         xl: "2rem",
-        "2xl": "2rem",
+        "2xl": "2.5rem",
       },
       screens: {
-        "2xl": "1400px",
+        "2xl": "1536px",
       },
     },
     screens: {
-      'xs': '480px',
       'sm': '640px',
       'md': '768px',
       'lg': '1024px',

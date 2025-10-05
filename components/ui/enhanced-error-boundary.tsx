@@ -114,7 +114,22 @@ export class EnhancedErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Enhanced error logging
+    // Filter out AbortErrors - these are expected and shouldn't be logged as errors
+    const isAbortError = error?.name === 'AbortError' ||
+                        error?.message?.includes('signal is aborted') ||
+                        error?.message?.includes('aborted without reason')
+
+    if (isAbortError) {
+      // Just log AbortErrors as info, not errors
+      console.info("ℹ️ Request cancelled (AbortError) in component:", {
+        componentName: this.props.componentName,
+        message: error.message,
+        timestamp: new Date().toISOString()
+      })
+      return
+    }
+
+    // Enhanced error logging for actual errors
     console.error("🚨 Error Boundary caught an error:", {
       error: error.message,
       stack: error.stack,
@@ -150,6 +165,21 @@ export class EnhancedErrorBoundary extends React.Component<
 // Hook for using error boundary in functional components
 export function useErrorHandler() {
   return (error: Error, errorInfo?: { componentStack?: string }) => {
+    // Filter out AbortErrors - these are expected and shouldn't be logged as errors
+    const isAbortError = error?.name === 'AbortError' ||
+                        error?.message?.includes('signal is aborted') ||
+                        error?.message?.includes('aborted without reason')
+
+    if (isAbortError) {
+      // Just log AbortErrors as info, not errors
+      console.info("ℹ️ Request cancelled (AbortError):", {
+        message: error.message,
+        componentStack: errorInfo?.componentStack,
+        timestamp: new Date().toISOString()
+      })
+      return
+    }
+
     console.error("🚨 Error Handler:", {
       error: error.message,
       stack: error.stack,

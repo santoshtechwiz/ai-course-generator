@@ -132,7 +132,7 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
       transition={{ duration: 0.3, ease: "easeInOut" }}
       className={cn(
         "rounded-xl border bg-card overflow-hidden h-full flex flex-col min-h-[500px] relative",
-        isPiPActive ? "hidden" : "hidden md:flex"
+        isPiPActive ? "hidden" : "flex md:flex overflow-x-auto md:overflow-x-visible"
       )}
     >
       {/* Sidebar header with progress */}

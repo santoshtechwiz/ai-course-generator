@@ -233,7 +233,7 @@ export default function PlanCards({
                     </Badge>
                   )}
                 </div>
-                <CardDescription className="min-h-[40px] text-center sm:text-left">{plan.description}</CardDescription>
+                <CardDescription className="min-h-[32px] sm:min-h-[40px] text-center sm:text-left text-xs sm:text-sm">{plan.description}</CardDescription>
                 <div className="mt-4 text-center sm:text-left">
                   <div className="flex items-baseline justify-center sm:justify-start">
                     {isPromoValid && promoDiscount > 0 ? (

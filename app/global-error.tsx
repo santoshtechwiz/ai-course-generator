@@ -48,17 +48,36 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
   const [progress, setProgress] = useState(0)
   const [showDetails, setShowDetails] = useState(false)
 
-  // Enhanced error logging
+  // Filter out AbortErrors - these are expected and shouldn't show error UI
+  const isAbortError = error?.name === 'AbortError' ||
+                      error?.message?.includes('signal is aborted') ||
+                      error?.message?.includes('aborted without reason')
+
+  // Enhanced error logging (but don't log AbortErrors as errors)
   useEffect(() => {
-    console.error("🚨 Global error occurred:", {
-      message: error.message,
-      stack: error.stack,
-      digest: error.digest,
-      timestamp: new Date().toISOString(),
-      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'SSR',
-      url: typeof window !== 'undefined' ? window.location.href : 'Unknown'
-    })
-  }, [error])
+    if (isAbortError) {
+      // Just log AbortErrors as info, not errors
+      console.info("ℹ️ Request cancelled (AbortError):", {
+        message: error.message,
+        timestamp: new Date().toISOString(),
+        url: typeof window !== 'undefined' ? window.location.href : 'Unknown'
+      })
+    } else {
+      console.error("🚨 Global error occurred:", {
+        message: error.message,
+        stack: error.stack,
+        digest: error.digest,
+        timestamp: new Date().toISOString(),
+        userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'SSR',
+        url: typeof window !== 'undefined' ? window.location.href : 'Unknown'
+      })
+    }
+  }, [error, isAbortError])
+
+  // Don't show error UI for AbortErrors - let the app continue normally
+  if (isAbortError) {
+    return null
+  }
 
   // Simulate progress during retry
   useEffect(() => {

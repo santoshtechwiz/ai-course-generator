@@ -190,7 +190,7 @@ export function SavedQuizList({ quizzes, onRefresh, onEditQuiz }: SavedQuizListP
             </div>
 
             <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOption)}>
-              <SelectTrigger className="w-[130px]">
+              <SelectTrigger className="w-[120px] sm:w-[130px]">
                 <ArrowUpDown className="mr-2 h-4 w-4" />
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
@@ -204,7 +204,7 @@ export function SavedQuizList({ quizzes, onRefresh, onEditQuiz }: SavedQuizListP
             </Select>
 
             <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "grid" | "list")}>
-              <TabsList className="grid w-[80px] grid-cols-2">
+              <TabsList className="grid w-[70px] sm:w-[80px] grid-cols-2">
                 <TabsTrigger value="grid" className="px-2">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

@@ -120,7 +120,7 @@ export function MainNavbar() {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center space-x-1">
+          <nav className="flex items-center space-x-1 overflow-x-auto lg:overflow-x-visible">
             {navItems.map((item) => {
               const active = pathname === item.href
               return (

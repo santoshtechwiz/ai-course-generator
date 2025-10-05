@@ -387,9 +387,9 @@ export const UserManagement = () => {
               />
             </div>
             <div className="col-span-5 sm:col-span-4">User</div>
-            <div className="col-span-3 sm:col-span-2 hidden sm:block">Type</div>
-            <div className="col-span-2 hidden md:block">Credits</div>
-            <div className="col-span-2 hidden lg:block">Last Active</div>
+            <div className="col-span-3 sm:col-span-2 text-xs sm:text-sm">Type</div>
+            <div className="col-span-2 text-xs sm:text-sm md:block">Credits</div>
+            <div className="col-span-2 text-xs sm:text-sm lg:block">Last Active</div>
             <div className="col-span-3 sm:col-span-1 text-right">Actions</div>
           </div>
 
@@ -417,15 +417,15 @@ export const UserManagement = () => {
                     <span className="text-xs text-muted-foreground truncate">{user.email}</span>
                   </div>
                 </div>
-                <div className="col-span-3 sm:col-span-2 hidden sm:block">
+                <div className="col-span-3 sm:col-span-2 text-xs sm:text-sm">
                   <Badge variant="outline" className="font-normal">
                     {USER_TYPES.find((type) => type.value === user.userType)?.label || "Free"}
                   </Badge>
                 </div>
-                <div className="col-span-2 hidden md:block text-center font-medium">
+                <div className="col-span-2 text-center font-medium text-xs sm:text-sm md:block">
                   {user.credits?.toLocaleString() || "0"}
                 </div>
-                <div className="col-span-2 hidden lg:block text-sm text-muted-foreground">
+                <div className="col-span-2 text-xs sm:text-sm text-muted-foreground lg:block">
                   {user.lastActive ? new Date(user.lastActive).toLocaleDateString() : "-"}
                 </div>
                 <div className="col-span-3 sm:col-span-1 flex justify-end">

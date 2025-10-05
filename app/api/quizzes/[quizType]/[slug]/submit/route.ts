@@ -871,27 +871,66 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
 
     let body: Record<string, any>
     try {
+      // CRITICAL: Read request body with better error handling
       const text = await request.text()
-  logDebug("Raw request body:", text)
+      
+      // Validate that we have a body
+      if (!text || text.trim().length === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Empty request body",
+            details: "No data was sent in the request",
+          },
+          { status: 400 },
+        )
+      }
+
+      logDebug("Raw request body length:", text.length)
+      logDebug("Raw request body preview:", text.substring(0, 200))
 
       try {
+        // Try to parse JSON with better error handling
         body = JSON.parse(text) as Record<string, any>
+        
+        // Validate that body is an object
+        if (typeof body !== 'object' || body === null) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Invalid request body format",
+              details: "Request body must be a JSON object",
+            },
+            { status: 400 },
+          )
+        }
+        
+        logDebug("Parsed body keys:", Object.keys(body))
       } catch (parseError) {
+        console.error("JSON parsing error:", parseError)
         return NextResponse.json(
           {
             success: false,
             error: "Invalid JSON in request body",
-            details: parseError instanceof Error ? parseError.message : "Unknown parsing error",
+            details: {
+              message: parseError instanceof Error ? parseError.message : "Unknown parsing error",
+              bodyPreview: text.substring(0, 100) + "...",
+              suggestion: "Ensure the request body is valid JSON format",
+            },
           },
           { status: 400 },
         )
       }
     } catch (error) {
+      console.error("Error reading request body:", error)
       return NextResponse.json(
         {
           success: false,
           error: "Failed to read request body",
-          details: error instanceof Error ? error.message : "Unknown error",
+          details: {
+            message: error instanceof Error ? error.message : "Unknown error",
+            suggestion: "Check network connection and try again",
+          },
         },
         { status: 400 },
       )

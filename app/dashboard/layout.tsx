@@ -4,7 +4,7 @@ import type { Metadata } from "next"
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
 import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
 import { DashboardLayout } from "@/components/dashboard/layout"
-import { MonitoredErrorBoundary, DebugToggle, ComponentMonitor } from "../debug/ComponentMonitor"
+
 
 
 export const dynamic = 'force-dynamic'
@@ -83,14 +83,13 @@ export default async function DashboardLayoutPage({
 
   return (
     // Debug components - only show in development
-    <MonitoredErrorBoundary componentName="App">
-      <ClientLayoutWrapper withTheme={true} withSubscriptionSync={true}>
+       <ClientLayoutWrapper withTheme={true} withSubscriptionSync={true}>
         <DashboardLayout userId={session?.user?.id}>
           {children}
         </DashboardLayout>
-        <DebugToggle />
-        <ComponentMonitor />
+       
+     
       </ClientLayoutWrapper>
-    </MonitoredErrorBoundary>
+  
   )
 }

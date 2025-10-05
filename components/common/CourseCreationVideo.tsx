@@ -218,10 +218,10 @@ const CourseCreationVideo = () => {
                 >
                   {s.icon}
                 </motion.div>
-                <span className="text-xs mt-2 text-center font-medium hidden sm:block">
+                <span className="text-xs mt-2 text-center font-medium text-xs sm:text-sm">
                   {s.title}
                 </span>
-                <span className="text-xs text-muted-foreground text-center hidden md:block">
+                <span className="text-xs text-muted-foreground text-center text-xs sm:text-sm">
                   {s.description}
                 </span>
               </div>

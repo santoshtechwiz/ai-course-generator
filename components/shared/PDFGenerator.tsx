@@ -1,8 +1,11 @@
 "use client"
 import React from "react"
-import UnifiedPdfGenerator from "./UnifiedPdfGenerator"
+import DynamicPdfGenerator from "@/components/pdf/DynamicPdfGenerator"
 import type { PdfData, PdfConfig } from "./UnifiedPdfGenerator"
 import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
+
+// Alias for consistency
+const UnifiedPdfGenerator = DynamicPdfGenerator
 
 interface PDFGeneratorProps {
   markdown: string
@@ -28,7 +31,12 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ markdown, chapterName, isOw
     highlightColor: "#10B981",
   }
 
-  const isDisabled = !subscription || subscription.plan === "FREE" || subscription.plan === "BASIC"
+  // Check subscription status - disabled for free/basic tiers
+  const isDisabled = !subscription || 
+    (subscription as any).tier === "FREE" || 
+    (subscription as any).tier === "BASIC" ||
+    (subscription as any).plan === "FREE" ||
+    (subscription as any).plan === "BASIC"
 
   return (
     <div className="flex justify-end mt-4">

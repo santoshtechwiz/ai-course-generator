@@ -5,7 +5,7 @@ export default function CourseLoading() {
 		<div className="min-h-screen">
 			<div className="max-w-screen-2xl mx-auto px-4 md:px-6 py-6">
 				{/* Video area skeleton */}
-				<div className="grid gap-6 md:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px]">
+				<div className="grid gap-4 sm:gap-5 md:gap-6 lg:gap-7 xl:gap-8 2xl:gap-10 xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
 					<div className="space-y-4">
 						<Skeleton className="w-full aspect-video rounded-lg" />
 						<div className="flex items-center justify-between">

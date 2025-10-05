@@ -619,7 +619,7 @@ const QuizActions = memo(
 
     if (variant === "minimal") {
       return (
-        <div className={cn("flex items-center gap-1", className)}>
+        <div className={cn("flex items-center gap-1 flex-wrap", className)}>
           <ActionButton 
             icon={Share2} 
             label="Share" 
@@ -655,7 +655,7 @@ const QuizActions = memo(
 
     if (variant === "compact") {
       return (
-        <div className={cn("flex items-center gap-2", className)}>
+        <div className={cn("flex items-center gap-2 flex-wrap", className)}>
           {/* Status Badge */}
           <Badge variant={isPublic ? "default" : "secondary"} className="text-xs">
             {isPublic ? (

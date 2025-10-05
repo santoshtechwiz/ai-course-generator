@@ -65,8 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: session.user.name,
       email: session.user.email,
       image: session.user.image,
-      credits: session.user.credits || 0,
-      creditsUsed: session.user.creditsUsed || 0,
+      // CRITICAL: Use ?? (null coalescing) to preserve 0 values
+      credits: session.user.credits ?? 0,
+      creditsUsed: session.user.creditsUsed ?? 0,
       isAdmin: session.user.isAdmin || false,
       userType: session.user.userType || 'FREE',
       subscriptionPlan: session.user.subscriptionPlan,

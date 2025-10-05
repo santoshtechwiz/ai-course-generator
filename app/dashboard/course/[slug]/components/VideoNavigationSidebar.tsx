@@ -17,6 +17,7 @@ interface Chapter {
   duration?: number;
   thumbnail?: string;
   locked?: boolean;
+  isFree?: boolean;
 }
 
 interface Course {
@@ -32,6 +33,7 @@ interface VideoNavigationSidebarProps {
   onChapterSelect: (chapter: Chapter) => void;
   currentVideoId: string;
   isAuthenticated: boolean;
+  userSubscription: string | null;
   progress: Record<string, number>;
   completedChapters: string[];
   nextVideoId?: string;
@@ -51,6 +53,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
   onChapterSelect,
   currentVideoId,
   isAuthenticated,
+  userSubscription,
   progress,
   completedChapters,
   videoDurations,
@@ -497,7 +500,8 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                             videoId: chapter.videoId,
                             duration: chapter.duration,
                             thumbnail: chapter.thumbnail || (chapter.videoId ? `https://img.youtube.com/vi/${chapter.videoId}/mqdefault.jpg` : undefined),
-                            locked: chapter.locked
+                            locked: chapter.locked,
+                            isFree: chapter.isFree
                           };
 
                           const isActive = currentChapter && safeChapter.id === String(currentChapter.id);
@@ -518,7 +522,8 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                           const duration = safeChapter.videoId ? videoDurations?.[safeChapter.videoId] : undefined;
                           const hasVideo = !!safeChapter.videoId;
                           const isHovered = hoveredChapter === safeChapter.id;
-                          const isLocked = safeChapter.locked || (!isAuthenticated && hasVideo);
+                          // Chapter is locked if it's not free AND user doesn't have subscription
+                          const isLocked = hasVideo && !safeChapter.isFree && !userSubscription;
                           
                           return (
                             <motion.li 
@@ -797,27 +802,27 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                     </div>
                                   </button>
                                 </TooltipTrigger>
-                                <TooltipContent side="right" className="max-w-xs">
+                                <TooltipContent side="right" className="max-w-xs bg-gray-900 text-white text-xs p-2 rounded">
                                   <div className="space-y-1">
                                     <p className="font-medium">{safeChapter.title}</p>
                                     {duration && hasVideo && !isLocked && (
-                                      <p className="text-xs text-muted-foreground">
+                                      <p className="text-xs opacity-80">
                                         Duration: {formatDuration(duration)}
                                       </p>
                                     )}
                                     {chapterProgress > 0 && !isLocked && (
-                                      <p className="text-xs text-muted-foreground">
+                                      <p className="text-xs opacity-80">
                                         Progress: {Math.round(chapterProgress)}%
                                       </p>
                                     )}
                                     {!hasVideo && (
-                                      <p className="text-xs text-muted-foreground">
+                                      <p className="text-xs opacity-80">
                                         This chapter doesn't have a video
                                       </p>
                                     )}
                                     {isLocked && (
-                                      <p className="text-xs text-muted-foreground">
-                                        {!isAuthenticated ? "Sign in to access this chapter" : "Complete previous chapters to unlock"}
+                                      <p className="text-xs opacity-90">
+                                        Sign in to unlock this course
                                       </p>
                                     )}
                                   </div>

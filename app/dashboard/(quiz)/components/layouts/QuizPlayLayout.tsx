@@ -640,15 +640,20 @@ export default function QuizPlayLayout({
           )}
         </AnimatePresence>
 
-        <div className="flex gap-6">
+        <div className={cn(
+          "transition-all duration-300",
+          sidebarOpen && !isFullscreen
+            ? "grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px] gap-4 sm:gap-5 md:gap-6 lg:gap-8"
+            : "flex"
+        )}>
           {/* Main Content */}
           <motion.section 
             ref={mainRef}
             className={cn(
-              "flex-1 rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-xl transition-all duration-300",
+              "w-full rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-xl transition-all duration-300",
               isFullscreen 
                 ? "p-2 sm:p-4 lg:p-6 min-h-[calc(100vh-8rem)]" 
-                : "p-3 sm:p-4 lg:p-6"
+                : "p-3 sm:p-4 md:p-5 lg:p-6"
             )}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -657,11 +662,11 @@ export default function QuizPlayLayout({
             <div className="w-full h-full font-mono text-[15px] [font-feature-settings:'ss02']">{children}</div>
           </motion.section>
 
-          {/* Enhanced Sidebar */}
+          {/* Enhanced Sidebar - Responsive */}
           <AnimatePresence>
             {sidebarOpen && !isFullscreen && (
               <motion.aside
-                className="hidden xl:block w-80 xl:w-96 shrink-0"
+                className="hidden lg:block w-full"
                 initial={{ opacity: 0, x: 20, width: 0 }}
                 animate={{ opacity: 1, x: 0, width: isFullscreen ? 0 : 320 }}
                 exit={{ opacity: 0, x: 20, width: 0 }}

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback, useMemo } from "react"
+import dynamic from "next/dynamic"
 import { createSelector } from "@reduxjs/toolkit"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -43,9 +44,11 @@ import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import type { RootState } from "@/store"
 import { removeBookmark, type BookmarkItem, type CourseProgress } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
-import CourseDetailsQuiz from "./CourseQuiz"
-import CourseAISummary from "./CourseSummary"
-import CertificateGenerator from "./CertificateGenerator"
+
+// Lazy load heavy components for better performance
+const CourseDetailsQuiz = dynamic(() => import("./CourseQuiz"), { ssr: false })
+const CourseAISummary = dynamic(() => import("./CourseSummary"), { ssr: false })
+const CertificateGenerator = dynamic(() => import("./CertificateGenerator"), { ssr: false })
 import { PDFDownloadLink } from "@react-pdf/renderer"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
@@ -618,8 +621,8 @@ export default function CourseDetailsTabs({
   return (
     <div className="h-full w-full flex flex-col">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full flex flex-col">
-        {/* Enhanced tab navigation with better styling */}
-        <TabsList className="grid w-full grid-cols-5 h-auto bg-gradient-to-r from-muted/20 via-muted/30 to-muted/20 rounded-none border-b border-border/30 p-2 md:p-3 gap-1 md:gap-3">
+        {/* Enhanced tab navigation with sticky positioning */}
+        <TabsList className="sticky top-0 z-10 grid w-full grid-cols-5 h-auto bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/30 p-2 md:p-3 gap-1 md:gap-3 shadow-sm">
           <TabsTrigger
             value="summary"
             className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"

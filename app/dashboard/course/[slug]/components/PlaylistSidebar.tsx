@@ -11,6 +11,7 @@ interface PlaylistSidebarProps {
       title: string;
       videoId?: string;
       duration?: number;
+      isFree?: boolean;
     }[];
   };
   currentChapter: {
@@ -18,10 +19,12 @@ interface PlaylistSidebarProps {
     title: string;
     videoId?: string;
     duration?: number;
+    isFree?: boolean;
   } | null;
   courseId: string;
   currentVideoId: string;
   isAuthenticated: boolean;
+  userSubscription: string | null;
   completedChapters: string[];
   formatDuration: (seconds: number) => string;
   videoDurations: Record<string, number>;
@@ -41,6 +44,7 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
   courseId,
   currentVideoId,
   isAuthenticated,
+  userSubscription,
   completedChapters,
   formatDuration,
   videoDurations,
@@ -70,7 +74,6 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="hidden md:block"
     >
       <div className="sticky top-4">
         <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
@@ -81,6 +84,7 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
             onChapterSelect={handleChapterSelect}
             progress={{}}
             isAuthenticated={isAuthenticated}
+            userSubscription={userSubscription}
             completedChapters={completedChapters}
             formatDuration={formatDuration}
             nextVideoId={undefined}
@@ -101,6 +105,7 @@ export default React.memo(PlaylistSidebar, (prevProps, nextProps) => {
     prevProps.course.id === nextProps.course.id &&
     prevProps.currentChapter?.id === nextProps.currentChapter?.id &&
     prevProps.currentVideoId === nextProps.currentVideoId &&
+    prevProps.userSubscription === nextProps.userSubscription &&
     prevProps.completedChapters.length === nextProps.completedChapters.length &&
     prevProps.courseStats.progressPercentage === nextProps.courseStats.progressPercentage &&
     prevProps.isProgressLoading === nextProps.isProgressLoading &&

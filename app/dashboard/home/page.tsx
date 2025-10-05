@@ -213,7 +213,7 @@ export default function DashboardPage() {
       </Head>
 
       {/* Sidebar: collapses on mobile, visible on md+ */}
-      <div className={"w-full md:w-64 md:flex-shrink-0 " + (sidebarOpen ? "block" : "hidden md:block") + " z-20"}>
+      <div className={"w-full md:w-64 md:flex-shrink-0 " + (sidebarOpen ? "block" : "hidden md:block") + " z-20 lg:mr-4 xl:mr-6"}>
         <DashboardSidebar
           activeTab={activeTab}
           setActiveTab={handleTabChange}

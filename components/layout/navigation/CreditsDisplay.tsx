@@ -23,7 +23,7 @@ export function CreditsDisplay({
   if (availableCredits === null || availableCredits === undefined) {
     return (
       <motion.div
-        className="hidden lg:flex items-center space-x-2"
+        className="flex items-center space-x-2 text-xs sm:text-sm"
         variants={prefersReducedMotion ? {} : {
           hidden: { opacity: 0, y: -10 },
           visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
@@ -41,7 +41,7 @@ export function CreditsDisplay({
   return (
     <motion.div
       className={cn(
-        "hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded-xl border transition-all duration-300",
+        "flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border transition-all duration-300 text-xs sm:text-sm",
         "bg-gradient-to-r from-primary/10 via-secondary/5 to-accent/10",
         "border-primary/20 hover:border-primary/40",
         "hover:shadow-lg hover:shadow-primary/10",

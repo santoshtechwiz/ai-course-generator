@@ -152,7 +152,7 @@ const CourseAILandingPage = () => {
 						</motion.div>
 
 						{/* Desktop Navigation */}
-						<nav className="hidden md:flex items-center space-x-8" aria-label="Main navigation" role="navigation">
+						<nav className="flex items-center space-x-4 sm:space-x-6 md:space-x-8 overflow-x-auto" aria-label="Main navigation" role="navigation">
 							{navItems.map((item) => (
 								<motion.button
 									key={item.id}

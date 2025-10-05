@@ -31,7 +31,7 @@ import { useNotes } from "@/hooks/use-notes"
 const PlayButton = React.memo(({ onClick }: { onClick: () => void }) => (
   <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
     <button
-      className="rounded-full p-3 sm:p-4 cursor-pointer pointer-events-auto transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-black/50 bg-primary text-primary-foreground shadow-lg"
+      className="rounded-full p-3 sm:p-4 cursor-pointer pointer-events-auto transition-all duration-200 hover:scale-110 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-black/50 bg-primary text-primary-foreground shadow-lg"
       onClick={onClick}
       aria-label="Play video"
       type="button"

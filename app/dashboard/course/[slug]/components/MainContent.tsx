@@ -28,7 +28,7 @@ import {
   ChevronUp,
   Loader2
 } from "lucide-react"
-import { store } from "@/store"
+import store from "@/store"
 import { setCurrentVideoApi } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import CourseDetailsTabs, { AccessLevels } from "./CourseDetailsTabs"
@@ -43,8 +43,6 @@ import ActionButtons from "./ActionButtons"
 import ReviewsSection from "./ReviewsSection"
 import { cn } from "@/lib/utils"
 import type { BookmarkData } from "./video/types"
-import { fetchRelatedCourses, fetchQuizSuggestions } from "@/services/recommendationsService"
-import type { RelatedCourse, PersonalizedRecommendation, QuizSuggestion } from "@/services/recommendationsService"
 import { isClient } from "@/lib/seo/core-utils"
 import { useCourseProgressSync } from "@/hooks/useCourseProgressSync"
 import { fetchPersonalizedRecommendations } from "@/app/services/recommendationsService"
@@ -175,15 +173,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const router = useRouter()
   const { toast } = useToast()
   const dispatch = useAppDispatch()
-  const { user, subscription } = useAuth()
+  const { user } = useAuth()
 
   // Use reducer for state management
   const [state, dispatch2] = useReducer(stateReducer, initialState)
 
   // Additional state that doesn't need to be in reducer
-  const [relatedCourses, setRelatedCourses] = useState<RelatedCourse[]>([])
-  const [personalizedRecommendations, setPersonalizedRecommendations] = useState<PersonalizedRecommendation[]>([])
-  const [quizSuggestions, setQuizSuggestions] = useState<QuizSuggestion[]>([])
   const [videoDurations, setVideoDurations] = useState<Record<string, number>>({})
   const [playerRef, setPlayerRef] = useState<React.RefObject<any> | null>(null)
   const [currentVideoProgress, setCurrentVideoProgress] = useState<number>(0)
@@ -373,9 +368,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // User subscription status
   const userSubscription = useMemo(() => {
-    if (!subscription) return null
-    return subscription.plan || null
-  }, [subscription])
+    return user?.subscriptionPlan || null
+  }, [user?.subscriptionPlan])
 
   // Video access permission
   const canPlayVideo = useMemo(() => {
@@ -397,9 +391,13 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     dispatch2({ type: 'SET_CERTIFICATE_VISIBLE', payload: true })
   }, [])
 
-  // Enhanced progress tracking with TanStack Query
+  // Enhanced progress tracking with TanStack Query - only when authenticated
   const { enqueueProgress, flushQueue, isLoading: progressLoading } = useProgressMutation()
-  const { chapterProgress } = useChapterProgress(user?.id, course.id, currentChapter?.id)
+  const { chapterProgress } = useChapterProgress(
+    user?.id, // Only fetch if user is authenticated
+    user?.id ? course.id : undefined, // Skip courseId if not authenticated
+    user?.id && currentChapter?.id ? currentChapter.id : undefined // Skip chapterId if not authenticated
+  )
 
   // Navigation handlers
   // Advance to next video (chapters are only marked complete when video ends)
@@ -422,13 +420,13 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
     console.log(`Advancing to next video: ${nextVid} for chapter ${nextVideoEntry.chapter?.id}`)
     
-    // Mark current chapter as completed when manually advancing to next video
+    // Mark current chapter as completed when manually advancing to next video - ONLY if authenticated
     if (currentChapter && user?.id) {
       const currentChapterId = Number(currentChapter.id);
       const isAlreadyCompleted = completedChapters.includes(String(currentChapter.id));
       
       if (!isAlreadyCompleted) {
-        console.log(`Marking current chapter ${currentChapterId} as completed before advancing`);
+        console.log(`[Authenticated] Marking current chapter ${currentChapterId} as completed before advancing`);
         
         // Use enhanced progress system for completion
         const timeSpent = Math.round(currentVideoProgress * (videoDurations[currentVideoId || ''] || 0))
@@ -461,6 +459,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           console.error('Failed to enqueue chapter completion')
         }
       }
+    } else if (!user?.id) {
+      console.log('[Unauthenticated] Skipping chapter completion tracking - user not signed in')
     }
     
     dispatch(setCurrentVideoApi(nextVid))
@@ -468,9 +468,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     try {
       videoStateStore.getState().setCurrentVideo(nextVid, course.id)
       
-      // Track transition to next video with enhanced progress system
+      // Track transition to next video with enhanced progress system - ONLY if authenticated
       if (user?.id && nextVideoEntry.chapter?.id) {
-        console.log(`Recording video start event for chapter ${nextVideoEntry.chapter.id}`)
+        console.log(`[Authenticated] Recording video start event for chapter ${nextVideoEntry.chapter.id}`)
         
         // Mark video as started in enhanced progress system
         const success = enqueueProgress(
@@ -492,8 +492,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         } else {
           console.error('Failed to queue video start event')
         }
-      } else {
-        console.warn('User ID or chapter ID not available. Cannot record video start event.')
+      } else if (!user?.id) {
+        console.log('[Unauthenticated] Skipping video start tracking - user not signed in')
       }
     } catch (e) {
       console.error("Failed to set current video:", e)
@@ -560,9 +560,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         dispatch(setCurrentVideoApi(videoId))
         videoStateStore.getState().setCurrentVideo(videoId, course.id)
 
-        // Always track chapter selection event regardless of completion status
+        // Track chapter selection event - ONLY if authenticated
         if (user?.id) {
-          console.log(`Video selected: ${videoId} for chapter ${safeChapter.id}`)
+          console.log(`[Authenticated] Video selected: ${videoId} for chapter ${safeChapter.id}`)
           
           // Mark video as started in enhanced progress system
           // We track all video views, even for completed chapters
@@ -591,6 +591,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           if (isAlreadyCompleted) {
             console.log(`Chapter ${safeChapter.id} was already completed. Re-watching.`)
           }
+        } else {
+          console.log('[Unauthenticated] Skipping chapter selection tracking - user not signed in')
         }
 
         dispatch2({ type: 'SET_MOBILE_PLAYLIST_OPEN', payload: false })
@@ -616,9 +618,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       }))
       dispatch2({ type: 'SET_VIDEO_LOADING', payload: false })
       
-      // Record video load event to ensure we track that the video was accessed
+      // Record video load event - ONLY if authenticated
       if (user?.id && currentChapter?.id && currentVideoId) {
-        console.log(`Video loaded: ${currentVideoId} with duration ${metadata.duration}s for chapter ${currentChapter.id}`)
+        console.log(`[Authenticated] Video loaded: ${currentVideoId} with duration ${metadata.duration}s for chapter ${currentChapter.id}`)
         
         // Update the initial video watched event with actual duration using enhanced progress system
         const success = enqueueProgress(
@@ -641,6 +643,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         } else {
           console.error('Failed to queue video metadata load event')
         }
+      } else if (!user?.id) {
+        console.log(`[Unauthenticated] Video loaded: ${currentVideoId} - skipping progress tracking`)
       }
     },
     [currentVideoId, user?.id, currentChapter?.id, course.id, enqueueProgress]
@@ -704,15 +708,21 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // (moved) progress tracking hook is now declared earlier
 
-  // Progress tracking using new event system
+  // Progress tracking using new event system - ONLY for authenticated users
   const handleVideoProgress = useCallback((progressState: { played: number, playedSeconds: number }) => {
-    // Update local state for current video progress
+    // Update local state for current video progress (always do this for UI)
     setCurrentVideoProgress(progressState.played)
+
+    // Only send progress updates if user is authenticated
+    if (!user?.id) {
+      // Skip progress tracking for unauthenticated users
+      return
+    }
 
     // Only send meaningful progress updates (skip very early progress)
     if (progressState.played > 0.05) { // Skip first 5% to reduce noise
-      if (user?.id && currentChapter?.id && currentVideoId) {
-        console.log(`Video progress: ${progressState.played * 100}% for chapter ${currentChapter.id}`)
+      if (currentChapter?.id && currentVideoId) {
+        console.log(`[Authenticated] Video progress: ${progressState.played * 100}% for chapter ${currentChapter.id}`)
         
         // Track continuous progress with enhanced system
         const success = enqueueProgress(
@@ -791,9 +801,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         userId: user?.id || ''
       }));
       
-      // Send completion to enhanced progress system
+      // Send completion to enhanced progress system - ONLY if authenticated
       if (user?.id) {
-        console.log(`Chapter ${chapterId} completed for course ${courseId} - Recording in enhanced progress system`);
+        console.log(`[Authenticated] Chapter ${chapterId} completed for course ${courseId} - Recording in enhanced progress system`);
         
         // Always dispatch chapter completed event to ensure it's recorded
         const success = enqueueProgress(
@@ -828,7 +838,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           console.log('No next video available. Reached end of playlist.');
         }
       } else {
-        console.warn('User ID not available. Cannot record learning event for chapter completion.');
+        console.log('[Unauthenticated] Video ended - skipping chapter completion tracking (user not signed in)');
+        
+        // Still handle autoplay for unauthenticated users on free videos
+        if (state.autoplayMode && hasNextVideo && nextVideoEntry) {
+          console.log(`[Unauthenticated] Autoplay enabled. Advancing to next video in 1 second`);
+          setTimeout(() => {
+            handleNextVideo();
+          }, 1000);
+        }
       }
     }
 
@@ -897,11 +915,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
-
-  // Fetch recommendations
-  useEffect(() => {
-    fetchRelatedCourses(course.id, 5).then(setRelatedCourses).catch(console.error)
-  }, [course.id])
 
   // Access levels
   const accessLevels: AccessLevels = useMemo(() => ({
@@ -1127,21 +1140,21 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
       {/* Main content */}
       <main className={cn(
-        "transition-all duration-300",
+        "transition-all duration-300 scroll-smooth",
         state.isTheaterMode && "bg-black"
       )}>
         <div className={cn(
           "mx-auto transition-all duration-300",
-          state.isTheaterMode ? "max-w-none px-0" : "max-w-screen-2xl px-4 lg:px-6 py-6"
+          state.isTheaterMode ? "max-w-none px-0" : "max-w-screen-2xl px-4 sm:px-6 lg:px-10 py-6"
         )}>
           <div className={cn(
             "transition-all duration-300",
             state.sidebarCollapsed || state.isTheaterMode
-              ? "flex flex-col max-w-5xl mx-auto"
-              : "grid grid-cols-1 xl:grid-cols-[1fr_320px] 2xl:grid-cols-[2fr_1fr] gap-6 xl:gap-8"
+              ? "flex flex-col max-w-6xl mx-auto"
+              : "flex flex-col lg:grid lg:grid-cols-[2fr,1fr] gap-4 lg:gap-6"
           )}>
             {/* Video and content area */}
-            <div className="space-y-6 min-w-0">
+            <div className="space-y-4 min-w-0">
               {/* Video player section */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -1149,7 +1162,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                 className="relative"
               >
                 {state.isPiPActive ? (
-                  <Card className="overflow-hidden">
+                  <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
                     <div className={cn(
                       "bg-muted flex items-center justify-center transition-all duration-300",
                       state.isTheaterMode ? "aspect-[21/9]" : "aspect-video"
@@ -1167,11 +1180,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   </Card>
                 ) : (
                   <Card className={cn(
-                    "overflow-hidden shadow-lg",
-                    state.isTheaterMode && "bg-transparent border-0 shadow-none"
+                    "overflow-hidden shadow-sm w-full aspect-video max-w-6xl mx-auto",
+                    state.isTheaterMode && "bg-transparent border-0 shadow-none max-w-none"
                   )}>
                     <div className={cn(
-                      "bg-black relative transition-all duration-300",
+                      "bg-black relative transition-all duration-300 w-full",
                       state.isTheaterMode ? "aspect-[21/9]" : "aspect-video"
                     )}>
                       <VideoPlayer
@@ -1219,8 +1232,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
                 >
-                  <Card>
-                    <CardContent className="p-6">
+                  <Card className="shadow-sm hover:shadow-md transition-shadow duration-200">
+                    <CardContent className="p-4">
                       <MemoizedCourseDetailsTabs
                         course={course}
                         currentChapter={currentChapter}
@@ -1240,8 +1253,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <Card>
-                    <CardContent className="p-6">
+                  <Card className="shadow-sm hover:shadow-md transition-shadow duration-200">
+                    <CardContent className="p-4">
                       <ReviewsSection slug={course.slug} />
                     </CardContent>
                   </Card>
@@ -1256,11 +1269,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className="hidden xl:block space-y-4 min-w-0 w-full max-w-none xl:max-w-sm 2xl:max-w-md"
+                  className="hidden lg:block space-y-4 min-w-0 w-full overflow-y-auto scrollbar-hide"
                 >
                   {/* Sidebar header */}
-                  <Card>
-                    <CardHeader className="pb-4">
+                  <Card className="shadow-sm hover:shadow-md transition-shadow duration-200">
+                    <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg flex items-center gap-2">
                           <BookOpen className="h-5 w-5 text-primary" />
@@ -1271,6 +1284,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                           size="sm"
                           onClick={() => dispatch2({ type: 'SET_SIDEBAR_COLLAPSED', payload: true })}
                           className="h-8 w-8 p-0"
+                          aria-label="Collapse sidebar"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -1299,7 +1313,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   </Card>
 
                   {/* Playlist */}
-                  <Card className="flex-1">
+                  <Card className="flex-1 h-full shadow-sm hover:shadow-md transition-shadow duration-200">
                     <CardContent className="p-0">
                       {sidebarCourse.chapters.length === 0 ? (
                         <div className="p-6 text-center">
@@ -1316,6 +1330,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                           courseId={course.id.toString()}
                           currentVideoId={currentVideoId || ''}
                           isAuthenticated={!!user}
+                          userSubscription={userSubscription || null}
                           completedChapters={completedChapters.map(String)}
                           formatDuration={formatDuration}
                           videoDurations={videoDurations}
@@ -1343,6 +1358,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           courseId={course.id.toString()}
           currentVideoId={currentVideoId || ''}
           isAuthenticated={!!user}
+          userSubscription={userSubscription || null}
           completedChapters={completedChapters.map(String)}
           formatDuration={formatDuration}
           videoDurations={videoDurations}

@@ -16,56 +16,107 @@ interface AppProvidersProps {
 }
 
 /**
- * AppProviders - Root provider stack for the application
- * 
- * Provider order (outer to inner):
- * 1. SessionProvider - NextAuth session management
- * 2. QueryClientProvider - React Query for data fetching
- * 3. AuthProvider - Authentication state (session-based)
- * 4. SubscriptionProvider - Subscription state (credits, plan, etc.)
- * 5. AnimationProvider - Animation utilities
- * 6. ThemeProvider - Dark/light mode
+ * ✅ Optimized Provider Order (outer → inner)
+ *
+ * 1️⃣ SessionProvider       → NextAuth global session context
+ * 2️⃣ QueryClientProvider   → React Query for data caching/fetching
+ * 3️⃣ AuthProvider          → App-level auth state derived from session
+ * 4️⃣ SubscriptionProvider  → Business logic (plan, credits, billing)
+ * 5️⃣ ThemeProvider         → Dark/light theme
+ * 6️⃣ AnimationProvider     → Animation utilities
+ * 7️⃣ Toaster               → Notifications
  */
 export function AppProviders({ children, session }: AppProvidersProps) {
-  // Create QueryClient instance - using useState to ensure it's stable across re-renders
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 5 * 60 * 1000, // 5 minutes
-            gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-            retry: 1,
-            refetchOnWindowFocus: false,
+  // Stable QueryClient across renders
+const [queryClient] = useState(
+  () =>
+    new QueryClient({
+      defaultOptions: {
+        queries: {
+          // Prevent React Query from retrying on AbortError
+          retry: (failureCount, error: any) => {
+            if (error?.name === "AbortError") return false
+            return failureCount < 2
           },
-          mutations: {
-            retry: 1,
+          throwOnError: (error: any) => {
+            // Only throw real errors, not aborts
+            if (error?.name === "AbortError") return false
+            return true
+          },
+          staleTime: 5 * 60 * 1000, // 5 minutes
+          gcTime: 10 * 60 * 1000,   // Garbage collection
+          refetchOnWindowFocus: false,
+        },
+        mutations: {
+          retry: (failureCount, error: any) => {
+            if (error?.name === "AbortError") return false
+            return failureCount < 1
+          },
+          throwOnError: (error: any) => {
+            if (error?.name === "AbortError") return false
+            return true
           },
         },
-      })
-  )
+      }
+    })
+)
 
-  // Run storage migration on app initialization
+  // Migrate storage only once at startup
   useEffect(() => {
     StorageMigrator.migrateAllData()
+  }, [])
+
+  // Handle unhandled promise rejections (especially AbortErrors)
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const error = event.reason
+      const isAbortError = error?.name === 'AbortError' ||
+                          error?.message?.includes('signal is aborted') ||
+                          error?.message?.includes('aborted without reason')
+
+      if (isAbortError) {
+        // Prevent AbortErrors from showing up in console as unhandled rejections
+        console.info('ℹ️ Unhandled AbortError caught:', error.message)
+        event.preventDefault()
+      }
+    }
+
+    const handleError = (event: ErrorEvent) => {
+      const isAbortError = event.error?.name === 'AbortError' ||
+                          event.message?.includes('signal is aborted') ||
+                          event.message?.includes('aborted without reason')
+
+      if (isAbortError) {
+        console.info('ℹ️ Global AbortError caught:', event.error?.message || event.message)
+        event.preventDefault()
+      }
+    }
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection)
+    window.addEventListener('error', handleError)
+
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+      window.removeEventListener('error', handleError)
+    }
   }, [])
 
   return (
     <SessionProvider
       session={session}
-      refetchInterval={0} // Disable automatic background refetch - only refresh on demand
-      refetchOnWindowFocus={false} // Don't refetch on window focus
-      refetchWhenOffline={false} // Don't refetch when coming back online
+      refetchInterval={0}
+      refetchOnWindowFocus={false}
+      refetchWhenOffline={false}
     >
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <SubscriptionProvider>
-            <AnimationProvider>
-              <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <AnimationProvider>
                 {children}
                 <Toaster />
-              </ThemeProvider>
-            </AnimationProvider>
+              </AnimationProvider>
+            </ThemeProvider>
           </SubscriptionProvider>
         </AuthProvider>
       </QueryClientProvider>

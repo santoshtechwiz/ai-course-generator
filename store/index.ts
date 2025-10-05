@@ -13,24 +13,35 @@ import courseProgressReducer from "./slices/courseProgress-slice"
 import progressEventsReducer from "./slices/progress-events-slice"
 import subscriptionReducer from "./slices/subscriptionSlice"
 
-// Storage with fallback
+// Storage with fallback - proper implementation to avoid redux-persist warnings
 const createStorage = () => {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const testKey = '__redux_persist_test__'
-      localStorage.setItem(testKey, 'test')
-      localStorage.removeItem(testKey)
-      return storage
-    }
-  } catch (error) {
-    console.warn('localStorage not available, using memory storage fallback')
+  // Check if we're in browser environment
+  if (typeof window === 'undefined') {
+    // Server-side: return noop storage
+    return createNoopStorage()
   }
 
-  return {
-    getItem: (key: string) => Promise.resolve(null),
-    setItem: (key: string, value: string) => Promise.resolve(),
-    removeItem: (key: string) => Promise.resolve(),
+  try {
+    // Test if localStorage is actually available (some browsers block it)
+    const testKey = '__redux_persist_test__'
+    localStorage.setItem(testKey, 'test')
+    localStorage.removeItem(testKey)
+    return storage // Use real localStorage
+  } catch (error) {
+    // localStorage not available (private mode, blocked, etc.)
+    console.warn('[Redux Persist] localStorage not available, using memory storage fallback')
+    return createNoopStorage()
   }
+}
+
+// Create a proper noop storage that implements the full Storage interface
+const createNoopStorage = () => {
+  const noopStorage = {
+    getItem: (_key: string): Promise<null> => Promise.resolve(null),
+    setItem: (_key: string, _value: string): Promise<void> => Promise.resolve(),
+    removeItem: (_key: string): Promise<void> => Promise.resolve(),
+  }
+  return noopStorage
 }
 
 // Persist configs for non-auth slices

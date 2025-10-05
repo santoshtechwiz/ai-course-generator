@@ -115,7 +115,7 @@ export function QuizAttempts({ quizAttempts }: QuizAttemptsProps) {
                 <AccordionTrigger className="px-4 py-3 sm:px-6 hover:bg-muted/50 transition-colors">
                   <div className="flex justify-between items-center w-full gap-2">
                     <div className="flex items-center text-left">
-                      <div className="bg-primary/10 rounded-full p-1.5 mr-3 hidden sm:flex">
+                      <div className="bg-primary/10 rounded-full p-1 sm:p-1.5 mr-2 sm:mr-3 flex">
                         <Book className="w-4 h-4 text-primary" />
                       </div>
                       <div>

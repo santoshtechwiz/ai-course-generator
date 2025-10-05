@@ -1,8 +1,11 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react"
-import Editor from "@monaco-editor/react"
+import DynamicMonacoEditor from "@/components/code/DynamicMonacoEditor"
 import { cn } from "@/lib/utils"
+
+// Alias for consistency
+const Editor = DynamicMonacoEditor
 
 interface CodeQuizEditorProps {
   value: string
@@ -55,8 +58,7 @@ const LANGUAGE_MAP: Record<string, string> = {
   "SQL": "sql",
   bash: "shell",
   "Bash/Shell": "shell",
-  "Bash Scripting": "shell",      // <-- Add this mapping
-  "Bash Scripting": "shell",      // <-- Add this mapping
+  "Bash Scripting": "shell",
   "Bash script": "shell",
   "Bash Script": "shell",
   "BASH SCRIPT": "shell",
