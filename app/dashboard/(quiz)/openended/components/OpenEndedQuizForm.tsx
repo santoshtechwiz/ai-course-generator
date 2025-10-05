@@ -163,27 +163,22 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   })
 
   // Use unified subscription as single source of truth - fixes sync issues
+  // Extract stable primitive values to prevent infinite loops
+  const subscriptionCredits = subscription?.credits ?? 0
+  const subscriptionTokensUsed = subscription?.tokensUsed ?? 0
+  
   useEffect(() => {
-    if (subscription) {
-      const totalCredits = subscription.credits || 0
-      const usedCredits = subscription.tokensUsed || 0
-      const remainingCredits = Math.max(0, totalCredits - usedCredits)
-      
-      setCreditInfo({
-        hasCredits: remainingCredits > 0,
-        remainingCredits: remainingCredits,
-        totalCredits: totalCredits,
-        usedCredits: usedCredits
-      })
-    } else {
-      setCreditInfo({
-        hasCredits: false,
-        remainingCredits: 0,
-        totalCredits: 0,
-        usedCredits: 0
-      })
-    }
-  }, [subscription])
+    const totalCredits = subscriptionCredits
+    const usedCredits = subscriptionTokensUsed
+    const remainingCredits = Math.max(0, totalCredits - usedCredits)
+    
+    setCreditInfo({
+      hasCredits: remainingCredits > 0,
+      remainingCredits: remainingCredits,
+      totalCredits: totalCredits,
+      usedCredits: usedCredits
+    })
+  }, [subscriptionCredits, subscriptionTokensUsed])
 
   const {
     control,

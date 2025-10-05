@@ -183,27 +183,22 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
   })
 
   // Use unified subscription as single source of truth - fixes sync issues
+  // Extract stable primitive values to prevent infinite loops
+  const subscriptionCredits = subscriptionData?.credits ?? 0
+  const subscriptionTokensUsed = subscriptionData?.tokensUsed ?? 0
+  
   React.useEffect(() => {
-    if (subscriptionData) {
-      const totalCredits = subscriptionData.credits || 0
-      const usedCredits = subscriptionData.tokensUsed || 0
-      const remainingCredits = Math.max(0, totalCredits - usedCredits)
-      
-      setCreditInfo({
-        hasCredits: remainingCredits > 0,
-        remainingCredits: remainingCredits,
-        totalCredits: totalCredits,
-        usedCredits: usedCredits
-      })
-    } else {
-      setCreditInfo({
-        hasCredits: false,
-        remainingCredits: 0,
-        totalCredits: 0,
-        usedCredits: 0
-      })
-    }
-  }, [subscriptionData])
+    const totalCredits = subscriptionCredits
+    const usedCredits = subscriptionTokensUsed
+    const remainingCredits = Math.max(0, totalCredits - usedCredits)
+    
+    setCreditInfo({
+      hasCredits: remainingCredits > 0,
+      remainingCredits: remainingCredits,
+      totalCredits: totalCredits,
+      usedCredits: usedCredits
+    })
+  }, [subscriptionCredits, subscriptionTokensUsed])
 
   const [selectedLanguageGroup, setSelectedLanguageGroup] = React.useState<string>("Popular")
   const [showCustomLanguage, setShowCustomLanguage] = React.useState(false)

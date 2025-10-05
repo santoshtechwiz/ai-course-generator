@@ -8,10 +8,9 @@ import { useRouter } from "next/navigation"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { Loader2, Check, Lock, AlertCircle, Sparkles } from "lucide-react"
-// Update the import path to the correct location of PlanType
-import type { PlanType } from "@/hooks/useQuizPlan"
 // ✅ UNIFIED: Using unified subscription system
 import { useAuth } from "@/modules/auth"
+import type { SubscriptionPlanType } from "@/types/subscription-plans"
 import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
 
 interface CustomButtonStates {
@@ -54,8 +53,8 @@ interface PlanAwareButtonProps extends Omit<ButtonProps, "onClick"> {
   hasCredits?: boolean // This will be auto-calculated if not provided
   creditsRequired?: number // Number of credits required for this action
   loadingLabel?: string
-  requiredPlan?: PlanType
-  currentPlan?: PlanType
+  requiredPlan?: SubscriptionPlanType
+  currentPlan?: SubscriptionPlanType
   fallbackHref?: string
   onPlanRequired?: () => void
   onInsufficientCredits?: () => void
@@ -104,21 +103,21 @@ export default function PlanAwareButton({
   const effectiveIsLoggedIn = isAuthenticated || (user?.id ? true : false)
 
   // Use unified subscription as single source of truth - fixes sync issues
+  // Use stable primitive dependencies to prevent infinite loops
+  const subscriptionCredits = subscription?.credits ?? 0
+  const subscriptionTokensUsed = subscription?.tokensUsed ?? 0
+  
   useEffect(() => {
-    if (subscription) {
-      const totalCredits = subscription.credits || 0
-      const usedCredits = subscription.tokensUsed || 0
-      const remainingCredits = Math.max(0, totalCredits - usedCredits)
-      
-      setCreditInfo({
-        hasCredits: remainingCredits > 0,
-        remainingCredits: remainingCredits,
-        hasEnoughCredits: (required: number) => remainingCredits >= required
-      })
-    } else {
-      setCreditInfo({ hasCredits: false, remainingCredits: 0, hasEnoughCredits: () => false })
-    }
-  }, [subscription])
+    const totalCredits = subscriptionCredits
+    const usedCredits = subscriptionTokensUsed
+    const remainingCredits = Math.max(0, totalCredits - usedCredits)
+    
+    setCreditInfo({
+      hasCredits: remainingCredits > 0,
+      remainingCredits: remainingCredits,
+      hasEnoughCredits: (required: number) => remainingCredits >= required
+    })
+  }, [subscriptionCredits, subscriptionTokensUsed])
 
   // Debug logging in development
   if (process.env.NODE_ENV === 'development') {
@@ -145,14 +144,14 @@ export default function PlanAwareButton({
   })()
 
   // Use provided plan or get from unified auth state if not provided
-  const effectivePlan = currentPlan || subscription?.plan || user?.subscriptionPlan || "FREE"
+  const effectivePlan = currentPlan || subscription?.subscriptionPlan || user?.subscriptionPlan || "FREE"
   const isAlreadySubscribed = subscription?.status === "ACTIVE" || false
   
   // Debug logging for plan detection issues
   if (process.env.NODE_ENV === 'development') {
     console.log('PlanAwareButton Plan Detection:', {
       currentPlan,
-      subscriptionPlan: subscription?.plan,
+      subscriptionPlan: subscription?.subscriptionPlan,
       userSubscriptionPlan: user?.subscriptionPlan,
       effectivePlan,
       subscriptionStatus: subscription?.status,
@@ -170,15 +169,15 @@ export default function PlanAwareButton({
   // Check if the user's plan meets requirements
   const meetsRequirement = useMemo((): boolean => {
     // Plan hierarchy for comparison
-    const planHierarchy: Record<PlanType, number> = {
+    const planHierarchy: Record<SubscriptionPlanType, number> = {
       FREE: 0,
       BASIC: 1,
       PREMIUM: 2,
-      ULTIMATE: 3,
+      ENTERPRISE: 3,
     }
 
     // Check if current plan is sufficient, using the effective plan
-    return planHierarchy[effectivePlan as PlanType] >= planHierarchy[requiredPlan]
+    return planHierarchy[effectivePlan as SubscriptionPlanType] >= planHierarchy[requiredPlan]
   }, [effectivePlan, requiredPlan])
 
   // Enhanced permission checking that considers both subscription status and credits
@@ -322,18 +321,18 @@ export default function PlanAwareButton({
       }
 
       // Find the next higher plan that the user should upgrade to
-      const planHierarchy: PlanType[] = ["FREE", "BASIC", "PREMIUM", "ULTIMATE"]
-      const currentPlanIndex = planHierarchy.indexOf(effectivePlan as PlanType)
+      const planHierarchy: SubscriptionPlanType[] = ["FREE", "BASIC", "PREMIUM", "ENTERPRISE"]
+      const currentPlanIndex = planHierarchy.indexOf(effectivePlan as SubscriptionPlanType)
       const requiredPlanIndex = planHierarchy.indexOf(requiredPlan)
       
       // Get the appropriate upgrade target
       // If user is already on the required plan or higher, suggest next tier
       // Otherwise, suggest the required plan
-      let upgradeTarget: PlanType
+      let upgradeTarget: SubscriptionPlanType
       if (currentPlanIndex >= requiredPlanIndex) {
         // User is on required plan or higher, but still doesn't meet requirements
         // This could happen if subscription is inactive - suggest reactivation of current plan
-        upgradeTarget = effectivePlan as PlanType
+        upgradeTarget = effectivePlan as SubscriptionPlanType
       } else {
         // User needs to upgrade to the required plan
         upgradeTarget = requiredPlan
