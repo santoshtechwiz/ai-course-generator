@@ -363,90 +363,212 @@ function QuizListComponent({
 
   return (
     <div className="relative space-y-8">
-      {/* SVG Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <svg 
-          className="absolute top-0 left-0 w-full h-full opacity-[0.02] dark:opacity-[0.05]" 
-          viewBox="0 0 100 100" 
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <defs>
-            <pattern id="quiz-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-              <circle cx="10" cy="10" r="1.5" fill="currentColor" />
-              <rect x="5" y="5" width="2" height="2" fill="currentColor" opacity="0.3" />
-              <rect x="13" y="13" width="2" height="2" fill="currentColor" opacity="0.3" />
-            </pattern>
-          </defs>
-          <rect width="100" height="100" fill="url(#quiz-pattern)" />
-        </svg>
+      {/* Hero Section with Gradient Background */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-500/20 dark:via-purple-500/20 dark:to-pink-500/20 border border-border/50">
+        {/* Animated Background Pattern */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <svg 
+            className="absolute top-0 left-0 w-full h-full opacity-[0.03] dark:opacity-[0.06]" 
+            viewBox="0 0 100 100" 
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <pattern id="quiz-hero-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                <circle cx="10" cy="10" r="1.5" fill="currentColor" />
+                <rect x="5" y="5" width="2" height="2" fill="currentColor" opacity="0.3" />
+                <rect x="13" y="13" width="2" height="2" fill="currentColor" opacity="0.3" />
+              </pattern>
+            </defs>
+            <rect width="100" height="100" fill="url(#quiz-hero-pattern)" />
+          </svg>
+          
+          {/* Floating geometric shapes */}
+          <motion.div 
+            className="absolute top-20 left-1/4 w-3 h-3 bg-blue-400/30 dark:bg-blue-600/40 rounded-full"
+            animate={{ 
+              y: [0, -20, 0],
+              opacity: [0.3, 0.6, 0.3],
+            }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div 
+            className="absolute top-40 right-1/3 w-4 h-4 bg-purple-400/30 dark:bg-purple-600/40 rounded-sm"
+            animate={{ 
+              y: [0, -15, 0],
+              rotate: [0, 90, 0],
+              opacity: [0.3, 0.6, 0.3],
+            }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          />
+          <motion.div 
+            className="absolute bottom-32 left-1/3 w-3 h-3 bg-green-400/30 dark:bg-green-600/40 rounded-full"
+            animate={{ 
+              y: [0, -18, 0],
+              opacity: [0.3, 0.6, 0.3],
+            }}
+            transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          />
+          <motion.div 
+            className="absolute bottom-20 right-1/4 w-4 h-4 bg-pink-400/30 dark:bg-pink-600/40 rounded-sm"
+            animate={{ 
+              y: [0, -22, 0],
+              rotate: [0, -90, 0],
+              opacity: [0.3, 0.6, 0.3],
+            }}
+            transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 3 }}
+          />
+        </div>
         
-        {/* Floating geometric shapes */}
-        <div className="absolute top-20 left-1/4 w-2 h-2 bg-blue-200 dark:bg-blue-900 rounded-full animate-pulse" />
-        <div className="absolute top-40 right-1/3 w-3 h-3 bg-purple-200 dark:bg-purple-900 rounded-sm animate-pulse delay-1000" />
-        <div className="absolute bottom-32 left-1/3 w-2 h-2 bg-green-200 dark:bg-green-900 rounded-full animate-pulse delay-2000" />
-        <div className="absolute bottom-20 right-1/4 w-3 h-3 bg-orange-200 dark:bg-orange-900 rounded-sm animate-pulse delay-3000" />
+        <div className="relative px-6 py-8 md:px-8 md:py-12">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            {/* Header Content */}
+            <div className="space-y-3 flex-1">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="flex items-center gap-3"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                  <Brain className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
+                    Discover Quizzes
+                  </h1>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Test your knowledge with interactive quizzes
+                  </p>
+                </div>
+              </motion.div>
+              
+              {/* Stats Row */}
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="flex items-center gap-6 mt-4"
+              >
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center">
+                    <FileQuestion className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-foreground">{filteredQuizzes.length}</div>
+                    <div className="text-xs text-muted-foreground">Quizzes</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 dark:bg-purple-500/20 flex items-center justify-center">
+                    <Target className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-foreground">{Object.keys(QUIZ_TYPE_CONFIG).length}</div>
+                    <div className="text-xs text-muted-foreground">Types</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-8 h-8 rounded-lg bg-green-500/10 dark:bg-green-500/20 flex items-center justify-center">
+                    <Sparkles className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-foreground">AI-Powered</div>
+                    <div className="text-xs text-muted-foreground">Learning</div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Action Buttons */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="flex items-center gap-3"
+            >
+              {onViewModeChange && (
+                <ToggleGroup
+                  type="single"
+                  value={viewMode}
+                  onValueChange={onViewModeChange}
+                  className="bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm"
+                >
+                  <ToggleGroupItem 
+                    value="grid" 
+                    aria-label="Grid view" 
+                    className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    <Grid3X3 className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem 
+                    value="list" 
+                    aria-label="List view" 
+                    className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    <List className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              )}
+              
+              {onCreateQuiz && (
+                <Button 
+                  onClick={onCreateQuiz} 
+                  size="lg"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  <Plus className="mr-2 h-5 w-5" />
+                  Create Quiz
+                </Button>
+              )}
+            </motion.div>
+          </div>
+        </div>
       </div>
       
       <div className="relative">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-foreground">
-            Discover Quizzes
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {filteredQuizzes.length} quizzes{filteredQuizzes.length !== 1 ? "s" : ""} available
-          </p>
+      {/* Enhanced Search and Filters Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="space-y-4 md:space-y-6"
+      >
+        {/* Search Bar with Enhanced Design */}
+        <div className="relative">
+          <div className="relative w-full">
+            <div className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+              <Search className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+            </div>
+            <Input
+              placeholder="Search quizzes by title or topic..."
+              value={currentSearch}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="h-12 md:h-14 pl-10 md:pl-12 pr-20 md:pr-24 text-sm md:text-base bg-background/80 backdrop-blur-sm border-border/50 shadow-sm focus:shadow-md transition-all duration-200 rounded-xl"
+              aria-label="Search quizzes"
+            />
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1 md:gap-2">
+              {currentSearch && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSearchChange("")}
+                  className="h-7 w-7 md:h-8 md:w-8 p-0 hover:bg-muted rounded-full"
+                  aria-label="Clear search"
+                >
+                  <X className="h-3 w-3 md:h-4 md:w-4" />
+                </Button>
+              )}
+              <Badge variant="secondary" className="hidden sm:flex items-center gap-1 px-1.5 md:px-2 py-0.5 md:py-1 text-xs">
+                <span>{filteredQuizzes.length}</span>
+              </Badge>
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          {onViewModeChange && (
-            <ToggleGroup
-              type="single"
-              value={viewMode}
-              onValueChange={onViewModeChange}
-              className="bg-card border border-border/50"
-            >
-              <ToggleGroupItem value="grid" aria-label="Grid view" className="data-[state=on]:bg-muted">
-                <Grid3X3 className="h-4 w-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="list" aria-label="List view" className="data-[state=on]:bg-muted">
-                <List className="h-4 w-4" />
-              </ToggleGroupItem>
-            </ToggleGroup>
-          )}
-          
-          {onCreateQuiz && (
-            <Button onClick={onCreateQuiz} className="bg-primary hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Quiz
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Enhanced Filter Section */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        {/* Search Bar */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search quizzes..."
-            value={currentSearch}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-10 bg-background/50 backdrop-blur-sm"
-          />
-          {currentSearch && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleSearchChange("")}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted"
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          )}
-        </div>
-
+        {/* Filter Section */}
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
         {/* Quiz Type Filters */}
         <TooltipProvider>
           <div className="flex items-center gap-2 flex-wrap">
@@ -574,12 +696,15 @@ function QuizListComponent({
 
         {/* Clear Filters */}
         {(currentSearch || currentSelectedTypes.length > 0 || sortBy !== 'default') && (
-          <Button variant="ghost" size="sm" onClick={clearFilters}>
-            Clear
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-2">
+            <X className="h-3 w-3" />
+            Clear Filters
           </Button>
         )}
-      </div>
+        </div>
+      </motion.div>
 
+      {/* Quiz Grid */}
       <motion.div
         className={cn(
           "grid gap-6",

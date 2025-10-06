@@ -148,26 +148,24 @@ export default function CourseListWithFilters({ url, userId }: CourseListWithFil
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="max-w-2xl mx-auto pt-4 md:pt-6 px-4 md:px-0"
+              className="max-w-2xl mx-auto pt-6"
             >
               <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-xl md:rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity" />
                 <div className="relative">
-                  <Search className="absolute left-3 md:left-5 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 md:w-5 md:h-5 z-10" />
+                  <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5 z-10" />
                   <Input
                     placeholder="Search for courses, topics, skills..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 md:pl-14 pr-12 md:pr-14 h-12 md:h-14 text-base md:text-lg rounded-xl md:rounded-2xl border-2 focus:border-primary shadow-lg bg-background/95 backdrop-blur-sm"
-                    aria-label="Search courses"
+                    className="pl-14 pr-14 h-14 text-lg rounded-2xl border-2 focus:border-primary shadow-lg bg-background/95 backdrop-blur-sm"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery("")}
-                      className="absolute right-3 md:right-5 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors z-10"
-                      aria-label="Clear search"
+                      className="absolute right-5 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors z-10"
                     >
-                      <X className="w-4 h-4 md:w-5 md:h-5" />
+                      <X className="w-5 h-5" />
                     </button>
                   )}
                 </div>
@@ -179,15 +177,14 @@ export default function CourseListWithFilters({ url, userId }: CourseListWithFil
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6 }}
-                  className="flex flex-wrap justify-center gap-1 md:gap-2 mt-3 md:mt-4"
+                  className="flex flex-wrap justify-center gap-2 mt-4"
                 >
-                  <span className="text-xs md:text-sm text-muted-foreground mb-1 w-full text-center md:w-auto md:mb-0">Popular:</span>
+                  <span className="text-sm text-muted-foreground">Popular:</span>
                   {['JavaScript', 'Python', 'React', 'Machine Learning', 'UI/UX Design'].map((topic) => (
                     <button
                       key={topic}
                       onClick={() => setSearchQuery(topic)}
-                      className="px-2 md:px-3 py-1 text-xs font-medium bg-muted/50 hover:bg-muted rounded-full transition-colors touch-manipulation"
-                      aria-label={`Search for ${topic} courses`}
+                      className="px-3 py-1 text-xs font-medium bg-muted/50 hover:bg-muted rounded-full transition-colors"
                     >
                       {topic}
                     </button>

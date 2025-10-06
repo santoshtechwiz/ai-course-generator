@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { createThumbnailErrorHandler, getYouTubeThumbnailUrl } from "@/utils/youtube-thumbnails"
 
 interface AddChapterFormProps {
   youtubeId: string
@@ -63,11 +64,12 @@ const AddChapterForm: React.FC<AddChapterFormProps> = ({
               <p className="text-xs text-green-500 mb-1">Video ID validated: {validatedId}</p>
               <div className="relative aspect-video bg-muted rounded-md">
                 <Image
-                  src={`https://img.youtube.com/vi/${validatedId}/hqdefault.jpg`}
+                  src={getYouTubeThumbnailUrl(validatedId, 'hqdefault')}
                   alt="Video thumbnail"
                   fill
                   className="object-cover rounded-md"
                   sizes="100vw"
+                  onError={createThumbnailErrorHandler(validatedId)}
                 />
               </div>
             </div>

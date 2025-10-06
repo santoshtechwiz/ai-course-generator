@@ -13,6 +13,7 @@ import BookmarkManager from "./BookmarkManager"
 import { NotesPanel } from "./NotesPanel"
 import KeyboardShortcutsModal from "@/app/dashboard/course/[slug]/components/KeyboardShortcutsModal"
 import { Button } from "@/components/ui/button"
+import { getYouTubeThumbnailUrl } from "@/utils/youtube-thumbnails"
 import { Card, CardContent } from "@/components/ui/card"
 import { Play, Lock, User, Maximize, HelpCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -390,7 +391,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
             onVideoLoad?.({
               title: courseName || chapterTitleRef.current || "Video",
               duration,
-              thumbnail: `https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg`,
+              thumbnail: `https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`,
             })
           }
 
@@ -1124,7 +1125,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
               const time = (playerState.videoDuration || state.duration) * percent
               handlers.onSeek(time)
             }}
-            thumbnail={`https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg`}
+            thumbnail={getYouTubeThumbnailUrl(youtubeVideoId, 'hqdefault')}
           />
         )}
 

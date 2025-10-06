@@ -166,8 +166,8 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
       <div
         className={cn(
           "relative overflow-hidden bg-muted",
-          variant === "list" && "w-full h-48 sm:w-48 sm:h-full sm:shrink-0",
-          variant === "grid" && "w-full h-40 sm:h-48",
+          variant === "list" && "w-full h-32 sm:w-40 sm:h-full sm:shrink-0",
+          variant === "grid" && "w-full h-32",
         )}
       >
   {/* Course image or generic placeholder */}
@@ -194,30 +194,30 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
         <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors duration-500" />
 
         {/* Action buttons */}
-        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex gap-2 sm:gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <Button
             variant="secondary"
             size="sm"
-            className="h-11 w-11 sm:h-10 sm:w-10 p-0 bg-card/90 hover:bg-card shadow-sm touch-manipulation min-h-[44px] min-w-[44px]"
+            className="h-8 w-8 p-0 bg-card/90 hover:bg-card shadow-sm"
             onClick={handleFavoriteClick}
           >
-            <Heart className={cn("h-3 w-3 sm:h-4 sm:w-4", isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground")} />
+            <Heart className={cn("h-3.5 w-3.5", isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground")} />
           </Button>
           <Button
             variant="secondary"
             size="sm"
-            className="h-11 w-11 sm:h-10 sm:w-10 p-0 bg-card/90 hover:bg-card shadow-sm touch-manipulation min-h-[44px] min-w-[44px]"
+            className="h-8 w-8 p-0 bg-card/90 hover:bg-card shadow-sm"
             onClick={handleBookmarkClick}
           >
-            <Bookmark className={cn("h-3 w-3 sm:h-4 sm:w-4", isBookmarked ? "fill-primary text-primary" : "text-muted-foreground")} />
+            <Bookmark className={cn("h-3.5 w-3.5", isBookmarked ? "fill-primary text-primary" : "text-muted-foreground")} />
           </Button>
         </div>
 
         {/* Status badges */}
         {(isPopular || isTrending) && (
-          <div className="absolute top-4 left-4">
+          <div className="absolute top-2 left-2">
             {isPopular && (
-              <Badge className="bg-accent text-accent-foreground text-xs font-medium border-0">Popular</Badge>
+              <Badge className="bg-accent text-accent-foreground text-[10px] font-medium border-0 px-2 py-0.5">🔥</Badge>
             )}
           </div>
         )}
@@ -226,24 +226,24 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
       <CardContent
         className={cn(
           "flex flex-col justify-between bg-card",
-          variant === "list" && "sm:flex-row sm:items-center p-4 sm:p-6 gap-3 sm:gap-6",
-          variant === "grid" && "p-4 sm:p-6 flex-1",
+          variant === "list" && "sm:flex-row sm:items-center p-3 gap-2",
+          variant === "grid" && "p-3 flex-1 space-y-2.5",
         )}
       >
         {/* Header with category and difficulty */}
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <Badge
               variant="secondary"
-              className={cn("text-xs font-medium border", DIFFICULTY_CONFIG[difficultyLevel].badge)}
+              className={cn("text-[10px] font-medium border px-1.5 py-0.5", DIFFICULTY_CONFIG[difficultyLevel].badge)}
             >
               {difficultyLevel}
             </Badge>
             {price !== undefined && (
               <div className="text-right">
-                <span className="font-bold text-foreground text-base sm:text-lg">${price}</span>
+                <span className="font-bold text-foreground text-sm">${price}</span>
                 {originalPrice && originalPrice > price && (
-                  <div className="text-xs text-muted-foreground line-through">${originalPrice}</div>
+                  <div className="text-[10px] text-muted-foreground line-through">${originalPrice}</div>
                 )}
               </div>
             )}
@@ -251,134 +251,91 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
         </div>
 
         {/* Title and instructor */}
-        <div className="mb-3 space-y-1">
+        <div className="space-y-0.5">
           <h3
             className={cn(
-              "font-bold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors duration-300",
-              variant === "list" ? "text-sm sm:text-base" : "text-base sm:text-lg",
+              "font-semibold text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors duration-300",
+              variant === "list" ? "text-sm" : "text-base",
             )}
           >
             {title}
           </h3>
-          <p className="text-xs sm:text-sm text-muted-foreground font-medium">{instructor}</p>
+          <p className="text-[10px] text-muted-foreground font-medium">{instructor}</p>
         </div>
 
         {/* Description - show on both grid and list so home cards display content */}
         {description && (
-          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-3 mb-3 leading-relaxed">
+          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
             {description}
           </p>
         )}
 
-        {/* Rating and enrollment stats */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
+        {/* Compact inline stats */}
+        <div className="flex items-center justify-between text-xs border-y border-border/30 py-2">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-              <span className="font-semibold text-sm text-foreground">{rating.toFixed(1)}</span>
+              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+              <span className="font-semibold text-foreground">{rating.toFixed(1)}</span>
             </div>
-            <span className="text-xs text-muted-foreground">({enrolledCount.toLocaleString()})</span>
-          </div>
-          {viewCount > 0 && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1 text-muted-foreground">
               <Users className="h-3 w-3" />
-              <span>{viewCount.toLocaleString()} views</span>
+              <span>{enrolledCount.toLocaleString()}</span>
             </div>
-          )}
-        </div>
-
-        {/* Course stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
-          <div className="flex flex-col items-center p-2 bg-muted/30 rounded-md hover:bg-muted/50 transition-colors">
-            <div className="text-sm sm:text-base font-bold text-foreground">{typeof unitCount === 'number' && unitCount > 0 ? unitCount : 'N/A'}</div>
-            <div className="text-xs text-muted-foreground">Chapters</div>
-          </div>
-          <div className="flex flex-col items-center p-2 bg-muted/30 rounded-md hover:bg-muted/50 transition-colors">
-            <div className="text-sm sm:text-base font-bold text-foreground">{typeof lessonCount === 'number' && lessonCount > 0 ? lessonCount : 'N/A'}</div>
-            <div className="text-xs text-muted-foreground">Lessons</div>
-          </div>
-          <div className="flex flex-col items-center p-2 bg-muted/30 rounded-md hover:bg-muted/50 transition-colors">
-            <div className="text-sm sm:text-base font-bold text-foreground">{typeof quizCount === 'number' && quizCount > 0 ? quizCount : 'N/A'}</div>
-            <div className="text-xs text-muted-foreground">Quizzes</div>
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              <span>{duration}</span>
+            </div>
           </div>
         </div>
 
-        {/* Duration and last updated */}
-        <div className="flex items-center justify-between mb-3 text-xs text-muted-foreground">
+        {/* Compact course stats */}
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            <span>{duration}</span>
+            <span className="font-medium text-foreground">{typeof unitCount === 'number' && unitCount > 0 ? unitCount : '0'}</span>
+            <span>chapters</span>
           </div>
-          {updatedAt && (
-            <div className="flex items-center gap-1">
-              <span>Updated {new Date(updatedAt).toLocaleDateString()}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-1">
+            <span className="font-medium text-foreground">{typeof lessonCount === 'number' && lessonCount > 0 ? lessonCount : '0'}</span>
+            <span>lessons</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="font-medium text-foreground">{typeof quizCount === 'number' && quizCount > 0 ? quizCount : '0'}</span>
+            <span>quizzes</span>
+          </div>
         </div>
 
         {/* Progress for enrolled courses */}
         {isEnrolled && (
-          <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 mb-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-primary">{progressPercentage > 0 ? `${progressPercentage}% Complete` : 'Not started'}</span>
-              <span className="text-xs text-muted-foreground">
-                {typeof totalChapters === 'number' && totalChapters > 0 ? `${completedChapters}/${totalChapters} chapters` : 'N/A chapters'}
+          <div className="bg-primary/5 border border-primary/10 rounded-lg p-2">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-primary">{progressPercentage > 0 ? `${progressPercentage}%` : 'Not started'}</span>
+              <span className="text-[10px] text-muted-foreground">
+                {typeof totalChapters === 'number' && totalChapters > 0 ? `${completedChapters}/${totalChapters}` : 'N/A'}
               </span>
             </div>
-            <Progress value={progressPercentage} className="h-2 mb-2" />
-            {currentChapterTitle && (
-              <div className="text-xs text-muted-foreground mb-1">
-                Current: {currentChapterTitle}
-              </div>
-            )}
-            {timeSpent && (
-              <div className="text-xs text-muted-foreground">
-                Time spent: {Math.round(timeSpent / 60)}h {timeSpent % 60}m
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tags */}
-        {tags && tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-3">
-            {tags.slice(0, 3).map((tag, index) => (
-              <Badge key={index} variant="outline" className="text-xs px-2 py-0">
-                {tag}
-              </Badge>
-            ))}
-            {tags.length > 3 && (
-              <Badge variant="outline" className="text-xs px-2 py-0">
-                +{tags.length - 3}
-              </Badge>
-            )}
+            <Progress value={progressPercentage} className="h-1.5" />
           </div>
         )}
 
         {/* Footer with badges */}
-        <div className="flex items-center justify-between mt-auto">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
             {price === undefined && (
-              <Badge className="bg-accent/10 text-accent border-accent/20 font-semibold px-3 py-1 text-xs">
-                Free Course
+              <Badge className="bg-accent/10 text-accent border-accent/20 font-semibold px-2 py-0.5 text-[10px]">
+                Free
               </Badge>
             )}
             {isPopular && (
-              <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 text-xs">
+              <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 text-[10px] px-2 py-0.5">
                 Popular
               </Badge>
             )}
             {isTrending && (
-              <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 text-xs">
+              <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 text-[10px] px-2 py-0.5">
                 Trending
               </Badge>
             )}
           </div>
-          {lastAccessedAt && (
-            <div className="text-xs text-muted-foreground">
-              Last accessed {new Date(lastAccessedAt).toLocaleDateString()}
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>

@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
+import { createThumbnailErrorHandler, getYouTubeThumbnailUrl } from "@/utils/youtube-thumbnails"
 
 interface Chapter {
   id: string;
@@ -499,7 +500,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                             title: chapter.title || 'Untitled Chapter',
                             videoId: chapter.videoId,
                             duration: chapter.duration,
-                            thumbnail: chapter.thumbnail || (chapter.videoId ? `https://img.youtube.com/vi/${chapter.videoId}/mqdefault.jpg` : undefined),
+                            thumbnail: chapter.thumbnail || (chapter.videoId ? getYouTubeThumbnailUrl(chapter.videoId, 'hqdefault') : '/images/placeholder.svg'),
                             locked: chapter.locked,
                             isFree: chapter.isFree
                           };
@@ -595,11 +596,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                             fill
                                             className="object-cover transition-all duration-300 group-hover:scale-105"
                                             sizes="112px"
-                                            onError={(e) => {
-                                              // Fallback to default thumbnail on error
-                                              const target = e.target as HTMLImageElement;
-                                              target.src = `https://img.youtube.com/vi/${safeChapter.videoId}/default.jpg`;
-                                            }}
+                                            onError={createThumbnailErrorHandler(safeChapter.videoId || '')}
                                           />
                                           {/* Duration overlay */}
                                           {duration && (

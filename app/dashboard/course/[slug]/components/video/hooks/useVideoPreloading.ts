@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { getYouTubeThumbnailUrl } from '@/utils/youtube-thumbnails';
 
 /**
  * Hook that preloads the next video in a playlist for smoother transitions
@@ -67,11 +68,11 @@ export function useVideoPreloading({
         console.debug(`[VideoPreloading] Preloading next video: ${nextVideoId}`);
       }
       
-      // Create a preload link for the YouTube thumbnail
+      // Create a preload link for the YouTube thumbnail (use hqdefault for better availability)
       const preloadLink = document.createElement('link');
       preloadLink.rel = 'preload';
       preloadLink.as = 'image';
-      preloadLink.href = `https://img.youtube.com/vi/${nextVideoId}/maxresdefault.jpg`;
+      preloadLink.href = getYouTubeThumbnailUrl(nextVideoId, 'hqdefault');
       document.head.appendChild(preloadLink);
       preloadLinkRef.current = preloadLink;
       
