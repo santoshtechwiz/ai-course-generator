@@ -5,6 +5,7 @@ import { QuizCreateLayout } from "../components/QuizCreateLayout";
 import OpenEndedQuizForm from "./components/OpenEndedQuizForm";
 import { useAuth } from "@/modules/auth";
 import { UnifiedLoader } from "@/components/loaders";
+import { QuizCreationProtection } from "@/components/auth/RouteProtectionWrapper";
 
 const OpenEndedPage = () => {
   const { isAuthenticated } = useAuth(); // Use consolidated hook
@@ -13,28 +14,30 @@ const OpenEndedPage = () => {
   const quizPlan = useQuizPlan(2); // Require 2 credits for open-ended quiz (corrected from MCQ)
 
   return (
-    <QuizCreateLayout
-      title="Open Ended Questions"
-      description="Create customized open-ended questions or practice with our pre-built exercises."
-      quizType="openended"
-      helpText={`You can create quizzes with up to ${quizPlan.maxQuestions} questions based on your ${quizPlan.currentPlan} plan.`}
-      isLoggedIn={isAuthenticated} // Use isAuthenticated from useAuth
-    >
-      {quizPlan.isLoading ? (
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
-          message="Loading quiz configuration..."
-          size="md"
-        />
-      ) : (
-        <OpenEndedQuizForm
-          credits={quizPlan.credits}
-          isLoggedIn={isAuthenticated} // Use isAuthenticated from useAuth
-          maxQuestions={quizPlan.maxQuestions}
-        />
-      )}
-    </QuizCreateLayout>
+    <QuizCreationProtection quizType="openended">
+      <QuizCreateLayout
+        title="Open Ended Questions"
+        description="Create customized open-ended questions or practice with our pre-built exercises."
+        quizType="openended"
+        helpText={`You can create quizzes with up to ${quizPlan.maxQuestions} questions based on your ${quizPlan.currentPlan} plan.`}
+        isLoggedIn={isAuthenticated} // Use isAuthenticated from useAuth
+      >
+        {quizPlan.isLoading ? (
+          <UnifiedLoader
+            state="loading"
+            variant="spinner"
+            message="Loading quiz configuration..."
+            size="md"
+          />
+        ) : (
+          <OpenEndedQuizForm
+            credits={quizPlan.credits}
+            isLoggedIn={isAuthenticated} // Use isAuthenticated from useAuth
+            maxQuestions={quizPlan.maxQuestions}
+          />
+        )}
+      </QuizCreateLayout>
+    </QuizCreationProtection>
   );
 };
 

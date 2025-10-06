@@ -100,14 +100,16 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (dbUser) {
-            token.credits = dbUser.credits ?? 3
-            token.creditsUsed = dbUser.creditsUsed ?? 0
+            // Preserve existing token values if present to prevent unwanted resets
+            token.credits = dbUser.credits ?? token.credits ?? 3
+            token.creditsUsed = dbUser.creditsUsed ?? token.creditsUsed ?? 0
             token.isAdmin = Boolean(dbUser.isAdmin)
             token.isActive = Boolean(dbUser.isActive ?? true)
-            token.userType = dbUser.userType || "FREE"
-            token.subscriptionPlan = dbUser.subscription?.planId || null
-            token.subscriptionStatus = dbUser.subscription?.status || null
-          } else {
+            token.userType = dbUser.userType || token.userType || "FREE"
+            token.subscriptionPlan = dbUser.subscription?.planId || token.subscriptionPlan || null
+            token.subscriptionStatus = dbUser.subscription?.status || token.subscriptionStatus || null
+          } else if (!token.credits) {
+            // Only set defaults if no existing token values
             token.credits = 3
             token.creditsUsed = 0
             token.isAdmin = false

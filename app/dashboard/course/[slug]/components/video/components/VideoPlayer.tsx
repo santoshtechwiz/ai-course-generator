@@ -23,7 +23,7 @@ import { addBookmark } from "@/store/slices/course-slice"
 import ChapterStartOverlay from "./ChapterStartOverlay"
 import ChapterEndOverlay from "./ChapterEndOverlay"
 import AutoPlayNotification from "./AutoPlayNotification"
-import EnhancedMiniPlayer from "./EnhancedMiniPlayer"
+import EnhancedMiniPlayer from "./YouTubePIP"
 import { storageManager } from "@/utils/storage-manager"
 import { videoService } from "@/services/video-service"
 import { useNotes } from "@/hooks/use-notes"
@@ -113,10 +113,9 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
   isTheaterMode = false,
   isLoading = false,
 }) => {
-    const { isAuthenticated: authState, user } = useAuth()
+    const { isAuthenticated:effectiveIsAuthenticated } = useAuth()
     // Derive effective authentication (prop can override but auth state acts as fallback)
-    const effectiveIsAuthenticated = isAuthenticated || authState
-    const youtubeVideoIdRef = useRef(youtubeVideoId)
+     const youtubeVideoIdRef = useRef(youtubeVideoId)
 
     // Consolidated state management with performance optimizations
     const [overlayState, setOverlayState] = useState({
@@ -310,7 +309,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
           if (interval) clearInterval(interval)
         })
       }
-    }, [authenticationState, user?.id])
+    }, [authenticationState])
 
     // Enhanced PiP detection and state management
     useEffect(() => {

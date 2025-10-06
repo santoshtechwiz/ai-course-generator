@@ -15,10 +15,23 @@ export async function POST(req: NextRequest) {
     }
 
     // Get the latest user and subscription data from the backend
-    const subscriptionData = await SubscriptionService.getSubscriptionStatus(session.user.id)
+    let subscriptionData;
+    try {
+      subscriptionData = await SubscriptionService.getSubscriptionStatus(session.user.id)
+    } catch (error) {
+      console.error("[Refresh] Error fetching subscription data:", error)
+    }
 
+    // Don't fail if subscription data isn't found, preserve existing data
     if (!subscriptionData) {
-      return NextResponse.json({ error: "Subscription data not found" }, { status: 404 })
+      subscriptionData = {
+        userId: session.user.id,
+        subscriptionPlan: session.user.subscriptionPlan || "FREE",
+        credits: session.user.credits || 3,
+        tokensUsed: session.user.creditsUsed || 0,
+        subscriptionId: null,
+        status: session.user.subscriptionStatus || null
+      }
     }
 
     // Return the updated user data that matches the session structure

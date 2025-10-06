@@ -5,6 +5,7 @@ import { QuizCreateLayout } from "../components/QuizCreateLayout";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { UnifiedLoader } from "@/components/loaders";
+import { QuizCreationProtection } from "@/components/auth/RouteProtectionWrapper";
 
 export const dynamic = 'force-dynamic'
 
@@ -56,30 +57,32 @@ const McqPage = () => {
   }, [draft, suggestedData]);
 
   return (
-    <QuizCreateLayout
-      title="Multiple Choice Questions"
-      description="Create customized multiple choice questions or practice with our pre-built quizzes."
-      quizType="mcq"
-      helpText={`You can create quizzes with up to ${quizPlan.maxQuestions} questions based on your ${quizPlan.currentPlan} plan.`}
-      isLoggedIn={quizPlan.isLoggedIn}
-    >
-      {quizPlan.isLoading ? (
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
-          message="Loading quiz configuration..."
-          size="md"
-        />
-      ) : (
-        <CreateQuizForm
-          credits={quizPlan.credits}
-          isLoggedIn={quizPlan.isLoggedIn}
-          maxQuestions={quizPlan.maxQuestions}
-          quizType="mcq"
-          params={initialParams as any}
-        />
-      )}
-    </QuizCreateLayout>
+    <QuizCreationProtection quizType="mcq">
+      <QuizCreateLayout
+        title="Multiple Choice Questions"
+        description="Create customized multiple choice questions or practice with our pre-built quizzes."
+        quizType="mcq"
+        helpText={`You can create quizzes with up to ${quizPlan.maxQuestions} questions based on your ${quizPlan.currentPlan} plan.`}
+        isLoggedIn={quizPlan.isLoggedIn}
+      >
+        {quizPlan.isLoading ? (
+          <UnifiedLoader
+            state="loading"
+            variant="spinner"
+            message="Loading quiz configuration..."
+            size="md"
+          />
+        ) : (
+          <CreateQuizForm
+            credits={quizPlan.credits}
+            isLoggedIn={quizPlan.isLoggedIn}
+            maxQuestions={quizPlan.maxQuestions}
+            quizType="mcq"
+            params={initialParams as any}
+          />
+        )}
+      </QuizCreateLayout>
+    </QuizCreationProtection>
   );
 };
 

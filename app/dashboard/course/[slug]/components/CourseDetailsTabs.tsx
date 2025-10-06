@@ -666,9 +666,16 @@ export default function CourseDetailsTabs({
           {currentChapter ? (
             <FeatureGate
               feature="course-videos"
-              showPartialContent={false}
-              lockMessage="Unlock Course Summaries"
-              lockDescription="Upgrade to access AI-generated chapter summaries and insights"
+              showPartialContent={true}
+              previewRatio={0.5}
+              minPreviewPx={260}
+              previewFadeRatio={0.45}
+              blur={true}
+              overlayPlacement="over"
+              overlayFullWidth={true}
+              hideOverlay={true}
+              lockMessage="Unlock Full AI Summary"
+              lockDescription="Upgrade to reveal the full AI-generated summary, key insights, and learning recommendations for this chapter."
             >
               <div className="p-4">
                 <CourseAISummary
@@ -705,9 +712,16 @@ export default function CourseDetailsTabs({
           {currentChapter ? (
             <FeatureGate
               feature="quiz-access"
-              showPartialContent={false}
-              lockMessage="Unlock Course Quizzes"
-              lockDescription="Upgrade to test your knowledge with interactive quizzes"
+              showPartialContent={true}
+              previewRatio={0.35}
+              minPreviewPx={240}
+              previewFadeRatio={0.4}
+              blur={true}
+              overlayPlacement="below"
+              overlayFullWidth={true}
+              hideOverlay={true}
+              lockMessage="Unlock Interactive Quizzes"
+              lockDescription="Upgrade to take full quizzes, view detailed explanations, and track your mastery over time."
             >
               <div className="p-4">
                 <CourseDetailsQuiz
