@@ -16,6 +16,7 @@ import BProgressProvider from "./providers"
 import { MotionProvider } from "@/components/MotionProvider"
 import Footer from "@/components/shared/Footer"
 import { Toaster } from "@/components/ui/toaster"
+import { BreadcrumbWelcome } from "@/components/auth/BreadcrumbWelcome"
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
@@ -98,6 +99,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </a>
 
             <RootErrorBoundary>
+              {/* Post-auth context restoration */}
+              <BreadcrumbWelcome />
+              
               {/* Simplified noscript message */}
               <noscript>
                 <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 m-4">

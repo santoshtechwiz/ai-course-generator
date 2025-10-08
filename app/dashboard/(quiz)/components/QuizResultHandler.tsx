@@ -249,7 +249,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         <div className="text-center space-y-4 px-4">
           <UnifiedLoader
             state="loading"
-            variant="spinner"
+            variant="progress"
             size="lg"
             message={LOADER_MESSAGES.CALCULATING_RESULTS}
             className="text-center"

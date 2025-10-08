@@ -64,13 +64,13 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
 
     if (quizType === "flashcard") {
       return (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
-            <div className="text-2xl font-bold text-green-700">{previewData.correctAnswers || 0}</div>
+            <div className="text-xl sm:text-2xl font-bold text-green-700">{previewData.correctAnswers || 0}</div>
             <div className="text-xs text-green-600 font-medium">Mastered</div>
           </div>
           <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-            <div className="text-2xl font-bold text-yellow-700">{previewData.stillLearningAnswers || 0}</div>
+            <div className="text-xl sm:text-2xl font-bold text-yellow-700">{previewData.stillLearningAnswers || 0}</div>
             <div className="text-xs text-yellow-600 font-medium">Learning</div>
           </div>
         </div>
@@ -78,13 +78,13 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
     }
 
     return (
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <div className="text-2xl font-bold text-blue-700">{previewData.percentage || 0}%</div>
+          <div className="text-xl sm:text-2xl font-bold text-blue-700">{previewData.percentage || 0}%</div>
           <div className="text-xs text-blue-600 font-medium">Score</div>
         </div>
         <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
-          <div className="text-2xl font-bold text-green-700">
+          <div className="text-xl sm:text-2xl font-bold text-green-700">
             {previewData.score || 0}/{previewData.maxScore || 0}
           </div>
           <div className="text-xs text-green-600 font-medium">Points</div>
@@ -94,42 +94,42 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-3 sm:p-4 md:p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        className="w-full max-w-sm sm:max-w-md lg:max-w-lg xl:max-w-xl mx-auto"
       >
-        <Card className="shadow-2xl border-0 overflow-hidden">
+        <Card className="shadow-2xl border-0 overflow-hidden w-full">
           {/* Header with gradient background */}
-          <div className={`bg-gradient-to-r ${config.color} p-6 text-white relative overflow-hidden`}>
+          <div className={`bg-gradient-to-r ${config.color} p-4 sm:p-6 text-white relative overflow-hidden`}>
             <div className="absolute inset-0 bg-black/10" />
             <div className="relative z-10">
               <motion.div
-                className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 mx-auto"
+                className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-full flex items-center justify-center mb-3 sm:mb-4 mx-auto"
                 whileHover={{ scale: 1.05, rotate: 5 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
-                <IconComponent className="w-8 h-8" />
+                <IconComponent className="w-6 h-6 sm:w-8 sm:h-8" />
               </motion.div>
-              <h1 className="text-2xl font-bold text-center mb-2">Quiz Completed!</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-center mb-2">Quiz Completed!</h1>
               <p className="text-center text-white/90 text-sm">{config.title}</p>
             </div>
           </div>
 
-          <CardContent className="p-6 space-y-6">
+          <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             {/* Preview Results */}
             {previewData && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="space-y-4"
+                className="space-y-3 sm:space-y-4"
               >
                 <div className="text-center">
-                  <h3 className="font-semibold text-lg mb-3 flex items-center justify-center gap-2">
-                    <Trophy className="w-5 h-5 text-yellow-500" />
+                  <h3 className="font-semibold text-base sm:text-lg mb-3 flex items-center justify-center gap-2">
+                    <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
                     Your Results Preview
                   </h3>
                 </div>
@@ -140,40 +140,30 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
             <Separator />
 
             {/* Sign In Benefits */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-center flex items-center justify-center gap-2">
-                <Shield className="w-5 h-5 text-blue-500" />
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="font-semibold text-center flex items-center justify-center gap-2 text-sm sm:text-base">
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
                 Sign In to Unlock
               </h3>
 
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <Trophy className="w-4 h-4 text-white" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Trophy className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <div className="font-medium text-sm">Detailed Results</div>
                     <div className="text-xs text-muted-foreground">View complete analysis & explanations</div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-white" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <div className="font-medium text-sm">Progress Tracking</div>
                     <div className="text-xs text-muted-foreground">Save your quiz history & improvements</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                    <Star className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <div className="font-medium text-sm">Personalized Learning</div>
-                    <div className="text-xs text-muted-foreground">Get recommendations & study plans</div>
                   </div>
                 </div>
               </div>
@@ -186,10 +176,10 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Button
                   onClick={onSignIn}
-                  className={`w-full h-12 bg-gradient-to-r ${config.color} hover:opacity-90 text-white font-semibold shadow-lg`}
+                  className={`w-full h-11 sm:h-12 bg-gradient-to-r ${config.color} hover:opacity-90 text-white font-semibold shadow-lg text-sm sm:text-base`}
                   size="lg"
                 >
-                  <LogIn className="w-5 h-5 mr-2" />
+                  <LogIn className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   Sign In to View Results
                 </Button>
               </motion.div>
@@ -198,19 +188,19 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
                 <Button
                   onClick={onRetake}
                   variant="outline"
-                  className="w-full h-12 border-2 font-semibold bg-transparent"
+                  className="w-full h-11 sm:h-12 border-2 font-semibold bg-transparent text-sm sm:text-base"
                   size="lg"
                 >
-                  <RotateCcw className="w-5 h-5 mr-2" />
+                  <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   Retake Quiz
                 </Button>
               </motion.div>
             </div>
 
             {/* Footer */}
-            <div className="text-center pt-4">
+            <div className="text-center pt-3 sm:pt-4">
               <p className="text-xs text-muted-foreground">Free account • No credit card required</p>
-              <div className="flex items-center justify-center gap-2 mt-2">
+              <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
                 <Badge variant="secondary" className="text-xs">
                   <Zap className="w-3 h-3 mr-1" />
                   Instant Access

@@ -4,8 +4,24 @@ import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { getPlanConfig, type SubscriptionPlanType } from "@/types/subscription-plans"
 
 /**
- * Clean Quiz Plan Hook - Uses centralized subscription data
- * No duplicate logic, single source of truth
+ * @deprecated Use useFeatureAccess('quiz-<type>') + useUnifiedSubscription() instead
+ * 
+ * This hook is deprecated and will be removed in a future version.
+ * Migrate to the unified feature access system:
+ * 
+ * @example
+ * // Old way (deprecated):
+ * const quizPlan = useQuizPlan()
+ * 
+ * // New way (recommended):
+ * import { useFeatureAccess } from '@/hooks/useFeatureAccess'
+ * import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
+ * import { getPlanConfig } from '@/types/subscription-plans'
+ * 
+ * const { canAccess, requiredPlan } = useFeatureAccess('quiz-mcq')
+ * const { subscription, plan, hasCredits } = useUnifiedSubscription()
+ * const planConfig = getPlanConfig(plan || 'FREE')
+ * const credits = Math.max(0, (subscription?.credits || 0) - (subscription?.tokensUsed || 0))
  */
 
 export interface QuizPlanData {

@@ -1120,7 +1120,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
             hasNext={!!onNextVideo}
             nextTitle={nextVideoTitle}
             played={state.played}
-            onSeek={(percent) => {
+            onSeek={(percent: number) => {
               const time = (playerState.videoDuration || state.duration) * percent
               handlers.onSeek(time)
             }}

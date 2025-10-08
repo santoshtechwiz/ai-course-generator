@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils"
 import Logo from "@/components/shared/Logo"
 import { CreditsDisplay } from "./CreditsDisplay"
 import { UserAvatar } from "./UserAvatar"
+import { CreditCounter } from "@/components/shared/CreditCounter"
 
 // ⚡ PERFORMANCE: Lazy load heavy components to reduce initial bundle
 const SearchModal = lazy(() => import("@/components/layout/navigation/SearchModal"))
@@ -141,14 +142,9 @@ export function MainNavbar() {
 
           {/* Right side */}
           <div className="flex items-center space-x-2 sm:space-x-3">
-            {/* Only show credits when authenticated and not loading */}
+            {/* Enhanced credit counter with warnings and detailed popover */}
             {isAuthenticated && !isLoading && (
-              <CreditsDisplay
-                availableCredits={availableCredits}
-                subscriptionPlan={subscriptionPlan}
-                isPremium={subscriptionPlan !== "FREE"}
-                prefersReducedMotion={false}
-              />
+              <CreditCounter />
             )}
 
             {/* Search */}
@@ -187,8 +183,8 @@ export function MainNavbar() {
 
             {/* Mobile Menu */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden rounded-xl">
+              <SheetTrigger asChild suppressHydrationWarning>
+                <Button variant="ghost" size="icon" className="lg:hidden rounded-xl" suppressHydrationWarning>
                   {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </Button>
               </SheetTrigger>

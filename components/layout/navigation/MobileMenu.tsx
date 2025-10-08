@@ -20,13 +20,13 @@ const MobileMenu = () => {
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
+      <SheetTrigger asChild suppressHydrationWarning>
         <motion.div
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
-          <Button variant="ghost" size="icon" className="md:hidden" aria-label="Toggle menu">
+          <Button variant="ghost" size="icon" className="md:hidden" aria-label="Toggle menu" suppressHydrationWarning>
             <Menu className="h-5 w-5" />
           </Button>
         </motion.div>

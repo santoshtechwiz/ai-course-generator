@@ -6,7 +6,7 @@ import { useMutation } from "@tanstack/react-query"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { api } from "@/lib/api-helper"
-import { signIn, useSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import {
   HelpCircle,
   Timer,
@@ -24,6 +24,7 @@ import {
   Plus,
 } from "lucide-react"
 import { motion } from "framer-motion"
+import { ContextualAuthPrompt, useContextualAuth } from "@/components/auth/ContextualAuthPrompt"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -173,6 +174,7 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
   const { subscription: subscriptionData } = useUnifiedSubscription()
 
   const { toast } = useToast()
+  const { requireAuth, authPrompt, closeAuthPrompt } = useContextualAuth()
 
   // Credit information state for consistent display
   const [creditInfo, setCreditInfo] = React.useState({
@@ -290,10 +292,16 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
         return
       }
 
-      // Check authentication
+      // ✅ NEW: Use contextual auth prompt instead of redirect
       if (!isLoggedIn) {
-        signIn("credentials", { callbackUrl: "/dashboard/code" })
-        return
+        const hasAuth = requireAuth('create_quiz', `${currentValues.amount} ${currentValues.language} coding questions on "${currentValues.title}"`)
+        if (!hasAuth) return // Auth prompt will be shown
+      }
+
+            // ✅ NEW: Use contextual auth prompt instead of redirect
+      if (!isLoggedIn) {
+        const hasAuth = requireAuth('create_quiz', `${currentValues.amount} ${currentValues.language} coding questions on "${currentValues.title}"`)
+        if (!hasAuth) return // Auth prompt will be shown
       }
 
       // Clear any previous errors
@@ -769,14 +777,14 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
             isLoggedIn={isLoggedIn}
             isEnabled={!isDisabled}
             isLoading={isLoading}
-            loadingLabel="Generating Code Quiz..."
-            className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg hover:shadow-xl hover:shadow-blue-500/25 disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            loadingLabel="Generating Quiz..."
+            className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg hover:shadow-xl disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed"
             customStates={{
               default: {
-                tooltip: "Click to generate your code quiz",
+                tooltip: "Click to generate your quiz",
               },
               notEnabled: {
-                label: "Enter a topic to generate",
+                label: "Complete form to generate",
                 tooltip: "Please complete the form before generating the quiz",
               },
               noCredits: {
@@ -787,6 +795,14 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
           />
         </motion.div>
       </form>
+
+      {/* ✅ NEW: Contextual auth prompt - shows when user tries to create without signing in */}
+      <ContextualAuthPrompt
+        open={authPrompt.open}
+        onOpenChange={closeAuthPrompt}
+        actionType={authPrompt.actionType}
+        actionContext={authPrompt.actionContext}
+      />
 
       <ConfirmDialog
         isOpen={isConfirmDialogOpen}

@@ -500,19 +500,19 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
                 isLoading={isLoading}
                 hasCredits={creditInfo.remainingCredits > 0}
                 creditsRequired={1}
-                loadingLabel="Creating Flashcards..."
-                className="w-full h-14 text-lg font-semibold"
+                loadingLabel="Generating Flashcards..."
+                className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg hover:shadow-xl disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed"
                 customStates={{
                   default: {
-                    tooltip: "Click to generate your flashcards",
+                    tooltip: "Click to generate your quiz",
                   },
                   notEnabled: {
                     label: "Complete form to generate",
-                    tooltip: "Please fill in all required fields before generating flashcards",
+                    tooltip: "Please complete the form before generating flashcards",
                   },
                   noCredits: {
-                    label: "Insufficient Credits",
-                    tooltip: "You need credits to generate flashcards. Consider upgrading your plan.",
+                    label: "Out of credits",
+                    tooltip: "You need credits to generate a quiz. Consider upgrading your plan.",
                   },
                 }}
               />

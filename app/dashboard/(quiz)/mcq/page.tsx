@@ -1,16 +1,26 @@
 'use client';
-import { useQuizPlan } from "../../../../hooks/useQuizPlan";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription";
+import { useAuth } from "@/modules/auth";
 import CreateQuizForm from "./components/CreateQuizForm";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { UnifiedLoader } from "@/components/loaders";
-import { QuizCreationProtection } from "@/components/auth/RouteProtectionWrapper";
+import { getPlanConfig } from "@/types/subscription-plans";
 
 export const dynamic = 'force-dynamic'
 
 const McqPage = () => {
-  const quizPlan = useQuizPlan(1);
+  // ✅ NEW: Use unified feature access system
+  const { canAccess, requiredPlan } = useFeatureAccess('quiz-mcq');
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { subscription, plan, hasCredits, isLoading: subLoading } = useUnifiedSubscription();
+  
+  const isLoading = authLoading || subLoading;
+  const currentPlan = plan || 'FREE';
+  const planConfig = getPlanConfig(currentPlan);
+  const credits = Math.max(0, (subscription?.credits || 0) - (subscription?.tokensUsed || 0));
   const searchParams = useSearchParams();
   const [draft, setDraft] = useState<any | null>(null);
   const [suggestedData, setSuggestedData] = useState<any | null>(null);
@@ -57,32 +67,30 @@ const McqPage = () => {
   }, [draft, suggestedData]);
 
   return (
-    <QuizCreationProtection quizType="mcq">
-      <QuizCreateLayout
-        title="Multiple Choice Questions"
-        description="Create customized multiple choice questions or practice with our pre-built quizzes."
-        quizType="mcq"
-        helpText={`You can create quizzes with up to ${quizPlan.maxQuestions} questions based on your ${quizPlan.currentPlan} plan.`}
-        isLoggedIn={quizPlan.isLoggedIn}
-      >
-        {quizPlan.isLoading ? (
-          <UnifiedLoader
-            state="loading"
-            variant="spinner"
-            message="Loading quiz configuration..."
-            size="md"
-          />
-        ) : (
-          <CreateQuizForm
-            credits={quizPlan.credits}
-            isLoggedIn={quizPlan.isLoggedIn}
-            maxQuestions={quizPlan.maxQuestions}
-            quizType="mcq"
-            params={initialParams as any}
-          />
-        )}
-      </QuizCreateLayout>
-    </QuizCreationProtection>
+    <QuizCreateLayout
+      title="Multiple Choice Questions"
+      description="Create customized multiple choice questions or practice with our pre-built quizzes."
+      quizType="mcq"
+      helpText={`You can create quizzes with up to ${planConfig.maxQuestionsPerQuiz} questions based on your ${currentPlan} plan.`}
+      isLoggedIn={isAuthenticated}
+    >
+      {isLoading ? (
+        <UnifiedLoader
+          state="loading"
+          variant="spinner"
+          message="Loading quiz configuration..."
+          size="md"
+        />
+      ) : (
+        <CreateQuizForm
+          credits={credits}
+          isLoggedIn={isAuthenticated}
+          maxQuestions={typeof planConfig.maxQuestionsPerQuiz === "number" ? planConfig.maxQuestionsPerQuiz : Infinity}
+          quizType="mcq"
+          params={initialParams as any}
+        />
+      )}
+    </QuizCreateLayout>
   );
 };
 

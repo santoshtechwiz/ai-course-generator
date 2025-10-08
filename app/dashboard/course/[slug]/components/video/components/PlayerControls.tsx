@@ -264,7 +264,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   const handleVolumeMouseLeave = useCallback(() => {
     volumeTimeoutRef.current = setTimeout(() => {
       setShowVolumeSlider(false)
-    }, 1000)
+    }, 800) // Reduced from 1000ms for snappier UX
   }, [])
 
   // Set mounted state
@@ -582,19 +582,27 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
           {/* Next video button */}
           {nextVideoButton}
 
-          {/* Enhanced Volume control with better UX */}
+          {/* Enhanced Vertical Volume Control - Modern & Compact */}
           <div
             className="relative flex items-center h-8 sm:h-8 shrink-0"
             onMouseEnter={handleVolumeMouseEnter}
             onMouseLeave={handleVolumeMouseLeave}
+            onClick={() => setShowVolumeSlider(prev => !prev)} // Toggle on click for mobile
             role="group"
             aria-label="Volume controls"
           >
             <Button
               variant="ghost"
               size="icon"
-              className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20", isCompact && "h-7 w-7")}
-              onClick={onMute}
+              className={cn(
+                "h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-all duration-200",
+                isCompact && "h-7 w-7",
+                showVolumeSlider && "bg-white/15 scale-105" // Enhanced visual feedback
+              )}
+              onClick={(e) => {
+                e.stopPropagation()
+                onMute()
+              }}
               title={muted ? "Unmute (M)" : "Mute (M)"}
               aria-label={muted ? "Unmute audio" : "Mute audio"}
             >
@@ -604,58 +612,68 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             <AnimatePresence>
               {showVolumeSlider && isMounted && typeof window !== "undefined" && (
                 <motion.div
-                  initial={{ opacity: 0, x: -6, scale: 0.95 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: -6, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-black/90 p-3 rounded-lg z-10 w-24 sm:w-28 backdrop-blur-sm border border-white/10 shadow-lg"
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-black/95 px-3 py-4 rounded-2xl z-50 backdrop-blur-md border border-white/20 shadow-2xl"
+                  onClick={(e) => e.stopPropagation()} // Prevent closing on click inside
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    {React.createElement(getVolumeIcon, { className: "h-3 w-3 text-white/60" })}
-                    <span className="text-xs text-white/80 font-medium">{Math.round((muted ? 0 : volume) * 100)}%</span>
-                  </div>
-                  <div
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => e.stopPropagation()}
-                  >
-                    {useFallbackSlider ? (
-                      <div
-                        className="w-full h-2 bg-white/20 rounded-full cursor-pointer relative"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          const rect = e.currentTarget.getBoundingClientRect()
-                          const x = e.clientX - rect.left
-                          const width = rect.width
-                          const newVolume = Math.max(0, Math.min(1, x / width))
-                          onVolumeChange(newVolume)
-                        }}
-                      >
+                  {/* Volume percentage indicator at top */}
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="flex items-center justify-center gap-2 px-2 py-1 bg-white/10 rounded-lg">
+                      {React.createElement(getVolumeIcon, { className: "h-3.5 w-3.5 text-white/70" })}
+                      <span className="text-xs text-white font-bold tabular-nums min-w-[2.5rem] text-center">{Math.round((muted ? 0 : volume) * 100)}%</span>
+                    </div>
+                    
+                    {/* Vertical slider container */}
+                    <div
+                      className="h-28 w-10 flex items-center justify-center"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onTouchStart={(e) => e.stopPropagation()}
+                    >
+                      {useFallbackSlider ? (
                         <div
-                          className="h-full bg-white rounded-full transition-all duration-150"
-                          style={{ width: `${muted ? 0 : volume * 100}%` }}
+                          className="h-full w-2 bg-white/20 rounded-full cursor-pointer relative"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const rect = e.currentTarget.getBoundingClientRect()
+                            const y = e.clientY - rect.top
+                            const height = rect.height
+                            // Invert for vertical (top = 100%, bottom = 0%)
+                            const newVolume = Math.max(0, Math.min(1, 1 - (y / height)))
+                            onVolumeChange(newVolume)
+                          }}
+                        >
+                          <div
+                            className="absolute bottom-0 w-full bg-gradient-to-t from-white to-white/90 rounded-full transition-all duration-150"
+                            style={{ height: `${muted ? 0 : volume * 100}%` }}
+                          />
+                        </div>
+                      ) : (
+                        <Slider
+                          value={[muted ? 0 : volume * 100]}
+                          max={100}
+                          step={1}
+                          orientation="vertical"
+                          onValueChange={([value]) => {
+                            try {
+                              onVolumeChange(value / 100)
+                            } catch (error) {
+                              console.warn("Volume change error:", error)
+                              setUseFallbackSlider(true)
+                            }
+                          }}
+                          className="touch-manipulation h-full [&>span:first-child]:h-full [&>span:first-child]:w-2 [&>span:first-child]:bg-white/20 [&>span:first-child>span]:bg-gradient-to-t [&>span:first-child>span]:from-white [&>span:first-child>span]:to-white/90"
+                          aria-label="Volume control"
+                          aria-orientation="vertical"
+                          onPointerDown={(e) => {
+                            e.stopPropagation()
+                          }}
                         />
-                      </div>
-                    ) : (
-                      <Slider
-                        value={[muted ? 0 : volume * 100]}
-                        max={100}
-                        step={1}
-                        onValueChange={([value]) => {
-                          try {
-                            onVolumeChange(value / 100)
-                          } catch (error) {
-                            console.warn("Volume change error:", error)
-                            setUseFallbackSlider(true)
-                          }
-                        }}
-                        className="touch-manipulation"
-                        aria-label="Volume control"
-                        onPointerDown={(e) => {
-                          e.stopPropagation()
-                        }}
-                      />
-                    )}
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               )}

@@ -22,9 +22,16 @@ export {
 
 export { default as FeatureGate, useFeatureGate } from './FeatureGate'
 
+// New: Enhanced Auth & Upgrade Components
+export { UpgradeDialog } from './UpgradeDialog'
+export { CreditCounter } from './CreditCounter'
+export { DraftRecoveryBanner } from './DraftRecoveryBanner'
+export { ContextualUpgradePrompt } from './ContextualUpgradePrompt'
+export { CreditGuidanceBanner } from './CreditGuidanceBanner'
+
 // Re-export types for convenience
 export type {
   FeatureType,
   AccessDenialReason,
   FeatureAccess
-} from '@/hooks/useFeatureAccess'
+} from '@/lib/featureAccess'

@@ -6,6 +6,7 @@ import { ReduxErrorBoundary } from "@/components/ui/error-boundary"
 import Chatbot from "@/components/Chatbot"
 import CourseAIState from "@/components/development/CourseAIState"
 import { MainNavbar } from "@/components/layout/navigation/MainNavbar"
+import { CreditGuidanceBanner } from "@/components/shared/CreditGuidanceBanner"
 import { cn } from "@/lib/utils"
 
 interface DashboardLayoutProps {
@@ -38,6 +39,9 @@ export function DashboardLayout({
       {/* Main Content Area - More spacious like n8n */}
       <main className="min-h-[calc(100vh-4rem)] pt-16 sm:pt-20 px-3 sm:px-4 lg:px-6">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+          {/* Credit Guidance Banner - Shows for 0-credit users */}
+          <CreditGuidanceBanner />
+          
           <ReduxErrorBoundary>
             {children}
           </ReduxErrorBoundary>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -18,13 +17,10 @@ import {
   CheckCircle,
   ArrowRight,
   Star,
+  Crown,
   Zap,
   BookMarked,
-  Lock,
-  Crown,
-  TrendingUp,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -32,6 +28,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +45,9 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import PlanAwareButton from '@/components/quiz/PlanAwareButton';
+import type { FeatureType } from '@/lib/featureAccess';
 import { getPlanConfig, isQuizTypeAvailable } from '@/types/subscription-plans';
 import type { SubscriptionPlanType } from '@/types/subscription';
 import { useToast } from '@/hooks/use-toast';
@@ -119,6 +119,7 @@ interface CreateTileGridProps {
   color: string;
   category: string;
   requiredPlan: SubscriptionPlanType;
+  featureType: FeatureType; // Add feature type for access control
   benefits?: string[];
   difficulty?: "Easy" | "Medium" | "Advanced";
   quizType?: 'mcq' | 'fill-blanks' | 'open-ended' | 'code-quiz' | 'video-quiz';
@@ -134,6 +135,7 @@ const tiles = [
     category: "assessment",
     quizType: 'mcq' as const,
     requiredPlan: 'FREE' as SubscriptionPlanType,
+    featureType: 'quiz-mcq' as FeatureType,
     taglines: [
       "Create quizzes for any subject",
       "AI-powered question generation",
@@ -155,6 +157,7 @@ const tiles = [
     category: "assessment",
     quizType: 'mcq' as const,
     requiredPlan: 'BASIC' as SubscriptionPlanType,
+    featureType: 'pdf-generation' as FeatureType,
     taglines: [
       "Upload PDF or document",
       "AI extracts key concepts",
@@ -175,7 +178,8 @@ const tiles = [
     color: "green",
     category: "assessment",
     quizType: 'open-ended' as const,
-    requiredPlan: 'BASIC' as SubscriptionPlanType,
+    requiredPlan: 'PREMIUM' as SubscriptionPlanType,
+    featureType: 'quiz-openended' as FeatureType,
     taglines: [
       "Open-ended questions",
       "Critical thinking focus",
@@ -196,7 +200,8 @@ const tiles = [
     color: "rose",
     category: "assessment",
     quizType: 'fill-blanks' as const,
-    requiredPlan: 'PREMIUM' as SubscriptionPlanType,
+    requiredPlan: 'BASIC' as SubscriptionPlanType,
+    featureType: 'quiz-blanks' as FeatureType,
     taglines: [
       "Fill-in-the-blank format",
       "Vocabulary reinforcement",
@@ -218,6 +223,7 @@ const tiles = [
     category: "creation",
     quizType: 'video-quiz' as const,
     requiredPlan: 'PREMIUM' as SubscriptionPlanType,
+    featureType: 'course-creation' as FeatureType,
     taglines: [
       "Full course creation",
       "AI-generated chapters",
@@ -239,6 +245,7 @@ const tiles = [
     category: "creation",
     quizType: 'code-quiz' as const,
     requiredPlan: 'ENTERPRISE' as SubscriptionPlanType,
+    featureType: 'quiz-code' as FeatureType,
     taglines: [
       "Coding challenge generation",
       "Multiple languages supported",
@@ -260,6 +267,7 @@ const tiles = [
     category: "study",
     quizType: 'mcq' as const,
     requiredPlan: 'BASIC' as SubscriptionPlanType,
+    featureType: 'quiz-flashcard' as FeatureType,
     taglines: [
       "AI-generated flashcards",
       "Spaced repetition system",
@@ -327,6 +335,7 @@ function Tile({
   taglines,
   color,
   requiredPlan,
+  featureType,
   benefits,
   difficulty,
   quizType,
@@ -337,21 +346,12 @@ function Tile({
   const router = useRouter();
   const { toast } = useToast();
   
-  const { subscription, isLoading } = useUnifiedSubscription();
-  const userPlan = (subscription?.subscriptionPlan || 'FREE') as SubscriptionPlanType;
+  // ✅ NEW: Use unified feature access with exploration support
+  const { canAccess, isExplorable, reason, requiredPlan: accessRequiredPlan } = useFeatureAccess(featureType);
   
-  // Check if user has access to this quiz type
-  const hasAccess = useMemo(() => {
-    if (quizType) {
-      return isQuizTypeAvailable(userPlan, quizType);
-    }
-    // For non-quiz features, use plan hierarchy
-    const planHierarchy = { FREE: 0, BASIC: 1, PREMIUM: 2, ENTERPRISE: 3 };
-    return planHierarchy[userPlan] >= planHierarchy[requiredPlan];
-  }, [userPlan, requiredPlan, quizType]);
-
-  const isLocked = !hasAccess;
-  const requiredPlanConfig = getPlanConfig(requiredPlan);
+  // All features are explorable, but actions are gated by canAccess
+  const showUpgradeBadge = !canAccess; // Show upgrade badge but keep tile interactive
+  const requiredPlanConfig = getPlanConfig(accessRequiredPlan || requiredPlan);
 
   const taglineInterval = useMemo(() => {
     if (isOpen) {
@@ -368,20 +368,7 @@ function Tile({
     };
   }, [taglineInterval]);
 
-  const colorClasses = getColorClasses(color, isLocked);
-
-  const handleAccess = () => {
-    if (isLocked) {
-      toast({
-        title: "Upgrade Required",
-        description: `This feature requires ${requiredPlanConfig.name} plan or higher. Upgrade to unlock!`,
-        variant: "destructive",
-      });
-      router.push('/dashboard/subscription');
-    } else {
-      router.push(url);
-    }
-  };
+  const colorClasses = getColorClasses(color, false); // Always show as accessible for exploration
 
   return (
     <>
@@ -397,30 +384,12 @@ function Tile({
           className="h-full"
         >
           <Card
-            className={`h-full flex flex-col justify-between transition-all duration-500 border-2 ${colorClasses.card} ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer'} hover:shadow-2xl hover:shadow-black/10 relative overflow-hidden group`}
+            className={`h-full flex flex-col justify-between transition-all duration-500 border-2 ${colorClasses.card} cursor-pointer hover:shadow-2xl hover:shadow-black/10 relative overflow-hidden group`}
             onClick={(e) => {
-              if (isLocked) {
-                e.preventDefault();
-                handleAccess();
-              } else {
-                setIsOpen(true);
-              }
+              // Always allow exploration - open details modal
+              setIsOpen(true);
             }}
           >
-            {/* Lock overlay */}
-            {isLocked && (
-              <div className="absolute inset-0 bg-black/5 dark:bg-black/20 backdrop-blur-[2px] z-10 flex items-center justify-center pointer-events-none">
-                <motion.div
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ duration: 0.5, type: "spring" }}
-                  className="bg-white/90 dark:bg-gray-900/90 rounded-full p-4 shadow-2xl"
-                >
-                  <Lock className="h-10 w-10 text-gray-600 dark:text-gray-400" />
-                </motion.div>
-              </div>
-            )}
-
             {/* Floating elements background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
               <motion.div
@@ -479,7 +448,7 @@ function Tile({
                 </div>
                 
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {isLocked ? (
+                  {showUpgradeBadge ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <motion.div
@@ -493,7 +462,7 @@ function Tile({
                         </motion.div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Requires {requiredPlanConfig.name} plan - Upgrade to unlock!</p>
+                        <p>Requires {requiredPlanConfig.name} plan to use - Click to explore!</p>
                       </TooltipContent>
                     </Tooltip>
                   ) : requiredPlan !== 'FREE' && (
@@ -535,28 +504,14 @@ function Tile({
             </CardContent>
 
             <CardFooter className="pt-4">
-              <motion.div whileHover={{ scale: isLocked ? 1 : 1.05 }} whileTap={{ scale: isLocked ? 1 : 0.95 }} className="w-full">
-                <Button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAccess();
-                  }}
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full">
+                <PlanAwareButton
+                  label="Get Started"
+                  onClick={() => router.push(url)}
+                  requiredPlan={accessRequiredPlan || requiredPlan}
+                  allowPublicAccess={true}
                   className={`w-full transition-all duration-300 font-semibold ${colorClasses.button} text-white shadow-lg hover:shadow-xl group`}
-                >
-                  <span className="flex items-center justify-center">
-                    {isLocked ? (
-                      <>
-                        <Lock className="h-4 w-4 mr-2" />
-                        Upgrade to Unlock
-                      </>
-                    ) : (
-                      <>
-                        Get Started
-                        <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                      </>
-                    )}
-                  </span>
-                </Button>
+                />
               </motion.div>
             </CardFooter>
           </Card>
@@ -588,7 +543,7 @@ function Tile({
                   </div>
 
                   <div className="flex items-center gap-3">
-                    {isLocked ? (
+                    {showUpgradeBadge ? (
                       <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/50 dark:to-yellow-900/50 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700">
                         <Crown className="h-3 w-3 mr-1" />
                         {requiredPlanConfig.name} Required
@@ -725,7 +680,7 @@ function Tile({
                   </h3>
                   <div className="grid gap-4">
                     {[
-                      "Enter your topic or upload content",
+                      "Enter your topic ",
                       "AI generates questions instantly",
                       "Review and use your creation"
                     ].map((step, i) => (
@@ -753,39 +708,17 @@ function Tile({
 
           <DialogFooter className="flex-col sm:flex-row gap-3 p-6 border-t bg-muted/20 flex-shrink-0">
             <motion.div
-              whileHover={{ scale: isLocked ? 1 : 1.02 }}
-              whileTap={{ scale: isLocked ? 1 : 0.98 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               className="w-full"
             >
-              {isLocked ? (
-                <Button
-                  onClick={handleAccess}
-                  className={`w-full h-12 font-bold text-lg ${colorClasses.button} text-white shadow-xl hover:shadow-2xl transition-all duration-300 group`}
-                >
-                  <motion.span
-                    className="flex items-center justify-center"
-                  >
-                    <Lock className="h-5 w-5 mr-2" />
-                    Upgrade to {requiredPlanConfig.name}
-                    <Crown className="h-5 w-5 ml-2" />
-                  </motion.span>
-                </Button>
-              ) : (
-                <Button
-                  asChild
-                  className={`w-full h-12 font-bold text-lg ${colorClasses.button} text-white shadow-xl hover:shadow-2xl transition-all duration-300 group`}
-                >
-                  <Link href={url}>
-                    <motion.span
-                      className="flex items-center justify-center"
-                      whileHover={{ x: 5 }}
-                    >
-                      Start Creating Now
-                      <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </motion.span>
-                  </Link>
-                </Button>
-              )}
+              <PlanAwareButton
+                label="Get Started"
+                onClick={() => router.push(url)}
+                requiredPlan={accessRequiredPlan || requiredPlan}
+                allowPublicAccess={true}
+                className={`w-full h-12 font-bold text-lg ${colorClasses.button} text-white shadow-xl hover:shadow-2xl transition-all duration-300 group`}
+              />
             </motion.div>
           </DialogFooter>
         </DialogContent>

@@ -32,6 +32,7 @@ import PlanAwareButton from "@/components/quiz/PlanAwareButton"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import FormContainer from "@/app/dashboard/FormContainer"
 import { useToast } from "@/components/ui/use-toast"
+import { ContextualAuthPrompt, useContextualAuth } from "@/components/auth/ContextualAuthPrompt"
 
 
 const openEndedQuizSchema = z.object({
@@ -153,6 +154,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   const [isSuccess, setIsSuccess] = useState(false)
   const { toast } = useToast()
   const { subscription } = useUnifiedSubscription()
+  const { requireAuth, authPrompt, closeAuthPrompt } = useContextualAuth()
 
   // Credit information state for consistent display
   const [creditInfo, setCreditInfo] = useState({
@@ -253,24 +255,31 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   const onSubmit = useCallback(() => {
     if (isLoading) return
 
-    if (!isLoggedIn) {
-      // Redirect to sign in if not logged in
+    // 1. Check authentication with contextual message
+    const currentTitle = watch("title") || "open-ended quiz"
+    const currentAmount = watch("amount") || 5
+    if (!requireAuth('create_quiz', `${currentAmount} open-ended questions on "${currentTitle}"`)) {
+      return // Auth modal shown, user stays on page
+    }
+
+    // 2. Validate credit balance
+    if (creditInfo.remainingCredits <= 0) {
+      toast({
+        title: "No Credits Available",
+        description: "You've used all your credits. Upgrade to continue creating quizzes.",
+        variant: "destructive"
+      })
       return
     }
 
-    // Validate token balance
-    if (credits <= 0) {
-      return
-    }
-
-    // Show confirmation dialog
+    // 3. Show confirmation dialog
     setIsConfirmDialogOpen(true)
-  }, [isLoading, isLoggedIn, credits])
+  }, [isLoading, requireAuth, watch, creditInfo.remainingCredits, toast])
 
   const title = watch("title")
   const amount = watch("amount")
 
-  const isDisabled = useMemo(() => isLoading || credits < 1 || !isValid, [isLoading, credits, isValid])
+  const isDisabled = useMemo(() => isLoading || creditInfo.remainingCredits < 1 || !isValid, [isLoading, creditInfo.remainingCredits, isValid])
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -427,18 +436,18 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
               isLoggedIn={isLoggedIn}
               isLoading={isLoading}
               isEnabled={!isDisabled}
-              loadingLabel="Generating quiz..."
-              className="w-full h-12 md:h-14 text-sm md:text-base font-medium transition-all duration-300 hover:shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed touch-manipulation"
+              loadingLabel="Generating Quiz..."
+              className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg hover:shadow-xl disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed"
               customStates={{
                 default: {
                   tooltip: "Click to generate your quiz",
                 },
                 notEnabled: {
-                  label: "Enter a title to generate",
-                  tooltip: "Please enter a title or topic before generating the quiz",
+                  label: "Complete form to generate",
+                  tooltip: "Please complete the form before generating the quiz",
                 },
                 noCredits: {
-                  label: `Need credits (${creditInfo.remainingCredits} remaining)`,
+                  label: "Out of credits",
                   tooltip: "You need credits to generate a quiz. Consider upgrading your plan.",
                 },
               }}
@@ -462,10 +471,10 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
         status={isLoading ? "loading" : submitError ? "error" : isSuccess ? "success" : undefined}
         errorMessage={submitError || undefined}
         creditUsage={{
-          used: Math.max(0, 100 - credits), // Assuming 100 total credits for calculation
-          available: 100,
-          remaining: credits,
-          percentage: credits > 0 ? ((100 - credits) / 100) * 100 : 100,
+          used: creditInfo.usedCredits,
+          available: creditInfo.totalCredits,
+          remaining: creditInfo.remainingCredits,
+          percentage: creditInfo.totalCredits > 0 ? (creditInfo.usedCredits / creditInfo.totalCredits) * 100 : 0,
         }}
         quizInfo={{
           type: "Open-Ended Quiz",
@@ -515,6 +524,12 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ✅ Contextual Auth Prompt Modal */}
+      <ContextualAuthPrompt
+        {...authPrompt}
+        onOpenChange={closeAuthPrompt}
+      />
     </div>
   )
 }

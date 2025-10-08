@@ -85,10 +85,32 @@ export default function CourseDetailsTabs({
 
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const { user } = useAuth()
-  const { isSubscribed } = useUnifiedSubscription()
+  const { isSubscribed, plan } = useUnifiedSubscription()
   const isOwner = Boolean(user?.id && user.id === course.userId)
   const isAdmin = Boolean(user?.isAdmin)
   const isAuthenticated = Boolean(user)
+  
+  // Feature access for Summary and Quiz tabs
+  const summaryAccess = useFeatureAccess('course-videos')
+  const quizAccess = useFeatureAccess('quiz-access')
+  
+  // Determine if user can access tabs (owners and admins bypass restrictions)
+  const canAccessSummary = isOwner || isAdmin || summaryAccess.canAccess
+  const canAccessQuiz = isOwner || isAdmin || quizAccess.canAccess
+  
+  // Debug logging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[CourseDetailsTabs] Feature Access:', {
+      plan,
+      isOwner,
+      isAdmin,
+      isSubscribed,
+      summaryAccess: { canAccess: summaryAccess.canAccess, reason: summaryAccess.reason },
+      quizAccess: { canAccess: quizAccess.canAccess, reason: quizAccess.reason },
+      canAccessSummary,
+      canAccessQuiz
+    })
+  }
 
   // Memoized selectors to prevent unnecessary re-renders
   const selectBookmarks = useMemo(
@@ -621,7 +643,7 @@ export default function CourseDetailsTabs({
     <div className="h-full w-full flex flex-col">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full flex flex-col">
         {/* Enhanced tab navigation with sticky positioning */}
-        <TabsList className="sticky top-0 z-10 grid w-full grid-cols-5 h-auto bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/30 p-2 md:p-3 gap-1 md:gap-3 shadow-sm">
+        <TabsList className="sticky top-0 z-10 grid w-full grid-cols-4 h-auto bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/30 p-2 md:p-3 gap-1 md:gap-3 shadow-sm">
           <TabsTrigger
             value="summary"
             className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
@@ -645,13 +667,6 @@ export default function CourseDetailsTabs({
             <span className="font-semibold">Notes</span>
           </TabsTrigger>
           <TabsTrigger
-            value="progress"
-            className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
-          >
-            <BarChart3 className="h-4 w-4 md:h-5 md:w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
-            <span className="font-semibold">Progress</span>
-          </TabsTrigger>
-          <TabsTrigger
             value="bookmarks"
             className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
           >
@@ -666,16 +681,16 @@ export default function CourseDetailsTabs({
           {currentChapter ? (
             <FeatureGate
               feature="course-videos"
-              showPartialContent={true}
-              previewRatio={0.5}
+              showPartialContent={!canAccessSummary}
+              previewRatio={canAccessSummary ? 1 : 0.5}
               minPreviewPx={260}
               previewFadeRatio={0.45}
-              blur={true}
+              blur={!canAccessSummary}
               overlayPlacement="over"
               overlayFullWidth={true}
-              hideOverlay={true}
+              hideOverlay={canAccessSummary}
               lockMessage="Unlock Full AI Summary"
-              lockDescription="Upgrade to reveal the full AI-generated summary, key insights, and learning recommendations for this chapter."
+              lockDescription="Upgrade to Basic plan or higher to reveal the full AI-generated summary, key insights, and learning recommendations for this chapter."
             >
               <div className="p-4">
                 <CourseAISummary
@@ -712,16 +727,16 @@ export default function CourseDetailsTabs({
           {currentChapter ? (
             <FeatureGate
               feature="quiz-access"
-              showPartialContent={true}
-              previewRatio={0.35}
+              showPartialContent={!canAccessQuiz}
+              previewRatio={canAccessQuiz ? 1 : 0.35}
               minPreviewPx={240}
               previewFadeRatio={0.4}
-              blur={true}
+              blur={!canAccessQuiz}
               overlayPlacement="below"
               overlayFullWidth={true}
-              hideOverlay={true}
+              hideOverlay={canAccessQuiz}
               lockMessage="Unlock Interactive Quizzes"
-              lockDescription="Upgrade to take full quizzes, view detailed explanations, and track your mastery over time."
+              lockDescription="Upgrade to Basic plan or higher to take full quizzes, view detailed explanations, and track your mastery over time."
             >
               <div className="p-4">
                 <CourseDetailsQuiz
@@ -757,170 +772,6 @@ export default function CourseDetailsTabs({
               </motion.div>
             </div>
           )}
-        </TabsContent>
-
-        <TabsContent value="progress" className="flex-1 overflow-auto w-full p-0">
-          <div className="space-y-6">
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center space-y-3"
-            >
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
-                Learning Progress
-              </h2>
-              <p className="text-lg text-muted-foreground">Track your journey through {course.title}</p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Course Progress Summary */}
-              <div className="lg:col-span-1">
-                <CourseProgressSummary
-                  totalChapters={courseStats.totalChapters}
-                  completedChapters={completedChapters}
-                  currentChapterId={currentChapter?.id}
-                />
-              </div>
-
-              {/* Detailed Chapter Progress */}
-              <div className="lg:col-span-2">
-                <Card className="h-full">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5" />
-                      Chapter Progress
-                    </CardTitle>
-                    <CardDescription>
-                      Track your progress through each chapter
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="max-h-96 overflow-y-auto">
-                    {course.courseUnits && course.courseUnits.length > 0 ? (
-                      <div className="space-y-6">
-                        {course.courseUnits.map((unit, unitIndex) => (
-                          <div key={unit.id} className="space-y-3">
-                            <div className="flex items-center gap-2 pb-2 border-b">
-                              <Badge variant="outline" className="text-xs">
-                                Unit {unitIndex + 1}
-                              </Badge>
-                              <h4 className="font-medium text-sm">{unit.name}</h4>
-                            </div>
-                            <ChapterProgressDisplay
-                              chapters={unit.chapters as FullChapterType[]}
-                              completedChapters={completedChapters}
-                              currentChapterId={currentChapter?.id}
-                              variant="compact"
-                              showProgress={true}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center text-muted-foreground py-8">
-                        No chapters available for this course.
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-
-            <AnimatePresence>
-              {courseStats.progressPercentage === 100 && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                  transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                  className="relative overflow-hidden"
-                >
-                  <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 relative">
-                    <CardContent className="p-8">
-                      <div className="flex items-center gap-6">
-                        <motion.div
-                          animate={{
-                            rotate: [0, 10, -10, 0],
-                            scale: [1, 1.1, 1],
-                          }}
-                          transition={{
-                            duration: 2,
-                            repeat: Number.POSITIVE_INFINITY,
-                            ease: "easeInOut",
-                          }}
-                        >
-                          <div className="w-20 h-20 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center shadow-lg">
-                            <Trophy className="h-10 w-10 text-primary-foreground" />
-                          </div>
-                        </motion.div>
-                        <div className="flex-1">
-                          <h3 className="text-2xl font-bold text-foreground mb-2">
-                            Congratulations! Course Completed!
-                          </h3>
-                          <p className="text-muted-foreground mb-6 text-lg">
-                            You've successfully completed all {courseStats.totalChapters} chapters. Time to celebrate
-                            your achievement!
-                          </p>
-                          <div className="flex flex-col sm:flex-row gap-4">
-                            <CertificateButton courseTitle={course.title} />
-                            <Button variant="outline" className="bg-transparent" size="lg">
-                              <Star className="h-5 w-5 mr-2" />
-                              Share Achievement
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {courseStats.progressPercentage > 0 && courseStats.progressPercentage < 100 && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                <Card className="border border-border/40 shadow-lg">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center gap-3 text-xl">
-                      <TrendingUp className="h-6 w-6 text-primary" />
-                      Learning Insights
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-base">
-                          <span className="text-muted-foreground font-medium">Next Milestone</span>
-                          <span className="font-semibold">
-                            {courseStats.progressPercentage < 25
-                              ? "25%"
-                              : courseStats.progressPercentage < 50
-                                ? "50%"
-                                : courseStats.progressPercentage < 75
-                                  ? "75%"
-                                  : "100%"}
-                          </span>
-                        </div>
-                        <Progress value={courseStats.progressPercentage} className="h-3" />
-                      </div>
-                      <div className="text-center">
-                        <div className="text-3xl font-bold text-primary">
-                          {courseStats.remainingChapters}
-                        </div>
-                        <div className="text-base text-muted-foreground font-medium">chapters to go</div>
-                      </div>
-                    </div>
-
-                    <div className="bg-muted/30 rounded-xl p-6 border border-border/20">
-                      <h4 className="text-lg font-semibold text-foreground mb-3">Keep Going!</h4>
-                      <p className="text-base text-muted-foreground leading-relaxed">
-                        You're making great progress! At your current pace, you'll complete this course in approximately{" "}
-                        {formatDuration(courseStats.estimatedTimeLeft)}.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-          </div>
         </TabsContent>
 
         <TabsContent value="bookmarks" className="flex-1 overflow-auto w-full p-0">

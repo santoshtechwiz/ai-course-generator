@@ -11,9 +11,12 @@ import { Input } from "@/components/ui/input"
 import { useSession } from "next-auth/react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Quiz, quizStore } from "@/lib/quiz-store"
-import { useQuizPlan } from "@/modules/auth"
 import { ConfirmDialog } from "../components/ConfirmDialog"
 import PlanAwareButton from "@/components/quiz/PlanAwareButton"
+import { ContextualAuthPrompt, useContextualAuth } from "@/components/auth/ContextualAuthPrompt"
+import { ContextualUpgradePrompt } from "@/components/shared/ContextualUpgradePrompt"
+import { useContextualUpgrade } from "@/hooks/useContextualUpgrade"
+import { useFeatureAccess } from "@/hooks/useFeatureAccess"
 
 import { DocumentQuizOptions } from "./components/DocumentQuizOptions"
 import { FileUpload } from "./components/FileUpload"
@@ -78,7 +81,11 @@ export default function DocumentQuizPage() {
   const currentRequestControllerRef = useRef<AbortController | null>(null)
 
   const { data: session } = useSession()
-  const quizPlan = useQuizPlan()
+  
+  // ✅ Unified auth and upgrade hooks
+  const { requireAuth, authPrompt, closeAuthPrompt } = useContextualAuth()
+  const { promptState, triggerDiscoveryUpgrade, triggerCreditExhaustionUpgrade, closePrompt } = useContextualUpgrade()
+  const { canAccess, reason, requiredPlan } = useFeatureAccess('pdf-generation')
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -135,6 +142,7 @@ export default function DocumentQuizPage() {
   }, [])
 
   const handleGenerateQuiz = async () => {
+    // 1. Validate file selection
     if (!file) {
       toast({
         title: "No file selected",
@@ -143,7 +151,32 @@ export default function DocumentQuizPage() {
       })
       return
     }
-    // Fetch client credit details to show accurate usage in the confirm dialog
+
+    // 2. Check authentication with contextual message
+    if (!requireAuth('generate_pdf', file.name)) {
+      return // Auth modal shown, user stays on page
+    }
+
+    // 3. Check feature access (plan + subscription)
+    if (!canAccess) {
+      if (reason === 'subscription') {
+        triggerDiscoveryUpgrade('PDF Quiz Generation', requiredPlan || 'BASIC')
+        return // Upgrade modal shown
+      }
+      if (reason === 'credits') {
+        triggerCreditExhaustionUpgrade()
+        return // Credit upgrade modal shown
+      }
+      // Other access denial reasons
+      toast({
+        title: "Access Denied",
+        description: `You don't have access to this feature. ${reason || 'Unknown reason'}`,
+        variant: "destructive",
+      })
+      return
+    }
+
+    // 4. Fetch client credit details to show accurate usage in the confirm dialog
     try {
       const clientCredits = await (await import('@/services/client-credit-service')).ClientCreditService.getCreditDetails()
       // ClientCreditService returns ClientCreditInfo with simple fields
@@ -157,6 +190,7 @@ export default function DocumentQuizPage() {
       console.warn('[DocumentPage] Failed to load client credit details for confirm dialog', err)
     }
 
+    // 5. Show confirmation dialog
     setIsConfirmDialogOpen(true)
   }
 
@@ -541,18 +575,18 @@ export default function DocumentQuizPage() {
                           isLoggedIn={!!session?.user}
                           loadingLabel="Generating Quiz..."
                           label="Generate Quiz with AI"
-                          className="w-full h-14 text-base font-medium transition-all duration-300 hover:shadow-lg bg-gradient-to-r from-primary to-primary/80"
+                          className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg hover:shadow-xl disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed"
                           customStates={{
                             default: {
-                              tooltip: "Generate quiz questions from your document",
+                              tooltip: "Click to generate your quiz",
                             },
                             notEnabled: {
-                              label: "Upload a document first",
+                              label: "Complete form to generate",
                               tooltip: "Please upload a document before generating quiz questions",
                             },
                             noCredits: {
-                              label: "Out of credits - Upgrade needed",
-                              tooltip: "You need credits to generate quiz questions. Consider upgrading your plan.",
+                              label: "Out of credits",
+                              tooltip: "You need credits to generate a quiz. Consider upgrading your plan.",
                             },
                           }}
                         >
@@ -938,6 +972,18 @@ export default function DocumentQuizPage() {
           </div>
         </div>
       </ConfirmDialog>
+
+      {/* ✅ Contextual Auth Prompt Modal */}
+      <ContextualAuthPrompt
+        {...authPrompt}
+        onOpenChange={closeAuthPrompt}
+      />
+
+      {/* ✅ Contextual Upgrade Prompt Modal */}
+      <ContextualUpgradePrompt
+        {...promptState}
+        onOpenChange={closePrompt}
+      />
     </main>
   )
 }

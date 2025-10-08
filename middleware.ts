@@ -4,11 +4,10 @@ import type { NextRequest } from "next/server"
 import { fetchSlug } from "@/lib/db"
 import { routeConfig } from "@/config/routes"
 
-// Import enhanced middleware functions
-import { protectAdminRoutes, protectAuthenticatedRoutes } from "@/middlewares/auth/route-protection"
-import { csrfMiddleware } from "@/middlewares/security/csrf-protection"
+// Import unified middleware system
+import { unifiedMiddleware } from "@/middlewares/core/unified-middleware"
+import { isFeatureEnabled } from "@/lib/featureFlags"
 import { securityHeadersMiddleware, corsMiddleware } from "@/middlewares/security/headers"
-import { validateSubscriptionMiddleware } from "@/middlewares/subscription-middleware"
 
 // Define matcher to exclude API, static files, and favicon requests
 export const config = {
@@ -125,17 +124,15 @@ export async function middleware(req: NextRequest) {
   // Setup GitHub credentials
   setupGitHubCredentials(req)
 
-  // Check authentication for protected routes
-  const authResponse = await protectAuthenticatedRoutes(req)
-  if (authResponse) return authResponse
-
-  // Check admin routes
-  const adminResponse = await protectAdminRoutes(req)
-  if (adminResponse) return adminResponse
-
-  // Check subscription for protected routes
-  const subscriptionResponse = await validateSubscriptionMiddleware(req)
-  if (subscriptionResponse) return subscriptionResponse
+  // Use unified middleware system with feature flag support
+  const middlewareResult = await unifiedMiddleware.execute(req)
+  if (middlewareResult.response) {
+    // Log middleware decision for debugging
+    if (isFeatureEnabled('performance-monitoring')) {
+      console.log(`[Middleware] Route ${pathname} - ${middlewareResult.reason}`)
+    }
+    return middlewareResult.response
+  }
 
   // Handle redirects
   const redirectResponse = await handleRedirects(req)

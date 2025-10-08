@@ -115,10 +115,11 @@ export function UserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger asChild suppressHydrationWarning>
         <Button
           variant="ghost"
           className="relative h-8 w-8 rounded-full hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          suppressHydrationWarning
         >
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? "User"} />

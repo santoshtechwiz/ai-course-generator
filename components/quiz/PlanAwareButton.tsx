@@ -12,6 +12,7 @@ import { Loader2, Check, Lock, AlertCircle, Sparkles } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import type { SubscriptionPlanType } from "@/types/subscription-plans"
 import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
+import { UpgradeDialog } from '@/components/shared/UpgradeDialog'
 
 interface CustomButtonStates {
   default?: {
@@ -61,6 +62,7 @@ interface PlanAwareButtonProps extends Omit<ButtonProps, "onClick"> {
   onExpiredSubscription?: () => void
   customStates?: CustomButtonStates
   showIcon?: boolean
+  allowPublicAccess?: boolean // ✅ NEW: Skip all auth/plan/credit checks for public exploration
 }
 
 export default function PlanAwareButton({
@@ -81,9 +83,11 @@ export default function PlanAwareButton({
   customStates,
   className = "",
   showIcon = true,
+  allowPublicAccess = false, // ✅ NEW: Default false to preserve existing behavior
   ...buttonProps
 }: PlanAwareButtonProps) {
   const [isLoadingState, setIsLoading] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [creditInfo, setCreditInfo] = useState<{
     hasCredits: boolean;
     remainingCredits: number;
@@ -143,22 +147,17 @@ export default function PlanAwareButton({
     return clientSaysEnough
   })()
 
-  // Use provided plan or get from unified auth state if not provided
-  const effectivePlan = currentPlan || subscription?.subscriptionPlan || user?.subscriptionPlan || "FREE"
-  const isAlreadySubscribed = subscription?.status === "ACTIVE" || false
+  // Use comprehensive plan detection from multiple sources with proper fallback
+  const effectivePlan = useMemo(() => {
+    // Priority order: provided prop > unified subscription plan > subscription object > auth user > fallback
+    return currentPlan || 
+           plan ||  // from useUnifiedSubscription hook (this should be the primary source)
+           subscription?.subscriptionPlan || 
+           user?.subscriptionPlan || 
+           "FREE"
+  }, [currentPlan, plan, subscription?.subscriptionPlan, user?.subscriptionPlan])
   
-  // Debug logging for plan detection issues
-  if (process.env.NODE_ENV === 'development') {
-    console.log('PlanAwareButton Plan Detection:', {
-      currentPlan,
-      subscriptionPlan: subscription?.subscriptionPlan,
-      userSubscriptionPlan: user?.subscriptionPlan,
-      effectivePlan,
-      subscriptionStatus: subscription?.status,
-      isAlreadySubscribed,
-      requiredPlan
-    })
-  }
+  const isAlreadySubscribed = subscription?.status === "ACTIVE" || false
   
   // Enhanced subscription state checking
   const hasExpiredSubscription = isExpired || 
@@ -166,7 +165,7 @@ export default function PlanAwareButton({
      !["ACTIVE", "TRIALING"].includes(subscription.status) && 
      subscription.status !== "INACTIVE")
 
-  // Check if the user's plan meets requirements
+  // Check if the user's plan meets requirements with proper type safety
   const meetsRequirement = useMemo((): boolean => {
     // Plan hierarchy for comparison
     const planHierarchy: Record<SubscriptionPlanType, number> = {
@@ -176,8 +175,10 @@ export default function PlanAwareButton({
       ENTERPRISE: 3,
     }
 
-    // Check if current plan is sufficient, using the effective plan
-    return planHierarchy[effectivePlan as SubscriptionPlanType] >= planHierarchy[requiredPlan]
+    const currentLevel = planHierarchy[effectivePlan as SubscriptionPlanType] ?? 0
+    const requiredLevel = planHierarchy[requiredPlan] ?? 0
+    
+    return currentLevel >= requiredLevel
   }, [effectivePlan, requiredPlan])
 
   // Enhanced permission checking that considers both subscription status and credits
@@ -200,8 +201,42 @@ export default function PlanAwareButton({
     return true
   }, [effectiveIsLoggedIn, hasExpiredSubscription, meetsRequirement, effectiveHasCredits, isEnabled])
 
+  // Debug logging for plan detection issues
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[PlanAwareButton "${label}"] Plan Detection:`, {
+      requiredPlan,
+      currentPlan,
+      subscriptionPlan: subscription?.subscriptionPlan,
+      userSubscriptionPlan: user?.subscriptionPlan,
+      unifiedPlan: plan,
+      effectivePlan,
+      subscriptionStatus: subscription?.status,
+      isAlreadySubscribed,
+      meetsRequirement,
+      hasExpiredSubscription,
+      isAuthenticated,
+      canPerformAction
+    })
+  }
+
   // Extract the button states based on conditions
   const getButtonState = useMemo(() => {
+    // ✅ NEW: Public access mode - skip all checks and execute onClick directly
+    if (allowPublicAccess) {
+      const defaultState = customStates?.default ?? {}
+      return {
+        label: defaultState.label ?? label,
+        tooltip: defaultState.tooltip ?? "Click to proceed",
+        disabled: false,
+        icon: <Sparkles className="h-4 w-4" />,
+        variant: "default" as const,
+        onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+          // Execute action directly without any auth/plan/credit checks
+          if (onClick) onClick(e)
+        },
+      }
+    }
+
     // Processing state takes priority
     if (isLoading || isLoadingState) {
       return {
@@ -303,23 +338,6 @@ export default function PlanAwareButton({
 
     // Plan requirement check
     if (!meetsRequirement) {
-      // Check if already subscribed to prevent duplicate subscriptions
-      if (isAlreadySubscribed && requiredPlan !== "FREE") {
-        const alreadySubscribedState = customStates?.alreadySubscribed ?? {}
-        return {
-          label: alreadySubscribedState.label ?? "Already subscribed",
-          tooltip:
-            alreadySubscribedState.tooltip ??
-            `You're already subscribed to ${effectivePlan}. Please wait for your subscription to be processed.`,
-          disabled: true,
-          icon: <Check className="h-4 w-4" />,
-          variant: "secondary" as const,
-          onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
-            e.preventDefault()
-          },
-        }
-      }
-
       // Find the next higher plan that the user should upgrade to
       const planHierarchy: SubscriptionPlanType[] = ["FREE", "BASIC", "PREMIUM", "ENTERPRISE"]
       const currentPlanIndex = planHierarchy.indexOf(effectivePlan as SubscriptionPlanType)
@@ -354,19 +372,15 @@ export default function PlanAwareButton({
           if (onPlanRequired) {
             onPlanRequired()
           } else {
-            toast({
-              title: "Plan Upgrade Required",
-              description: `This feature requires the ${requiredPlan} plan or higher. Current plan: ${effectivePlan}`,
-              variant: "destructive",
-            })
-            router.push(fallbackHref)
+            setShowUpgradeModal(true)
           }
         },
       }
     }
 
-    // Default state when everything is OK
+    // Default state when everything is OK - user can proceed
     const defaultState = customStates?.default ?? {}
+    
     return {
       label: defaultState.label ?? label,
       tooltip: defaultState.tooltip ?? "Click to proceed",
@@ -374,6 +388,23 @@ export default function PlanAwareButton({
       icon: <Sparkles className="h-4 w-4" />,
       variant: "default" as const,
       onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+        // Critical: Double-check permissions before executing action
+        if (!canPerformAction) {
+          e.preventDefault()
+          if (!effectiveHasCredits) {
+            toast({
+              title: "Insufficient Credits",
+              description: `You need ${creditsRequired} credit${creditsRequired > 1 ? "s" : ""} for this action. You have ${creditInfo.remainingCredits} remaining.`,
+              variant: "destructive",
+            })
+            router.push("/dashboard/subscription")
+          } else if (!meetsRequirement) {
+            setShowUpgradeModal(true)
+          }
+          return
+        }
+        
+        // All checks passed - execute the action
         if (onClick) onClick(e)
       },
     }
@@ -400,35 +431,47 @@ export default function PlanAwareButton({
     customStates,
     router,
     toast,
+    canPerformAction,
   ])
 
   const state = getButtonState
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            onClick={state.onClick}
-            disabled={state.disabled}
-            variant={state.variant}
-            className={cn(
-              "relative min-w-[120px] transition-all duration-200",
-              (isLoading || isLoadingState) && "opacity-80 cursor-not-allowed",
-              state.disabled && "opacity-70",
-              className,
-            )}
-            {...buttonProps}
-          >
-            {showIcon && state.icon && <span className="mr-2">{state.icon}</span>}
-            {(isLoading || isLoadingState) && !state.icon && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {state.label}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{state.tooltip}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={state.onClick}
+              disabled={state.disabled}
+              variant={state.variant}
+              className={cn(
+                "relative min-w-[120px] transition-all duration-200",
+                (isLoading || isLoadingState) && "opacity-80 cursor-not-allowed",
+                state.disabled && "opacity-70",
+                className,
+              )}
+              {...buttonProps}
+            >
+              {showIcon && state.icon && <span className="mr-2">{state.icon}</span>}
+              {(isLoading || isLoadingState) && !state.icon && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {state.label}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{state.tooltip}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      {/* Upgrade Modal Dialog */}
+      <UpgradeDialog
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+        requiredPlan={requiredPlan}
+        currentPlan={effectivePlan}
+        feature={label}
+      />
+    </>
   )
 }

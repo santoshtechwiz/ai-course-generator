@@ -177,10 +177,42 @@ export const authOptions: NextAuthOptions = {
 
     async redirect({ url, baseUrl }) {
       try {
-        const redirectUrl = new URL(url, baseUrl)
-        return redirectUrl.origin === baseUrl ? redirectUrl.href : baseUrl
-      } catch {
-        return baseUrl
+        // Parse the URL
+        const urlObj = new URL(url, baseUrl)
+        
+        // Check for callbackUrl parameter
+        const callbackUrl = urlObj.searchParams.get('callbackUrl')
+        if (callbackUrl) {
+          console.log(`[Auth Redirect] Found callbackUrl: ${callbackUrl}`)
+          
+          // Validate callbackUrl is safe (starts with / = relative path)
+          if (callbackUrl.startsWith('/')) {
+            const safeUrl = `${baseUrl}${callbackUrl}`
+            console.log(`[Auth Redirect] Redirecting to callbackUrl: ${safeUrl}`)
+            return safeUrl
+          }
+        }
+        
+        // If url is relative path, use it
+        if (url.startsWith('/')) {
+          const fullUrl = `${baseUrl}${url}`
+          console.log(`[Auth Redirect] Redirecting to relative: ${fullUrl}`)
+          return fullUrl
+        }
+        
+        // If url is absolute and same origin, use it
+        if (urlObj.origin === baseUrl) {
+          console.log(`[Auth Redirect] Redirecting to same origin: ${url}`)
+          return url
+        }
+        
+        // Default to dashboard home (personalized view after auth)
+        console.log(`[Auth Redirect] Defaulting to /dashboard`)
+        return `${baseUrl}/dashboard`
+      } catch (error) {
+        console.error(`[Auth Redirect] Error processing redirect:`, error)
+        // Safe fallback to dashboard home
+        return `${baseUrl}/dashboard`
       }
     },
   },

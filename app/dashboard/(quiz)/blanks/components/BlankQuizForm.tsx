@@ -32,6 +32,7 @@ import PlanAwareButton from "@/components/quiz/PlanAwareButton"
 import FormContainer from "@/app/dashboard/FormContainer"
 import { useToast } from "@/components/ui/use-toast"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
+import { ContextualAuthPrompt, useContextualAuth } from "@/components/auth/ContextualAuthPrompt"
 
 
 type BlankQuizFormData = z.infer<typeof blanksQuizSchema> & {}
@@ -50,6 +51,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
   const [submitError, setSubmitError] = React.useState<string | null>(null)
   const { toast } = useToast()
   const { subscription } = useUnifiedSubscription()
+  const { requireAuth, authPrompt, closeAuthPrompt } = useContextualAuth()
 
   // Credit information state for consistent display
   const [creditInfo, setCreditInfo] = React.useState({
@@ -134,15 +136,31 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
     (data: BlankQuizFormData) => {
       if (isLoading) return
 
+      // 1. Check authentication with contextual message
+      if (!requireAuth('create_quiz', `${data.amount} fill-in-the-blank questions on "${data.title}"`)) {
+        return // Auth modal shown, user stays on page
+      }
+
+      // 2. Validate form data
       if (!data.title || !data.amount || !data.difficulty) {
         setSubmitError("Please fill in all required fields")
+        return
+      }
+
+      // 3. Check credits
+      if (creditInfo.remainingCredits <= 0) {
+        toast({
+          title: "No Credits Available",
+          description: "You've used all your credits. Upgrade to continue creating quizzes.",
+          variant: "destructive"
+        })
         return
       }
 
       setSubmitError(null)
       setIsConfirmDialogOpen(true)
     },
-    [isLoading],
+    [isLoading, requireAuth, creditInfo.remainingCredits, toast],
   )
 
   const handleConfirm = React.useCallback(async () => {
@@ -453,10 +471,10 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                 isEnabled={!isDisabled}
                 isLoading={isLoading}
                 loadingLabel="Generating Quiz..."
-                className="w-full h-12 lg:h-14 text-base lg:text-lg font-medium transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg hover:shadow-xl disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed"
                 customStates={{
                   default: {
-                    tooltip: "Click to generate your fill-in-the-blanks quiz",
+                    tooltip: "Click to generate your quiz",
                   },
                   notEnabled: {
                     label: "Complete form to generate",
@@ -508,6 +526,12 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
           </p>
         </div>
       </ConfirmDialog>
+
+      {/* ✅ Contextual Auth Prompt Modal */}
+      <ContextualAuthPrompt
+        {...authPrompt}
+        onOpenChange={closeAuthPrompt}
+      />
     </div>
   )
 }

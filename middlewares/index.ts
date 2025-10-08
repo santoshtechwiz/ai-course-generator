@@ -1,12 +1,24 @@
 /**
- * Middleware exports for organized imports
+ * Centralized Middleware System
+ * Clean exports with deprecated components removed
  */
 
-// Auth middlewares
+// NEW: Unified middleware system (recommended)
+export {
+  unifiedMiddleware,
+  tokenCache,
+  middleware,
+  isFeatureEnabled,
+  matchRouteToFeature,
+  type MiddlewareContext,
+  type MiddlewareResult
+} from './unified'
+
+// API auth middlewares (still needed for API routes)
 export { 
-  protectAdminRoutes, 
-  protectAuthenticatedRoutes 
-} from './auth/route-protection'
+  withAuth, 
+  withAdminAuth 
+} from './auth-middleware'
 
 // Security middlewares
 export { 
@@ -22,7 +34,7 @@ export {
 
 // Store middlewares
 export { 
-  default as authSubscriptionSyncMiddleware 
+  authSubscriptionSyncMiddleware 
 } from './store/auth-sync'
 
 export { 

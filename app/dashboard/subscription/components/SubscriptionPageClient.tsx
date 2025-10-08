@@ -270,19 +270,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     )
   }
   return (
-    <div className="container mx-auto px-4 py-8">      {/* Debug: Force Sync Button - Development Only */}
-      {process.env.NODE_ENV === "development" && userId && (
-        <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-          <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
-            Debug: Subscription State
-          </h3>
-          <p className="text-xs text-yellow-700 dark:text-yellow-300 mb-3">
-            Current: Plan {subscription?.subscriptionPlan || 'UNKNOWN'}, Status {subscription?.status || 'UNKNOWN'}          </p>
-          <p className="text-xs text-yellow-700 dark:text-yellow-300">
-            Sync Status: Session-driven (automatic)
-          </p>
-        </div>
-      )}
+    <>
 
       {/* Only show login modal if user is definitely unauthenticated */}
   {!isAuthenticated && (
@@ -313,6 +301,6 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   expirationDate={subscription?.expirationDate || null}
         planName={subscription?.subscriptionPlan || ""}
       />
-    </div>
+   </>
   )
 }

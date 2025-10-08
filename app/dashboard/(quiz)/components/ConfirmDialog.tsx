@@ -116,10 +116,15 @@ export function ConfirmDialog({
   const hasError = status === "error"
   const isSuccess = status === "success"
 
+  // Check if user has sufficient credits
+  const hasInsufficientCredits = creditUsage && quizInfo?.estimatedCredits 
+    ? creditUsage.remaining < quizInfo.estimatedCredits 
+    : false
+
   const handleConfirm = React.useCallback(() => {
-    if (isLoading) return
+    if (isLoading || hasInsufficientCredits) return
     onConfirm()
-  }, [isLoading, onConfirm])
+  }, [isLoading, hasInsufficientCredits, onConfirm])
 
   const handleCancel = React.useCallback(() => {
     if (isLoading) return
@@ -245,6 +250,15 @@ export function ConfirmDialog({
                   </span>
                 </div>
               )}
+
+              {hasInsufficientCredits && (
+                <div className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-950/20 rounded-md">
+                  <XCircle className="h-4 w-4 text-red-600" />
+                  <span className="text-xs text-red-800 dark:text-red-200">
+                    Insufficient credits for this action. You need {quizInfo?.estimatedCredits} credit{(quizInfo?.estimatedCredits || 0) > 1 ? 's' : ''} but have {creditUsage.remaining} remaining.
+                  </span>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -322,11 +336,12 @@ export function ConfirmDialog({
 
           <Button
             onClick={handleConfirm}
-            disabled={isLoading || hasError}
+            disabled={isLoading || hasError || hasInsufficientCredits}
             className={cn(
               "w-full sm:w-auto",
               isLoading && "bg-blue-600 hover:bg-blue-600",
               hasError && "bg-red-600 hover:bg-red-600",
+              hasInsufficientCredits && "bg-gray-400 hover:bg-gray-400 cursor-not-allowed",
             )}
           >
             {isLoading ? (
@@ -338,6 +353,11 @@ export function ConfirmDialog({
               <>
                 <XCircle className="mr-2 h-4 w-4" />
                 Try Again
+              </>
+            ) : hasInsufficientCredits ? (
+              <>
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Insufficient Credits
               </>
             ) : (
               <>

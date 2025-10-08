@@ -7,9 +7,10 @@ import { useMutation } from "@tanstack/react-query"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { api } from "@/lib/api-helper"
-import { signIn, useSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import { HelpCircle, Timer, Sparkles, Check, Lightbulb } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import { ContextualAuthPrompt, useContextualAuth } from "@/components/auth/ContextualAuthPrompt"
 // Removed redux subscription sync imports
 
 import { Button } from "@/components/ui/button"
@@ -63,6 +64,7 @@ export default function CreateQuizForm({
   const { data: session } = useSession()
   const subscription = useUnifiedSubscription()
   const subscriptionData = subscription
+  const { requireAuth, authPrompt, closeAuthPrompt } = useContextualAuth()
 
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
     title: params?.title && typeof params.title === 'string' ? params.title : "",
@@ -185,9 +187,10 @@ export default function CreateQuizForm({
         return
       }
 
+      // ✅ NEW: Use contextual auth prompt instead of redirect
       if (!isLoggedIn) {
-        signIn("credentials", { callbackUrl: `/dashboard/mcq` })
-        return
+        const hasAuth = requireAuth('create_quiz', `${data.amount} MCQ questions on "${data.title}"`)
+        if (!hasAuth) return // Auth prompt will be shown
       }
 
       // Reset states when opening dialog
@@ -481,14 +484,14 @@ export default function CreateQuizForm({
             isEnabled={!isDisabled}
             isLoading={isLoading}
             loadingLabel="Generating Quiz..."
-            className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl hover:shadow-indigo-500/25 disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed"
+            className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg hover:shadow-xl disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed"
             customStates={{
               default: {
                 tooltip: "Click to generate your quiz",
               },
               notEnabled: {
-                label: "Enter a topic to generate",
-                tooltip: "Please enter a topic before generating the quiz",
+                label: "Complete form to generate",
+                tooltip: "Please complete the form before generating the quiz",
               },
               noCredits: {
                 label: "Out of credits",
@@ -498,6 +501,14 @@ export default function CreateQuizForm({
           />
         </motion.div>
       </form>
+
+      {/* ✅ NEW: Contextual auth prompt - shows when user tries to create without signing in */}
+      <ContextualAuthPrompt
+        open={authPrompt.open}
+        onOpenChange={closeAuthPrompt}
+        actionType={authPrompt.actionType}
+        actionContext={authPrompt.actionContext}
+      />
 
       <ConfirmDialog
         isOpen={isConfirmDialogOpen}
