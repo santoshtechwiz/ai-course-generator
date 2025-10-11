@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     // Check rate limits
     const canUseChat = await checkRateLimit(userId, isSubscribed)
     if (!canUseChat) {
-      const limits = 10;// isSubscribed ? RATE_LIMITS.subscribed : RATE_LIMITS.free
+      const limits = isSubscribed ? RATE_LIMITS.subscribed : RATE_LIMITS.free
       return NextResponse.json(
         { 
           error: `Rate limit exceeded. ${isSubscribed ? 'Subscribers' : 'Free users'} can send ${limits.limit} messages per ${limits.windowHours} hour(s).`,

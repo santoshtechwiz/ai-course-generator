@@ -16,6 +16,109 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
     version: '2.1.0'
   },
 
+  // Dashboard & Navigation Features
+  'dashboard-access': {
+    enabled: true,
+    environments: ['production', 'staging', 'development'],
+    routes: ['/dashboard', '/home', '/dashboard/history'],
+    requiresAuth: false, // Public dashboard access for exploration
+    description: 'Dashboard access - public for exploration, personalized when authenticated',
+    version: '1.0.0'
+  },
+
+  'course-browsing': {
+    enabled: true,
+    environments: ['production', 'staging', 'development'],
+    routes: ['/explore', '/dashboard/explore'],
+    requiresAuth: false, // Public browsing allowed
+    description: 'Course browsing and exploration - public access',
+    version: '1.0.0'
+  },
+
+  'course-access': {
+    enabled: true,
+    environments: ['production', 'staging', 'development'],
+    routes: ['/dashboard/learn', '/dashboard/course/**'],
+    requiresAuth: false, // Public viewing allowed, actions require auth
+    description: 'Course viewing access - public for viewing, auth for actions',
+    version: '1.0.0'
+  },
+
+  'quiz-access': {
+    enabled: true,
+    environments: ['production', 'staging', 'development'],
+    routes: ['/quizzes'],
+    requiresAuth: false, // Browse only, taking requires auth
+    description: 'Quiz browsing access - public browsing, auth for taking quizzes',
+    version: '1.0.0'
+  },
+
+  'admin-access': {
+    enabled: true,
+    environments: ['production', 'staging', 'development'],
+    routes: ['/admin', '/admin/**'],
+    userGroups: ['admin'],
+    requiresAuth: true,
+    description: 'Admin panel access - requires admin role',
+    version: '1.0.0'
+  },
+
+  // Quiz Type Features
+  'quiz-mcq': {
+    enabled: true,
+    environments: ['production', 'staging', 'development'],
+    routes: ['/dashboard/mcq'],
+    requiresAuth: true, // Auth required for creating MCQ quizzes
+    requiresCredits: true,
+    minimumPlan: 'FREE',
+    description: 'Multiple choice quiz creation - browsing public, creation requires auth',
+    version: '1.0.0'
+  },
+
+  'quiz-openended': {
+    enabled: true,
+    environments: ['production', 'staging', 'development'],
+    routes: ['/dashboard/openended'],
+    requiresAuth: true, // Auth required for creating open-ended quizzes
+    requiresCredits: true,
+    minimumPlan: 'FREE',
+    description: 'Open-ended quiz creation - browsing public, creation requires auth',
+    version: '1.0.0'
+  },
+
+  'quiz-blanks': {
+    enabled: true,
+    environments: ['production', 'staging', 'development'],
+    routes: ['/dashboard/blanks'],
+    requiresAuth: true, // Auth required for creating fill-in-the-blanks quizzes
+    requiresCredits: true,
+    minimumPlan: 'FREE',
+    description: 'Fill-in-the-blanks quiz creation - browsing public, creation requires auth',
+    version: '1.0.0'
+  },
+
+  'quiz-code': {
+    enabled: true,
+    environments: ['production', 'staging', 'development'],
+    routes: ['/dashboard/code'],
+    requiresAuth: true, // Auth required for creating code quizzes
+    requiresCredits: true,
+    minimumPlan: 'FREE',
+    description: 'Code quiz creation - browsing public, creation requires auth',
+    version: '1.0.0'
+  },
+
+  'quiz-flashcard': {
+    enabled: true,
+    environments: ['production', 'staging', 'development'],
+    routes: ['/dashboard/flashcard'],
+    requiresAuth: true, // Auth required for creating flashcards
+    requiresCredits: true,
+    minimumPlan: 'FREE',
+    description: 'Flashcard creation - browsing public, creation requires auth',
+    version: '1.0.0'
+  },
+
   'middleware-caching': {
     enabled: true,
     environments: ['production', 'staging'],
