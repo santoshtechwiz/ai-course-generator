@@ -281,6 +281,13 @@ export class UnifiedMiddlewareService {
       return { response: null, context, shouldContinue: true }
     }
 
+    // CRITICAL: Skip subscription check for public exploration routes
+    // These routes handle their own subscription prompts at the action level
+    if (routeConfig.allowPublicAccess) {
+      console.log(`[SubscriptionCheck] Skipping subscription check for public route: ${context.pathname}`)
+      return { response: null, context, shouldContinue: true }
+    }
+
     // Check subscription requirements via feature flags
     const flagContext: FeatureFlagContext = {
       userId: context.userId,

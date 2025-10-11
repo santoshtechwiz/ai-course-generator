@@ -68,10 +68,10 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
     enabled: true,
     environments: ['production', 'staging', 'development'],
     routes: ['/dashboard/mcq'],
-    requiresAuth: true, // Auth required for creating MCQ quizzes
-    requiresCredits: true,
+    requiresAuth: false, // Public browsing - auth enforced at action level by page itself
+    requiresCredits: false, // Credits checked when user clicks "Create Quiz" button
     minimumPlan: 'FREE',
-    description: 'Multiple choice quiz creation - browsing public, creation requires auth',
+    description: 'Multiple choice quiz creation - browsing public, creation requires auth (handled by page)',
     version: '1.0.0'
   },
 
@@ -79,10 +79,10 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
     enabled: true,
     environments: ['production', 'staging', 'development'],
     routes: ['/dashboard/openended'],
-    requiresAuth: true, // Auth required for creating open-ended quizzes
-    requiresCredits: true,
+    requiresAuth: false, // Public browsing - auth enforced at action level by page itself
+    requiresCredits: false, // Credits checked when user clicks "Create Quiz" button
     minimumPlan: 'FREE',
-    description: 'Open-ended quiz creation - browsing public, creation requires auth',
+    description: 'Open-ended quiz creation - browsing public, creation requires auth (handled by page)',
     version: '1.0.0'
   },
 
@@ -90,10 +90,10 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
     enabled: true,
     environments: ['production', 'staging', 'development'],
     routes: ['/dashboard/blanks'],
-    requiresAuth: true, // Auth required for creating fill-in-the-blanks quizzes
-    requiresCredits: true,
+    requiresAuth: false, // Public browsing - auth enforced at action level by page itself
+    requiresCredits: false, // Credits checked when user clicks "Create Quiz" button
     minimumPlan: 'FREE',
-    description: 'Fill-in-the-blanks quiz creation - browsing public, creation requires auth',
+    description: 'Fill-in-the-blanks quiz creation - browsing public, creation requires auth (handled by page)',
     version: '1.0.0'
   },
 
@@ -101,10 +101,10 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
     enabled: true,
     environments: ['production', 'staging', 'development'],
     routes: ['/dashboard/code'],
-    requiresAuth: true, // Auth required for creating code quizzes
-    requiresCredits: true,
+    requiresAuth: false, // Public browsing - auth enforced at action level by page itself
+    requiresCredits: false, // Credits checked when user clicks "Create Quiz" button
     minimumPlan: 'FREE',
-    description: 'Code quiz creation - browsing public, creation requires auth',
+    description: 'Code quiz creation - browsing public, creation requires auth (handled by page)',
     version: '1.0.0'
   },
 
@@ -112,10 +112,10 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
     enabled: true,
     environments: ['production', 'staging', 'development'],
     routes: ['/dashboard/flashcard'],
-    requiresAuth: true, // Auth required for creating flashcards
-    requiresCredits: true,
+    requiresAuth: false, // Public browsing - auth enforced at action level by page itself
+    requiresCredits: false, // Credits checked when user clicks "Create Quiz" button
     minimumPlan: 'FREE',
-    description: 'Flashcard creation - browsing public, creation requires auth',
+    description: 'Flashcard creation - browsing public, creation requires auth (handled by page)',
     version: '1.0.0'
   },
 
