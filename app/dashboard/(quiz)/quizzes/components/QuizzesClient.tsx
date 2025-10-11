@@ -50,6 +50,9 @@ function EnhancedQuizzesClientComponent({ initialQuizzesData, userId }: Enhanced
 
   // Enhanced local storage with error handling
   useEffect(() => {
+    // Skip localStorage access on server-side
+    if (typeof window === 'undefined') return
+
     try {
       const preferences = {
         tab: localStorage.getItem("quiz_active_tab"),
@@ -89,6 +92,9 @@ function EnhancedQuizzesClientComponent({ initialQuizzesData, userId }: Enhanced
 
   // Enhanced preference persistence
   useEffect(() => {
+    // Skip localStorage access on server-side
+    if (typeof window === 'undefined') return
+
     try {
       const preferences = {
         "quiz_active_tab": activeTab,

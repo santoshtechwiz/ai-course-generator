@@ -3,7 +3,7 @@
  *
  * Helps migrate from old storage patterns to the unified storage service
  */
-import { storage } from '../unified-storage'
+import { storage } from '../legacy-storage'
 
 /**
  * Safe JSON parse utility

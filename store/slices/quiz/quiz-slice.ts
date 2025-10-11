@@ -4,7 +4,8 @@ import type { RootState } from '@/store'
 import { API_ENDPOINTS } from './quiz-helpers'
 import { QuizQuestion, QuizResults, QuizState, QuestionResult, QuizType } from './quiz-types'
 
-import { storageManager, QuizProgress } from '@/utils/storage-manager'
+import { storage } from '@/lib/storage'
+import type { QuizProgress } from '@/types/quiz'
 
 const QUIZ_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 const MAX_CACHE_ENTRIES = 100
@@ -71,6 +72,9 @@ export const fetchQuiz = createAsyncThunk<
     const slug = payload.slug?.trim() || ""
     const type = payload.quizType as QuizType
     const requestKey = `quiz-${type}-${slug}`
+    
+    // Determine API endpoint early
+    let url: string = ''
 
     try {
       // Check if request was already cancelled
@@ -127,7 +131,6 @@ export const fetchQuiz = createAsyncThunk<
       }
 
       // Determine API endpoint
-      let url: string
       if (API_ENDPOINTS.byTypeAndSlug) {
         url = API_ENDPOINTS.byTypeAndSlug(type, slug)
       } else {
@@ -248,13 +251,13 @@ export const fetchQuiz = createAsyncThunk<
         stack: error?.stack,
         code: error?.code,
         status: error?.status,
-        url,
+        requestUrl: url,
         type,
         slug,
         typeOfError: typeof error,
         errorKeys: error ? Object.keys(error) : [],
         isEmptyObject: error && typeof error === 'object' && Object.keys(error).length === 0
-      });
+      })
 
       if (error.name === 'AbortError' || error.message?.includes('aborted')) {
         return rejectWithValue({ error: 'Request was cancelled', code: 'CANCELLED' })
@@ -560,7 +563,7 @@ export const submitQuiz = createAsyncThunk(
         // Check for authentication errors first, before parsing body
         if (response.status === 401 || response.status === 403) {
           // User not authenticated, save results temporarily and return results for local display
-          storageManager.saveTempQuizResults(slug!, quizType!, quizResults, answers)
+          storage.setItem(`quiz_temp_${slug}_${quizType}`, { quizResults, answers })
           
           // Return the calculated results instead of redirecting immediately
           // This allows the component to show results locally with signin prompt
@@ -819,7 +822,7 @@ export const loadTempResultsAndSave = createAsyncThunk(
   'quiz/loadTempAndSave',
   async ({ slug, quizType }: { slug: string; quizType: string }, { rejectWithValue }) => {
     try {
-      const tempData = storageManager.getTempQuizResults(slug, quizType)
+      const tempData = storage.getItem(`quiz_temp_${slug}_${quizType}`)
       if (!tempData) {
         return rejectWithValue({ error: 'No temporary results found' })
       }
@@ -828,7 +831,7 @@ export const loadTempResultsAndSave = createAsyncThunk(
       const results = tempData.results
 
       // Clear temp data
-      storageManager.clearTempQuizResults(slug, quizType)
+      storage.removeItem(`quiz_temp_${slug}_${quizType}`)
 
       // Save to DB
       const { answers, totalTime, score, maxScore } = results

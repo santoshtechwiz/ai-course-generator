@@ -1,5 +1,5 @@
 /**
- * Unified Storage Hooks
+ * Unifi} from './legacy-storage'd Storage Hooks
  * 
  * React hooks that provide a consistent interface for working with persistent state
  * across localStorage and sessionStorage with type safety and SSR support.
@@ -11,7 +11,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { storage, StorageOptions } from "./unified-storage"
+import { storage, StorageOptions } from "./legacy-storage"
 
 // ============================================================================
 // TYPES

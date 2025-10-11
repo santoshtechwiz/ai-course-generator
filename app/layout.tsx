@@ -17,6 +17,7 @@ import { MotionProvider } from "@/components/MotionProvider"
 import Footer from "@/components/shared/Footer"
 import { Toaster } from "@/components/ui/toaster"
 import { BreadcrumbWelcome } from "@/components/auth/BreadcrumbWelcome"
+import { ClientGuestProvider } from "@/components/guest/ClientGuestProvider"
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
@@ -102,33 +103,36 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {/* Post-auth context restoration */}
               <BreadcrumbWelcome />
               
-              {/* Simplified noscript message */}
-              <noscript>
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 m-4">
-                  <div className="flex">
-                    <div className="ml-3">
-                      <p className="text-sm text-yellow-700">
-                        JavaScript is required for CourseAI to work properly. Please enable JavaScript and refresh the page.
-                      </p>
+              {/* Guest experience provider - client-only to prevent SSR issues */}
+              <ClientGuestProvider>
+                {/* Simplified noscript message */}
+                <noscript>
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 m-4">
+                    <div className="flex">
+                      <div className="ml-3">
+                        <p className="text-sm text-yellow-700">
+                          JavaScript is required for CourseAI to work properly. Please enable JavaScript and refresh the page.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </noscript>
+                </noscript>
 
-              <Suspense fallback={<SuspenseGlobalFallback />}>
-                <div className="relative min-h-screen flex flex-col">
-                  {/* Main Content */}
-                  <main id="main-content" className="flex-1 w-full">
-                    <MotionProvider>
-                      <Suspense fallback={<SuspenseGlobalFallback />}>
-                        {children}
-                      </Suspense>
-                    </MotionProvider>
-                  </main>
-                  <Footer/>
-                  {/* Footer removed - using page-specific footers instead */}
-                </div>
-              </Suspense>
+                <Suspense fallback={<SuspenseGlobalFallback />}>
+                  <div className="relative min-h-screen flex flex-col">
+                    {/* Main Content */}
+                    <main id="main-content" className="flex-1 w-full">
+                      <MotionProvider>
+                        <Suspense fallback={<SuspenseGlobalFallback />}>
+                          {children}
+                        </Suspense>
+                      </MotionProvider>
+                    </main>
+                    <Footer/>
+                    {/* Footer removed - using page-specific footers instead */}
+                  </div>
+                </Suspense>
+              </ClientGuestProvider>
             </RootErrorBoundary>
 
             {/* Analytics */}
@@ -137,7 +141,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Suspense>
             <DefaultSEO enableFAQ={false} />
             <Toaster />
-            
           
           </Providers>
         </BProgressProvider>

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@reduxjs/toolkit';
 import type { RootState } from '@/store';
-import { storageManager } from '@/utils/storage-manager';
+import { storage } from '@/lib/storage';
 import { EventReplayer } from '@/utils/progress-events';
 import { ProgressEventType } from '@/types/progress-events';
 import type { 
@@ -102,7 +102,7 @@ export const syncEventsWithServer = createAsyncThunk<
     }
 
     // Group events by type and entityId
-    const groupedEvents = pendingEvents.reduce((groups: Record<string, ProgressEvent[]>, event) => {
+    const groupedEvents = pendingEvents.reduce((groups: Record<string, ProgressEvent[]>, event: ProgressEvent) => {
       let key = `${event.type}_${event.entityId}_${event.userId}`;
       
       // For video progress events, use a more specific key to track individual segments
@@ -198,7 +198,7 @@ export const syncEventsWithServer = createAsyncThunk<
       console.warn('No valid events to sync after validation');
       return { 
         syncedEvents: [], 
-        failedEvents: pendingEvents.map(e => e.id)
+        failedEvents: pendingEvents.map((e: ProgressEvent) => e.id)
       };
     }
 
@@ -290,7 +290,7 @@ export const syncEventsWithServer = createAsyncThunk<
 export const loadEventsFromStorage = createAsyncThunk(
   'progressEvents/loadFromStorage',
   async (userId: string) => {
-    const stored = storageManager.getProgressEvents(userId);
+    const stored = storage.getItem(`progress_events_${userId}`) || [];
     return stored || [];
   }
 );
@@ -353,7 +353,7 @@ const progressEventsSlice = createSlice({
       });
 
       // Persist to localStorage
-      storageManager.saveProgressEvents(event.userId, state.events);
+      storage.setItem(`progress_events_${event.userId}`, state.events);
     },
     retryFailedEvents: (state) => {
       state.pendingEvents.push(...state.failedEvents);

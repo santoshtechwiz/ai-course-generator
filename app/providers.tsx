@@ -2,9 +2,32 @@
 
 import { ProgressProvider } from '@bprogress/next/app';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
+import { initializeStorageSystem } from '@/lib/storage/startup-service';
+import { toast } from '@/components/ui/use-toast';
 
 const Providers = ({ children }: { children: ReactNode }) => {
+  // Initialize storage system with migration and cleanup
+  useEffect(() => {
+    const initStorage = async () => {
+      try {
+        // Initialize storage system
+        await initializeStorageSystem()
+        console.log('Storage system initialized successfully')
+      } catch (error) {
+        console.error('Storage initialization failed:', error)
+        toast({
+          title: 'Storage System Error',
+          description: 'Failed to initialize the storage system. Please refresh the page.',
+          variant: 'destructive',
+        })
+      }
+    }
+
+    // Run initialization
+    initStorage()
+  }, [])
+
   // Create a QueryClient instance
   const [queryClient] = useState(
     () => new QueryClient({

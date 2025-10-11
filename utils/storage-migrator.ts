@@ -1,228 +1,341 @@
-"use client"
-
-import { storageManager } from './storage-manager'
-
 /**
- * Migration utility to move existing localStorage data to the new StorageManager
- * This should be called once during app initialization
+ * Storage Migration Utility
+ * 
+ * Handles migration of data between different storage systems and formats.
+ * Ensures backward compatibility when storage systems are updated.
  */
+
+import { simpleStorage } from '@/lib/storage/storage'
+
+// ============================================================================
+// STORAGE MIGRATOR CLASS
+// ============================================================================
+
 export class StorageMigrator {
-  private static migratedKey = 'storage_migration_completed'
+  private static readonly MIGRATION_VERSION = '3.0.0'
+  private static readonly MIGRATION_KEY = 'storage_migration_version'
 
+  /**
+   * Migrate all data from legacy storage systems
+   */
   static migrateAllData(): void {
-    if (typeof window === 'undefined') return
-
-    // Check if migration already completed
-    if (localStorage.getItem(this.migratedKey)) {
+    if (typeof window === 'undefined') {
+      console.log('[StorageMigrator] Skipping migration (SSR)')
       return
     }
 
-    console.log('Starting localStorage migration to StorageManager...')
-
     try {
-      // Run all migrations
-      this.migrateVideoSettings()
-      this.migrateQuizProgress()
-      this.migrateUserPreferences()
-      this.migrateCourseSettings()
-      this.migrateDebugLogs()
+      const currentVersion = this.getCurrentMigrationVersion()
+      
+      if (currentVersion === this.MIGRATION_VERSION) {
+        console.log('[StorageMigrator] Already at latest version')
+        return
+      }
+
+      console.log(`[StorageMigrator] Migrating from ${currentVersion} to ${this.MIGRATION_VERSION}`)
+
+      // Run migration steps
+      this.migrateLegacyVideoProgress()
+      this.migrateLegacyQuizResults()
+      this.migrateLegacyUserPreferences()
+      this.cleanupObsoleteKeys()
 
       // Mark migration as complete
-      localStorage.setItem(this.migratedKey, 'true')
-
-      console.log('localStorage migration completed successfully')
+      this.setMigrationVersion(this.MIGRATION_VERSION)
+      
+      console.log('[StorageMigrator] Migration completed successfully')
     } catch (error) {
-      console.warn('Storage migration failed:', error)
+      console.error('[StorageMigrator] Migration failed:', error)
+      throw error
     }
   }
 
-  private static migrateVideoSettings(): void {
-    const oldKeys = [
-      'VIDEO_PLAYER_VOLUME',
-      'video-player-volume',
-      'video-autoplay',
-      'video-theater-mode',
-      'mini-player-pos',
-      'hasPlayedFreeVideo',
-      'playerPreferences'
-    ]
+  /**
+   * Get current migration version
+   */
+  private static getCurrentMigrationVersion(): string {
+    if (typeof window === 'undefined') {
+      return '1.0.0'
+    }
+    
+    try {
+      return localStorage.getItem(this.MIGRATION_KEY) || '1.0.0'
+    } catch (error) {
+      console.warn('[StorageMigrator] Failed to get migration version:', error)
+      return '1.0.0'
+    }
+  }
 
-    const settings: any = {}
+  /**
+   * Set migration version
+   */
+  private static setMigrationVersion(version: string): void {
+    if (typeof window === 'undefined') {
+      return
+    }
+    
+    try {
+      localStorage.setItem(this.MIGRATION_KEY, version)
+    } catch (error) {
+      console.warn('[StorageMigrator] Failed to set migration version:', error)
+    }
+  }
 
-    oldKeys.forEach(key => {
-      const value = localStorage.getItem(key)
-      if (value) {
+  /**
+   * Migrate legacy video progress data
+   */
+  private static migrateLegacyVideoProgress(): void {
+    try {
+      const legacyKeys = this.findLegacyKeys([
+        'video-progress-',
+        'video_progress_',
+        'courseProgress_',
+        'chapter_progress_'
+      ])
+
+      let migratedCount = 0
+
+      for (const key of legacyKeys) {
         try {
-          switch (key) {
-            case 'VIDEO_PLAYER_VOLUME':
-            case 'video-player-volume':
-              settings.volume = parseFloat(value)
-              break
-            case 'video-autoplay':
-              settings.autoplay = JSON.parse(value)
-              break
-            case 'video-theater-mode':
-              settings.theaterMode = JSON.parse(value)
-              break
-            case 'mini-player-pos':
-              settings.miniPlayerPos = JSON.parse(value)
-              break
-            case 'hasPlayedFreeVideo':
-              settings.hasPlayedFreeVideo = value === 'true'
-              break
-            case 'playerPreferences':
-              const prefs = JSON.parse(value)
-              Object.assign(settings, prefs)
-              break
-          }
-        } catch {
-          // Ignore parsing errors
-        }
-        localStorage.removeItem(key)
-      }
-    })
+          const value = localStorage.getItem(key)
+          if (!value) continue
 
-    if (Object.keys(settings).length > 0) {
-      storageManager.saveVideoSettings(settings)
+          const data = JSON.parse(value)
+          
+          // Convert to new format
+          const newKey = this.convertToNewKey(key, 'video_progress')
+          simpleStorage.setItem(newKey, {
+            ...data,
+            migrated: true,
+            migratedAt: Date.now(),
+            originalKey: key
+          })
+
+          migratedCount++
+        } catch (error) {
+          console.warn(`[StorageMigrator] Failed to migrate ${key}:`, error)
+        }
+      }
+
+      if (migratedCount > 0) {
+        console.log(`[StorageMigrator] Migrated ${migratedCount} video progress items`)
+      }
+    } catch (error) {
+      console.warn('[StorageMigrator] Video progress migration failed:', error)
     }
   }
 
-  private static migrateQuizProgress(): void {
-    const keys = Object.keys(localStorage)
-    const oldProgressKeys = keys.filter(key =>
-      key.startsWith('quiz-progress-') ||
-      key.includes('QUIZ_STATE:')
-    )
+  /**
+   * Migrate legacy quiz results
+   */
+  private static migrateLegacyQuizResults(): void {
+    try {
+      const legacyKeys = this.findLegacyKeys([
+        'quiz-results-',
+        'quiz_results_',
+        'quizProgress_',
+        'tempQuizResults_'
+      ])
 
-    oldProgressKeys.forEach(key => {
-      try {
-        const data = localStorage.getItem(key)
-        if (data) {
-          const oldProgress = JSON.parse(data)
+      let migratedCount = 0
 
-          if (key.startsWith('quiz-progress-')) {
-            // Handle old quiz progress format
-            const parts = key.replace('quiz-progress-', '').split('_')
-            if (parts.length >= 2) {
-              const courseId = parts[0]
-              const chapterId = parts.slice(1).join('_')
-
-              const newProgress = {
-                courseId,
-                chapterId,
-                currentQuestionIndex: oldProgress.currentQuestionIndex || 0,
-                answers: oldProgress.answers || {},
-                timeSpent: oldProgress.timeSpent || 0,
-                lastUpdated: oldProgress.lastUpdated ? new Date(oldProgress.lastUpdated).getTime() : Date.now(),
-                isCompleted: oldProgress.isCompleted || false
-              }
-
-              storageManager.saveQuizProgress(newProgress)
-            }
-          } else if (key.includes('QUIZ_STATE:')) {
-            // Handle Redux quiz state format
-            const parts = key.split(':')
-            if (parts.length >= 3) {
-              const quizType = parts[1]
-              const slug = parts[2]
-
-              const newProgress = {
-                courseId: slug,
-                chapterId: `${quizType}_${slug}`,
-                currentQuestionIndex: oldProgress.currentQuestionIndex || 0,
-                answers: {},
-                timeSpent: 0,
-                lastUpdated: oldProgress.updatedAt || Date.now(),
-                isCompleted: false
-              }
-
-              storageManager.saveQuizProgress(newProgress)
-            }
-          }
-        }
-      } catch (error) {
-        console.warn(`Failed to migrate quiz progress for key "${key}":`, error)
-      }
-      localStorage.removeItem(key)
-    })
-  }
-
-  private static migrateUserPreferences(): void {
-    const oldKeys = [
-      'hasSeenChatTooltip',
-      'autoplay_mode'
-    ]
-
-    const prefs: any = {}
-
-    oldKeys.forEach(key => {
-      const value = localStorage.getItem(key)
-      if (value) {
+      for (const key of legacyKeys) {
         try {
-          switch (key) {
-            case 'hasSeenChatTooltip':
-              prefs.hasSeenChatTooltip = value === 'true'
-              break
-            case 'autoplay_mode':
-              prefs.autoplay = JSON.parse(value)
-              break
+          const value = localStorage.getItem(key)
+          if (!value) continue
+
+          const data = JSON.parse(value)
+          
+          // Convert to new format
+          const newKey = this.convertToNewKey(key, 'quiz_results')
+          simpleStorage.setItem(newKey, {
+            ...data,
+            migrated: true,
+            migratedAt: Date.now(),
+            originalKey: key
+          })
+
+          migratedCount++
+        } catch (error) {
+          console.warn(`[StorageMigrator] Failed to migrate ${key}:`, error)
+        }
+      }
+
+      if (migratedCount > 0) {
+        console.log(`[StorageMigrator] Migrated ${migratedCount} quiz result items`)
+      }
+    } catch (error) {
+      console.warn('[StorageMigrator] Quiz results migration failed:', error)
+    }
+  }
+
+  /**
+   * Migrate legacy user preferences
+   */
+  private static migrateLegacyUserPreferences(): void {
+    try {
+      const legacyKeys = this.findLegacyKeys([
+        'user-prefs-',
+        'user_preferences_',
+        'settings_',
+        'theme_'
+      ])
+
+      let migratedCount = 0
+
+      for (const key of legacyKeys) {
+        try {
+          const value = localStorage.getItem(key)
+          if (!value) continue
+
+          const data = JSON.parse(value)
+          
+          // Convert to new format
+          const newKey = this.convertToNewKey(key, 'user_prefs')
+          simpleStorage.setItem(newKey, {
+            ...data,
+            migrated: true,
+            migratedAt: Date.now(),
+            originalKey: key
+          })
+
+          migratedCount++
+        } catch (error) {
+          console.warn(`[StorageMigrator] Failed to migrate ${key}:`, error)
+        }
+      }
+
+      if (migratedCount > 0) {
+        console.log(`[StorageMigrator] Migrated ${migratedCount} user preference items`)
+      }
+    } catch (error) {
+      console.warn('[StorageMigrator] User preferences migration failed:', error)
+    }
+  }
+
+  /**
+   * Find legacy keys matching patterns
+   */
+  private static findLegacyKeys(patterns: string[]): string[] {
+    const keys: string[] = []
+    
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (!key) continue
+
+        for (const pattern of patterns) {
+          if (key.includes(pattern) && !key.includes('courseai_')) {
+            keys.push(key)
+            break
           }
-        } catch {
-          // Ignore parsing errors
         }
-        localStorage.removeItem(key)
       }
-    })
+    } catch (error) {
+      console.warn('[StorageMigrator] Failed to scan localStorage keys:', error)
+    }
 
-    if (Object.keys(prefs).length > 0) {
-      storageManager.saveUserPreferences(prefs)
+    return keys
+  }
+
+  /**
+   * Convert legacy key to new format
+   */
+  private static convertToNewKey(legacyKey: string, type: string): string {
+    // Extract identifier from legacy key
+    const parts = legacyKey.split(/[-_]/g)
+    const identifier = parts[parts.length - 1] || 'default'
+    
+    return `migrated_${type}_${identifier}_${Date.now()}`
+  }
+
+  /**
+   * Clean up obsolete storage keys
+   */
+  private static cleanupObsoleteKeys(): void {
+    try {
+      const obsoletePatterns = [
+        '__redux_devtools_',
+        'debug_',
+        'temp_',
+        '_test_',
+        'cache_expired_'
+      ]
+
+      let cleanedCount = 0
+
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i)
+        if (!key) continue
+
+        for (const pattern of obsoletePatterns) {
+          if (key.includes(pattern)) {
+            try {
+              localStorage.removeItem(key)
+              cleanedCount++
+              break
+            } catch (error) {
+              console.warn(`[StorageMigrator] Failed to remove obsolete key ${key}:`, error)
+            }
+          }
+        }
+      }
+
+      if (cleanedCount > 0) {
+        console.log(`[StorageMigrator] Cleaned up ${cleanedCount} obsolete keys`)
+      }
+    } catch (error) {
+      console.warn('[StorageMigrator] Cleanup failed:', error)
     }
   }
 
-  private static migrateCourseSettings(): void {
-    const keys = Object.keys(localStorage)
-    const courseKeys = keys.filter(key => key.startsWith('autoplay_mode_course_'))
+  /**
+   * Reset all migrations (for testing)
+   */
+  static resetMigrations(): void {
+    if (typeof window === 'undefined') {
+      console.warn('[StorageMigrator] Reset requires browser environment')
+      return
+    }
+    
+    if (process.env.NODE_ENV !== 'development') {
+      console.warn('[StorageMigrator] Reset only allowed in development')
+      return
+    }
 
-    courseKeys.forEach(key => {
-      try {
-        const courseId = key.replace('autoplay_mode_course_', '')
-        const value = localStorage.getItem(key)
-        if (value) {
-          const autoplayMode = JSON.parse(value)
-          storageManager.saveCourseSettings(courseId, { autoplayMode })
-        }
-      } catch (error) {
-        console.warn(`Failed to migrate course settings for key "${key}":`, error)
-      }
-      localStorage.removeItem(key)
-    })
-  }
-
-  private static migrateDebugLogs(): void {
-    const debugKeys = ['quiz_error_logs']
-
-    debugKeys.forEach(key => {
-      try {
-        const value = localStorage.getItem(key)
-        if (value) {
-          const logs = JSON.parse(value)
-          storageManager.saveDebugLogs(logs)
-        }
-      } catch (error) {
-        console.warn(`Failed to migrate debug logs for key "${key}":`, error)
-      }
-      localStorage.removeItem(key)
-    })
-  }
-
-  static clearMigrationFlag(): void {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(this.migratedKey)
+    try {
+      localStorage.removeItem(this.MIGRATION_KEY)
+      console.log('[StorageMigrator] Migration version reset')
+    } catch (error) {
+      console.warn('[StorageMigrator] Failed to reset migrations:', error)
     }
   }
 
-  static forceReMigration(): void {
-    this.clearMigrationFlag()
-    this.migrateAllData()
+  /**
+   * Get migration status
+   */
+  static getStatus(): {
+    currentVersion: string
+    targetVersion: string
+    needsMigration: boolean
+    isHealthy: boolean
+  } {
+    const currentVersion = this.getCurrentMigrationVersion()
+    const needsMigration = currentVersion !== this.MIGRATION_VERSION
+    
+    return {
+      currentVersion,
+      targetVersion: this.MIGRATION_VERSION,
+      needsMigration,
+      isHealthy: typeof window !== 'undefined' && !!localStorage
+    }
   }
 }
+
+// ============================================================================
+// CONVENIENCE EXPORTS
+// ============================================================================
+
+export const getMigrationStatus = () => StorageMigrator.getStatus()
+
+export default StorageMigrator

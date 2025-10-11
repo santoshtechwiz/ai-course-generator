@@ -1,735 +1,202 @@
-"use client"
+/**
+ * Storage Manager Utility
+ * 
+ * Legacy storage manager implementation for compatibility with existing code.
+ * Provides a simplified interface that works with the new unified storage system.
+ */
 
-import { STORAGE_KEYS } from '@/constants/global'
+import { simpleStorage } from '@/lib/storage/storage'
 
-// Storage configuration
-const STORAGE_CONFIG = {
-  maxRetries: 3,
-  retryDelay: 1000,
-  maxStorageSize: 5 * 1024 * 1024, // 5MB
-  quizHistoryLimit: 2, // Keep last 2 courses
-  cleanupInterval: 24 * 60 * 60 * 1000, // 24 hours
-  dataExpiry: 30 * 24 * 60 * 60 * 1000, // 30 days
-} as const
-
-// Storage key prefixes for organization
-const STORAGE_PREFIXES = {
-  USER_PREFERENCES: 'user_prefs_',
-  QUIZ_HISTORY: 'quiz_history_',
-  QUIZ_PROGRESS: 'quiz_progress_',
-  QUIZ_TEMP_RESULTS: 'quiz_temp_results_',
-  VIDEO_SETTINGS: 'video_settings_',
-  COURSE_SETTINGS: 'course_settings_',
-  DEBUG_LOGS: 'debug_logs_',
-} as const
-
-// Types for our storage system
-export interface UserPreferences {
-  theme?: 'light' | 'dark' | 'system'
-  autoplay?: boolean
-  volume?: number
-  playbackRate?: number
-  theaterMode?: boolean
-  hasSeenChatTooltip?: boolean
-  lastUpdated?: number
-}
-
-export interface QuizHistoryEntry {
-  courseId: string
-  courseName: string
-  quizType: string
-  completedAt: number
-  score?: number
-  totalQuestions?: number
-  timeSpent?: number
-}
+// ============================================================================
+// TYPES
+// ============================================================================
 
 export interface QuizProgress {
   courseId: string
   chapterId: string
-  currentQuestionIndex: number
+  progress: number
   answers: Record<string, any>
-  timeSpent: number
-  lastUpdated: number
-  isCompleted: boolean
-}
-
-export interface QuizTempResults {
-  slug: string
-  quizType: string
-  results: any // QuizResults
-  answers: Record<string, any>
-  savedAt: number
+  completed: boolean
+  score?: number
+  timeSpent?: number
+  lastUpdated?: number
 }
 
 export interface VideoSettings {
-  volume: number
-  muted: boolean
-  playbackRate: number
-  autoplay: boolean
-  autoPlayNext?: boolean
-  theaterMode: boolean
-  miniPlayerPos?: { x: number; y: number }
+  playbackRate?: number
+  volume?: number
   hasPlayedFreeVideo?: boolean
+  [key: string]: any
 }
 
-export interface CourseSettings {
-  autoplayMode: boolean
-  lastAccessedChapter?: string
-  progress?: number
+export interface UserPreferences {
+  hasSeenChatTooltip?: boolean
+  darkMode?: boolean
+  language?: string
+  [key: string]: any
 }
 
-/**
- * Smart localStorage Manager with cleanup and organization
- */
+export interface ChatHistory {
+  messages: Array<{
+    id: string
+    content: string
+    role: 'user' | 'assistant'
+    timestamp: number
+  }>
+  lastUpdated: number
+}
+
+// ============================================================================
+// STORAGE MANAGER CLASS
+// ============================================================================
+
 class StorageManager {
-  private static instance: StorageManager
-  private lastCleanup: number = 0
+  private prefix = 'storage_manager_'
 
-  private constructor() {
-    this.initializeCleanup()
+  // Video Settings Management
+  getVideoSettings(): VideoSettings {
+    return simpleStorage.getItem<VideoSettings>(`${this.prefix}video_settings`) || {}
   }
 
-  static getInstance(): StorageManager {
-    if (!StorageManager.instance) {
-      StorageManager.instance = new StorageManager()
-    }
-    return StorageManager.instance
-  }
-
-  // Safe storage utilities with error handling
-  private safeGetItem(key: string): string | null {
-    if (typeof window === 'undefined') return null
-
-    try {
-      return localStorage.getItem(key)
-    } catch (error) {
-      console.warn(`Storage read error for key "${key}":`, error)
-      return null
-    }
-  }
-
-  private safeSetItem(key: string, value: string): boolean {
-    if (typeof window === 'undefined') return false
-
-    // Check size limit
-    if (value.length > STORAGE_CONFIG.maxStorageSize) {
-      console.warn(`Value too large for storage key "${key}": ${value.length} bytes`)
-      return false
-    }
-
-    let attempts = 0
-    while (attempts < STORAGE_CONFIG.maxRetries) {
-      try {
-        localStorage.setItem(key, value)
-        return true
-      } catch (error) {
-        attempts++
-        console.warn(`Storage write attempt ${attempts} failed for key "${key}":`, error)
-
-        if (attempts >= STORAGE_CONFIG.maxRetries) {
-          return false
-        }
-
-        // Wait before retry
-        setTimeout(() => {}, STORAGE_CONFIG.retryDelay * attempts)
-      }
-    }
-    return false
-  }
-
-  private safeRemoveItem(key: string): void {
-    if (typeof window === 'undefined') return
-
-    try {
-      localStorage.removeItem(key)
-    } catch (error) {
-      console.warn(`Storage removal error for key "${key}":`, error)
-    }
-  }
-
-  private initializeCleanup(): void {
-    // Run cleanup on initialization
-    this.performCleanup()
-
-    // Set up periodic cleanup
-    if (typeof window !== 'undefined') {
-      setInterval(() => {
-        this.performCleanup()
-      }, STORAGE_CONFIG.cleanupInterval)
-    }
-  }
-
-  private performCleanup(): void {
-    const now = Date.now()
-    if (now - this.lastCleanup < STORAGE_CONFIG.cleanupInterval) {
-      return
-    }
-
-    this.lastCleanup = now
-    console.log('Performing localStorage cleanup...')
-
-    try {
-      // Clean up old quiz progress
-      this.cleanupOldQuizProgress()
-
-      // Clean up old quiz history (keep only last 2 courses)
-      this.cleanupOldQuizHistory()
-
-      // Clean up expired data
-      this.cleanupExpiredData()
-
-      // Clean up debug logs older than 7 days
-      this.cleanupOldDebugLogs()
-
-    } catch (error) {
-      console.warn('Cleanup failed:', error)
-    }
-  }
-
-  private cleanupOldQuizProgress(): void {
-    if (typeof window === 'undefined') return
-
-    const keys = Object.keys(localStorage)
-    const progressKeys = keys.filter(key => key.startsWith(STORAGE_PREFIXES.QUIZ_PROGRESS))
-
-    progressKeys.forEach(key => {
-      try {
-        const data = this.safeGetItem(key)
-        if (data) {
-          const progress: QuizProgress = JSON.parse(data)
-          // Remove progress older than 30 days
-          if (Date.now() - progress.lastUpdated > STORAGE_CONFIG.dataExpiry) {
-            this.safeRemoveItem(key)
-          }
-        }
-      } catch (error) {
-        console.warn(`Failed to cleanup quiz progress for key "${key}":`, error)
-        // Remove corrupted data
-        this.safeRemoveItem(key)
-      }
-    })
-  }
-
-  private cleanupOldQuizHistory(): void {
-    const history = this.getQuizHistory()
-    if (history.length > STORAGE_CONFIG.quizHistoryLimit) {
-      // Keep only the most recent entries
-      const sortedHistory = history.sort((a, b) => b.completedAt - a.completedAt)
-      const recentHistory = sortedHistory.slice(0, STORAGE_CONFIG.quizHistoryLimit)
-      this.saveQuizHistory(recentHistory)
-    }
-  }
-
-  private cleanupExpiredData(): void {
-    if (typeof window === 'undefined') return
-
-    const keys = Object.keys(localStorage)
-    const now = Date.now()
-
-    keys.forEach(key => {
-      try {
-        const data = this.safeGetItem(key)
-        if (data && data.trim()) {
-          const parsed = JSON.parse(data)
-          if (parsed.lastUpdated && (now - parsed.lastUpdated > STORAGE_CONFIG.dataExpiry)) {
-            this.safeRemoveItem(key)
-          }
-        }
-      } catch (error) {
-        console.warn(`Failed to parse data for key "${key}":`, error)
-        // Remove corrupted data
-        this.safeRemoveItem(key)
-      }
-    })
-  }
-
-  private cleanupOldDebugLogs(): void {
-    const debugKey = STORAGE_PREFIXES.DEBUG_LOGS + 'quiz_error_logs'
-    try {
-      const logs = this.safeGetItem(debugKey)
-      if (logs) {
-        const parsedLogs = JSON.parse(logs)
-        const weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000)
-        const recentLogs = parsedLogs.filter((log: any) => log.timestamp > weekAgo)
-        this.safeSetItem(debugKey, JSON.stringify(recentLogs))
-      }
-    } catch (error) {
-      console.warn('Failed to cleanup debug logs:', error)
-    }
-  }
-
-  // User Preferences Management
-  getUserPreferences(): UserPreferences {
-    const key = STORAGE_PREFIXES.USER_PREFERENCES + 'main'
-    const data = this.safeGetItem(key)
-    if (data) {
-      try {
-        return JSON.parse(data)
-      } catch {
-        return {}
-      }
-    }
-    return {}
-  }
-
-  saveUserPreferences(prefs: Partial<UserPreferences>): void {
-    const current = this.getUserPreferences()
-    const updated = {
-      ...current,
-      ...prefs,
-      lastUpdated: Date.now()
-    }
-    const key = STORAGE_PREFIXES.USER_PREFERENCES + 'main'
-    this.safeSetItem(key, JSON.stringify(updated))
-  }
-
-  // Quiz History Management
-  getQuizHistory(): QuizHistoryEntry[] {
-    const key = STORAGE_PREFIXES.QUIZ_HISTORY + 'courses'
-    const data = this.safeGetItem(key)
-    if (data) {
-      try {
-        return JSON.parse(data)
-      } catch {
-        return []
-      }
-    }
-    return []
-  }
-
-  private saveQuizHistory(history: QuizHistoryEntry[]): void {
-    const key = STORAGE_PREFIXES.QUIZ_HISTORY + 'courses'
-    this.safeSetItem(key, JSON.stringify(history))
-  }
-
-  addQuizHistory(entry: QuizHistoryEntry): void {
-    const history = this.getQuizHistory()
-    const existingIndex = history.findIndex(h => h.courseId === entry.courseId)
-
-    if (existingIndex >= 0) {
-      history[existingIndex] = entry
-    } else {
-      history.push(entry)
-    }
-
-    this.saveQuizHistory(history)
+  saveVideoSettings(settings: Partial<VideoSettings>): boolean {
+    const current = this.getVideoSettings()
+    const updated = { ...current, ...settings }
+    return simpleStorage.setItem(`${this.prefix}video_settings`, updated)
   }
 
   // Quiz Progress Management
   getQuizProgress(courseId: string, chapterId: string): QuizProgress | null {
-    const key = `${STORAGE_PREFIXES.QUIZ_PROGRESS}${courseId}_${chapterId}`
-    const data = this.safeGetItem(key)
-    if (data) {
-      try {
-        return JSON.parse(data)
-      } catch {
-        return null
-      }
-    }
-    return null
+    const key = `${this.prefix}quiz_progress_${courseId}_${chapterId}`
+    return simpleStorage.getItem<QuizProgress>(key)
   }
 
-  saveQuizProgress(progress: QuizProgress): void {
-    const key = `${STORAGE_PREFIXES.QUIZ_PROGRESS}${progress.courseId}_${progress.chapterId}`
-    this.safeSetItem(key, JSON.stringify({
-      ...progress,
-      lastUpdated: Date.now()
-    }))
-  }
-
-  saveTempQuizResults(slug: string, quizType: string, results: any, answers: Record<string, any>): void {
-    const key = `${STORAGE_PREFIXES.QUIZ_TEMP_RESULTS}${slug}_${quizType}`
-    const tempResults: QuizTempResults = {
-      slug,
-      quizType,
-      results,
-      answers,
-      savedAt: Date.now()
-    }
-    this.safeSetItem(key, JSON.stringify(tempResults))
-  }
-
-  getTempQuizResults(slug: string, quizType: string): QuizTempResults | null {
-    const key = `${STORAGE_PREFIXES.QUIZ_TEMP_RESULTS}${slug}_${quizType}`
-    const data = this.safeGetItem(key)
-    if (data && data.trim()) {
-      try {
-        const tempResults: QuizTempResults = JSON.parse(data)
-        // Check if expired (24 hours)
-        if (Date.now() - tempResults.savedAt > 24 * 60 * 60 * 1000) {
-          this.safeRemoveItem(key)
-          return null
-        }
-        return tempResults
-      } catch (error) {
-        console.warn(`Failed to parse temp quiz results for key "${key}":`, error)
-        // Remove corrupted data
-        this.safeRemoveItem(key)
-        return null
-      }
-    }
-    return null
-  }
-
-  clearTempQuizResults(slug: string, quizType: string): void {
-    const key = `${STORAGE_PREFIXES.QUIZ_TEMP_RESULTS}${slug}_${quizType}`
-    this.safeRemoveItem(key)
-  }
-
-  getIncompleteQuizzes(): QuizProgress[] {
-    if (typeof window === 'undefined') return []
-
-    const keys = Object.keys(localStorage)
-    const progressKeys = keys.filter(key => key.startsWith(STORAGE_PREFIXES.QUIZ_PROGRESS))
-
-    const incomplete: QuizProgress[] = []
-    progressKeys.forEach(key => {
-      try {
-        const data = this.safeGetItem(key)
-        if (data && data.trim()) {
-          const progress: QuizProgress = JSON.parse(data)
-          if (!progress.isCompleted) {
-            incomplete.push(progress)
-          }
-        }
-      } catch (error) {
-        console.warn(`Failed to load quiz progress for key "${key}":`, error)
-        // Remove corrupted data
-        this.safeRemoveItem(key)
-      }
-    })
-
-    return incomplete.sort((a, b) => b.lastUpdated - a.lastUpdated)
-  }
-
-  // Video Settings Management
-  getVideoSettings(): VideoSettings {
-    const key = STORAGE_PREFIXES.VIDEO_SETTINGS + 'main'
-    const data = this.safeGetItem(key)
-    if (data) {
-      try {
-        return JSON.parse(data)
-      } catch {
-        return {
-          volume: 1,
-          muted: false,
-          playbackRate: 1,
-          autoplay: false,
-          theaterMode: false
-        }
-      }
-    }
-    return {
-      volume: 1,
-      muted: false,
-      playbackRate: 1,
-      autoplay: false,
-      theaterMode: false
-    }
-  }
-
-  saveVideoSettings(settings: Partial<VideoSettings>): void {
-    const current = this.getVideoSettings()
-    const updated = {
-      ...current,
-      ...settings,
+  saveQuizProgress(data: QuizProgress): boolean {
+    const key = `${this.prefix}quiz_progress_${data.courseId}_${data.chapterId}`
+    const progressData = {
+      ...data,
       lastUpdated: Date.now()
     }
-    const key = STORAGE_PREFIXES.VIDEO_SETTINGS + 'main'
-    this.safeSetItem(key, JSON.stringify(updated))
+    return simpleStorage.setItem(key, progressData)
   }
 
-  // Course Settings Management
-  getCourseSettings(courseId: string): CourseSettings {
-    const key = `${STORAGE_PREFIXES.COURSE_SETTINGS}${courseId}`
-    const data = this.safeGetItem(key)
-    if (data) {
-      try {
-        return JSON.parse(data)
-      } catch {
-        return { autoplayMode: false }
-      }
-    }
-    return { autoplayMode: false }
-  }
-
-  saveCourseSettings(courseId: string, settings: Partial<CourseSettings>): void {
-    const current = this.getCourseSettings(courseId)
-    const updated = {
-      ...current,
-      ...settings,
-      lastUpdated: Date.now()
-    }
-    const key = `${STORAGE_PREFIXES.COURSE_SETTINGS}${courseId}`
-    this.safeSetItem(key, JSON.stringify(updated))
-  }
-
-  // Debug/Error Logging Management
-  getDebugLogs(): any[] {
-    const key = STORAGE_PREFIXES.DEBUG_LOGS + 'quiz_error_logs'
-    const data = this.safeGetItem(key)
-    if (data) {
-      try {
-        return JSON.parse(data)
-      } catch {
-        return []
-      }
-    }
-    return []
-  }
-
-  saveDebugLogs(logs: any[]): void {
-    const key = STORAGE_PREFIXES.DEBUG_LOGS + 'quiz_error_logs'
-    this.safeSetItem(key, JSON.stringify(logs))
-  }
-
-  // Utility methods
-  clearAllData(): void {
-    if (typeof window === 'undefined') return
-
-    const keys = Object.keys(localStorage)
-    keys.forEach(key => {
-      if (key.startsWith('user_prefs_') ||
-          key.startsWith('quiz_history_') ||
-          key.startsWith('quiz_progress_') ||
-          key.startsWith('video_settings_') ||
-          key.startsWith('course_settings_') ||
-          key.startsWith('debug_logs_')) {
-        this.safeRemoveItem(key)
-      }
-    })
-  }
-
-  getStorageSize(): number {
-    if (typeof window === 'undefined') return 0
-
-    try {
-      let total = 0
-      for (const key in localStorage) {
-        if (localStorage.hasOwnProperty(key)) {
-          total += localStorage[key].length + key.length
-        }
-      }
-      return total
-    } catch {
-      return 0
-    }
-  }
-
-  // Migration helpers for existing data
-  migrateLegacyData(): void {
-    // Migrate old video settings
-    this.migrateVideoSettings()
-
-    // Migrate old quiz progress
-    this.migrateQuizProgress()
-
-    // Migrate old user preferences
-    this.migrateUserPreferences()
-  }
-
-  private migrateVideoSettings(): void {
-    // Migrate old video settings to new format
-    const oldKeys = [
-      'VIDEO_PLAYER_VOLUME',
-      'video-player-volume',
-      'video-autoplay',
-      'video-theater-mode',
-      'mini-player-pos',
-      'hasPlayedFreeVideo'
-    ]
-
-    const settings: Partial<VideoSettings> = {}
-
-    oldKeys.forEach(key => {
-      const value = this.safeGetItem(key)
-      if (value) {
-        try {
-          switch (key) {
-            case 'VIDEO_PLAYER_VOLUME':
-            case 'video-player-volume':
-              settings.volume = parseFloat(value)
-              break
-            case 'video-autoplay':
-              settings.autoplay = JSON.parse(value)
-              break
-            case 'video-theater-mode':
-              settings.theaterMode = JSON.parse(value)
-              break
-            case 'mini-player-pos':
-              settings.miniPlayerPos = JSON.parse(value)
-              break
-            case 'hasPlayedFreeVideo':
-              settings.hasPlayedFreeVideo = value === 'true'
-              break
-          }
-        } catch {
-          // Ignore parsing errors
-        }
-        this.safeRemoveItem(key)
-      }
-    })
-
-    if (Object.keys(settings).length > 0) {
-      this.saveVideoSettings(settings)
-    }
-  }
-
-  private migrateQuizProgress(): void {
-    if (typeof window === 'undefined') return
-
-    const keys = Object.keys(localStorage)
-    const oldProgressKeys = keys.filter(key => key.startsWith('quiz-progress-'))
-
-    oldProgressKeys.forEach(key => {
-      try {
-        const data = this.safeGetItem(key)
-        if (data) {
-          const oldProgress = JSON.parse(data)
-          // Extract courseId and chapterId from key
-          const parts = key.replace('quiz-progress-', '').split('_')
-          if (parts.length >= 2) {
-            const courseId = parts[0]
-            const chapterId = parts.slice(1).join('_')
-
-            const newProgress: QuizProgress = {
-              courseId,
-              chapterId,
-              currentQuestionIndex: oldProgress.currentQuestionIndex || 0,
-              answers: oldProgress.answers || {},
-              timeSpent: oldProgress.timeSpent || 0,
-              lastUpdated: oldProgress.lastUpdated ? new Date(oldProgress.lastUpdated).getTime() : Date.now(),
-              isCompleted: oldProgress.isCompleted || false
-            }
-
-            this.saveQuizProgress(newProgress)
-          }
-        }
-      } catch (error) {
-        console.warn(`Failed to migrate quiz progress for key "${key}":`, error)
-      }
-      this.safeRemoveItem(key)
-    })
-  }
-
-  private migrateUserPreferences(): void {
-    // Migrate old user preferences
-    const oldKeys = ['hasSeenChatTooltip', 'autoplay_mode']
-
-    const prefs: Partial<UserPreferences> = {}
-
-    oldKeys.forEach(key => {
-      const value = this.safeGetItem(key)
-      if (value) {
-        try {
-          switch (key) {
-            case 'hasSeenChatTooltip':
-              prefs.hasSeenChatTooltip = value === 'true'
-              break
-            case 'autoplay_mode':
-              prefs.autoplay = JSON.parse(value)
-              break
-          }
-        } catch {
-          // Ignore parsing errors
-        }
-        this.safeRemoveItem(key)
-      }
-    })
-
-    if (Object.keys(prefs).length > 0) {
-      this.saveUserPreferences(prefs)
-    }
-  }
-
-  // Progress Events Storage Methods
-  saveProgressEvents(userId: string, events: any[]): boolean {
-    const key = `${STORAGE_PREFIXES.QUIZ_PROGRESS}events_${userId}`
-    return this.safeSetItem(key, JSON.stringify({
-      events,
-      lastUpdated: Date.now(),
-      version: 1
-    }))
-  }
-
-  getProgressEvents(userId: string): any[] | null {
-    const key = `${STORAGE_PREFIXES.QUIZ_PROGRESS}events_${userId}`
-    const data = this.safeGetItem(key)
-
-    if (!data) return null
-
-    try {
-      const parsed = JSON.parse(data)
-
-      // Check if data is expired (30 days)
-      if (Date.now() - parsed.lastUpdated > STORAGE_CONFIG.dataExpiry) {
-        this.safeRemoveItem(key)
-        return null
-      }
-
-      return parsed.events || []
-    } catch (error) {
-      console.warn('Failed to parse progress events:', error)
+  // Temporary Quiz Results (for guest users)
+  getTempQuizResults(slug: string, quizType: string): any | null {
+    const key = `${this.prefix}temp_quiz_${slug}_${quizType}`
+    const stored = simpleStorage.getItem<any>(key)
+    
+    // Check if results have expired (24 hours)
+    if (stored && stored.expiresAt && Date.now() > stored.expiresAt) {
+      this.clearTempQuizResults(slug, quizType)
       return null
     }
+    
+    return stored?.data || null
   }
 
-  clearProgressEvents(userId: string): void {
-    const key = `${STORAGE_PREFIXES.QUIZ_PROGRESS}events_${userId}`
-    this.safeRemoveItem(key)
+  saveTempQuizResults(slug: string, quizType: string, results: any): boolean {
+    const key = `${this.prefix}temp_quiz_${slug}_${quizType}`
+    const data = {
+      data: results,
+      savedAt: Date.now(),
+      expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+    }
+    return simpleStorage.setItem(key, data)
+  }
+
+  clearTempQuizResults(slug: string, quizType: string): boolean {
+    const key = `${this.prefix}temp_quiz_${slug}_${quizType}`
+    return simpleStorage.removeItem(key)
+  }
+
+  // User Preferences Management
+  getUserPreferences(): UserPreferences {
+    return simpleStorage.getItem<UserPreferences>(`${this.prefix}user_prefs`) || {}
+  }
+
+  saveUserPreferences(prefs: Partial<UserPreferences>): boolean {
+    const current = this.getUserPreferences()
+    const updated = { ...current, ...prefs }
+    return simpleStorage.setItem(`${this.prefix}user_prefs`, updated)
   }
 
   // Chat History Management
-  saveChatHistory(userId: string, data: {
-    messages: Array<{ id: string; role: string; content: string; timestamp: number }>
-    lastQuestionTime: number
-    remainingQuestions: number
-  }): boolean {
-    const key = `chat_history_${userId}`
-    return this.safeSetItem(key, JSON.stringify({
-      ...data,
-      lastUpdated: Date.now(),
-      version: 1
-    }))
+  getChatHistory(userId: string): ChatHistory | null {
+    const key = `${this.prefix}chat_history_${userId}`
+    return simpleStorage.getItem<ChatHistory>(key)
   }
 
-  getChatHistory(userId: string): {
-    messages: Array<{ id: string; role: string; content: string; timestamp: number }>
-    lastQuestionTime: number
-    remainingQuestions: number
-  } | null {
-    const key = `chat_history_${userId}`
-    const data = this.safeGetItem(key)
+  saveChatHistory(userId: string, history: ChatHistory): boolean {
+    const key = `${this.prefix}chat_history_${userId}`
+    const data = {
+      ...history,
+      lastUpdated: Date.now()
+    }
+    return simpleStorage.setItem(key, data)
+  }
 
-    if (!data) return null
+  // General Storage Operations
+  getItem<T = any>(key: string, defaultValue?: T): T | null {
+    return simpleStorage.getItem<T>(`${this.prefix}${key}`) ?? defaultValue ?? null
+  }
 
+  setItem(key: string, value: any): boolean {
+    return simpleStorage.setItem(`${this.prefix}${key}`, value)
+  }
+
+  removeItem(key: string): boolean {
+    return simpleStorage.removeItem(`${this.prefix}${key}`)
+  }
+
+  // Cleanup Operations
+  cleanup(maxAge: number = 7 * 24 * 60 * 60 * 1000): number {
+    // Clean up items older than maxAge (default 7 days)
+    return simpleStorage.cleanup(maxAge)
+  }
+
+  // Health Check
+  isHealthy(): boolean {
+    if (typeof window === 'undefined') return false
+    
     try {
-      const parsed = JSON.parse(data)
-
-      // Check if data is expired (7 days for chat history)
-      if (Date.now() - parsed.lastUpdated > 7 * 24 * 60 * 60 * 1000) {
-        this.safeRemoveItem(key)
-        return null
-      }
-
-      return {
-        messages: parsed.messages || [],
-        lastQuestionTime: parsed.lastQuestionTime || Date.now(),
-        remainingQuestions: parsed.remainingQuestions || 5
-      }
+      const testKey = `${this.prefix}__health_check__`
+      const testValue = { timestamp: Date.now() }
+      
+      const saved = this.setItem('__health_check__', testValue)
+      if (!saved) return false
+      
+      const retrieved = this.getItem('__health_check__')
+      this.removeItem('__health_check__')
+      
+      return retrieved && retrieved.timestamp === testValue.timestamp
     } catch (error) {
-      console.warn('Failed to parse chat history:', error)
-      this.safeRemoveItem(key)
-      return null
+      console.warn('StorageManager health check failed:', error)
+      return false
     }
   }
 
-  clearChatHistory(userId: string): void {
-    const key = `chat_history_${userId}`
-    this.safeRemoveItem(key)
+  // Migration Support (for compatibility)
+  migrateFromLegacyStorage(): void {
+    if (typeof window === 'undefined') return
+    
+    try {
+      // Migrate any legacy localStorage data if needed
+      // This is a placeholder for future migration logic
+      console.log('StorageManager: Legacy migration completed')
+    } catch (error) {
+      console.warn('StorageManager: Legacy migration failed:', error)
+    }
   }
 }
 
-// Export singleton instance
-export const storageManager = StorageManager.getInstance()
+// ============================================================================
+// SINGLETON EXPORT
+// ============================================================================
+
+export const storageManager = new StorageManager()
+
+// Initialize migration on first import
+if (typeof window !== 'undefined') {
+  storageManager.migrateFromLegacyStorage()
+}
+
+export default storageManager

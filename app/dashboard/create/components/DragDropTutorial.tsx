@@ -129,6 +129,9 @@ export function DragDropTutorial() {
   ]
 
   useEffect(() => {
+    // Skip localStorage access on server-side
+    if (typeof window === 'undefined') return
+
     // Check if tutorial has been completed before
     const tutorialCompleted = localStorage.getItem(STORAGE_KEY) === "true"
 
@@ -215,7 +218,15 @@ export function DragDropTutorial() {
 
   const completeTutorial = () => {
     setIsCompleted(true)
-    localStorage.setItem(STORAGE_KEY, "true")
+    
+    // Only save to localStorage if available (client-side)
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(STORAGE_KEY, "true")
+      } catch (error) {
+        console.warn('Failed to save tutorial completion:', error)
+      }
+    }
 
     // Show completion animation then hide
     setTimeout(() => {

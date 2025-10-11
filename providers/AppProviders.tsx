@@ -8,7 +8,8 @@ import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/modules/auth'
 import { SubscriptionProvider } from '@/modules/subscription'
 import { AnimationProvider } from './animation-provider'
-import { StorageMigrator } from '@/utils/storage-migrator'
+import { ClientGuestProvider } from '@/components/guest/ClientGuestProvider'
+import { storage, migrateStorageData, performStorageCleanup, validateStorageMigration } from '@/lib/storage'
 
 interface AppProvidersProps {
   children: ReactNode
@@ -27,16 +28,40 @@ interface AppProvidersProps {
  * 7️⃣ Toaster               → Notifications
  */
 export function AppProviders({ children, session }: AppProvidersProps) {
+  // Initialize unified storage system
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Run storage migration
+    const migrationResults = migrateStorageData();
+    if (migrationResults.errors.length > 0) {
+      console.warn('Storage migration errors:', migrationResults.errors);
+    }
+
+    // Run storage cleanup
+    const cleanupResults = performStorageCleanup();
+    if (cleanupResults.errors.length > 0) {
+      console.warn('Storage cleanup errors:', cleanupResults.errors);
+    }
+
+    // Validate migration
+    const validationResults = validateStorageMigration();
+    if (!validationResults.valid) {
+      console.warn('Storage validation issues:', validationResults.issues);
+      console.log('Storage recommendations:', validationResults.recommendations);
+    }
+  }, []);
+
   // Stable QueryClient across renders
-const [queryClient] = useState(
-  () =>
-    new QueryClient({
-      defaultOptions: {
-        queries: {
-          // Prevent React Query from retrying on AbortError
-          retry: (failureCount, error: any) => {
-            if (error?.name === "AbortError") return false
-            return failureCount < 2
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            // Prevent React Query from retrying on AbortError
+            retry: (failureCount, error: any) => {
+              if (error?.name === "AbortError") return false
+              return failureCount < 2
           },
           throwOnError: (error: any) => {
             // Only throw real errors, not aborts
@@ -63,7 +88,12 @@ const [queryClient] = useState(
 
   // Migrate storage only once at startup
   useEffect(() => {
-    StorageMigrator.migrateAllData()
+    // Initialize the unified storage system
+    import('@/lib/storage/startup-service').then(({ initializeStorageSystem }) => {
+      initializeStorageSystem().catch(error => {
+        console.error('Storage system initialization failed:', error)
+      })
+    })
   }, [])
 
   // Handle unhandled promise rejections (especially AbortErrors)
@@ -113,8 +143,10 @@ const [queryClient] = useState(
           <SubscriptionProvider>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
               <AnimationProvider>
-                {children}
-                <Toaster />
+                <ClientGuestProvider>
+                  {children}
+                  <Toaster />
+                </ClientGuestProvider>
               </AnimationProvider>
             </ThemeProvider>
           </SubscriptionProvider>

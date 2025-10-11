@@ -198,54 +198,5 @@ export const useMobile = useResponsive
 // STORAGE HOOKS
 // ============================================================================
 
-/**
- * Hook for persistent state with localStorage
- * @param key The storage key
- * @param initialValue The initial value
- * @param options Storage options
- * @returns State and setter
- */
-export function usePersistentState<T>(
-  key: string,
-  initialValue: T,
-  options: {
-    serialize?: (value: T) => string
-    deserialize?: (value: string) => T
-    storage?: Storage
-  } = {},
-): [T, (value: T | ((prev: T) => T)) => void] {
-  const {
-    serialize = JSON.stringify,
-    deserialize = JSON.parse,
-    storage = typeof window !== "undefined" ? localStorage : undefined
-  } = options
-
-  const [state, setState] = useState<T>(() => {
-    if (!storage) return initialValue
-
-    try {
-      const item = storage.getItem(key)
-      return item ? deserialize(item) : initialValue
-    } catch {
-      return initialValue
-    }
-  })
-
-  const setValue = useCallback((value: T | ((prev: T) => T)) => {
-    setState(prevState => {
-      const newValue = typeof value === 'function' ? (value as (prev: T) => T)(prevState) : value
-      
-      if (storage) {
-        try {
-          storage.setItem(key, serialize(newValue))
-        } catch (error) {
-          console.warn(`Failed to save to storage:`, error)
-        }
-      }
-      
-      return newValue
-    })
-  }, [key, serialize, storage])
-
-  return [state, setValue]
-}
+// Re-export from unified storage system
+export { usePersistentState } from '@/lib/storage'

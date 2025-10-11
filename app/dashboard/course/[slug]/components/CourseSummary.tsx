@@ -218,6 +218,7 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
               customMessage="Sign in to view AI-generated summaries"
               showBenefits={true}
               className="max-w-2xl mx-auto"
+              callbackUrl={typeof window !== 'undefined' ? window.location.href : undefined}
             />
           </CardContent>
         </Card>

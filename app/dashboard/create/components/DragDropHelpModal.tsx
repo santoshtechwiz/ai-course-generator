@@ -23,6 +23,9 @@ export function DragDropHelpModal() {
 
   // Check if the modal has been dismissed before
   useEffect(() => {
+    // Skip localStorage access on server-side
+    if (typeof window === 'undefined') return
+
     const dismissed = localStorage.getItem(STORAGE_KEY) === "true"
     if (!dismissed) {
       // Show modal after a short delay to ensure page is fully loaded
@@ -35,6 +38,9 @@ export function DragDropHelpModal() {
 
   // Add interaction listener
   useEffect(() => {
+    // Skip interaction handling on server-side
+    if (typeof window === 'undefined') return
+
     if (!hasInteracted) {
       const handleInteraction = () => {
         setHasInteracted(true)
@@ -52,8 +58,12 @@ export function DragDropHelpModal() {
 
   const handleClose = () => {
     setOpen(false)
-    if (dontShowAgain) {
-      localStorage.setItem(STORAGE_KEY, "true")
+    if (dontShowAgain && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(STORAGE_KEY, "true")
+      } catch (error) {
+        console.warn('Failed to save modal preference:', error)
+      }
     }
   }
 

@@ -121,6 +121,7 @@ export function FeatureGate({
             context="feature"
             feature={feature}
             showBenefits={true}
+            callbackUrl={typeof window !== 'undefined' ? window.location.href : undefined}
           />
         </CardContent>
       </Card>

@@ -10,11 +10,21 @@ import type { Components } from "react-markdown"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
+interface ChatAction {
+  type: string
+  label: string
+  url: string
+  disabled?: boolean
+  disabledReason?: string
+  metadata?: any
+}
+
 interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
   timestamp: number
+  actions?: ChatAction[]
 }
 
 interface MessageBubbleProps {
@@ -98,6 +108,32 @@ const MessageBubble = memo(({ message, index, onCopy, copiedMessageId }: Message
                 <Copy className="h-3 w-3" />
               )}
             </Button>
+          )}
+          
+          {/* Render action buttons */}
+          {message.role === "assistant" && message.actions && message.actions.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2 ml-1">
+              {message.actions.map((action, idx) => (
+                <Button
+                  key={idx}
+                  variant={action.type === 'upgrade_plan' ? 'default' : 'outline'}
+                  size="sm"
+                  disabled={action.disabled}
+                  onClick={() => {
+                    if (!action.disabled) {
+                      window.location.href = action.url
+                    }
+                  }}
+                  className={cn(
+                    "h-8 text-xs",
+                    action.disabled && "opacity-60 cursor-not-allowed"
+                  )}
+                  title={action.disabledReason}
+                >
+                  {action.label}
+                </Button>
+              ))}
+            </div>
           )}
         </div>
       </div>

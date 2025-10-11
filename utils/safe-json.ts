@@ -1,7 +1,11 @@
 /**
  * Safe JSON Parser Utility
  * Use this wrapper for all JSON.parse() calls to prevent crashes
+ * 
+ * @deprecated Use storage utilities from @/lib/storage instead for persistent data
  */
+
+import { storage } from '@/lib/storage'
 
 export interface SafeParseResult<T> {
   success: boolean

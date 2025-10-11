@@ -18,7 +18,7 @@ import { storageManager } from "@/utils/storage-manager"
 import { useProgressEvents } from "@/utils/progress-events"
 import { selectQuizProgressFromEvents, selectCurrentQuizAnswers } from "@/store/slices/progress-events-slice"
 import { useAppSelector } from "@/store/hooks"
-import { QuizProgress } from "@/utils/storage-manager"
+import type { QuizProgress } from "@/utils/storage-manager"
 
 import type { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
 import type { AccessLevels } from "./types"
@@ -186,11 +186,12 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
         const progress: QuizProgress = {
           courseId: String(course.id),
           chapterId: effectiveChapterId,
-          currentQuestionIndex: data.currentQuestionIndex || quizState.currentQuestionIndex,
+          progress: data.currentQuestionIndex || quizState.currentQuestionIndex,
           answers: { ...quizState.quizProgress.answers, ...data.answers },
+          completed: data.isCompleted || false,
+          score: data.score,
           timeSpent: data.timeSpent || 0,
-          lastUpdated: Date.now(),
-          isCompleted: data.isCompleted || false
+          lastUpdated: Date.now()
         }
         storageManager.saveQuizProgress(progress)
       } catch (e) {
@@ -326,19 +327,21 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
 
       // Update progress with the new queue system
       const accuracy = (newScore / effectiveQuestions.length) * 100
-      dispatchQuizCompleted(userId, effectiveChapterId, course.id, newScore, effectiveQuestions.length, Date.now(), {
-        ...Object.entries(quizState.answers).map(([questionId, answer]) => ({
-          questionId,
-          isCorrect: answer?.trim() === effectiveQuestions.find(q => q.id === questionId)?.answer?.trim(),
-          timeSpent: 0, // TODO: Add time tracking
-        })),
-        chapterId: chapter?.id || 0,
-        score: newScore,
-        accuracy,
-        timeSpent: 0, // You might want to track actual time spent
-        completed: true,
-        passed: newScore >= Math.ceil(effectiveQuestions.length * 0.7) // 70% passing score
-      })
+      const answersArray = Object.entries(quizState.answers).map(([questionId, answer]) => ({
+        questionId,
+        isCorrect: answer?.trim() === effectiveQuestions.find(q => q.id === questionId)?.answer?.trim(),
+        timeSpent: 0, // TODO: Add time tracking
+      }))
+      
+      dispatchQuizCompleted(
+        userId, 
+        effectiveChapterId, 
+        newScore, 
+        effectiveQuestions.length, 
+        accuracy, 
+        0, // timeSpent - TODO: track actual time
+        answersArray
+      )
 
       // Dispatch quiz completed event
       if (userId && effectiveChapterId) {

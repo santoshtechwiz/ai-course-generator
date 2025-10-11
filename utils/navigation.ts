@@ -1,6 +1,10 @@
 /**
  * Navigation utility functions for quiz paths
+ * Use      const results = storage.getItem(`quiz_results_${currentSlugOrId}`);
+      if (results) {ified storage system for state persistence
  */
+
+import { storage } from '@/lib/storage';
 
 /**
  * Ensures slug is used in URLs instead of numeric IDs
@@ -38,35 +42,34 @@ export const redirectFromNumericId = async (
   if (typeof window !== 'undefined') {
     try {
       // Check for any pending quiz with a different slug
-      const pendingQuizStr = sessionStorage.getItem('pendingQuiz');
-      if (pendingQuizStr) {
+      const pendingQuiz = storage.getItem('pendingQuiz')
+      if (pendingQuiz) {
         try {
-          const pendingQuiz = JSON.parse(pendingQuizStr);
           if (pendingQuiz.slug && pendingQuiz.slug !== currentSlugOrId) {
             if (process.env.NODE_ENV !== 'production') {
-              console.log(`Redirecting from numeric ID ${currentSlugOrId} to proper slug ${pendingQuiz.slug}`);
+              console.log(`Redirecting from numeric ID ${currentSlugOrId} to proper slug ${pendingQuiz.slug}`)
             }
-            const path = getNormalizedQuizPath(quizType, pendingQuiz.slug, segment);
-            router.replace(path);
-            return true;
+            const path = getNormalizedQuizPath(quizType, pendingQuiz.slug, segment)
+            router.replace(path)
+            return true
           }
         } catch (parseError) {
-          console.error("Failed to parse pendingQuiz:", parseError);
+          console.error("Failed to parse pendingQuiz:", parseError)
         }
       }
       
       // Look for quiz results with a slug property
-      const storedResults = sessionStorage.getItem(`quiz_results_${currentSlugOrId}`);
+      const storedResults = sessionStorage.getItem(`quiz_results_${currentSlugOrId}`)
       if (storedResults) {
         try {
-          const resultsData = JSON.parse(storedResults);
+          const resultsData = JSON.parse(storedResults)
           if (resultsData.slug && resultsData.slug !== currentSlugOrId && !/^\d+$/.test(resultsData.slug)) {
             if (process.env.NODE_ENV !== 'production') {
-              console.log(`Redirecting from numeric ID ${currentSlugOrId} to slug from results ${resultsData.slug}`);
+              console.log(`Redirecting from numeric ID ${currentSlugOrId} to slug from results ${resultsData.slug}`)
             }
-            const path = getNormalizedQuizPath(quizType, resultsData.slug, segment);
-            router.replace(path);
-            return true;
+            const path = getNormalizedQuizPath(quizType, resultsData.slug, segment)
+            router.replace(path)
+            return true
           }
         } catch (e) {
           // Ignore parsing errors
@@ -74,13 +77,13 @@ export const redirectFromNumericId = async (
       }
     } catch (e) {
       if (process.env.NODE_ENV !== 'production') {
-        console.error("Error accessing sessionStorage:", e);
+        console.error("Error accessing sessionStorage:", e)
       }
-      return false;
+      return false
     }
   }
   
-  return false;
+  return false
 };
 
 /**

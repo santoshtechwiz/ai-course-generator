@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { transactionManager } from '@/lib/storage/transaction-manager'
 
 interface VideoState {
   // Course-level state
@@ -127,6 +128,21 @@ export const useVideoState = create<VideoState>()(
               }
             }
           } : {};
+
+          // Use transaction manager for consistent storage (fire and forget)
+          if (courseId) {
+            transactionManager.saveVideoProgress({
+              courseId,
+              chapterId: 'current', // Should be passed from caller
+              videoId,
+              progress: played * 100,
+              playedSeconds,
+              duration,
+              userId: 'current', // Should be passed from auth context
+            }).catch(error => {
+              console.warn('[VideoState] Transaction save failed:', error);
+            });
+          }
             
           return {
             ...courseUpdate,

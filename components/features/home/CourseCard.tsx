@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Star, Heart, Bookmark, Clock, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Progress } from "@/components/ui/progress"
-import CoursePlaceholder from '@/components/icons/CoursePlaceholder'
+import CoursePlaceholder from "@/components/icons/CoursePlaceholder"
 
 export interface CourseCardProps {
   title: string
@@ -35,10 +35,7 @@ export interface CourseCardProps {
   isTrending?: boolean
   completionRate?: number
   enrolledCount?: number
-  ratingLoading?: boolean
-  tags?: string[]
   instructor?: string
-  updatedAt?: string
   isEnrolled?: boolean
   progressPercentage?: number
   completedChapters?: number
@@ -46,6 +43,7 @@ export interface CourseCardProps {
   lastAccessedAt?: string
   currentChapterTitle?: string
   timeSpent?: number
+  tags?: string[]
 }
 
 const DIFFICULTY_CONFIG = {
@@ -66,7 +64,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
     quizCount,
     viewCount,
     category = "Course",
-  duration = "4-6 weeks",
+    duration = "4-6 weeks",
     className,
     loading = false,
     image,
@@ -146,7 +144,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
       onClick={handleCardClick}
       className={cn(
         "group relative overflow-hidden rounded-xl bg-card shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border border-border/50",
-        "hover:-translate-y-1 sm:hover:-translate-y-2 focus-visible:ring-2 focus-visible:ring-primary/60",
+        "hover:shadow-xl focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         isNavigating && "opacity-75 scale-95",
         variant === "list" && "flex flex-col sm:flex-row sm:h-32",
         variant === "grid" && "flex flex-col",
@@ -162,6 +160,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
           handleCardClick(e as any)
         }
       }}
+      aria-label={`${title} course card`}
     >
       <div
         className={cn(
@@ -170,12 +169,11 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
           variant === "grid" && "w-full h-32",
         )}
       >
-  {/* Course image or generic placeholder */}
         {image ? (
           <div className="w-full h-full relative">
             <Image
-              src={image}
-              alt={title}
+              src={image || "/placeholder.svg"}
+              alt={`${title} course thumbnail`}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-500"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -190,34 +188,45 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
           </div>
         )}
 
-        {/* Hover overlay */}
         <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors duration-500" />
 
-        {/* Action buttons */}
-        <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div
+          className={cn(
+            "absolute top-2 right-2 flex gap-1.5 transition-opacity duration-300",
+            "opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
+          )}
+        >
           <Button
             variant="secondary"
             size="sm"
-            className="h-8 w-8 p-0 bg-card/90 hover:bg-card shadow-sm"
+            className="h-8 w-8 p-0 bg-card/90 hover:bg-card shadow-sm focus:ring-2 focus:ring-primary"
             onClick={handleFavoriteClick}
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart className={cn("h-3.5 w-3.5", isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground")} />
           </Button>
           <Button
             variant="secondary"
             size="sm"
-            className="h-8 w-8 p-0 bg-card/90 hover:bg-card shadow-sm"
+            className="h-8 w-8 p-0 bg-card/90 hover:bg-card shadow-sm focus:ring-2 focus:ring-primary"
             onClick={handleBookmarkClick}
+            aria-label={isBookmarked ? "Remove bookmark" : "Bookmark course"}
           >
-            <Bookmark className={cn("h-3.5 w-3.5", isBookmarked ? "fill-primary text-primary" : "text-muted-foreground")} />
+            <Bookmark
+              className={cn("h-3.5 w-3.5", isBookmarked ? "fill-primary text-primary" : "text-muted-foreground")}
+            />
           </Button>
         </div>
 
-        {/* Status badges */}
         {(isPopular || isTrending) && (
           <div className="absolute top-2 left-2">
             {isPopular && (
-              <Badge className="bg-accent text-accent-foreground text-[10px] font-medium border-0 px-2 py-0.5">🔥</Badge>
+              <Badge
+                className="bg-accent text-accent-foreground text-[10px] font-medium border-0 px-2 py-0.5"
+                aria-label="Popular course"
+              >
+                🔥
+              </Badge>
             )}
           </div>
         )}
@@ -230,7 +239,6 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
           variant === "grid" && "p-3 flex-1 space-y-2.5",
         )}
       >
-        {/* Header with category and difficulty */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Badge
@@ -250,7 +258,6 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
           </div>
         </div>
 
-        {/* Title and instructor */}
         <div className="space-y-0.5">
           <h3
             className={cn(
@@ -263,61 +270,73 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
           <p className="text-[10px] text-muted-foreground font-medium">{instructor}</p>
         </div>
 
-        {/* Description - show on both grid and list so home cards display content */}
-        {description && (
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-            {description}
-          </p>
-        )}
+        {description && <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{description}</p>}
 
-        {/* Compact inline stats */}
         <div className="flex items-center justify-between text-xs border-y border-border/30 py-2">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
-              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+              <Star className="h-3 w-3 fill-amber-400 text-amber-400" aria-hidden="true" />
               <span className="font-semibold text-foreground">{rating.toFixed(1)}</span>
+              <span className="sr-only">rating out of 5</span>
             </div>
             <div className="flex items-center gap-1 text-muted-foreground">
-              <Users className="h-3 w-3" />
-              <span>{enrolledCount.toLocaleString()}</span>
+              <Users className="h-3 w-3" aria-hidden="true" />
+              <span className="font-medium text-foreground">{enrolledCount.toLocaleString()}</span>
+              <span className="sr-only">enrolled students</span>
             </div>
             <div className="flex items-center gap-1 text-muted-foreground">
-              <Clock className="h-3 w-3" />
-              <span>{duration}</span>
+              <Clock className="h-3 w-3" aria-hidden="true" />
+              <span className="font-medium text-foreground">{duration}</span>
             </div>
           </div>
         </div>
 
-        {/* Compact course stats */}
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
-            <span className="font-medium text-foreground">{typeof unitCount === 'number' && unitCount > 0 ? unitCount : '0'}</span>
+            <span className="font-medium text-foreground">
+              {typeof unitCount === "number" && unitCount > 0 ? unitCount : "0"}
+            </span>
             <span>chapters</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="font-medium text-foreground">{typeof lessonCount === 'number' && lessonCount > 0 ? lessonCount : '0'}</span>
+            <span className="font-medium text-foreground">
+              {typeof lessonCount === "number" && lessonCount > 0 ? lessonCount : "0"}
+            </span>
             <span>lessons</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="font-medium text-foreground">{typeof quizCount === 'number' && quizCount > 0 ? quizCount : '0'}</span>
+            <span className="font-medium text-foreground">
+              {typeof quizCount === "number" && quizCount > 0 ? quizCount : "0"}
+            </span>
             <span>quizzes</span>
           </div>
         </div>
 
-        {/* Progress for enrolled courses */}
         {isEnrolled && (
-          <div className="bg-primary/5 border border-primary/10 rounded-lg p-2">
+          <div
+            className="bg-primary/5 border border-primary/10 rounded-lg p-2"
+            role="region"
+            aria-label="Course progress"
+          >
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-medium text-primary">{progressPercentage > 0 ? `${progressPercentage}%` : 'Not started'}</span>
+              <span className="text-xs font-medium text-primary">
+                {progressPercentage > 0 ? `${progressPercentage}%` : "Not started"}
+              </span>
               <span className="text-[10px] text-muted-foreground">
-                {typeof totalChapters === 'number' && totalChapters > 0 ? `${completedChapters}/${totalChapters}` : 'N/A'}
+                {typeof totalChapters === "number" && totalChapters > 0
+                  ? `${completedChapters}/${totalChapters}`
+                  : "N/A"}
               </span>
             </div>
-            <Progress value={progressPercentage} className="h-1.5" />
+            <Progress value={progressPercentage} className="h-2" aria-label={`${progressPercentage}% complete`} />
+            {lastAccessedAt && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Last accessed {new Date(lastAccessedAt).toLocaleDateString()}
+              </p>
+            )}
           </div>
         )}
 
-        {/* Footer with badges */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             {price === undefined && (

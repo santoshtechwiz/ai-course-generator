@@ -419,21 +419,25 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
     if (notifications.length > 0 && !isLoading && !courseDataLoading && !quizzesLoading) {
       const highPriorityNotifications = notifications.filter(n => n.priority === 'high')
       
-      if (highPriorityNotifications.length > 0) {
+      if (highPriorityNotifications.length > 0 && typeof window !== 'undefined') {
         // Check if we should show a toast (don't spam the user)
-        const lastToastTime = localStorage.getItem('last_course_notification_toast')
-        const now = Date.now()
-        const oneHourAgo = now - (60 * 60 * 1000)
-        
-        if (!lastToastTime || parseInt(lastToastTime) < oneHourAgo) {
-          const firstNotification = highPriorityNotifications[0]
+        try {
+          const lastToastTime = localStorage.getItem('last_course_notification_toast')
+          const now = Date.now()
+          const oneHourAgo = now - (60 * 60 * 1000)
           
-          toast({
-            title: "Continue Learning",
-            description: firstNotification.description,
-          })
-          
-          localStorage.setItem('last_course_notification_toast', now.toString())
+          if (!lastToastTime || parseInt(lastToastTime) < oneHourAgo) {
+            const firstNotification = highPriorityNotifications[0]
+            
+            toast({
+              title: "Continue Learning",
+              description: firstNotification.description,
+            })
+            
+            localStorage.setItem('last_course_notification_toast', now.toString())
+          }
+        } catch (error) {
+          console.warn('Failed to handle notification toast:', error)
         }
       }
     }

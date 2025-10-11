@@ -30,7 +30,7 @@ export default function CreateContentPromo({ context = "quiz", topic, className 
   const [title, setTitle] = React.useState<string>(topic || "")
 
   React.useEffect(() => {
-    if (!storageKey) return
+    if (!storageKey || typeof window === 'undefined') return
     try {
       const seen = localStorage.getItem(`promo_create_${context}_${storageKey}`)
       if (seen === "1" && !force) setHidden(true)
@@ -43,7 +43,7 @@ export default function CreateContentPromo({ context = "quiz", topic, className 
 
   const handleDismiss = () => {
     setHidden(true)
-    if (storageKey) {
+    if (storageKey && typeof window !== 'undefined') {
       try { localStorage.setItem(`promo_create_${context}_${storageKey}`, "1") } catch {}
     }
     setOpen(false)

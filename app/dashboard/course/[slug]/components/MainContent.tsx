@@ -41,6 +41,11 @@ import VideoGenerationSection from "./VideoGenerationSection"
 import MobilePlaylistCount from "@/components/course/MobilePlaylistCount"
 import { setVideoProgress } from "@/store/slices/courseProgress-slice"
 
+// Guest system imports
+import { useGuestProgress } from "@/hooks/useGuestProgress"
+import { GuestProgressIndicator, ContextualSignInPrompt } from "@/components/guest"
+import { useSession } from "next-auth/react"
+
 // Import components
 import CertificateModal from "./CertificateModal"
 import PlaylistSidebar from "./PlaylistSidebar"
@@ -162,6 +167,25 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const { toast } = useToast()
   const dispatch = useAppDispatch()
   const { user } = useAuth()
+  const { status } = useSession()
+
+  // Guest system hooks
+  const {
+    isGuest,
+    markGuestChapterCompleted,
+    setGuestCurrentChapter,
+    getGuestCompletionStats,
+    trackGuestVideoWithCourse
+  } = useGuestProgress(course.id)
+
+  // Debug logging for guest system
+  console.log('MainContent Debug:', {
+    user: user ? 'authenticated' : 'null',
+    userId: user?.id,
+    status,
+    isGuest,
+    courseId: course.id
+  })
 
   // Use reducer for state management
   const [state, dispatch2] = useReducer(stateReducer, initialState)
@@ -243,22 +267,32 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     }
   }, [currentVideoId, getVideoBookmarks])
 
-  // Completed chapters tracking - get from Redux state directly
+  // Completed chapters tracking - support both authenticated and guest users
   const reduxProgress = useAppSelector((state) => selectCourseProgressById(state, course.id))
   const completedChapters = useMemo(() => {
-    // First check Redux state for immediate updates
-    if (reduxProgress?.videoProgress?.completedChapters) {
-      return reduxProgress.videoProgress.completedChapters.map(String)
+    if (user?.id) {
+      // Authenticated user - get from Redux state
+      // First check Redux state for immediate updates
+      if (reduxProgress?.videoProgress?.completedChapters) {
+        return reduxProgress.videoProgress.completedChapters.map(String)
+      }
+      
+      // Fallback to sync hook data
+      if (courseProgress?.videoProgress?.completedChapters) {
+        return courseProgress.videoProgress.completedChapters.map(String)
+      }
+      
+      return []
+    } else {
+      // Guest user - get from guest progress
+      const guestStats = getGuestCompletionStats();
+      if (guestStats?.completedChapters) {
+        // Return array of completed chapter IDs (as strings)
+        return Array.from({ length: guestStats.completedChapters }, (_, i) => String(i + 1))
+      }
+      return []
     }
-    
-    // Fallback to sync hook data
-    if (courseProgress?.videoProgress?.completedChapters) {
-      return courseProgress.videoProgress.completedChapters.map(String)
-    }
-    
-    // No legacy fallback needed
-    return []
-  }, [reduxProgress, courseProgress])
+  }, [user?.id, reduxProgress, courseProgress, getGuestCompletionStats])
 
   // Initialize mounted state and preferences
   useEffect(() => {
@@ -696,71 +730,80 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // (moved) progress tracking hook is now declared earlier
 
-  // Progress tracking using new event system - ONLY for authenticated users
+  // Progress tracking using new event system - handles both authenticated and guest users
   const handleVideoProgress = useCallback((progressState: { played: number, playedSeconds: number }) => {
     // Update local state for current video progress (always do this for UI)
     setCurrentVideoProgress(progressState.played)
 
-    // Only send progress updates if user is authenticated
-    if (!user?.id) {
-      // Skip progress tracking for unauthenticated users
-      return
-    }
-
     // Only send meaningful progress updates (skip very early progress)
     if (progressState.played > 0.05) { // Skip first 5% to reduce noise
       if (currentChapter?.id && currentVideoId) {
-        console.log(`[Authenticated] Video progress: ${progressState.played * 100}% for chapter ${currentChapter.id}`)
         
-        // Track continuous progress with enhanced system
-        const success = enqueueProgress(
-          user.id,
-          course.id,
-          currentChapter.id,
-          'chapter_progress',
-          progressState.played * 100,
-          progressState.playedSeconds,
-          {
-            videoId: currentVideoId,
-            totalDuration: videoDurations[currentVideoId] || 0,
-            timestamp: Date.now(),
-            eventSubtype: 'continuous_progress'
-          }
-        )
-        
-        if (success) {
-          console.log(`Progress update queued: ${Math.floor(progressState.played * 100)}% for chapter ${currentChapter.id}`)
-        }
-        
-        // Sync progress periodically (every 25% completion or major milestones)
-        const progressPercent = Math.floor(progressState.played * 100)
-        if (progressPercent % 25 === 0 && progressPercent > 0) {
-          // Track milestone progress with enhanced system
+        if (user?.id) {
+          // Authenticated user - track in database
+          console.log(`[Authenticated] Video progress: ${progressState.played * 100}% for chapter ${currentChapter.id}`)
+          
+          // Track continuous progress with enhanced system
           const success = enqueueProgress(
             user.id,
             course.id,
             currentChapter.id,
             'chapter_progress',
-            progressPercent,
-            Math.round(progressState.playedSeconds),
+            progressState.played * 100,
+            progressState.playedSeconds,
             {
               videoId: currentVideoId,
-              milestone: progressPercent,
               totalDuration: videoDurations[currentVideoId] || 0,
               timestamp: Date.now(),
-              eventSubtype: 'progress_milestone'
+              eventSubtype: 'continuous_progress'
             }
           )
           
           if (success) {
-            console.log(`Progress milestone ${progressPercent}% queued for chapter ${currentChapter.id}`)
-          } else {
-            console.error(`Failed to queue progress milestone ${progressPercent}%`)
+            console.log(`Progress update queued: ${Math.floor(progressState.played * 100)}% for chapter ${currentChapter.id}`)
           }
+          
+          // Sync progress periodically (every 25% completion or major milestones)
+          const progressPercent = Math.floor(progressState.played * 100)
+          if (progressPercent % 25 === 0 && progressPercent > 0) {
+            // Track milestone progress with enhanced system
+            const success = enqueueProgress(
+              user.id,
+              course.id,
+              currentChapter.id,
+              'chapter_progress',
+              progressPercent,
+              Math.round(progressState.playedSeconds),
+              {
+                videoId: currentVideoId,
+                milestone: progressPercent,
+                totalDuration: videoDurations[currentVideoId] || 0,
+                timestamp: Date.now(),
+                eventSubtype: 'progress_milestone'
+              }
+            )
+            
+            if (success) {
+              console.log(`Progress milestone ${progressPercent}% queued for chapter ${currentChapter.id}`)
+            } else {
+              console.error(`Failed to queue progress milestone ${progressPercent}%`)
+            }
+          }
+        } else {
+          // Guest user - track in local storage
+          console.log(`[Guest] Video progress: ${progressState.played * 100}% for chapter ${currentChapter.id}`)
+          
+          trackGuestVideoWithCourse(
+            currentVideoId,
+            progressState.played * 100,
+            progressState.playedSeconds,
+            videoDurations[currentVideoId] || 0,
+            course.id
+          )
         }
       }
     }
-  }, [user?.id, currentChapter?.id, course.id, currentVideoId, videoDurations, setCurrentVideoProgress, dispatch, enqueueProgress])
+  }, [user?.id, currentChapter?.id, course.id, currentVideoId, videoDurations, setCurrentVideoProgress, dispatch, enqueueProgress, trackGuestVideoWithCourse])
 
   const handleVideoEnded = useCallback(() => {
     console.log(`Video ended handler called - currentChapter: ${currentChapter?.id}, isCompleted: ${completedChapters.includes(String(currentChapter?.id))}`)
@@ -769,28 +812,30 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     if (currentChapter) {
       const chapterId = Number(currentChapter.id);
       const courseId = Number(course.id);
-      const isAlreadyCompleted = completedChapters.includes(String(currentChapter.id));
       
-      if (!isAlreadyCompleted) {
-        // Mark as completed in Redux state (local UI update)
-        console.log(`Marking chapter ${chapterId} as completed for course ${courseId}`);
-        dispatch(markChapterCompleted({ courseId, chapterId, userId: user?.id || '' }));
-      } else {
-        console.log(`Chapter ${chapterId} was already completed. Updating progress only.`);
-      }
-      
-      // Update video progress in Redux state
-      dispatch(setVideoProgress({
-        courseId: String(courseId),
-        chapterId: chapterId,
-        progress: 100,
-        playedSeconds: Math.round(currentVideoProgress * (videoDurations[currentVideoId || ''] || 0)),
-        completed: true,
-        userId: user?.id || ''
-      }));
-      
-      // Send completion to enhanced progress system - ONLY if authenticated
       if (user?.id) {
+        // Authenticated user - handle database completion
+        const isAlreadyCompleted = completedChapters.includes(String(currentChapter.id));
+        
+        if (!isAlreadyCompleted) {
+          // Mark as completed in Redux state (local UI update)
+          console.log(`[Authenticated] Marking chapter ${chapterId} as completed for course ${courseId}`);
+          dispatch(markChapterCompleted({ courseId, chapterId, userId: user.id }));
+        } else {
+          console.log(`[Authenticated] Chapter ${chapterId} was already completed. Updating progress only.`);
+        }
+        
+        // Update video progress in Redux state
+        dispatch(setVideoProgress({
+          courseId: String(courseId),
+          chapterId: chapterId,
+          progress: 100,
+          playedSeconds: Math.round(currentVideoProgress * (videoDurations[currentVideoId || ''] || 0)),
+          completed: true,
+          userId: user.id
+        }));
+        
+        // Send completion to enhanced progress system
         console.log(`[Authenticated] Chapter ${chapterId} completed for course ${courseId} - Recording in enhanced progress system`);
         
         // Always dispatch chapter completed event to ensure it's recorded
@@ -814,27 +859,33 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           console.log(`Chapter completion queued for chapter ${chapterId}`)
         } else {
           console.error('Failed to queue chapter completion')
-        }        // Handle autoplay if enabled
-        if (state.autoplayMode && hasNextVideo && nextVideoEntry) {
-          console.log(`Autoplay enabled. Advancing to next video in 1 second`);
-          setTimeout(() => {
-            handleNextVideo();
-          }, 1000); // Small delay before advancing
-        } else if (!state.autoplayMode) {
-          console.log('Autoplay disabled. Not advancing to next video automatically.');
-        } else if (!hasNextVideo) {
-          console.log('No next video available. Reached end of playlist.');
         }
       } else {
-        console.log('[Unauthenticated] Video ended - skipping chapter completion tracking (user not signed in)');
+        // Guest user - handle local storage completion
+        console.log(`[Guest] Marking chapter ${chapterId} as completed for course ${courseId}`);
         
-        // Still handle autoplay for unauthenticated users on free videos
-        if (state.autoplayMode && hasNextVideo && nextVideoEntry) {
-          console.log(`[Unauthenticated] Autoplay enabled. Advancing to next video in 1 second`);
-          setTimeout(() => {
-            handleNextVideo();
-          }, 1000);
-        }
+        markGuestChapterCompleted(chapterId);
+        
+        // Track guest video completion
+        trackGuestVideoWithCourse(
+          currentVideoId || '',
+          100,
+          Math.round(currentVideoProgress * (videoDurations[currentVideoId || ''] || 0)),
+          videoDurations[currentVideoId || ''] || 0,
+          course.id
+        );
+      }
+      
+      // Handle autoplay if enabled - for both authenticated and guest users
+      if (state.autoplayMode && hasNextVideo && nextVideoEntry) {
+        console.log(`Autoplay enabled. Advancing to next video in 1 second`);
+        setTimeout(() => {
+          handleNextVideo();
+        }, 1000); // Small delay before advancing
+      } else if (!state.autoplayMode) {
+        console.log('Autoplay disabled. Not advancing to next video automatically.');
+      } else if (!hasNextVideo) {
+        console.log('No next video available. Reached end of playlist.');
       }
     }
 
@@ -857,8 +908,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     hasNextVideo,
     nextVideoEntry,
     handleNextVideo,
-    dispatch,
-    enqueueProgress
+    enqueueProgress,
+    markGuestChapterCompleted,
+    trackGuestVideoWithCourse
   ])
 
   // Initialize video selection
@@ -951,6 +1003,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Main content
   return (
     <div className="min-h-screen bg-background relative">
+      {/* Debug indicator for testing - REMOVE IN PRODUCTION */}
+      <div className="fixed top-0 left-0 z-50 bg-red-500 text-white p-2 text-xs">
+        Debug: {user ? `User: ${user.id}` : 'Guest User'} | Status: {status} | IsGuest: {isGuest ? 'Yes' : 'No'}
+      </div>
+      
       {authPromptOverlay}
       <motion.header
         initial={{ y: -100, opacity: 0 }}
@@ -1108,8 +1165,36 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           )}>  
             {/* Video and content area */}
             <div className="space-y-0.5 min-w-0">
+              {/* Guest Progress Indicator for unauthenticated users */}
+              {(
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-2 bg-yellow-200 border-2 border-yellow-500 p-4 rounded"
+                >
+                  <div className="text-black font-bold mb-2">GUEST UI TEST (FORCED VISIBLE)</div>
+                  <GuestProgressIndicator 
+                    courseId={course.id}
+                  />
+                </motion.div>
+              )}
+              
+              {/* Original guest condition */}
+              {!user && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-2 bg-yellow-200 border-2 border-yellow-500 p-4 rounded"
+                >
+                  <div className="text-black font-bold mb-2">GUEST UI TEST (!user condition)</div>
+                  <GuestProgressIndicator 
+                    courseId={course.id}
+                  />
+                </motion.div>
+              )}
+              
               {/* Progress Stats Bar - Above Video */}
-              {!state.isTheaterMode && currentChapter && (
+              {!state.isTheaterMode && currentChapter && user && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1236,6 +1321,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   </Card>
                 )}
               </motion.div>
+
+              {/* Contextual Sign-In Prompt for Guest Users */}
+              {!user && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="my-4 bg-blue-200 border-2 border-blue-500 p-4 rounded"
+                >
+                  <div className="text-black font-bold mb-2">SIGN-IN PROMPT TEST</div>
+                  <ContextualSignInPrompt 
+                    action="continue_course"
+                    courseId={String(course.id)}
+                  />
+                </motion.div>
+              )}
 
               {/* Course details tabs */}
               {!state.isTheaterMode && (

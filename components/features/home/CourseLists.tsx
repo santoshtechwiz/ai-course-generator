@@ -1,7 +1,9 @@
+"use client"
+
 import React, { useState, useEffect, useCallback, useRef } from "react"
-import { motion } from "framer-motion"
+import { motion, useReducedMotion } from "framer-motion"
 import { useInfiniteQuery, type UseInfiniteQueryResult, type InfiniteData } from "@tanstack/react-query"
-import { BookOpen, LayoutGrid, List, Search, X, Play } from "lucide-react"
+import { BookOpen, LayoutGrid, List, Search, X, Play, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDebounce } from "@/lib/utils/hooks"
@@ -10,6 +12,8 @@ import { CourseCard } from "./CourseCard"
 import { useCoursesWithProgress } from "@/hooks/use-course-progress"
 import { getImageWithFallback } from "@/utils/image-utils"
 import type { CategoryId } from "@/config/categories"
+import { Badge } from "@/components/ui/badge"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 
 // Types
 interface Course {
@@ -49,6 +53,8 @@ interface CoursesClientProps {
   selectedCategory: CategoryId | null
   ratingFilter?: number
   sortBy?: "popular" | "rating" | "newest" | "price-low" | "price-high"
+  showMobileFilters?: boolean
+  onCloseMobileFilters?: () => void
 }
 
 const ITEMS_PER_PAGE = 8 // Reduced from 12 for faster initial load
@@ -59,6 +65,8 @@ export default function CoursesClient({
   searchQuery,
   selectedCategory,
   sortBy = "popular",
+  showMobileFilters = false,
+  onCloseMobileFilters,
 }: CoursesClientProps) {
   // Local filter state (kept client-side to drive UI and query)
   const [categoryFilter, setCategoryFilter] = useState<CategoryId | null>(selectedCategory || null)
@@ -81,12 +89,15 @@ export default function CoursesClient({
 
   // Helper: compute unit count and lesson count from nested structure if missing
   const computeUnitAndLessonCounts = (course: any) => {
-    const unitCount = typeof course.unitCount === 'number' && course.unitCount > 0
-      ? course.unitCount
-      : (Array.isArray(course.courseUnits) ? course.courseUnits.length : 0)
+    const unitCount =
+      typeof course.unitCount === "number" && course.unitCount > 0
+        ? course.unitCount
+        : Array.isArray(course.courseUnits)
+          ? course.courseUnits.length
+          : 0
 
     let lessonCount = 0
-    if (typeof course.lessonCount === 'number' && course.lessonCount > 0) {
+    if (typeof course.lessonCount === "number" && course.lessonCount > 0) {
       lessonCount = course.lessonCount
     } else if (Array.isArray(course.courseUnits)) {
       for (const unit of course.courseUnits) {
@@ -100,8 +111,19 @@ export default function CoursesClient({
   }
 
   // State
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid") // Default to grid like Udemy
+  const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("courseViewMode") as "grid" | "list") || "grid"
+    }
+    return "grid"
+  })
   const [isThrottling, setIsThrottling] = useState(false)
+  const [filtersCollapsed, setFiltersCollapsed] = useState(false)
+  const shouldReduceMotion = useReducedMotion()
+
+  useEffect(() => {
+    localStorage.setItem("courseViewMode", viewMode)
+  }, [viewMode])
 
   // Hooks
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
@@ -183,7 +205,7 @@ export default function CoursesClient({
       shouldSearch ? effectiveSearchQuery : "",
       categoryFilter || "",
       levelFilter || "",
-    // instructorFilter removed
+      // instructorFilter removed
       ratingFilter || "",
       userId || "",
       sortFilter,
@@ -223,7 +245,11 @@ export default function CoursesClient({
 
   // Derive available filters from loaded courses for the sidebar selects
   const availableCategories = Array.from(
-    new Set(allCourses.map((c: any) => (c.category ? (typeof c.category === 'object' ? c.category.name : c.category) : null)).filter(Boolean)),
+    new Set(
+      allCourses
+        .map((c: any) => (c.category ? (typeof c.category === "object" ? c.category.name : c.category) : null))
+        .filter(Boolean),
+    ),
   ) as string[]
   // availableInstructors removed - instructor filter intentionally omitted
 
@@ -239,7 +265,7 @@ export default function CoursesClient({
   const coursesData: InfiniteData<CoursesResponse> | undefined = data
   const isInitialLoading = status === "pending" && !coursesData?.pages?.length
   const hasNoData = !isInitialLoading && (!coursesData?.pages?.length || !coursesData.pages[0]?.courses?.length)
-  const hasFilters = Boolean(searchQuery || selectedCategory)
+  const hasFilters = Boolean(searchQuery || selectedCategory || categoryFilter || levelFilter) // Updated to include local filters
 
   // Prevent UI freezing by showing loading state only when necessary
   const showLoading = isInitialLoading || (isFetching && !coursesData?.pages?.length)
@@ -276,7 +302,6 @@ export default function CoursesClient({
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, isThrottling])
 
-  // Loading state - Optimized to prevent UI freezing
   if (showLoading) {
     return (
       <div className="w-full space-y-6">
@@ -296,7 +321,7 @@ export default function CoursesClient({
         </div>
 
         <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-          {[...Array(12)].map((_, i) => (
+          {[...Array(ITEMS_PER_PAGE)].map((_, i) => (
             <CourseCard
               key={i}
               title=""
@@ -344,7 +369,6 @@ export default function CoursesClient({
     )
   }
 
-  // Empty state with reset filter CTA
   if (hasNoData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
@@ -354,331 +378,422 @@ export default function CoursesClient({
         <h3 className="text-xl font-semibold mb-2">
           {hasFilters ? "No courses match your filters" : "No courses available yet"}
         </h3>
-        <p className="text-muted-foreground max-w-md mb-6">
+        <p className="text-muted-foreground max-w-md mb-6 text-pretty leading-relaxed">
           {hasFilters
             ? "Try adjusting your search terms or removing some filters to see more results"
             : "Check back soon - new courses are added regularly"}
         </p>
         {hasFilters && (
-          <Button
-            variant="outline"
-            onClick={() => {
-              // Reset filters by navigating to clean URL
-              window.location.href = "/dashboard"
-            }}
-            className="flex items-center gap-2"
-          >
-            <X className="w-4 h-4" />
-            Clear all filters
-          </Button>
+          <div className="flex flex-col gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Reset filters by navigating to clean URL
+                window.location.href = "/dashboard"
+              }}
+              className="flex items-center gap-2"
+            >
+              <X className="w-4 h-4" />
+              Clear all filters
+            </Button>
+            <div className="mt-4">
+              <p className="text-sm text-muted-foreground mb-3">Try these popular categories:</p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {["JavaScript", "Python", "React", "Machine Learning"].map((cat) => (
+                  <Badge
+                    key={cat}
+                    variant="secondary"
+                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                    onClick={() => (window.location.href = `/dashboard?category=${cat}`)}
+                  >
+                    {cat}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     )
   }
 
-  // Main content
-  return (
-    <div className="w-full max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 space-y-6">
-      <div className="grid grid-cols-12 gap-6">
-        {/* Sidebar Filters */}
-        <aside className="col-span-12 lg:col-span-3 xl:col-span-3">
-          <div className="sticky top-20 space-y-6">
-            <div className="p-4 bg-card rounded-lg border">
-              <h4 className="text-sm font-semibold mb-3">Filters</h4>
-              <label className="block text-xs text-muted-foreground mb-1">Category</label>
-              <select
-                value={categoryFilter ?? ""}
-                onChange={(e) => setCategoryFilter(e.target.value ? (e.target.value as CategoryId) : null)}
-                className="w-full p-2 rounded-md border bg-background"
-              >
-                <option value="">All Categories</option>
-                {availableCategories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-
-              <label className="block text-xs text-muted-foreground mt-3 mb-1">Level</label>
-              <select
-                value={levelFilter ?? ""}
-                onChange={(e) => setLevelFilter(e.target.value || null)}
-                className="w-full p-2 rounded-md border bg-background"
-              >
-                <option value="">All Levels</option>
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced</option>
-              </select>
-
-              {/* Instructor filter removed */}
-            </div>
-
-            <div className="p-4 bg-card rounded-lg border">
-              <h4 className="text-sm font-semibold mb-3">Sort By</h4>
-              <div className="flex flex-col space-y-2">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="sort"
-                    checked={sortFilter === "popular"}
-                    onChange={() => setSortFilter("popular")}
-                    className="accent-primary"
-                  />
-                  <span className="text-sm">Relevance</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="sort"
-                    checked={sortFilter === "newest"}
-                    onChange={() => setSortFilter("newest")}
-                    className="accent-primary"
-                  />
-                  <span className="text-sm">Newest</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="sort"
-                    checked={sortFilter === "rating"}
-                    onChange={() => setSortFilter("rating")}
-                    className="accent-primary"
-                  />
-                  <span className="text-sm">Highest Rated</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        {/* Main content area (header removed as requested) */}
-        <main className="col-span-12 lg:col-span-9 xl:col-span-9">
-      {/* View Mode Toggle */}
-      <div className="flex justify-end">
-        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "px-3 h-8 transition-all duration-200",
-              viewMode === "grid"
-                ? "bg-background shadow-sm text-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-            onClick={() => setViewMode("grid")}
-            aria-label="Grid view"
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "px-3 h-8 transition-all duration-200",
-              viewMode === "list"
-                ? "bg-background shadow-sm text-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-            onClick={() => setViewMode("list")}
-            aria-label="List view"
-          >
-            <List className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Resume Learning Section - Simplified to text only */}
-      {userId && coursesInProgress.length > 0 && !hasFilters && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="mb-8"
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <Play className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-semibold text-primary">
-              Continue Learning
-            </h2>
-          </div>
-          <div className="space-y-3">
-            {coursesInProgress.map((course, index) => (
-              <motion.div
-                key={course.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-                whileHover={{ x: 4 }}
-                className="flex items-center justify-between p-4 bg-gradient-to-r from-white to-blue-50/30 border border-blue-100 rounded-lg hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
-                onClick={() => window.location.href = `/dashboard/course/${course.slug}`}
-              >
-                <div className="flex-1">
-                  <h3 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                    {course.title || course.name}
-                  </h3>
-                  <div className="flex items-center gap-4 mt-2">
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      {course.progressPercentage}% complete
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {(course.completedCount || 0)}/{course.totalChapters} chapters
-                    </div>
-                    {course.lastAccessedAt && (
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(course.lastAccessedAt).toLocaleDateString()}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Play className="h-4 w-4 text-primary" />
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Background loading indicator */}
-      {isFetching && coursesData?.pages?.length && (
-        <div className="fixed top-4 right-4 z-50 bg-background/80 backdrop-blur-sm border rounded-lg px-3 py-2 shadow-lg">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            Updating...
-          </div>
-        </div>
-      )}
-
-      {/* Results count */}
-      {coursesData?.pages?.[0]?.total !== undefined && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{coursesData.pages[0].total}</span> course
-            {coursesData.pages[0].total !== 1 ? "s" : ""} found
-            {isFetching && coursesData.pages.length > 1 && (
-              <span className="ml-2 text-primary animate-pulse">(updating...)</span>
-            )}
-          </p>
-        </div>
-      )}
-
-      <motion.div
-        className={cn(
-          "grid gap-4 sm:gap-6",
-          // Mobile-first responsive grid
-          viewMode === "grid" && "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3",
-          viewMode === "list" && "grid-cols-1 max-w-4xl gap-3 sm:gap-4",
-        )}
-        variants={{
-          hidden: { opacity: 0 },
-          show: {
-            opacity: 1,
-            transition: { staggerChildren: 0.05, delayChildren: 0.02 },
-          },
-        }}
-        initial="hidden"
-        animate="show"
-      >
-        {coursesData?.pages?.map((page: CoursesResponse, pageIndex: number) => (
-          <React.Fragment key={pageIndex}>
-            {page.courses?.map((course: Course) => {
-              // Find the course with progress data
-              const courseWithProgress =
-                coursesWithProgress.find((cp) => cp.id === course.id || cp.slug === course.slug) || course
-
-              return (
-                <motion.div
-                  key={course.id}
-                  variants={{
-                    hidden: { opacity: 0, y: 20, scale: 0.98 },
-                    show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 260, damping: 24 } },
-                  }}
-                >
-                  <CourseCard
-                    key={course.id}
-                    courseId={Number(course.id) || undefined}
-                    title={course.title || course.name || "Untitled Course"}
-                    description={course.description || "No description available"}
-                    rating={course.rating || 0}
-                    slug={course.slug || `course-${course.id}`}
-                    variant={viewMode}
-                    {...(() => {
-                      const counts = computeUnitAndLessonCounts(course)
-                      return {
-                        unitCount: counts.unitCount,
-                        lessonCount: counts.lessonCount,
-                        quizCount: computeQuizCount(course) || 0,
-                      }
-                    })()}
-                    viewCount={course.viewCount || 0}
-                    category={course.category?.name || "General"}
-                    duration={`${course.estimatedHours || 4} hours`}
-                    image={getImageWithFallback(course.image)}
-                    difficulty={course.difficulty as "Beginner" | "Intermediate" | "Advanced"}
-                    price={undefined}
-                    originalPrice={undefined}
-                    instructor="Course Instructor"
-                    enrolledCount={Math.floor(Math.random() * 5000) + 500}
-                    updatedAt={
-                      course.updatedAt
-                        ? new Date(course.updatedAt).toISOString()
-                        : course.createdAt
-                          ? new Date(course.createdAt).toISOString()
-                          : new Date().toISOString()
-                    }
-                    tags={[]}
-                    className={viewMode === "list" ? "w-full" : undefined}
-                    // Progress tracking props
-                    isEnrolled={courseWithProgress.isEnrolled}
-                    progressPercentage={courseWithProgress.progressPercentage}
-                    completedChapters={courseWithProgress.completedCount || 0}
-                    totalChapters={courseWithProgress.totalChapters}
-                    lastAccessedAt={courseWithProgress.lastAccessedAt}
-                    currentChapterTitle={courseWithProgress.currentChapterTitle}
-                    timeSpent={courseWithProgress.timeSpent}
-                  />
-                </motion.div>
-              )
-            })}
-          </React.Fragment>
-        ))}
-      </motion.div>
-
-      {hasNextPage && (
-        <div ref={loadMoreRef} className="flex justify-center py-8">
-          {isFetchingNextPage ? (
-            <div className="flex items-center gap-3 px-6 py-3 bg-muted/50 rounded-full">
-              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm font-medium text-muted-foreground">Loading more courses...</span>
-            </div>
-          ) : (
+  const FilterSidebar = () => (
+    <div className="space-y-6">
+      <div className="p-4 bg-card rounded-lg border">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-semibold">Filters</h4>
+          {(categoryFilter || levelFilter) && (
             <Button
-              variant="outline"
-              onClick={() => fetchNextPage()}
-              disabled={!hasNextPage || isFetchingNextPage}
-              className="min-w-[160px] hover:bg-primary hover:text-primary-foreground transition-colors"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setCategoryFilter(null)
+                setLevelFilter(null)
+              }}
+              className="h-6 px-2 text-xs"
             >
-              Load more courses
+              Clear
             </Button>
           )}
         </div>
-      )}
+        <label className="block text-xs text-muted-foreground mb-1" htmlFor="category-filter">
+          Category
+        </label>
+        <select
+          id="category-filter"
+          value={categoryFilter ?? ""}
+          onChange={(e) => setCategoryFilter(e.target.value ? (e.target.value as CategoryId) : null)}
+          className="w-full p-2 rounded-md border bg-background focus:ring-2 focus:ring-primary focus:outline-none"
+          aria-label="Filter by category"
+        >
+          <option value="">All Categories</option>
+          {availableCategories.map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
+          ))}
+        </select>
 
-      {!hasNextPage &&
-        coursesData?.pages?.length &&
-        coursesData.pages.some((p: CoursesResponse) => p.courses.length > 0) && (
-          <div className="text-center py-8 border-t border-border/50">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-muted/30 rounded-full">
-              <div className="w-2 h-2 bg-muted-foreground/50 rounded-full"></div>
-              <p className="text-sm text-muted-foreground font-medium">You've reached the end of the results</p>
-              <div className="w-2 h-2 bg-muted-foreground/50 rounded-full"></div>
+        <label className="block text-xs text-muted-foreground mt-3 mb-1" htmlFor="level-filter">
+          Level
+        </label>
+        <select
+          id="level-filter"
+          value={levelFilter ?? ""}
+          onChange={(e) => setLevelFilter(e.target.value || null)}
+          className="w-full p-2 rounded-md border bg-background focus:ring-2 focus:ring-primary focus:outline-none"
+          aria-label="Filter by level"
+        >
+          <option value="">All Levels</option>
+          <option value="Beginner">Beginner</option>
+          <option value="Intermediate">Intermediate</option>
+          <option value="Advanced">Advanced</option>
+        </select>
+      </div>
+
+      <div className="p-4 bg-card rounded-lg border">
+        <h4 className="text-sm font-semibold mb-3">Sort By</h4>
+        <div className="flex flex-col space-y-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="sort"
+              checked={sortFilter === "popular"}
+              onChange={() => setSortFilter("popular")}
+              className="accent-primary focus:ring-2 focus:ring-primary"
+            />
+            <span className="text-sm">Relevance</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="sort"
+              checked={sortFilter === "newest"}
+              onChange={() => setSortFilter("newest")}
+              className="accent-primary focus:ring-2 focus:ring-primary"
+            />
+            <span className="text-sm">Newest</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="sort"
+              checked={sortFilter === "rating"}
+              onChange={() => setSortFilter("rating")}
+              className="accent-primary focus:ring-2 focus:ring-primary"
+            />
+            <span className="text-sm">Highest Rated</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  )
+
+  // Main content
+  return (
+    <div className="w-full max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 space-y-6">
+      <Sheet open={showMobileFilters} onOpenChange={onCloseMobileFilters}>
+        <SheetContent side="left" className="w-[300px] sm:w-[400px] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Filters</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6">
+            <FilterSidebar />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <div className="grid grid-cols-12 gap-6">
+        <aside className="hidden lg:block lg:col-span-3 xl:col-span-2">
+          <div className="sticky top-20 space-y-4">
+            <Button
+              variant="ghost"
+              onClick={() => setFiltersCollapsed(!filtersCollapsed)}
+              className="w-full justify-between"
+            >
+              <span className="font-semibold">Filters</span>
+              <ChevronDown className={cn("w-4 h-4 transition-transform", filtersCollapsed && "rotate-180")} />
+            </Button>
+            {!filtersCollapsed && <FilterSidebar />}
+          </div>
+        </aside>
+
+        <main className="col-span-12 lg:col-span-9 xl:col-span-10">
+          {/* View Mode Toggle */}
+          <div className="flex justify-end">
+            <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1" role="group" aria-label="View mode">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "px-3 h-8 transition-all duration-200",
+                  viewMode === "grid"
+                    ? "bg-background shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+                onClick={() => setViewMode("grid")}
+                aria-label="Grid view"
+                aria-pressed={viewMode === "grid"}
+              >
+                <LayoutGrid className="h-4 w-4" />
+                <span className="sr-only">Grid view</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "px-3 h-8 transition-all duration-200",
+                  viewMode === "list"
+                    ? "bg-background shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+                onClick={() => setViewMode("list")}
+                aria-label="List view"
+                aria-pressed={viewMode === "list"}
+              >
+                <List className="h-4 w-4" />
+                <span className="sr-only">List view</span>
+              </Button>
             </div>
           </div>
-        )}
+
+          {/* Resume Learning Section - Simplified to text only */}
+          {userId && coursesInProgress.length > 0 && !hasFilters && (
+            <motion.section
+              initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.3 }}
+              className="mb-8 p-6 bg-gradient-to-br from-primary/5 to-accent/5 border-2 border-primary/20 rounded-xl"
+              aria-label="Continue learning"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Play className="h-5 w-5 text-primary" />
+                </div>
+                <h2 className="text-xl font-semibold text-primary">Continue Learning</h2>
+              </div>
+              <div className="space-y-3">
+                {coursesInProgress.map((course, index) => (
+                  <motion.div
+                    key={course.id}
+                    initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: shouldReduceMotion ? 0 : 0.3, delay: shouldReduceMotion ? 0 : index * 0.1 }}
+                    whileHover={shouldReduceMotion ? {} : { x: 4 }}
+                    className="flex items-center justify-between p-4 bg-background border border-primary/10 rounded-lg hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group"
+                    onClick={() => (window.location.href = `/dashboard/course/${course.slug}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        window.location.href = `/dashboard/course/${course.slug}`
+                      }
+                    }}
+                  >
+                    <div className="flex-1">
+                      <h3 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                        {course.title || course.name}
+                      </h3>
+                      <div className="flex items-center gap-4 mt-2">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <div className="w-2 h-2 bg-primary rounded-full"></div>
+                          <span className="font-semibold text-primary">{course.progressPercentage}%</span> complete
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {course.completedCount || 0}/{course.totalChapters} chapters
+                        </div>
+                        {course.lastAccessedAt && (
+                          <div className="text-xs text-muted-foreground">
+                            Last accessed {new Date(course.lastAccessedAt).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                        <Play className="h-4 w-4 text-primary" />
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.section>
+          )}
+
+          {/* Background loading indicator */}
+          {isFetching && coursesData?.pages?.length && (
+            <div
+              className="fixed top-4 right-4 z-50 bg-background/80 backdrop-blur-sm border rounded-lg px-3 py-2 shadow-lg"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span>Updating...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Results count */}
+          {coursesData?.pages?.[0]?.total !== undefined && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">{coursesData.pages[0].total}</span> course
+                {coursesData.pages[0].total !== 1 ? "s" : ""} found
+                {isFetching && coursesData.pages.length > 1 && (
+                  <span className="ml-2 text-primary animate-pulse">(updating...)</span>
+                )}
+              </p>
+            </div>
+          )}
+
+          <motion.div
+            className={cn(
+              "grid gap-4 sm:gap-6",
+              // Mobile-first responsive grid
+              viewMode === "grid" && "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3",
+              viewMode === "list" && "grid-cols-1 max-w-4xl gap-3 sm:gap-4",
+            )}
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: shouldReduceMotion ? 0 : 0.05,
+                  delayChildren: shouldReduceMotion ? 0 : 0.02,
+                },
+              },
+            }}
+            initial="hidden"
+            animate="show"
+          >
+            {coursesData?.pages?.map((page: CoursesResponse, pageIndex: number) => (
+              <React.Fragment key={pageIndex}>
+                {page.courses?.map((course: Course) => {
+                  // Find the course with progress data
+                  const courseWithProgress =
+                    coursesWithProgress.find((cp) => cp.id === course.id || cp.slug === course.slug) || course
+
+                  return (
+                    <motion.div
+                      key={course.id}
+                      variants={{
+                        hidden: shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 20, scale: 0.98 },
+                        show: shouldReduceMotion
+                          ? { opacity: 1 }
+                          : {
+                              opacity: 1,
+                              y: 0,
+                              scale: 1,
+                              transition: { type: "spring", stiffness: 260, damping: 24 },
+                            },
+                      }}
+                    >
+                      <CourseCard
+                        key={course.id}
+                        courseId={Number(course.id) || undefined}
+                        title={course.title || course.name || "Untitled Course"}
+                        description={course.description || "No description available"}
+                        rating={course.rating || 0}
+                        slug={course.slug || `course-${course.id}`}
+                        variant={viewMode}
+                        {...(() => {
+                          const counts = computeUnitAndLessonCounts(course)
+                          return {
+                            unitCount: counts.unitCount,
+                            lessonCount: counts.lessonCount,
+                            quizCount: computeQuizCount(course) || 0,
+                          }
+                        })()}
+                        viewCount={course.viewCount || 0}
+                        category={course.category?.name || "General"}
+                        duration={`${course.estimatedHours || 4} hours`}
+                        image={getImageWithFallback(course.image)}
+                        difficulty={course.difficulty as "Beginner" | "Intermediate" | "Advanced"}
+                        price={undefined}
+                        originalPrice={undefined}
+                        instructor="Course Instructor"
+                        enrolledCount={Math.floor(Math.random() * 5000) + 500}
+                        updatedAt={
+                          course.updatedAt
+                            ? new Date(course.updatedAt).toISOString()
+                            : course.createdAt
+                              ? new Date(course.createdAt).toISOString()
+                              : new Date().toISOString()
+                        }
+                        tags={[]}
+                        className={viewMode === "list" ? "w-full" : undefined}
+                        // Progress tracking props
+                        isEnrolled={courseWithProgress.isEnrolled}
+                        progressPercentage={courseWithProgress.progressPercentage}
+                        completedChapters={courseWithProgress.completedCount || 0}
+                        totalChapters={courseWithProgress.totalChapters}
+                        lastAccessedAt={courseWithProgress.lastAccessedAt}
+                        currentChapterTitle={courseWithProgress.currentChapterTitle}
+                        timeSpent={courseWithProgress.timeSpent}
+                      />
+                    </motion.div>
+                  )
+                })}
+              </React.Fragment>
+            ))}
+          </motion.div>
+
+          {hasNextPage && (
+            <div ref={loadMoreRef} className="flex flex-col items-center gap-3 py-8">
+              {isFetchingNextPage ? (
+                <div className="flex items-center gap-3 px-6 py-3 bg-muted/50 rounded-full">
+                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm font-medium text-muted-foreground">Loading more courses...</span>
+                </div>
+              ) : (
+                <>
+                  <div className="text-xs text-muted-foreground mb-2">Scroll for more or click below</div>
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchNextPage()}
+                    disabled={!hasNextPage || isFetchingNextPage}
+                    className="min-w-[160px] hover:bg-primary hover:text-primary-foreground transition-colors"
+                  >
+                    Load more courses
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+
+          {!hasNextPage &&
+            coursesData?.pages?.length &&
+            coursesData.pages.some((p: CoursesResponse) => p.courses.length > 0) && (
+              <div className="text-center py-8 border-t border-border/50">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-muted/30 rounded-full">
+                  <div className="w-2 h-2 bg-muted-foreground/50 rounded-full"></div>
+                  <p className="text-sm text-muted-foreground font-medium">You've reached the end of the results</p>
+                  <div className="w-2 h-2 bg-muted-foreground/50 rounded-full"></div>
+                </div>
+              </div>
+            )}
         </main>
       </div>
     </div>

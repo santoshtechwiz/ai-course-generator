@@ -3,11 +3,21 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { storageManager } from "@/utils/storage-manager"
 
+interface ChatAction {
+  type: string
+  label: string
+  url: string
+  disabled?: boolean
+  disabledReason?: string
+  metadata?: any
+}
+
 interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
   timestamp: number
+  actions?: ChatAction[]
 }
 
 interface ChatState {
@@ -139,22 +149,24 @@ export function useChatStore(userId: string): UseChatStoreReturn {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: text.trim(), userId }),
+        body: JSON.stringify({ message: text.trim() }),
         signal: abortControllerRef.current.signal,
       })
 
       if (!res.ok) {
-        throw new Error(`Request failed: ${res.status}`)
+        const errorData = await res.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || `Request failed: ${res.status}`)
       }
 
       const data = await res.json()
-      const assistantText = data?.assistant || data?.message || getFallbackResponse(text)
+      const assistantText = data?.content || data?.assistant || data?.message || getFallbackResponse(text)
 
       const assistantMessage: ChatMessage = {
         id: `msg_${Date.now()}_assistant`,
         role: 'assistant',
         content: assistantText,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        actions: data?.actions  // Include actions from API response
       }
 
       setState(prev => ({

@@ -1,7 +1,7 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit"
 import { createListenerMiddleware } from '@reduxjs/toolkit'
 import { persistReducer, persistStore } from "redux-persist"
-import storage from "redux-persist/lib/storage"
+import reduxStorage from "redux-persist/lib/storage"
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux"
 
 // Core reducers
@@ -15,22 +15,37 @@ import subscriptionReducer from "./slices/subscriptionSlice"
 
 // Storage with fallback - proper implementation to avoid redux-persist warnings
 const createStorage = () => {
-  // Check if we're in browser environment
-  if (typeof window === 'undefined') {
-    // Server-side: return noop storage
-    return createNoopStorage()
-  }
-
-  try {
-    // Test if localStorage is actually available (some browsers block it)
-    const testKey = '__redux_persist_test__'
-    localStorage.setItem(testKey, 'test')
-    localStorage.removeItem(testKey)
-    return storage // Use real localStorage
-  } catch (error) {
-    // localStorage not available (private mode, blocked, etc.)
-    console.warn('[Redux Persist] localStorage not available, using memory storage fallback')
-    return createNoopStorage()
+  if (typeof window === 'undefined') return createNoopStorage()
+  
+  // Create async wrapper for our synchronous storage
+  return {
+    getItem: (key: string): Promise<string | null> => {
+      try {
+        const item = localStorage.getItem(key)
+        return Promise.resolve(item)
+      } catch (error) {
+        console.warn('[Redux Persist] getItem failed:', error)
+        return Promise.resolve(null)
+      }
+    },
+    setItem: (key: string, value: string): Promise<void> => {
+      try {
+        localStorage.setItem(key, value)
+        return Promise.resolve()
+      } catch (error) {
+        console.warn('[Redux Persist] setItem failed:', error)
+        return Promise.resolve()
+      }
+    },
+    removeItem: (key: string): Promise<void> => {
+      try {
+        localStorage.removeItem(key)
+        return Promise.resolve()
+      } catch (error) {
+        console.warn('[Redux Persist] removeItem failed:', error)
+        return Promise.resolve()
+      }
+    }
   }
 }
 
@@ -111,7 +126,7 @@ const rootReducer = combineReducers({
 // ---------------------
 // Listener middleware: debounced persistence for quiz progress
 // ---------------------
-import { storageManager } from '@/utils/storage-manager'
+import { simpleStorage as storage } from '@/lib/storage'
 
 // Simple debounce helper (module-scoped to preserve timer between invocations)
 function debounce<Func extends (...args: any[]) => void>(fn: Func, wait = 250) {
@@ -124,11 +139,11 @@ function debounce<Func extends (...args: any[]) => void>(fn: Func, wait = 250) {
 
 const listenerMiddleware = createListenerMiddleware()
 
-// Debounced persist function: writes quiz progress into storageManager
+// Debounced persist function: saves quiz progress using unified storage
 const debouncedPersist = debounce((slug: string | null, quizType: string | null, currentQuestionIndex: number) => {
   try {
     if (!slug || !quizType) return
-    // Use the same shape storageManager expects in existing code
+    const key = `quiz_progress_${slug}_${quizType}`
     const progress = {
       courseId: slug,
       chapterId: `${quizType}_${slug}`,
@@ -138,7 +153,7 @@ const debouncedPersist = debounce((slug: string | null, quizType: string | null,
       lastUpdated: Date.now(),
       isCompleted: false,
     }
-    storageManager.saveQuizProgress(progress)
+    storage.setItem(key, progress)
   } catch (e) {
     // swallow errors to avoid breaking UI
     // eslint-disable-next-line no-console
