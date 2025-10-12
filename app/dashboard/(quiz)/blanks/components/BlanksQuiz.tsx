@@ -1,6 +1,6 @@
 "use client"
 import type React from "react"
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { motion } from "framer-motion"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -13,7 +13,8 @@ import { HintSystem } from "@/components/quiz/HintSystem"
 import { useOptionalQuizState } from "@/components/quiz/QuizStateProvider"
 import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
 import { generateBlanksHints } from "@/lib/utils/hint-system"
-import type { QuizQuestion } from "@/app/types/quiz-types"
+import { AdaptiveFeedbackWrapper, useAdaptiveFeedback } from "@/components/quiz/AdaptiveFeedbackWrapper"
+import { useAuth } from "@/modules/auth"
 
 interface BlanksQuizProps {
   question: any
@@ -29,6 +30,7 @@ interface BlanksQuizProps {
   isLastQuestion?: boolean
   timeSpent?: number
   isQuizCompleted?: boolean
+  slug?: string
 }
 
 // Standardized animation variants
@@ -105,6 +107,7 @@ export default function BlanksQuiz({
   isLastQuestion = false,
   timeSpent = 0,
   isQuizCompleted = false,
+  slug,
 }: BlanksQuizProps) {
   const [answer, setAnswer] = useState(existingAnswer)
   const [similarity, setSimilarity] = useState<number>(0)
@@ -113,17 +116,71 @@ export default function BlanksQuiz({
   const [hintsUsed, setHintsUsed] = useState(0)
   const [isFocused, setIsFocused] = useState(false)
   const [showCelebration, setShowCelebration] = useState(false)
+  const pendingResetRef = useRef(false)
+
+  // Adaptive feedback integration
+  const { isAuthenticated } = useAuth()
+  const adaptiveFeedback = useAdaptiveFeedback(
+    slug || 'unknown-quiz',
+    question.id,
+    isAuthenticated
+  )
 
   // Extract question data with proper fallbacks
   const questionData = useMemo(() => {
+    const answer = question.answer || ""
+    const questionText = question.question || ""
+    
+    // Normalize tags/keywords which may appear in `tags` or `keywords`
+    const tags = Array.isArray(question.tags) && question.tags.length > 0 
+      ? question.tags 
+      : Array.isArray(question.keywords) && question.keywords.length > 0 
+      ? question.keywords 
+      : []
+    
+    // Extract keywords from the answer if not provided
+    const keywords = Array.isArray(question.keywords) && question.keywords.length > 0
+      ? question.keywords
+      : tags.length > 0
+      ? tags
+      : answer.length > 0
+      ? [answer] // Use the answer itself as a keyword
+      : []
+    
+    // Extract blanks metadata from question text (look for blank patterns)
+    const blanks: string[] = []
+    
+    // If question has a blank (______), extract context around it
+    if (questionText.includes("______")) {
+      const parts = questionText.split("______")
+      if (parts.length === 2) {
+        // Extract meaningful words before and after the blank
+        const before = parts[0].trim().split(/\s+/).slice(-3).join(" ")
+        const after = parts[1].trim().split(/\s+/).slice(0, 3).join(" ")
+        if (before || after) {
+          blanks.push(`${before} _____ ${after}`.trim())
+        }
+      }
+    }
+    
+    // Add answer pattern info (length, first/last letter)
+    if (answer.length > 0) {
+      blanks.push(`${answer.length} letters — starts with '${answer[0].toUpperCase()}' and ends with '${answer[answer.length - 1]}'`)
+    }
+    
     return {
-      text: question.question,
-      answer: question.answer,
+      text: questionText,
+      answer: answer,
+      // Allow hints to be strings or objects; leave as-is for generator's normalization
       hints: question.hints,
       difficulty: question.difficulty || "Medium",
-      tags: question.tags || [],
+      tags: tags,
+      keywords: keywords,
+      blanks: blanks,
     }
   }, [question])
+
+  // Mounted instrumentation removed
 
   // Generate comprehensive hints for this question
   const hints = useMemo(() => {
@@ -132,7 +189,7 @@ export default function BlanksQuiz({
       questionData.text,
       questionData.hints,
       answer,
-    { allowDirectAnswer: false, maxHints: 3 }
+    { allowDirectAnswer: false, maxHints: 3, keywords: questionData.tags || [], tags: questionData.tags || [] }
     )
   }, [questionData.answer, questionData.text, questionData.hints, answer])
 
@@ -147,37 +204,77 @@ export default function BlanksQuiz({
     }
   }, [questionData.text])
 
-  // Calculate similarity when answer changes
+  // Calculate similarity when answer changes. Do NOT include isAnswered in deps
+  // because setIsAnswered is derived from the result and including it causes
+  // an update loop that clears the input on each keystroke.
   useEffect(() => {
     if (answer.trim() && questionData.answer) {
       const result = calculateAnswerSimilarity(answer, questionData.answer, 0.7)
       setSimilarity(result.similarity)
-      const wasAnswered = isAnswered
-      setIsAnswered(result.isAcceptable)
+      // derive isAnswered from the similarity check only
+      const becameAnswered = result.isAcceptable
+      setIsAnswered(becameAnswered)
 
-      // Show celebration for first correct answer
-      if (!wasAnswered && result.isAcceptable && result.similarity >= 0.8) {
+      // Show celebration for first time the answer becomes acceptable
+      if (becameAnswered && result.similarity >= 0.8) {
         setShowCelebration(true)
-        setTimeout(() => setShowCelebration(false), 2000)
+        const t = setTimeout(() => setShowCelebration(false), 2000)
+        return () => clearTimeout(t)
       }
     } else {
       setSimilarity(0)
       setIsAnswered(false)
     }
-  }, [answer, questionData.answer, isAnswered])
+    // intentionally omit isAnswered from deps
+  }, [answer, questionData.answer])
 
-  // Update answer from props
+  // Log whenever the local `answer` state changes (helps see writes from outside)
   useEffect(() => {
-    if (existingAnswer && existingAnswer !== answer) {
-      setAnswer(existingAnswer)
+    // local answer changed; no debug logging
+  }, [answer])
+
+  // Sync answer state when question changes (only when moving to a different question)
+  const questionIdRef = useRef(question?.id)
+  useEffect(() => {
+    if (questionIdRef.current !== question?.id) {
+  // Always update the ref
+  questionIdRef.current = question?.id
+
+      // Only overwrite local answer if the input is not currently focused. If focused,
+      // keep the user's in-progress typing and sync when the input blurs (handled below).
+      if (!isFocused) {
+        setAnswer(existingAnswer || '')
+        setIsAnswered(!!existingAnswer)
+        setShowValidation(false)
+        setHintsUsed(0)
+        setSimilarity(0)
+      } else {
+        // Reset derived states but preserve current typed answer
+        setIsAnswered(!!existingAnswer)
+        setShowValidation(false)
+        setHintsUsed(0)
+        setSimilarity(0)
+      }
     }
-  }, [existingAnswer, answer])
+  }, [question?.id, existingAnswer, isFocused])
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setAnswer(value)
     setShowValidation(false)
   }, [])
+
+  // On blur: if there's a newer external existingAnswer (e.g., from another tab or sync), adopt it
+  const handleInputBlur = useCallback(() => {
+    setIsFocused(false)
+    // If a reset was requested while the input was focused, perform it now
+    if (pendingResetRef.current) {
+      pendingResetRef.current = false
+      setAnswer('')
+      setIsAnswered(false)
+      setShowValidation(false)
+    }
+  }, [answer, existingAnswer, question?.id])
 
   const handleAnswerSubmit = useCallback(() => {
     // Prevent submission if the quiz is already completed
@@ -294,7 +391,7 @@ export default function BlanksQuiz({
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
+                  onBlur={handleInputBlur}
                   placeholder="Your answer"
                   disabled={isQuizCompleted}
                   className={cn(
@@ -311,7 +408,7 @@ export default function BlanksQuiz({
                   inputMode="text" // Better mobile keyboard
                   autoCapitalize="sentences"
                   autoComplete="off"
-                  autoFocus
+                  autoFocus={!isQuizCompleted}
                 />
 
                 {isAnswered && (
@@ -323,6 +420,7 @@ export default function BlanksQuiz({
                     <CheckCircle className="w-4 h-4 text-white" />
                   </motion.div>
                 )}
+                
               </motion.div>
 
               {/* Continuation of question */}
@@ -345,7 +443,7 @@ export default function BlanksQuiz({
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
+                  onBlur={handleInputBlur}
                   placeholder="Enter your answer"
                   disabled={isQuizCompleted}
                   className={cn(
@@ -357,7 +455,7 @@ export default function BlanksQuiz({
                         ? "border-destructive bg-destructive/10"
                         : "border-primary/30 hover:border-primary/50 focus:border-primary",
                   )}
-                  autoFocus
+                  autoFocus={!isQuizCompleted}
                 />
 
                 {isAnswered && (
@@ -405,6 +503,31 @@ export default function BlanksQuiz({
               <span className="text-sm font-semibold">Please enter an answer before continuing</span>
             </motion.div>
           )}
+
+          {/* Adaptive Feedback Wrapper - Intelligent feedback based on attempts */}
+          {answer.trim() && similarity < 0.6 && (
+            <AdaptiveFeedbackWrapper
+              quizSlug={slug || 'unknown-quiz'}
+              questionId={question.id}
+              userAnswer={answer}
+              correctAnswer={questionData.answer}
+              isAuthenticated={isAuthenticated}
+              hints={hints.map((h) => h.content)}
+              relatedTopicSlug={slug}
+              difficulty={3}
+              shouldShowFeedback={true}
+              onReset={() => {
+                // If user is currently typing, defer the reset until blur to avoid erasing in-progress input
+                if (isFocused) {
+                  pendingResetRef.current = true
+                } else {
+                  setAnswer('')
+                  setIsAnswered(false)
+                  setShowValidation(false)
+                }
+              }}
+            />
+          )}
         </motion.div>
 
         {/* Hint System - Enhanced with vibrant colors */}
@@ -416,8 +539,12 @@ export default function BlanksQuiz({
             hints={hints}
             onHintUsed={handleHintUsed}
             userInput={answer}
+            correctAnswer={questionData.answer}
             questionText={questionData.text}
             maxHints={3}
+            tags={questionData.tags}
+            keywords={questionData.keywords}
+            blanks={questionData.blanks}
             className="border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-950/30 dark:to-yellow-900/20 rounded-xl shadow-lg shadow-amber-100/50 dark:shadow-amber-900/20"
           />
         </motion.div>

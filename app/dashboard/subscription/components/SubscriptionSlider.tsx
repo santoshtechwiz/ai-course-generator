@@ -30,16 +30,6 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
     : 5 // Default to 5 for FREE plan
   const isMaxPlan = currentPlan.name === "ULTIMATE"
   
-  // Debug info in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('SubscriptionSlider Debug:', {
-      subscriptionPlan: subscription?.subscriptionPlan,
-      currentPlan: currentPlan?.name,
-      maxQuestions,
-      isMaxPlan
-    })
-  }
-  
   const getNextPlan = (): string => {
     const plans = getPlansArray()
     const currentIndex = plans.findIndex((plan) => plan.name === currentPlan.name)

@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useCallback, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
+import { useAppDispatch } from '@/store'
 import { useAuth } from "@/modules/auth"
-import type { AppDispatch } from "@/store"
 import {
   selectQuizQuestions,
   selectQuizAnswers,
@@ -37,7 +37,7 @@ interface CodeQuizWrapperProps {
 }
 
 function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
-  const dispatch = useDispatch<AppDispatch>()
+  const dispatch = useAppDispatch()
   const router = useRouter()
   const { user } = useAuth()
 
@@ -84,18 +84,19 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       } catch (err) {
         if (isComponentMounted) {
           // Enhanced error logging with more details
+          const errorObj = err as any;
           console.error("Failed to load quiz:", {
             error: err,
-            message: err?.message,
-            code: err?.code,
-            status: err?.status,
-            stack: err?.stack,
+            message: errorObj?.message,
+            code: errorObj?.code,
+            status: errorObj?.status,
+            stack: errorObj?.stack,
             type: typeof err,
-            keys: err ? Object.keys(err) : [],
+            keys: err ? Object.keys(errorObj) : [],
             slug,
             quizType: "code",
             // Check if it's a serialized error
-            isSerializedError: err && typeof err === 'object' && !err.message && !err.code,
+            isSerializedError: errorObj && typeof errorObj === 'object' && !errorObj.message && !errorObj.code,
             stringified: JSON.stringify(err)
           });
 
@@ -103,16 +104,16 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
           let errorMessage = "Failed to load quiz. Please try again.";
 
           // Handle empty error objects
-          if (!err || (typeof err === 'object' && Object.keys(err).length === 0)) {
+          if (!errorObj || (typeof errorObj === 'object' && Object.keys(errorObj).length === 0)) {
             console.warn("Received empty error object, this may indicate a serialization issue");
             errorMessage = "Unable to load quiz. The quiz may not exist or there may be a connection issue.";
-          } else if (err?.code === 'NOT_FOUND') {
+          } else if (errorObj?.code === 'NOT_FOUND') {
             errorMessage = "Quiz not found. It may have been deleted or the URL is incorrect.";
-          } else if (err?.code === 'NETWORK_ERROR') {
+          } else if (errorObj?.code === 'NETWORK_ERROR') {
             errorMessage = "Network error. Please check your internet connection.";
-          } else if (err?.code === 'SERVER_ERROR') {
+          } else if (errorObj?.code === 'SERVER_ERROR') {
             errorMessage = "Server error. Please try again in a few moments.";
-          } else if (err?.code === 'CANCELLED') {
+          } else if (errorObj?.code === 'CANCELLED') {
             errorMessage = "Request was cancelled. Please try again.";
           }
 
@@ -332,6 +333,7 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
           canGoNext={canGoNext}
           isLastQuestion={isLastQuestion}
           quizTitle={quizTitle || title || "Code Quiz"}
+          quizSlug={slug}
         />
       </div>
     </div>

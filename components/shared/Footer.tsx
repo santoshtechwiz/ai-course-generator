@@ -17,34 +17,36 @@ const footerLinks = [
   {
     title: "Platform",
     links: [
-      { name: "Dashboard", href: "/dashboard" },
-      { name: "Quizzes", href: "/dashboard/quizzes" },
-      { name: "Courses", href: "/dashboard" },
-      { name: "Create", href: "/dashboard/explore" },
+      { name: "Explore", href: "/dashboard/explore" },
+      { name: "Courses", href: "/dashboard/learn" },
+      { name: "Quizzes", href: "/quizzes" },
+      { name: "Create", href: "/dashboard/create" },
     ],
   },
   {
     title: "Resources",
     links: [
-      { name: "Learning Path", href: "/dashboard" },
-      { name: "Membership", href: "/dashboard/subscription" },
+      { name: "Dashboard", href: "/dashboard" },
+      { name: "My Progress", href: "/dashboard/history" },
+      { name: "Subscription", href: "/dashboard/subscription" },
     ],
   },
   {
-    title: "Legal",
+    title: "Support",
     links: [
+      { name: "About", href: "/about" },
+      { name: "Contact Us", href: "/contactus" },
       { name: "Privacy Policy", href: "/privacy" },
       { name: "Terms of Service", href: "/terms" },
-      { name: "Contact Us", href: "/contactus" },
     ],
   },
 ]
 
 const socialLinks = [
-  { icon: Twitter, label: "Twitter", href: "https://twitter.com" },
-  { icon: Facebook, label: "Facebook", href: "https://facebook.com" },
-  { icon: Linkedin, label: "LinkedIn", href: "https://linkedin.com" },
-  { icon: Instagram, label: "Instagram", href: "https://instagram.com" },
+  { icon: Twitter, label: "Twitter", href: "#" },
+  { icon: Facebook, label: "Facebook", href: "#" },
+  { icon: Linkedin, label: "LinkedIn", href: "#" },
+  { icon: Instagram, label: "Instagram", href: "#" },
 ]
 
 export default function Footer() {

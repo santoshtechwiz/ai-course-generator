@@ -1,11 +1,24 @@
 /**
- * Progressive hint system for quiz questions
+ * Progressive hint system for quiz questions - Context-Aware & Adaptive
+ * 
+ * Uses question metadata (tags, keywords, blanks) to generate intelligent hints
+ * that adapt based on user's answer similarity to the correct answer.
+ * 
+ * Hint Progression Strategy:
+ * - Far from correct (similarity < 0.3) → Tags/Concept hints (broad topic direction)
+ * - Closer (0.3-0.6) → Keywords hints (specific terms/phrases)
+ * - Very close (0.6-0.8) → Blanks/Structure hints (fill-in-the-gap style)
  */
+
+import { maskForLevel } from '@/lib/utils/hint-policy'
+import { calculateAnswerSimilarity } from '@/lib/utils/text-similarity'
 
 export interface HintLevel {
   level: "low" | "medium" | "high"
   type: "contextual" | "structural" | "semantic" | "direct" | "length" | "depth"
   content: string
+  /** Optional masked version to display instead of content when spoilers should be limited */
+  maskedContent?: string
   spoilerLevel: "low" | "medium" | "high"
   penalty: number
   description: string
@@ -25,7 +38,8 @@ export const HINT_LEVELS: Record<number, HintLevel> = {
     type: "contextual",
     content: "",
     spoilerLevel: "low",
-    penalty: 5,
+    // Penalty retained for backend metrics but hidden in UI; set to 0 to avoid punitive messaging
+    penalty: 0,
     description: "General guidance",
   },
   1: {
@@ -33,7 +47,7 @@ export const HINT_LEVELS: Record<number, HintLevel> = {
     type: "structural",
     content: "",
     spoilerLevel: "low",
-    penalty: 8,
+    penalty: 0,
     description: "Structural hint",
   },
   2: {
@@ -41,7 +55,7 @@ export const HINT_LEVELS: Record<number, HintLevel> = {
     type: "semantic",
     content: "",
     spoilerLevel: "medium",
-    penalty: 12,
+    penalty: 0,
     description: "More specific hint",
   },
   3: {
@@ -49,7 +63,7 @@ export const HINT_LEVELS: Record<number, HintLevel> = {
     type: "semantic",
     content: "",
     spoilerLevel: "medium",
-    penalty: 15,
+    penalty: 0,
     description: "Detailed guidance",
   },
   4: {
@@ -57,27 +71,115 @@ export const HINT_LEVELS: Record<number, HintLevel> = {
     type: "direct",
     content: "",
     spoilerLevel: "high",
-    penalty: 20,
+    penalty: 0,
     description: "Major spoiler",
   },
 }
 
+/**
+ * Select next hint based on user's answer similarity to correct answer
+ * 
+ * @param userAnswer - User's current answer attempt
+ * @param correctAnswer - The correct answer
+ * @param availableHints - Array of hints ordered by difficulty (Concept → Keyword → Structure)
+ * @param revealedCount - Number of hints already revealed
+ * @returns Next hint to show, or null if no more hints
+ */
+export function selectAdaptiveHint(
+  userAnswer: string,
+  correctAnswer: string,
+  availableHints: HintLevel[],
+  revealedCount: number
+): { hint: HintLevel; reason: string } | null {
+  if (revealedCount >= availableHints.length) return null
+  
+  // If no user answer yet, show first hint
+  if (!userAnswer || userAnswer.trim().length === 0) {
+    return {
+      hint: availableHints[0],
+      reason: 'Start with concept-level guidance'
+    }
+  }
+  
+  // Calculate similarity
+  const { similarity } = calculateAnswerSimilarity(userAnswer, correctAnswer)
+  
+  // Adaptive hint selection based on similarity
+  let targetIndex = revealedCount // Default: next sequential hint
+  let reason = 'Sequential progression'
+  
+  if (similarity < 0.3) {
+    // Far from correct - need broad concept help
+    targetIndex = 0
+    reason = 'Answer is far from correct — showing concept clue to guide direction'
+  } else if (similarity >= 0.3 && similarity < 0.6) {
+    // Getting closer - need keyword help
+    targetIndex = Math.min(1, availableHints.length - 1)
+    reason = 'Answer is closer — showing keyword clue to narrow focus'
+  } else if (similarity >= 0.6 && similarity < 0.8) {
+    // Very close - need structure help
+    targetIndex = Math.min(2, availableHints.length - 1)
+    reason = 'Answer is very close — showing structure clue to complete it'
+  } else {
+    // Answer is good (>80%) but user still requested hint
+    return null // No hint needed, answer is acceptable
+  }
+  
+  // Ensure we don't go backwards (can't "un-reveal" a hint)
+  targetIndex = Math.max(revealedCount, targetIndex)
+  
+  if (targetIndex >= availableHints.length) return null
+  
+  return {
+    hint: availableHints[targetIndex],
+    reason
+  }
+}
+
 // Generate progressive hints for fill-in-the-blank questions
+/**
+ * Generate context-aware adaptive hints for fill-in-the-blank questions
+ * 
+ * Uses question metadata:
+ * - tags: High-level concepts (e.g., "design pattern", "object creation")
+ * - keywords: Specific terms (e.g., "single", "instance", "shared resource")
+ * - blanks: Fill-in-the-gap patterns (e.g., "It ensures only ___ instance")
+ * 
+ * Hint progression:
+ * 1. Concept Clue (tags) - Broad topic direction
+ * 2. Keyword Clue (keywords) - Specific terms to focus on
+ * 3. Structure Clue (blanks) - Fill-in-the-gap guidance
+ * 
+ * @param correctAnswer - The correct answer text
+ * @param questionText - The question being asked
+ * @param providedHints - Optional instructor-provided hints
+ * @param learnerAnswer - User's current answer attempt (for adaptive selection)
+ * @param options - Configuration options including tags, keywords, blanks
+ */
 export function generateBlanksHints(
   correctAnswer: string,
   questionText: string,
   providedHints: string[] = [],
   learnerAnswer?: string,
-  options?: { allowDirectAnswer?: boolean; maxHints?: number }
+  options?: { 
+    allowDirectAnswer?: boolean
+    maxHints?: number
+    tags?: string[]
+    keywords?: string[]
+    blanks?: string[]
+  }
 ): HintLevel[] {
   const hints: HintLevel[] = []
   const allowDirect = options?.allowDirectAnswer || false
-  const maxHints = options?.maxHints ?? 5
+  const maxHints = options?.maxHints ?? 3 // Default to 3 hints (Concept, Keyword, Structure)
+  const tags: string[] = options?.tags || []
+  const keywords: string[] = options?.keywords || []
+  const blanks: string[] = options?.blanks || []
 
   // Keep provided hints queued to append after generated hints (so generated hints appear first)
-  const queuedProvidedHints = Array.isArray(providedHints) ? providedHints.slice() : []
+  const queuedProvidedHints = normalizeProvidedHints(providedHints, correctAnswer)
 
-  // Generate comprehensive hints for blanks (5 total hints)
+  // Generate comprehensive hints for blanks (Concept → Keyword → Structure progression)
   if (correctAnswer) {
     // If learner provided an attempt, compute edit distance and provide a "closeness" hint
     if (learnerAnswer && learnerAnswer.trim()) {
@@ -94,8 +196,9 @@ export function generateBlanksHints(
             level: "low",
             type: "structural",
             content: distanceHint,
+            maskedContent: distanceHint,
             spoilerLevel: "low",
-            penalty: 4,
+            penalty: 0,
             description: "Proximity hint",
           })
         }
@@ -110,9 +213,25 @@ export function generateBlanksHints(
         level: "low",
         type: "contextual",
         content: contextHint,
+        maskedContent: contextHint,
         spoilerLevel: "low",
-        penalty: 5,
+        penalty: 0,
         description: "Context clue",
+      })
+    }
+
+    // If keywords/tags available, add an early keyword-focused hint (low-spoiler)
+    if (keywords.length > 0 && hints.length < 5) {
+      const kwHint = `Focus on these key concepts: ${keywords.slice(0, 3).join(', ')}`
+      hints.push({
+        level: "low",
+        type: "semantic",
+        content: kwHint,
+        // Show a lightly masked version by default to avoid giving everything away
+        maskedContent: maskForLevel(kwHint, 'low'),
+        spoilerLevel: "low",
+        penalty: 0,
+        description: "Keyword clue",
       })
     }
 
@@ -123,8 +242,9 @@ export function generateBlanksHints(
         level: "low",
         type: "structural",
         content: structureHint,
+        maskedContent: structureHint,
         spoilerLevel: "low",
-        penalty: 8,
+        penalty: 0,
         description: "Word structure",
       })
     }
@@ -136,8 +256,9 @@ export function generateBlanksHints(
         level: "medium",
         type: "structural",
         content: letterHint,
+        maskedContent: letterHint,
         spoilerLevel: "medium",
-        penalty: 12,
+        penalty: 0,
         description: "Letter clue",
       })
     }
@@ -149,8 +270,9 @@ export function generateBlanksHints(
         level: "medium",
         type: "semantic",
         content: partialHint,
+        maskedContent: partialHint,
         spoilerLevel: "medium",
-        penalty: 15,
+        penalty: 0,
         description: "Partial reveal",
       })
     }
@@ -160,9 +282,10 @@ export function generateBlanksHints(
       hints.push({
         level: "high",
         type: "direct",
-        content: `The answer is "${correctAnswer}".`,
+        content: `The answer is "${correctAnswer}."`,
+        maskedContent: maskForLevel(correctAnswer, 'high'),
         spoilerLevel: "high",
-        penalty: 20,
+        penalty: 0,
         description: "Complete answer",
       })
     }
@@ -210,6 +333,50 @@ export function generateBlanksHints(
   return hints.slice(0, maxHints)
 }
 
+// Normalize provided hints which may be strings or objects coming from data sources.
+function normalizeProvidedHints(hints: any, answer?: string): string[] {
+  if (!hints) return []
+  if (!Array.isArray(hints)) return []
+  const out: string[] = []
+  for (const h of hints) {
+    if (typeof h === 'string') {
+      out.push(h)
+      continue
+    }
+    if (h == null) continue
+    // Common shapes: { text }, { content }, { hint }, or legacy objects
+    if (typeof h === 'object') {
+      if (typeof h.text === 'string' && h.text.trim()) {
+        out.push(h.text)
+        continue
+      }
+      if (typeof h.content === 'string' && h.content.trim()) {
+        out.push(h.content)
+        continue
+      }
+      if (typeof h.hint === 'string' && h.hint.trim()) {
+        out.push(h.hint)
+        continue
+      }
+      // If it's an entire question object mistakenly placed in hints, try to extract its hints
+      if (Array.isArray((h as any).hints) && (h as any).hints.length > 0) {
+        const nested = normalizeProvidedHints((h as any).hints, answer)
+        out.push(...nested)
+        continue
+      }
+      // Fallback: stringify small objects, otherwise skip to avoid noisy content
+      try {
+        const s = JSON.stringify(h)
+        if (s && s.length < 200) out.push(s)
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
+  // Redact direct answer occurrences in provided hints
+  return out.map((p) => sanitizeProvidedHint(p, answer || ''))
+}
+
 // Sanitize provided hints so they don't reveal the answer directly
 function sanitizeProvidedHint(hint: string, answer: string): string {
   if (!hint || !answer) return hint || ""
@@ -252,7 +419,7 @@ export function generateContentAwareHints(
   keywords: string[] = [],
   expectedLength: "short" | "medium" | "long" = "medium",
   learnerAnswer?: string,
-  options?: { allowDirectAnswer?: boolean; maxHints?: number; partialWords?: number }
+  options?: { allowDirectAnswer?: boolean; maxHints?: number; partialWords?: number; tags?: string[] }
 ): HintLevel[] {
   const hints: HintLevel[] = []
   const question = questionText.toLowerCase()
@@ -785,6 +952,7 @@ export function generateOpenEndedHints(
         level: "low",
         type: "length",
         content: `Aim for a ${config.description} answer of ${config.minWords}-${config.maxWords} words that covers the key concepts.`,
+        maskedContent: `Aim for a ${config.description} answer of ${config.minWords}-${config.maxWords} words.`,
         spoilerLevel: "low",
         penalty: 3, // Lower penalty for length guidance
         description: "Length guidance",
@@ -805,6 +973,7 @@ export function generateOpenEndedHints(
         level: "low",
         type: "semantic",
         content: keywordHint,
+        maskedContent: keywordHint,
         spoilerLevel: "low",
         penalty: 5,
         description: "Key concepts",
@@ -825,6 +994,7 @@ export function generateOpenEndedHints(
         level: "medium",
         type: "structural",
         content: structureHint,
+        maskedContent: structureHint,
         spoilerLevel: "medium",
         penalty: 8,
         description: "Structure guidance",
@@ -967,7 +1137,6 @@ export function calculateHintPenalty(hintsUsed: number | number[]): number {
 
   // If it's an array, calculate total penalty
   if (!Array.isArray(hintsUsed)) {
-    console.warn("calculateHintPenalty received invalid hintsUsed:", hintsUsed)
     return 0
   }
 
@@ -1181,6 +1350,7 @@ export function generateFallbackHints(question: string, answer: string, expected
       level: "high",
       type: "direct",
       content: `The answer starts with: "${firstPart}..." (This is a ${expectedLength} answer that should be ${config.minWords}+ words)`,
+      maskedContent: `The answer starts with: "${firstPart}..."`,
       spoilerLevel: "high",
       penalty: 15,
       description: "Major spoiler",

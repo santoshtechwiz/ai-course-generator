@@ -121,8 +121,8 @@ export function MainNavbar() {
             <Logo />
           </Link>
 
-          {/* Desktop Nav */}
-          <nav className="flex items-center space-x-1 overflow-x-auto lg:overflow-x-visible">
+          {/* Desktop Nav - Improved with hover effects and active states */}
+          <nav className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => {
               const active = pathname === item.href
               return (
@@ -130,21 +130,33 @@ export function MainNavbar() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "px-4 py-2 text-sm font-medium rounded-xl transition-colors",
-                    active ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                    "relative px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200",
+                    "hover:bg-accent hover:text-accent-foreground",
+                    active 
+                      ? "text-primary bg-primary/5" 
+                      : "text-muted-foreground",
                   )}
                 >
                   {item.name}
+                  {active && (
+                    <motion.div
+                      layoutId="navbar-indicator"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
                 </Link>
               )
             })}
           </nav>
 
-          {/* Right side */}
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          {/* Right side - Improved spacing and hover effects */}
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Enhanced credit counter with warnings and detailed popover */}
             {isAuthenticated && !isLoading && (
-              <CreditCounter />
+              <div className="hidden sm:flex">
+                <CreditCounter />
+              </div>
             )}
 
             {/* Search */}
@@ -153,48 +165,59 @@ export function MainNavbar() {
               size="icon"
               aria-label="Search"
               onClick={() => setIsSearchModalOpen(true)}
-              className="rounded-xl"
+              className="rounded-lg hover:bg-accent transition-colors"
             >
               <Search className="h-4 w-4" />
             </Button>
 
-            <ThemeToggle />
+            <div className="hidden sm:block">
+              <ThemeToggle />
+            </div>
 
             {/* Auth */}
             {isAuthenticated ? (
-              <div className="flex items-center space-x-2">
-                <Suspense fallback={<Loader2 className="h-5 w-5 animate-spin" />}>
+              <div className="hidden md:flex items-center gap-1">
+                <Suspense fallback={<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}>
                   <CourseNotificationsMenu />
                   <NotificationsMenu />
                 </Suspense>
-                <UserMenu
-                 
-                />
+                <UserMenu />
               </div>
             ) : (
               <Button
                 onClick={handleSignIn}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                className="hidden sm:flex bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg shadow-sm hover:shadow transition-all"
                 size="sm"
               >
                 Sign in
               </Button>
             )}
 
-            {/* Mobile Menu */}
+            {/* Mobile Menu - Improved with better touch targets and animations */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild suppressHydrationWarning>
-                <Button variant="ghost" size="icon" className="lg:hidden rounded-xl" suppressHydrationWarning>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="md:hidden rounded-lg hover:bg-accent transition-colors" 
+                  suppressHydrationWarning
+                  aria-label="Toggle menu"
+                >
                   {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-80 p-0 bg-background">
+              <SheetContent side="right" className="w-[85vw] max-w-sm p-0 bg-background">
                 <div className="h-full flex flex-col">
+                  {/* Header */}
                   <div className="p-4 border-b flex items-center justify-between">
                     <Logo />
-                    <ThemeToggle />
+                    <div className="flex items-center gap-2">
+                      <ThemeToggle />
+                    </div>
                   </div>
-                  <nav className="flex-1 p-4 space-y-1">
+                  
+                  {/* Navigation */}
+                  <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                     {navItems.map((item) => {
                       const active = pathname === item.href
                       return (
@@ -203,37 +226,62 @@ export function MainNavbar() {
                           href={item.href}
                           onClick={() => setIsMobileMenuOpen(false)}
                           className={cn(
-                            "block px-3 py-2 rounded-lg min-h-[44px] flex items-center", // 44px touch target
-                            active ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
+                            "block px-4 py-3 rounded-lg min-h-[48px] flex items-center font-medium transition-all", // 48px touch target for mobile
+                            active 
+                              ? "bg-primary/10 text-primary" 
+                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                           )}
                         >
                           {item.name}
+                          {active && (
+                            <motion.div
+                              layoutId="mobile-navbar-indicator"
+                              className="ml-auto w-1.5 h-1.5 rounded-full bg-primary"
+                              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                            />
+                          )}
                         </Link>
                       )
                     })}
                   </nav>
+                  
+                  {/* Footer */}
                   <div className="p-4 border-t space-y-3">
                     {isAuthenticated ? (
-                      availableCredits !== null && (
-                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                          <div className="flex items-center space-x-2">
-                            <CreditCard className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">Credits</span>
+                      <>
+                        {availableCredits !== null && (
+                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                            <div className="flex items-center space-x-2">
+                              <CreditCard className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm font-medium">Credits</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-medium tabular-nums">
+                                {availableCredits.toLocaleString()}
+                              </span>
+                              {subscriptionPlan !== "FREE" && (
+                                <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                                  {subscriptionPlan}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium tabular-nums">
-                              {availableCredits.toLocaleString()}
-                            </span>
-                            {subscriptionPlan !== "FREE" && (
-                              <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
-                                {subscriptionPlan}
-                              </Badge>
-                            )}
-                          </div>
+                        )}
+                        <div className="flex gap-2 md:hidden">
+                          <Suspense fallback={<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}>
+                            <CourseNotificationsMenu />
+                            <NotificationsMenu />
+                          </Suspense>
                         </div>
-                      )
+                      </>
                     ) : (
-                      <Button className="w-full min-h-[44px]" onClick={handleSignIn}>
+                      <Button 
+                        className="w-full min-h-[48px] bg-primary hover:bg-primary/90 transition-all" 
+                        onClick={() => {
+                          handleSignIn()
+                          setIsMobileMenuOpen(false)
+                        }}
+                      >
                         Sign in
                       </Button>
                     )}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
+import { useAppDispatch } from '@/store'
 import { useAuth } from "@/modules/auth"
 
 import {
@@ -26,8 +27,7 @@ import { NoResults } from "@/components/ui/no-results"
 import BlanksQuiz from "./BlanksQuiz"
 import { UnifiedLoader } from "@/components/loaders"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
-import { AppDispatch } from "@/store"
-import { BlankQuizQuestion } from "@/app/types/quiz-types"
+// Type removed - using any for quiz question types
 
 
 
@@ -38,13 +38,13 @@ interface BlanksQuizWrapperProps {
 
 export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProps) {
   const router = useRouter()
-  const dispatch = useDispatch<AppDispatch>()
+  const dispatch = useAppDispatch()
   const { user } = useAuth()
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const hasShownLoaderRef = useRef(false)
   const [error, setError] = useState<string | null>(null)
   // Redux selectors
-  const questions = useSelector(selectQuizQuestions) as BlankQuizQuestion[]
+  const questions = useSelector(selectQuizQuestions) as any[]
   const answers = useSelector(selectQuizAnswers)
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
   const quizStatus = useSelector(selectQuizStatus)
@@ -63,14 +63,15 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
         setError(null)
       } catch (err) {
         // Enhanced error logging with more details
+        const errorObj = err as any;
         console.error("Failed to load quiz:", {
           error: err,
-          message: err?.message,
-          code: err?.code,
-          status: err?.status,
-          stack: err?.stack,
+          message: errorObj?.message,
+          code: errorObj?.code,
+          status: errorObj?.status,
+          stack: errorObj?.stack,
           type: typeof err,
-          keys: err ? Object.keys(err) : [],
+          keys: err ? Object.keys(errorObj) : [],
           slug,
           quizType: "blanks"
         });
@@ -79,17 +80,17 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
         let errorMessage = "Failed to load quiz. Please try again.";
 
         // Handle empty error objects
-        if (!err || (typeof err === 'object' && Object.keys(err).length === 0)) {
+        if (!errorObj || (typeof errorObj === 'object' && Object.keys(errorObj).length === 0)) {
           console.warn("Received empty error object, this may indicate a serialization issue");
           errorMessage = "Unable to load quiz. The quiz may not exist or there may be a connection issue.";
-        } else if (err && typeof err === 'object' && 'code' in err) {
-          if (err.code === 'NOT_FOUND') {
+        } else if (errorObj && typeof errorObj === 'object' && 'code' in errorObj) {
+          if (errorObj.code === 'NOT_FOUND') {
             errorMessage = "Quiz not found. It may have been deleted or the URL is incorrect.";
-          } else if (err.code === 'NETWORK_ERROR') {
+          } else if (errorObj.code === 'NETWORK_ERROR') {
             errorMessage = "Network error. Please check your internet connection.";
-          } else if (err.code === 'SERVER_ERROR') {
+          } else if (errorObj.code === 'SERVER_ERROR') {
             errorMessage = "Server error. Please try again in a few moments.";
-          } else if (err.code === 'CANCELLED') {
+          } else if (errorObj.code === 'CANCELLED') {
             errorMessage = "Request was cancelled. Please try again.";
           }
         }
@@ -220,7 +221,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
 
   const formattedQuestion = useMemo(() => {
     if (!currentQuestion) return null
-    const cq = currentQuestion as BlankQuizQuestion
+    const cq = currentQuestion as any
     return {
       id: cq.id, // Keep as number to match BlankQuizQuestion type
       text: cq.text || cq.question || "",
@@ -273,7 +274,6 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
     <div className="w-full ">
       <div className="space-y-6">
         <BlanksQuiz
-          key={formattedQuestion.id} // ✅ forces component reset per question
           question={formattedQuestion}
           questionNumber={currentQuestionIndex + 1}
           totalQuestions={questions.length}
@@ -286,6 +286,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
           canGoPrevious={canGoPrevious}
           isLastQuestion={isLastQuestion}
           isQuizCompleted={isCompleted}
+          slug={slug}
         />
       </div>
     </div>

@@ -64,6 +64,7 @@ export function AdaptiveFeedbackWrapper({
   const router = useRouter()
   const [currentFeedback, setCurrentFeedback] = useState<FeedbackResponse | null>(null)
   const [showFeedbackCard, setShowFeedbackCard] = useState(false)
+  const [showFullAnswer, setShowFullAnswer] = useState(false)
 
   // Get attempt count from tracker
   const attemptCount = AttemptTracker.getAttemptCount(questionId, quizSlug)
@@ -71,9 +72,14 @@ export function AdaptiveFeedbackWrapper({
   // Generate feedback when answer changes
   useEffect(() => {
     if (shouldShowFeedback && userAnswer.trim()) {
+      // Read attempt count snapshot here to avoid creating a dependency that
+      // changes when we increment attempts inside this effect (which would
+      // cause a re-run and potential infinite loop).
+      const currentAttemptCount = AttemptTracker.getAttemptCount(questionId, quizSlug)
+
       const feedback = getAdaptiveFeedback({
         isAuthenticated,
-        attemptCount,
+        attemptCount: currentAttemptCount,
         difficulty,
         userAnswer,
         correctAnswer,
@@ -83,24 +89,27 @@ export function AdaptiveFeedbackWrapper({
 
       setCurrentFeedback(feedback)
       setShowFeedbackCard(true)
-      
+
       if (onFeedback) {
         onFeedback(feedback)
       }
 
-      // Increment attempt count if not acceptable
+      // Increment attempt count if not acceptable. Use the tracker directly
+      // rather than relying on a prop-derived attemptCount value so we don't
+      // trigger this effect again via dependency changes.
       if (!feedback.isAcceptable) {
         AttemptTracker.incrementAttempt(questionId, quizSlug)
       }
     } else {
       setShowFeedbackCard(false)
     }
+  // Note: attempt count is intentionally not included in deps to avoid
+  // re-running when we increment attempts inside this effect.
   }, [
     shouldShowFeedback,
     userAnswer,
     correctAnswer,
     isAuthenticated,
-    attemptCount,
     difficulty,
     hints,
     relatedTopicSlug,
@@ -201,7 +210,7 @@ export function AdaptiveFeedbackWrapper({
           )}
 
           {/* Answer Reveal (for authenticated users after multiple attempts) */}
-          {currentFeedback.revealAnswer && (
+          {currentFeedback.allowFullReveal && isAuthenticated && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
@@ -209,12 +218,41 @@ export function AdaptiveFeedbackWrapper({
               transition={{ duration: 0.3, delay: 0.1 }}
               className="mb-3"
             >
-              <Alert className="bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800">
-                <BookOpen className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                <AlertDescription className="text-sm text-purple-900 dark:text-purple-100 ml-2">
-                  <strong>Correct Answer:</strong> {correctAnswer}
-                </AlertDescription>
-              </Alert>
+              {!showFullAnswer ? (
+                <Alert className="bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800">
+                  <BookOpen className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <AlertDescription className="text-sm text-purple-900 dark:text-purple-100 ml-2">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <strong>Need the answer?</strong> You can reveal the correct answer, but this may affect your progress.
+                      </div>
+                      <div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            // Simple confirm flow to avoid adding a modal dependency here.
+                            // If user confirms, reveal the answer and record a penalty attempt.
+                            if (window.confirm('Reveal the correct answer? This may count as an additional attempt.')) {
+                              AttemptTracker.incrementAttempt(questionId, quizSlug)
+                              setShowFullAnswer(true)
+                            }
+                          }}
+                        >
+                          Reveal Answer
+                        </Button>
+                      </div>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert className="bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800">
+                  <BookOpen className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <AlertDescription className="text-sm text-purple-900 dark:text-purple-100 ml-2">
+                    <strong>Correct Answer:</strong> {correctAnswer}
+                  </AlertDescription>
+                </Alert>
+              )}
             </motion.div>
           )}
 

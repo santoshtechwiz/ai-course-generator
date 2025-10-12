@@ -41,7 +41,7 @@ interface McqQuizWrapperProps {
 
 export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const router = useRouter()
-  const dispatch = useDispatch<AppDispatch>()
+  const dispatch = useDispatch<any>()
   const { user } = useAuth()
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const hasShownLoaderRef = useRef(false)
@@ -325,6 +325,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
         canGoNext={currentQuestionIndex < questions.length - 1}
         isLastQuestion={currentQuestionIndex === questions.length - 1}
         quizTitle={quizTitle}
+        quizSlug={slug}
       />
     )
   }

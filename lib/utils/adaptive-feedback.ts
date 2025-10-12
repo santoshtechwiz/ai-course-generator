@@ -38,10 +38,10 @@ export interface FeedbackResponse {
   isAcceptable: boolean
   /** Feedback message to display */
   message: string
-  /** Hint to show (if applicable) */
-  hint?: string
-  /** Should reveal the correct answer? */
-  revealAnswer: boolean
+  /** Optional: recommended hint spoiler level to show next */
+  recommendedSpoilerLevel?: 'low' | 'medium' | 'high'
+  /** Optional: whether UI may offer a full-answer reveal as a user-action (not automatic) */
+  allowFullReveal?: boolean
   /** Suggested resources */
   suggestedResources?: Array<{
     title: string
@@ -66,7 +66,8 @@ export function getAdaptiveFeedback(config: AdaptiveFeedbackConfig): FeedbackRes
   } = config
 
   // Calculate similarity using existing utility
-  const similarity = calculateAnswerSimilarity(userAnswer, correctAnswer)
+  const similarityResult = calculateAnswerSimilarity(userAnswer, correctAnswer)
+  const similarity = similarityResult.similarity
   const isAcceptable = similarity >= 0.8
 
   // If answer is acceptable, return positive feedback
@@ -75,7 +76,7 @@ export function getAdaptiveFeedback(config: AdaptiveFeedbackConfig): FeedbackRes
       similarity,
       isAcceptable: true,
       message: getSuccessMessage(similarity),
-      revealAnswer: false,
+      allowFullReveal: false,
       encouragementLevel: 3
     }
   }
@@ -113,7 +114,7 @@ function getGuestFeedback(
       isAcceptable: false,
       message: getSimilarityMessage(similarity) + " Try again!",
       hint: similarity < 0.3 ? firstHint : undefined,
-      revealAnswer: false,
+      allowFullReveal: false,
       encouragementLevel: 2
     }
   }
@@ -125,7 +126,7 @@ function getGuestFeedback(
       isAcceptable: false,
       message: "You're getting closer! " + (firstHint ? "Here's a hint:" : ""),
       hint: firstHint,
-      revealAnswer: false,
+      allowFullReveal: false,
       encouragementLevel: 2
     }
   }
@@ -135,7 +136,7 @@ function getGuestFeedback(
     similarity,
     isAcceptable: false,
     message: "Want more hints and learning resources? Sign in to unlock full feedback!",
-    revealAnswer: false,
+    allowFullReveal: false,
     suggestedResources: [{
       title: "Sign in to continue",
       url: `/api/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`,
@@ -165,7 +166,7 @@ function getAuthenticatedFeedback(
       isAcceptable: false,
       message: getSimilarityMessage(similarity) + " Think carefully and try again.",
       hint: similarity < 0.3 ? hints[0] : undefined,
-      revealAnswer: false,
+      allowFullReveal: false,
       encouragementLevel: 2
     }
   }
@@ -177,7 +178,7 @@ function getAuthenticatedFeedback(
       isAcceptable: false,
       message: "You're making progress! Here's a hint to help:",
       hint: hints[0],
-      revealAnswer: false,
+      allowFullReveal: false,
       encouragementLevel: 2
     }
   }
@@ -189,7 +190,7 @@ function getAuthenticatedFeedback(
       isAcceptable: false,
       message: "Almost there! Here's another hint:",
       hint: hints[1],
-      revealAnswer: false,
+      allowFullReveal: false,
       encouragementLevel: 2
     }
   }
@@ -200,7 +201,7 @@ function getAuthenticatedFeedback(
     isAcceptable: false,
     message: "Let's review the correct answer and some resources to help you understand:",
     hint: hints[hints.length - 1], // Show last hint
-    revealAnswer: true,
+    allowFullReveal: true,
     suggestedResources: relatedTopicSlug ? [
       {
         title: "Review the related course",
@@ -278,8 +279,7 @@ export class AttemptTracker {
       }
 
       return attempt.count
-    } catch (error) {
-      console.error('[AttemptTracker] Failed to get attempt count:', error)
+    } catch {
       return 0
     }
   }
@@ -305,8 +305,7 @@ export class AttemptTracker {
 
       this.saveData(data)
       return newCount
-    } catch (error) {
-      console.error('[AttemptTracker] Failed to increment attempt:', error)
+    } catch {
       return 1
     }
   }
@@ -322,8 +321,8 @@ export class AttemptTracker {
       const key = `${quizSlug}_${questionId}`
       delete data[key]
       this.saveData(data)
-    } catch (error) {
-      console.error('[AttemptTracker] Failed to clear attempt:', error)
+    } catch {
+      // Silently fail
     }
   }
 
@@ -339,8 +338,8 @@ export class AttemptTracker {
       
       keys.forEach(key => delete data[key])
       this.saveData(data)
-    } catch (error) {
-      console.error('[AttemptTracker] Failed to clear quiz attempts:', error)
+    } catch {
+      // Silently fail
     }
   }
 
@@ -362,8 +361,8 @@ export class AttemptTracker {
       })
 
       this.saveData(data)
-    } catch (error) {
-      console.error('[AttemptTracker] Failed to clear expired attempts:', error)
+    } catch {
+      // Silently fail
     }
   }
 
@@ -379,8 +378,8 @@ export class AttemptTracker {
   private static saveData(data: Record<string, any>): void {
     try {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data))
-    } catch (error) {
-      console.error('[AttemptTracker] Failed to save data:', error)
+    } catch {
+      // Silently fail
     }
   }
 }

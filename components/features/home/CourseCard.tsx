@@ -81,7 +81,6 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
     completedChapters = 0,
     totalChapters = unitCount || 0,
     lastAccessedAt,
-    updatedAt,
     currentChapterTitle,
     timeSpent,
     tags,
@@ -165,8 +164,8 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
       <div
         className={cn(
           "relative overflow-hidden bg-muted",
-          variant === "list" && "w-full h-32 sm:w-40 sm:h-full sm:shrink-0",
-          variant === "grid" && "w-full h-32",
+          variant === "list" && "w-full h-28 sm:w-36 sm:h-full sm:shrink-0",
+          variant === "grid" && "w-full h-44",
         )}
       >
         {image ? (
@@ -236,7 +235,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
         className={cn(
           "flex flex-col justify-between bg-card",
           variant === "list" && "sm:flex-row sm:items-center p-3 gap-2",
-          variant === "grid" && "p-3 flex-1 space-y-2.5",
+          variant === "grid" && "p-4 flex-1 space-y-2",
         )}
       >
         <div className="flex items-center justify-between">

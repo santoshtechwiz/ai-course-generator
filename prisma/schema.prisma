@@ -161,7 +161,7 @@ model Course {
   tags             Tag[]            @relation("CourseTags")
   learningEvents   LearningEvent[]
   chapterProgresses ChapterProgress[]
-
+  viewCount  Int?     @default(0)
   @@index([title])
   @@index([categoryId])
   @@index([userId])
@@ -911,4 +911,26 @@ model SubscriptionEvent {
   @@index([userId])
   @@index([userSubscriptionId])
   @@index([effectiveAt])
+}
+
+// Adaptive learning tracking for personalized difficulty adjustment
+model UserTopicProgress {
+  id              String   @id @default(cuid())
+  userId          String
+  topic           String   // Topic/category name (e.g., "JavaScript", "Algebra")
+  correctAnswers  Int      @default(0)
+  totalAttempts   Int      @default(0)
+  currentStreak   Int      @default(0)
+  longestStreak   Int      @default(0)
+  averageTime     Float    @default(0) // Average time per question in seconds
+  difficultyLevel String   @default("MEDIUM") // EASY | MEDIUM | HARD
+  masteryScore    Float    @default(0) // 0-100 score indicating mastery
+  lastAttemptAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, topic])
+  @@index([userId])
+  @@index([topic])
+  @@index([masteryScore])
 }

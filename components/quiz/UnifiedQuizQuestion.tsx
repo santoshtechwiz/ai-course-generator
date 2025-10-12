@@ -17,6 +17,8 @@ import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
 import { generateBlanksHints, generateOpenEndedHints } from "@/lib/utils/hint-system"
 import { toast } from "sonner"
 import { HintSystem } from "./HintSystem"
+import { AdaptiveFeedbackWrapper, useAdaptiveFeedback } from "./AdaptiveFeedbackWrapper"
+import { useAuth } from "@/modules/auth"
 
 export type QuizQuestionType = 'mcq' | 'blanks' | 'openended' | 'code'
 
@@ -73,6 +75,8 @@ interface UnifiedQuizQuestionProps {
   showRetake?: boolean
   timeSpent?: number
   className?: string
+  quizSlug?: string
+  enableAdaptiveFeedback?: boolean
 }
 
 // Memoized option component with clean animations
@@ -181,16 +185,28 @@ function UnifiedQuizQuestionComponent({
   showRetake = false,
   timeSpent,
   className,
+  quizSlug,
+  enableAdaptiveFeedback = true,
 }: UnifiedQuizQuestionProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string>(existingAnswer || '')
   const [isAnswering, setIsAnswering] = useState(false)
   const [hintsUsed, setHintsUsed] = useState(0)
+  const [showIncorrectFeedback, setShowIncorrectFeedback] = useState(false)
+
+  // Adaptive feedback integration
+  const { isAuthenticated } = useAuth()
+  const adaptiveFeedback = useAdaptiveFeedback(
+    quizSlug || 'unified-quiz',
+    question.id,
+    isAuthenticated
+  )
 
   // Reset state when question changes
   useEffect(() => {
     setSelectedAnswer(existingAnswer || '');
     setIsAnswering(false);
     setHintsUsed(0);
+    setShowIncorrectFeedback(false);
   }, [question.id, existingAnswer]);
 
   // Memoized question text

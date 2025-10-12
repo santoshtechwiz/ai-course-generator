@@ -1,6 +1,6 @@
 "use client"
 import type React from "react"
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { motion } from "framer-motion"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
@@ -11,12 +11,13 @@ import { QuizFooter } from "@/components/quiz/QuizFooter"
 import { HintSystem } from "@/components/quiz/HintSystem"
 import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
 import { generateContentAwareHints } from "@/lib/utils/hint-system"
-import type { OpenEndedQuestion } from "@/app/types/quiz-types"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useOptionalQuizState } from "@/components/quiz/QuizStateProvider"
+import { AdaptiveFeedbackWrapper, useAdaptiveFeedback } from "@/components/quiz/AdaptiveFeedbackWrapper"
+import { useAuth } from "@/modules/auth"
 
 interface OpenEndedQuizProps {
-  question: OpenEndedQuestion
+  question: any
   questionNumber: number
   totalQuestions: number
   existingAnswer?: string
@@ -28,6 +29,7 @@ interface OpenEndedQuizProps {
   canGoPrevious?: boolean
   isLastQuestion?: boolean
   timeSpent?: number
+  slug?: string
 }
 
 // Standardized animation variants
@@ -90,6 +92,7 @@ export default function OpenEndedQuiz({
   canGoPrevious = false,
   isLastQuestion = false,
   timeSpent = 0,
+  slug,
 }: OpenEndedQuizProps) {
   const [answer, setAnswer] = useState(existingAnswer)
   const [similarity, setSimilarity] = useState<number>(0)
@@ -97,6 +100,16 @@ export default function OpenEndedQuiz({
   const [showValidation, setShowValidation] = useState(false)
   const [hintsUsed, setHintsUsed] = useState(0)
   const [keywordsCovered, setKeywordsCovered] = useState<string[]>([])
+  const [isFocused, setIsFocused] = useState(false)
+  const pendingResetRef = useRef(false)
+
+  // Adaptive feedback integration
+  const { isAuthenticated } = useAuth()
+  const adaptiveFeedback = useAdaptiveFeedback(
+    slug || 'unknown-quiz',
+    question.id,
+    isAuthenticated
+  )
 
   // Extract question data with proper fallbacks
   const questionData = useMemo(() => {
@@ -104,10 +117,18 @@ export default function OpenEndedQuiz({
     return {
       text: question.question || question.text || "",
       answer: question.answer || openEndedData.correctAnswer || "",
-      keywords: Array.isArray(question.tags) ? question.tags : [],
-      hints: Array.isArray(question.hints) ? question.hints : [],
+      // keywords may be stored under `tags`, `keywords`, or `keyphrases` depending on source
+      keywords: Array.isArray(openEndedData.keywords)
+        ? openEndedData.keywords
+        : Array.isArray(openEndedData.tags)
+        ? openEndedData.tags
+        : Array.isArray(openEndedData.keyphrases)
+        ? openEndedData.keyphrases
+        : [],
+      // Hints may be strings or objects; keep raw and let generator normalize
+      hints: Array.isArray(openEndedData.hints) ? openEndedData.hints : [],
       difficulty: openEndedData.difficulty || question.difficulty || "Medium",
-      tags: Array.isArray(openEndedData.tags) ? openEndedData.tags : Array.isArray(question.tags) ? question.tags : [],
+      tags: Array.isArray(openEndedData.tags) ? openEndedData.tags : Array.isArray(openEndedData.keywords) ? openEndedData.keywords : [],
     }
   }, [question])
 
@@ -125,7 +146,7 @@ export default function OpenEndedQuiz({
     }
 
     // Check answer length as indicator
-    const answerWords = correctAnswer.split(/\s+/).filter(word => word.length > 0)
+    const answerWords = correctAnswer.split(/\s+/).filter((word: string) => word.length > 0)
     if (answerWords.length < 25) return "short"
     if (answerWords.length > 100) return "long"
     return "medium"
@@ -139,7 +160,7 @@ export default function OpenEndedQuiz({
       validKeywords,
       expectedLength,
       answer,
-      { allowDirectAnswer: false, maxHints: 3, partialWords: 4 },
+      { allowDirectAnswer: false, maxHints: 3, partialWords: 4, keywords: validKeywords, tags: Array.isArray(questionData.tags) ? questionData.tags : [] },
     )
   }, [questionData.keywords, questionData.text, expectedLength, answer])
 
@@ -153,7 +174,7 @@ export default function OpenEndedQuiz({
       }
       // Check keyword coverage
       if (questionData.keywords.length > 0) {
-        const covered = questionData.keywords.filter((keyword) => answer.toLowerCase().includes(keyword.toLowerCase()))
+        const covered = questionData.keywords.filter((keyword: string) => answer.toLowerCase().includes(keyword.toLowerCase()))
         setKeywordsCovered(covered)
       }
     } else {
@@ -163,17 +184,39 @@ export default function OpenEndedQuiz({
     }
   }, [answer, questionData.answer, questionData.keywords])
 
-  // Update answer from props
+  // Track question changes and reset state only when question changes
+  const questionIdRef = useRef(question?.id)
   useEffect(() => {
-    if (existingAnswer && existingAnswer !== answer) {
-      setAnswer(existingAnswer)
+    if (questionIdRef.current !== question?.id) {
+      questionIdRef.current = question?.id
+      setAnswer(existingAnswer || '')
+      setIsAnswered(!!existingAnswer)
+      setShowValidation(false)
+      setHintsUsed(0)
+      setSimilarity(0)
+      setKeywordsCovered([])
     }
-  }, [existingAnswer, answer])
+  }, [question?.id, existingAnswer])
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     setAnswer(value)
     setShowValidation(false)
+  }, [])
+
+  const handleInputBlur = useCallback(() => {
+    setIsFocused(false)
+    if (pendingResetRef.current) {
+      pendingResetRef.current = false
+      setAnswer('')
+      setIsAnswered(false)
+      setShowValidation(false)
+      setKeywordsCovered([])
+    }
+  }, [])
+
+  const handleInputFocus = useCallback(() => {
+    setIsFocused(true)
   }, [])
 
   const handleAnswerSubmit = useCallback(() => {
@@ -311,7 +354,9 @@ export default function OpenEndedQuiz({
               id="answer"
               value={answer}
               onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
+          onKeyDown={handleKeyDown}
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
               placeholder="Share your understanding and reasoning..."
               className={cn(
                 "w-full min-h-[120px] sm:min-h-[140px] md:min-h-[160px] resize-y transition-all border-2 bg-background text-sm sm:text-base md:text-lg",
@@ -355,6 +400,32 @@ export default function OpenEndedQuiz({
             </div>
           )}
 
+          {/* Adaptive Feedback Wrapper - Intelligent feedback based on attempts */}
+          {answer.trim() && similarity < 0.3 && (
+            <AdaptiveFeedbackWrapper
+              quizSlug={slug || 'unknown-quiz'}
+              questionId={question.id}
+              userAnswer={answer}
+              correctAnswer={questionData.answer}
+              isAuthenticated={isAuthenticated}
+              hints={hints.map((h) => h.content)}
+              relatedTopicSlug={slug}
+              difficulty={3}
+              shouldShowFeedback={true}
+              onReset={() => {
+                // If user is actively typing, defer the reset until blur to avoid erasing in-progress input
+                if (isFocused) {
+                  pendingResetRef.current = true
+                } else {
+                  setAnswer('')
+                  setIsAnswered(false)
+                  setShowValidation(false)
+                  setKeywordsCovered([])
+                }
+              }}
+            />
+          )}
+
           {/* Hint System */}
           <motion.div
             variants={itemVariants}
@@ -371,6 +442,8 @@ export default function OpenEndedQuiz({
               correctAnswer={questionData.answer}
               maxHints={3}
               expectedLength={expectedLength}
+              // @ts-expect-error - allow passing tags for display
+              tags={questionData.tags}
             />
           </motion.div>
         </div>

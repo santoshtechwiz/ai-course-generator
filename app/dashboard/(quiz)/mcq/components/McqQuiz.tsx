@@ -30,6 +30,7 @@ interface McqQuizProps {
   difficulty?: string
   category?: string
   timeLimit?: number
+  quizSlug?: string  // Added for adaptive feedback
 }
 
 const McqQuiz = ({
@@ -50,6 +51,7 @@ const McqQuiz = ({
   difficulty = "Medium",
   category = "General Knowledge",
   timeLimit,
+  quizSlug,  // Added for adaptive feedback
 }: McqQuizProps) => {
   // Convert legacy question format to unified format
   const unifiedQuestion: MCQQuestion = useMemo(
@@ -102,6 +104,8 @@ const McqQuiz = ({
             canGoNext={canGoNext}
             isLastQuestion={isLastQuestion}
             isSubmitting={isSubmitting}
+            quizSlug={quizSlug}
+            enableAdaptiveFeedback={true}
           />
 
           <QuizFooter

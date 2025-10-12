@@ -288,7 +288,7 @@ export default function SignInPrompt({
           </div>
           <div className="flex items-center gap-1">
             <Star className="w-4 h-4" />
-            Free forever
+            Free to start
           </div>
         </div>
       </div>

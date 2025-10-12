@@ -26,6 +26,7 @@ interface CodeQuizProps {
   difficulty?: string
   category?: string
   timeLimit?: number
+  quizSlug?: string  // Added for adaptive feedback
 }
 
 const CodeQuiz = ({
@@ -48,6 +49,7 @@ const CodeQuiz = ({
   difficulty = "Medium",
   category = "Programming",
   timeLimit,
+  quizSlug,  // Added for adaptive feedback
 }: CodeQuizProps) => {
   // Convert legacy question format to unified format
   const unifiedQuestion: UnifiedCodeQuestion = useMemo(
@@ -89,6 +91,8 @@ const CodeQuiz = ({
             canGoNext={canGoNext}
             isLastQuestion={isLastQuestion}
             isSubmitting={isSubmitting}
+            quizSlug={quizSlug}
+            enableAdaptiveFeedback={true}
           />
 
           {showNavigation && (

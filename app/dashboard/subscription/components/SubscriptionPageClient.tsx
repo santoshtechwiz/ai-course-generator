@@ -52,12 +52,9 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   
   const error = undefined
 
-  // Log subscription errors for debugging
+  // Silent error handling - errors handled by unified subscription hook
   useEffect(() => {
-    if (error) {
-      // eslint-disable-next-line no-console
-      console.error("Subscription fetch error:", error)
-    }
+    // Error state monitored internally, no console logging needed
   }, [error])
 
   const isProd = process.env.NODE_ENV === "production"
@@ -108,7 +105,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         setPendingSubscriptionData(pendingData)
       }
     } catch (error) {
-      console.error("Error parsing pending subscription data:", error)
+      // Silent failure - invalid pending subscription data will be ignored
     }
   }, [])
 
@@ -117,14 +114,6 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   // Handle subscription button click for unauthenticated users
   const handleUnauthenticatedSubscribe = useCallback(
     (planName: SubscriptionPlanType, duration: number, promoCode?: string, promoDiscount?: number) => {
-      console.log('[SubscriptionPageClient] handleUnauthenticatedSubscribe called:', {
-        planName,
-        duration,
-        isAuthenticated,
-        isLoading,
-        userId
-      })
-      
       // Only show login modal if user is definitely not authenticated
       if (!isAuthenticated && !isLoading) {
         const subscriptionData = {
@@ -136,9 +125,8 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         }
         setPendingSubscriptionData(subscriptionData)
         setShowLoginModal(true)
-      } else if (isAuthenticated) {
-        console.warn('[SubscriptionPageClient] User is already authenticated, should not call handleUnauthenticatedSubscribe')
       }
+      // Silent handling for authenticated users - no action needed
     },
     [referralCode, isLoading, isAuthenticated, userId],
   )

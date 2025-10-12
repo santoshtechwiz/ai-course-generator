@@ -123,18 +123,6 @@ export default function PlanAwareButton({
     })
   }, [subscriptionCredits, subscriptionTokensUsed])
 
-  // Debug logging in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('PlanAwareButton Credit Info (SECURE):', {
-      userId: user?.id,
-      remainingCredits: creditInfo.remainingCredits,
-      hasCredits: creditInfo.hasCredits,
-      hasCreditsPassedProp: hasCredits,
-      creditsRequired,
-      effectiveHasCredits: hasCredits !== undefined ? hasCredits : creditInfo.hasEnoughCredits(creditsRequired)
-    })
-  }
-
   // Use provided hasCredits prop when present, but prefer the authoritative client-side
   // credit check. This prevents stale session-derived props from incorrectly marking
   // the user as out-of-credits while the client service shows available credits.
@@ -200,24 +188,6 @@ export default function PlanAwareButton({
     
     return true
   }, [effectiveIsLoggedIn, hasExpiredSubscription, meetsRequirement, effectiveHasCredits, isEnabled])
-
-  // Debug logging for plan detection issues
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[PlanAwareButton "${label}"] Plan Detection:`, {
-      requiredPlan,
-      currentPlan,
-      subscriptionPlan: subscription?.subscriptionPlan,
-      userSubscriptionPlan: user?.subscriptionPlan,
-      unifiedPlan: plan,
-      effectivePlan,
-      subscriptionStatus: subscription?.status,
-      isAlreadySubscribed,
-      meetsRequirement,
-      hasExpiredSubscription,
-      isAuthenticated,
-      canPerformAction
-    })
-  }
 
   // Extract the button states based on conditions
   const getButtonState = useMemo(() => {

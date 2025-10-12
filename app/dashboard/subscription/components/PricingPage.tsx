@@ -104,14 +104,6 @@ export function PricingPage({
   const hasAllPlans = false // Placeholder for potential multi-plan support
 
   const handleSubscribe = async (planName: SubscriptionPlanType, duration: number) => {
-    console.log('[PricingPage] handleSubscribe called:', {
-      planName,
-      duration,
-      isAuthenticated,
-      userId: currentUserId,
-      hasUser: !!user
-    })
-    
     setLoading(planName)
     setSubscriptionError(null)
     
@@ -120,14 +112,11 @@ export function PricingPage({
       
       // Check authentication status before proceeding
       if (!isAuthenticated || !user) {
-        console.log('[PricingPage] User not authenticated, calling onUnauthenticatedSubscribe')
         onUnauthenticatedSubscribe?.(planName, duration, promoArgs.promoCode, promoArgs.promoDiscount)
         migratedStorage.setItem("pendingSubscription", { planName, duration, ...promoArgs }, { secure: true })
         // Auth flow handled by parent (login modal) – no forced redirect here
         return
       }
-      
-      console.log('[PricingPage] User authenticated, proceeding with subscription')
 
       // Enhanced upgrade flow validation with better UX messaging
       const hadPaidPlanBefore = hasAnyPaidPlan
@@ -315,7 +304,7 @@ export function PricingPage({
   const planOrder: SubscriptionPlanType[] = ["FREE", "BASIC", "PREMIUM", "ENTERPRISE"];
   const currentPlanIndex = planOrder.indexOf(currentPlan);
 
-  // Convert plans to array format  
+  // Convert plans to array format - show ALL plans regardless of current subscription
   const availablePlans = planOrder
     .map(planId => {
       const config = getPlanConfig(planId)
@@ -339,8 +328,9 @@ export function PricingPage({
           { duration: 6, price: yearlyPrice / 2 }
         ]
       }
-    })
-    .filter((_, index) => index >= currentPlanIndex);
+    });
+    // Removed: .filter((_, index) => index >= currentPlanIndex) 
+    // This filter was hiding Free Plan from paid users - all plans should be visible
 
   return (
     <div className="container max-w-6xl space-y-10 px-4 sm:px-6 animate-in fade-in duration-500">

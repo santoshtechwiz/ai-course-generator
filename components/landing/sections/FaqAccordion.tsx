@@ -16,63 +16,63 @@ import { useDebounce } from "@/hooks"
 const faqs = [
 	{
 		id: "faq-1",
-		question: "How does CourseAI create such amazing content?",
+		question: "How does CourseAI work?",
 		answer:
-			"CourseAI combines advanced AI with deep educational expertise to create comprehensive, engaging courses. Our system analyzes your topic, researches relevant information, and structures it into beautiful, interactive learning experiences that captivate and educate your audience.",
+			"CourseAI uses AI to help you create educational content quickly. Enter a topic, and our AI generates course structures, quizzes, and learning materials. You can then customize and edit everything to match your teaching style.",
 	},
 	{
 		id: "faq-2",
-		question: "Can I customize the AI-generated content?",
+		question: "Can I create both courses and quizzes?",
 		answer:
-			"Absolutely! CourseAI gives you complete creative control. Edit any aspect of your course—from the content and structure to the visual design and quizzes. Our platform serves as your intelligent assistant, not a replacement for your expertise.",
+			"Yes! CourseAI supports multiple content types including full courses with chapters, multiple-choice quizzes, open-ended questions, fill-in-the-blanks, code challenges, and flashcards. Create what works best for your learners.",
 	},
 	{
 		id: "faq-3",
-		question: "Can I import my existing materials?",
+		question: "Can I upload YouTube videos with transcripts?",
 		answer:
-			"Yes! CourseAI supports importing content from various sources including PDFs, websites, YouTube videos, and existing documents. Our AI will intelligently restructure and enhance your materials into cohesive, engaging courses.",
+			"Yes, you can add YouTube videos to your courses. If YouTube provides transcripts for the video, our AI can use them to generate relevant quizzes and summaries. Interactive elements depend on transcript availability.",
 	},
 	{
 		id: "faq-4",
-		question: "What if I'm not satisfied with my course?",
+		question: "Is there a limit on how many learners I can invite?",
 		answer:
-			"Your satisfaction is our priority. If you're not completely happy with your course, simply let us know within 30 days and we'll work with you to perfect it or provide a full refund. We stand behind the quality of our AI.",
+			"The number of learners you can invite depends on your subscription plan. Free accounts have basic sharing capabilities, while paid plans offer expanded access and collaboration features. Check the pricing page for specific limits.",
 	},
 	{
 		id: "faq-5",
-		question: "How do I keep my courses private?",
+		question: "How can I track learner progress?",
 		answer:
-			"Privacy and control are built into CourseAI. You can set courses as private, password-protected, or share them only with specific individuals. Your content remains yours, and you have complete control over who can access it.",
+			"CourseAI provides progress tracking for your courses and quizzes. Monitor completion rates, quiz scores, and time spent on content. Access analytics from your dashboard to see how learners engage with your materials.",
 	},
 	{
 		id: "faq-6",
-		question: "Does CourseAI create video content?",
+		question: "Can I edit AI-generated content?",
 		answer:
-			"CourseAI integrates seamlessly with video content. While we don't create videos ourselves, our platform automatically finds and incorporates relevant videos from YouTube and other sources, complete with interactive quizzes and discussion prompts.",
+			"Absolutely! All AI-generated content is fully editable. You have complete control to modify, add, or remove any part of your courses and quizzes. The AI serves as a starting point that you can refine to perfection.",
 	},
 	{
 		id: "faq-7",
-		question: "How do I share my courses with others?",
+		question: "How do I share my courses?",
 		answer:
-			"Sharing is effortless with CourseAI. Generate a unique link, embed your course on websites, or share directly through email and social media. Track engagement and gather feedback from your audience with built-in analytics.",
+			"You can share courses by generating a unique link or inviting learners via email. Set your courses as public, private, or password-protected based on your needs. Manage access controls from your dashboard.",
 	},
 	{
 		id: "faq-8",
-		question: "Do videos include interactive elements?",
+		question: "What types of quizzes can I create?",
 		answer:
-			"Yes! CourseAI automatically generates quizzes, discussion questions, and interactive elements for video content. Even without transcripts, our AI creates relevant assessments that enhance learning and engagement.",
+			"Create multiple quiz types: multiple-choice questions, open-ended questions, fill-in-the-blanks, code challenges, and flashcards. Each type supports AI generation and full customization to match your learning objectives.",
 	},
 	{
 		id: "faq-9",
-		question: "Can I track learner progress and engagement?",
+		question: "Is my content secure and private?",
 		answer:
-			"CourseAI provides comprehensive analytics and progress tracking. Monitor completion rates, quiz scores, time spent on content, and learner engagement. Use these insights to continuously improve your courses and teaching effectiveness.",
+			"Yes. All your data is encrypted and stored securely. Your courses and quizzes are private by default—only you control who can access them. We follow industry-standard security practices to protect your content.",
 	},
 	{
 		id: "faq-10",
-		question: "Is my data and progress secure?",
+		question: "Do I need technical skills to use CourseAI?",
 		answer:
-			"Security is fundamental to CourseAI. All data is encrypted, and your personal information and course content are protected with enterprise-grade security. Only you can access your account and the courses you've created.",
+			"No technical skills required! CourseAI is designed to be simple and intuitive. Just provide a topic or content, and the AI handles the heavy lifting. The interface is user-friendly for educators, trainers, and anyone creating learning content.",
 	},
 ]
 

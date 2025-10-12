@@ -78,21 +78,6 @@ const useQuizActions = (props: QuizActionsProps) => {
   // Check if user is the owner
   const isOwner = user?.id && props.userId && String(user.id) === String(props.userId)
 
-  console.log('QuizActions Hook Debug:', {
-    userId: user?.id,
-    propsUserId: props.userId,
-    userIdType: typeof user?.id,
-    propsUserIdType: typeof props.userId,
-    isOwner,
-    isAuthenticated,
-    userExists: !!user,
-    // PDF Access Debug
-    canGeneratePdf,
-    pdfDenialReason,
-    requiredPlan,
-    showPdfUpgradePrompt
-  })
-
   // Use the mutation hook for deletion
   const deleteQuizMutation = useDeleteQuiz({
     onSuccess: () => {
@@ -107,8 +92,7 @@ const useQuizActions = (props: QuizActionsProps) => {
         router.push('/dashboard/quizzes')
       }, 1000) // Small delay to show the success toast
     },
-    onError: (error) => {
-      console.error('Delete quiz error:', error)
+    onError: () => {
       toast.error("Failed to delete quiz. Please try again.")
       setShowDeleteDialog(false)
     }
@@ -224,7 +208,6 @@ const useQuizActions = (props: QuizActionsProps) => {
       props.onVisibilityChange?.(newVisibility)
       toast.success(newVisibility ? "Quiz is now public!" : "Quiz is now private!", { id: "visibility-action" })
     } catch (error) {
-      console.error('Visibility toggle error:', error)
       toast.error(error instanceof Error ? error.message : "Failed to update quiz visibility", { id: "visibility-action" })
     } finally {
       updateActionState("isTogglingVisibility", false)
@@ -239,9 +222,8 @@ const useQuizActions = (props: QuizActionsProps) => {
         slug: props.quizSlug,
         quizType: props.quizType
       })
-    } catch (error) {
+    } catch {
       // Error handling is done in the mutation hook
-      console.error('Delete quiz error:', error)
     }
   }, [canPerformAction, deleteQuizMutation, props.quizSlug, props.quizType])
 
@@ -391,7 +373,6 @@ const useQuizActions = (props: QuizActionsProps) => {
 
       toast.success("PDF generated and downloaded successfully!", { id: "pdf-generation" })
     } catch (error) {
-      console.error('PDF generation error:', error)
       toast.error(error instanceof Error ? error.message : "Failed to generate PDF", { id: "pdf-generation" })
     } finally {
       updateActionState("isGeneratingPdf", false)
@@ -607,7 +588,7 @@ const QuizActions = memo(
       [handleShare, handleFavorite, handleVisibilityToggle, actionState.isSharing, actionState.isFavoriting, actionState.isTogglingVisibility, isFavorite, isPublic, isAuthenticated, isOwner],
     )
 
-    const secondaryActions = useMemo(
+      const secondaryActions = useMemo(
       () => {
         const actions = [
         {
@@ -630,14 +611,6 @@ const QuizActions = memo(
           variant: "ghost" as const,
         },
       ]
-        console.log('QuizActions Debug:', {
-          isOwner,
-          isAuthenticated,
-          showPdfGeneration,
-          deleteShowCondition: isOwner && isAuthenticated,
-          variant,
-          secondaryActions: actions.map(a => ({ key: a.key, show: a.show }))
-        })
         return actions
       },
       [
@@ -745,11 +718,6 @@ const QuizActions = memo(
             <DropdownMenuContent align="end" className="w-48">
               {(() => {
                 const visibleActions = secondaryActions.filter((action) => action.show)
-                console.log('DropdownMenu rendering:', {
-                  totalSecondaryActions: secondaryActions.length,
-                  visibleActions: visibleActions.length,
-                  visibleActionKeys: visibleActions.map(a => a.key)
-                })
                 return visibleActions.map((action, index) => (
                   <div key={action.key}>
                     {index > 0 && action.key === "delete" && <DropdownMenuSeparator />}

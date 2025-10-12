@@ -30,7 +30,7 @@ import OpenEndedQuiz from "./OpenEndedQuiz"
 
 import { UnifiedLoader } from "@/components/loaders"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
-import { OpenEndedQuestion } from "@/app/types/quiz-types"
+// Type removed - using any for quiz question types
 
 
 
@@ -42,7 +42,7 @@ interface OpenEndedQuizWrapperProps {
 
 export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapperProps) {
   const router = useRouter()
-  const dispatch = useDispatch<AppDispatch>()
+  const dispatch = useDispatch<any>()
   const { user } = useAuth()
 
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -50,7 +50,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   // Redux selectors
-  const questions = useSelector(selectQuizQuestions) as unknown as OpenEndedQuestion[];
+  const questions = useSelector(selectQuizQuestions) as any[];
   const answers = useSelector(selectQuizAnswers)
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
   const quizStatus = useSelector(selectQuizStatus)
@@ -79,14 +79,15 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
         setError(null)
       } catch (err) {
         // Enhanced error logging with more details
+        const errorObj = err as any;
         console.error("Failed to load quiz:", {
           error: err,
-          message: err?.message,
-          code: err?.code,
-          status: err?.status,
-          stack: err?.stack,
+          message: errorObj?.message,
+          code: errorObj?.code,
+          status: errorObj?.status,
+          stack: errorObj?.stack,
           type: typeof err,
-          keys: err ? Object.keys(err) : [],
+          keys: err ? Object.keys(errorObj) : [],
           slug,
           quizType: "openended"
         });
@@ -95,17 +96,17 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
         let errorMessage = "Failed to load quiz. Please try again.";
 
         // Handle empty error objects
-        if (!err || (typeof err === 'object' && Object.keys(err).length === 0)) {
+        if (!errorObj || (typeof errorObj === 'object' && Object.keys(errorObj).length === 0)) {
           console.warn("Received empty error object, this may indicate a serialization issue");
           errorMessage = "Unable to load quiz. The quiz may not exist or there may be a connection issue.";
-        } else if (err && typeof err === 'object' && 'code' in err) {
-          if (err.code === 'NOT_FOUND') {
+        } else if (errorObj && typeof errorObj === 'object' && 'code' in errorObj) {
+          if (errorObj.code === 'NOT_FOUND') {
             errorMessage = "Quiz not found. It may have been deleted or the URL is incorrect.";
-          } else if (err.code === 'NETWORK_ERROR') {
+          } else if (errorObj.code === 'NETWORK_ERROR') {
             errorMessage = "Network error. Please check your internet connection.";
-          } else if (err.code === 'SERVER_ERROR') {
+          } else if (errorObj.code === 'SERVER_ERROR') {
             errorMessage = "Server error. Please try again in a few moments.";
-          } else if (err.code === 'CANCELLED') {
+          } else if (errorObj.code === 'CANCELLED') {
             errorMessage = "Request was cancelled. Please try again.";
           }
         }
@@ -241,7 +242,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
 
   const formattedQuestion = useMemo(() => {
     if (!currentQuestion) return null
-    const cq = currentQuestion as OpenEndedQuestion
+    const cq = currentQuestion as any
     return {
       id: Number(cq.id) || cq.id,
       text: cq.text || cq.question || "",
@@ -307,6 +308,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
           canGoNext={canGoNext}
           canGoPrevious={canGoPrevious}
           isLastQuestion={isLastQuestion}
+          slug={slug}
         />
       </div>
     </div>

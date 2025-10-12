@@ -288,7 +288,6 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
                 feature="course-videos"
                 requiredPlan={requiredPlan || 'BASIC'}
                 customMessage="Unlock AI Summaries"
-                showFeatureList={false}
                 className=""
               />
             </div>
