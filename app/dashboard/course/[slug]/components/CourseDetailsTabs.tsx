@@ -58,8 +58,7 @@ import { DeleteNoteDialog } from "./modals/DeleteNoteDialog"
 import { useNotes } from "@/hooks/use-notes"
 import { useBookmarks } from "@/hooks/use-bookmarks"
 import type { Bookmark } from "@prisma/client"
-import { ChapterProgressDisplay, CourseProgressSummary } from "@/components/course/ChapterProgressDisplay"
-import { FeatureGate, SignInPrompt, SubscriptionUpgrade } from "@/components/shared"
+import GlassDoorLock from '@/components/shared/GlassDoorLock'
 import { useFeatureAccess } from "@/hooks/useFeatureAccess"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 
@@ -93,7 +92,7 @@ export default function CourseDetailsTabs({
   // Feature access for Summary and Quiz tabs
   const summaryAccess = useFeatureAccess('course-videos')
   const quizAccess = useFeatureAccess('quiz-access')
-  
+
   // Determine if user can access tabs (owners and admins bypass restrictions)
   const canAccessSummary = isOwner || isAdmin || summaryAccess.canAccess
   const canAccessQuiz = isOwner || isAdmin || quizAccess.canAccess
@@ -651,7 +650,7 @@ export default function CourseDetailsTabs({
             <FileText className="h-4 w-4 md:h-5 md:w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
             <span className="font-semibold">Summary</span>
           </TabsTrigger>
-          {/* Quiz tab - always visible, FeatureGate handles access control */}
+    {/* Quiz tab - always visible, access is visually handled by GlassDoorLock */}
           <TabsTrigger
             value="quiz"
             className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
@@ -677,20 +676,14 @@ export default function CourseDetailsTabs({
 
         {/* Enhanced tabs content with better spacing */}
         <TabsContent value="summary" className="flex-1 overflow-auto w-full p-0">
-          {/* FeatureGate handles authentication and subscription internally */}
+          {/* GlassDoorLock handles authentication and subscription visually */}
           {currentChapter ? (
-            <FeatureGate
-              feature="course-videos"
-              showPartialContent={!canAccessSummary}
-              previewRatio={canAccessSummary ? 1 : 0.5}
-              minPreviewPx={260}
-              previewFadeRatio={0.45}
-              blur={!canAccessSummary}
-              overlayPlacement="over"
-              overlayFullWidth={true}
-              hideOverlay={canAccessSummary}
-              lockMessage="Unlock Full AI Summary"
-              lockDescription="Upgrade to Basic plan or higher to reveal the full AI-generated summary, key insights, and learning recommendations for this chapter."
+            <GlassDoorLock
+              isLocked={!canAccessSummary}
+               previewRatio={0.2} // show top 20%
+              reason={!user ? 'Sign in to continue learning' : 'Upgrade your plan to unlock this content'}
+              className="p-0"
+              blurIntensity={canAccessSummary ? 'light' : 'medium'}
             >
               <div className="p-4">
                 <CourseAISummary
@@ -700,7 +693,7 @@ export default function CourseDetailsTabs({
                   isAdmin={isAdmin}
                 />
               </div>
-            </FeatureGate>
+            </GlassDoorLock>
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
               <motion.div
@@ -723,20 +716,13 @@ export default function CourseDetailsTabs({
         </TabsContent>
 
         <TabsContent value="quiz" className="flex-1 overflow-auto w-full p-0">
-          {/* FeatureGate handles authentication and subscription internally */}
+          {/* GlassDoorLock handles authentication and subscription visually */}
           {currentChapter ? (
-            <FeatureGate
-              feature="quiz-access"
-              showPartialContent={!canAccessQuiz}
-              previewRatio={canAccessQuiz ? 1 : 0.35}
-              minPreviewPx={240}
-              previewFadeRatio={0.4}
-              blur={!canAccessQuiz}
-              overlayPlacement="below"
-              overlayFullWidth={true}
-              hideOverlay={canAccessQuiz}
-              lockMessage="Unlock Interactive Quizzes"
-              lockDescription="Upgrade to Basic plan or higher to take full quizzes, view detailed explanations, and track your mastery over time."
+            <GlassDoorLock
+              isLocked={!canAccessQuiz}
+              reason={!user ? 'Sign in to continue learning' : 'Upgrade your plan to unlock this content'}
+              className="p-0"
+              blurIntensity={canAccessQuiz ? 'light' : 'medium'}
             >
               <div className="p-4">
                 <CourseDetailsQuiz
@@ -752,7 +738,7 @@ export default function CourseDetailsTabs({
                   chapterId={currentChapter.id.toString()}
                 />
               </div>
-            </FeatureGate>
+            </GlassDoorLock>
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
               <motion.div

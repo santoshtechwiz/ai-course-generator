@@ -11,6 +11,7 @@ export type FeatureType =
   | 'quiz-code'
   | 'quiz-flashcard'
   | 'course-videos'
+  | 'course-premium-content'
   | 'course-creation'
   | 'course-access'
   | 'course-browsing'
@@ -105,6 +106,12 @@ export const FEATURE_REQUIREMENTS: Record<FeatureType, FeatureRequirement> = {
     requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].mcqGenerator
   },
   'course-videos': {
+    requiresAuth: false, // Allow viewing free chapters without auth
+    requiresSubscription: false, // Free chapters don't require subscription
+    minimumPlan: 'FREE', // Free tier can access free chapters
+    requireFeature: (plan) => true // All plans can access videos (chapter-level restrictions apply)
+  },
+  'course-premium-content': {
     requiresAuth: true,
     requiresSubscription: true,
     minimumPlan: 'BASIC',

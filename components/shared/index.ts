@@ -22,6 +22,9 @@ export {
 
 export { default as FeatureGate, useFeatureGate } from './FeatureGate'
 
+// Visual lock wrapper for obfuscating content
+export { default as GlassDoorLock } from './GlassDoorLock'
+
 // New: Enhanced Auth & Upgrade Components
 export { UpgradeDialog } from './UpgradeDialog'
 export { CreditCounter } from './CreditCounter'

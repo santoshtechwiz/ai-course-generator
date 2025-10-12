@@ -1004,9 +1004,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   return (
     <div className="min-h-screen bg-background relative">
       {/* Debug indicator for testing - REMOVE IN PRODUCTION */}
-      <div className="fixed top-0 left-0 z-50 bg-red-500 text-white p-2 text-xs">
-        Debug: {user ? `User: ${user.id}` : 'Guest User'} | Status: {status} | IsGuest: {isGuest ? 'Yes' : 'No'}
-      </div>
+     
       
       {authPromptOverlay}
       <motion.header
@@ -1166,27 +1164,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             {/* Video and content area */}
             <div className="space-y-0.5 min-w-0">
               {/* Guest Progress Indicator for unauthenticated users */}
-              {(
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-2 bg-yellow-200 border-2 border-yellow-500 p-4 rounded"
-                >
-                  <div className="text-black font-bold mb-2">GUEST UI TEST (FORCED VISIBLE)</div>
-                  <GuestProgressIndicator 
-                    courseId={course.id}
-                  />
-                </motion.div>
-              )}
-              
-              {/* Original guest condition */}
               {!user && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-2 bg-yellow-200 border-2 border-yellow-500 p-4 rounded"
+                  className="mb-2"
                 >
-                  <div className="text-black font-bold mb-2">GUEST UI TEST (!user condition)</div>
                   <GuestProgressIndicator 
                     courseId={course.id}
                   />
