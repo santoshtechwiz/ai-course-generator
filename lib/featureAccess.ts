@@ -27,6 +27,11 @@ export interface FeatureAccess {
   isExplorable: boolean // Always true for exploration, separate from canAccess for actions
   reason: AccessDenialReason
   requiredPlan: SubscriptionPlanType | null
+  currentPlan?: SubscriptionPlanType
+  isAuthenticated?: boolean
+  isSubscribed?: boolean
+  hasCredits?: boolean
+  needsUpgrade?: boolean
 }
 
 export interface FeatureRequirement {

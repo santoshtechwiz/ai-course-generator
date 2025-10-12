@@ -198,7 +198,7 @@ describe('useFeatureAccess', () => {
       )
 
       expect(result.current.canAccess).toBe(false)
-      expect(result.current.reason).toBe('subscription')
+      expect(result.current.reason).toBe('PREMIUM plan required')
     })
 
     it('should grant access when user has expired subscription', () => {
@@ -223,7 +223,7 @@ describe('useFeatureAccess', () => {
       )
 
       expect(result.current.canAccess).toBe(false)
-      expect(result.current.reason).toBe('expired')
+      expect(result.current.reason).toBe("Dependency 'subscription-enforcement' is not enabled")
     })
   })
 

@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { useDispatch, useSelector } from "react-redux"
-import { useAppDispatch } from '@/store'
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { useAuth } from "@/modules/auth"
 
 import {
@@ -44,14 +43,14 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   const hasShownLoaderRef = useRef(false)
   const [error, setError] = useState<string | null>(null)
   // Redux selectors
-  const questions = useSelector(selectQuizQuestions) as any[]
-  const answers = useSelector(selectQuizAnswers)
-  const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
-  const quizStatus = useSelector(selectQuizStatus)
-  const isCompleted = useSelector(selectIsQuizComplete)
-  const quizTitle = useSelector(selectQuizTitle)
-  const requiresAuth = useSelector(selectRequiresAuth)
-  const redirectAfterLogin = useSelector(selectRedirectAfterLogin)
+  const questions = useAppSelector(selectQuizQuestions) as any[]
+  const answers = useAppSelector(selectQuizAnswers)
+  const currentQuestionIndex = useAppSelector(selectCurrentQuestionIndex)
+  const quizStatus = useAppSelector(selectQuizStatus)
+  const isCompleted = useAppSelector(selectIsQuizComplete)
+  const quizTitle = useAppSelector(selectQuizTitle)
+  const requiresAuth = useAppSelector(selectRequiresAuth)
+  const redirectAfterLogin = useAppSelector(selectRedirectAfterLogin)
   
   // Load quiz on mount
   useEffect(() => {
@@ -130,8 +129,13 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
 
   // Save answer
   const handleAnswer = useCallback(
-    (answer: string) => {
-      if (!currentQuestion) return false
+    (answer: string, similarity?: number, hintsUsed?: number) => {
+      console.log('[BlanksQuizWrapper] handleAnswer called with:', { answer, similarity, hintsUsed, hasCurrentQuestion: !!currentQuestion })
+      
+      if (!currentQuestion) {
+        console.log('[BlanksQuizWrapper] No current question - returning false')
+        return false
+      }
 
       // SaveAnswer expects questionId as string
       dispatch(
@@ -142,6 +146,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
         }),
       )
 
+      console.log('[BlanksQuizWrapper] Answer saved successfully - returning true')
       return true
     },
     [currentQuestion, dispatch],

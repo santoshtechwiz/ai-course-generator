@@ -339,7 +339,7 @@ export default function FlashCardQuiz({
               <FlashcardBack
                 key="back"
                 answer={currentCard?.answer || ""}
-                explanation={currentCard?.explanation}
+                explanation={(currentCard as any)?.explanation}
                 onFlip={toggleFlip}
                 onSelfRating={(rating) => {
                   if (currentCard?.id && !ratingAnimation) {
@@ -355,7 +355,7 @@ export default function FlashCardQuiz({
         </motion.div>
       </div>
 
-      {/* Simple Action Bar */}
+      {/* Simple Action Bar - Flip and Save only (navigation moved to controller) */}
       <div className="flex justify-center gap-3">
         <Button variant="outline" onClick={toggleFlip}>
           <RotateCcw className="w-4 h-4 mr-2" />
@@ -366,18 +366,6 @@ export default function FlashCardQuiz({
           <Heart className={`w-4 h-4 mr-2 ${isSaved ? "fill-red-500 text-red-500" : ""}`} />
           {isSaved ? "Saved" : "Save"}
         </Button>
-
-        {currentQuestionIndex < cards.length - 1 ? (
-          <Button onClick={moveToNextCard} className="bg-blue-600 hover:bg-blue-700">
-            Next Card
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
-        ) : (
-          <Button onClick={handleQuizCompletion} className="bg-green-600 hover:bg-green-700">
-            <CheckCircle2 className="w-4 h-4 mr-2" />
-            Complete
-          </Button>
-        )}
       </div>
 
       {/* Rating Animation Overlay */}

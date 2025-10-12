@@ -145,15 +145,15 @@ export function AdaptiveFeedbackWrapper({
         className="mt-4"
       >
         <Card className={cn(
-          "p-4 border-2",
+          "p-5 border-2 rounded-xl shadow-sm",
           isSuccess 
-            ? "bg-green-50 dark:bg-green-950/20 border-green-500/50" 
-            : "bg-amber-50 dark:bg-amber-950/20 border-amber-500/50"
+            ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/10 border-green-500/50" 
+            : "bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/10 border-amber-500/50"
         )}>
           {/* Feedback Message */}
-          <div className="flex items-start gap-3 mb-3">
+          <div className="flex items-start gap-4 mb-4">
             <div className={cn(
-              "p-2 rounded-full",
+              "p-2.5 rounded-full shrink-0 shadow-sm",
               isSuccess
                 ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
                 : "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
@@ -163,6 +163,7 @@ export function AdaptiveFeedbackWrapper({
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", stiffness: 200, damping: 10 }}
+                  className="w-5 h-5 flex items-center justify-center font-bold text-lg"
                 >
                   ✓
                 </motion.div>
@@ -173,7 +174,7 @@ export function AdaptiveFeedbackWrapper({
             
             <div className="flex-1 min-w-0">
               <p className={cn(
-                "text-sm font-medium",
+                "text-sm font-semibold leading-relaxed mb-2",
                 isSuccess ? "text-green-900 dark:text-green-100" : "text-amber-900 dark:text-amber-100"
               )}>
                 {currentFeedback.message}
@@ -183,28 +184,30 @@ export function AdaptiveFeedbackWrapper({
               {!isSuccess && currentFeedback.similarity > 0 && (
                 <Badge 
                   variant="outline" 
-                  className="mt-2 text-xs"
+                  className="text-xs font-medium border-amber-300 dark:border-amber-700"
                 >
-                  {Math.round(currentFeedback.similarity * 100)}% similar
+                  {Math.round(currentFeedback.similarity * 100)}% similar to answer
                 </Badge>
               )}
             </div>
           </div>
 
           {/* Hint Display */}
-          {!isSuccess && currentFeedback.hint && (
+          {!isSuccess && (currentFeedback as any).hint && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
-              className="mb-3"
+              className="mb-4"
             >
-              <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
-                <Lightbulb className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <AlertDescription className="text-sm text-blue-900 dark:text-blue-100 ml-2">
-                  <strong>Hint:</strong> {currentFeedback.hint}
-                </AlertDescription>
+              <Alert className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/10 border-blue-200 dark:border-blue-800 rounded-lg shadow-sm">
+                <div className="flex items-start gap-3">
+                  <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                  <AlertDescription className="text-sm text-blue-900 dark:text-blue-100 leading-relaxed">
+                    <strong className="font-semibold">Hint:</strong> {(currentFeedback as any).hint}
+                  </AlertDescription>
+                </div>
               </Alert>
             </motion.div>
           )}
@@ -219,20 +222,19 @@ export function AdaptiveFeedbackWrapper({
               className="mb-3"
             >
               {!showFullAnswer ? (
-                <Alert className="bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800">
-                  <BookOpen className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                  <AlertDescription className="text-sm text-purple-900 dark:text-purple-100 ml-2">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <strong>Need the answer?</strong> You can reveal the correct answer, but this may affect your progress.
-                      </div>
-                      <div>
+                <Alert className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/10 border-purple-200 dark:border-purple-800 rounded-lg shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <BookOpen className="h-5 w-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                    <AlertDescription className="text-sm text-purple-900 dark:text-purple-100 leading-relaxed w-full">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="flex-1">
+                          <strong className="font-semibold">Need the answer?</strong> You can reveal the correct answer, but this may affect your progress.
+                        </div>
                         <Button
                           size="sm"
                           variant="outline"
+                          className="whitespace-nowrap border-purple-300 hover:bg-purple-100 dark:border-purple-700 dark:hover:bg-purple-900/30"
                           onClick={() => {
-                            // Simple confirm flow to avoid adding a modal dependency here.
-                            // If user confirms, reveal the answer and record a penalty attempt.
                             if (window.confirm('Reveal the correct answer? This may count as an additional attempt.')) {
                               AttemptTracker.incrementAttempt(questionId, quizSlug)
                               setShowFullAnswer(true)
@@ -242,15 +244,17 @@ export function AdaptiveFeedbackWrapper({
                           Reveal Answer
                         </Button>
                       </div>
-                    </div>
-                  </AlertDescription>
+                    </AlertDescription>
+                  </div>
                 </Alert>
               ) : (
-                <Alert className="bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800">
-                  <BookOpen className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                  <AlertDescription className="text-sm text-purple-900 dark:text-purple-100 ml-2">
-                    <strong>Correct Answer:</strong> {correctAnswer}
-                  </AlertDescription>
+                <Alert className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/10 border-purple-200 dark:border-purple-800 rounded-lg shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <BookOpen className="h-5 w-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                    <AlertDescription className="text-sm text-purple-900 dark:text-purple-100 leading-relaxed">
+                      <strong className="font-semibold">Correct Answer:</strong> <span className="font-medium">{correctAnswer}</span>
+                    </AlertDescription>
+                  </div>
                 </Alert>
               )}
             </motion.div>

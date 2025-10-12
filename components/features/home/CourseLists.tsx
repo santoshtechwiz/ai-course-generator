@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react"
 import { motion, useReducedMotion } from "framer-motion"
 import { useInfiniteQuery, type UseInfiniteQueryResult, type InfiniteData } from "@tanstack/react-query"
-import { BookOpen, LayoutGrid, List, Search, X, Play, ChevronDown } from "lucide-react"
+import { BookOpen, LayoutGrid, List, Search, X, Play, ChevronDown, Filter, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDebounce } from "@/lib/utils/hooks"
@@ -371,39 +371,48 @@ export default function CoursesClient({
 
   if (hasNoData) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
-        <div className="bg-primary/10 rounded-full p-6 mb-6">
-          {hasFilters ? <Search className="w-12 h-12 text-primary" /> : <BookOpen className="w-12 h-12 text-primary" />}
-        </div>
-        <h3 className="text-xl font-semibold mb-2">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl p-8 mb-6 border-2 border-primary/20"
+        >
+          {hasFilters ? (
+            <Search className="w-16 h-16 text-primary mx-auto" />
+          ) : (
+            <BookOpen className="w-16 h-16 text-primary mx-auto" />
+          )}
+        </motion.div>
+        <h3 className="text-2xl font-bold mb-3 text-balance">
           {hasFilters ? "No courses match your filters" : "No courses available yet"}
         </h3>
-        <p className="text-muted-foreground max-w-md mb-6 text-pretty leading-relaxed">
+        <p className="text-muted-foreground max-w-md mb-8 text-pretty leading-relaxed text-base">
           {hasFilters
             ? "Try adjusting your search terms or removing some filters to see more results"
             : "Check back soon - new courses are added regularly"}
         </p>
         {hasFilters && (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4 w-full max-w-sm">
             <Button
-              variant="outline"
+              variant="default"
+              size="lg"
               onClick={() => {
-                // Reset filters by navigating to clean URL
                 window.location.href = "/dashboard"
               }}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 w-full"
             >
               <X className="w-4 h-4" />
               Clear all filters
             </Button>
             <div className="mt-4">
-              <p className="text-sm text-muted-foreground mb-3">Try these popular categories:</p>
+              <p className="text-sm font-semibold text-muted-foreground mb-4">Try these popular categories:</p>
               <div className="flex flex-wrap gap-2 justify-center">
                 {["JavaScript", "Python", "React", "Machine Learning"].map((cat) => (
                   <Badge
                     key={cat}
                     variant="secondary"
-                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-all hover:scale-105 px-3 py-1.5 text-sm"
                     onClick={() => (window.location.href = `/dashboard?category=${cat}`)}
                   >
                     {cat}
@@ -419,9 +428,12 @@ export default function CoursesClient({
 
   const FilterSidebar = () => (
     <div className="space-y-6">
-      <div className="p-4 bg-card rounded-lg border">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-semibold">Filters</h4>
+      <div className="p-5 bg-gradient-to-br from-card to-card/50 rounded-xl border-2 border-border/50 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-base font-bold flex items-center gap-2">
+            <Filter className="w-4 h-4 text-primary" />
+            Filters
+          </h4>
           {(categoryFilter || levelFilter) && (
             <Button
               variant="ghost"
@@ -430,80 +442,87 @@ export default function CoursesClient({
                 setCategoryFilter(null)
                 setLevelFilter(null)
               }}
-              className="h-6 px-2 text-xs"
+              className="h-7 px-2 text-xs hover:bg-destructive/10 hover:text-destructive"
             >
               Clear
             </Button>
           )}
         </div>
-        <label className="block text-xs text-muted-foreground mb-1" htmlFor="category-filter">
-          Category
-        </label>
-        <select
-          id="category-filter"
-          value={categoryFilter ?? ""}
-          onChange={(e) => setCategoryFilter(e.target.value ? (e.target.value as CategoryId) : null)}
-          className="w-full p-2 rounded-md border bg-background focus:ring-2 focus:ring-primary focus:outline-none"
-          aria-label="Filter by category"
-        >
-          <option value="">All Categories</option>
-          {availableCategories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
 
-        <label className="block text-xs text-muted-foreground mt-3 mb-1" htmlFor="level-filter">
-          Level
-        </label>
-        <select
-          id="level-filter"
-          value={levelFilter ?? ""}
-          onChange={(e) => setLevelFilter(e.target.value || null)}
-          className="w-full p-2 rounded-md border bg-background focus:ring-2 focus:ring-primary focus:outline-none"
-          aria-label="Filter by level"
-        >
-          <option value="">All Levels</option>
-          <option value="Beginner">Beginner</option>
-          <option value="Intermediate">Intermediate</option>
-          <option value="Advanced">Advanced</option>
-        </select>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-2" htmlFor="category-filter">
+              Category
+            </label>
+            <select
+              id="category-filter"
+              value={categoryFilter ?? ""}
+              onChange={(e) => setCategoryFilter(e.target.value ? (e.target.value as CategoryId) : null)}
+              className="w-full p-2.5 rounded-lg border-2 bg-background focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all text-sm"
+              aria-label="Filter by category"
+            >
+              <option value="">All Categories</option>
+              {availableCategories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-2" htmlFor="level-filter">
+              Level
+            </label>
+            <select
+              id="level-filter"
+              value={levelFilter ?? ""}
+              onChange={(e) => setLevelFilter(e.target.value || null)}
+              className="w-full p-2.5 rounded-lg border-2 bg-background focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all text-sm"
+              aria-label="Filter by level"
+            >
+              <option value="">All Levels</option>
+              <option value="Beginner">🌱 Beginner</option>
+              <option value="Intermediate">⚡ Intermediate</option>
+              <option value="Advanced">🚀 Advanced</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      <div className="p-4 bg-card rounded-lg border">
-        <h4 className="text-sm font-semibold mb-3">Sort By</h4>
-        <div className="flex flex-col space-y-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="sort"
-              checked={sortFilter === "popular"}
-              onChange={() => setSortFilter("popular")}
-              className="accent-primary focus:ring-2 focus:ring-primary"
-            />
-            <span className="text-sm">Relevance</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="sort"
-              checked={sortFilter === "newest"}
-              onChange={() => setSortFilter("newest")}
-              className="accent-primary focus:ring-2 focus:ring-primary"
-            />
-            <span className="text-sm">Newest</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="sort"
-              checked={sortFilter === "rating"}
-              onChange={() => setSortFilter("rating")}
-              className="accent-primary focus:ring-2 focus:ring-primary"
-            />
-            <span className="text-sm">Highest Rated</span>
-          </label>
+      <div className="p-5 bg-gradient-to-br from-card to-card/50 rounded-xl border-2 border-border/50 shadow-sm">
+        <h4 className="text-base font-bold mb-4 flex items-center gap-2">
+          <ChevronDown className="w-4 h-4 text-primary" />
+          Sort By
+        </h4>
+        <div className="flex flex-col space-y-2.5">
+          {[
+            { value: "popular", label: "Most Popular", icon: "🔥" },
+            { value: "newest", label: "Newest First", icon: "✨" },
+            { value: "rating", label: "Highest Rated", icon: "⭐" },
+          ].map((option) => (
+            <label
+              key={option.value}
+              className={cn(
+                "flex items-center gap-3 cursor-pointer p-3 rounded-lg border-2 transition-all",
+                sortFilter === option.value
+                  ? "bg-primary/10 border-primary text-primary font-semibold"
+                  : "bg-background border-border hover:border-primary/50 hover:bg-primary/5",
+              )}
+            >
+              <input
+                type="radio"
+                name="sort"
+                checked={sortFilter === option.value}
+                onChange={() => setSortFilter(option.value as typeof sortBy)}
+                className="accent-primary focus:ring-2 focus:ring-primary w-4 h-4"
+              />
+              <span className="text-sm flex items-center gap-2">
+                <span>{option.icon}</span>
+                {option.label}
+              </span>
+            </label>
+          ))}
         </div>
       </div>
     </div>
@@ -511,7 +530,7 @@ export default function CoursesClient({
 
   // Main content
   return (
-    <div className="w-full max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 space-y-6">
+    <div className="w-full max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 space-y-8">
       <Sheet open={showMobileFilters} onOpenChange={onCloseMobileFilters}>
         <SheetContent side="left" className="w-[300px] sm:w-[400px] overflow-y-auto">
           <SheetHeader>
@@ -523,74 +542,84 @@ export default function CoursesClient({
         </SheetContent>
       </Sheet>
 
-      <div className="grid grid-cols-12 gap-6">
-        <aside className="hidden lg:block lg:col-span-3 xl:col-span-2">
-          <div className="sticky top-20 space-y-4">
+      <div className="grid grid-cols-12 gap-6 lg:gap-8">
+        <aside className="hidden lg:block lg:col-span-3 xl:col-span-3">
+          <div className="sticky top-24 space-y-4">
             <Button
               variant="ghost"
               onClick={() => setFiltersCollapsed(!filtersCollapsed)}
-              className="w-full justify-between"
+              className="w-full justify-between hover:bg-primary/10 font-semibold"
             >
-              <span className="font-semibold">Filters</span>
-              <ChevronDown className={cn("w-4 h-4 transition-transform", filtersCollapsed && "rotate-180")} />
+              <span className="flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                Filters
+              </span>
+              <ChevronDown
+                className={cn("w-4 h-4 transition-transform duration-200", filtersCollapsed && "rotate-180")}
+              />
             </Button>
             {!filtersCollapsed && <FilterSidebar />}
           </div>
         </aside>
 
-        <main className="col-span-12 lg:col-span-9 xl:col-span-10">
-          {/* View Mode Toggle */}
+        <main className="col-span-12 lg:col-span-9 xl:col-span-9 space-y-6">
           <div className="flex justify-end">
-            <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1" role="group" aria-label="View mode">
+            <div
+              className="flex items-center gap-1 bg-muted/50 rounded-xl p-1.5 border border-border/50"
+              role="group"
+              aria-label="View mode"
+            >
               <Button
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "px-3 h-8 transition-all duration-200",
+                  "px-4 h-9 transition-all duration-200 rounded-lg",
                   viewMode === "grid"
-                    ? "bg-background shadow-sm text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
+                    ? "bg-background shadow-md text-foreground font-semibold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/50",
                 )}
                 onClick={() => setViewMode("grid")}
                 aria-label="Grid view"
                 aria-pressed={viewMode === "grid"}
               >
-                <LayoutGrid className="h-4 w-4" />
-                <span className="sr-only">Grid view</span>
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                Grid
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "px-3 h-8 transition-all duration-200",
+                  "px-4 h-9 transition-all duration-200 rounded-lg",
                   viewMode === "list"
-                    ? "bg-background shadow-sm text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
+                    ? "bg-background shadow-md text-foreground font-semibold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/50",
                 )}
                 onClick={() => setViewMode("list")}
                 aria-label="List view"
                 aria-pressed={viewMode === "list"}
               >
-                <List className="h-4 w-4" />
-                <span className="sr-only">List view</span>
+                <List className="h-4 w-4 mr-2" />
+                List
               </Button>
             </div>
           </div>
 
-          {/* Resume Learning Section - Simplified to text only */}
           {userId && coursesInProgress.length > 0 && !hasFilters && (
             <motion.section
               initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: shouldReduceMotion ? 0 : 0.3 }}
-              className="mb-8 p-6 bg-gradient-to-br from-primary/5 to-accent/5 border-2 border-primary/20 rounded-xl"
+              transition={{ duration: shouldReduceMotion ? 0 : 0.4 }}
+              className="mb-8 p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-accent/10 border-2 border-primary/20 rounded-2xl shadow-lg"
               aria-label="Continue learning"
             >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Play className="h-5 w-5 text-primary" />
+              <div className="flex items-center gap-3 mb-5">
+                <div className="p-3 bg-primary/20 rounded-xl">
+                  <Play className="h-6 w-6 text-primary" />
                 </div>
-                <h2 className="text-xl font-semibold text-primary">Continue Learning</h2>
+                <div>
+                  <h2 className="text-2xl font-bold text-primary">Continue Learning</h2>
+                  <p className="text-sm text-muted-foreground">Pick up where you left off</p>
+                </div>
               </div>
               <div className="space-y-3">
                 {coursesInProgress.map((course, index) => (
@@ -599,8 +628,8 @@ export default function CoursesClient({
                     initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: shouldReduceMotion ? 0 : 0.3, delay: shouldReduceMotion ? 0 : index * 0.1 }}
-                    whileHover={shouldReduceMotion ? {} : { x: 4 }}
-                    className="flex items-center justify-between p-4 bg-background border border-primary/10 rounded-lg hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group"
+                    whileHover={shouldReduceMotion ? {} : { x: 6, scale: 1.01 }}
+                    className="flex items-center justify-between p-5 bg-background/80 backdrop-blur-sm border-2 border-primary/10 rounded-xl hover:shadow-lg hover:border-primary/30 transition-all cursor-pointer group"
                     onClick={() => (window.location.href = `/dashboard/course/${course.slug}`)}
                     role="button"
                     tabIndex={0}
@@ -611,28 +640,31 @@ export default function CoursesClient({
                       }
                     }}
                   >
-                    <div className="flex-1">
-                      <h3 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-base text-foreground truncate group-hover:text-primary transition-colors mb-2">
                         {course.title || course.name}
                       </h3>
-                      <div className="flex items-center gap-4 mt-2">
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <div className="w-2 h-2 bg-primary rounded-full"></div>
-                          <span className="font-semibold text-primary">{course.progressPercentage}%</span> complete
+                      <div className="flex items-center gap-5 flex-wrap">
+                        <div className="flex items-center gap-2 text-sm">
+                          <div className="w-2.5 h-2.5 bg-primary rounded-full animate-pulse"></div>
+                          <span className="font-bold text-primary">{course.progressPercentage}%</span>
+                          <span className="text-muted-foreground">complete</span>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {course.completedCount || 0}/{course.totalChapters} chapters
+                        <div className="text-sm text-muted-foreground">
+                          <span className="font-semibold text-foreground">{course.completedCount || 0}</span>/
+                          {course.totalChapters} chapters
                         </div>
                         {course.lastAccessedAt && (
-                          <div className="text-xs text-muted-foreground">
-                            Last accessed {new Date(course.lastAccessedAt).toLocaleDateString()}
+                          <div className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            {new Date(course.lastAccessedAt).toLocaleDateString()}
                           </div>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                        <Play className="h-4 w-4 text-primary" />
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all">
+                        <Play className="h-5 w-5 text-primary" />
                       </div>
                     </div>
                   </motion.div>
@@ -655,14 +687,15 @@ export default function CoursesClient({
             </div>
           )}
 
-          {/* Results count */}
           {coursesData?.pages?.[0]?.total !== undefined && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">{coursesData.pages[0].total}</span> course
-                {coursesData.pages[0].total !== 1 ? "s" : ""} found
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50">
+              <p className="text-sm font-medium">
+                <span className="font-bold text-foreground text-lg">{coursesData.pages[0].total}</span>
+                <span className="text-muted-foreground ml-2">
+                  course{coursesData.pages[0].total !== 1 ? "s" : ""} found
+                </span>
                 {isFetching && coursesData.pages.length > 1 && (
-                  <span className="ml-2 text-primary animate-pulse">(updating...)</span>
+                  <span className="ml-3 text-primary animate-pulse font-semibold">(updating...)</span>
                 )}
               </p>
             </div>
@@ -735,13 +768,6 @@ export default function CoursesClient({
                         originalPrice={undefined}
                         instructor="Course Instructor"
                         enrolledCount={Math.floor(Math.random() * 5000) + 500}
-                        updatedAt={
-                          course.updatedAt
-                            ? new Date(course.updatedAt).toISOString()
-                            : course.createdAt
-                              ? new Date(course.createdAt).toISOString()
-                              : new Date().toISOString()
-                        }
                         tags={[]}
                         className={viewMode === "list" ? "w-full" : undefined}
                         // Progress tracking props
@@ -761,20 +787,21 @@ export default function CoursesClient({
           </motion.div>
 
           {hasNextPage && (
-            <div ref={loadMoreRef} className="flex flex-col items-center gap-3 py-8">
+            <div ref={loadMoreRef} className="flex flex-col items-center gap-4 py-12">
               {isFetchingNextPage ? (
-                <div className="flex items-center gap-3 px-6 py-3 bg-muted/50 rounded-full">
-                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm font-medium text-muted-foreground">Loading more courses...</span>
+                <div className="flex items-center gap-3 px-8 py-4 bg-primary/10 rounded-full border-2 border-primary/20">
+                  <div className="w-5 h-5 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm font-semibold text-primary">Loading more courses...</span>
                 </div>
               ) : (
                 <>
-                  <div className="text-xs text-muted-foreground mb-2">Scroll for more or click below</div>
+                  <div className="text-sm text-muted-foreground mb-2 font-medium">Scroll for more or click below</div>
                   <Button
                     variant="outline"
+                    size="lg"
                     onClick={() => fetchNextPage()}
                     disabled={!hasNextPage || isFetchingNextPage}
-                    className="min-w-[160px] hover:bg-primary hover:text-primary-foreground transition-colors"
+                    className="min-w-[200px] hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all hover:scale-105 font-semibold"
                   >
                     Load more courses
                   </Button>
@@ -786,11 +813,11 @@ export default function CoursesClient({
           {!hasNextPage &&
             coursesData?.pages?.length &&
             coursesData.pages.some((p: CoursesResponse) => p.courses.length > 0) && (
-              <div className="text-center py-8 border-t border-border/50">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-muted/30 rounded-full">
-                  <div className="w-2 h-2 bg-muted-foreground/50 rounded-full"></div>
-                  <p className="text-sm text-muted-foreground font-medium">You've reached the end of the results</p>
-                  <div className="w-2 h-2 bg-muted-foreground/50 rounded-full"></div>
+              <div className="text-center py-12 border-t-2 border-border/50">
+                <div className="inline-flex items-center gap-3 px-6 py-3 bg-muted/50 rounded-full border border-border/50">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  <p className="text-sm text-muted-foreground font-semibold">You've reached the end of the results</p>
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
                 </div>
               </div>
             )}

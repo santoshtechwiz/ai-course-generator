@@ -11,5 +11,13 @@
     "workbench.editor.enablePreview": false,
     "microsoft-sovereign-cloud.customEnvironment": {
         
+    },
+    "chat.mcp.serverSampling": {
+        "ai-learning/.vscode/mcp.json: Sentry": {
+            "allowedModels": [
+                "copilot/gpt-4.1",
+                "copilot/grok-code-fast-1"
+            ]
+        }
     }
 }

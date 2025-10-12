@@ -62,7 +62,7 @@ function LastActivityCard({ courseProgress, courseData, incompleteQuizzes, onCon
         if (progress?.videoProgress?.lastAccessedAt) {
           const course = courseData?.find(c => c.id === courseId || c.slug === courseId)
           if (course) {
-            const progressPercent = (progress.videoProgress.progressPercentage || 0)
+            const progressPercent = (progress.videoProgress.progress || 0)
             activities.push({
               type: 'course',
               title: course.title,
@@ -602,7 +602,7 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
           ) : notifications.length === 0 ? (
             <LastActivityCard 
               courseProgress={memoizedCourseProgress}
-              courseData={memoizedCourseData}
+              courseData={Object.values(memoizedCourseData)}
               incompleteQuizzes={incompleteQuizzes}
               onContinue={(type, courseSlug, chapterId) => {
                 setIsOpen(false)

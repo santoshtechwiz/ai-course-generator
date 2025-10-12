@@ -3,10 +3,9 @@ import type { Metadata } from "next"
 import { getAuthSession } from "@/lib/auth"
 import { getQuizzes, type QuizListItem } from "@/app/actions/getQuizes"
 import ClientOnly from "@/components/ClientOnly"
-import { SuspenseGlobalFallback } from "../../../../components/loaders"
-import { JsonLD } from "@/lib/seo"
-import { generateMetadata } from "@/lib/seo"
-import { EnhancedQuizzesClient } from "./components/QuizzesClient"
+import { SuspenseGlobalFallback } from "@/components/loaders"
+import { generateMetadata, JsonLD } from "@/lib/seo"
+import EnhancedQuizzesClient from "./components/QuizzesClient"
 
 export const metadata: Metadata = generateMetadata({
   title: "Explore Interactive Quizzes – Master Your Knowledge | CourseAI",
@@ -33,7 +32,7 @@ export const dynamic = "force-dynamic"
 const Page = async () => {
   const session = await getAuthSession()
   const userId = session?.user?.id
-  
+
   // Enhanced initial data fetching with better error handling
   let quizzesData
   try {
@@ -42,7 +41,7 @@ const Page = async () => {
       limit: 12,
       searchTerm: "",
       userId: userId,
-      quizTypes: []
+      quizTypes: [],
     })
   } catch (error) {
     console.error("Failed to fetch initial quizzes:", error)
@@ -73,9 +72,9 @@ const Page = async () => {
             itemListElement: initialQuizzesData.quizzes.slice(0, 5).map((quiz, index) => ({
               "@type": "CreativeWork",
               name: quiz.title,
-              description: (quiz as any).description || '',
+              description: (quiz as any).description || "",
               position: index + 1,
-              educationalLevel: 'Intermediate',
+              educationalLevel: "Intermediate",
               timeRequired: `PT${Math.max(Math.ceil((quiz.questionCount || 10) * 0.5), 1)}M`,
             })),
           },
@@ -89,10 +88,7 @@ const Page = async () => {
 
       <ClientOnly>
         <Suspense fallback={<SuspenseGlobalFallback text="Loading amazing quizzes…" />}>
-          <EnhancedQuizzesClient 
-            initialQuizzesData={initialQuizzesData} 
-            userId={userId} 
-          />
+          <EnhancedQuizzesClient initialQuizzesData={initialQuizzesData} userId={userId} />
         </Suspense>
       </ClientOnly>
     </div>

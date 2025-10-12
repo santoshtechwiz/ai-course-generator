@@ -34,7 +34,7 @@ import { cn } from "@/lib/utils"
 import type { BookmarkData } from "./video/types"
 import { useCourseProgressSync } from "@/hooks/useCourseProgressSync"
 import { useVideoState } from "./video/hooks/useVideoState"
-import { useProgressMutation, useChapterProgress } from "@/services/enhanced-progress/client"
+import { useProgressMutation, useChapterProgress, flushProgress } from "@/services/enhanced-progress/client"
 import { SignInPrompt, SubscriptionUpgrade } from "@/components/shared"
 import { migratedStorage } from "@/lib/storage"
 import VideoGenerationSection from "./VideoGenerationSection"
@@ -743,6 +743,16 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           // Authenticated user - track in database
           console.log(`[Authenticated] Video progress: ${progressState.played * 100}% for chapter ${currentChapter.id}`)
           
+          // Update Redux store for immediate UI feedback
+          dispatch(setVideoProgress({
+            courseId: String(course.id),
+            chapterId: Number(currentChapter.id),
+            progress: progressState.played * 100,
+            playedSeconds: progressState.playedSeconds,
+            completed: false, // Don't mark as completed during progress updates
+            userId: user.id
+          }))
+          
           // Track continuous progress with enhanced system
           const success = enqueueProgress(
             user.id,
@@ -954,6 +964,17 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  // Flush progress on page unload to ensure data is saved
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Force flush any pending progress events
+      flushProgress().catch(console.error)
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [])
 
   // Sidebar course data

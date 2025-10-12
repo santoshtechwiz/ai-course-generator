@@ -171,16 +171,79 @@ export function generateBlanksHints(
 ): HintLevel[] {
   const hints: HintLevel[] = []
   const allowDirect = options?.allowDirectAnswer || false
-  const maxHints = options?.maxHints ?? 3 // Default to 3 hints (Concept, Keyword, Structure)
+  const requestedMaxHints = options?.maxHints ?? 3
+  const maxHints = requestedMaxHints + 2 // Allow room for enhanced hints (character count + letters)
   const tags: string[] = options?.tags || []
   const keywords: string[] = options?.keywords || []
   const blanks: string[] = options?.blanks || []
 
-  // Keep provided hints queued to append after generated hints (so generated hints appear first)
+  // ALWAYS add enhanced hints FIRST for blanks (most useful, no spoilers)
+  if (correctAnswer) {
+    // ENHANCED: Character count hint (ALWAYS FIRST - most useful)
+    const charCount = correctAnswer.trim().length
+    const wordCount = correctAnswer.trim().split(/\s+/).length
+    const characterHint = wordCount === 1 
+      ? `💡 The answer has exactly **${charCount} characters**`
+      : `💡 The answer has **${wordCount} words** with a total of **${charCount} characters**`
+    
+    hints.push({
+      level: "low",
+      type: "structural",
+      content: characterHint,
+      maskedContent: characterHint,
+      spoilerLevel: "low",
+      penalty: 0,
+      description: "Character count",
+    })
+
+    // ENHANCED: Starting and ending letters hint (SECOND - very useful)
+    const cleaned = correctAnswer.trim()
+    const words = cleaned.split(/\s+/)
+    let letterHint = ""
+    
+    if (words.length === 1) {
+      const firstLetter = cleaned.charAt(0).toUpperCase()
+      const lastLetter = cleaned.charAt(cleaned.length - 1).toLowerCase()
+      letterHint = `🔤 Starts with **'${firstLetter}'** and ends with **'${lastLetter}'**`
+    } else {
+      const firstLetter = words[0].charAt(0).toUpperCase()
+      const lastWord = words[words.length - 1]
+      const lastLetter = lastWord.charAt(lastWord.length - 1).toLowerCase()
+      letterHint = `🔤 First word starts with **'${firstLetter}'**, last word ends with **'${lastLetter}'**`
+    }
+    
+    hints.push({
+      level: "low",
+      type: "structural",
+      content: letterHint,
+      maskedContent: letterHint,
+      spoilerLevel: "low",
+      penalty: 0,
+      description: "Letter boundaries",
+    })
+  }
+
+  // PRIORITY: Instructor-provided hints come AFTER enhanced hints (database hints)
   const queuedProvidedHints = normalizeProvidedHints(providedHints, correctAnswer)
 
+  // Add provided hints if available
+  if (queuedProvidedHints.length > 0) {
+    for (let i = 0; i < queuedProvidedHints.length && hints.length < maxHints; i++) {
+      const safeHint = sanitizeProvidedHint(queuedProvidedHints[i], correctAnswer)
+      hints.push({
+        level: i < 1 ? "low" : i < 2 ? "medium" : "high",
+        type: "contextual",
+        content: safeHint,
+        spoilerLevel: i < 1 ? "low" : i < 2 ? "medium" : "high",
+        penalty: 0, // No penalty for instructor hints
+        description: `Database hint ${i + 1}`,
+      })
+    }
+  }
+
   // Generate comprehensive hints for blanks (Concept → Keyword → Structure progression)
-  if (correctAnswer) {
+  // Only generate if we still have space after provided hints
+  if (correctAnswer && hints.length < maxHints) {
     // If learner provided an attempt, compute edit distance and provide a "closeness" hint
     if (learnerAnswer && learnerAnswer.trim()) {
       try {
@@ -191,7 +254,7 @@ export function generateBlanksHints(
           ? `You're very close — only 1 edit away from the answer.`
           : `You're ${distance} edits away from the correct answer.`
 
-        if (hints.length < 5) {
+        if (hints.length < maxHints) {
           hints.push({
             level: "low",
             type: "structural",
@@ -207,7 +270,7 @@ export function generateBlanksHints(
       }
     }
     // Hint 1: Context/Category hint
-    if (hints.length < 5) {
+    if (hints.length < maxHints) {
       const contextHint = generateContextHint(correctAnswer, questionText)
       hints.push({
         level: "low",
@@ -221,50 +284,37 @@ export function generateBlanksHints(
     }
 
     // If keywords/tags available, add an early keyword-focused hint (low-spoiler)
-    if (keywords.length > 0 && hints.length < 5) {
-      const kwHint = `Focus on these key concepts: ${keywords.slice(0, 3).join(', ')}`
+    if (keywords.length > 0 && hints.length < maxHints) {
+      const kwHint = `🔑 Focus on these key concepts: **${keywords.slice(0, 3).join(', ')}**`
       hints.push({
         level: "low",
         type: "semantic",
         content: kwHint,
-        // Show a lightly masked version by default to avoid giving everything away
-        maskedContent: maskForLevel(kwHint, 'low'),
+        maskedContent: kwHint,
         spoilerLevel: "low",
         penalty: 0,
         description: "Keyword clue",
       })
     }
 
-    // Hint 2: Length and structure hint
-    if (hints.length < 5) {
-      const structureHint = generateStructureHint(correctAnswer)
-      hints.push({
-        level: "low",
-        type: "structural",
-        content: structureHint,
-        maskedContent: structureHint,
-        spoilerLevel: "low",
-        penalty: 0,
-        description: "Word structure",
-      })
-    }
-
-    // Hint 3: First letter and word type hint
-    if (hints.length < 5) {
-      const letterHint = generateLetterHint(correctAnswer)
-      hints.push({
-        level: "medium",
-        type: "structural",
-        content: letterHint,
-        maskedContent: letterHint,
-        spoilerLevel: "medium",
-        penalty: 0,
-        description: "Letter clue",
-      })
+    // ENHANCED: Context-based hint from question text
+    if (hints.length < maxHints && questionText) {
+      const contextHint = generateEnhancedContextHint(correctAnswer, questionText, tags)
+      if (contextHint) {
+        hints.push({
+          level: "low",
+          type: "contextual",
+          content: contextHint,
+          maskedContent: contextHint,
+          spoilerLevel: "low",
+          penalty: 0,
+          description: "Question context",
+        })
+      }
     }
 
     // Hint 4: Partial word reveal or synonym
-    if (hints.length < 5) {
+    if (hints.length < maxHints) {
       const partialHint = generatePartialHint(correctAnswer)
       hints.push({
         level: "medium",
@@ -291,46 +341,9 @@ export function generateBlanksHints(
     }
   }
 
-  // After generating the canonical hints, include provided contextual hints.
-  // Strategy: fill any available space first; if there are more provided hints than space,
-  // replace trailing generated hints so learners still see instructor-provided clues.
-  if (queuedProvidedHints.length > 0) {
-    const toAppend = queuedProvidedHints.map((h) => sanitizeProvidedHint(h, correctAnswer))
-    // Space available to append without removing generated hints
-    const space = Math.max(0, maxHints - hints.length)
-    let appended = 0
-    for (let i = 0; i < toAppend.length && appended < space; i++, appended++) {
-      const safeHint = toAppend[i]
-      const index = hints.length
-      hints.push({
-        level: index < 2 ? "low" : index < 4 ? "medium" : "high",
-        type: "contextual",
-        content: safeHint,
-        spoilerLevel: index < 2 ? "low" : index < 4 ? "medium" : "high",
-        penalty: HINT_LEVELS[index]?.penalty || 5,
-        description: HINT_LEVELS[index]?.description || "Context clue",
-      })
-    }
-
-    // If still have provided hints left, replace trailing generated hints with them
-    const remaining = toAppend.slice(appended)
-    for (let i = 0; i < remaining.length && hints.length > 0; i++) {
-      // Remove the last generated hint to make space (preserve order of provided hints)
-      hints.pop()
-      const safeHint = remaining[i]
-      const index = hints.length
-      hints.push({
-        level: index < 2 ? "low" : index < 4 ? "medium" : "high",
-        type: "contextual",
-        content: safeHint,
-        spoilerLevel: index < 2 ? "low" : index < 4 ? "medium" : "high",
-        penalty: HINT_LEVELS[index]?.penalty || 5,
-        description: HINT_LEVELS[index]?.description || "Context clue",
-      })
-    }
-  }
-
-  return hints.slice(0, maxHints)
+  // Return hints: prioritize enhanced hints (char count, letters) + database hints + context hints
+  // Limit to 5 total hints for better UX (more than requested to show all useful info)
+  return hints.slice(0, Math.min(hints.length, 5))
 }
 
 // Normalize provided hints which may be strings or objects coming from data sources.
@@ -450,6 +463,19 @@ export function generateContentAwareHints(
       hints.push(...generateGenericSmartHints(questionType, keywords, expectedLength))
   }
 
+  // ENHANCED: Add keyword-based hints for all answer types
+  if (keywords && keywords.length > 0 && hints.length < maxHints) {
+    const keywordHint = generateKeyPointsHint(questionText, keywords)
+    hints.push({
+      level: "low",
+      type: "semantic",
+      content: keywordHint,
+      spoilerLevel: "low",
+      penalty: Math.round(5 * penaltyFactor),
+      description: "Important keywords",
+    })
+  }
+
   // If this question expects a long answer, generate long-answer friendly hints
   if (expectedLength === 'long') {
     const longHints: HintLevel[] = []
@@ -492,6 +518,48 @@ export function generateContentAwareHints(
       spoilerLevel: "low",
       penalty: Math.round(4 * penaltyFactor),
       description: "Length & structure guidance",
+    })
+
+    // ENHANCED: Add sentence structure guidance
+    const structureGuide = generateSentenceStructureHint(questionText, expectedLength)
+    longHints.push({
+      level: "low",
+      type: "structural",
+      content: structureGuide,
+      spoilerLevel: "low",
+      penalty: Math.round(5 * penaltyFactor),
+      description: "Sentence structure",
+    })
+
+    // ENHANCED: Add segmented hints for long answers
+    const openingHint = generateSegmentedHint(questionText, 'opening', keywords)
+    longHints.push({
+      level: "low",
+      type: "structural",
+      content: openingHint,
+      spoilerLevel: "low",
+      penalty: Math.round(4 * penaltyFactor),
+      description: "Opening segment",
+    })
+
+    const bodyHint = generateSegmentedHint(questionText, 'body', keywords)
+    longHints.push({
+      level: "medium",
+      type: "semantic",
+      content: bodyHint,
+      spoilerLevel: "medium",
+      penalty: Math.round(6 * penaltyFactor),
+      description: "Body segment",
+    })
+
+    const conclusionHint = generateSegmentedHint(questionText, 'conclusion', keywords)
+    longHints.push({
+      level: "medium",
+      type: "structural",
+      content: conclusionHint,
+      spoilerLevel: "medium",
+      penalty: Math.round(5 * penaltyFactor),
+      description: "Conclusion segment",
     })
 
     // Prepend longHint suggestions so learners see structure first
@@ -568,11 +636,73 @@ function generateOutlineHint(text: string, keywords: string[] = []): string {
   return bullets.join(' ')
 }
 
-// Generate key points hint: short list of items to mention
+// ENHANCED: Generate key points hint with important keywords to include
 function generateKeyPointsHint(text: string, keywords: string[] = []): string {
-  const kws = (keywords || []).slice(0, 4)
-  const points = kws.length > 0 ? kws.map(k => `Mention: ${k}.`) : [`Cover definition, purpose, examples, and impact.`]
-  return points.join(' ')
+  const kws = (keywords || []).slice(0, 5)
+  
+  if (kws.length > 0) {
+    const keywordList = kws.map(k => `**${k}**`).join(', ')
+    return `🔑 **Important keywords to include:** ${keywordList}. Make sure your answer incorporates these terms.`
+  }
+  
+  // Fallback: analyze question to extract key concepts
+  const textLower = text.toLowerCase()
+  const suggestedPoints: string[] = []
+  
+  if (textLower.includes('how') || textLower.includes('process')) {
+    suggestedPoints.push('**steps/process**', '**method**', '**outcome**')
+  } else if (textLower.includes('why') || textLower.includes('reason')) {
+    suggestedPoints.push('**cause**', '**effect**', '**importance**')
+  } else if (textLower.includes('what')) {
+    suggestedPoints.push('**definition**', '**purpose**', '**examples**')
+  } else {
+    suggestedPoints.push('**definition**', '**examples**', '**application**')
+  }
+  
+  return `🔑 **Key points to cover:** ${suggestedPoints.join(', ')}`
+}
+
+// ENHANCED: Provide sentence structure guidance for long answers
+function generateSentenceStructureHint(text: string, expectedLength: "short" | "medium" | "long"): string {
+  const textLower = text.toLowerCase()
+  
+  if (expectedLength === "long") {
+    return `📝 **Structure your answer:**
+    1️⃣ **Opening** → Define or introduce the main concept
+    2️⃣ **Explanation** → Explain how/why it works with details
+    3️⃣ **Examples** → Provide 1-2 concrete examples
+    4️⃣ **Conclusion** → Summarize the significance or impact`
+  } else if (expectedLength === "medium") {
+    return `📝 **Structure:** Start → Explain → Example
+    Begin with a clear statement, explain the concept, and include one example.`
+  } else {
+    return `📝 **Structure:** Definition + Brief Example
+    Give a concise definition followed by a quick example if space allows.`
+  }
+}
+
+// ENHANCED: Generate segmented hints for long answers
+function generateSegmentedHint(text: string, segment: 'opening' | 'body' | 'conclusion', keywords: string[] = []): string {
+  const textLower = text.toLowerCase()
+  const topic = extractTopic(textLower) || 'the concept'
+  
+  if (segment === 'opening') {
+    if (textLower.includes('what') || textLower.includes('define')) {
+      return `💡 **Opening segment:** Start by defining ${topic}. Example: "${capitalizeFirst(topic)} is..."`
+    } else if (textLower.includes('how')) {
+      return `💡 **Opening segment:** Introduce the process or method. Example: "${capitalizeFirst(topic)} works by..."`
+    } else if (textLower.includes('why')) {
+      return `💡 **Opening segment:** State the reason or purpose. Example: "The main reason for ${topic} is..."`
+    }
+    return `💡 **Opening segment:** Begin with a clear statement about ${topic}`
+  } else if (segment === 'body') {
+    const keywordsHint = keywords.length > 0 
+      ? ` Include terms like: ${keywords.slice(0, 3).join(', ')}.`
+      : ''
+    return `💡 **Body segment:** Explain the key mechanisms, steps, or factors.${keywordsHint} Provide supporting details.`
+  } else { // conclusion
+    return `💡 **Conclusion segment:** Summarize the main points and state why ${topic} matters or its practical impact.`
+  }
 }
 
 // Provide an opening sentence template the learner can adapt
@@ -584,11 +714,11 @@ function generateOpeningSentenceHint(text: string): string {
 function generateLengthGuidanceHint(expectedLength: "short" | "medium" | "long"): string {
   switch (expectedLength) {
     case 'short':
-      return 'Aim for 10-30 words: 1-2 sentences focusing on the core idea.'
+      return '📏 Aim for **10-30 words**: 1-2 concise sentences focusing on the core idea.'
     case 'medium':
-      return 'Aim for 30-60 words: include definition and one example.'
+      return '📏 Aim for **30-60 words**: Include definition and one clear example.'
     case 'long':
-      return 'Aim for 80+ words: include definition, 2 examples, and a short conclusion.'
+      return '📏 Aim for **80+ words**: Include definition, 2 examples, and a brief conclusion.'
   }
 }
 
@@ -1047,6 +1177,44 @@ function generateContextHint(answer: string, question: string): string {
   } else {
     return "This is a longer term that represents an important concept."
   }
+}
+
+// ENHANCED: Generate context-aware hints from question text and tags
+function generateEnhancedContextHint(answer: string, question: string, tags: string[] = []): string {
+  const questionLower = question.toLowerCase()
+  const answerLower = answer.toLowerCase()
+  
+  // Extract key phrases from question
+  const actionWords = ['process', 'method', 'technique', 'approach', 'strategy', 'concept', 'principle', 'structure']
+  const hasActionWord = actionWords.find(word => questionLower.includes(word))
+  
+  // Database/SQL specific
+  if (tags.some(t => ['SQL', 'Database', 'Performance'].includes(t)) || questionLower.includes('database') || questionLower.includes('query')) {
+    if (questionLower.includes('performance') || questionLower.includes('optimize')) {
+      return "📊 Think about database optimization techniques that improve query speed"
+    }
+    if (questionLower.includes('structure') || questionLower.includes('rearrang')) {
+      return "📊 Consider how database structures are organized for efficiency"
+    }
+    return "📊 This relates to database operations and management"
+  }
+  
+  // Programming concepts
+  if (tags.some(t => ['Programming', 'Code', 'Algorithm'].includes(t)) || questionLower.includes('program') || questionLower.includes('code')) {
+    return "💻 This is a fundamental programming concept used in software development"
+  }
+  
+  // General context from question structure
+  if (hasActionWord) {
+    return `📝 The question asks about a ${hasActionWord} - focus on the technical term for this action`
+  }
+  
+  // Fallback: extract context from question length and complexity
+  if (question.length > 100) {
+    return "🎯 Break down the question into key parts - the answer directly addresses the main action described"
+  }
+  
+  return "💡 The answer is a specific term related to the question's main topic"
 }
 
 function generateStructureHint(answer: string): string {

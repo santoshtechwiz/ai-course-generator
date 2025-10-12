@@ -153,8 +153,13 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
 
   // Save answer
   const handleAnswer = useCallback(
-    (answer: string) => {
-      if (!currentQuestion) return false
+    (answer: string, similarity?: number, hintsUsed?: number) => {
+      console.log('[OpenEndedQuizWrapper] handleAnswer called with:', { answer, similarity, hintsUsed, hasCurrentQuestion: !!currentQuestion })
+      
+      if (!currentQuestion) {
+        console.log('[OpenEndedQuizWrapper] No current question - returning false')
+        return false
+      }
 
       dispatch(
         saveAnswer({
@@ -164,6 +169,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
         }),
       )
 
+      console.log('[OpenEndedQuizWrapper] Answer saved successfully - returning true')
       return true
     },
     [currentQuestion, dispatch],

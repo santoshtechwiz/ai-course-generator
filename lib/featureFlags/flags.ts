@@ -9,7 +9,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
   // Core System Features
   'route-protection': {
     enabled: true,
-    environments: ['production', 'staging', 'development'],
+    environments: ['production', 'staging', 'development', 'test'],
     routes: ['/admin/**', '/home', '/dashboard/history/**', '/dashboard/mcq', '/dashboard/create/**'],
     requiresAuth: false, // Changed: Auth required only for specific routes, not all dashboard
     description: 'Selective route protection - exploration is public',
@@ -19,7 +19,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
   // Dashboard & Navigation Features
   'dashboard-access': {
     enabled: true,
-    environments: ['production', 'staging', 'development'],
+    environments: ['production', 'staging', 'development', 'test'],
     routes: ['/dashboard', '/home', '/dashboard/history'],
     requiresAuth: false, // Public dashboard access for exploration
     description: 'Dashboard access - public for exploration, personalized when authenticated',
@@ -28,7 +28,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
 
   'course-browsing': {
     enabled: true,
-    environments: ['production', 'staging', 'development'],
+    environments: ['production', 'staging', 'development', 'test'],
     routes: ['/explore', '/dashboard/explore'],
     requiresAuth: false, // Public browsing allowed
     description: 'Course browsing and exploration - public access',
@@ -37,7 +37,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
 
   'course-access': {
     enabled: true,
-    environments: ['production', 'staging', 'development'],
+    environments: ['production', 'staging', 'development', 'test'],
     routes: ['/dashboard/learn', '/dashboard/course/**'],
     requiresAuth: false, // Public viewing allowed, actions require auth
     description: 'Course viewing access - public for viewing, auth for actions',
@@ -46,7 +46,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
 
   'quiz-access': {
     enabled: true,
-    environments: ['production', 'staging', 'development'],
+    environments: ['production', 'staging', 'development', 'test'],
     routes: ['/quizzes'],
     requiresAuth: false, // Browse only, taking requires auth
     description: 'Quiz browsing access - public browsing, auth for taking quizzes',
@@ -55,7 +55,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
 
   'admin-access': {
     enabled: true,
-    environments: ['production', 'staging', 'development'],
+    environments: ['production', 'staging', 'development', 'test'],
     routes: ['/admin', '/admin/**'],
     userGroups: ['admin'],
     requiresAuth: true,
@@ -66,7 +66,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
   // Quiz Type Features
   'quiz-mcq': {
     enabled: true,
-    environments: ['production', 'staging', 'development'],
+    environments: ['production', 'staging', 'development', 'test'],
     routes: ['/dashboard/mcq'],
     requiresAuth: false, // Public browsing - auth enforced at action level by page itself
     requiresCredits: false, // Credits checked when user clicks "Create Quiz" button
@@ -77,7 +77,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
 
   'quiz-openended': {
     enabled: true,
-    environments: ['production', 'staging', 'development'],
+    environments: ['production', 'staging', 'development', 'test'],
     routes: ['/dashboard/openended'],
     requiresAuth: false, // Public browsing - auth enforced at action level by page itself
     requiresCredits: false, // Credits checked when user clicks "Create Quiz" button
@@ -88,7 +88,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
 
   'quiz-blanks': {
     enabled: true,
-    environments: ['production', 'staging', 'development'],
+    environments: ['production', 'staging', 'development', 'test'],
     routes: ['/dashboard/blanks'],
     requiresAuth: false, // Public browsing - auth enforced at action level by page itself
     requiresCredits: false, // Credits checked when user clicks "Create Quiz" button
@@ -99,7 +99,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
 
   'quiz-code': {
     enabled: true,
-    environments: ['production', 'staging', 'development'],
+    environments: ['production', 'staging', 'development', 'test'],
     routes: ['/dashboard/code'],
     requiresAuth: false, // Public browsing - auth enforced at action level by page itself
     requiresCredits: false, // Credits checked when user clicks "Create Quiz" button
@@ -110,7 +110,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
 
   'quiz-flashcard': {
     enabled: true,
-    environments: ['production', 'staging', 'development'],
+    environments: ['production', 'staging', 'development', 'test'],
     routes: ['/dashboard/flashcard'],
     requiresAuth: false, // Public browsing - auth enforced at action level by page itself
     requiresCredits: false, // Credits checked when user clicks "Create Quiz" button
@@ -121,14 +121,14 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
 
   'middleware-caching': {
     enabled: true,
-    environments: ['production', 'staging'],
+    environments: ['production', 'staging', 'development', 'test'],
     description: 'Enable token and session caching in middleware',
     version: '1.5.0'
   },
 
   'performance-monitoring': {
     enabled: true,
-    environments: ['production', 'staging'],
+    environments: ['production', 'staging', 'development', 'test'],
     description: 'Enable performance monitoring and logging',
     version: '1.0.0'
   },
@@ -136,7 +136,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
   // Authentication & Authorization
   'admin-panel': {
     enabled: true,
-    environments: ['production', 'staging', 'development'],
+    environments: ['production', 'staging', 'development', 'test'],
     routes: ['/admin/**'],
     userGroups: ['admin'],
     requiresAuth: true,
@@ -146,7 +146,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
 
   'subscription-enforcement': {
     enabled: true,
-    environments: ['production', 'staging'],
+    environments: ['production', 'staging', 'development', 'test'],
     routes: [
       '/dashboard/mcq',
       '/dashboard/openended',
@@ -164,7 +164,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
   // Content Creation Features
   'quiz-creation': {
     enabled: true,
-    environments: ['production', 'staging', 'development'],
+    environments: ['production', 'staging', 'development', 'test'],
     routes: ['/dashboard/mcq', '/dashboard/openended', '/dashboard/blanks', '/dashboard/code'],
     requiresAuth: true, // Auth required for CREATING quizzes
     requiresCredits: true,
@@ -175,7 +175,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
 
   'course-creation': {
     enabled: true,
-    environments: ['production', 'staging', 'development'],
+    environments: ['production', 'staging', 'development', 'test'],
     routes: ['/dashboard/create/course'],
     requiresAuth: true, // Auth required for CREATING courses
     requiresCredits: true,
@@ -186,7 +186,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
 
   'pdf-generation': {
     enabled: true,
-    environments: ['production', 'staging'],
+    environments: ['production', 'staging', 'development', 'test'],
     requiresAuth: true,
     requiresSubscription: true,
     minimumPlan: 'BASIC',
@@ -198,7 +198,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
   // Analytics & Insights
   'analytics': {
     enabled: true,
-    environments: ['production', 'staging'],
+    environments: ['production', 'staging', 'development', 'test'],
     requiresAuth: true,
     requiresSubscription: true,
     minimumPlan: 'PREMIUM',
@@ -209,7 +209,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
 
   'enhanced-analytics': {
     enabled: true,
-    environments: ['production', 'staging'],
+    environments: ['production', 'staging', 'development', 'test'],
     requiresAuth: true,
     requiresSubscription: true,
     minimumPlan: 'PREMIUM',
@@ -222,7 +222,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
   // AI Features
   'ai-recommendations': {
     enabled: true,
-    environments: ['production', 'staging'],
+    environments: ['production', 'staging', 'development', 'test'],
     requiresAuth: true,
     minimumPlan: 'BASIC',
     rolloutPercentage: 75,
