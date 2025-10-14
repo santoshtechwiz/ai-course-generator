@@ -155,9 +155,18 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   const handleAnswer = useCallback(
     (answer: string, similarity?: number, hintsUsed?: number) => {
       console.log('[OpenEndedQuizWrapper] handleAnswer called with:', { answer, similarity, hintsUsed, hasCurrentQuestion: !!currentQuestion })
-      
+
       if (!currentQuestion) {
         console.log('[OpenEndedQuizWrapper] No current question - returning false')
+        return false
+      }
+
+      // Check if answer meets minimum similarity threshold (50% for progression)
+      const minSimilarity = 0.5
+      const meetsThreshold = similarity !== undefined && similarity >= minSimilarity
+
+      if (!meetsThreshold) {
+        console.log(`[OpenEndedQuizWrapper] Answer similarity ${similarity} below threshold ${minSimilarity} - not proceeding`)
         return false
       }
 
@@ -173,9 +182,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
       return true
     },
     [currentQuestion, dispatch],
-  )
-
-  // Navigation
+  )  // Navigation
   const handleNextQuestion = useCallback(() => {
     if (currentQuestionIndex < questions.length - 1) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))

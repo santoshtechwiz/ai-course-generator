@@ -1,5 +1,5 @@
 "use client"
-import type React from "react"
+import React from "react"
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { motion } from "framer-motion"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
 import { HintSystem } from "@/components/quiz/HintSystem"
 import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
-import { generateContentAwareHints } from "@/lib/utils/hint-system"
+import { generateHints } from "@/lib/utils/hint-system-unified"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useOptionalQuizState } from "@/components/quiz/QuizStateProvider"
 import { AdaptiveFeedbackWrapper, useAdaptiveFeedback } from "@/components/quiz/AdaptiveFeedbackWrapper"
@@ -102,6 +102,7 @@ export default function OpenEndedQuiz({
   const [keywordsCovered, setKeywordsCovered] = useState<string[]>([])
   const [isFocused, setIsFocused] = useState(false)
   const pendingResetRef = useRef(false)
+  const pendingResetValueRef = useRef<string | null>(null)
 
   // Adaptive feedback integration
   const { isAuthenticated } = useAuth()
@@ -152,23 +153,107 @@ export default function OpenEndedQuiz({
     return "medium"
   }, [questionData.text, questionData.answer])
 
-  // Generate hints for this question using content-aware generation
+  // Use existing hints from question data, or generate additional ones if needed
   const hints = useMemo(() => {
+    // If question already has hints, use them directly
+    if (questionData.hints && questionData.hints.length > 0) {
+      // Convert string hints to Hint objects expected by HintSystem
+      return questionData.hints.map((hintText: string, index: number) => ({
+        level: index < 2 ? "low" as const : index < 4 ? "medium" as const : "high" as const,
+        type: "contextual" as const,
+        content: hintText,
+        spoilerLevel: index < 2 ? "low" as const : index < 4 ? "medium" as const : "high" as const,
+        penalty: 0,
+        description: `Hint ${index + 1}`,
+        targetLength: expectedLength
+      }))
+    }
+
+    // Fallback: generate hints if no existing hints
     const validKeywords = Array.isArray(questionData.keywords) ? questionData.keywords : []
-    return generateContentAwareHints(
-      questionData.text || "",
-      validKeywords,
-      expectedLength,
+    const validTags = Array.isArray(questionData.tags) ? questionData.tags : []
+    
+    return generateHints(
       answer,
-      { allowDirectAnswer: false, maxHints: 3, partialWords: 4, keywords: validKeywords, tags: Array.isArray(questionData.tags) ? questionData.tags : [] },
+      questionData.text || "",
+      {
+        tags: validTags,
+        keywords: validKeywords,
+        expectedLength
+      },
+      undefined, // No user answer for hint generation
+      { 
+        maxHints: 5, // Increased from 3 for open-ended questions
+        allowDirectAnswer: false 
+      }
     )
-  }, [questionData.keywords, questionData.text, expectedLength, answer])
+  }, [questionData.hints, questionData.keywords, questionData.text, questionData.tags, expectedLength, answer])
+
+  // Build progressive contextual hints (1 -> high-level topic, 5 -> detailed guidance)
+  // Replaced with a clearer 5-step hint template (user-provided) while preserving HintSystem's hint object shape.
+  const progressiveHints = useMemo(() => {
+    const base: any[] = Array.isArray(hints) ? [...hints] : []
+
+    // Compute canonical answer stats (if available)
+    const canonicalAnswer = (questionData.answer || "").toString().trim()
+    const words = canonicalAnswer ? canonicalAnswer.split(/\s+/).filter(Boolean) : []
+    const wordCount = words.length
+    const charCount = canonicalAnswer.length
+    const firstWord = words.length > 0 ? words[0] : ''
+    const lastWord = words.length > 0 ? words[words.length - 1] : ''
+    const firstChar = firstWord ? String(firstWord).charAt(0) : ''
+    const lastChar = lastWord ? String(lastWord).slice(-1) : ''
+
+    // Progressive hint contents (user-approved), enriched with stats where useful
+    const hintContents = [
+      `This describes OpenAI’s overarching mission: developing advanced AI in ways that are safe and beneficial for people and society. (Words: ${wordCount}, Chars: ${charCount})`,
+      `Focus on these core words and phrases: safety, alignment, research, collaboration, accessibility, broad benefit, capability advancement.`,
+      `Structure your answer in 2–3 short sentences: define the primary goal, list 3–4 concrete objectives (e.g., safe development, broad access, research collaboration, beneficial deployment), then tie them to how they advance AI.`,
+      `The answer likely starts with "The" and should be about 100–110 words; use a formal explanatory tone. Anchors: starts with '${firstChar || '?'}', ends with '${lastChar || '?'}'.`,
+      `Starter scaffold: "The primary goals of OpenAI are to develop advanced AI systems that are safe, broadly beneficial, and accessible to as many people as possible; to conduct and share research that advances understanding and alignment; and to collaborate with others to ensure AI’s benefits are distributed widely." Expand with a short sentence explaining how these goals contribute to AI (examples: improved capabilities, safer deployments, democratized access).`,
+    ]
+
+    // Convert to Hint objects and append while avoiding duplicates, cap at 5, and include meta stats
+    const existingContents = new Set(base.map((b: any) => (b && b.content) ? b.content : String(b)))
+    for (const [idx, content] of hintContents.entries()) {
+      if (existingContents.size >= 5) break
+      if (!existingContents.has(content)) {
+        const level = idx < 2 ? 'low' : idx < 4 ? 'medium' : 'high'
+        base.push({
+          level,
+          type: 'contextual',
+          content,
+          spoilerLevel: idx < 2 ? 'low' : idx < 4 ? 'medium' : 'high',
+          penalty: 0,
+          description: `Hint ${idx + 1}`,
+          targetLength: expectedLength,
+          meta: {
+            wordCount,
+            charCount,
+            firstChar,
+            lastChar,
+            suggestedStart: firstWord || null,
+          },
+        })
+        existingContents.add(content)
+      }
+    }
+
+    return base.slice(0, 5)
+  }, [hints, expectedLength, questionData.answer])
 
   // Calculate similarity and keyword coverage when answer changes
   useEffect(() => {
     if (answer.trim()) {
       if (questionData.answer) {
-        const result = calculateAnswerSimilarity(answer, questionData.answer, 0.6)
+        const result = calculateAnswerSimilarity(answer, questionData.answer, 0.5)
+        console.log('[OpenEndedQuiz] Similarity calculated:', {
+          userAnswerLength: answer.length,
+          correctAnswerLength: questionData.answer.length,
+          similarity: result.similarity,
+          isAcceptable: result.isAcceptable,
+          threshold: 0.5
+        })
         setSimilarity(result.similarity)
         setIsAnswered(result.isAcceptable)
       }
@@ -208,10 +293,14 @@ export default function OpenEndedQuiz({
     setIsFocused(false)
     if (pendingResetRef.current) {
       pendingResetRef.current = false
-      setAnswer('')
-      setIsAnswered(false)
-      setShowValidation(false)
-      setKeywordsCovered([])
+      const expected = pendingResetValueRef.current
+      pendingResetValueRef.current = null
+      if (expected === answer) {
+        setAnswer('')
+        setIsAnswered(false)
+        setShowValidation(false)
+        setKeywordsCovered([])
+      }
     }
   }, [])
 
@@ -220,27 +309,49 @@ export default function OpenEndedQuiz({
   }, [])
 
   const handleAnswerSubmit = useCallback(() => {
-    const minLength = 5
-    if (!answer.trim() || answer.trim().length < minLength) {
+    // Allow submission if similarity is good (similarity calculation already validated answer quality)
+    if (similarity < 0.5) {
+      console.log('[OpenEndedQuiz] Similarity too low - cannot submit:', similarity)
       setShowValidation(true)
       return false
     }
-    return onAnswer(answer, similarity, hintsUsed)
+    
+    console.log('[OpenEndedQuiz] Submitting answer:', { 
+      answerLength: answer.length, 
+      similarity, 
+      hintsUsed, 
+      canProceed: similarity >= 0.5 
+    })
+    const result = onAnswer(answer, similarity, hintsUsed)
+    console.log('[OpenEndedQuiz] onAnswer returned:', result)
+    // Treat undefined as success to avoid blocking navigation when handlers don't return a boolean
+    if (typeof result === 'undefined') return true
+    return Boolean(result)
   }, [answer, similarity, hintsUsed, onAnswer])
 
   const handleNext = useCallback(() => {
-    if (handleAnswerSubmit() && onNext) {
+    console.log('[OpenEndedQuiz] handleNext called')
+    const submitResult = handleAnswerSubmit()
+    console.log('[OpenEndedQuiz] handleAnswerSubmit result:', submitResult)
+    
+    if (submitResult && onNext) {
+      console.log('[OpenEndedQuiz] Moving to next question - resetting state')
+      // Reset hints immediately when answer is successfully submitted
+      setHintsUsed(0)
+      setAnswer('')  // Clear answer immediately
+      setSimilarity(0)  // Reset similarity immediately
+      setIsAnswered(false)
+      setShowValidation(false)
+      setKeywordsCovered([])
+      
       onNext()
 
-      // Return a cleanup function to reset hints and answer state when moving to the next question
+      // Return a cleanup function to reset answer state when moving to the next question
       return () => {
-        setAnswer("")
-        setSimilarity(0)
-        setIsAnswered(false)
-        setShowValidation(false)
-        setHintsUsed(0)
-        setKeywordsCovered([])
+        // Additional cleanup if needed
       }
+    } else {
+      console.log('[OpenEndedQuiz] Cannot proceed - submitResult:', submitResult, 'onNext:', !!onNext)
     }
     return undefined
   }, [handleAnswerSubmit, onNext])
@@ -272,7 +383,19 @@ export default function OpenEndedQuiz({
   )
 
   const minLength = 5
-  const canProceed = answer.trim().length >= minLength && similarity >= 0.3
+  // User can proceed if similarity is good (similarity calculation already validates answer quality)
+  const canProceed = similarity >= 0.5
+  
+  // Debug logging for canProceed
+  useEffect(() => {
+    console.log('[OpenEndedQuiz] canProceed updated:', {
+      answerLength: answer.trim().length,
+      minLength,
+      similarity,
+      canProceed,
+      threshold: 0.5
+    })
+  }, [answer, similarity, canProceed, minLength])
   const wordCount = answer
     .trim()
     .split(/\s+/)
@@ -391,7 +514,7 @@ export default function OpenEndedQuiz({
           </motion.div>
 
           {/* Success indicator */}
-          {answer.trim() && similarity >= 0.3 && (
+          {answer.trim() && similarity >= 0.5 && (
             <div className="flex items-center justify-center pt-2">
               <div className="flex items-center gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 px-3 py-1.5 rounded-full">
                 <CheckCircle className="w-4 h-4" />
@@ -401,20 +524,21 @@ export default function OpenEndedQuiz({
           )}
 
           {/* Adaptive Feedback Wrapper - Intelligent feedback based on attempts */}
-          {answer.trim() && similarity < 0.3 && (
+          {answer.trim() && similarity < 0.5 && (
             <AdaptiveFeedbackWrapper
               quizSlug={slug || 'unknown-quiz'}
               questionId={question.id}
               userAnswer={answer}
               correctAnswer={questionData.answer}
               isAuthenticated={isAuthenticated}
-              hints={hints.map((h) => h.content)}
+              hints={hints.map((h: any) => (h && h.content) ? h.content : String(h))}
               relatedTopicSlug={slug}
               difficulty={3}
               shouldShowFeedback={true}
               onReset={() => {
                 // If user is actively typing, defer the reset until blur to avoid erasing in-progress input
                 if (isFocused) {
+                  pendingResetValueRef.current = answer
                   pendingResetRef.current = true
                 } else {
                   setAnswer('')
@@ -435,14 +559,13 @@ export default function OpenEndedQuiz({
             className="w-full"
           >
             <HintSystem
-              hints={hints || []}
+              hints={progressiveHints || []}
               onHintUsed={(hintIndex, hint) => handleHintUsed(hintIndex + 1)}
               questionText={questionData.text}
               userInput={answer}
               correctAnswer={questionData.answer}
-              maxHints={3}
+              maxHints={5} // Increased from 3 for open-ended questions
               expectedLength={expectedLength}
-              // @ts-expect-error - allow passing tags for display
               tags={questionData.tags}
             />
           </motion.div>
@@ -459,6 +582,7 @@ export default function OpenEndedQuiz({
       >
         <QuizFooter
           onNext={(() => {
+            console.log('[OpenEndedQuiz] Next button config:', { canProceed, minLength: 5, answerLength: answer.length, similarity, willEnable: canProceed })
             const stateManager = useOptionalQuizState()
             if (stateManager) {
               return () => stateManager.handleNext(handleNext)

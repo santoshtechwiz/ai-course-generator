@@ -75,7 +75,11 @@ export function NewsletterForm() {
       </Button>
 
       {message && (
-        <div className={`text-sm flex items-center ${status === "error" ? "text-destructive" : "text-primary"}`}>
+        <div 
+          className={`text-sm flex items-center ${status === "error" ? "text-destructive" : "text-primary"}`}
+          aria-live="polite"
+          role={status === "error" ? "alert" : "status"}
+        >
           {status === "error" ? (
             <AlertCircle className="mr-2 h-4 w-4" />
           ) : status === "success" ? (

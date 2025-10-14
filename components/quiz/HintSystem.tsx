@@ -19,26 +19,18 @@ import {
 import { motion, AnimatePresence } from "framer-motion"
 import { AttemptTracker } from "@/lib/utils/adaptive-feedback"
 import { cn } from "@/lib/utils"
-import type { HintLevel } from "@/lib/utils/hint-system"
-
-declare module "@/lib/utils/hint-system" {
-  interface HintLevel {
-    type: 'contextual' | 'semantic' | 'structural' | 'blank_start' | 'blank_end' | 'open_ended_deconstruction' | 'open_ended_brainstorming' | 'open_ended_structuring' | 'open_ended_adaptive';
-  }
-}
-import { analyzeUserInput } from "@/lib/utils/hint-system"
 import {
-  generateContextualHints,
-  selectAdaptiveContextualHint,
+  generateHints,
+  selectAdaptiveHint,
   formatHintForDisplay,
+  type Hint,
   type QuestionMetadata
-} from "@/lib/utils/hint-generation-contextual"
+} from "@/lib/utils/hint-system-unified"
 import { useAuth } from "@/modules/auth"
 
 interface HintSystemProps {
-
-  hints: HintLevel[]
-  onHintUsed?: (hintIndex: number, hint: HintLevel) => void
+  hints?: Hint[] // Optional - if not provided, will generate from metadata
+  onHintUsed?: (hintIndex: number, hint: Hint) => void
   className?: string
   userInput?: string
   correctAnswer?: string
@@ -82,7 +74,7 @@ const proactiveHintVariants = {
 }
 
 export function HintSystem({
-  hints,
+  hints = [], // Default to empty array
   onHintUsed,
   className,
   userInput,
@@ -98,7 +90,7 @@ export function HintSystem({
   const [revealedCount, setRevealedCount] = useState(0)
   const [proactiveHint, setProactiveHint] = useState<string | null>(null)
   const [showConfirmation, setShowConfirmation] = useState(false)
-  const [hintToConfirm, setHintToConfirm] = useState<HintLevel | null>(null)
+  const [hintToConfirm, setHintToConfirm] = useState<Hint | null>(null)
   const [hintIndexToConfirm, setHintIndexToConfirm] = useState<number | null>(null)
   const [showFullAnswer, setShowFullAnswer] = useState(false)
   const [showFullConfirm, setShowFullConfirm] = useState(false)
@@ -107,176 +99,58 @@ export function HintSystem({
   const [isOnCooldown, setIsOnCooldown] = useState(false)
   const [cooldownRemaining, setCooldownRemaining] = useState(0)
 
+  // Reset hints when question changes
+  useEffect(() => {
+    setRevealedCount(0)
+    setProactiveHint(null)
+    setShowConfirmation(false)
+    setHintToConfirm(null)
+    setHintIndexToConfirm(null)
+    setShowFullAnswer(false)
+    setShowFullConfirm(false)
+    setAdaptiveReason("")
+    setIsOnCooldown(false)
+    setCooldownRemaining(0)
+  }, [questionText, correctAnswer])
 
-  // Generate contextual hints from question metadata (as fallback only)
-  const contextualHints = useMemo(() => {
+  // Generate hints using the unified system if no hints provided
+  const generatedHints = useMemo(() => {
     if (!correctAnswer || !questionText) return []
-    
-    const metadata: QuestionMetadata = { tags, keywords, blanks }
-    return generateContextualHints(correctAnswer, questionText, metadata, userInput)
-  }, [correctAnswer, questionText, tags, keywords, blanks, userInput])
 
-  // Helper to generate hints for blanks
-  const generateBlankHints = (correctAnswer: string, blanks: string[]): HintLevel[] => {
-    if (!blanks || blanks.length === 0 || !correctAnswer) return [];
-
-    const blankHints: HintLevel[] = [];
-    const words = correctAnswer.split(/\s+/); // Simple split for words
-
-    blanks.forEach((blankPlaceholder, index) => {
-      // Find the actual word in the correct answer that corresponds to the blank
-      // This is a simplified approach; a more robust solution might involve NLP or specific markers
-      const actualWord = words.find(word => word.toLowerCase().includes(blankPlaceholder.toLowerCase()));
-
-      if (actualWord) {
-        if (actualWord.length > 0) {
-          blankHints.push({
-            level: "medium",
-            type: "blank_start",
-            content: `The missing word starting with '${actualWord[0].toUpperCase()}'`, // First letter
-            spoilerLevel: "medium",
-            penalty: 5,
-            description: `Hint for blank ${index + 1}: Starting letter`
-          });
-        }
-        if (actualWord.length > 1) {
-          blankHints.push({
-            level: "high",
-            type: "blank_end",
-            content: `The missing word ending with '${actualWord[actualWord.length - 1].toLowerCase()}'`, // Last letter
-            spoilerLevel: "high",
-            penalty: 10,
-            description: `Hint for blank ${index + 1}: Ending letter`
-          });
-        }
-      }
-    });
-    return blankHints;
-  };
-
-  const generatedBlankHints = useMemo(() => {
-    return generateBlankHints(correctAnswer || '', blanks);
-  }, [correctAnswer, blanks]);
-
-  // Helper to generate hints for open-ended questions
-  const generateOpenEndedHints = (questionText?: string, userInput?: string): HintLevel[] => {
-    if (!questionText) return [];
-
-    const hints: HintLevel[] = [];
-
-    // Hint 1: Deconstruct the question (Start)
-    hints.push({
-      level: "low",
-      type: "open_ended_deconstruction",
-      content: `Let's start by breaking down the question: "${questionText}". What are the key components it's asking for?`,
-      spoilerLevel: "low",
-      penalty: 0,
-      description: "Start: Deconstruct the question"
-    });
-
-    // Hint 2: Brainstorm initial ideas (Start)
-    hints.push({
-      level: "low",
-      type: "open_ended_brainstorming",
-      content: "For the beginning of your answer, brainstorm some initial ideas or perspectives. Don't worry about structure yet, just get your thoughts down.",
-      spoilerLevel: "low",
-      penalty: 0,
-      description: "Start: Brainstorm initial ideas"
-    });
-
-    // Hint 3: Structure the main body (Middle)
-    hints.push({
-      level: "medium",
-      type: "open_ended_structuring",
-      content: "For the middle of your answer, think about how to organize your points. A good structure could be to define the main concepts, then compare and contrast them.",
-      spoilerLevel: "medium",
-      penalty: 0,
-      description: "Middle: Structure the main body"
-    });
-
-    // Hint 4: Elaborate with examples (Middle)
-    hints.push({
-      level: "medium",
-      type: "open_ended_adaptive", // Using adaptive for elaboration
-      content: "To add depth to the middle of your answer, provide specific examples or evidence to support your points. This will make your argument more convincing.",
-      spoilerLevel: "medium",
-      penalty: 5,
-      description: "Middle: Elaborate with examples"
-    });
-
-    // Hint 5: Conclude your answer (End)
-    hints.push({
-      level: "high",
-      type: "open_ended_structuring", // Re-using structuring for conclusion
-      content: "To end your answer, summarize your main points and offer a concluding thought. What is the key takeaway you want to leave the reader with?",
-      spoilerLevel: "high",
-      penalty: 10,
-      description: "End: Conclude your answer"
-    });
-
-    return hints;
-  };
-
-  const generatedOpenEndedHints = useMemo(() => {
-    // Assuming an open-ended question can be identified by the absence of a direct correctAnswer
-    // or by a specific tag/type if available in metadata (not currently in props)
-    const isOpenEnded = !correctAnswer && questionText; // Simplified detection
-    return isOpenEnded ? generateOpenEndedHints(questionText, userInput) : [];
-  }, [questionText, userInput, correctAnswer]);
-
-  // PRIORITY: Use hints prop first, then generated hints, then contextual hints, then generic fallbacks
-  const effectiveHints = (hints && hints.length > 0) ? hints : generatedBlankHints.length > 0 ? generatedBlankHints : generatedOpenEndedHints.length > 0 ? generatedOpenEndedHints : contextualHints.length > 0 ? contextualHints.map((ch, idx) => ({
-    level: ch.spoilerLevel === 'low' ? 'low' as const : ch.spoilerLevel === 'high' ? 'high' as const : 'medium' as const,
-    type: ch.level === 'concept' ? 'contextual' as const : ch.level === 'keyword' ? 'semantic' as const : 'structural' as const,
-    content: ch.content,
-    spoilerLevel: ch.spoilerLevel,
-    penalty: 0, // No penalties for context-aware hints
-    description: ch.description
-  })) : [
-    {
-      level: "low" as const,
-      type: "contextual" as const,
-      content: "Break down the question into smaller parts and tackle each one.",
-      spoilerLevel: "low" as const,
-      penalty: 0,
-      description: "General guidance"
-    },
-    {
-      level: "low" as const,
-      type: "structural" as const,
-      content: "Consider the key concepts mentioned in the question.",
-      spoilerLevel: "low" as const,
-      penalty: 0,
-      description: "Structural hint"
-    },
-    {
-      level: "medium" as const,
-      type: "semantic" as const,
-      content: "Think about real-world examples that relate to this topic.",
-      spoilerLevel: "medium" as const,
-      penalty: 0,
-      description: "Application hint"
+    const metadata: QuestionMetadata = {
+      tags,
+      keywords,
+      blanks,
+      hints: [], // Instructor hints would come from props if available
+      expectedLength
     }
-  ]
+
+    return generateHints(correctAnswer, questionText, metadata, userInput, {
+      maxHints: maxHints || 5,
+      progressiveReveal: true,
+      allowDirectAnswer: false // Don't allow direct answers in the hint system
+    })
+  }, [correctAnswer, questionText, tags, keywords, blanks, userInput, maxHints, expectedLength])
+
+  // Use provided hints or generated hints
+  const effectiveHints = hints.length > 0 ? hints : generatedHints
 
   const nextHint = effectiveHints[revealedCount]
-  const availableHints = effectiveHints.slice(0, Math.min(maxHints, effectiveHints.length))
-
-  // Adaptive hint selection based on user answer similarity
+  const availableHints = effectiveHints.slice(0, Math.min(maxHints, effectiveHints.length))  // Adaptive hint selection based on user answer similarity
   useEffect(() => {
-    if (userInput && correctAnswer && contextualHints.length > 0) {
-      const selected = selectAdaptiveContextualHint(
+    if (userInput && correctAnswer && generatedHints.length > 0) {
+      const selected = selectAdaptiveHint(
         userInput,
         correctAnswer,
-        contextualHints,
+        generatedHints,
         revealedCount
       )
-      
+
       if (selected) {
         setAdaptiveReason(selected.encouragement)
       }
     }
-  }, [userInput, correctAnswer, contextualHints, revealedCount])
+  }, [userInput, correctAnswer, generatedHints, revealedCount])
 
   const handleReveal = () => {
     if (!nextHint || isOnCooldown) return
@@ -352,39 +226,27 @@ export function HintSystem({
     setHintIndexToConfirm(null)
   }
 
-  const getHintIcon = (hintType: HintLevel['type'], index: number) => {
+  const getHintIcon = (hintType: Hint['type'], index: number) => {
     switch (hintType) {
       case 'contextual': return HelpCircle;
       case 'semantic': return BookOpen;
       case 'structural': return Target;
-      case 'blank_start': return Lock; // Or another appropriate icon
-      case 'blank_end': return Crown; // Or another appropriate icon
-      case 'open_ended_deconstruction': return Info;
-      case 'open_ended_brainstorming': return Sparkles;
-      case 'open_ended_structuring': return Eye;
-      case 'open_ended_adaptive': return Lightbulb;
+      case 'direct': return Lightbulb;
       default: return HelpCircle;
     }
   }
 
-  const getColor = (hint: HintLevel) => {
+  const getColor = (hint: Hint) => {
     // Color-code hints by type for clarity
     switch (hint.type) {
       case "contextual":
-      case "open_ended_deconstruction":
         return "bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/10 dark:text-blue-300 dark:border-blue-800";
       case "semantic":
-      case "open_ended_brainstorming":
         return "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800";
       case "structural":
-      case "open_ended_structuring":
         return "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/10 dark:text-emerald-300 dark:border-emerald-800";
-      case "blank_start":
-        return "bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-950/10 dark:text-purple-300 dark:border-purple-800";
-      case "blank_end":
-        return "bg-pink-50 text-pink-800 border-pink-200 dark:bg-pink-950/10 dark:text-pink-300 dark:border-pink-800";
-      case "open_ended_adaptive":
-        return "bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/10 dark:text-indigo-300 dark:border-indigo-800";
+      case "direct":
+        return "bg-red-50 text-red-800 border-red-200 dark:bg-red-950/10 dark:text-red-300 dark:border-red-800";
       default:
         return "bg-muted text-foreground border-border";
     }
@@ -507,8 +369,8 @@ export function HintSystem({
             {isOnCooldown 
               ? `Wait ${cooldownRemaining}s before next hint...`
               : nextHint 
-                ? `Reveal Next Hint (${Math.min(revealedCount+1, availableHints.length)}/${Math.min(availableHints.length, maxHints)})` 
-                : "No More Hints"}
+                ? `Reveal Next Hint (${revealedCount + 1}/${effectiveHints.length})` 
+                : "All Hints Revealed"}
           </Button>
 
           {/* Positive Reinforcement */}

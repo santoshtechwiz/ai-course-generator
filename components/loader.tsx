@@ -10,7 +10,7 @@ interface LoaderProps {
   className?: string
 }
 
-export function Loader({
+export const Loader = React.memo(function Loader({
   message = "Loading...",
   size = 'medium',
   className
@@ -47,14 +47,16 @@ export function Loader({
       )}
     </div>
   )
-}
+})
+
+Loader.displayName = "Loader"
 
 interface SkeletonLoaderProps {
   lines?: number
   className?: string
 }
 
-export function SkeletonLoader({ lines = 1, className }: SkeletonLoaderProps) {
+export const SkeletonLoader = React.memo(function SkeletonLoader({ lines = 1, className }: SkeletonLoaderProps) {
   return (
     <div className={cn("space-y-2", className)}>
       {Array.from({ length: lines }).map((_, i) => (
@@ -65,4 +67,6 @@ export function SkeletonLoader({ lines = 1, className }: SkeletonLoaderProps) {
       ))}
     </div>
   )
-}
+})
+
+SkeletonLoader.displayName = "SkeletonLoader"

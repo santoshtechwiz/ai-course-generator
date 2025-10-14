@@ -4,6 +4,7 @@ import { getCourseData } from "@/app/actions/getCourseData"
 import type { FullCourseType } from "@/app/types/types"
 import CourseLayout from "./components/CourseLayout"
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
+import { EnhancedErrorBoundary } from "@/components/error-boundary"
 
 type CoursePageParams = {
   params: Promise<{ slug: string }>
@@ -138,7 +139,30 @@ export default async function Page({ params }: CoursePageParams) {
 
     return (
       <div className="min-h-screen">
-        <CourseLayout course={course as FullCourseType} />
+        <EnhancedErrorBoundary
+          fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <div className="text-center">
+                <h1 className="text-2xl font-bold text-gray-900 mb-4">Course Error</h1>
+                <p className="text-gray-600 mb-6">We encountered an error while loading this course.</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 mr-3"
+                >
+                  Reload Page
+                </button>
+                <a
+                  href="/dashboard/explore"
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  Browse Courses
+                </a>
+              </div>
+            </div>
+          }
+        >
+          <CourseLayout course={course as FullCourseType} />
+        </EnhancedErrorBoundary>
       </div>
     )
   } catch (error) {

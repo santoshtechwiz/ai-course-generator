@@ -131,9 +131,18 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   const handleAnswer = useCallback(
     (answer: string, similarity?: number, hintsUsed?: number) => {
       console.log('[BlanksQuizWrapper] handleAnswer called with:', { answer, similarity, hintsUsed, hasCurrentQuestion: !!currentQuestion })
-      
+
       if (!currentQuestion) {
         console.log('[BlanksQuizWrapper] No current question - returning false')
+        return false
+      }
+
+      // Check if answer meets minimum similarity threshold (50% for progression)
+      const minSimilarity = 0.5
+      const meetsThreshold = similarity !== undefined && similarity >= minSimilarity
+
+      if (!meetsThreshold) {
+        console.log(`[BlanksQuizWrapper] Answer similarity ${similarity} below threshold ${minSimilarity} - not proceeding`)
         return false
       }
 
@@ -150,9 +159,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
       return true
     },
     [currentQuestion, dispatch],
-  )
-
-  // Navigation
+  )  // Navigation
   const handleNextQuestion = useCallback(() => {
     if (currentQuestionIndex < questions.length - 1) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))

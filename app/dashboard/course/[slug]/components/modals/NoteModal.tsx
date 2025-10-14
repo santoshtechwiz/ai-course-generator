@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -29,10 +29,45 @@ export function NoteModal({
   const [open, setOpen] = useState(false)
   const [note, setNote] = useState(existingNote?.note || "")
   const [isLoading, setIsLoading] = useState(false)
+  const [draftSaved, setDraftSaved] = useState(false)
   const { toast } = useToast()
   const { createNote, updateNote } = useNotes({ courseId, chapterId })
 
   const isEditing = Boolean(existingNote)
+
+  // Auto-save note content to localStorage with debouncing
+  useEffect(() => {
+    if (!open || !note.trim()) return
+
+    const timeoutId = setTimeout(() => {
+      const key = `note-draft-${courseId}-${chapterId || 'general'}-${existingNote?.id || 'new'}`
+      try {
+        localStorage.setItem(key, note)
+        setDraftSaved(true)
+        // Hide the indicator after 2 seconds
+        setTimeout(() => setDraftSaved(false), 2000)
+      } catch (error) {
+        console.warn('Failed to auto-save note draft:', error)
+      }
+    }, 1000) // Save after 1 second of inactivity
+
+    return () => clearTimeout(timeoutId)
+  }, [note, open, courseId, chapterId, existingNote?.id])
+
+  // Load draft when modal opens
+  useEffect(() => {
+    if (open && !isEditing) {
+      const key = `note-draft-${courseId}-${chapterId || 'general'}-new`
+      try {
+        const draft = localStorage.getItem(key)
+        if (draft && !existingNote?.note) {
+          setNote(draft)
+        }
+      } catch (error) {
+        console.warn('Failed to load note draft:', error)
+      }
+    }
+  }, [open, isEditing, courseId, chapterId, existingNote?.note])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -91,6 +126,14 @@ export function NoteModal({
         })
       }
       
+      // Clear draft after successful save
+      const draftKey = `note-draft-${courseId}-${chapterId || 'general'}-${existingNote?.id || 'new'}`
+      try {
+        localStorage.removeItem(draftKey)
+      } catch (error) {
+        console.warn('Failed to clear note draft:', error)
+      }
+
       setOpen(false)
       setNote("")
       onSuccess?.()
@@ -142,7 +185,14 @@ export function NoteModal({
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="note">Note Content</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="note">Note Content</Label>
+              {draftSaved && (
+                <span className="text-xs text-green-600 font-medium animate-in fade-in duration-300">
+                  Draft saved
+                </span>
+              )}
+            </div>
             <Textarea
               id="note"
               placeholder="Enter your note here..."

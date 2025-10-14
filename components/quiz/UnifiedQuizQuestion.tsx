@@ -14,8 +14,8 @@ import SyntaxHighlighter from "react-syntax-highlighter";
 import atomOneDark from "react-syntax-highlighter/dist/styles/atom-one-dark";
 
 import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
-import { generateBlanksHints, generateOpenEndedHints } from "@/lib/utils/hint-system"
-import { toast } from "sonner"
+import { generateHints } from "@/lib/utils/hint-system-unified"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 import { HintSystem } from "./HintSystem"
 import { AdaptiveFeedbackWrapper, useAdaptiveFeedback } from "./AdaptiveFeedbackWrapper"
 import { useAuth } from "@/modules/auth"
@@ -229,10 +229,10 @@ function UnifiedQuizQuestionComponent({
         const selectedOption = mcqQuestion.options[parseInt(optionId)]
         if (selectedOption) {
           onAnswer(selectedOption)
-          toast.success("Answer selected!")
+          handleSuccess("Answer selected!")
         }
       } catch (error) {
-        toast.error("Failed to select answer")
+        handleError(error, { userMessage: "Failed to select answer", context: "Quiz Answer Selection" })
       } finally {
         setIsAnswering(false)
       }
@@ -264,10 +264,10 @@ function UnifiedQuizQuestionComponent({
       const success = onAnswer(selectedAnswer, similarity, hintsUsed)
 
       if (success) {
-        toast.success("Answer submitted!")
+        handleSuccess("Answer submitted!")
       }
     } catch (error) {
-      toast.error("Failed to submit answer")
+      handleError(error, { userMessage: "Failed to submit answer", context: "Quiz Answer Submission" })
     } finally {
       setIsAnswering(false)
     }

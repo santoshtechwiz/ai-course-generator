@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import {
@@ -362,6 +362,18 @@ export function useProgressEvents() {
     const event = ProgressEventFactory.chapterCompleted(userId, chapterId, courseId, timeSpent)
     dispatchEvent(event)
   }
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (videoWatchDebounceRef.current.timerId) {
+        clearTimeout(videoWatchDebounceRef.current.timerId)
+      }
+      if (batchSyncTimeoutRef.current) {
+        clearTimeout(batchSyncTimeoutRef.current)
+      }
+    }
+  }, [])
 
   return {
     dispatchEvent,

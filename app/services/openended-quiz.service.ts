@@ -1,7 +1,7 @@
 import { QuizType } from "@/app/types/quiz-types";
 import { BaseQuizService } from "./base-quiz.service";
 import { generateOpenEndedQuiz } from "@/lib/chatgpt/userMcqQuiz";
-import { generateContentAwareHints } from "@/lib/utils/hint-system";
+import { generateHints } from "@/lib/utils/hint-system-unified";
 
 export class OpenEndedQuizService extends BaseQuizService {
   constructor() {
@@ -35,16 +35,30 @@ export class OpenEndedQuizService extends BaseQuizService {
   protected formatQuestions(questions: any[]): any[] {
     return questions.map((q: any) => {
       // Extract DB-provided hints and tags (may be empty/null)
-      const dbHints: string[] = q.openEndedQuestion?.hints?.split("|")?.map((h: string) => h.trim()).filter(Boolean) || [];
+      // Check for hints in multiple possible locations
+      let dbHints: string[] = [];
+      if (q.hints && Array.isArray(q.hints)) {
+        // Direct hints array (from API response)
+        dbHints = q.hints;
+      } else if (q.openEndedQuestion?.hints) {
+        // Pipe-separated hints from database
+        dbHints = q.openEndedQuestion.hints.split("|").map((h: string) => h.trim()).filter(Boolean);
+      }
+
       const dbTags: string[] = q.openEndedQuestion?.tags?.split("|")?.map((t: string) => t.trim()).filter(Boolean) || [];
 
       // If no DB hints are available, generate content-aware hints from the question
-      const generatedHints = generateContentAwareHints(
+      const keywords = q.openEndedQuestion?.keywords?.split('|')?.map((k: string) => k.trim()).filter(Boolean) || [];
+      const generatedHints = generateHints(
+        q.answer || '',
         q.question || '',
-        q.openEndedQuestion?.keywords?.split('|')?.map((k: string) => k.trim()).filter(Boolean) || [],
-        'medium',
-        undefined,
-        { maxHints: 3, tags: dbTags }
+        {
+          tags: dbTags,
+          keywords: keywords,
+          expectedLength: 'medium'
+        },
+        undefined, // No user answer for hint generation
+        { maxHints: 5 } // Increased from 3 for open-ended questions
       ).map((h: any) => h.content || '');
 
       const hints = dbHints.length > 0 ? dbHints : generatedHints;
