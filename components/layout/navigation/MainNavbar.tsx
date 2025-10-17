@@ -106,14 +106,13 @@ export function MainNavbar() {
     <>
       <motion.header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-          isScrolled
-            ? "bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-lg border-b border-gray-200/50 dark:border-gray-800/50"
-            : "bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg",
+          "fixed top-0 left-0 right-0 z-50",
+          "bg-background border-b-2 border-border",
+          isScrolled && "shadow-[var(--shadow)]",
         )}
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
       >
         <div className="container flex h-16 items-center justify-between px-3 sm:px-4 lg:px-6 max-w-7xl mx-auto">
           {/* Logo */}
@@ -121,7 +120,7 @@ export function MainNavbar() {
             <Logo />
           </Link>
 
-          {/* Desktop Nav - Improved with hover effects and active states */}
+          {/* Desktop Nav - Neobrutalism style with bold borders */}
           <nav className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => {
               const active = pathname === item.href
@@ -130,27 +129,20 @@ export function MainNavbar() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "relative px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200",
-                    "hover:bg-accent hover:text-accent-foreground",
+                    "relative px-4 py-2 text-sm font-semibold",
+                    "border-2 border-transparent",
                     active 
-                      ? "text-primary bg-primary/5" 
-                      : "text-muted-foreground",
+                      ? "border-border bg-main text-main-foreground" 
+                      : "hover:border-border hover:bg-secondary-background",
                   )}
                 >
                   {item.name}
-                  {active && (
-                    <motion.div
-                      layoutId="navbar-indicator"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    />
-                  )}
                 </Link>
               )
             })}
           </nav>
 
-          {/* Right side - Improved spacing and hover effects */}
+          {/* Right side - Neobrutalism style buttons */}
           <div className="flex items-center gap-1 sm:gap-2">
             {/* Enhanced credit counter with warnings and detailed popover */}
             {isAuthenticated && !isLoading && (
@@ -159,13 +151,13 @@ export function MainNavbar() {
               </div>
             )}
 
-            {/* Search */}
+            {/* Search - Neobrutalism button */}
             <Button
               variant="ghost"
               size="icon"
               aria-label="Search"
               onClick={() => setIsSearchModalOpen(true)}
-              className="rounded-lg hover:bg-accent transition-colors"
+              className="border-2 border-transparent hover:border-border hover:bg-secondary-background"
             >
               <Search className="h-4 w-4" />
             </Button>
@@ -186,30 +178,30 @@ export function MainNavbar() {
             ) : (
               <Button
                 onClick={handleSignIn}
-                className="hidden sm:flex bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg shadow-sm hover:shadow transition-all"
+                className="hidden sm:flex bg-main text-main-foreground border-2 border-border shadow-[var(--shadow)] hover:translate-x-[3px] hover:translate-y-[-3px] hover:shadow-none font-semibold"
                 size="sm"
               >
                 Sign in
               </Button>
             )}
 
-            {/* Mobile Menu - Improved with better touch targets and animations */}
+            {/* Mobile Menu - Neobrutalism style */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild suppressHydrationWarning>
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="md:hidden rounded-lg hover:bg-accent transition-colors" 
+                  className="md:hidden border-2 border-transparent hover:border-border hover:bg-secondary-background" 
                   suppressHydrationWarning
                   aria-label="Toggle menu"
                 >
                   {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[85vw] max-w-sm p-0 bg-background">
+              <SheetContent side="right" className="w-[85vw] max-w-sm p-0 bg-background border-l-2 border-border">
                 <div className="h-full flex flex-col">
                   {/* Header */}
-                  <div className="p-4 border-b flex items-center justify-between">
+                  <div className="p-4 border-b-2 border-border flex items-center justify-between">
                     <Logo />
                     <div className="flex items-center gap-2">
                       <ThemeToggle />
@@ -226,41 +218,34 @@ export function MainNavbar() {
                           href={item.href}
                           onClick={() => setIsMobileMenuOpen(false)}
                           className={cn(
-                            "block px-4 py-3 rounded-lg min-h-[48px] flex items-center font-medium transition-all", // 48px touch target for mobile
+                            "block px-4 py-3 min-h-[48px] flex items-center font-semibold border-2",
                             active 
-                              ? "bg-primary/10 text-primary" 
-                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                              ? "bg-main text-main-foreground border-border" 
+                              : "border-transparent hover:border-border hover:bg-secondary-background",
                           )}
                         >
                           {item.name}
-                          {active && (
-                            <motion.div
-                              layoutId="mobile-navbar-indicator"
-                              className="ml-auto w-1.5 h-1.5 rounded-full bg-primary"
-                              transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                            />
-                          )}
                         </Link>
                       )
                     })}
                   </nav>
                   
                   {/* Footer */}
-                  <div className="p-4 border-t space-y-3">
+                  <div className="p-4 border-t-2 border-border space-y-3">
                     {isAuthenticated ? (
                       <>
                         {availableCredits !== null && (
-                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                          <div className="flex items-center justify-between p-3 bg-secondary-background border-2 border-border">
                             <div className="flex items-center space-x-2">
-                              <CreditCard className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm font-medium">Credits</span>
+                              <CreditCard className="h-4 w-4" />
+                              <span className="text-sm font-semibold">Credits</span>
                             </div>
                             <div className="flex items-center space-x-2">
-                              <span className="text-sm font-medium tabular-nums">
+                              <span className="text-sm font-bold tabular-nums">
                                 {availableCredits.toLocaleString()}
                               </span>
                               {subscriptionPlan !== "FREE" && (
-                                <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                                <Badge variant="secondary" className="text-xs px-1.5 py-0.5 border-2 border-border font-bold">
                                   {subscriptionPlan}
                                 </Badge>
                               )}
@@ -276,7 +261,7 @@ export function MainNavbar() {
                       </>
                     ) : (
                       <Button 
-                        className="w-full min-h-[48px] bg-primary hover:bg-primary/90 transition-all" 
+                        className="w-full min-h-[48px] bg-main text-main-foreground border-2 border-border shadow-[var(--shadow)] hover:translate-x-[3px] hover:translate-y-[-3px] hover:shadow-none font-semibold" 
                         onClick={() => {
                           handleSignIn()
                           setIsMobileMenuOpen(false)
