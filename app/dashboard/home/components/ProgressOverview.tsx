@@ -71,10 +71,10 @@ function formatTimeSpent(seconds: number): string {
 
 function getDifficultyColor(difficulty?: string) {
   switch (difficulty?.toLowerCase()) {
-    case 'beginner': return 'bg-green-100 text-green-800'
-    case 'intermediate': return 'bg-yellow-100 text-yellow-800'
-    case 'advanced': return 'bg-red-100 text-red-800'
-    default: return 'bg-gray-100 text-gray-800'
+    case 'beginner': return 'bg-success/10 text-success border-success/20'
+    case 'intermediate': return 'bg-warning/10 text-warning border-warning/20'
+    case 'advanced': return 'bg-destructive/10 text-destructive border-destructive/20'
+    default: return 'bg-muted text-muted-foreground border-border'
   }
 }
 
@@ -91,8 +91,8 @@ export default function ProgressOverview({ courseProgresses, chapterProgresses, 
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-blue-100">
-                <BookOpen className="h-6 w-6 text-blue-600" />
+              <div className="p-3 rounded-full bg-primary/10">
+                <BookOpen className="h-6 w-6 text-primary" />
               </div>
               <div>
                 <div className="text-2xl font-bold">{overallStats.completedCourses}/{overallStats.totalCourses}</div>
@@ -208,11 +208,11 @@ export default function ProgressOverview({ courseProgresses, chapterProgresses, 
           <div className="space-y-3">
             {chapterProgresses.slice(0, 5).map((chapterProgress) => (
               <div key={chapterProgress.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-                <div className={`p-2 rounded-full ${chapterProgress.isCompleted ? 'bg-green-100' : 'bg-blue-100'}`}>
+                <div className={`p-2 rounded-full ${chapterProgress.isCompleted ? 'bg-success/10' : 'bg-primary/10'}`}>
                   {chapterProgress.isCompleted ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <CheckCircle2 className="h-4 w-4 text-success" />
                   ) : (
-                    <PlayCircle className="h-4 w-4 text-blue-600" />
+                    <PlayCircle className="h-4 w-4 text-primary" />
                   )}
                 </div>
                 <div className="flex-1">

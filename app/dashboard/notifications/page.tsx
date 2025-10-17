@@ -149,9 +149,9 @@ function NotificationCard({
         <div className="flex items-start gap-4">
           <div className={cn(
             "p-2 rounded-lg",
-            type === "course" && "bg-blue-500/10 text-blue-600",
-            type === "flashcard" && "bg-purple-500/10 text-purple-600",
-            type === "achievement" && "bg-green-500/10 text-green-600"
+            type === "course" && "bg-primary/10 text-primary",
+            type === "flashcard" && "bg-secondary/10 text-secondary",
+            type === "achievement" && "bg-success/10 text-success"
           )}>
             {icon}
           </div>

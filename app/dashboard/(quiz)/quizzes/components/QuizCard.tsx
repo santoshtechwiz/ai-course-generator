@@ -37,11 +37,11 @@ const getDifficulty = (questionCount: number) => {
   if (questionCount <= 5)
     return {
       label: "Beginner",
-      color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+      color: "bg-success/10 text-success border-success/20",
     }
   if (questionCount <= 15)
-    return { label: "Intermediate", color: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30" }
-  return { label: "Advanced", color: "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30" }
+    return { label: "Intermediate", color: "bg-warning/10 text-warning border-warning/20" }
+  return { label: "Advanced", color: "bg-destructive/10 text-destructive border-destructive/20" }
 }
 
 function QuizCardComponent({
@@ -201,7 +201,7 @@ function QuizCardComponent({
                   </QuizBadge>
 
                   {isPopular && (
-                    <QuizBadge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-700 dark:text-orange-300 border-orange-500/40" aria-label="Popular quiz">
+                    <QuizBadge className="bg-primary/20 text-primary border-primary/40" aria-label="Popular quiz">
                       <TrendingUp className="w-4 h-4 mr-1 inline-block align-middle" aria-hidden />
                       <span className="align-middle">Popular</span>
                     </QuizBadge>
@@ -253,16 +253,16 @@ function QuizCardComponent({
 
             {/* Stats Grid - Redesigned */}
             <div className="grid grid-cols-3 gap-2 py-4">
-              <div className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20">
-                <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" aria-hidden />
+              <div className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg bg-primary/10 border border-primary/20">
+                <Clock className="w-4 h-4 text-primary" aria-hidden />
                 <span className="text-xs font-bold text-foreground">{estimatedTime}</span>
               </div>
-              <div className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20">
-                <BookOpen className="w-4 h-4 text-purple-600 dark:text-purple-400" aria-hidden />
+              <div className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg bg-primary/10 border border-primary/20">
+                <BookOpen className="w-4 h-4 text-primary" aria-hidden />
                 <span className="text-xs font-bold text-foreground">{questionCount} Qs</span>
               </div>
-              <div className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
-                <Users className="w-4 h-4 text-green-600 dark:text-green-400" aria-hidden />
+              <div className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg bg-primary/10 border border-primary/20">
+                <Users className="w-4 h-4 text-primary" aria-hidden />
                 <span className="text-xs font-bold text-foreground">{attemptCount}</span>
               </div>
             </div>
@@ -302,7 +302,7 @@ function QuizCardComponent({
               {/* Rating & Badge Row */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
-                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" aria-hidden />
+                  <Star className="w-4 h-4 text-warning fill-warning" aria-hidden />
                   <span className="text-sm font-bold text-foreground">4.5</span>
                   <span className="text-xs text-muted-foreground">(128)</span>
                 </div>
@@ -312,8 +312,8 @@ function QuizCardComponent({
                   className={cn(
                     "text-xs px-2.5 py-1 font-semibold border shadow-sm rounded-full",
                     isPublic
-                      ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
-                      : "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30",
+                      ? "bg-success/10 text-success border-success/20"
+                      : "bg-muted text-muted-foreground border-border",
                   )}
                   aria-label={isPublic ? "Public quiz" : "Private quiz"}
                 >
@@ -327,8 +327,8 @@ function QuizCardComponent({
                 size="lg"
                 className={cn(
                   "w-full gap-2 text-sm font-bold shadow-lg transition-all",
-                  "bg-gradient-to-r from-primary via-primary to-primary/90",
-                  "hover:from-primary/90 hover:via-primary/95 hover:to-primary/80",
+                  "bg-primary",
+                  "hover:bg-primary/90",
                   "hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02]",
                   "active:scale-[0.98]",
                   isHovered && "shadow-xl shadow-primary/25",

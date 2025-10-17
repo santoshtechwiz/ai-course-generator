@@ -237,16 +237,16 @@ export function HintSystem({
   }
 
   const getColor = (hint: Hint) => {
-    // Color-code hints by type for clarity
+    // Color-code hints by type for clarity using theme tokens
     switch (hint.type) {
       case "contextual":
-        return "bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/10 dark:text-blue-300 dark:border-blue-800";
+        return "bg-primary/10 text-primary border-primary/20";
       case "semantic":
-        return "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800";
+        return "bg-warning/10 text-warning border-warning/20";
       case "structural":
-        return "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/10 dark:text-emerald-300 dark:border-emerald-800";
+        return "bg-success/10 text-success border-success/20";
       case "direct":
-        return "bg-red-50 text-red-800 border-red-200 dark:bg-red-950/10 dark:text-red-300 dark:border-red-800";
+        return "bg-destructive/10 text-destructive border-destructive/20";
       default:
         return "bg-muted text-foreground border-border";
     }
@@ -379,12 +379,12 @@ export function HintSystem({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
-              className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/10 dark:to-indigo-950/10 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
+              className="bg-primary/10 border border-primary/20 rounded-lg p-4"
             >
               <div className="flex items-center gap-3">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
-                    <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                    <Lightbulb className="w-5 h-5 text-primary" />
                   </div>
                 </div>
                 <div className="flex-1">
@@ -568,8 +568,8 @@ export function HintSystem({
                 className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-700"
               >
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Sparkles className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Sparkles className="h-8 w-8 text-primary" />
                   </div>
                   <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-gray-100">
                     {isAuthenticated ? "Unlock Premium Learning" : "Join Our Learning Community"}

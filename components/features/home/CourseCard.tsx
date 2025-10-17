@@ -81,10 +81,10 @@ const CATEGORY_CONFIG: Record<
         />
       </svg>
     ),
-    gradient: "from-purple-500 to-pink-500",
-    accentColor: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-50 dark:bg-purple-950/30",
-    borderColor: "border-purple-200 dark:border-purple-800",
+    gradient: "from-secondary to-secondary",
+    accentColor: "text-secondary",
+    bgColor: "bg-secondary/10",
+    borderColor: "border-secondary/20",
   },
   "Machine Learning": {
     icon: ({ className }) => (
@@ -98,10 +98,10 @@ const CATEGORY_CONFIG: Record<
         />
       </svg>
     ),
-    gradient: "from-purple-500 to-indigo-500",
-    accentColor: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-50 dark:bg-purple-950/30",
-    borderColor: "border-purple-200 dark:border-purple-800",
+    gradient: "from-secondary to-secondary",
+    accentColor: "text-secondary",
+    bgColor: "bg-secondary/10",
+    borderColor: "border-secondary/20",
   },
   Programming: {
     icon: ({ className }) => (
@@ -115,10 +115,10 @@ const CATEGORY_CONFIG: Record<
         />
       </svg>
     ),
-    gradient: "from-blue-500 to-cyan-500",
-    accentColor: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-50 dark:bg-blue-950/30",
-    borderColor: "border-blue-200 dark:border-blue-800",
+    gradient: "from-primary to-primary",
+    accentColor: "text-primary",
+    bgColor: "bg-primary/10",
+    borderColor: "border-primary/20",
   },
   "Web Development": {
     icon: ({ className }) => (
@@ -130,10 +130,10 @@ const CATEGORY_CONFIG: Record<
         <circle cx="10" cy="5.5" r="0.5" fill="currentColor" />
       </svg>
     ),
-    gradient: "from-cyan-500 to-teal-500",
-    accentColor: "text-cyan-600 dark:text-cyan-400",
-    bgColor: "bg-cyan-50 dark:bg-cyan-950/30",
-    borderColor: "border-cyan-200 dark:border-cyan-800",
+    gradient: "from-accent to-accent",
+    accentColor: "text-accent",
+    bgColor: "bg-accent/10",
+    borderColor: "border-accent/20",
   },
   Cloud: {
     icon: ({ className }) => (
@@ -147,10 +147,10 @@ const CATEGORY_CONFIG: Record<
         />
       </svg>
     ),
-    gradient: "from-sky-500 to-blue-500",
-    accentColor: "text-sky-600 dark:text-sky-400",
-    bgColor: "bg-sky-50 dark:bg-sky-950/30",
-    borderColor: "border-sky-200 dark:border-sky-800",
+    gradient: "from-primary to-primary",
+    accentColor: "text-primary",
+    bgColor: "bg-primary/10",
+    borderColor: "border-primary/20",
   },
   DevOps: {
     icon: ({ className }) => (
@@ -166,10 +166,10 @@ const CATEGORY_CONFIG: Record<
         <path d="M2 7L12 12L22 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
-    gradient: "from-gray-600 to-gray-800",
-    accentColor: "text-gray-600 dark:text-gray-400",
-    bgColor: "bg-gray-50 dark:bg-gray-950/30",
-    borderColor: "border-gray-200 dark:border-gray-800",
+    gradient: "from-muted-foreground to-muted-foreground",
+    accentColor: "text-muted-foreground",
+    bgColor: "bg-muted",
+    borderColor: "border-border",
   },
   Design: {
     icon: ({ className }) => (
@@ -183,10 +183,10 @@ const CATEGORY_CONFIG: Record<
         />
       </svg>
     ),
-    gradient: "from-pink-500 to-rose-500",
-    accentColor: "text-pink-600 dark:text-pink-400",
-    bgColor: "bg-pink-50 dark:bg-pink-950/30",
-    borderColor: "border-pink-200 dark:border-pink-800",
+    gradient: "from-secondary to-secondary",
+    accentColor: "text-secondary",
+    bgColor: "bg-secondary/10",
+    borderColor: "border-secondary/20",
   },
   "UI/UX": {
     icon: ({ className }) => (
@@ -197,10 +197,10 @@ const CATEGORY_CONFIG: Record<
         <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
       </svg>
     ),
-    gradient: "from-pink-500 to-orange-500",
-    accentColor: "text-pink-600 dark:text-pink-400",
-    bgColor: "bg-pink-50 dark:bg-pink-950/30",
-    borderColor: "border-pink-200 dark:border-pink-800",
+    gradient: "from-secondary to-secondary",
+    accentColor: "text-secondary",
+    bgColor: "bg-secondary/10",
+    borderColor: "border-secondary/20",
   },
   "Data Science": {
     icon: ({ className }) => (
@@ -215,10 +215,10 @@ const CATEGORY_CONFIG: Record<
         />
       </svg>
     ),
-    gradient: "from-yellow-500 to-orange-500",
-    accentColor: "text-yellow-600 dark:text-yellow-500",
-    bgColor: "bg-yellow-50 dark:bg-yellow-950/30",
-    borderColor: "border-yellow-200 dark:border-yellow-800",
+    gradient: "from-warning to-warning",
+    accentColor: "text-warning",
+    bgColor: "bg-warning/10",
+    borderColor: "border-warning/20",
   },
   Networking: {
     icon: ({ className }) => (
@@ -231,10 +231,10 @@ const CATEGORY_CONFIG: Record<
         <path d="M12 10V6M12 14V18M10 12H6M14 12H18" stroke="currentColor" strokeWidth="2" />
       </svg>
     ),
-    gradient: "from-green-500 to-emerald-500",
-    accentColor: "text-green-600 dark:text-green-400",
-    bgColor: "bg-green-50 dark:bg-green-950/30",
-    borderColor: "border-green-200 dark:border-green-800",
+    gradient: "from-success to-success",
+    accentColor: "text-success",
+    bgColor: "bg-success/10",
+    borderColor: "border-success/20",
   },
   "Software Architecture": {
     icon: ({ className }) => (
@@ -246,35 +246,34 @@ const CATEGORY_CONFIG: Record<
         <path d="M10 6.5H14M10 17.5H14M17.5 10V14M6.5 10V14" stroke="currentColor" strokeWidth="2" />
       </svg>
     ),
-    gradient: "from-violet-500 to-purple-500",
-    accentColor: "text-violet-600 dark:text-violet-400",
-    bgColor: "bg-violet-50 dark:bg-violet-950/30",
-    borderColor: "border-violet-200 dark:border-violet-800",
+    gradient: "from-secondary to-secondary",
+    accentColor: "text-secondary",
+    bgColor: "bg-secondary/10",
+    borderColor: "border-secondary/20",
   },
   General: {
     icon: BookOpen,
-    gradient: "from-gray-500 to-gray-600",
-    accentColor: "text-gray-600 dark:text-gray-400",
-    bgColor: "bg-gray-50 dark:bg-gray-950/30",
-    borderColor: "border-gray-200 dark:border-gray-800",
+    gradient: "from-muted-foreground to-muted-foreground",
+    accentColor: "text-muted-foreground",
+    bgColor: "bg-muted",
+    borderColor: "border-border",
   },
 }
 
 const DIFFICULTY_CONFIG = {
   Beginner: {
-    badge:
-      "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800",
-    dot: "bg-emerald-500",
+    badge: "bg-success/10 text-success border-success/20",
+    dot: "bg-success",
     icon: "🌱",
   },
   Intermediate: {
-    badge: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800",
-    dot: "bg-amber-500",
+    badge: "bg-warning/10 text-warning border-warning/20",
+    dot: "bg-warning",
     icon: "⚡",
   },
   Advanced: {
-    badge: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800",
-    dot: "bg-rose-500",
+    badge: "bg-destructive/10 text-destructive border-destructive/20",
+    dot: "bg-destructive",
     icon: "🚀",
   },
 }
@@ -463,7 +462,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
         <div className="absolute top-3 left-3 flex flex-col gap-2">
           {isPopular && (
             <Badge
-              className="bg-orange-500 text-white text-xs font-semibold border-0 px-2.5 py-1 shadow-lg backdrop-blur-sm flex items-center gap-1"
+              className="bg-primary text-primary-foreground text-xs font-semibold border-0 px-2.5 py-1 shadow-lg backdrop-blur-sm flex items-center gap-1"
               aria-label="Popular course"
             >
               <TrendingUp className="w-3 h-3" />
@@ -472,7 +471,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
           )}
           {isTrending && (
             <Badge
-              className="bg-red-500 text-white text-xs font-semibold border-0 px-2.5 py-1 shadow-lg backdrop-blur-sm flex items-center gap-1"
+              className="bg-primary text-primary-foreground text-xs font-semibold border-0 px-2.5 py-1 shadow-lg backdrop-blur-sm flex items-center gap-1"
               aria-label="Trending course"
             >
               🔥 Trending
@@ -522,7 +521,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
             </div>
           )}
           {price === undefined && (
-            <Badge className="bg-emerald-500 text-white font-semibold px-2.5 py-1 text-xs border-0">Free</Badge>
+            <Badge className="bg-success text-success-foreground font-semibold px-2.5 py-1 text-xs border-0">Free</Badge>
           )}
         </div>
 
@@ -548,7 +547,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
         <div className="flex items-center justify-between py-2.5 border-y border-border/40">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <Star className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden="true" />
+              <Star className="h-4 w-4 fill-primary text-primary" aria-hidden="true" />
               <span className="font-bold text-foreground text-sm">{rating.toFixed(1)}</span>
               <span className="sr-only">rating out of 5</span>
             </div>

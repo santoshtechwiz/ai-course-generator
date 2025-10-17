@@ -36,6 +36,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { getImageWithFallback } from "@/utils/image-utils"
 import { CategoryIcon } from "@/app/category-icon"
 import { StatCard } from "@/components/dashboard/StatCard"
+import { 
+  cardVariants, 
+  staggerContainerVariants, 
+  staggerItemVariants,
+  badgeVariants,
+  fadeInUp
+} from "@/utils/animation-utils"
 
 interface CoursesTabProps {
   userData: DashboardUser
@@ -43,21 +50,6 @@ interface CoursesTabProps {
 
 type ViewMode = "grid" | "list"
 type FilterTab = "all" | "in-progress" | "completed" | "favorites"
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-}
 
 export default function CoursesTab({ userData }: CoursesTabProps) {
   const [searchTerm, setSearchTerm] = useState("")
@@ -122,9 +114,7 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
     <div className="space-y-6">
       {/* Quick Stats Overview */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
+        {...fadeInUp(0.1)}
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
       >
         <StatCard
@@ -158,10 +148,8 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
 
       {/* Search and Controls (sticky) */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sticky top-0 z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border-b py-3"
+        {...fadeInUp(0.15)}
+        className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sticky top-0 z-20 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 border-b border-border/50 py-4 px-1 rounded-lg shadow-sm"
       >
         <div className="relative flex-1 max-w-md">
           <Search
@@ -210,63 +198,71 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
       </motion.div>
 
       {/* Enhanced Filter Tabs */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+      <motion.div {...fadeInUp(0.2)}>
         <Tabs
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as FilterTab)}
           aria-label="Course filter tabs"
         >
           <TabsList
-            className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4 bg-muted/30 p-1 rounded-xl"
+            className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4 bg-muted/30 p-1 rounded-xl backdrop-blur-sm"
             role="tablist"
           >
             <TabsTrigger
               value="all"
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all"
+              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg transition-all duration-200"
               role="tab"
               aria-selected={activeTab === "all"}
             >
               <BookOpen className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline font-medium">All</span>
-              <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
-                {courseData.all.length}
-              </Badge>
+              <motion.div variants={badgeVariants} initial="hidden" animate="visible">
+                <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs font-semibold">
+                  {courseData.all.length}
+                </Badge>
+              </motion.div>
             </TabsTrigger>
             <TabsTrigger
               value="in-progress"
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all"
+              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg transition-all duration-200"
               role="tab"
               aria-selected={activeTab === "in-progress"}
             >
               <Clock className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline font-medium">In Progress</span>
-              <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
-                {courseData.inProgress.length}
-              </Badge>
+              <motion.div variants={badgeVariants} initial="hidden" animate="visible">
+                <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs font-semibold">
+                  {courseData.inProgress.length}
+                </Badge>
+              </motion.div>
             </TabsTrigger>
             <TabsTrigger
               value="completed"
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all"
+              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg transition-all duration-200"
               role="tab"
               aria-selected={activeTab === "completed"}
             >
               <CheckCircle className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline font-medium">Completed</span>
-              <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
-                {courseData.completed.length}
-              </Badge>
+              <motion.div variants={badgeVariants} initial="hidden" animate="visible">
+                <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs font-semibold">
+                  {courseData.completed.length}
+                </Badge>
+              </motion.div>
             </TabsTrigger>
             <TabsTrigger
               value="favorites"
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all"
+              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg transition-all duration-200"
               role="tab"
               aria-selected={activeTab === "favorites"}
             >
               <Star className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline font-medium">Favorites</span>
-              <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
-                {courseData.favorites.length}
-              </Badge>
+              <motion.div variants={badgeVariants} initial="hidden" animate="visible">
+                <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs font-semibold">
+                  {courseData.favorites.length}
+                </Badge>
+              </motion.div>
             </TabsTrigger>
           </TabsList>
 
@@ -277,7 +273,7 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
                 initial="hidden"
                 animate="visible"
                 exit="hidden"
-                variants={containerVariants}
+                variants={staggerContainerVariants}
               >
                 <CourseGrid
                   courses={filteredCourses}
@@ -324,7 +320,12 @@ function CourseGrid({ courses, viewMode, showProgress = false, onCourseClick, us
         const progress = courseProgress?.progress || 0
 
         return (
-          <motion.div key={course.id} variants={itemVariants} transition={{ delay: index * 0.03 }} role="gridcell">
+          <motion.div 
+            key={course.id} 
+            variants={staggerItemVariants} 
+            transition={{ delay: index * 0.02 }} 
+            role="gridcell"
+          >
             {viewMode === "grid" ? (
               <CourseCard
                 course={course}
@@ -371,23 +372,29 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
 
   return (
     <motion.div
-      whileHover={{ y: -3 }}
-      whileTap={{ scale: 0.995 }}
-      transition={{ duration: 0.18 }}
-      className="relative group"
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      whileHover="hover"
+      whileTap="tap"
+      className="relative group h-full"
     >
       <Card
         className={cn(
-          "cursor-pointer border-0",
-          "shadow-sm hover:shadow-md transition-all duration-200",
-          "bg-card/80 backdrop-blur-sm",
-          "rounded-xl h-full flex items-center justify-center",
+          "cursor-pointer border border-border/50",
+          "shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300",
+          "bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-sm",
+          "rounded-2xl h-full flex items-center justify-center overflow-hidden",
+          "group-hover:ring-2 group-hover:ring-primary/10",
           isLoading && "opacity-70",
         )}
         onClick={onClick}
       >
-        <CardContent className="p-6 flex items-center justify-center flex-col gap-3 text-center">
-          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 text-primary">
+        <CardContent className="p-6 flex items-center justify-center flex-col gap-4 text-center relative">
+          {/* Decorative gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
+          
+          <div className="relative flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 text-primary shadow-sm group-hover:shadow-md transition-shadow duration-300">
             {course.category ? (
               (() => {
                 const cat = typeof course.category === 'object' && course.category?.name ? String(course.category.name) : String(course.category)
@@ -401,22 +408,56 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
                 )
               })()
             ) : (
-              <BookOpen className="h-6 w-6" />
+              <BookOpen className="h-7 w-7" />
             )}
           </div>
 
-          <h3 className="text-base font-semibold leading-tight text-foreground line-clamp-2">
-            {course.title}
-          </h3>
+          <div className="relative space-y-2 w-full">
+            <h3 className="text-base font-semibold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors duration-200">
+              {course.title}
+            </h3>
+            
+            {course.description && (
+              <p className="text-xs text-muted-foreground line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                {course.description}
+              </p>
+            )}
+          </div>
           
           {/* Display progress if available */}
           {progress !== undefined && progress > 0 && (
-            <div className="w-full space-y-1.5">
+            <div className="w-full space-y-2 relative">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Progress</span>
-                <span className="font-medium text-foreground">{Math.round(progress)}%</span>
+                <span className="text-muted-foreground font-medium">Progress</span>
+                <span className="font-semibold text-primary">{Math.round(progress)}%</span>
               </div>
-              <Progress value={progress} className="h-1.5" />
+              <div className="relative">
+                <Progress value={progress} className="h-2 bg-muted" />
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  className="absolute top-0 left-0 h-2 bg-gradient-to-r from-primary to-primary/80 rounded-full"
+                />
+              </div>
+            </div>
+          )}
+          
+          {/* Metadata */}
+          {(chapterCount > 0 || totalDuration) && (
+            <div className="flex items-center gap-3 text-xs text-muted-foreground w-full justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+              {chapterCount > 0 && (
+                <span className="flex items-center gap-1">
+                  <GraduationCap className="h-3 w-3" />
+                  {chapterCount} chapters
+                </span>
+              )}
+              {totalDuration && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {totalDuration}h
+                </span>
+              )}
             </div>
           )}
         </CardContent>

@@ -7,80 +7,82 @@
 
 // ========== COLORS ==========
 export const colors = {
-  // Brand Colors
+  // Brand Colors - Enterprise Premium
   brand: {
-    primary: 'hsl(221.2 83.2% 53.3%)', // Blue
-    primaryHover: 'hsl(221.2 83.2% 45%)',
-    secondary: 'hsl(210 40% 96.1%)', // Light blue-gray
-    accent: 'hsl(142.1 76.2% 36.3%)', // Green
-    accentHover: 'hsl(142.1 76.2% 30%)',
+    primary: 'hsl(221 83% 53%)', // Modern Blue
+    primaryHover: 'hsl(221 83% 43%)',
+    primaryLight: 'hsl(221 83% 97%)',
+    secondary: 'hsl(260 84% 64%)', // Elegant Purple
+    secondaryHover: 'hsl(260 84% 54%)',
+    accent: 'hsl(199 89% 48%)', // Vibrant Cyan
+    accentHover: 'hsl(199 89% 38%)',
   },
 
-  // Semantic Colors
+  // Semantic Colors - WCAG AAA Compliant
   success: {
-    50: 'hsl(142.1 76.2% 96%)',
-    100: 'hsl(142.1 76.2% 85%)',
-    500: 'hsl(142.1 76.2% 36.3%)',
-    600: 'hsl(142.1 76.2% 30%)',
-    700: 'hsl(142.1 76.2% 25%)',
-    900: 'hsl(142.1 76.2% 15%)',
+    50: 'hsl(142 71% 96%)',
+    100: 'hsl(142 71% 88%)',
+    500: 'hsl(142 71% 45%)',
+    600: 'hsl(142 71% 38%)',
+    700: 'hsl(142 71% 30%)',
+    900: 'hsl(142 71% 18%)',
   },
   
   warning: {
-    50: 'hsl(47.9 95.8% 95%)',
-    100: 'hsl(47.9 95.8% 85%)',
-    500: 'hsl(47.9 95.8% 53.1%)',
-    600: 'hsl(47.9 95.8% 45%)',
-    700: 'hsl(47.9 95.8% 35%)',
-    900: 'hsl(47.9 95.8% 20%)',
+    50: 'hsl(38 92% 95%)',
+    100: 'hsl(38 92% 85%)',
+    500: 'hsl(38 92% 50%)',
+    600: 'hsl(38 92% 42%)',
+    700: 'hsl(38 92% 35%)',
+    900: 'hsl(38 92% 20%)',
   },
   
   error: {
-    50: 'hsl(0 84.2% 96%)',
-    100: 'hsl(0 84.2% 85%)',
-    500: 'hsl(0 84.2% 60.2%)',
-    600: 'hsl(0 84.2% 50%)',
-    700: 'hsl(0 84.2% 40%)',
-    900: 'hsl(0 84.2% 25%)',
+    50: 'hsl(0 72% 96%)',
+    100: 'hsl(0 72% 88%)',
+    500: 'hsl(0 72% 51%)',
+    600: 'hsl(0 72% 43%)',
+    700: 'hsl(0 72% 35%)',
+    900: 'hsl(0 72% 20%)',
   },
   
   info: {
-    50: 'hsl(214.3 31.8% 95%)',
-    100: 'hsl(214.3 31.8% 85%)',
-    500: 'hsl(214.3 31.8% 51.4%)',
-    600: 'hsl(214.3 31.8% 45%)',
-    700: 'hsl(214.3 31.8% 35%)',
-    900: 'hsl(214.3 31.8% 20%)',
+    50: 'hsl(199 89% 95%)',
+    100: 'hsl(199 89% 85%)',
+    500: 'hsl(199 89% 48%)',
+    600: 'hsl(199 89% 40%)',
+    700: 'hsl(199 89% 32%)',
+    900: 'hsl(199 89% 20%)',
   },
 
-  // Neutral Grays
+  // Neutral Grays - Enhanced Contrast
   gray: {
-    50: 'hsl(210 40% 98%)',
-    100: 'hsl(210 40% 96.1%)',
-    200: 'hsl(214.3 31.8% 91.4%)',
-    300: 'hsl(213 27.8% 84.2%)',
-    400: 'hsl(215 20.2% 65.1%)',
-    500: 'hsl(215 16.3% 46.9%)',
-    600: 'hsl(215 19.3% 34.5%)',
-    700: 'hsl(215 25% 26.7%)',
-    800: 'hsl(217 33% 17%)',
-    900: 'hsl(222.2 47.4% 11.2%)',
+    50: 'hsl(220 14% 98%)',
+    100: 'hsl(220 14% 96%)',
+    200: 'hsl(220 13% 91%)',
+    300: 'hsl(220 12% 82%)',
+    400: 'hsl(220 9% 60%)',
+    500: 'hsl(220 9% 46%)',
+    600: 'hsl(220 12% 36%)',
+    700: 'hsl(220 16% 26%)',
+    800: 'hsl(220 20% 18%)',
+    900: 'hsl(222 47% 11%)',
   },
 
-  // Quiz Type Colors
+  // Quiz Type Colors - Modernized
   quiz: {
-    mcq: 'hsl(262.1 83.3% 57.8%)', // Purple
-    blanks: 'hsl(47.9 95.8% 53.1%)', // Amber
-    openended: 'hsl(142.1 76.2% 36.3%)', // Green
-    code: 'hsl(217.2 91.2% 59.8%)', // Blue
-    flashcard: 'hsl(346.8 77.2% 49.8%)', // Rose
+    mcq: 'hsl(262 83% 58%)', // Purple
+    blanks: 'hsl(38 92% 50%)', // Amber
+    openended: 'hsl(142 71% 45%)', // Green
+    code: 'hsl(221 83% 53%)', // Blue
+    flashcard: 'hsl(346 77% 50%)', // Rose
   },
 
   // Difficulty Colors
   difficulty: {
-    easy: 'hsl(142.1 76.2% 36.3%)', // Green
-    medium: 'hsl(47.9 95.8% 53.1%)', // Amber
-    hard: 'hsl(0 84.2% 60.2%)', // Red
+    easy: 'hsl(142 71% 45%)', // Green
+    medium: 'hsl(38 92% 50%)', // Amber
+    hard: 'hsl(0 72% 51%)', // Red
   },
 } as const
 
@@ -274,6 +276,7 @@ export const components = {
 
 // ========== ANIMATION VARIANTS ==========
 export const animations = {
+  // Basic animations
   fadeIn: {
     hidden: { opacity: 0 },
     visible: { opacity: 1 },
@@ -307,6 +310,78 @@ export const animations = {
   rotate: {
     hidden: { opacity: 0, rotate: -10 },
     visible: { opacity: 1, rotate: 0 },
+  },
+
+  // Premium card animations
+  cardHover: {
+    rest: { scale: 1, y: 0 },
+    hover: { 
+      scale: 1.02, 
+      y: -4,
+      transition: { duration: 0.2, ease: 'easeOut' }
+    },
+  },
+
+  cardPress: {
+    scale: 0.98,
+    transition: { duration: 0.1 }
+  },
+
+  // Stagger container for lists
+  staggerContainer: {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.05,
+      },
+    },
+  },
+
+  staggerItem: {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.3, ease: 'easeOut' }
+    },
+  },
+
+  // Button micro-interactions
+  buttonTap: {
+    scale: 0.95,
+    transition: { duration: 0.1 }
+  },
+
+  buttonHover: {
+    scale: 1.05,
+    transition: { duration: 0.2 }
+  },
+
+  // Progress animations
+  progressPulse: {
+    scale: [1, 1.05, 1],
+    transition: { 
+      duration: 2,
+      repeat: Infinity,
+      ease: 'easeInOut'
+    }
+  },
+
+  // Notification slide-in
+  notificationSlide: {
+    hidden: { x: 400, opacity: 0 },
+    visible: { 
+      x: 0, 
+      opacity: 1,
+      transition: { type: 'spring', stiffness: 100, damping: 15 }
+    },
+    exit: { 
+      x: 400, 
+      opacity: 0,
+      transition: { duration: 0.2 }
+    }
   },
 } as const
 

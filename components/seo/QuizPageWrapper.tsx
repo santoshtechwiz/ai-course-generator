@@ -1,69 +1,25 @@
-import type { Metadata } from "next"
-import { generateQuizMetadata } from "@/lib/quiz-metadata"
+/**
+ * DEPRECATED: This file is kept for backwards compatibility only.
+ * 
+ * Please use the functions from @/lib/quiz-metadata directly:
+ * - generateQuizMetadata (renamed from generateQuizPageMetadata)
+ * 
+ * This wrapper will be removed in a future cleanup.
+ */
 
-interface QuizPageWrapperProps {
-  children: React.ReactNode
-  quizType: "mcq" | "code" | "blanks" | "openended" | "flashcard" | "document"
-  slug?: string
-  title?: string
-  description?: string
-  topic?: string
-  difficulty?: "easy" | "medium" | "hard"
-  questionCount?: number
+import type { Metadata } from "next"
+import { generateQuizMetadata, type QuizMetadataOptions } from "@/lib/quiz-metadata"
+
+/**
+ * @deprecated Use generateQuizMetadata from @/lib/quiz-metadata instead
+ */
+export function generateQuizPageMetadata(options: QuizMetadataOptions): Metadata {
+  return generateQuizMetadata(options)
 }
 
 /**
- * Centralized Quiz Page Wrapper (Server Component)
- * 
- * This wrapper generates proper SEO metadata on the server side
- * and wraps quiz content. Use this instead of individual layout files.
- * 
- * Usage:
- * 1. Convert your quiz pages to server components
- * 2. Wrap content with this component
- * 3. Pass quiz metadata as props
+ * @deprecated This wrapper component is no longer needed
  */
-
-export function generateQuizPageMetadata({
-  quizType,
-  slug,
-  title,
-  description,
-  topic,
-  difficulty,
-  questionCount,
-  // When rendering not-found/private pages, opt out of indexing
-  noIndex
-}: Omit<QuizPageWrapperProps, 'children'> & { noIndex?: boolean }): Metadata {
-  
-  // Extract topic from slug if not provided
-  const derivedTopic = topic || (slug ? slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : undefined)
-  
-  return generateQuizMetadata({
-    quizType,
-    slug,
-    title,
-    description,
-    topic: derivedTopic,
-    difficulty,
-    questionCount,
-    noIndex: Boolean(noIndex)
-  })
-}
-
-export function QuizPageWrapper({
-  children,
-  quizType,
-  slug,
-  title,
-  description,
-  topic,
-  difficulty,
-  questionCount
-}: QuizPageWrapperProps) {
-  return (
-    <div className="quiz-page-wrapper" data-quiz-type={quizType}>
-      {children}
-    </div>
-  )
+export function QuizPageWrapper({ children }: { children: React.ReactNode }) {
+  return <>{children}</>
 }

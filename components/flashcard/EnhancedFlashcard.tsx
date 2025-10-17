@@ -55,12 +55,12 @@ interface EnhancedFlashcardProps {
 const SWIPE_THRESHOLD = 100
 const SWIPE_POWER_THRESHOLD = 50000
 
-// Difficulty ratings (for spaced repetition)
+// Difficulty ratings (for spaced repetition) - using primary color theme
 const DIFFICULTY_RATINGS = [
-  { value: 1, label: 'Again', icon: ThumbsDown, color: 'text-red-500', description: 'Complete blackout' },
-  { value: 2, label: 'Hard', icon: Star, color: 'text-orange-500', description: 'Incorrect, but remembered' },
-  { value: 3, label: 'Good', icon: ThumbsUp, color: 'text-blue-500', description: 'Correct with effort' },
-  { value: 4, label: 'Easy', icon: Zap, color: 'text-green-500', description: 'Perfect recall' },
+  { value: 1, label: 'Again', icon: ThumbsDown, color: 'text-destructive', description: 'Complete blackout' },
+  { value: 2, label: 'Hard', icon: Star, color: 'text-warning', description: 'Incorrect, but remembered' },
+  { value: 3, label: 'Good', icon: ThumbsUp, color: 'text-primary', description: 'Correct with effort' },
+  { value: 4, label: 'Easy', icon: Zap, color: 'text-success', description: 'Perfect recall' },
 ]
 
 export default function EnhancedFlashcard({
@@ -202,7 +202,7 @@ export default function EnhancedFlashcard({
           </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-gradient-to-r from-primary to-primary/70"
+              className="h-full bg-primary"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -297,7 +297,7 @@ export default function EnhancedFlashcard({
               <Card
                 className={cn(
                   'h-96 absolute top-0 left-0 w-full',
-                  'backface-hidden bg-gradient-to-br from-primary/5 to-primary/10'
+                  'backface-hidden bg-primary/5'
                 )}
                 style={{
                   backfaceVisibility: 'hidden',

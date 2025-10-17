@@ -147,7 +147,7 @@ export function CreditCounter() {
           {usagePercentage >= 80 && (
             <Button
               onClick={() => router.push('/dashboard/subscription')}
-              className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
+              className="w-full bg-warning hover:bg-warning/90"
               size="sm"
             >
               Upgrade for Unlimited

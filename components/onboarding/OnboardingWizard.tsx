@@ -384,7 +384,7 @@ function CompleteStep({ onNext }: StepProps) {
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-        className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-white"
+        className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-success text-success-foreground"
       >
         <Check className="w-12 h-12" />
       </motion.div>

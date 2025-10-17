@@ -13,6 +13,8 @@ export const dynamic = 'force-dynamic'
  * - Authentication check and admin role validation
  * - Consistent sidebar navigation
  * - Responsive grid layout
+ * 
+ * Note: DashboardLayout already provides padding, this just adds admin-specific structure
  */
 
 export default async function AdminLayout({
@@ -28,12 +30,14 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="container mx-auto max-w-7xl px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 py-6 sm:py-7 md:py-8">
-      <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] lg:grid-cols-[220px_1fr] xl:grid-cols-[240px_1fr] gap-4 sm:gap-5 md:gap-6 lg:gap-8">
-        <aside className="hidden md:block">
-          <AdminNav user={{ isAdmin: true }} />
-        </aside>
-        <main className="min-w-0">{children}</main>
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] lg:grid-cols-[240px_1fr] gap-6 lg:gap-8">
+          <aside className="hidden md:block">
+            <AdminNav user={{ isAdmin: true }} />
+          </aside>
+          <main className="min-w-0">{children}</main>
+        </div>
       </div>
     </div>
   )

@@ -45,42 +45,42 @@ export function BestGuess({
   const points = similarity >= 0.9 ? 1 : similarity >= 0.7 ? 0.5 : 0
   
   const { color, bgColor, borderColor, icon, label, progressColor } = useMemo(() => {
-    // Calculate similarity level with proper thresholds (90% full, 70-90% partial, <70% none)
+    // Calculate similarity level with proper thresholds using theme tokens
     if (similarity >= 0.9) {
       return {
-        color: isDark ? "text-green-400" : "text-green-600",
-        bgColor: isDark ? "bg-green-950/40" : "bg-green-50",
-        borderColor: isDark ? "border-green-800" : "border-green-200",
-        icon: <CheckIcon className="h-4 w-4 text-green-500" />,
+        color: "text-success",
+        bgColor: "bg-success/10",
+        borderColor: "border-success/20",
+        icon: <CheckIcon className="h-4 w-4 text-success" />,
         label: "Correct",
-        progressColor: "bg-green-500",
+        progressColor: "bg-success",
       }
     } else if (similarity >= 0.7) {
       return {
-        color: isDark ? "text-blue-400" : "text-blue-700",
-        bgColor: isDark ? "bg-blue-950/40" : "bg-blue-50",
-        borderColor: isDark ? "border-blue-800" : "border-blue-100",
-        icon: <CheckIcon className="h-4 w-4 text-blue-600" />,
+        color: "text-primary",
+        bgColor: "bg-primary/10",
+        borderColor: "border-primary/20",
+        icon: <CheckIcon className="h-4 w-4 text-primary" />,
         label: "Almost Correct",
-        progressColor: "bg-blue-600",
+        progressColor: "bg-primary",
       }
     } else if (similarity >= 0.5) {
       return {
-        color: isDark ? "text-yellow-400" : "text-yellow-600",
-        bgColor: isDark ? "bg-yellow-950/40" : "bg-yellow-50",
-        borderColor: isDark ? "border-yellow-800" : "border-yellow-200",
-        icon: <AlertTriangleIcon className="h-4 w-4 text-yellow-500" />,
+        color: "text-warning",
+        bgColor: "bg-warning/10",
+        borderColor: "border-warning/20",
+        icon: <AlertTriangleIcon className="h-4 w-4 text-warning" />,
         label: "Close",
-        progressColor: "bg-yellow-500",
+        progressColor: "bg-warning",
       }
     } else {
       return {
-        color: isDark ? "text-red-400" : "text-red-600",
-        bgColor: isDark ? "bg-red-950/40" : "bg-red-50",
-        borderColor: isDark ? "border-red-800" : "border-red-200",
-        icon: <XIcon className="h-4 w-4 text-red-500" />,
+        color: "text-destructive",
+        bgColor: "bg-destructive/10",
+        borderColor: "border-destructive/20",
+        icon: <XIcon className="h-4 w-4 text-destructive" />,
         label: "Incorrect",
-        progressColor: "bg-red-500",
+        progressColor: "bg-destructive",
       }
     }
   }, [similarity, isDark])

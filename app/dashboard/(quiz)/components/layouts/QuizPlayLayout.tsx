@@ -75,7 +75,7 @@ const quizTypeIcons: Record<string, React.ComponentType<any>> = {
 
 const QuizSkeleton = () => (
   <motion.div 
-    className="w-full p-6 space-y-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 to-gray-900 rounded-2xl border border-gray-200/50 dark:border-gray-700/50"
+    className="w-full p-6 space-y-4 bg-gradient-to-br from-muted to-card rounded-2xl border border-border"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3 }}
@@ -110,8 +110,8 @@ const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) =
       className={cn(
         "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
         isPaused 
-          ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300" 
-          : "bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 dark:from-blue-900/30 dark:to-purple-900/30 dark:text-blue-300 border border-blue-200/50 dark:border-blue-700/50"
+          ? "bg-warning/10 text-warning border border-warning/30" 
+          : "bg-primary/10 text-primary border border-primary/20"
       )}
       whileHover={{ scale: 1.05 }}
       layout
@@ -130,7 +130,7 @@ const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) =
 
 const ProgressBar = ({ progress, questionNumber, totalQuestions }: { progress: number; questionNumber: number; totalQuestions: number }) => (
   <motion.div
-    className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-white/60 to-gray-50/60 dark:from-gray-900/60 dark:to-gray-800/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 shadow-lg"
+    className="mb-8 p-6 rounded-2xl bg-card/60 backdrop-blur-sm border border-border shadow-lg"
     initial={{ opacity: 0, y: -20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5 }}
@@ -138,7 +138,7 @@ const ProgressBar = ({ progress, questionNumber, totalQuestions }: { progress: n
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-4">
         <motion.div
-          className="flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full text-white shadow-lg"
+          className="flex items-center gap-3 px-4 py-2.5 bg-primary rounded-full text-primary-foreground shadow-lg"
           whileHover={{ scale: 1.05 }}
           transition={{ type: "spring", stiffness: 400, damping: 10 }}
         >
@@ -153,7 +153,7 @@ const ProgressBar = ({ progress, questionNumber, totalQuestions }: { progress: n
           </span>
         </motion.div>
         <motion.div
-          className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-full"
+          className="flex items-center gap-2 px-3 py-1.5 bg-success/10 border border-success/30 rounded-full"
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.2 }}
@@ -162,48 +162,48 @@ const ProgressBar = ({ progress, questionNumber, totalQuestions }: { progress: n
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           >
-            <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <CheckCircle className="w-4 h-4 text-success" />
           </motion.div>
-          <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+          <span className="text-sm font-semibold text-success">
             {progress}% Complete
           </span>
         </motion.div>
       </div>
       <motion.div
-        className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 px-4 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-full border border-gray-200 dark:border-gray-700"
+        className="flex items-center gap-2 text-sm text-muted-foreground px-4 py-2 bg-muted rounded-full border border-border"
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <Award className="h-4 w-4 text-amber-500" />
+        <Award className="h-4 w-4 text-warning" />
         <span className="font-medium">{questionNumber - 1} completed</span>
-        <span className="text-gray-400">•</span>
-        <span className="text-gray-500">{totalQuestions - questionNumber + 1} remaining</span>
+        <span className="text-muted-foreground/60">•</span>
+        <span className="text-muted-foreground/80">{totalQuestions - questionNumber + 1} remaining</span>
       </motion.div>
     </div>
 
     <div className="relative">
-      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2 px-1">
+      <div className="flex justify-between text-xs text-muted-foreground mb-2 px-1">
         <span>Start</span>
         <span className="font-medium">{progress}%</span>
         <span>Finish</span>
       </div>
-      <div className="relative h-6 bg-gray-200/50 dark:bg-gray-700/50 border border-gray-300/50 dark:border-gray-600/50 rounded-full overflow-hidden shadow-inner backdrop-blur-sm">
+      <div className="relative h-6 bg-muted/50 border border-border rounded-full overflow-hidden shadow-inner backdrop-blur-sm">
         <motion.div
-          className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full relative overflow-hidden shadow-lg"
+          className="h-full bg-primary rounded-full relative overflow-hidden shadow-lg"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 1.2, ease: "easeOut" }}
         >
           {/* Enhanced shimmer effect */}
           <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent rounded-full"
+            className="absolute inset-0 bg-white/20 rounded-full"
             animate={{ x: [-300, 300] }}
             transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
           />
           {/* Pulse effect */}
           <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-blue-400/50 to-purple-400/50 rounded-full"
+            className="absolute inset-0 bg-primary/30 rounded-full"
             animate={{ opacity: [0.3, 0.8, 0.3] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           />
@@ -211,14 +211,14 @@ const ProgressBar = ({ progress, questionNumber, totalQuestions }: { progress: n
 
         {/* Progress indicator dot */}
         <motion.div
-          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-blue-500"
+          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-primary-foreground rounded-full shadow-lg border-2 border-primary"
           style={{ left: `calc(${progress}% - 8px)` }}
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
         >
           <motion.div
-            className="absolute inset-0 bg-blue-500 rounded-full"
+            className="absolute inset-0 bg-primary rounded-full"
             animate={{ scale: [0.5, 1, 0.5] }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
           />
@@ -234,7 +234,7 @@ const ProgressBar = ({ progress, questionNumber, totalQuestions }: { progress: n
       transition={{ delay: 0.8 }}
     >
       <motion.p
-        className="text-sm text-gray-600 dark:text-gray-400 font-medium"
+        className="text-sm text-muted-foreground font-medium"
         animate={{ scale: [1, 1.05, 1] }}
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       >
@@ -403,7 +403,7 @@ export default function QuizPlayLayout({
     const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
     return (
       <motion.header 
-        className="sticky top-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm"
+        className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border shadow-sm"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
@@ -422,15 +422,15 @@ export default function QuizPlayLayout({
               transition={{ delay: 0.2 }}
             >
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg">
+                <div className="p-2.5 rounded-xl bg-primary text-primary-foreground shadow-lg">
                   <QuizTypeIcon className="w-5 h-5" />
                 </div>
                 <div>
-                  <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate mb-0.5">
+                  <h1 className="text-lg sm:text-xl font-bold text-foreground truncate mb-0.5">
                     {title}
                   </h1>
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 dark:from-blue-900/30 dark:to-purple-900/30 dark:text-blue-300 border-blue-200/50 dark:border-blue-700/50">
+                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
                       {quizTypeLabel[quizType] || "Quiz"}
                     </Badge>
                     <DifficultyBadge difficulty={difficulty} />
@@ -438,20 +438,20 @@ export default function QuizPlayLayout({
                 </div>
               </div>
 
-              <div className="hidden sm:flex items-center gap-4 px-4 py-2 bg-gray-50/80 dark:bg-gray-800/50 rounded-xl">
+              <div className="hidden sm:flex items-center gap-4 px-4 py-2 bg-muted rounded-xl">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-gray-600 dark:text-gray-400 font-medium">
+                    <Badge variant="outline" className="text-muted-foreground font-medium">
                       {/* Question counter removed for cleaner layout */}
                     </Badge>
-                    <Badge variant="secondary" className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 dark:from-blue-900/30 dark:to-purple-900/30 dark:text-blue-300">
+                    <Badge variant="secondary" className="bg-primary/10 text-primary">
                       {progress}% Complete
                     </Badge>
                   </div>
                   <Timer seconds={displaySeconds} isPaused={isPaused} />
                 </div>
                 {isFocusMode && (
-                  <div className="flex items-center gap-1 text-sm text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-3 py-1 rounded-lg">
+                  <div className="flex items-center gap-1 text-sm text-primary bg-primary/10 px-3 py-1 rounded-lg">
                     <Target className="h-4 w-4" /> Focus Mode
                   </div>
                 )}
@@ -469,7 +469,7 @@ export default function QuizPlayLayout({
                   variant="ghost" 
                   size="sm"
                   onClick={togglePause}
-                  className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="hover:bg-muted transition-colors"
                 >
                   {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                 </Button>
@@ -478,18 +478,18 @@ export default function QuizPlayLayout({
                   variant="ghost" 
                   size="sm" 
                   onClick={resetQuiz}
-                  className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="hover:bg-muted transition-colors"
                 >
                   <RotateCcw className="h-4 w-4" />
                 </Button>
               </div>
               
-              <div className="flex items-center gap-2 border-l border-gray-200 dark:border-gray-700 pl-3">
-                <Button variant="ghost" size="sm" onClick={goHome} className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors min-h-[44px] min-w-[44px] p-3">
+              <div className="flex items-center gap-2 border-l border-border pl-3">
+                <Button variant="ghost" size="sm" onClick={goHome} className="hover:bg-muted transition-colors min-h-[44px] min-w-[44px] p-3">
                   <Home className="h-4 w-4" />
                 </Button>
                 
-                <Button variant="ghost" size="sm" onClick={toggleFullscreen} className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors min-h-[44px] min-w-[44px] p-3">
+                <Button variant="ghost" size="sm" onClick={toggleFullscreen} className="hover:bg-muted transition-colors min-h-[44px] min-w-[44px] p-3">
                   {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
                 </Button>
                 
@@ -497,7 +497,7 @@ export default function QuizPlayLayout({
                   variant="ghost" 
                   size="sm" 
                   onClick={toggleSidebar}
-                  className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="hover:bg-muted transition-colors"
                 >
                   {sidebarOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
@@ -514,27 +514,27 @@ export default function QuizPlayLayout({
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-gray-600 dark:text-gray-400 font-medium">
+                  <Badge variant="outline" className="text-muted-foreground font-medium">
                     {/* Question counter removed for cleaner layout */}
                   </Badge>
-                  <Badge variant="secondary" className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 dark:from-blue-900/30 dark:to-purple-900/30 dark:text-blue-300">
+                  <Badge variant="secondary" className="bg-primary/10 text-primary">
                     {progress}%
                   </Badge>
                 </div>
                 <Timer seconds={displaySeconds} isPaused={isPaused} />
               </div>
               
-              <div className="flex items-center justify-between py-1.5 px-3 bg-gray-50/80 dark:bg-gray-800/50 rounded-lg">
+              <div className="flex items-center justify-between py-1.5 px-3 bg-muted rounded-lg">
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={togglePause} className="min-h-[44px] min-w-[44px] p-3 hover:bg-white/50 dark:hover:bg-gray-900/50">
+                  <Button variant="ghost" size="sm" onClick={togglePause} className="min-h-[44px] min-w-[44px] p-3 hover:bg-background/50">
                     {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={resetQuiz} className="min-h-[44px] min-w-[44px] p-3 hover:bg-white/50 dark:hover:bg-gray-900/50">
+                  <Button variant="ghost" size="sm" onClick={resetQuiz} className="min-h-[44px] min-w-[44px] p-3 hover:bg-background/50">
                     <RotateCcw className="h-4 w-4" />
                   </Button>
                 </div>
                 {isFocusMode && (
-                  <div className="flex items-center gap-1 text-sm text-purple-600 dark:text-purple-400">
+                  <div className="flex items-center gap-1 text-sm text-secondary">
                     <Target className="h-4 w-4" /> Focus
                   </div>
                 )}
@@ -586,22 +586,22 @@ export default function QuizPlayLayout({
   // If quiz is private and user can't view it, show access denied message
   if (!canViewQuiz) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
         <motion.div
-          className="text-center p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 max-w-md"
+          className="text-center p-8 bg-card rounded-2xl shadow-xl border border-border max-w-md"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Lock className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-gray-400" />
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          <Lock className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
             Private Quiz
           </h2>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-6">
+          <p className="text-sm sm:text-base text-muted-foreground mb-6">
             This quiz is private and can only be viewed by its owner.
           </p>
           {!authUser && (
-            <p className="text-sm text-gray-500 dark:text-gray-500 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               Please log in to access private quizzes.
             </p>
           )}
@@ -617,7 +617,7 @@ export default function QuizPlayLayout({
 
   return (
     <div className={cn(
-      "min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative selection:bg-blue-100 dark:selection:bg-blue-900/40", 
+      "min-h-screen bg-gradient-to-br from-background to-muted relative selection:bg-primary/10", 
       isFullscreen && "overflow-hidden"
     )}>
       {header}
@@ -639,22 +639,22 @@ export default function QuizPlayLayout({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.9 }}
               transition={{ duration: 0.3 }}
-              className="relative overflow-hidden rounded-2xl border border-blue-200 dark:border-blue-700/50 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 shadow-lg"
+              className="relative overflow-hidden rounded-2xl border border-primary/20 bg-primary/5 shadow-lg"
             >
-              <div className="absolute inset-0 bg-grid-blue-500/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]" />
+              <div className="absolute inset-0 bg-grid-primary/5 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]" />
               <div className="relative p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/50 shadow-sm">
-                    <Play className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <div className="p-2.5 rounded-xl bg-primary/10 shadow-sm">
+                    <Play className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-white text-lg">Continue where you left off</p>
-                    <p className="text-gray-600 dark:text-gray-400 mt-0.5">{/* Question counter removed for cleaner layout */}</p>
+                    <p className="font-semibold text-foreground text-lg">Continue where you left off</p>
+                    <p className="text-muted-foreground mt-0.5">{/* Question counter removed for cleaner layout */}</p>
                   </div>
                 </div>
                 <Button 
                   onClick={() => mainRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 text-base px-6"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 text-base px-6"
                 >
                   Resume Quiz
                 </Button>
@@ -666,14 +666,14 @@ export default function QuizPlayLayout({
         <div className={cn(
           "transition-all duration-300",
           sidebarOpen && !isFullscreen
-            ? "grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px] gap-4 sm:gap-5 md:gap-6 lg:gap-8"
+            ? "grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_380px] gap-4 sm:gap-5 md:gap-6"
             : "flex"
         )}>
           {/* Main Content */}
           <motion.section 
             ref={mainRef}
             className={cn(
-              "w-full rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-xl transition-all duration-300",
+              "w-full rounded-3xl border border-border bg-card/95 backdrop-blur-xl shadow-xl transition-all duration-300",
               isFullscreen 
                 ? "p-2 sm:p-4 lg:p-6 min-h-[calc(100vh-8rem)]" 
                 : "p-3 sm:p-4 md:p-5 lg:p-6"
@@ -689,15 +689,15 @@ export default function QuizPlayLayout({
           <AnimatePresence>
             {sidebarOpen && !isFullscreen && (
               <motion.aside
-                className="hidden lg:block w-full"
-                initial={{ opacity: 0, x: 20, width: 0 }}
-                animate={{ opacity: 1, x: 0, width: isFullscreen ? 0 : 320 }}
-                exit={{ opacity: 0, x: 20, width: 0 }}
+                className="hidden lg:block w-full max-w-[380px]"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
               >
                 <div className="space-y-6">
                   <motion.div 
-                    className="rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-6 shadow-xl"
+                    className="rounded-3xl border border-border bg-card/80 backdrop-blur-xl p-6 shadow-xl"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
@@ -726,7 +726,7 @@ export default function QuizPlayLayout({
                   </motion.div>
 
                   <motion.div 
-                    className="rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-6 shadow-xl"
+                    className="rounded-3xl border border-border bg-card/80 backdrop-blur-xl p-6 shadow-xl"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
@@ -749,32 +749,32 @@ export default function QuizPlayLayout({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 40 }}
               transition={{ duration: 0.5, delay: 0.6 }}
-              className="mt-8"
+              className="mt-8 w-full"
             >
               <RecommendedSection title="Continue Learning">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
                   {relatedQuizzes.slice(0, 3).map((rq, index) => (
                     <motion.a
                       key={rq.id}
                       href={`/dashboard/${rq.quizType}/${rq.slug}`}
-                      className="group rounded-2xl border border-gray-200/50 dark:border-gray-700/50 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl p-6 hover:shadow-xl transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40"
+                      className="group rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-5 hover:shadow-xl transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.7 + index * 0.1 }}
                       whileHover={{ y: -5, scale: 1.02 }}
                     >
                       <div className="flex items-start justify-between mb-4">
-                        <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                        <div className="p-2 rounded-xl bg-primary text-primary-foreground">
                           <BookOpen className="w-5 h-5" />
                         </div>
                         {/* isFavorite removed (not on RelatedQuizItem) */}
                       </div>
                       
-                      <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors mb-2">
+                      <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors mb-2">
                         {rq.title}
                       </h3>
                       
-                      <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
                         <Badge variant="secondary" className="text-xs">
                           {rq.quizType?.toUpperCase()}
                         </Badge>
@@ -783,10 +783,10 @@ export default function QuizPlayLayout({
                       </div>
                       
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">
+                        <span className="text-sm text-primary font-medium">
                           Start Quiz
                         </span>
-                        <Play className="w-4 h-4 text-purple-500 group-hover:text-purple-600 transition-colors" />
+                        <Play className="w-4 h-4 text-primary group-hover:text-primary/80 transition-colors" />
                       </div>
                     </motion.a>
                   ))}
@@ -816,19 +816,19 @@ export default function QuizPlayLayout({
               exit={{ opacity: 0 }}
             />
             <motion.div 
-              className="absolute right-0 top-0 h-full w-full sm:w-5/6 max-w-sm bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-2xl"
+              className="absolute right-0 top-0 h-full w-full sm:w-5/6 max-w-sm bg-card border-l border-border shadow-2xl"
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
             >
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 min-h-[4rem]">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Quiz Panel</h2>
+              <div className="flex items-center justify-between p-6 border-b border-border min-h-[4rem]">
+                <h2 className="text-lg font-semibold text-foreground">Quiz Panel</h2>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={() => setSidebarOpen(false)}
-                  className="hover:bg-gray-100 dark:hover:bg-gray-800 min-h-[44px] min-w-[44px] p-3"
+                  className="hover:bg-muted min-h-[44px] min-w-[44px] p-3"
                 >
                   <X className="h-5 w-5" />
                 </Button>
