@@ -107,6 +107,21 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
     console.log('[QuizResultHandler] Initializing for slug:', slug, 'isAuthenticated:', isAuthenticated)
 
+    // Check if we're returning from authentication
+    const authReturn = typeof window !== 'undefined' 
+      ? sessionStorage.getItem('quiz_auth_return')
+      : null
+    const isReturningFromAuth = authReturn ? JSON.parse(authReturn) : null
+    const isThisQuiz = isReturningFromAuth && 
+      isReturningFromAuth.slug === slug && 
+      isReturningFromAuth.quizType === quizType
+    
+    if (isThisQuiz) {
+      console.log('[QuizResultHandler] Detected return from authentication')
+      // Clear the flag
+      sessionStorage.removeItem('quiz_auth_return')
+    }
+
     // Clear mismatched results
     if (quizResults && quizResults.slug !== slug) {
       console.log('[QuizResultHandler] Clearing mismatched results')
@@ -127,23 +142,30 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         setViewState('calculating')
         dispatch(loadTempResultsAndSave({ slug, quizType }))
           .unwrap()
-          .then(() => {
+          .then((savedResults) => {
             console.log('[QuizResultHandler] Temp results saved to DB successfully')
+            // Ensure results are in state
+            dispatch(setQuizResults(savedResults))
+            // IMPORTANT: Keep user on results page, don't navigate
             setViewState('showResults')
+            hasInitialized.current = true
           })
           .catch((err: any) => {
             console.error('[QuizResultHandler] Failed to save temp results:', err)
-            // Don't clear temp results on error - user can try again
-            setErrorMessage('Failed to save results. Please try again.')
-            setViewState('error')
+            // On error, still show the results from local storage but show error toast
+            dispatch(setQuizResults(tempResults.results))
+            setErrorMessage('Failed to save results to your account, but you can still view them.')
+            setViewState('showResults')
+            hasInitialized.current = true
           })
+        return // Exit early while async operation completes
       } else {
         console.log('[QuizResultHandler] User not authenticated, loading temp results and showing sign-in prompt')
         dispatch(setQuizResults(tempResults.results))
         setViewState('showSignin')
+        hasInitialized.current = true
+        return
       }
-      hasInitialized.current = true
-      return
     }
 
     // If initialization already completed and we have results
@@ -176,6 +198,9 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     // Try to load from API for authenticated users
     if (isAuthenticated) {
       console.log('[QuizResultHandler] Attempting to load from API')
+      // Don't redirect if we're returning from auth with temp results
+      const hasTempResults = storageManager.getTempQuizResults(slug, quizType)
+      
       dispatch(loadQuizResults())
         .unwrap()
         .then(() => {
@@ -183,8 +208,15 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
           setViewState('showResults')
         })
         .catch((err: any) => {
-          console.log('[QuizResultHandler] No results found in API, redirecting to quiz')
-          handleRetake()
+          console.log('[QuizResultHandler] No results found in API')
+          // Only redirect if we don't have temp results to load
+          if (!hasTempResults && !isThisQuiz) {
+            console.log('[QuizResultHandler] No results available, redirecting to quiz')
+            handleRetake()
+          } else if (isThisQuiz) {
+            // If returning from auth but API call failed, wait for temp results to load
+            console.log('[QuizResultHandler] Waiting for temp results to load after auth')
+          }
         })
     } else {
       // Unauthenticated user with no temp results - redirect to quiz
@@ -202,8 +234,13 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
       const tempResults = storageManager.getTempQuizResults(slug, quizType)
       if (tempResults && !tempResultsLoadedRef.current) {
         console.log('[QuizResultHandler] User authenticated with temp results, reloading')
-        hasInitialized.current = false // Reset to trigger reload
-        tempResultsLoadedRef.current = false
+        
+        // Mark as loading temp results to prevent race conditions
+        tempResultsLoadedRef.current = true
+        setViewState('calculating')
+        
+        // Reset initialization to trigger the main useEffect
+        hasInitialized.current = false
       }
     }
   }, [isAuthenticated, hasResults, isAuthLoading, slug, quizType])
@@ -225,6 +262,14 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
   const handleSignIn = () => {
     console.log('[QuizResultHandler] Redirecting to sign in')
+    // Store a flag to indicate we're coming back from auth
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('quiz_auth_return', JSON.stringify({
+        slug,
+        quizType,
+        timestamp: Date.now()
+      }))
+    }
     window.location.href = `/api/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/${quizType}/${slug}/results`)}`
   }
 

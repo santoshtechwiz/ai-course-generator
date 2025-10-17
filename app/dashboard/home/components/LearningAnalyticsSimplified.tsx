@@ -77,36 +77,36 @@ export default function LearningAnalyticsSimplified({
         {/* Key Metrics Row */}
         <div className="grid grid-cols-3 gap-4">
           {/* Weekly Quizzes */}
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 p-4 rounded-lg">
+          <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
-              <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <BookOpen className="h-4 w-4 text-primary" />
               <span className="text-sm text-muted-foreground">This Week</span>
             </div>
-            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+            <div className="text-3xl font-bold text-primary">
               {weeklyQuizzes}
             </div>
             <div className="text-xs text-muted-foreground mt-1">Quizzes Completed</div>
           </div>
 
           {/* Study Time */}
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 p-4 rounded-lg">
+          <div className="bg-gradient-to-br from-secondary/5 to-secondary/10 p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
-              <Clock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              <Clock className="h-4 w-4 text-secondary" />
               <span className="text-sm text-muted-foreground">Study Time</span>
             </div>
-            <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+            <div className="text-3xl font-bold text-secondary">
               {weeklyStudyTime}h
             </div>
             <div className="text-xs text-muted-foreground mt-1">This Week</div>
           </div>
 
           {/* Current Streak */}
-          <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 p-4 rounded-lg">
+          <div className="bg-gradient-to-br from-warning/5 to-warning/10 p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
-              <Flame className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+              <Flame className="h-4 w-4 text-warning" />
               <span className="text-sm text-muted-foreground">Streak {streakEmoji}</span>
             </div>
-            <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+            <div className="text-3xl font-bold text-warning">
               {streak}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
@@ -147,12 +147,12 @@ export default function LearningAnalyticsSimplified({
         <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950 dark:to-yellow-900 p-4 rounded-lg">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-              <h4 className="font-semibold text-yellow-900 dark:text-yellow-100">
+              <Trophy className="h-5 w-5 text-warning" />
+              <h4 className="font-semibold text-foreground">
                 Badge Progress
               </h4>
             </div>
-            <Badge variant="secondary" className="bg-yellow-200 dark:bg-yellow-800">
+            <Badge variant="secondary" className="bg-warning/20 text-warning">
               {badgesEarned}/{totalBadges}
             </Badge>
           </div>

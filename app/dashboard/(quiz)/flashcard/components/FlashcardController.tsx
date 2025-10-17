@@ -100,9 +100,7 @@ export function FlashcardController({
             variant="default"
             onClick={onFinishQuiz}
             size="sm"
-            className={cn("text-xs flex items-center gap-1", 
-              currentIndex < Math.floor(totalCards * 0.5) && !isReviewMode ? "bg-amber-500 hover:bg-amber-600" : ""
-            )}
+            className="text-xs flex items-center gap-1"
           >
             Finish Quiz
           </Button>

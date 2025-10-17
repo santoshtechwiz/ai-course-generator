@@ -53,12 +53,12 @@ export interface EnhancedCardProps {
   /** Category or type badge */
   badge?: {
     text: string
-    variant?: "default" | "primary" | "success" | "warning"
+    variant?: "default" | "secondary" | "destructive" | "success" | "outline"
   }
   /** Any additional badges */
   extraBadges?: Array<{
     text: string
-    variant?: "default" | "primary" | "success" | "warning"
+    variant?: "default" | "secondary" | "destructive" | "success" | "outline"
   }>
   /** Progress percentage (0-100) */
   progress?: number
@@ -102,9 +102,9 @@ export function EnhancedCard({
 }: EnhancedCardProps) {
   // Default difficulty colors
   const difficultyConfig = {
-    Beginner: "from-emerald-400 to-green-500",
-    Intermediate: "from-amber-400 to-orange-500",
-    Advanced: "from-rose-400 to-red-500",
+    Beginner: "from-success to-success",
+    Intermediate: "from-warning to-warning",
+    Advanced: "from-destructive to-destructive",
   }
 
   const cardContent = (

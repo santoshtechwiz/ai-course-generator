@@ -86,7 +86,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
 
-      <body className={`font-sans antialiased bg-background text-foreground`}>
+      <body className={`font-sans antialiased min-h-screen bg-background text-foreground`}>
         <BProgressProvider>
           <Providers session={session}>
             {/* Skip Navigation for accessibility */}
@@ -119,7 +119,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </noscript>
 
                 <Suspense fallback={<SuspenseGlobalFallback />}>
-                  <div className="relative min-h-screen flex flex-col">
+                  <div className="relative min-h-screen flex flex-col bg-background">
                     {/* Main Content */}
                     <main id="main-content" className="flex-1 w-full">
                       <MotionProvider>

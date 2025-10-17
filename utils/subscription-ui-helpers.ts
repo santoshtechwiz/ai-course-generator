@@ -464,11 +464,11 @@ export function getPlanStatus(context: PlanStatusContext): PlanStatusConfig {
     }
     
     result.cardClass = cancelAtPeriodEnd
-      ? 'border-2 border-amber-500 dark:border-amber-400'
-      : 'border-2 border-green-500 dark:border-green-400'
+      ? 'border-2 border-warning dark:border-warning'
+      : 'border-2 border-success dark:border-success'
     
     result.bannerText = cancelAtPeriodEnd ? 'Cancels at Period End' : 'Current Plan'
-    result.bannerClass = cancelAtPeriodEnd ? 'bg-amber-500' : 'bg-green-500'
+    result.bannerClass = cancelAtPeriodEnd ? 'bg-warning' : 'bg-success'
   }
   
   // Canceled plan styling
@@ -477,14 +477,14 @@ export function getPlanStatus(context: PlanStatusContext): PlanStatusConfig {
       text: 'Canceled',
       variant: 'destructive'
     }
-    result.cardClass = 'border-2 border-amber-500 dark:border-amber-400'
+    result.cardClass = 'border-2 border-warning dark:border-warning'
   }
   
   // Best value styling (if not current plan)
   if (isBestValue && !isCurrentActivePlan) {
-    result.cardClass = 'shadow-lg ring-1 ring-purple-500'
+    result.cardClass = 'shadow-lg ring-1 ring-primary'
     result.bannerText = 'Most Popular'
-    result.bannerClass = 'bg-gradient-to-r from-blue-500 to-purple-500'
+    result.bannerClass = 'bg-primary'
   }
   
   return result

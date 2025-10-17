@@ -105,13 +105,13 @@ export function FeedbackButton({
     }
   }
 
-  // Determine button styling based on state
+  // Determine button styling based on state using theme tokens
   const getButtonStyles = () => {
     switch (feedbackState) {
       case "success":
-        return "bg-green-500 hover:bg-green-600 text-white border-green-500"
+        return "bg-success hover:bg-success/90 text-white border-success"
       case "error":
-        return "bg-red-500 hover:bg-red-600 text-white border-red-500"
+        return "bg-destructive hover:bg-destructive/90 text-white border-destructive"
       default:
         return ""
     }

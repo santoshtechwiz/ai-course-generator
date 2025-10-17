@@ -167,21 +167,28 @@ export const fetchQuiz = createAsyncThunk<
       clearTimeout(timeoutId)
 
       if (!response.ok) {
+        let errorData: any = {}
         const errorText = await response.text()
+        
+        try {
+          errorData = JSON.parse(errorText)
+        } catch {
+          errorData = { error: errorText }
+        }
 
         // Handle specific HTTP status codes
         if (response.status === 404) {
           return rejectWithValue({
-            error: 'Quiz not found',
+            error: errorData.error || 'Quiz not found',
             code: 'NOT_FOUND',
             status: response.status
           })
         }
 
-        if (response.status === 403) {
+        if (response.status === 403 || errorData.code === 'PRIVATE_QUIZ') {
           return rejectWithValue({
-            error: 'Access denied to this quiz',
-            code: 'FORBIDDEN',
+            error: errorData.error || errorData.message || 'Access denied to this quiz',
+            code: 'PRIVATE_QUIZ',
             status: response.status
           })
         }
@@ -195,7 +202,7 @@ export const fetchQuiz = createAsyncThunk<
         }
 
         return rejectWithValue({
-          error: errorText || `HTTP ${response.status}: ${response.statusText}`,
+          error: errorData.error || errorText || `HTTP ${response.status}: ${response.statusText}`,
           code: 'HTTP_ERROR',
           status: response.status
         })
@@ -1164,8 +1171,22 @@ const quizSlice = createSlice({
       .addCase(fetchQuiz.rejected, (state: QuizState, action) => {
         console.log('fetchQuiz.rejected - error:', action.payload || action.error.message)
 
-        state.status = 'failed'
-        state.error = (action.payload as any)?.error || action.error.message || 'Failed to load quiz'
+        const payload = action.payload as any
+        const errorCode = payload?.code || ''
+        const errorMessage = payload?.error || action.error.message || 'Failed to load quiz'
+        
+        // Check for specific error types
+        if (errorCode === 'PRIVATE_QUIZ' || payload?.status === 403 || errorMessage.toLowerCase().includes('private')) {
+          state.status = 'not-found'
+          state.error = 'This quiz is private and not accessible.'
+        } else if (payload?.status === 404 || errorMessage.toLowerCase().includes('not found')) {
+          state.status = 'not-found'
+          state.error = 'Quiz not found.'
+        } else {
+          state.status = 'failed'
+          state.error = errorMessage
+        }
+        
         state.isInitialized = true
       })
       .addCase(submitQuiz.pending, (state) => {

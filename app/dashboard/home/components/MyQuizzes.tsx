@@ -52,12 +52,12 @@ const getQuizTypeLabel = (quizType: QuizType) => {
 
 const getQuizColor = (index: number) => {
   const colors = [
-    "bg-red-100 text-red-800",
-    "bg-blue-100 text-blue-800",
-    "bg-green-100 text-green-800",
-    "bg-yellow-100 text-yellow-800",
-    "bg-purple-100 text-purple-800",
-    "bg-pink-100 text-pink-800",
+    "bg-destructive/10 text-destructive",
+    "bg-primary/10 text-primary",
+    "bg-success/10 text-success",
+    "bg-warning/10 text-warning",
+    "bg-secondary/10 text-secondary",
+    "bg-accent/10 text-accent",
   ]
   return colors[index % colors.length]
 }
@@ -93,12 +93,12 @@ export function MyQuizzes({ quizzes }: MyQuizzesProps) {
                     <div className="flex items-center space-x-2 text-sm">
                       <Badge className={getQuizColor(index)}>{getQuizTypeLabel(quiz.quizType as QuizType)}</Badge>
                       {quiz.timeEnded ? (
-                        <Badge variant="outline" className="bg-green-50 text-green-700">
+                        <Badge variant="outline" className="bg-success/10 text-success border-success/20">
                           <CheckCircle2 className="w-3 h-3 mr-1" />
                           Completed
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
+                        <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
                           <Clock className="w-3 h-3 mr-1" />
                           In Progress
                         </Badge>
@@ -136,13 +136,13 @@ export function MyQuizzes({ quizzes }: MyQuizzesProps) {
         {quizzes.length > 0 ? (
           <div className="space-y-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Card className="bg-blue-50">
+              <Card className="bg-primary/5 border-primary/20">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
-                    <BrainCircuit className="h-6 w-6 text-blue-600" />
-                    <span className="text-3xl font-bold text-blue-600">{totalQuizzes}</span>
+                    <BrainCircuit className="h-6 w-6 text-primary" />
+                    <span className="text-3xl font-bold text-primary">{totalQuizzes}</span>
                   </div>
-                  <p className="text-sm font-medium text-blue-600 mt-2">Total Quizzes</p>
+                  <p className="text-sm font-medium text-primary mt-2">Total Quizzes</p>
                 </CardContent>
               </Card>
               <Card className="bg-green-50">

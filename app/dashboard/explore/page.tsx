@@ -1,12 +1,17 @@
 "use client";
 
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper";
-import { DashboardWrapper } from "@/components/dashboard/DashboardWrapper";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { FAQSchema } from "@/lib/seo";
 import { motion, AnimatePresence } from "framer-motion";
 import { UnifiedLoader } from "@/components/loaders/UnifiedLoader";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, RefreshCw } from "lucide-react";
+import { Suspense } from "react";
+import { SuspenseGlobalFallback } from "@/components/loaders";
 import {
   Breadcrumb,
   BreadcrumbItem,

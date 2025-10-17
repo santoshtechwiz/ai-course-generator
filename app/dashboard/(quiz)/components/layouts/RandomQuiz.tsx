@@ -51,22 +51,22 @@ const QUIZ_ICONS = {
 
 const DIFFICULTY_COLORS = {
   easy: {
-    bg: "from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20",
-    text: "text-green-700 dark:text-green-300",
-    border: "border-green-200/50 dark:border-green-700/50",
-    accent: "from-green-500 to-emerald-500"
+    bg: "from-success/5 to-success/10",
+    text: "text-success",
+    border: "border-success/20",
+    accent: "from-success to-success"
   },
   medium: {
-    bg: "from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20", 
-    text: "text-yellow-700 dark:text-yellow-300",
-    border: "border-yellow-200/50 dark:border-yellow-700/50",
-    accent: "from-yellow-500 to-orange-500"
+    bg: "from-warning/5 to-warning/10", 
+    text: "text-warning",
+    border: "border-warning/20",
+    accent: "from-warning to-warning"
   },
   hard: {
-    bg: "from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20",
-    text: "text-red-700 dark:text-red-300", 
-    border: "border-red-200/50 dark:border-red-700/50",
-    accent: "from-red-500 to-pink-500"
+    bg: "from-destructive/5 to-destructive/10",
+    text: "text-destructive", 
+    border: "border-destructive/20",
+    accent: "from-destructive to-destructive"
   },
 } as const
 
@@ -161,10 +161,10 @@ const QuizStats = memo(({
     </div>
     
     {(rating || viewCount || likeCount) && (
-      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
+      <div className="flex items-center gap-4 text-xs text-muted-foreground">
         {rating && (
           <div className="flex items-center gap-1">
-            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+            <Star className="w-3 h-3 fill-warning text-warning" />
             <span>{rating.toFixed(1)}</span>
           </div>
         )}
@@ -228,18 +228,18 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
           "group relative overflow-hidden border-2 transition-all duration-500 hover:shadow-2xl cursor-pointer",
           isActive 
             ? `bg-gradient-to-br ${difficultyColors.bg} border-2 ${difficultyColors.border} shadow-xl` 
-            : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600"
+            : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-primary/50"
         )}
       >
         {/* Animated background overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-blue-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         
         {/* Floating particles */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {[...Array(6)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute w-1 h-1 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full"
+              className="absolute w-1 h-1 bg-primary rounded-full"
               style={{
                 left: `${20 + (i * 12)}%`,
                 top: `${15 + (i * 8)}%`,
@@ -276,7 +276,7 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
                 <Badge variant="outline" className="mb-2 text-xs font-medium">
                   {quiz.quizType.toUpperCase()}
                 </Badge>
-                <h3 className="font-bold text-lg leading-tight text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors line-clamp-2">
+                <h3 className="font-bold text-lg leading-tight text-foreground group-hover:text-secondary transition-colors line-clamp-2">
                   {quiz.title}
                 </h3>
               </div>
@@ -288,7 +288,7 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
                   animate={{ rotate: [0, 10, -10, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
-                  <Trophy className="w-5 h-5 text-yellow-500" />
+                  <Trophy className="w-5 h-5 text-warning" />
                 </motion.div>
               )}
               <DifficultyBadge difficulty={quiz.difficulty} />
@@ -393,17 +393,17 @@ const EmptyState = memo(() => (
     <Card className="border-2 border-dashed border-gray-300 dark:border-gray-600">
       <CardContent className="p-12 text-center">
         <motion.div 
-          className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 flex items-center justify-center"
+          className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center"
           animate={{ rotate: [0, 10, -10, 0] }}
           transition={{ duration: 4, repeat: Infinity }}
         >
-          <Zap className="w-10 h-10 text-purple-600 dark:text-purple-400" />
+          <Zap className="w-10 h-10 text-primary" />
         </motion.div>
         
-        <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">
+        <h3 className="text-xl font-bold mb-3 text-foreground">
           No Quizzes Available
         </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto leading-relaxed">
+        <p className="text-muted-foreground mb-6 max-w-sm mx-auto leading-relaxed">
           We're fetching fresh quiz recommendations for you. Check back in a moment!
         </p>
         
@@ -425,26 +425,26 @@ const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
     animate={{ opacity: 1, scale: 1 }}
     transition={{ duration: 0.5 }}
   >
-    <Card className="border-2 border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10">
+    <Card className="border-2 border-destructive/20 bg-destructive/5">
       <CardContent className="p-12 text-center">
         <motion.div 
-          className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-red-100 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30 flex items-center justify-center"
+          className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-destructive/10 to-destructive/5 flex items-center justify-center"
           animate={{ x: [0, -6, 6, 0] }}
           transition={{ duration: 0.5, repeat: 3 }}
         >
-          <Zap className="w-10 h-10 text-red-600 dark:text-red-400" />
+          <Zap className="w-10 h-10 text-destructive" />
         </motion.div>
         
-        <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">
+        <h3 className="text-xl font-bold mb-3 text-foreground">
           Oops! Something went wrong
         </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto leading-relaxed">
+        <p className="text-muted-foreground mb-6 max-w-sm mx-auto leading-relaxed">
           We couldn't load the quiz recommendations. Let's try again!
         </p>
         
         <Button 
           onClick={onRetry} 
-          className="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+          className="bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg hover:shadow-xl transition-all duration-300"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
           Try Again
@@ -615,17 +615,17 @@ export const RandomQuiz = memo(({
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 text-white shadow-lg">
+          <div className="p-2 rounded-xl bg-primary text-primary-foreground shadow-lg">
             <Zap className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            <h2 className="text-lg font-bold text-foreground">
               Recommended Quiz
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-muted-foreground">
               Curated just for you
               {currentQuiz && (
-                <span className="ml-2 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
+                <span className="ml-2 px-2 py-1 bg-secondary/10 text-secondary rounded-full text-xs font-medium">
                   {currentQuiz.questionCount} questions
                 </span>
               )}
@@ -645,10 +645,10 @@ export const RandomQuiz = memo(({
               size="sm"
               onClick={toggleAutoRotate}
               className={cn(
-                "h-9 px-3 rounded-full border-gray-300 dark:border-gray-600 transition-all duration-300",
+                "h-9 px-3 rounded-full transition-all duration-300",
                 isAutoRotating 
-                  ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 text-green-700 dark:text-green-300" 
-                  : "bg-gray-50 dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-300 dark:hover:border-purple-600"
+                  ? "bg-success/10 border-success/20 text-success" 
+                  : "bg-muted hover:bg-secondary/10 hover:border-secondary/20"
               )}
             >
               {isAutoRotating ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -657,7 +657,7 @@ export const RandomQuiz = memo(({
               variant="outline"
               size="sm"
               onClick={prevQuiz}
-              className="h-9 w-9 p-0 rounded-full border-gray-300 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300"
+              className="h-9 w-9 p-0 rounded-full hover:bg-secondary/10 hover:border-secondary/20 transition-all duration-300"
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -665,7 +665,7 @@ export const RandomQuiz = memo(({
               variant="outline"
               size="sm"
               onClick={nextQuiz}
-              className="h-9 w-9 p-0 rounded-full border-gray-300 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300"
+              className="h-9 w-9 p-0 rounded-full hover:bg-secondary/10 hover:border-secondary/20 transition-all duration-300"
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
@@ -726,8 +726,8 @@ export const RandomQuiz = memo(({
                 className={cn(
                   "h-2 rounded-full transition-all duration-300 hover:scale-125",
                   index === currentIndex 
-                    ? "w-8 bg-gradient-to-r from-purple-500 to-blue-500 shadow-lg" 
-                    : "w-2 bg-gray-300 dark:bg-gray-600 hover:bg-purple-300 dark:hover:bg-purple-700"
+                    ? "w-8 bg-primary shadow-lg" 
+                    : "w-2 bg-muted hover:bg-primary/30"
                 )}
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.9 }}
@@ -767,12 +767,12 @@ export const RandomQuiz = memo(({
                   fill="none"
                   strokeDasharray={`${2 * Math.PI * 10}`}
                   strokeDashoffset={`${2 * Math.PI * 10 * (1 - progress / 100)}`}
-                  className="text-green-500 transition-all duration-100"
+                  className="text-success transition-all duration-100"
                   strokeLinecap="round"
                 />
               </svg>
             </div>
-            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+            <span className="text-xs font-medium text-muted-foreground">
               Auto-rotating
             </span>
           </motion.div>

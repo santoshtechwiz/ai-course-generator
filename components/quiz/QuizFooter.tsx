@@ -191,7 +191,7 @@ export function QuizFooter({
             size="lg"
             className={cn(
               "min-w-[160px] h-14 px-6 text-base font-bold transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg",
-              "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground border-0"
+              "bg-primary hover:bg-primary/90 text-primary-foreground border-0"
             )}
             disabled={!hasAnswer || isLoading || disabled}
             aria-label={submitLabel}
@@ -219,7 +219,7 @@ export function QuizFooter({
             size="lg"
             className={cn(
               "min-w-[160px] h-14 px-6 text-base font-bold transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg",
-              "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground border-0"
+              "bg-primary hover:bg-primary/90 text-primary-foreground border-0"
             )}
             disabled={!canGoNext || isLoading || disabled}
             aria-label={nextLabel}

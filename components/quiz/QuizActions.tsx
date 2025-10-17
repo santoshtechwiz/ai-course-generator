@@ -270,6 +270,17 @@ const useQuizActions = (props: QuizActionsProps) => {
 
       const quizData = await response.json()
       
+      // Validate quiz data
+      if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+        throw new Error('No questions found in this quiz. Cannot generate PDF.')
+      }
+      
+      console.log('[PDF Generation] Quiz data loaded:', {
+        title: quizData.title || props.title,
+        questionsCount: quizData.questions.length,
+        hasOptions: quizData.questions.some((q: any) => q.options && q.options.length > 0)
+      })
+      
       toast.loading("Generating PDF...", { id: "pdf-generation" })
       
       // Dynamically import PDF generation libraries to avoid SSR issues
@@ -334,13 +345,13 @@ const useQuizActions = (props: QuizActionsProps) => {
       const QuizDocument = () => (
         React.createElement(Document, null,
           React.createElement(Page, { size: "A4", style: styles.page },
-            React.createElement(Text, { style: styles.title }, props.title),
+            React.createElement(Text, { style: styles.title }, quizData.title || props.title),
             ...(quizData.questions || []).map((question: any, index: number) => 
               React.createElement(View, { key: question.id || index, style: styles.section },
                 React.createElement(Text, { style: styles.question }, 
-                  `${index + 1}. ${question.question}`
+                  `${index + 1}. ${question.question || 'Question not available'}`
                 ),
-                ...(question.options || []).map((option: string, optIndex: number) => 
+                ...(question.options && Array.isArray(question.options) ? question.options : []).map((option: string, optIndex: number) => 
                   React.createElement(Text, {
                     key: optIndex,
                     style: question.correctAnswer === optIndex ? styles.correctOption : styles.option
@@ -365,7 +376,8 @@ const useQuizActions = (props: QuizActionsProps) => {
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `${props.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_quiz.pdf`
+      const safeTitle = (quizData.title || props.title).replace(/[^a-z0-9]/gi, "_").toLowerCase()
+      link.download = `${safeTitle}_quiz.pdf`
       document.body.appendChild(link)
       link.click()
       link.remove()
@@ -373,7 +385,9 @@ const useQuizActions = (props: QuizActionsProps) => {
 
       toast.success("PDF generated and downloaded successfully!", { id: "pdf-generation" })
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to generate PDF", { id: "pdf-generation" })
+      console.error('[PDF Generation] Error:', error)
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate PDF"
+      toast.error(errorMessage, { id: "pdf-generation" })
     } finally {
       updateActionState("isGeneratingPdf", false)
     }
@@ -451,11 +465,11 @@ const ActionButton = memo(
 )
 ActionButton.displayName = "ActionButton"
 
-// Quiz type configuration
+// Quiz type configuration with theme tokens
 const quizTypeConfig = {
   mcq: {
     label: "Multiple Choice",
-    color: "bg-blue-500",
+    color: "bg-primary",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M20 6 9 17l-5-5" />
@@ -464,7 +478,7 @@ const quizTypeConfig = {
   },
   openended: {
     label: "Open Ended",
-    color: "bg-purple-500",
+    color: "bg-secondary",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -473,7 +487,7 @@ const quizTypeConfig = {
   },
   blanks: {
     label: "Fill in Blanks",
-    color: "bg-cyan-500",
+    color: "bg-warning",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M12 2v20M2 12h20" />
@@ -482,7 +496,7 @@ const quizTypeConfig = {
   },
   code: {
     label: "Code",
-    color: "bg-orange-500",
+    color: "bg-success",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="m18 16 4-4-4-4M6 8l-4 4 4 4M14.5 4l-5 16" />
@@ -574,6 +588,13 @@ const QuizActions = memo(
           className: isFavorite ? "text-red-500 hover:text-red-600 fill-current" : "hover:text-red-500",
           variant: "outline" as const,
         },
+      ],
+      [handleShare, handleFavorite, actionState.isSharing, actionState.isFavoriting, isFavorite, isAuthenticated],
+    )
+
+      const secondaryActions = useMemo(
+      () => {
+        const actions = [
         {
           key: "visibility",
           icon: isPublic ? Globe : Lock,
@@ -582,15 +603,8 @@ const QuizActions = memo(
           loading: actionState.isTogglingVisibility,
           show: isOwner && isAuthenticated,
           className: isPublic ? "text-green-600 hover:text-green-700" : "text-gray-500 hover:text-gray-600",
-          variant: "outline" as const,
+          variant: "ghost" as const,
         },
-      ],
-      [handleShare, handleFavorite, handleVisibilityToggle, actionState.isSharing, actionState.isFavoriting, actionState.isTogglingVisibility, isFavorite, isPublic, isAuthenticated, isOwner],
-    )
-
-      const secondaryActions = useMemo(
-      () => {
-        const actions = [
         {
           key: "pdf",
           icon: FileText,
@@ -614,11 +628,14 @@ const QuizActions = memo(
         return actions
       },
       [
+        handleVisibilityToggle,
         handlePdfGeneration,
         setShowDeleteDialog,
+        actionState.isTogglingVisibility,
         actionState.isGeneratingPdf,
         actionState.isDeleting,
         isOwner,
+        isPublic,
         showPdfGeneration,
         isAuthenticated,
         variant,

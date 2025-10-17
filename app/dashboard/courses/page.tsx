@@ -6,7 +6,6 @@ import { useAuth } from "@/hooks"
 import { useUserData } from "@/hooks/useUserDashboard"
 import dynamic from "next/dynamic"
 import { redirect } from "next/navigation"
-import { DashboardLayoutWrapper } from "@/components/dashboard/DashboardLayoutWrapper"
 import { Button } from "@/components/ui/button"
 import { PlusCircle } from "lucide-react"
 import Link from "next/link"
@@ -27,47 +26,43 @@ export default function CoursesPage() {
 
   if (isLoading || !userData) {
     return (
-      <DashboardLayoutWrapper userData={null}>
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <UnifiedLoader
-            variant="spinner"
-            size="lg"
-            message="Loading your courses..."
-          />
-        </div>
-      </DashboardLayoutWrapper>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <UnifiedLoader
+          variant="spinner"
+          size="lg"
+          message="Loading your courses..."
+        />
+      </div>
     )
   }
 
   return (
-    <DashboardLayoutWrapper userData={userData}>
-      <div className="container mx-auto px-4 py-6 sm:px-6 md:px-8">
-        {/* Page Header */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">My Courses</h1>
-            <p className="text-muted-foreground mt-2">
-              Manage and continue your learning journey
-            </p>
-          </div>
-          <Button asChild className="shadow-sm w-fit">
-            <Link href="/dashboard/create">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create Course
-            </Link>
-          </Button>
+    <div className="container mx-auto px-4 py-6 sm:px-6 md:px-8">
+      {/* Page Header */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">My Courses</h1>
+          <p className="text-muted-foreground mt-2">
+            Manage and continue your learning journey
+          </p>
         </div>
-
-        <Suspense fallback={
-          <UnifiedLoader
-            variant="spinner"
-            size="md"
-            message="Loading courses..."
-          />
-        }>
-          <CoursesTab userData={userData} />
-        </Suspense>
+        <Button asChild className="shadow-sm w-fit">
+          <Link href="/dashboard/create">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Create Course
+          </Link>
+        </Button>
       </div>
-    </DashboardLayoutWrapper>
+
+      <Suspense fallback={
+        <UnifiedLoader
+          variant="spinner"
+          size="md"
+          message="Loading courses..."
+        />
+      }>
+        <CoursesTab userData={userData} />
+      </Suspense>
+    </div>
   )
 }

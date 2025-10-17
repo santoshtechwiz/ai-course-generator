@@ -82,17 +82,17 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
   const getQuizTypeColor = useCallback((quizType: QuizType) => {
     switch (quizType) {
       case "mcq":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+        return "bg-primary/10 text-primary"
       case "openended":
-        return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+        return "bg-secondary/10 text-secondary"
       case "blanks":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400"
+        return "bg-warning/10 text-warning"
       case "code":
-        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+        return "bg-success/10 text-success"
       case "flashcard":
-        return "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400"
+        return "bg-accent/10 text-accent"
       default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
+        return "bg-muted text-muted-foreground"
     }
   }, [])
 
@@ -114,19 +114,19 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
   }, [])
 
   const getScoreColor = useCallback((score: number) => {
-    if (score >= 90) return "text-emerald-600 dark:text-emerald-400"
-    if (score >= 80) return "text-green-600 dark:text-green-400"
-    if (score >= 70) return "text-lime-600 dark:text-lime-400"
-    if (score >= 60) return "text-yellow-600 dark:text-yellow-400"
-    if (score >= 50) return "text-orange-600 dark:text-orange-400"
-    return "text-red-600 dark:text-red-400"
+    if (score >= 90) return "text-success"
+    if (score >= 80) return "text-success"
+    if (score >= 70) return "text-warning"
+    if (score >= 60) return "text-warning"
+    if (score >= 50) return "text-warning"
+    return "text-destructive"
   }, [])
 
   const getScoreIcon = useCallback((score: number) => {
-    if (score >= 90) return <Trophy className="h-4 w-4 text-emerald-500" />
-    if (score >= 80) return <Target className="h-4 w-4 text-green-500" />
-    if (score >= 60) return <TrendingUp className="h-4 w-4 text-yellow-500" />
-    return <AlertCircle className="h-4 w-4 text-red-500" />
+    if (score >= 90) return <Trophy className="h-4 w-4 text-success" />
+    if (score >= 80) return <Target className="h-4 w-4 text-success" />
+    if (score >= 60) return <TrendingUp className="h-4 w-4 text-warning" />
+    return <AlertCircle className="h-4 w-4 text-destructive" />
   }, [])
 
   const getGradeLabel = useCallback((score: number) => {
@@ -251,7 +251,7 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
           value={filteredAllQuizzes.length}
           icon={Target}
           variant="default"
-          description={`${filteredAllQuizzes.length} quizzes taken`}
+          description={filteredAllQuizzes.length === 1 ? "1 quiz taken" : `${filteredAllQuizzes.length} quizzes taken`}
         />
         <StatCard
           label="Average Score"
@@ -268,21 +268,29 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
             const avgScore = completedQuizzes.reduce((sum, q) => sum + (q.bestScore || 0), 0) / completedQuizzes.length
             return avgScore >= 80 ? 'success' as const : avgScore >= 60 ? 'warning' as const : 'destructive' as const
           })()}
-          description="Across all quizzes"
+          description={(() => {
+            const completedQuizzes = filteredAllQuizzes.filter(q => q.bestScore !== null && q.bestScore !== undefined)
+            if (completedQuizzes.length === 0) return 'No completed quizzes'
+            const avgScore = completedQuizzes.reduce((sum, q) => sum + (q.bestScore || 0), 0) / completedQuizzes.length
+            if (avgScore >= 90) return '🎉 Excellent work!'
+            if (avgScore >= 80) return '👍 Great performance'
+            if (avgScore >= 60) return '📈 Keep improving'
+            return '💪 Room for growth'
+          })()}
         />
         <StatCard
           label="Completed"
           value={filteredCompletedQuizzes.length}
           icon={CheckCircle}
           variant="success"
-          description={`${filteredCompletedQuizzes.length} finished`}
+          description={filteredCompletedQuizzes.length === 1 ? "1 quiz finished" : `${filteredCompletedQuizzes.length} quizzes finished`}
         />
         <StatCard
           label="In Progress"
           value={filteredInProgressQuizzes.length}
           icon={Clock}
           variant={filteredInProgressQuizzes.length > 0 ? 'warning' : 'default'}
-          description={filteredInProgressQuizzes.length > 0 ? "Continue now" : "All caught up!"}
+          description={filteredInProgressQuizzes.length > 0 ? "🚀 Continue now" : "✅ All caught up!"}
         />
       </div>
 
@@ -303,68 +311,83 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
 
         <TabsContent value="quizzes" className="space-y-4">
           {filteredAllQuizzes.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <GraduationCap className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Quizzes Found</h3>
-                <p className="text-muted-foreground text-center mb-4">
-                  {searchTerm ? "No quizzes match your search criteria." : "You haven't created any quizzes yet."}
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <div className="w-20 h-20 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full flex items-center justify-center mb-6">
+                  <GraduationCap className="h-10 w-10 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">No Quizzes Found</h3>
+                <p className="text-muted-foreground text-center mb-6 max-w-md">
+                  {searchTerm ? "No quizzes match your search criteria. Try a different search term." : "Start your learning journey by creating your first quiz!"}
                 </p>
                 <Link href="/dashboard">
-                  <Button>Create Your First Quiz</Button>
+                  <Button className="gap-2">
+                    <GraduationCap className="h-4 w-4" />
+                    Create Your First Quiz
+                  </Button>
                 </Link>
               </CardContent>
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredAllQuizzes.map((quiz) => (
-                <Card key={quiz.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                <Card key={quiz.id} className="group hover:shadow-lg hover:border-primary/30 transition-all duration-200 cursor-pointer">
                   <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg line-clamp-2 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <CardTitle className="text-base font-semibold line-clamp-2 flex-1 group-hover:text-primary transition-colors">
                         {quiz.title}
                       </CardTitle>
-                      <Badge className={getQuizTypeColor(quiz.quizType)} variant="secondary">
+                      <Badge className={`${getQuizTypeColor(quiz.quizType)} shrink-0`} variant="secondary">
                         {getQuizTypeLabel(quiz.quizType)}
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <BookOpen className="h-4 w-4" />
+                      {/* Quiz metadata */}
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <BookOpen className="h-3.5 w-3.5" />
                           <span>{(quiz as any)?._count?.questions || quiz.questions?.length || 0} questions</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          <span>{new Date(quiz.timeStarted).toLocaleDateString()}</span>
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>{new Date(quiz.timeStarted).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1">
+
+                      {/* Status and action */}
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <div className="flex items-center gap-2">
                           {quiz.timeEnded ? (
-                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <>
+                              <div className="w-2 h-2 bg-success rounded-full"></div>
+                              <span className="text-sm font-medium text-success">Completed</span>
+                            </>
                           ) : (
-                            <AlertCircle className="h-4 w-4 text-yellow-500" />
+                            <>
+                              <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
+                              <span className="text-sm font-medium text-warning">In Progress</span>
+                            </>
                           )}
-                          <span className="text-sm">
-                            {quiz.timeEnded ? "Completed" : "In Progress"}
-                          </span>
                         </div>
                         <Button
-                          variant="outline"
+                          variant={quiz.timeEnded ? "outline" : "default"}
                           size="sm"
                           onClick={() => handleQuizClick(quiz.id.toString(), quiz.quizType, quiz.slug)}
                           disabled={navigatingQuizId === quiz.id.toString()}
+                          className="gap-2"
                         >
                           {navigatingQuizId === quiz.id.toString() ? (
                             <>
-                              <Loader2 className="h-4 w-4 mr-2" />
-                              Loading...
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <span>Loading...</span>
                             </>
                           ) : (
-                            quiz.timeEnded ? "Review" : "Continue"
+                            <>
+                              <Eye className="h-3.5 w-3.5" />
+                              <span>{quiz.timeEnded ? "Review" : "Continue"}</span>
+                            </>
                           )}
                         </Button>
                       </div>
@@ -378,95 +401,94 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
 
         <TabsContent value="completed" className="space-y-4">
           {filteredCompletedQuizzes.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <CheckCircle className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Completed Quizzes</h3>
-                <p className="text-muted-foreground text-center">
-                  Complete your first quiz to see it here.
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <div className="w-20 h-20 bg-gradient-to-br from-success/10 to-success/20 rounded-full flex items-center justify-center mb-6">
+                  <CheckCircle className="h-10 w-10 text-success" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">No Completed Quizzes</h3>
+                <p className="text-muted-foreground text-center max-w-md">
+                  Complete your first quiz to see your achievements here. Track your progress and celebrate your success!
                 </p>
               </CardContent>
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredCompletedQuizzes.map((quiz) => (
-                <Card key={quiz.id} className="hover:shadow-md transition-shadow">
+                <Card key={quiz.id} className="group hover:shadow-lg hover:border-success/30 transition-all duration-200 bg-gradient-to-br from-card to-success/5">
                   <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg line-clamp-2 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <CardTitle className="text-base font-semibold line-clamp-2 flex-1 group-hover:text-success transition-colors">
                         {quiz.title}
                       </CardTitle>
-                      <Badge className={getQuizTypeColor(quiz.quizType)} variant="secondary">
+                      <Badge className={`${getQuizTypeColor(quiz.quizType)} shrink-0`} variant="secondary">
                         {getQuizTypeLabel(quiz.quizType)}
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <BookOpen className="h-4 w-4" />
+                      {/* Quiz metadata */}
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <BookOpen className="h-3.5 w-3.5" />
                           <span>{(quiz as any)?._count?.questions || quiz.questions?.length || 0} questions</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          <span>{new Date(quiz.timeEnded!).toLocaleDateString()}</span>
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>{new Date(quiz.timeEnded!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          <span className="text-sm font-medium">Completed</span>
-                        </div>
-                        {quiz.bestScore !== null && quiz.bestScore !== undefined ? (
-                          <div className="flex items-center gap-2">
-                            {getScoreIcon(quiz.bestScore)}
-                            <div className="text-right">
-                              <div className={`text-lg font-bold ${getScoreColor(quiz.bestScore)}`}>
-                                {formatScore(quiz.bestScore)}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {getGradeLabel(quiz.bestScore)}
-                              </div>
+
+                      {/* Score display */}
+                      {quiz.bestScore !== null && quiz.bestScore !== undefined ? (
+                        <div className="bg-gradient-to-br from-background to-success/10 rounded-lg p-3 border border-success/20">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              {getScoreIcon(quiz.bestScore)}
+                              <span className="text-xs font-medium text-muted-foreground">{getGradeLabel(quiz.bestScore)}</span>
+                            </div>
+                            <div className={`text-2xl font-bold ${getScoreColor(quiz.bestScore)}`}>
+                              {formatScore(quiz.bestScore)}
                             </div>
                           </div>
-                        ) : (
-                          <Badge variant="outline" className="text-xs">
-                            No Score
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="mt-2">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                          <span>Performance</span>
-                          <span>{formatScore(quiz.bestScore)}</span>
+                          <Progress 
+                            value={quiz.bestScore} 
+                            className={`h-2 ${
+                              quiz.bestScore >= 80 ? 'bg-success/20' : 
+                              quiz.bestScore >= 60 ? 'bg-warning/20' : 
+                              'bg-destructive/20'
+                            }`}
+                          />
                         </div>
-                        <Progress 
-                          value={quiz.bestScore || 0} 
-                          className={`h-2 ${
-                            quiz.bestScore && quiz.bestScore >= 80 ? 'bg-green-100' : 
-                            quiz.bestScore && quiz.bestScore >= 60 ? 'bg-yellow-100' : 
-                            'bg-red-100'
-                          }`}
-                        />
-                      </div>
-                      <div className="mt-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleQuizClick(quiz.id.toString(), quiz.quizType, quiz.slug)}
-                          disabled={navigatingQuizId === quiz.id.toString()}
-                        >
-                          {navigatingQuizId === quiz.id.toString() ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2" />
-                              Loading...
-                            </>
-                          ) : (
-                            "Review"
-                          )}
-                        </Button>
-                      </div>
+                      ) : (
+                        <div className="bg-muted/30 rounded-lg p-3 border border-dashed">
+                          <Badge variant="outline" className="text-xs">
+                            No Score Available
+                          </Badge>
+                        </div>
+                      )}
+
+                      {/* Action button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleQuizClick(quiz.id.toString(), quiz.quizType, quiz.slug)}
+                        disabled={navigatingQuizId === quiz.id.toString()}
+                        className="w-full gap-2 group-hover:bg-green-500/10 group-hover:border-green-500/30"
+                      >
+                        {navigatingQuizId === quiz.id.toString() ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <span>Loading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-3.5 w-3.5" />
+                            <span>Review Results</span>
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

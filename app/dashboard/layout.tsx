@@ -2,7 +2,6 @@ import type React from "react"
 import { getAuthSession } from "@/lib/auth"
 import type { Metadata } from "next"
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
-import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
 import { DashboardLayout } from "@/components/dashboard/layout"
 
 
@@ -24,14 +23,14 @@ export const viewport = {
 /**
  * Dashboard Layout
  *
- * Simplified layout that wraps dashboard pages with:
+ * Simplified layout following Next.js best practices:
+ * - DashboardLayout now includes all providers (Redux, Theme)
+ * - Removed nested ClientLayoutWrapper for cleaner structure
  * - Conditional authentication check (allows public exploration)
- * - Client-side providers
- * - Dashboard-specific UI components
- * - Error boundaries
+ * - Dashboard-specific UI components and error boundaries
  * 
- * ✅ UPDATED: Removed layout-level auth blocking to allow public exploration
- * Auth is now enforced at the action level (form submission, save, etc.)
+ * ✅ UPDATED: Consolidated providers into DashboardLayout component
+ * Auth is enforced at the action level (form submission, save, etc.)
  */
 export default async function DashboardLayoutPage({
   children,
@@ -40,19 +39,9 @@ export default async function DashboardLayoutPage({
 }) {
   const session = await getAuthSession()
 
-  // ✅ NO AUTH BLOCKING AT LAYOUT LEVEL
-  // Middleware + action-level checks handle authentication
-  // This allows users to explore dashboard pages freely
-
   return (
-    // Debug components - only show in development
-       <ClientLayoutWrapper withTheme={true} withSubscriptionSync={true}>
-        <DashboardLayout userId={session?.user?.id}>
-          {children}
-        </DashboardLayout>
-       
-     
-      </ClientLayoutWrapper>
-  
+    <DashboardLayout userId={session?.user?.id}>
+      {children}
+    </DashboardLayout>
   )
 }

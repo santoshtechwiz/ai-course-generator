@@ -179,13 +179,13 @@ export function FeatureGate({
                     }`}
                   >
                   <div className="flex flex-col items-center text-center gap-4 w-full">
-                    <div className="w-16 h-16 bg-gradient-to-br from-primary/30 via-blue-500/25 to-cyan-500/30 rounded-full flex items-center justify-center shadow-lg shadow-primary/20 backdrop-blur-sm border border-primary/20">
+                    <div className="w-16 h-16 bg-primary/30 rounded-full flex items-center justify-center shadow-lg shadow-primary/20 backdrop-blur-sm border border-primary/20">
                       <Lock className="h-8 w-8 text-primary drop-shadow-lg" />
                     </div>
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-xl font-bold mb-2 flex items-center gap-2 justify-center">
-                      <Crown className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      <Crown className="h-5 w-5 text-primary" />
                       {lockMessage || 'Upgrade Required'}
                     </h3>
                     <p className="text-sm text-muted-foreground">

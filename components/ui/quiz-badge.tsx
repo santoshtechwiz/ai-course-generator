@@ -16,48 +16,48 @@ interface QuizBadgeProps {
   children?: React.ReactNode
 }
 
-// Enhanced unified color schemes for quiz types with more consistent naming
+// Unified color scheme - ALL quiz types use PRIMARY color
 const quizTypeColors = {
   mcq: {
-    bg: "bg-blue-50 dark:bg-blue-900/30",
-    text: "text-blue-700 dark:text-blue-400",
-    border: "border-blue-200 dark:border-blue-800",
-    gradient: "from-blue-400 to-sky-500",
-    fullGradient: "bg-gradient-to-r from-indigo-500 to-blue-600 text-white border-0 shadow-md shadow-indigo-500/25"
+    bg: "bg-primary/10",
+    text: "text-primary",
+    border: "border-primary/20",
+    gradient: "from-primary to-primary",
+    fullGradient: "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0 shadow-md shadow-primary/25"
   },
   openended: {
-    bg: "bg-green-50 dark:bg-green-900/30",
-    text: "text-green-700 dark:text-green-400",
-    border: "border-green-200 dark:border-green-800",
-    gradient: "from-green-400 to-emerald-500",
-    fullGradient: "bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 shadow-md shadow-purple-500/25"
+    bg: "bg-primary/10",
+    text: "text-primary",
+    border: "border-primary/20",
+    gradient: "from-primary to-primary",
+    fullGradient: "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0 shadow-md shadow-primary/25"
   },
   code: {
-    bg: "bg-purple-50 dark:bg-purple-900/30",
-    text: "text-purple-700 dark:text-purple-400",
-    border: "border-purple-200 dark:border-purple-800",
-    gradient: "from-purple-400 to-violet-500",
-    fullGradient: "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 shadow-md shadow-green-500/25"
+    bg: "bg-primary/10",
+    text: "text-primary",
+    border: "border-primary/20",
+    gradient: "from-primary to-primary",
+    fullGradient: "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0 shadow-md shadow-primary/25"
   },
   blanks: {
-    bg: "bg-amber-50 dark:bg-amber-900/30",
-    text: "text-amber-700 dark:text-amber-400",
-    border: "border-amber-200 dark:border-amber-800",
-    gradient: "from-amber-400 to-yellow-500",
-    fullGradient: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 shadow-md shadow-blue-500/25"
+    bg: "bg-primary/10",
+    text: "text-primary",
+    border: "border-primary/20",
+    gradient: "from-primary to-primary",
+    fullGradient: "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0 shadow-md shadow-primary/25"
   },
   flashcard: {
-    bg: "bg-orange-50 dark:bg-orange-900/30",
-    text: "text-orange-700 dark:text-orange-400",
-    border: "border-orange-200 dark:border-orange-800",
-    gradient: "from-orange-400 to-red-500",
-    fullGradient: "bg-gradient-to-r from-orange-500 to-amber-500 text-white border-0 shadow-md shadow-orange-500/25"
+    bg: "bg-primary/10",
+    text: "text-primary",
+    border: "border-primary/20",
+    gradient: "from-primary to-primary",
+    fullGradient: "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0 shadow-md shadow-primary/25"
   },
   quiz: {
-    bg: "bg-gray-50 dark:bg-gray-900/30",
-    text: "text-gray-700 dark:text-gray-400",
-    border: "border-gray-200 dark:border-gray-800",
-    gradient: "from-gray-400 to-slate-500",
+    bg: "bg-muted",
+    text: "text-muted-foreground",
+    border: "border-border",
+    gradient: "from-muted-foreground to-muted-foreground",
     fullGradient: "bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0 shadow-md shadow-gray-500/25"
   }
 }
