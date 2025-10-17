@@ -60,53 +60,7 @@ import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
 import { generateHints } from "@/lib/utils/hint-system-unified"
 import { AdaptiveFeedbackWrapper, useAdaptiveFeedback } from "@/components/quiz/AdaptiveFeedbackWrapper"
 import { useAuth } from "@/modules/auth"
-
-// Standardized animation variants
-const containerVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      when: "beforeChildren",
-      staggerChildren: 0.1,
-      duration: 0.6,
-      ease: "easeOut",
-    },
-  },
-  exit: {
-    opacity: 0,
-    y: -20,
-    transition: {
-      when: "afterChildren",
-      staggerChildren: 0.05,
-      staggerDirection: -1,
-      duration: 0.4,
-      ease: "easeIn",
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      type: "spring",
-      stiffness: 200,
-      damping: 20,
-      mass: 0.8,
-    },
-  },
-  exit: {
-    opacity: 0,
-    y: -20,
-    scale: 0.95,
-    transition: { duration: 0.3 },
-  },
-}
+import { containerVariants, itemVariants } from "../../components/animations/quiz-animations"
 
 const inputFocusVariants = {
   focused: {
@@ -206,7 +160,8 @@ export default function BlanksQuiz(props: any) {
     const questionText = question.question || ""
     const tags = Array.isArray(question.tags) ? question.tags : []
     const keywords = Array.isArray(question.keywords) ? question.keywords : []
-    return { text: questionText, answer: correct, hints: question.hints, tags, keywords }
+    const blanks = Array.isArray(question.blanks) ? question.blanks : []
+    return { text: questionText, answer: correct, hints: question.hints, tags, keywords, blanks }
   }, [question])
 
   // Use debounced similarity calculation for better performance

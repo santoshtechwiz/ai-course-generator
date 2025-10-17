@@ -142,7 +142,7 @@ export default function FlashCardQuiz({
 
   // Handle self-rating with simplified feedback
   const handleSelfRating = useCallback(
-    (cardId: string, rating: "correct" | "incorrect" | "still_learning") => {
+    async (cardId: string, rating: "correct" | "incorrect" | "still_learning") => {
       if (!cardId || !currentCard) return
 
       const newStreak = rating === "correct" ? streak + 1 : 0
@@ -171,6 +171,26 @@ export default function FlashCardQuiz({
       }
 
       dispatch(submitFlashCardAnswer(answerData))
+
+      // Save review to database with spaced repetition scheduling
+      try {
+        const response = await fetch('/api/flashcards/review', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cardId: parseInt(cardId),
+            rating,
+            timeSpent: answerData.timeSpent
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          console.log('[Flashcard] Review scheduled:', data.schedule)
+        }
+      } catch (error) {
+        console.error('[Flashcard] Failed to save review:', error)
+      }
 
       // Auto-advance or manual control
       const delay = autoAdvance ? 1200 : 0

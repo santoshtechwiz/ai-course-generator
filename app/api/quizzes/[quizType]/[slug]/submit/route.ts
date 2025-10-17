@@ -3,6 +3,7 @@ import { getAuthSession } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import { QuizType } from "@/app/types/quiz-types"
 import { validateSubscriptionServer } from "@/lib/subscription-validation"
+import { unifiedQuizService } from "@/services/unified-quiz.service"
 
 // Simple in-memory cache for quiz data and course associations
 // In production, consider using Redis for distributed caching
@@ -505,7 +506,6 @@ async function updateCourseProgress(
               userId: userId,
               courseId: courseId,
               currentChapterId: chapter.id,
-              completedChapters: JSON.stringify([chapter.id]),
               progress: 1, // Start with some progress
               timeSpent: Math.round(totalTime || 0),
               isCompleted: false
@@ -653,6 +653,24 @@ async function processQuizSubmission(
     updateCourseProgress(userId, quiz, submission.totalTime, percentageScore, accuracyScore, submission).catch((error) => {
       // Log but don't fail the quiz submission if course progress update fails
       console.error("Error updating course progress (async):", error);
+    });
+
+    // COMMIT: Call unified quiz service for consistent streak tracking, badge unlocks, and progress sync
+    // This runs asynchronously to not block the quiz submission response
+    const correctAnswers = Math.round((percentageScore / 100) * quiz.questions.length)
+    unifiedQuizService.handleQuizCompletion({
+      userId,
+      quizId: quiz.id,
+      quizType: submission.type,
+      score: Math.round(percentageScore),
+      correctAnswers,
+      totalQuestions: quiz.questions.length,
+      timeSpent: Math.round(submission.totalTime),
+      difficulty: (quiz as any).difficulty || undefined,
+      hintsUsed: 0 // TODO: Track hints used from client
+    }).catch((error) => {
+      // Log but don't fail quiz submission if unified service fails
+      console.error("Error in unified quiz service (async):", error);
     });
 
     // Always create a learning event for quiz completion, even for standalone quizzes (fire-and-forget)

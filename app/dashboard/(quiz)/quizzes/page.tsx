@@ -86,11 +86,29 @@ const Page = async () => {
         }}
       />
 
-      <ClientOnly>
-        <Suspense fallback={<SuspenseGlobalFallback text="Loading amazing quizzes…" />}>
-          <EnhancedQuizzesClient initialQuizzesData={initialQuizzesData} userId={userId} />
-        </Suspense>
-      </ClientOnly>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" aria-labelledby="quizzes-heading">
+
+        <section aria-live="polite" aria-busy="false">
+          <ClientOnly>
+            <Suspense fallback={<SuspenseGlobalFallback text="Loading amazing quizzes…" />}>
+              <div className="prose prose-invert max-w-none mb-6 sr-only" aria-hidden>
+                {/* Keep SEO content available for screen readers if needed */}
+                <h2>Interactive quizzes collection</h2>
+                <p>
+                  A comprehensive collection of educational quizzes including multiple choice, coding
+                  challenges, flashcards, and open-ended questions with advanced filtering and
+                  personalized recommendations.
+                </p>
+              </div>
+
+              <div className="relative -mx-4 px-4 sm:mx-0 sm:px-0">
+                {/* Preserve existing client component — updated surrounding spacing and visual hierarchy */}
+                <EnhancedQuizzesClient initialQuizzesData={initialQuizzesData} userId={userId} />
+              </div>
+            </Suspense>
+          </ClientOnly>
+        </section>
+      </main>
     </div>
   )
 }

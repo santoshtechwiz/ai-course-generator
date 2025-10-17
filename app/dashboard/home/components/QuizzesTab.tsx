@@ -17,6 +17,7 @@ import QuizResultsDialog from "./QuizResultsDialog"
 import type { QuizType } from "@/app/types/quiz-types"
 import { useQuizAttempts } from "@/hooks/useQuizAttempts"
 import { toast } from "sonner"
+import { StatCard } from "@/components/dashboard/StatCard"
 
 interface QuizzesTabProps {
   userData: DashboardUser
@@ -241,6 +242,48 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
             />
           </div>
         </div>
+      </div>
+
+      {/* Performance Overview */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label="Total Attempts"
+          value={filteredAllQuizzes.length}
+          icon={Target}
+          variant="default"
+          description={`${filteredAllQuizzes.length} quizzes taken`}
+        />
+        <StatCard
+          label="Average Score"
+          value={(() => {
+            const completedQuizzes = filteredAllQuizzes.filter(q => q.bestScore !== null && q.bestScore !== undefined)
+            if (completedQuizzes.length === 0) return "N/A"
+            const avgScore = completedQuizzes.reduce((sum, q) => sum + (q.bestScore || 0), 0) / completedQuizzes.length
+            return `${Math.round(avgScore)}%`
+          })()}
+          icon={Trophy}
+          variant={(() => {
+            const completedQuizzes = filteredAllQuizzes.filter(q => q.bestScore !== null && q.bestScore !== undefined)
+            if (completedQuizzes.length === 0) return 'default' as const
+            const avgScore = completedQuizzes.reduce((sum, q) => sum + (q.bestScore || 0), 0) / completedQuizzes.length
+            return avgScore >= 80 ? 'success' as const : avgScore >= 60 ? 'warning' as const : 'destructive' as const
+          })()}
+          description="Across all quizzes"
+        />
+        <StatCard
+          label="Completed"
+          value={filteredCompletedQuizzes.length}
+          icon={CheckCircle}
+          variant="success"
+          description={`${filteredCompletedQuizzes.length} finished`}
+        />
+        <StatCard
+          label="In Progress"
+          value={filteredInProgressQuizzes.length}
+          icon={Clock}
+          variant={filteredInProgressQuizzes.length > 0 ? 'warning' : 'default'}
+          description={filteredInProgressQuizzes.length > 0 ? "Continue now" : "All caught up!"}
+        />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

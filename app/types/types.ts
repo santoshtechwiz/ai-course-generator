@@ -18,8 +18,7 @@ import type {
   Category,
   Rating,
   CourseUnit,
-  Chapter,
-  Question
+  Chapter
 } from "./course-types"
 
 // Re-export course-related types
@@ -35,14 +34,16 @@ export type {
   Category,
   Rating,
   CourseUnit,
-  Chapter,
-  Question
+  Chapter
 }
 
 // Core type definitions for the AI Learning platform
 
 import { Prisma } from "@prisma/client"
 import { QuizType } from "./quiz-types";
+
+// Re-export QuizType for convenience
+export type { QuizType } from "./quiz-types";
 
 // Simplified progress type for internal use
 export interface VideoProgressState {

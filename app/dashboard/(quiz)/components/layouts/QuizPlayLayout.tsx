@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
+import { BreadcrumbNavigation, LearningDashboardLink } from "@/components/navigation/BreadcrumbNavigation"
 import { 
   CheckCircle, 
   Clock, 
@@ -627,6 +628,9 @@ export default function QuizPlayLayout({
           ? "px-2 sm:px-4 max-w-none" 
           : "max-w-screen-2xl px-4 sm:px-6 lg:px-8"
       )}>
+        {/* Breadcrumb Navigation */}
+        {!isFullscreen && <BreadcrumbNavigation />}
+        
         {/* Resume CTA */}
         <AnimatePresence>
           {canResume && !isFullscreen && (

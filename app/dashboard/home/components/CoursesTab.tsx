@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { getImageWithFallback } from "@/utils/image-utils"
 import { CategoryIcon } from "@/app/category-icon"
+import { StatCard } from "@/components/dashboard/StatCard"
 
 interface CoursesTabProps {
   userData: DashboardUser
@@ -119,28 +120,40 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header Section */}
+      {/* Quick Stats Overview */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0"
+        transition={{ delay: 0.1 }}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
       >
-        <div className="space-y-1">
-          <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <GraduationCap className="h-7 w-7 text-primary" />
-            My Courses
-          </h2>
-          <p className="text-muted-foreground">Manage and continue your learning journey</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Button asChild className="shadow-sm">
-            <Link href="/dashboard/create">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create Course
-            </Link>
-          </Button>
-        </div>
+        <StatCard
+          label="Total Enrolled"
+          value={courseData.all.length}
+          icon={BookOpen}
+          variant="default"
+        />
+        <StatCard
+          label="In Progress"
+          value={courseData.inProgress.length}
+          icon={Clock}
+          variant="primary"
+          description={courseData.inProgress.length > 0 ? "Continue learning" : "All caught up!"}
+        />
+        <StatCard
+          label="Completed"
+          value={courseData.completed.length}
+          icon={CheckCircle}
+          variant="success"
+          description={`${courseData.completed.length} courses finished`}
+        />
+        <StatCard
+          label="Favorites"
+          value={courseData.favorites.length}
+          icon={Heart}
+          variant="warning"
+          description={courseData.favorites.length > 0 ? "Your top picks" : "Star courses you love"}
+        />
       </motion.div>
 
       {/* Search and Controls (sticky) */}
@@ -381,7 +394,7 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
                   <CategoryIcon
                     categoryId={categoryId}
                     size="lg"
-                    variant="flat"
+                    variant="default"
                   />
                 )
               })()
@@ -415,7 +428,7 @@ function CourseListItem({ course, progress, isLoading, onClick }: CourseCardProp
               const cat = typeof course.category === 'object' && course.category?.name ? String(course.category.name) : String(course.category)
               const categoryId = cat ? cat.toLowerCase() : ''
               return (
-                <CategoryIcon categoryId={categoryId} size="sm" variant="flat" />
+                <CategoryIcon categoryId={categoryId} size="sm" variant="default" />
               )
             })()
           ) : (

@@ -8,7 +8,8 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import { BrainCircuit, Clock, Target, Trophy, BookOpen, CheckCircle2 } from "lucide-react"
-import type { UserQuiz, QuizType } from "@/app/types/types"
+import type { UserQuiz } from "@/app/types/types"
+import type { QuizType } from "@/app/types/quiz-types"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface MyQuizzesProps {
@@ -25,6 +26,8 @@ const buildQuizSlug = (quizType: QuizType) => {
       return "blanks";
     case "code":
       return "code";
+    case "flashcard":
+      return "flashcard";
     default:
       return "quiz";
   }
@@ -40,6 +43,8 @@ const getQuizTypeLabel = (quizType: QuizType) => {
       return "Fill in the Blanks"
     case "code":
       return "Code"
+    case "flashcard":
+      return "Flashcards"
     default:
       return "Quiz"
   }

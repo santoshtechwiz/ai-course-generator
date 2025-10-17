@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useOptionalQuizState } from "@/components/quiz/QuizStateProvider"
 import { AdaptiveFeedbackWrapper, useAdaptiveFeedback } from "@/components/quiz/AdaptiveFeedbackWrapper"
 import { useAuth } from "@/modules/auth"
+import { containerVariants, itemVariants } from "../../components/animations/quiz-animations"
 
 interface OpenEndedQuizProps {
   question: any
@@ -30,53 +31,6 @@ interface OpenEndedQuizProps {
   isLastQuestion?: boolean
   timeSpent?: number
   slug?: string
-}
-
-// Standardized animation variants
-const containerVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      when: "beforeChildren",
-      staggerChildren: 0.1,
-      duration: 0.6,
-      ease: "easeOut",
-    },
-  },
-  exit: {
-    opacity: 0,
-    y: -20,
-    transition: {
-      when: "afterChildren",
-      staggerChildren: 0.05,
-      staggerDirection: -1,
-      duration: 0.4,
-      ease: "easeIn",
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      type: "spring",
-      stiffness: 200,
-      damping: 20,
-      mass: 0.8,
-    },
-  },
-  exit: {
-    opacity: 0,
-    y: -20,
-    scale: 0.95,
-    transition: { duration: 0.3 },
-  },
 }
 
 export default function OpenEndedQuiz({

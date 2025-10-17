@@ -26,6 +26,7 @@ import { VideoDebug } from "./video/components/VideoDebug"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { AlertTriangle } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { useAuth } from "@/modules/auth"
 import ActionButtons from "./ActionButtons"
@@ -420,6 +421,17 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     user?.id ? course.id : undefined, // Skip courseId if not authenticated
     user?.id && currentChapter?.id ? currentChapter.id : undefined // Skip chapterId if not authenticated
   )
+
+  // Show a small non-blocking notice if chapter progress fetch failed
+  const [showProgressError, setShowProgressError] = useState(true)
+  // react-query error/refetch available from hook - grab them by calling useChapterProgress directly
+  const chapterProgressQuery = useChapterProgress(
+    user?.id,
+    user?.id ? course.id : undefined,
+    user?.id && currentChapter?.id ? currentChapter.id : undefined
+  )
+  const progressError = chapterProgressQuery.error
+
 
   // Navigation handlers
   // Advance to next video (chapters are only marked complete when video ends)
@@ -1114,6 +1126,34 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             <Progress value={courseStats.progressPercentage} className="h-2" />
           </div>
         </div>
+        {/* Progress fetch error notice (non-blocking) */}
+        {progressError && showProgressError && (
+          <div className="mt-3">
+            <Card className="border-destructive bg-destructive/5">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="text-destructive h-4 w-4" />
+                  <CardTitle className="text-sm">Progress Sync Issue</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="text-sm text-muted-foreground">
+                    We couldn’t fetch your chapter progress. Some progress indicators may be out of date.
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" onClick={() => chapterProgressQuery.refetch()}>
+                      Retry
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setShowProgressError(false)}>
+                      Dismiss
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </motion.header>
 
       {/* Video generation section for owners */}

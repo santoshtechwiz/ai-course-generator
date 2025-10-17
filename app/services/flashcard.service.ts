@@ -28,48 +28,100 @@ export class FlashcardService extends BaseQuizService {
     userId: string;
     language: string | null;
   } | null> {
-    console.log("Fetching flashcard quiz by slug:", { slug, userId });
+    try {
+      console.log(`[FlashcardService] Fetching quiz: ${slug} for user: ${userId}`);
 
-    // Fetch all flashcards with the given slug
-    const quiz = await prisma.flashCard.findMany({
-      where: { slug },
-      select: {
-        id: true,
-        question: true,
-        answer: true,
-        difficulty: true,
-        saved: true,
-        createdAt: true,
-        userId: true,
-        slug: true,
-        updatedAt: true,
-        generatedBy: true,
-        version: true,
-        parentId: true,
-        userQuizId: true,
-        // Only fields that exist on the model
-      },
-      orderBy: { id: "asc" },
-    });
+      // First find the UserQuiz record (don't filter by userId yet)
+      const userQuiz = await prisma.userQuiz.findFirst({
+        where: {
+          slug,
+          quizType: "flashcard"
+        },
+      });
 
-    if (!quiz || quiz.length === 0) {
-      console.error("Quiz not found:", { slug });
+      if (!userQuiz) {
+        console.warn(`[FlashcardService] Quiz not found: ${slug}`);
+        return null;
+      }
+
+      console.log(`[FlashcardService] Found UserQuiz:`, {
+        id: userQuiz.id,
+        slug: userQuiz.slug,
+        title: userQuiz.title,
+        isPublic: userQuiz.isPublic,
+        ownerId: userQuiz.userId,
+      });
+
+      // Check if user has access (owner OR public quiz)
+      const isOwner = userQuiz.userId === userId;
+      const hasAccess = isOwner || userQuiz.isPublic;
+
+      if (!hasAccess) {
+        console.warn(`[FlashcardService] Private quiz access denied: ${slug} by user ${userId} (owner: ${userQuiz.userId})`);
+        // Return special error object to indicate private quiz
+        throw new Error("PRIVATE_QUIZ");
+      }
+
+      // Get flashcards by userQuizId (no userId filter - they belong to the quiz)
+      // Also support legacy flashcards that only have slug (no userQuizId)
+      console.log(`[FlashcardService] Querying flashcards with userQuizId: ${userQuiz.id} OR slug: ${slug}`);
+      const flashcards = await prisma.flashCard.findMany({
+        where: {
+          OR: [
+            { userQuizId: userQuiz.id },
+            { slug: slug, userQuizId: null }  // Legacy flashcards without userQuizId
+          ]
+        },
+        select: {
+          id: true,
+          question: true,
+          answer: true,
+          difficulty: true,
+          saved: true,
+          createdAt: true,
+          userId: true,
+          slug: true,
+          updatedAt: true,
+          generatedBy: true,
+          version: true,
+          parentId: true,
+          userQuizId: true,
+        },
+        orderBy: { id: "asc" },
+      });
+
+      console.log(`[FlashcardService] Retrieved ${flashcards.length} flashcards for quiz ${userQuiz.id}`);
+      
+      if (flashcards.length > 0) {
+        console.log(`[FlashcardService] First flashcard sample:`, {
+          id: flashcards[0].id,
+          question: flashcards[0].question?.substring(0, 50),
+          answer: flashcards[0].answer?.substring(0, 50),
+        });
+      }
+
+      // Format questions
+      const formattedQuestions = this.formatQuestions(flashcards);
+      
+      console.log(`[FlashcardService] Formatted ${formattedQuestions.length} questions from ${flashcards.length} flashcards`);
+
+      return {
+        isPublic: userQuiz.isPublic,
+        isFavorite: false,
+        id: userQuiz.id,
+        title: userQuiz.title,
+        questions: formattedQuestions,
+        userId: userQuiz.userId,
+        language: userQuiz.language,
+      };
+    } catch (error) {
+      // Re-throw PRIVATE_QUIZ errors for proper error handling
+      if (error instanceof Error && error.message === "PRIVATE_QUIZ") {
+        throw error;
+      }
+      console.error(`[FlashcardService] Error retrieving quiz ${slug} for user ${userId}:`, error);
       return null;
     }
-
-    // Format questions for the response
-    const formattedQuestions = this.formatQuestions(quiz);
-
-    // Provide fallback values for required fields
-    return {
-      isPublic: false,
-      isFavorite: false,
-      id: quiz[0]?.id,
-      title: quiz[0]?.slug || "Untitled",
-      questions: formattedQuestions,
-      userId: quiz[0]?.userId,
-      language: null,
-    };
   }
 
   /**

@@ -246,14 +246,29 @@ export const useChapterProgress = (userId?: string, courseId?: string | number, 
       if (!userId || !courseId || !chapterId) {
         return null
       }
-      
-      const response = await fetch(`/api/progress/chapter?userId=${userId}&courseId=${courseId}&chapterId=${chapterId}`)
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch chapter progress: ${response.statusText}`)
+
+      try {
+        const response = await fetch(`/api/progress/chapter?userId=${userId}&courseId=${courseId}&chapterId=${chapterId}`)
+
+        if (!response.ok) {
+          // Try to parse JSON error body if available
+          let errBody = null
+          try {
+            errBody = await response.json()
+          } catch {
+            // ignore parse errors
+          }
+          const message = errBody?.error || response.statusText || `HTTP ${response.status}`
+          // Return a structured error object instead of throwing to avoid uncaught rejection in UI
+          throw Object.assign(new Error(message), { status: response.status, body: errBody })
+        }
+
+        return response.json()
+      } catch (err: any) {
+        // Log and rethrow so react-query sets error state, but keep message consistent
+        console.error('Chapter progress query failed:', err)
+        throw err
       }
-      
-      return response.json()
     },
     enabled: !!(userId && courseId && chapterId),
     staleTime: 30000, // 30 seconds

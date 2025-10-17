@@ -207,10 +207,8 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
         toast.success("Quiz submitted successfully!")
       }
       
-      // Brief delay to show calculating state
-      setTimeout(() => {
-        router.push(`/dashboard/openended/${slug}/results`)
-      }, 800)
+      // COMMIT: Remove delay to prevent layout shift, navigate immediately
+      router.push(`/dashboard/openended/${slug}/results`)
     } catch (err: any) {
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
@@ -218,10 +216,10 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     }
   }, [dispatch, slug, router])
 
-  // Show calculating loader during submission
+  // COMMIT: Show calculating loader during submission with stable positioning
   if (isSubmitting) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
+      <div className="min-h-[60vh] flex items-center justify-center bg-background">
         <div className="text-center space-y-4 px-4">
           <UnifiedLoader
             state="loading"

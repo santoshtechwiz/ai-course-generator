@@ -1,0 +1,40 @@
+"use client"
+
+import { Suspense } from "react"
+import { UnifiedLoader } from "@/components/loaders/UnifiedLoader"
+import { useAuth } from "@/hooks"
+import dynamic from "next/dynamic"
+import { redirect } from "next/navigation"
+
+const RecommendationsWidget = dynamic(() => import("@/components/RecommendationsWidget"), {
+  ssr: false,
+})
+
+export default function RecommendationsPage() {
+  const { isAuthenticated } = useAuth()
+
+  if (!isAuthenticated) {
+    redirect('/auth/signin')
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-6 sm:px-6 md:px-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">For You</h1>
+        <p className="text-muted-foreground mt-2">
+          Personalized learning recommendations based on your progress
+        </p>
+      </div>
+
+      <Suspense fallback={
+        <UnifiedLoader
+          variant="spinner"
+          size="md"
+          message="Loading recommendations..."
+        />
+      }>
+        <RecommendationsWidget />
+      </Suspense>
+    </div>
+  )
+}

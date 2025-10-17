@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
 import { getServerAuthSession } from "@/lib/server-auth"
 import Chatbot from "@/components/Chatbot"
+import { QuizErrorBoundary } from "./components/QuizErrorBoundary"
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "Interactive Quizzes – Master Your Knowledge | CourseAI",
@@ -47,7 +48,10 @@ export default async function QuizLayout({
     <div className="min-h-screen w-full flex flex-col">
       {/* main acts as the flexible container so children can grow/shrink */}
       <main className="flex-1 w-full min-h-0">
-        {children}
+        {/* COMMIT: Wrap quiz routes in ErrorBoundary for graceful failure recovery */}
+        <QuizErrorBoundary>
+          {children}
+        </QuizErrorBoundary>
       </main>
       {/* Include Chatbot for authenticated users */}
       {session?.user?.id && <Chatbot userId={session.user.id} />}

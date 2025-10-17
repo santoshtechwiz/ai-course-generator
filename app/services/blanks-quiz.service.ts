@@ -49,30 +49,44 @@ export class BlanksQuizService extends BaseQuizService {
    * Get a blanks quiz by its slug
    */
   async getQuizBySlug(slug: string, userId: string) {
-    const quiz = await this.quizRepository.findBySlug(slug);
+    try {
+      const quiz = await this.quizRepository.findBySlug(slug);
 
-    // If quiz not found or not accessible, throw an error
-    if (!quiz) {
-      throw new Error("Quiz not found");
+      if (!quiz) {
+        console.warn(`[blanksService] Quiz not found: ${slug} for user ${userId}`);
+        return null;
+      }
+
+      // Check if user has access to this quiz
+      const isOwner = quiz.userId === userId;
+      const hasAccess = isOwner || quiz.isPublic;
+      
+      if (!hasAccess) {
+        console.warn(`[blanksService] Unauthorized access attempt: ${slug} by user ${userId} (owner: ${quiz.userId})`);
+        throw new Error("PRIVATE_QUIZ");
+      }
+
+      // Check if the current user has favorited this quiz
+      let isFavorite = false;
+      if (userId) {
+        isFavorite = await this.quizRepository.checkIfUserFavorited(slug, userId);
+      }
+
+      console.log(`[blanksService] Successfully retrieved quiz: ${slug} (${quiz.questions?.length || 0} questions) for user ${userId}`);
+
+      return {
+        isPublic: quiz.isPublic,
+        isFavorite: isFavorite,
+        id: quiz.id,
+        title: quiz.title,
+        questions: this.formatQuestions(quiz.questions),
+        userId: quiz.userId,
+        language: quiz.language,
+      };
+    } catch (error) {
+      console.error(`[blanksService] Error retrieving quiz ${slug} for user ${userId}:`, error);
+      return null;
     }
-
-    // Check if quiz is accessible (public or owned by user)
-    if (!quiz.isPublic && quiz.userId !== userId) {
-      throw new Error("Quiz not accessible");
-    }
-
-    const result = {
-      isPublic: quiz.isPublic,
-      isFavorite: quiz.isFavorite,
-      id: quiz.id,
-      title: quiz.title,
-      questions: this.formatQuestions(quiz.questions),
-      userId: quiz.userId,
-      language: quiz.language ?? null,
-    };
-
-    console.log("Blanks Quiz found:", result);
-    return result;
   }
 
   /**

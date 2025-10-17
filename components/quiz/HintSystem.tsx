@@ -280,7 +280,7 @@ export function HintSystem({
               <span>Learning Hints</span>
             </CardTitle>
             <Badge variant="outline" className="text-sm font-medium">
-              {revealedCount}/{maxHints} Revealed
+              {revealedCount}/{effectiveHints.length} Revealed
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">

@@ -14,7 +14,7 @@ import { RootErrorBoundary } from "@/components/layout/RootErrorBoundary"
 import { SuspenseGlobalFallback } from "@/components/loaders"
 import BProgressProvider from "./providers"
 import { MotionProvider } from "@/components/MotionProvider"
-import Footer from "@/components/shared/Footer"
+import { ConditionalFooter } from "@/components/layout/ConditionalFooter"
 import { Toaster } from "@/components/ui/toaster"
 import { BreadcrumbWelcome } from "@/components/auth/BreadcrumbWelcome"
 import { ClientGuestProvider } from "@/components/guest/ClientGuestProvider"
@@ -128,8 +128,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                         </Suspense>
                       </MotionProvider>
                     </main>
-                    <Footer/>
-                    {/* Footer removed - using page-specific footers instead */}
+                    {/* Conditional Footer - Hidden on sidebar-enabled dashboard pages */}
+                    <ConditionalFooter />
                   </div>
                 </Suspense>
               </ClientGuestProvider>

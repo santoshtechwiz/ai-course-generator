@@ -58,6 +58,5 @@ export default function BlanksQuizPage({ params }: BlanksQuizPageProps) {
       </>
     )
   }
-  // @ts-expect-error Async Server Component
   return <ClientWithJsonLd />
 }

@@ -23,28 +23,44 @@ export abstract class BaseQuizService {
    * Get a quiz by its slug with user-specific data
    */
   async getQuizBySlug(slug: string, userId: string) {
-    const quiz = await this.quizRepository.findBySlug(slug);
+    try {
+      const quiz = await this.quizRepository.findBySlug(slug);
 
-    if (!quiz) {
+      if (!quiz) {
+        console.warn(`[${this.quizType}Service] Quiz not found: ${slug} for user ${userId}`);
+        return null;
+      }
+
+      // Check if user has access to this quiz
+      const isOwner = quiz.userId === userId;
+      const hasAccess = isOwner || quiz.isPublic;
+      
+      if (!hasAccess) {
+        console.warn(`[${this.quizType}Service] Unauthorized access attempt: ${slug} by user ${userId} (owner: ${quiz.userId})`);
+        throw new Error("PRIVATE_QUIZ");
+      }
+
+      // Check if the current user has favorited this quiz
+      let isFavorite = false;
+      if (userId) {
+        isFavorite = await this.quizRepository.checkIfUserFavorited(slug, userId);
+      }
+
+      console.log(`[${this.quizType}Service] Successfully retrieved quiz: ${slug} (${quiz.questions?.length || 0} questions) for user ${userId}`);
+
+      return {
+        isPublic: quiz.isPublic,
+        isFavorite: isFavorite, // User-specific favorite status
+        id: quiz.id,
+        title: quiz.title,
+        questions: this.formatQuestions(quiz.questions),
+        userId: quiz.userId,
+        language: quiz.language,
+      };
+    } catch (error) {
+      console.error(`[${this.quizType}Service] Error retrieving quiz ${slug} for user ${userId}:`, error);
       return null;
     }
-
-    // Check if the current user has favorited this quiz
-    let isFavorite = false;
-    if (userId) {
-      isFavorite = await this.quizRepository.checkIfUserFavorited(slug, userId);
-    }
-
-    console.log("Quiz found:", quiz);
-    return {
-      isPublic: quiz.isPublic,
-      isFavorite: isFavorite, // User-specific favorite status
-      id: quiz.id,
-      title: quiz.title,
-      questions: this.formatQuestions(quiz.questions),
-      userId: quiz.userId,
-      language: quiz.language,
-    };
   }
 
   /**

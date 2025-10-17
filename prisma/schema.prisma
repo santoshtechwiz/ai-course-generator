@@ -6,84 +6,66 @@ datasource db {
   provider          = "postgresql"
   url               = env("DATABASE_URL_PROD")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL_LOCAL")
-  
 }
-
-enum GeneratedBy {
-  USER
-  AI
-  ADMIN
-}
-
-enum CourseStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
-enum DifficultyLevel {
-  BEGINNER
-  INTERMEDIATE
-  ADVANCED
-}
-
-enum QuizAttemptStatus {
-  IN_PROGRESS
-  COMPLETED
-  ABANDONED
-}
-
-/* ========== USER & AUTH ========== */
 
 model User {
-  id                  String                @id @default(cuid())
-  name                String?
-  email               String?               @unique
-  emailVerified       DateTime?
-  image               String?
-  isAdmin             Boolean               @default(false)
-  userType            String                @default("FREE")
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
-  language            String?
-  isActive            Boolean               @default(true)
-  credits             Int                   @default(0)
-  creditsUsed         Int                   @default(0)
-  currentPlanId       String?
-  metadata            Json?
-  lastActiveAt        DateTime              @default(now())
-  hadPreviousPaidPlan Boolean               @default(false) // Added: persistent flag (safe additive)
-  hasUsedFreePlan     Boolean               @default(false) // Added: persistent flag (safe additive)
-  accounts            Account[]
-  bookmarks           Bookmark[]
-  Certificate         Certificate[]
-  courses             Course[]
-  courseProgress      CourseProgress[]
-  courseQuizAttempts  CourseQuizAttempt[]
-  ratings             CourseRating[]
-  favorites           Favorite[]
-  flashCards          FlashCard[]
-  flashCardReviews    FlashCardReview[]
-  PendingSubscription PendingSubscription[]
-  quizProgress        QuizProgress[]
-  sessions            Session[]
-  TokenTransaction    TokenTransaction[]
-  achievements        UserAchievement[]
-  notifications       UserNotification[]
-  userQuizzes         UserQuiz[]
-  userQuizAttempts    UserQuizAttempt[]
-  userQuizRatings     UserQuizRating[]
-  userQuizFavorites   UserQuizFavorite[]
-  UserReferral        UserReferral?
-  referralsReceived   UserReferralUse[]     @relation("Referred")
-  referralsGiven      UserReferralUse[]     @relation("Referrer")
-  settings            UserSettings?
-  subscription        UserSubscription?
-  recommendations     Recommendation[]
-  learningEvents      LearningEvent[]
-  chapterProgresses   ChapterProgress[]
-  chatMessages        ChatMessage[]
-  SubscriptionEvent   SubscriptionEvent[]
+  id                   String                @id @default(cuid())
+  name                 String?
+  email                String?               @unique
+  emailVerified        DateTime?
+  image                String?
+  isAdmin              Boolean               @default(false)
+  userType             String                @default("FREE")
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  language             String?
+  isActive             Boolean               @default(true)
+  credits              Int                   @default(0)
+  creditsUsed          Int                   @default(0)
+  currentPlanId        String?
+  metadata             Json?
+  lastActiveAt         DateTime              @default(now())
+  hadPreviousPaidPlan  Boolean               @default(false)
+  hasUsedFreePlan      Boolean               @default(false)
+  streak               Int                   @default(0)
+  longestStreak        Int                   @default(0)
+  lastReviewDate       DateTime?
+  notificationSettings Json?                 @default("{\"emailDigest\": \"weekly\", \"pushEnabled\": true, \"streakAlerts\": true}")
+  accounts             Account[]
+  bookmarks            Bookmark[]
+  Certificate          Certificate[]
+  chapterProgresses    ChapterProgress[]
+  chatMessages         ChatMessage[]
+  courses              Course[]
+  courseProgress       CourseProgress[]
+  courseQuizAttempts   CourseQuizAttempt[]
+  ratings              CourseRating[]
+  EmailQueue           EmailQueue[]
+  favorites            Favorite[]
+  flashCards           FlashCard[]
+  flashCardReviews     FlashCardReview[]
+  Leaderboard          Leaderboard[]
+  learningEvents       LearningEvent[]
+  PendingSubscription  PendingSubscription[]
+  PushSubscription     PushSubscription[]
+  quizProgress         QuizProgress[]
+  recommendations      Recommendation[]
+  sessions             Session[]
+  SubscriptionEvent    SubscriptionEvent[]
+  TokenTransaction     TokenTransaction[]
+  UsageLimit           UsageLimit[]
+  achievements         UserAchievement[]
+  UserBadge            UserBadge[]
+  notifications        UserNotification[]
+  userQuizzes          UserQuiz[]
+  userQuizAttempts     UserQuizAttempt[]
+  userQuizFavorites    UserQuizFavorite[]
+  userQuizRatings      UserQuizRating[]
+  UserReferral         UserReferral?
+  referralsReceived    UserReferralUse[]     @relation("Referred")
+  referralsGiven       UserReferralUse[]     @relation("Referrer")
+  settings             UserSettings?
+  subscription         UserSubscription?
 
   @@index([email])
   @@index([userType])
@@ -91,6 +73,8 @@ model User {
   @@index([isAdmin])
   @@index([hadPreviousPaidPlan])
   @@index([hasUsedFreePlan])
+  @@index([lastReviewDate])
+  @@index([streak])
 }
 
 model Account {
@@ -107,6 +91,7 @@ model Account {
   id_token          String?
   session_state     String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([provider, providerAccountId])
   @@index([userId])
   @@index([provider])
@@ -118,50 +103,50 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([expires])
 }
 
-/* ========== COURSE DOMAIN ========== */
-
 model Course {
-  id               Int              @id @default(autoincrement())
-  title            String
-  description      String?
-  image            String
-  userId           String           @map("user_id")
-  categoryId       Int?
-  isCompleted      Boolean?         @default(false)
-  isPublic         Boolean          @default(false)
-  isFeatured       Boolean          @default(false)
-  slug             String?          @unique
-  difficulty       String?
-  estimatedHours   Float?
-  language         String?
-  metadata         Json?
-  status           String           @default("DRAFT")
-  pricing          Json?
-  prerequisitesIds Int[]
-  lastPublishedAt  DateTime?
-  startDate        DateTime?
-  endDate          DateTime?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  generatedBy      String           @default("USER") // kept for compatibility
-  version          Int              @default(1)
-  parentId         Int?
-  bookmarks        Bookmark[]
-  Certificate      Certificate[]
-  category         Category?        @relation(fields: [categoryId], references: [id])
-  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseProgress   CourseProgress[]
-  ratings          CourseRating[]
-  courseUnits      CourseUnit[]
-  favorites        Favorite[]
-  tags             Tag[]            @relation("CourseTags")
-  learningEvents   LearningEvent[]
+  id                Int               @id @default(autoincrement())
+  title             String
+  description       String?
+  image             String
+  userId            String            @map("user_id")
+  categoryId        Int?
+  isCompleted       Boolean?          @default(false)
+  isPublic          Boolean           @default(false)
+  isFeatured        Boolean           @default(false)
+  slug              String?           @unique
+  difficulty        String?
+  estimatedHours    Float?
+  language          String?
+  metadata          Json?
+  status            String            @default("DRAFT")
+  pricing           Json?
+  prerequisitesIds  Int[]
+  lastPublishedAt   DateTime?
+  startDate         DateTime?
+  endDate           DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  generatedBy       String            @default("USER")
+  version           Int               @default(1)
+  parentId          Int?
+  viewCount         Int?              @default(0)
+  bookmarks         Bookmark[]
+  Certificate       Certificate[]
   chapterProgresses ChapterProgress[]
-  viewCount  Int?     @default(0)
+  category          Category?         @relation(fields: [categoryId], references: [id])
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseProgress    CourseProgress[]
+  ratings           CourseRating[]
+  courseUnits       CourseUnit[]
+  favorites         Favorite[]
+  learningEvents    LearningEvent[]
+  tags              Tag[]             @relation("CourseTags")
+
   @@index([title])
   @@index([categoryId])
   @@index([userId])
@@ -186,7 +171,7 @@ model CourseUnit {
   updatedAt   DateTime  @updatedAt
   version     Int       @default(1)
   parentId    Int?
-  generatedBy String    @default("USER") // kept for compatibility
+  generatedBy String    @default("USER")
   chapters    Chapter[]
   course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
@@ -197,27 +182,27 @@ model CourseUnit {
 }
 
 model Chapter {
-  id                 Int          @id @default(autoincrement())
+  id                 Int               @id @default(autoincrement())
   unitId             Int
   title              String
   youtubeSearchQuery String?
   videoId            String?
   summary            String?
   videoDuration      Float?
-  isFreePreview      Boolean      @default(true)
-  isCompleted        Boolean      @default(false)
-  summaryStatus      String       @default("PENDING")
-  videoStatus        String       @default("PENDING")
-  order              Int          @default(0)
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-  version            Int          @default(1)
+  isFreePreview      Boolean           @default(true)
+  isCompleted        Boolean           @default(false)
+  summaryStatus      String            @default("PENDING")
+  videoStatus        String            @default("PENDING")
+  order              Int               @default(0)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  version            Int               @default(1)
   parentId           Int?
-  generatedBy        String       @default("USER")
+  generatedBy        String            @default("USER")
   bookmarks          Bookmark[]
-  unit               CourseUnit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  courseQuizzes      CourseQuiz[]
+  unit               CourseUnit        @relation(fields: [unitId], references: [id], onDelete: Cascade)
   chapterProgresses  ChapterProgress[]
+  courseQuizzes      CourseQuiz[]
   learningEvents     LearningEvent[]
 
   @@index([unitId])
@@ -228,39 +213,36 @@ model Chapter {
 }
 
 model ChapterProgress {
-  id              Int      @id @default(autoincrement())
-  userId          String
-  courseId        Int
-  chapterId       Int
-  isCompleted     Boolean  @default(false)
-  timeSpent       Int      @default(0) // seconds
-  lastProgress    Float    @default(0) // 0..1 video progress fraction
-  lastAccessedAt  DateTime @default(now())
-
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  id             Int      @id @default(autoincrement())
+  userId         String
+  courseId       Int
+  chapterId      Int
+  isCompleted    Boolean  @default(false)
+  timeSpent      Int      @default(0)
+  lastProgress   Float    @default(0)
+  lastAccessedAt DateTime @default(now())
+  chapter        Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId, chapterId])
   @@index([userId, chapterId])
   @@index([userId, lastAccessedAt])
 }
 
-/* ========== QUIZ DOMAIN (COURSE-BOUND + USER-OWNED) ========== */
-
 model CourseQuiz {
-  id        Int                 @id @default(autoincrement())
-  chapterId Int
-  question  String
-  answer    String
-  options   String
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
-  generatedBy String            @default("USER")
-  version   Int                 @default(1)
-  parentId  Int?
-  chapter   Chapter             @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  attempts  CourseQuizAttempt[]
+  id          Int                 @id @default(autoincrement())
+  chapterId   Int
+  question    String
+  answer      String
+  options     String
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  generatedBy String              @default("USER")
+  version     Int                 @default(1)
+  parentId    Int?
+  chapter     Chapter             @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  attempts    CourseQuizAttempt[]
 
   @@index([chapterId])
 }
@@ -279,7 +261,7 @@ model CourseQuizAttempt {
   courseQuiz   CourseQuiz        @relation(fields: [courseQuizId], references: [id], onDelete: Cascade)
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, courseQuizId]) // one active/latest attempt; lift if you need multiple
+  @@unique([userId, courseQuizId])
   @@index([userId])
   @@index([courseQuizId])
   @@index([score])
@@ -320,7 +302,7 @@ model CourseProgress {
   courseId            Int
   currentChapterId    Int
   currentUnitId       Int?
-  progress            Float     @default(0) // 0..1
+  progress            Float     @default(0)
   timeSpent           Int       @default(0)
   isCompleted         Boolean   @default(false)
   completionDate      DateTime?
@@ -346,8 +328,6 @@ model CourseProgress {
   @@index([currentChapterId])
   @@index([lastAccessedAt])
 }
-
-/* USER-OWNED QUIZ SYSTEM */
 
 model Favorite {
   id        Int      @id @default(autoincrement())
@@ -391,9 +371,9 @@ model UserQuiz {
   openEndedQuestions OpenEndedQuestion[]
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   attempts           UserQuizAttempt[]
+  userQuizFavorites  UserQuizFavorite[]
   questions          UserQuizQuestion[]
   userQuizRating     UserQuizRating[]
-  userQuizFavorites  UserQuizFavorite[]
   tags               Tag[]               @relation("QuizTags")
 
   @@index([userId])
@@ -494,23 +474,23 @@ model UserQuizAttemptQuestion {
 }
 
 model FlashCard {
-  id          Int       @id @default(autoincrement())
+  id          Int               @id @default(autoincrement())
   question    String
   answer      String
   userId      String
   slug        String?
   userQuizId  Int?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
   difficulty  String?
-  saved       Boolean   @default(false)
-  generatedBy String    @default("USER")
-  version     Int       @default(1)
+  saved       Boolean           @default(false)
+  generatedBy String            @default("USER")
+  version     Int               @default(1)
   parentId    Int?
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userQuiz    UserQuiz? @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userQuiz    UserQuiz?         @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
   reviews     FlashCardReview[]
-  tags        Tag[]     @relation("FlashCardTags")
+  tags        Tag[]             @relation("FlashCardTags")
 
   @@index([question])
   @@index([userId])
@@ -531,6 +511,8 @@ model FlashCardReview {
   notes          String?
   reviewCount    Int       @default(1)
   nextReviewDate DateTime?
+  easeFactor     Decimal   @default(2.5) @db.Decimal(3, 2)
+  interval       Int       @default(0)
   flashCard      FlashCard @relation(fields: [flashCardId], references: [id], onDelete: Cascade)
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -540,6 +522,8 @@ model FlashCardReview {
   @@index([reviewDate])
   @@index([nextReviewDate])
   @@index([userId, flashCardId, nextReviewDate])
+  @@index([easeFactor])
+  @@index([interval])
 }
 
 model QuizProgress {
@@ -561,8 +545,6 @@ model QuizProgress {
   @@index([isCompleted])
   @@index([lastUpdated])
 }
-
-/* ========== OTHER SUPPORTING MODELS ========== */
 
 model UserQuizRating {
   id         Int      @id @default(autoincrement())
@@ -586,9 +568,8 @@ model UserQuizFavorite {
   userQuizId Int
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userQuiz UserQuiz @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userQuiz   UserQuiz @relation(fields: [userQuizId], references: [id], onDelete: Cascade)
 
   @@unique([userId, userQuizId])
   @@index([userId])
@@ -602,8 +583,8 @@ model Tag {
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @default(now())
   courses    Course[]    @relation("CourseTags")
-  quizzes    UserQuiz[]  @relation("QuizTags")
   flashcards FlashCard[] @relation("FlashCardTags")
+  quizzes    UserQuiz[]  @relation("QuizTags")
 }
 
 model Bookmark {
@@ -641,7 +622,7 @@ model Certificate {
 model Recommendation {
   id        Int      @id @default(autoincrement())
   userId    String
-  type      String   // COURSE | QUIZ | FLASHCARD | CHAPTER
+  type      String
   targetId  String
   reason    String?
   score     Float
@@ -658,15 +639,15 @@ model LearningEvent {
   userId    String
   courseId  Int?
   chapterId Int?
-  type      String   // VIDEO_PLAY | VIDEO_PAUSE | VIDEO_COMPLETE | QUIZ_START | QUIZ_SUBMIT | CHAPTER_COMPLETE
+  type      String
   entityId  String?
-  progress  Float?   // For video progress or quiz completion percentage
-  timeSpent Int?     // Time spent in seconds
-  metadata  Json?    // Additional event-specific data
+  progress  Float?
+  timeSpent Int?
+  metadata  Json?
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course    Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   chapter   Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  course    Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([courseId])
@@ -676,38 +657,37 @@ model LearningEvent {
   @@index([userId, courseId, createdAt])
 }
 
-/* Billing / referrals / misc — unchanged except for trivial indexing */
-
 model Plan {
-  id            String   @id
+  id            String             @id
   name          String
   price         Int
   duration      Int
   features      Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
   subscriptions UserSubscription[]
 }
 
 model UserSubscription {
-  id                   String    @id @default(cuid())
-  userId               String    @unique
+  id                   String              @id @default(cuid())
+  userId               String              @unique
   planId               String
   status               String
   currentPeriodStart   DateTime
   currentPeriodEnd     DateTime
-  cancelAtPeriodEnd    Boolean   @default(false)
-  stripeSubscriptionId String?   @unique
+  cancelAtPeriodEnd    Boolean             @default(false)
+  stripeSubscriptionId String?             @unique
   stripeCustomerId     String?
   stripePriceId        String?
   stripeStatus         String?
   lastStripeEvent      String?
   trialEnd             DateTime?
   canceledAt           DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  user                 User      @relation(fields: [userId], references: [id])
-  plan                 Plan      @relation(fields: [planId], references: [id])
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  SubscriptionEvent    SubscriptionEvent[]
+  plan                 Plan                @relation(fields: [planId], references: [id])
+  user                 User                @relation(fields: [userId], references: [id])
 
   @@index([status])
   @@index([currentPeriodEnd])
@@ -715,7 +695,6 @@ model UserSubscription {
   @@index([stripeCustomerId])
   @@index([stripeStatus])
   @@index([canceledAt])
-  SubscriptionEvent SubscriptionEvent[]
 }
 
 model ContactSubmission {
@@ -845,28 +824,26 @@ model UserReferralUse {
   @@index([createdAt])
 }
 
-/* ========== AI SERVICES ========== */
-
 model Embedding {
-  id        String   @id @default(cuid())
-  content   String
-  embeddingJson Json   // Store as JSON string (backup, debugging, or portability)
-  embedding  Json?
-  type      String
-  metadata  Json     @default("{}")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  content       String
+  embeddingJson Json
+  embedding     Json?
+  type          String
+  metadata      Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([type])
   @@index([createdAt])
-  @@index([embedding], type: Gin) // optional: vector index for fast search
+  @@index([embedding], type: Gin)
 }
 
 model EmbeddingJob {
-  id        Int     @id @default(autoincrement())
-  status    String  @default("queued") // queued | running | completed | failed
+  id        Int      @id @default(autoincrement())
+  status    String   @default("queued")
   payload   Json?
-  progress  Int     @default(0)
+  progress  Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -878,53 +855,48 @@ model ChatMessage {
   id        Int      @id @default(autoincrement())
   userId    String
   sessionId String   @default("default")
-  role      String   // 'user', 'assistant', 'system'
+  role      String
   content   String
   metadata  Json     @default("{}")
   createdAt DateTime @default(now())
-  count     Int        @default(5)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  count     Int      @default(5)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, sessionId])
   @@index([createdAt])
-  }
+}
 
-
-// Log of status transitions for UserSubscription to keep an immutable history
 model SubscriptionEvent {
-  id                 String    @id @default(cuid())
-  userSubscriptionId String?   // optional if event recorded before subscription row exists
+  id                 String            @id @default(cuid())
+  userSubscriptionId String?
   userId             String
   previousStatus     String?
   newStatus          String
   reason             String?
-  source             String?   @default("SYSTEM") // 'STRIPE' | 'MANUAL' | 'SYSTEM' | 'BACKFILL'
-  stripeEventId      String?   @unique
+  source             String?           @default("SYSTEM")
+  stripeEventId      String?           @unique
   metadata           Json?
-  effectiveAt        DateTime  @default(now())
-  createdAt          DateTime  @default(now())
-
-  userSubscription   UserSubscription? @relation(fields: [userSubscriptionId], references: [id], onDelete: Cascade)
+  effectiveAt        DateTime          @default(now())
+  createdAt          DateTime          @default(now())
   user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userSubscription   UserSubscription? @relation(fields: [userSubscriptionId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userSubscriptionId])
   @@index([effectiveAt])
 }
 
-// Adaptive learning tracking for personalized difficulty adjustment
 model UserTopicProgress {
   id              String   @id @default(cuid())
   userId          String
-  topic           String   // Topic/category name (e.g., "JavaScript", "Algebra")
+  topic           String
   correctAnswers  Int      @default(0)
   totalAttempts   Int      @default(0)
   currentStreak   Int      @default(0)
   longestStreak   Int      @default(0)
-  averageTime     Float    @default(0) // Average time per question in seconds
-  difficultyLevel String   @default("MEDIUM") // EASY | MEDIUM | HARD
-  masteryScore    Float    @default(0) // 0-100 score indicating mastery
+  averageTime     Float    @default(0)
+  difficultyLevel String   @default("MEDIUM")
+  masteryScore    Float    @default(0)
   lastAttemptAt   DateTime @default(now())
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -933,4 +905,119 @@ model UserTopicProgress {
   @@index([userId])
   @@index([topic])
   @@index([masteryScore])
+}
+
+model Badge {
+  id            String      @id
+  name          String      @unique
+  description   String
+  category      String
+  icon          String
+  requiredValue Int
+  tier          String      @default("bronze")
+  createdAt     DateTime    @default(now())
+  UserBadge     UserBadge[]
+
+  @@index([category])
+  @@index([tier])
+}
+
+model EmailQueue {
+  id           String    @id
+  userId       String
+  type         String
+  payload      String
+  status       String    @default("pending")
+  scheduledFor DateTime
+  sentAt       DateTime?
+  createdAt    DateTime  @default(now())
+  error        String?
+  User         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([scheduledFor])
+  @@index([status])
+  @@index([userId])
+}
+
+model Leaderboard {
+  id        String   @id
+  userId    String
+  type      String
+  value     Int
+  rank      Int?
+  updatedAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([rank])
+  @@index([type, value(sort: Desc)])
+  @@index([userId])
+}
+
+model PushSubscription {
+  id        String   @id
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model UsageLimit {
+  id           String   @id
+  userId       String
+  resourceType String
+  usedCount    Int      @default(0)
+  limitCount   Int
+  periodStart  DateTime @default(now())
+  periodEnd    DateTime
+  updatedAt    DateTime @default(now())
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resourceType])
+  @@index([periodEnd])
+  @@index([resourceType])
+  @@index([userId])
+}
+
+model UserBadge {
+  id         String   @id
+  userId     String
+  badgeId    String
+  unlockedAt DateTime @default(now())
+  progress   Int      @default(0)
+  Badge      Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  User       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([badgeId])
+  @@index([unlockedAt])
+  @@index([userId])
+}
+
+enum GeneratedBy {
+  USER
+  AI
+  ADMIN
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum QuizAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
 }

@@ -17,6 +17,7 @@ import { CreditCard, LogOut, Settings, User, Menu } from "lucide-react"
 import { signOut } from "next-auth/react"
 import Link from "next/link"
 import type { DashboardUser } from "@/app/types/types"
+import NotificationBell from "./NotificationBell"
 
 interface DashboardHeaderProps {
   userData: DashboardUser
@@ -41,29 +42,30 @@ const DashboardHeader = memo(function DashboardHeader({ userData, toggleSidebar 
   }, [userData, memoizedUserData])
 
   return (
-    <header className="sticky top-0 z-10 bg-background border-b">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden">
-              <Menu className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold">Dashboard</h1>
-              <p className="text-sm text-muted-foreground">
-                Welcome back, {memoizedUserData.name?.split(' ')[0] || "Learner"}
-              </p>
-            </div>
+    <header className="sticky top-0 z-20 bg-background border-b h-16">
+      <div className="h-full px-6 flex items-center justify-between">
+        {/* Left side - Breadcrumb/Title */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={toggleSidebar} className="lg:hidden">
+            <Menu className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-lg font-semibold">Dashboard</h1>
+          </div>
+        </div>
+
+        {/* Right side - Notifications, Credits, User */}
+        <div className="flex items-center gap-3">
+          {/* Credits Badge */}
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full">
+            <CreditCard className="h-4 w-4" />
+            <span className="text-sm font-medium">{memoizedUserData.credits || 0} credits</span>
           </div>
 
-          {/* User menu */}
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2 text-sm">
-              <CreditCard className="h-4 w-4" />
-              <span>{memoizedUserData.credits || 0} credits</span>
-            </div>
+          {/* Notification Bell */}
+          <NotificationBell userId={memoizedUserData.id} />
             
-            <DropdownMenu>
+          <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10">
@@ -101,9 +103,8 @@ const DashboardHeader = memo(function DashboardHeader({ userData, toggleSidebar 
             </DropdownMenu>
           </div>
         </div>
-      </div>
-    </header>
-  )
-})
+      </header>
+    )
+  })
 
 export default DashboardHeader

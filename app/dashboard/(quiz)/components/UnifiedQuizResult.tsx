@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 import { useRouter, usePathname } from "next/navigation"
 import { useDispatch } from "react-redux"
 import { Trophy, Share2, Clock, Target, Star, Medal, Award, Download } from "lucide-react"
+import { useBadgeNotifications, useStreakNotifications } from "@/hooks/useBadgeNotifications"
 
 import { CheckCircle2, XCircle, BookOpen } from "lucide-react"
 // Use Recharts directly for chart rendering to avoid coupling with chart wrapper
@@ -81,7 +82,11 @@ const performanceConfig = {
 export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRetake }: QuizResultProps) {
   const router = useRouter()
   const dispatch = useDispatch()
-  const { isAuthenticated, isLoading: isAuthLoading, subscription } = useAuth()
+  const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth()
+
+  // COMMIT: Show badge and streak notifications after quiz completion
+  useBadgeNotifications(user?.id, isAuthenticated)
+  useStreakNotifications(user?.id, isAuthenticated)
 
   const handleRetake = () => {
     dispatch(resetQuiz())

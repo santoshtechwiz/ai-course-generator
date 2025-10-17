@@ -29,6 +29,8 @@ export async function GET(
     const session = await getAuthSession()
     const userId = session?.user?.id || ""
     
+    console.log(`API: Fetching ${quizType}/${slug} for userId: ${userId}`)
+    
     // For quiz viewing, we don't need to validate subscription or credits
     // Users should be able to view and take quizzes freely
     // Only quiz submission/results require authentication and credits
@@ -60,6 +62,23 @@ export async function GET(
     response.headers.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
     return response
   } catch (error) {
+    // Handle PRIVATE_QUIZ errors
+    if (error instanceof Error && error.message === "PRIVATE_QUIZ") {
+      let quizType = "unknown"
+      let slug = "unknown"
+      try {
+        const awaitedParams = await context.params
+        quizType = awaitedParams.quizType
+        slug = awaitedParams.slug
+      } catch {}
+      console.warn(`Access denied for private quiz: ${quizType}/${slug}`)
+      return NextResponse.json({ 
+        error: "This quiz is private",
+        message: "This quiz is only accessible to its owner. Please sign in or request access.",
+        code: "PRIVATE_QUIZ"
+      }, { status: 403 })
+    }
+    
     // Await params before using its properties in error logging
     let quizType = "unknown"
     try {

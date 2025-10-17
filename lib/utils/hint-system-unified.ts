@@ -338,24 +338,27 @@ function generateStructureHint(blanks: string[], correctAnswer: string): string 
   const words = correctAnswer.split(/\s+/)
 
   if (words.length > 3) {
-    // Multi-word answer: reveal first and last word, mask middle
-    const masked = [
-      words[0],
-      ...Array(words.length - 2).fill('___'),
-      words[words.length - 1]
-    ]
+    // Multi-word answer: reveal middle context words as hints
+    const middleStart = Math.floor(words.length / 3)
+    const middleEnd = Math.ceil(words.length * 2 / 3)
+    const masked = words.map((w, i) => {
+      if (i >= middleStart && i < middleEnd) return w
+      return '___'
+    })
     return `Answer structure: "${masked.join(' ')}"`
   } else if (words.length > 1) {
-    // 2-3 words: reveal first word only
-    const masked = [words[0], ...words.slice(1).map(() => '___')]
+    // 2-3 words: reveal middle word as context
+    const middleIndex = Math.floor(words.length / 2)
+    const masked = words.map((w, i) => i === middleIndex ? w : '___')
     return `Answer structure: "${masked.join(' ')}"`
   } else {
-    // Single word: show first and last letter
+    // Single word: show first and last character only
     const word = words[0]
     if (word.length <= 3) {
       return `The answer is a short word with ${word.length} letters.`
     }
-    const masked = word[0] + '___'.repeat(word.length - 2) + word[word.length - 1]
+    // Display only first and last characters with ellipsis for blanks
+    const masked = `${word[0]}...${word[word.length - 1]}`
     return `Answer structure: "${masked}" (${word.length} letters)`
   }
 }

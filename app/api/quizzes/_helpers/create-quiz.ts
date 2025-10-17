@@ -86,6 +86,8 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       
       console.log(`[Quiz API] Successfully created code quiz ${result.userQuizId} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
       return NextResponse.json({ 
+        success: true,
+        message: "Code quiz created successfully!",
         userQuizId: result.userQuizId, 
         slug: result.slug,
         creditsRemaining: creditResult.newBalance 
@@ -106,6 +108,8 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
 
       console.log(`[Quiz API] Successfully created MCQ quiz ${created.id} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
       return NextResponse.json({ 
+        success: true,
+        message: "MCQ quiz created successfully!",
         userQuizId: created.id, 
         slug,
         creditsRemaining: creditResult.newBalance 
@@ -155,6 +159,8 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
 
       console.log(`[Quiz API] Successfully created openended quiz ${created.id} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
       return NextResponse.json({ 
+        success: true,
+        message: "Open-ended quiz created successfully!",
         userQuizId: created.id, 
         slug,
         creditsRemaining: creditResult.newBalance 
@@ -204,6 +210,8 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
 
       console.log(`[Quiz API] Successfully created blanks quiz ${created.id} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
       return NextResponse.json({ 
+        success: true,
+        message: "Blanks quiz created successfully!",
         userQuizId: created.id, 
         slug,
         creditsRemaining: creditResult.newBalance 
@@ -214,22 +222,37 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       const count = amount
       const cards = await generateFlashCards(title, count)
 
+      console.log(`[Quiz API] Generated ${cards?.length || 0} flashcards for "${title}"`)
+
       const created = await quizRepo.createUserQuiz(userId, title, "flashcard", slug)
+      console.log(`[Quiz API] Created UserQuiz with ID ${created.id}`)
+
       if (Array.isArray(cards) && cards.length > 0) {
-        await prisma.flashCard.createMany({
-          data: cards.map((c: any) => ({
-            question: String(c.question),
-            answer: String(c.answer),
-            userId,
-            userQuizId: created.id,
-          })),
+        const flashcardData = cards.map((c: any) => ({
+          question: String(c.question),
+          answer: String(c.answer),
+          userId,
+          userQuizId: created.id,
+          slug,
+        }))
+
+        console.log(`[Quiz API] Creating ${flashcardData.length} flashcards in database`)
+
+        const result = await prisma.flashCard.createMany({
+          data: flashcardData,
         })
+
+        console.log(`[Quiz API] Created ${result.count} flashcards in database`)
+      } else {
+        console.warn(`[Quiz API] No valid flashcards to create for quiz ${created.id}`)
       }
 
       // NOTE: Credits already deducted atomically above - no need to call userRepo.updateUserCredits
 
       console.log(`[Quiz API] Successfully created flashcard quiz ${created.id} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
       return NextResponse.json({ 
+        success: true,
+        message: "Flashcards created successfully!",
         userQuizId: created.id, 
         slug,
         creditsRemaining: creditResult.newBalance 

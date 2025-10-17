@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useMemo, useState, useCallback, useEffect } from "react"
+import { memo, useMemo, useState, useCallback, useEffect, startTransition } from "react"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
 import { useInView } from "react-intersection-observer"
 import {
@@ -151,10 +151,12 @@ function QuizListComponent({
   // Quiz type configurations for filters
   // Using shared QUIZ_TYPE_CONFIG imported above
 
-  // Debounce search input
+  // Debounce search input - use startTransition to prevent UI blocking
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(localSearch)
+      startTransition(() => {
+        setDebouncedSearch(localSearch)
+      })
     }, 300) // 300ms debounce
 
     return () => clearTimeout(timer)
@@ -164,8 +166,9 @@ function QuizListComponent({
   const currentSearch = search || debouncedSearch
   const currentSelectedTypes = selectedTypes.length > 0 ? selectedTypes : localSelectedTypes
 
-  // Filter handlers
+  // Filter handlers - Optimized to prevent UI freeze
   const handleSearchChange = useCallback((value: string) => {
+    // Use startTransition to prevent blocking UI
     setLocalSearch(value)
   }, [])
 
@@ -199,17 +202,21 @@ function QuizListComponent({
     return `${minutes} min`
   }
 
+  // Optimized filtering with proper memoization to prevent UI freeze
   const filteredQuizzes = useMemo(() => {
-    let list = quizzes || []
+    // Early return if no quizzes
+    if (!quizzes || quizzes.length === 0) return []
+    
+    let list = [...quizzes] // Create a copy to avoid mutations
 
-    // Search term filter
+    // Search term filter - optimized
     if (currentSearch && currentSearch.trim() !== "") {
       const term = currentSearch.trim().toLowerCase()
-      list = list.filter(
-        (quiz) =>
-          quiz.title.toLowerCase().includes(term) ||
-          ((quiz as any).description && (quiz as any).description.toLowerCase().includes(term)),
-      )
+      list = list.filter((quiz) => {
+        const title = quiz.title?.toLowerCase() || ""
+        const description = (quiz as any).description?.toLowerCase() || ""
+        return title.includes(term) || description.includes(term)
+      })
     }
 
     // Type filter - use current selected types
@@ -282,87 +289,64 @@ function QuizListComponent({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
+        className="min-h-[500px] flex items-center justify-center"
       >
-        <Card className="border-dashed border-border/50 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
-          <CardContent className="flex flex-col items-center justify-center p-12 text-center relative">
+        <Card className="border-2 border-dashed border-border/50 relative overflow-hidden shadow-xl max-w-2xl w-full">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-pink-500/5" />
+          <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-blue-400/20 to-transparent rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tl from-purple-400/20 to-transparent rounded-full blur-3xl animate-pulse delay-1000" />
+          
+          <CardContent className="flex flex-col items-center justify-center p-16 text-center relative z-10">
             {isSearching ? (
               <>
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: "spring" }}
-                  className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mb-6"
-                >
-                  <Search className="h-10 w-10 text-muted-foreground" />
-                </motion.div>
-                <motion.h3
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="font-semibold text-xl mb-2"
-                >
+                <div className="relative mb-8">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-full blur-2xl animate-pulse" />
+                  <div className="relative w-28 h-28 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full flex items-center justify-center border-4 border-border/50 shadow-2xl">
+                    <Search className="h-14 w-14 text-muted-foreground" />
+                  </div>
+                </div>
+                <h3 className="font-black text-3xl mb-3 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                   No quizzes found
-                </motion.h3>
-                <motion.p
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-muted-foreground mb-6 max-w-md"
-                >
+                </h3>
+                <p className="text-muted-foreground mb-8 max-w-md text-lg leading-relaxed">
                   Try adjusting your search terms or filters to discover more quizzes.
-                </motion.p>
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                  <Button variant="outline" onClick={() => window.location.reload()}>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Clear Filters
-                  </Button>
-                </motion.div>
+                </p>
+                <Button variant="outline" onClick={() => window.location.reload()} size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-all rounded-xl px-8">
+                  <RefreshCw className="mr-2 h-5 w-5" />
+                  Clear Filters
+                </Button>
               </>
             ) : (
               <>
-                <motion.div
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                  className="w-24 h-24 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center mb-6"
-                >
-                  <Sparkles className="h-12 w-12 text-primary" />
-                </motion.div>
-                <motion.h3
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="font-semibold text-2xl mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"
-                >
+                <div className="relative mb-8">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-secondary/30 rounded-full blur-2xl animate-pulse" />
+                  <div className="relative w-32 h-32 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center border-4 border-border/50 shadow-2xl">
+                    <Sparkles className="h-16 w-16 text-primary animate-pulse" />
+                  </div>
+                </div>
+                <h3 className="font-black text-4xl mb-3 bg-gradient-to-r from-primary via-purple-600 to-secondary bg-clip-text text-transparent">
                   Ready to start learning?
-                </motion.h3>
-                <motion.p
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-muted-foreground mb-8 max-w-md"
-                >
-                  Create your first quiz and begin your journey of knowledge discovery.
-                </motion.p>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="flex flex-col sm:flex-row gap-3"
-                >
-                  <Button
-                    onClick={onCreateQuiz}
-                    className="gap-2 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Create Your First Quiz
-                  </Button>
-                  <Button variant="outline" onClick={() => window.location.reload()}>
-                    <TrendingUp className="mr-2 h-4 w-4" />
+                </h3>
+                <p className="text-muted-foreground mb-10 max-w-lg text-lg leading-relaxed">
+                  Create your first quiz and begin your journey of knowledge discovery with AI-powered learning.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary rounded-xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity" />
+                    <Button
+                      onClick={onCreateQuiz}
+                      size="lg"
+                      className="relative gap-3 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 shadow-xl hover:shadow-2xl transition-all px-8 py-6 text-base font-bold rounded-xl"
+                    >
+                      <Plus className="h-5 w-5" />
+                      Create Your First Quiz
+                    </Button>
+                  </div>
+                  <Button variant="outline" onClick={() => window.location.reload()} size="lg" className="gap-3 shadow-lg hover:shadow-xl transition-all px-8 py-6 text-base font-semibold rounded-xl border-2">
+                    <TrendingUp className="h-5 w-5" />
                     Explore Quizzes
                   </Button>
-                </motion.div>
+                </div>
               </>
             )}
           </CardContent>
@@ -372,95 +356,115 @@ function QuizListComponent({
   }
 
   return (
-    <div className="relative space-y-6">
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-500/20 dark:via-purple-500/20 dark:to-pink-500/20 border border-border/50">
-        <div className="relative px-4 py-6 md:px-6 md:py-8">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+    <div className="relative space-y-8">
+      {/* Modern Hero Section */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 dark:from-indigo-500/20 dark:via-purple-500/20 dark:to-pink-500/20 border border-border/50 shadow-lg">
+        {/* Animated background pattern */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-400/30 to-transparent rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-purple-400/30 to-transparent rounded-full blur-3xl animate-pulse delay-1000" />
+        </div>
+        
+        <div className="relative px-6 py-8 md:px-8 md:py-10">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             {/* Header Content */}
-            <div className="space-y-2 flex-1">
-              {/* Removed motion from here as animations are simplified */}
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-                  <Brain className="h-5 w-5 text-white" />
+            <div className="space-y-4 flex-1">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl blur-lg opacity-50 animate-pulse" />
+                  <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-2xl shadow-purple-500/30">
+                    <Brain className="h-7 w-7 text-white" />
+                  </div>
                 </div>
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
+                  <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
                     Discover Quizzes
                   </h1>
-                  <p className="text-xs text-muted-foreground mt-0.5">Test your knowledge with interactive quizzes</p>
+                  <p className="text-sm text-muted-foreground mt-1 font-medium">Master any topic with AI-powered interactive quizzes</p>
                 </div>
               </div>
 
-              {/* Stats Row */}
-              <div className="flex items-center gap-4 mt-3">
-                <div className="flex items-center gap-1.5 text-xs">
-                  <div className="w-7 h-7 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center">
-                    <FileQuestion className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-foreground">{filteredQuizzes.length}</div>
-                    <div className="text-[10px] text-muted-foreground">Quizzes</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 text-xs">
-                  <div className="w-7 h-7 rounded-lg bg-purple-500/10 dark:bg-purple-500/20 flex items-center justify-center">
-                    <Target className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-foreground">{Object.keys(QUIZ_TYPE_CONFIG).length}</div>
-                    <div className="text-[10px] text-muted-foreground">Types</div>
+              {/* Stats Row - Redesigned */}
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="group relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl blur-md group-hover:blur-lg transition-all" />
+                  <div className="relative flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 backdrop-blur-sm shadow-sm hover:shadow-md transition-all">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                      <FileQuestion className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-foreground">{filteredQuizzes.length}</div>
+                      <div className="text-xs text-muted-foreground font-semibold">Active Quizzes</div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-xs">
-                  <div className="w-7 h-7 rounded-lg bg-green-500/10 dark:bg-green-500/20 flex items-center justify-center">
-                    <Sparkles className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                <div className="group relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl blur-md group-hover:blur-lg transition-all" />
+                  <div className="relative flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 backdrop-blur-sm shadow-sm hover:shadow-md transition-all">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                      <Target className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-foreground">{Object.keys(QUIZ_TYPE_CONFIG).length}</div>
+                      <div className="text-xs text-muted-foreground font-semibold">Quiz Types</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-semibold text-foreground">AI-Powered</div>
-                    <div className="text-[10px] text-muted-foreground">Learning</div>
+                </div>
+
+                <div className="group relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl blur-md group-hover:blur-lg transition-all" />
+                  <div className="relative flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 backdrop-blur-sm shadow-sm hover:shadow-md transition-all">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
+                      <Sparkles className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-xl font-black text-foreground">AI</div>
+                      <div className="text-xs text-muted-foreground font-semibold">Powered</div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            {/* Removed motion from here as animations are simplified */}
-            <div className="flex items-center gap-2">
+            {/* Action Buttons - Redesigned */}
+            <div className="flex items-center gap-3">
               {onViewModeChange && (
                 <ToggleGroup
                   type="single"
                   value={viewMode}
                   onValueChange={onViewModeChange}
-                  className="bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm"
+                  className="bg-background/90 backdrop-blur-sm border-2 border-border/50 shadow-lg rounded-xl p-1"
                 >
                   <ToggleGroupItem
                     value="grid"
                     aria-label="Grid view"
-                    className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground h-8 w-8"
+                    className="data-[state=on]:bg-gradient-to-br data-[state=on]:from-primary data-[state=on]:to-primary/80 data-[state=on]:text-primary-foreground data-[state=on]:shadow-md h-10 w-10 rounded-lg transition-all hover:scale-105"
                   >
-                    <Grid3X3 className="h-3.5 w-3.5" />
+                    <Grid3X3 className="h-4 w-4" />
                   </ToggleGroupItem>
                   <ToggleGroupItem
                     value="list"
                     aria-label="List view"
-                    className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground h-8 w-8"
+                    className="data-[state=on]:bg-gradient-to-br data-[state=on]:from-primary data-[state=on]:to-primary/80 data-[state=on]:text-primary-foreground data-[state=on]:shadow-md h-10 w-10 rounded-lg transition-all hover:scale-105"
                   >
-                    <List className="h-3.5 w-3.5" />
+                    <List className="h-4 w-4" />
                   </ToggleGroupItem>
                 </ToggleGroup>
               )}
 
               {onCreateQuiz && (
-                <Button
-                  onClick={onCreateQuiz}
-                  size="default"
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 h-8 text-xs"
-                >
-                  <Plus className="mr-1.5 h-4 w-4" />
-                  Create Quiz
-                </Button>
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity" />
+                  <Button
+                    onClick={onCreateQuiz}
+                    size="default"
+                    className="relative bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 h-10 px-6 text-sm font-bold rounded-xl"
+                  >
+                    <Plus className="mr-2 h-5 w-5" />
+                    Create Quiz
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -468,27 +472,31 @@ function QuizListComponent({
       </div>
 
       <div className="relative">
-        <div className="space-y-4 md:space-y-5">
-          {/* Search Bar with Enhanced Design */}
-          <div className="relative">
-            <div className="relative w-full">
-              <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-                <Search className="h-5 w-5 text-muted-foreground" />
+        <div className="space-y-6">
+          {/* Search Bar - Modern Redesign */}
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="relative">
+              <div className="absolute left-5 top-1/2 transform -translate-y-1/2 flex items-center gap-2 pointer-events-none z-10">
+                <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20">
+                  <Search className="h-5 w-5 text-primary" />
+                </div>
               </div>
               <Input
-                placeholder="Search quizzes by title or topic..."
-                value={currentSearch}
+                placeholder="Search quizzes by title, topic, or difficulty..."
+                value={localSearch}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="h-12 md:h-14 pl-12 pr-20 text-base bg-background/80 backdrop-blur-sm border-border/50 shadow-sm focus:shadow-md transition-all duration-200 rounded-xl"
+                className="h-16 pl-20 pr-24 text-base font-medium bg-background/90 backdrop-blur-md border-2 border-border/50 hover:border-primary/30 focus:border-primary/50 shadow-lg hover:shadow-xl focus:shadow-2xl transition-all duration-200 rounded-2xl"
                 aria-label="Search quizzes"
+                autoComplete="off"
               />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-                {currentSearch && (
+              <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                {localSearch && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleSearchChange("")}
-                    className="h-8 w-8 p-0 hover:bg-muted rounded-full"
+                    className="h-9 w-9 p-0 hover:bg-destructive/10 hover:text-destructive rounded-full transition-all hover:scale-110"
                     aria-label="Clear search"
                   >
                     <X className="h-4 w-4" />
@@ -496,16 +504,17 @@ function QuizListComponent({
                 )}
                 <Badge
                   variant="secondary"
-                  className="hidden sm:flex items-center gap-1 px-2 py-1 text-xs font-semibold"
+                  className="hidden sm:flex items-center gap-1 px-3 py-2 text-sm font-bold bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 shadow-md"
                 >
+                  <FileQuestion className="h-3.5 w-3.5 mr-1" />
                   {filteredQuizzes.length}
                 </Badge>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-            {/* Quiz Type Filters - Enhanced Size and Clarity */}
+          <div className="flex flex-col lg:flex-row gap-5 items-start">
+            {/* Quiz Type Filters - Modern Pill Design */}
             <TooltipProvider>
               <div className="flex items-center gap-3 flex-wrap">
                 {Object.entries(QUIZ_TYPE_CONFIG).map(([type, config]) => {
@@ -520,33 +529,31 @@ function QuizListComponent({
                           type="button"
                           onClick={() => toggleQuizType(normalizedType)}
                           className={cn(
-                            "flex items-center gap-2 rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/40 relative overflow-hidden hover:scale-105 active:scale-95",
+                            "group relative flex items-center gap-3 rounded-2xl border-2 px-5 py-3 text-sm font-bold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 overflow-hidden hover:scale-105 hover:-translate-y-0.5 active:scale-95 shadow-md hover:shadow-xl",
                             config.pill,
                             isSelected
-                              ? "ring-2 ring-primary shadow-md border-primary/50 bg-primary/10"
-                              : "hover:bg-muted/60 hover:border-primary/30",
+                              ? "ring-2 ring-primary shadow-lg border-primary/50 bg-gradient-to-br scale-105"
+                              : "hover:bg-muted/60 hover:border-primary/40 bg-background/80 backdrop-blur-sm",
                           )}
                           aria-pressed={isSelected}
                         >
-                          <div className="relative flex items-center gap-2">
-                            <IconComponent className={cn("h-4 w-4", config.color)} />
+                          {/* Glow effect on hover */}
+                          <div className={cn("absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl", config.gradient || "bg-gradient-to-br from-primary/20 to-accent/20")} />
+                          
+                          <div className="relative flex items-center gap-3">
+                            <div className={cn("p-2 rounded-xl transition-transform group-hover:scale-110", isSelected ? config.bg : "bg-muted/50")}>
+                              <IconComponent className={cn("h-5 w-5", config.color)} />
+                            </div>
                             <span className="whitespace-nowrap flex items-center gap-2">
                               {config.label}
                               {typeof count === "number" && (
-                                <span
-                                  className={cn(
-                                    "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold border",
-                                    isSelected
-                                      ? "bg-primary text-primary-foreground border-primary"
-                                      : "bg-background/80 border-border/60",
-                                  )}
-                                >
+                                <span className={cn("inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-black border-2 shadow-sm transition-all", isSelected ? "bg-primary text-primary-foreground border-primary-foreground/20 scale-110" : "bg-background border-border/60")} aria-hidden>
                                   {count}
                                 </span>
                               )}
                             </span>
                             {isSelected && (
-                              <span className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground font-bold">
+                              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold shadow-lg animate-in zoom-in-50">
                                 ✓
                               </span>
                             )}
@@ -567,47 +574,50 @@ function QuizListComponent({
               </div>
             </TooltipProvider>
 
-            {/* Enhanced Sort Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="default" className="gap-2 h-10 text-sm bg-background/80 border-2">
-                  <SlidersHorizontal className="h-4 w-4" />
-                  Sort
-                  <ChevronDown className="h-3.5 w-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={() => setSortBy("default")}
-                  className={cn(sortBy === "default" && "bg-muted", "text-sm")}
-                >
-                  <Star className="mr-2 h-4 w-4" />
-                  Default Order
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setSortBy("title")}
-                  className={cn(sortBy === "title" && "bg-muted", "text-sm")}
-                >
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  Alphabetical (A-Z)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Sort & Clear - Modern Design */}
+            <div className="flex items-center gap-3 ml-auto">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="default" className="gap-2 h-11 px-5 text-sm font-semibold bg-background/90 backdrop-blur-sm border-2 border-border hover:border-primary/50 shadow-md hover:shadow-lg transition-all rounded-xl">
+                    <SlidersHorizontal className="h-4 w-4" />
+                    Sort
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52 rounded-xl border-2 shadow-xl">
+                  <DropdownMenuItem
+                    onClick={() => setSortBy("default")}
+                    className={cn(sortBy === "default" && "bg-primary/10 text-primary", "text-sm font-medium rounded-lg")}
+                  >
+                    <Star className="mr-3 h-4 w-4" />
+                    Default Order
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setSortBy("title")}
+                    className={cn(sortBy === "title" && "bg-primary/10 text-primary", "text-sm font-medium rounded-lg")}
+                  >
+                    <BookOpen className="mr-3 h-4 w-4" />
+                    Alphabetical (A-Z)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-            {/* Clear Filters */}
-            {(currentSearch || currentSelectedTypes.length > 0 || sortBy !== "default") && (
-              <Button variant="ghost" size="default" onClick={clearFilters} className="gap-2 h-10 text-sm">
-                <X className="h-4 w-4" />
-                Clear Filters
-              </Button>
-            )}
+              {/* Clear Filters */}
+              {(currentSearch || currentSelectedTypes.length > 0 || sortBy !== "default") && (
+                <Button variant="ghost" size="default" onClick={clearFilters} className="gap-2 h-11 px-5 text-sm font-semibold hover:bg-destructive/10 hover:text-destructive transition-all rounded-xl shadow-md">
+                  <X className="h-4 w-4" />
+                  Clear All
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
+        {/* Quiz Grid - Enhanced Spacing */}
         <div
           className={cn(
-            "grid gap-4 md:gap-5 mt-6",
-            viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1 max-w-4xl",
+            "grid gap-6 md:gap-7",
+            viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1 max-w-5xl mx-auto",
           )}
         >
           {/* Removed LayoutGroup, AnimatePresence, and motion.div for individual items for performance */}
@@ -634,25 +644,27 @@ function QuizListComponent({
           ))}
         </div>
 
-        {/* Loading more */}
+        {/* Loading more - Enhanced */}
         {isFetchingNextPage && (
-          <div className="flex justify-center py-8">
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <div
-                className="w-5 h-5 border-2 border-primary border-r-transparent rounded-full animate-spin"
-                aria-hidden="true"
-              />
-              <span>Loading more quizzes...</span>
+          <div className="flex justify-center py-12">
+            <div className="flex items-center gap-4 px-8 py-4 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 border-2 border-border/50 shadow-lg backdrop-blur-sm">
+              <div className="relative">
+                <div className="w-6 h-6 border-3 border-primary border-r-transparent rounded-full animate-spin" aria-hidden="true" />
+                <div className="absolute inset-0 w-6 h-6 border-3 border-primary/20 border-r-transparent rounded-full animate-ping" aria-hidden="true" />
+              </div>
+              <span className="text-base font-semibold text-foreground">Loading more quizzes...</span>
             </div>
           </div>
         )}
 
-        {/* End message */}
+        {/* End message - Enhanced */}
         {!hasNextPage && quizzes.length > 0 && (
-          <div ref={endMessageRef} className="text-center py-8">
-            <div className="inline-flex items-center gap-2 text-sm text-muted-foreground bg-card px-4 py-2 rounded-full border border-border/50">
-              <Sparkles className="h-4 w-4" />
-              You've seen them all!
+          <div ref={endMessageRef} className="text-center py-12">
+            <div className="relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl border-2 border-border/50 shadow-xl overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-purple-500/10 group-hover:opacity-80 transition-opacity" />
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-purple-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Sparkles className="relative h-5 w-5 text-primary animate-pulse" />
+              <span className="relative text-base font-bold text-foreground">You've seen them all! 🎉</span>
             </div>
           </div>
         )}

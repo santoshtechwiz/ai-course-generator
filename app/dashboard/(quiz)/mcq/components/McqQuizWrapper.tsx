@@ -23,6 +23,7 @@ import {
 } from "@/store/slices/quiz/quiz-slice"
 
 import { NoResults } from "@/components/ui/no-results"
+import { isPrivateError } from "../../components/privateErrorUtils"
 import McqQuiz from "./McqQuiz"
 import { UnifiedLoader } from "@/components/loaders"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
@@ -53,6 +54,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const isCompleted = useSelector(selectIsQuizComplete)
   const requiresAuth = useSelector(selectRequiresAuth)
   const redirectAfterLogin = useSelector(selectRedirectAfterLogin)
+  const quizError = useSelector((state: any) => state.quiz.error)
 
   // Load the quiz with improved error handling
   useEffect(() => {
@@ -171,10 +173,8 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
         toast.success("Quiz submitted successfully!")
       }
       
-      // Brief delay to show calculating state
-      setTimeout(() => {
-        router.push(`/dashboard/mcq/${slug}/results`)
-      }, 800)
+      // COMMIT: Remove delay to prevent layout shift, navigate immediately
+      router.push(`/dashboard/mcq/${slug}/results`)
     } catch (err: any) {
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
@@ -182,10 +182,10 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     }
   }, [dispatch, router, slug])
 
-  // Show calculating loader during submission
+  // COMMIT: Show calculating loader during submission with stable positioning
   if (isSubmitting) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
+      <div className="min-h-[60vh] flex items-center justify-center bg-background">
         <UnifiedLoader
           state="loading"
           variant="spinner"
@@ -259,14 +259,19 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
 
   // Not found state
   if (quizStatus === 'not-found') {
+    const privateContent = isPrivateError(quizError)
     return (
       <div className="min-h-[60vh] flex items-center justify-center p-6">
         <NoResults
-          title="Quiz Not Found"
-          description="The quiz you're looking for doesn't exist or has been removed."
+          title={privateContent ? "This quiz is private" : "Quiz Not Found"}
+          description={
+            privateContent
+              ? "This quiz exists but is not publicly accessible. Sign in or request access from the owner."
+              : "The quiz you're looking for doesn't exist or has been removed."
+          }
           action={{
-            label: "Browse Quizzes",
-            onClick: () => router.push('/dashboard/quizzes')
+            label: privateContent ? "Request Access" : "Browse Quizzes",
+            onClick: () => router.push(privateContent ? '/dashboard/requests' : '/dashboard/quizzes')
           }}
         />
       </div>

@@ -5,6 +5,7 @@ import { useState, memo, useCallback, useMemo, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import QuizBadge from "./QuizBadge"
 import { Clock, Star, BookOpen, Loader2, Play, Bookmark, Users, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
@@ -147,6 +148,8 @@ function QuizCardComponent({
             loading && "opacity-70 cursor-progress",
           )}
           aria-busy={loading}
+          role="article"
+          aria-labelledby={`quiz-title-${slug}`}
           aria-live="polite"
         >
           <div className={cn("absolute top-0 left-0 right-0 h-1", "bg-gradient-to-r", config.accent)} />
@@ -174,11 +177,11 @@ function QuizCardComponent({
           )}
 
           <div className={cn("relative px-4 pt-4 pb-3 border-b transition-colors", config.bg, config.border)}>
-            <div className="flex items-start justify-between gap-2 mb-3">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div
                   className={cn(
-                    "p-2 rounded-lg border shadow-sm relative overflow-hidden shrink-0 transition-transform hover:scale-105",
+                    "p-3 rounded-xl border shadow-sm relative overflow-hidden shrink-0 transition-transform hover:scale-105",
                     config.bg,
                     config.border,
                   )}
@@ -189,25 +192,19 @@ function QuizCardComponent({
                       config.gradient || "from-primary to-accent",
                     )}
                   />
-                  <QuizTypeIcon className={cn("h-4 w-4 relative z-10", config.color)} />
+                  <QuizTypeIcon className={cn("h-5 w-5 relative z-10", config.color)} aria-hidden />
                 </div>
 
-                <div className="flex flex-col gap-1.5 min-w-0">
-                  <Badge
-                    variant="secondary"
-                    className={cn("text-[10px] px-2 py-0.5 font-semibold border shadow-sm w-fit", difficulty.color)}
-                  >
+                <div className="flex flex-col gap-2 min-w-0">
+                  <QuizBadge className={difficulty.color} aria-label={`Difficulty: ${difficulty.label}`}>
                     {difficulty.label}
-                  </Badge>
+                  </QuizBadge>
 
                   {isPopular && (
-                    <Badge
-                      variant="secondary"
-                      className="text-[10px] px-2 py-0.5 bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-700 dark:text-orange-300 border-orange-500/40 font-semibold shadow-sm w-fit"
-                    >
-                      <TrendingUp className="w-2.5 h-2.5 mr-1" />
-                      Popular
-                    </Badge>
+                    <QuizBadge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-700 dark:text-orange-300 border-orange-500/40" aria-label="Popular quiz">
+                      <TrendingUp className="w-4 h-4 mr-1 inline-block align-middle" aria-hidden />
+                      <span className="align-middle">Popular</span>
+                    </QuizBadge>
                   )}
                 </div>
               </div>
@@ -215,14 +212,14 @@ function QuizCardComponent({
               <button
                 onClick={handleBookmarkClick}
                 className={cn(
-                  "p-1.5 rounded-lg border transition-all shrink-0 shadow-sm hover:scale-105 active:scale-95",
+                  "p-2 rounded-lg border transition-all shrink-0 shadow-sm hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                   isBookmarked
                     ? "bg-primary border-primary text-primary-foreground shadow-md shadow-primary/20"
                     : "bg-card/80 backdrop-blur-sm border-border hover:border-primary/50 text-muted-foreground hover:text-primary hover:bg-primary/5",
                 )}
                 aria-label={isBookmarked ? "Remove bookmark" : "Bookmark quiz"}
               >
-                <Bookmark className={cn("h-3.5 w-3.5", isBookmarked && "fill-current")} />
+                <Bookmark className={cn("h-4 w-4", isBookmarked && "fill-current")} aria-hidden />
               </button>
             </div>
 
@@ -233,7 +230,7 @@ function QuizCardComponent({
                 onTypeClick?.(quizType)
               }}
               className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all border shadow-sm hover:scale-105 active:scale-95",
+                "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all border shadow-sm hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
                 config.pill,
                 isTypeActive && "ring-2 ring-primary ring-offset-1 shadow-md",
               )}
@@ -243,93 +240,110 @@ function QuizCardComponent({
             </button>
           </div>
 
-          <CardContent className="p-4 space-y-3 relative z-10 flex-1 flex flex-col">
-            <div className="space-y-1.5">
-              <h3 className="font-bold text-base leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+          <CardContent className="p-5 relative z-10 flex-1 flex flex-col">
+            {/* Title & Description - Fixed height */}
+            <div className="space-y-2 h-[88px] flex flex-col">
+              <h3 className="font-bold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
                 {title}
               </h3>
-              <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                {description || `Test your ${config.label.toLowerCase()} skills with ${questionCount} questions`}
+              <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed flex-1">
+                {description || `Test your ${config.label.toLowerCase()} skills`}
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 py-3 border-y border-border/50">
-              <div className="flex flex-col items-center gap-1.5 text-center">
-                <div className="p-1.5 rounded-lg bg-primary/10">
-                  <Clock className="w-3.5 h-3.5 text-primary" />
-                </div>
-                <span className="text-[10px] font-semibold text-foreground">{estimatedTime}</span>
+            {/* Stats Grid - Redesigned */}
+            <div className="grid grid-cols-3 gap-2 py-4">
+              <div className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20">
+                <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" aria-hidden />
+                <span className="text-xs font-bold text-foreground">{estimatedTime}</span>
               </div>
-              <div className="flex flex-col items-center gap-1.5 text-center">
-                <div className="p-1.5 rounded-lg bg-accent/10">
-                  <BookOpen className="w-3.5 h-3.5 text-accent-foreground" />
-                </div>
-                <span className="text-[10px] font-semibold text-foreground">{questionCount} Qs</span>
+              <div className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20">
+                <BookOpen className="w-4 h-4 text-purple-600 dark:text-purple-400" aria-hidden />
+                <span className="text-xs font-bold text-foreground">{questionCount} Qs</span>
               </div>
-              <div className="flex flex-col items-center gap-1.5 text-center">
-                <div className="p-1.5 rounded-lg bg-secondary/10">
-                  <Users className="w-3.5 h-3.5 text-secondary-foreground" />
-                </div>
-                <span className="text-[10px] font-semibold text-foreground">{attemptCount}</span>
+              <div className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
+                <Users className="w-4 h-4 text-green-600 dark:text-green-400" aria-hidden />
+                <span className="text-xs font-bold text-foreground">{attemptCount}</span>
               </div>
             </div>
 
-            {completionRate > 0 && (
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[10px]">
-                  <span className="text-muted-foreground font-medium">Your Progress</span>
-                  <span className="font-bold text-primary">{Math.round(completionRate)}%</span>
-                </div>
-                <div className="w-full bg-muted rounded-full h-2 overflow-hidden shadow-inner">
+            {/* Progress Bar - Fixed height section to maintain alignment */}
+            <div className="min-h-[60px] flex items-center">
+              {completionRate > 0 ? (
+                <div className="space-y-2 w-full">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground font-medium">Your progress</span>
+                    <span className="font-black text-base text-primary">{Math.round(completionRate)}%</span>
+                  </div>
                   <div
-                    style={{ width: `${completionRate}%` }}
-                    className={cn(
-                      "h-2 rounded-full bg-gradient-to-r shadow-sm transition-all duration-500",
-                      config.accent,
-                    )}
-                  />
+                    className="w-full bg-muted/50 rounded-full h-2.5 overflow-hidden shadow-inner border border-border/30"
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(completionRate)}
+                    aria-label="Quiz completion progress"
+                  >
+                    <div
+                      style={{ width: `${completionRate}%` }}
+                      className={cn(
+                        "h-full rounded-full bg-gradient-to-r shadow-sm transition-all duration-500",
+                        config.accent,
+                      )}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="w-full" /> // Empty placeholder to maintain height
+              )}
+            </div>
 
-            <div className="flex items-center justify-between pt-2 mt-auto">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1">
-                  <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-                  <span className="text-xs font-bold text-foreground">4.5</span>
-                  <span className="text-[10px] text-muted-foreground">(128)</span>
+            {/* Footer - Always at bottom with consistent spacing */}
+            <div className="flex flex-col gap-3 pt-4 mt-auto border-t border-border/30">
+              {/* Rating & Badge Row */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" aria-hidden />
+                  <span className="text-sm font-bold text-foreground">4.5</span>
+                  <span className="text-xs text-muted-foreground">(128)</span>
                 </div>
 
-                <Badge
+                <QuizBadge
                   variant="outline"
                   className={cn(
-                    "text-[10px] px-2 py-0.5 font-medium border shadow-sm",
+                    "text-xs px-2.5 py-1 font-semibold border shadow-sm rounded-full",
                     isPublic
                       ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
                       : "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30",
                   )}
+                  aria-label={isPublic ? "Public quiz" : "Private quiz"}
                 >
                   {isPublic ? "Public" : "Private"}
-                </Badge>
+                </QuizBadge>
               </div>
 
+              {/* Start Button - Full Width */}
               <Button
                 variant="default"
-                size="sm"
+                size="lg"
                 className={cn(
-                  "gap-1.5 text-[10px] h-8 px-3 font-semibold shadow-md transition-all",
-                  "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80",
-                  "hover:shadow-lg hover:shadow-primary/20",
-                  isHovered && "shadow-lg shadow-primary/20",
+                  "w-full gap-2 text-sm font-bold shadow-lg transition-all",
+                  "bg-gradient-to-r from-primary via-primary to-primary/90",
+                  "hover:from-primary/90 hover:via-primary/95 hover:to-primary/80",
+                  "hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02]",
+                  "active:scale-[0.98]",
+                  isHovered && "shadow-xl shadow-primary/25",
                 )}
                 disabled={loading}
               >
                 {loading ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Loading...</span>
+                  </>
                 ) : (
                   <>
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Start</span>
+                    <Play className="w-4 h-4 fill-current" aria-hidden />
+                    <span>Start Quiz</span>
                   </>
                 )}
               </Button>

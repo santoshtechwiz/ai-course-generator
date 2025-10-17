@@ -8,6 +8,7 @@ import { useSelector } from "react-redux"
 import { RootState } from "@/store"
 import { NoResults } from "@/components/ui/no-results"
 import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
+import { isPrivateError } from "../../components/privateErrorUtils"
 import { PageLoader } from "@/components/loaders"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
 import { useAuth } from "@/hooks"
@@ -32,6 +33,7 @@ export default function FlashcardQuizClient({ params }: FlashcardQuizClientProps
   const quizStatus = useSelector((state: RootState) => state.flashcard.status);
   const status = useSelector((state: any) => state.quiz.status)
   const error = useSelector((state: any) => state.quiz.error)
+  const isPrivate = isPrivateError(error)
   
   // Create quiz data object for QuizPlayLayout
   const quizData = {
@@ -57,7 +59,6 @@ export default function FlashcardQuizClient({ params }: FlashcardQuizClientProps
   }
 
   if (status === 'not-found') {
-    const isPrivate = error && /private|visibility|unauthorized/i.test(error)
     return (
       <div className="mx-auto w-full max-w-screen-md px-4 py-10">
         <NoResults

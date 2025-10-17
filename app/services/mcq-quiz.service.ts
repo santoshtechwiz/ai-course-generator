@@ -40,8 +40,17 @@ export class McqQuizService extends BaseQuizService {
      * Get an MCQ quiz by its slug
      */
     async getQuizBySlug(slug: string, userId: string) {
-        const result = await super.getQuizBySlug(slug, userId);
-        return result;
+        try {
+            const result = await super.getQuizBySlug(slug, userId);
+            return result;
+        } catch (error) {
+            // Re-throw PRIVATE_QUIZ errors for proper error handling
+            if (error instanceof Error && error.message === "PRIVATE_QUIZ") {
+                throw error;
+            }
+            console.error(`[mcqService] Error retrieving quiz ${slug} for user ${userId}:`, error);
+            return null;
+        }
     }
 
     protected formatQuestions(questions: any[]): any[] {

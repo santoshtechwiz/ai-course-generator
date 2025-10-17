@@ -8,6 +8,7 @@ import { useSelector } from "react-redux"
 import { NoResults } from "@/components/ui/no-results"
 import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
 import { PageLoader } from "@/components/loaders"
+import { isPrivateError } from "../../components/privateErrorUtils"
 
 // ⚡ PERFORMANCE: Lazy load heavy components with framer-motion
 const BlanksQuizWrapper = lazy(() => import("../components/BlanksQuizWrapper"))
@@ -44,7 +45,7 @@ export default function BlanksQuizClient({ params }: BlanksQuizClientProps) {
   }
 
   if (status === 'not-found') {
-    const isPrivate = error && /private|visibility|unauthorized/i.test(error)
+    const isPrivate = isPrivateError(error)
     return (
       <div className="mx-auto w-full max-w-screen-md px-4 py-10">
         <NoResults

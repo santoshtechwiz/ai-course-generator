@@ -9,7 +9,7 @@
  */
 
 import { BaseAIService, AIServiceContext, StringLengthRule, RequiredFieldRule } from "../core/base-ai-service"
-import { EmbeddingManager, EmbeddingDocument } from "../core/embedding-manager"
+import { EmbeddingManager } from "../core/embedding-manager"
 import { ChatMemoryManager } from "./memory-manager"
 import { ContextBuilder } from "./context-builder"
 import { openai } from "@ai-sdk/openai"
@@ -72,7 +72,8 @@ export class ChatService extends BaseAIService {
    */
   private async initializeKnowledgeBase(): Promise<void> {
     try {
-      const documentCount = await this.embeddingManager.getDocumentCount()
+      // Check if knowledge base is already initialized by checking embeddings table
+      const documentCount = await prisma.embedding.count()
       
       if (documentCount > 0) {
         logger.info(`Knowledge base already initialized with ${documentCount} documents`)
@@ -108,7 +109,7 @@ export class ChatService extends BaseAIService {
       ])
 
       // Convert to embedding documents
-      const documents: EmbeddingDocument[] = [
+      const documents: Array<{ id?: string; content: string; metadata?: any; type?: string }> = [
         ...courses.map(course => ({
           content: `Course: ${course.title}\nDescription: ${course.description || 'No description available'}\nCategory: ${course.category?.name || 'General'}`,
           metadata: {
@@ -131,7 +132,8 @@ export class ChatService extends BaseAIService {
         }))
       ]
 
-      await this.embeddingManager.addDocuments(documents)
+      // Use processBatch instead of addDocuments
+      await this.embeddingManager.processBatch(documents)
       logger.info(`Knowledge base initialized with ${documents.length} documents`)
     } catch (error) {
       logger.error('Failed to initialize knowledge base', { error })
@@ -173,9 +175,7 @@ export class ChatService extends BaseAIService {
       const result = await streamText({
         model: openai("gpt-4o-mini"),
         messages,
-        temperature: 0.7,
-        maxTokens: 500,
-        stream: true
+        temperature: 0.7
       })
 
       // Save user message to memory
@@ -248,8 +248,7 @@ export class ChatService extends BaseAIService {
       const result = await generateText({
         model: openai("gpt-4o-mini"),
         messages,
-        temperature: 0.7,
-        maxTokens: 500
+        temperature: 0.7
       })
 
       // Save messages to memory
@@ -302,7 +301,7 @@ export class ChatService extends BaseAIService {
     const messages: CoreMessage[] = []
 
     // Get relevant content if requested
-    let relevantDocs: EmbeddingDocument[] = []
+    let relevantDocs: Awaited<ReturnType<typeof this.embeddingManager.similaritySearch>> = []
     if (request.includeContext !== false) {
       relevantDocs = await this.embeddingManager.similaritySearch(
         request.message,
@@ -365,8 +364,8 @@ export class ChatService extends BaseAIService {
   /**
    * Update knowledge base with new content
    */
-  async updateKnowledgeBase(documents: EmbeddingDocument[]): Promise<void> {
-    await this.embeddingManager.addDocuments(documents)
+  async updateKnowledgeBase(documents: Array<{ id?: string; content: string; metadata?: any; type?: string }>): Promise<void> {
+    await this.embeddingManager.processBatch(documents)
     logger.info(`Added ${documents.length} documents to knowledge base`)
   }
 
@@ -377,7 +376,7 @@ export class ChatService extends BaseAIService {
     query: string, 
     limit: number = 5,
     context?: AIServiceContext
-  ): Promise<EmbeddingDocument[]> {
+  ): Promise<Awaited<ReturnType<typeof this.embeddingManager.similaritySearch>>> {
     if (context) {
       this.logActivity('knowledge_search', context, { query, limit })
     }
