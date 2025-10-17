@@ -604,6 +604,18 @@ export const submitQuiz = createAsyncThunk(
         console.log('Quiz submitted successfully:', responseData)
       }
 
+      // COMMIT: Trigger cache invalidation for immediate dashboard updates
+      // Import invalidateDashboardCache dynamically to avoid SSR issues
+      if (typeof window !== 'undefined') {
+        import('@/utils/cache-invalidation').then(({ invalidateDashboardCacheDelayed }) => {
+          // Use delayed invalidation (500ms) to ensure database writes are complete
+          invalidateDashboardCacheDelayed(500, 'QUIZ_COMPLETED')
+          console.log('[QuizSlice] Triggered cache invalidation after quiz completion')
+        }).catch(err => {
+          console.warn('[QuizSlice] Failed to trigger cache invalidation:', err)
+        })
+      }
+
       // Return results with additional data from API response
       return {
         ...quizResults,

@@ -319,21 +319,23 @@ function CourseGrid({ courses, viewMode, showProgress = false, onCourseClick, us
       aria-label={`${viewMode === "grid" ? "Grid" : "List"} view of courses`}
     >
       {courses.map((course, index) => {
-        const progress = userData.courseProgress?.find((p) => p.course.id === course.id)?.progress || 0
+        // ALWAYS show progress for all courses (not just in-progress)
+        const courseProgress = userData.courseProgress?.find((p) => p.course.id === course.id)
+        const progress = courseProgress?.progress || 0
 
         return (
           <motion.div key={course.id} variants={itemVariants} transition={{ delay: index * 0.03 }} role="gridcell">
             {viewMode === "grid" ? (
               <CourseCard
                 course={course}
-                progress={showProgress ? progress : undefined}
+                progress={progress}
                 isLoading={false}
                 onClick={() => onCourseClick(course.id, course.slug)}
               />
             ) : (
               <CourseListItem
                 course={course}
-                progress={showProgress ? progress : undefined}
+                progress={progress}
                 isLoading={false}
                 onClick={() => onCourseClick(course.id, course.slug)}
               />
@@ -406,6 +408,17 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
           <h3 className="text-base font-semibold leading-tight text-foreground line-clamp-2">
             {course.title}
           </h3>
+          
+          {/* Display progress if available */}
+          {progress !== undefined && progress > 0 && (
+            <div className="w-full space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Progress</span>
+                <span className="font-medium text-foreground">{Math.round(progress)}%</span>
+              </div>
+              <Progress value={progress} className="h-1.5" />
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>
@@ -438,6 +451,17 @@ function CourseListItem({ course, progress, isLoading, onClick }: CourseCardProp
 
         <div className="flex-1">
           <h3 className="text-sm font-medium text-foreground line-clamp-1">{course.title}</h3>
+          
+          {/* Display progress if available */}
+          {progress !== undefined && progress > 0 && (
+            <div className="mt-2 space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Progress</span>
+                <span className="font-medium text-foreground">{Math.round(progress)}%</span>
+              </div>
+              <Progress value={progress} className="h-1" />
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

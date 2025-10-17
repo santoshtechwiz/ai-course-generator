@@ -5,8 +5,10 @@
  * - MCQ, Fill-in-Blanks, Open-ended, Coding, Flashcards
  * 
  * COMMIT: Ensures consistent streak tracking, badge unlocks, and progress sync
+ * 
+ * UPDATED: Now uses universal-streak service for ALL quiz types
  */
-import { streakService } from './streak.service'
+import { updateUniversalStreak, getUserStreakStats } from './universal-streak'
 import { badgeService } from './badge.service'
 import { usageLimitService } from './usage-limit.service'
 import prisma from '@/lib/db'
@@ -33,6 +35,8 @@ interface QuizCompletionResult {
   streakInfo?: {
     current: number
     longest: number
+    continued?: boolean
+    isNewRecord?: boolean
   }
 }
 
@@ -58,9 +62,9 @@ export class UnifiedQuizService {
         totalQuestions
       })
 
-      // COMMIT: Update streak (extends flashcard-only feature to all quizzes)
-      const streakInfo = await streakService.updateStreak(userId)
-      console.log(`[UnifiedQuizService] Streak updated:`, streakInfo)
+      // UPDATED: Use universal streak tracking for ALL quiz types (not just flashcards)
+      const streakResult = await updateUniversalStreak(userId)
+      console.log(`[UnifiedQuizService] Universal streak updated:`, streakResult)
       
       // COMMIT: Check badge unlocks for all quiz types
       // Run asynchronously to not block quiz completion
@@ -117,6 +121,8 @@ export class UnifiedQuizService {
       
       // COMMIT: Save quiz attempt to database (upsert to handle retakes)
       const userQuizIdNumber = typeof quizId === 'number' ? quizId : parseInt(quizId)
+      const calculatedScore = score || Math.round((correctAnswers / totalQuestions) * 100)
+      
       const attempt = await prisma.userQuizAttempt.upsert({
         where: {
           userId_userQuizId: {
@@ -125,7 +131,7 @@ export class UnifiedQuizService {
           }
         },
         update: {
-          score: score || Math.round((correctAnswers / totalQuestions) * 100),
+          score: calculatedScore,
           accuracy: (correctAnswers / totalQuestions) * 100,
           timeSpent,
           updatedAt: new Date()
@@ -133,11 +139,30 @@ export class UnifiedQuizService {
         create: {
           userId,
           userQuizId: userQuizIdNumber,
-          score: score || Math.round((correctAnswers / totalQuestions) * 100),
+          score: calculatedScore,
           accuracy: (correctAnswers / totalQuestions) * 100,
           timeSpent
         }
       })
+      
+      // COMMIT: Update UserQuiz.bestScore if this is a new best score
+      // This ensures dashboard displays the correct best score
+      const existingUserQuiz = await prisma.userQuiz.findUnique({
+        where: { id: userQuizIdNumber },
+        select: { bestScore: true }
+      })
+      
+      if (!existingUserQuiz?.bestScore || calculatedScore > existingUserQuiz.bestScore) {
+        await prisma.userQuiz.update({
+          where: { id: userQuizIdNumber },
+          data: { 
+            bestScore: calculatedScore,
+            lastAttempted: new Date(),
+            timeEnded: new Date()
+          }
+        })
+        console.log(`[UnifiedQuizService] Updated UserQuiz.bestScore to ${calculatedScore} for quiz ${userQuizIdNumber}`)
+      }
       
       // Wait for badge checks to complete
       const newBadges = await badgePromise
@@ -147,6 +172,8 @@ export class UnifiedQuizService {
         quizId,
         quizType,
         attemptId: attempt.id,
+        streak: streakResult.currentStreak,
+        newRecord: streakResult.isNewRecord,
         newBadgesCount: newBadges.length
       })
       
@@ -156,8 +183,10 @@ export class UnifiedQuizService {
         newBadges,
         streakUpdated: true,
         streakInfo: {
-          current: streakInfo.streak,
-          longest: streakInfo.longestStreak
+          current: streakResult.currentStreak,
+          longest: streakResult.longestStreak,
+          continued: streakResult.streakContinued,
+          isNewRecord: streakResult.isNewRecord
         }
       }
     } catch (error) {

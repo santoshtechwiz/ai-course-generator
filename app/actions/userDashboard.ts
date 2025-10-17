@@ -26,7 +26,14 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
     const [user, userQuizAttempts] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          credits: true,
+          isAdmin: true,
+          streak: true, // ✅ Include streak for streakDays
           courses: {
             select: {
               id: true,
@@ -59,6 +66,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
               quizType: true,
               timeEnded: true,
               timeStarted: true,
+              bestScore: true, // ✅ Include bestScore for dashboard display
               _count: {
                 select: {
                   questions: true,
@@ -138,7 +146,18 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
       isAdmin: user.isAdmin ?? false,
       courses: user.courses as unknown as Course[],
       courseProgress: user.courseProgress as unknown as CourseProgress[],
-      userQuizzes: user.userQuizzes as unknown as UserQuiz[],
+      // COMMIT: Preserve _count property for question count display
+      userQuizzes: user.userQuizzes.map(quiz => ({
+        id: quiz.id.toString(),
+        title: quiz.title,
+        slug: quiz.slug || '',
+        quizType: quiz.quizType as any,
+        timeStarted: quiz.timeStarted.toISOString(),
+        timeEnded: quiz.timeEnded?.toISOString() || null,
+        bestScore: quiz.bestScore || undefined, // ✅ Include bestScore
+        _count: quiz._count, // ✅ Preserve _count for question count
+        questions: [], // Empty array (actual questions loaded on demand)
+      })) as unknown as UserQuiz[],
       quizAttempts: userQuizAttempts.map((attempt: any) => ({
         ...attempt,
         id: attempt.id.toString(), // Convert number to string
@@ -153,7 +172,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
         attemptQuestions: [], // Empty array for performance, load on demand
       })) as unknown as UserQuizAttempt[],
       favorites: user.favorites as unknown as Favorite[],
-      streakDays: user.streakDays ?? 0,
+      streakDays: user.streak ?? 0, // ✅ Use user.streak field
     }
   } catch (error) {
     console.error("Error fetching user data:", error)

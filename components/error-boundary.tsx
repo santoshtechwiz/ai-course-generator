@@ -6,86 +6,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, RefreshCw, Bug, Home } from 'lucide-react'
-import { Loader2 } from 'lucide-react'
 
-interface ErrorFallbackProps {
-  error: Error
-  resetError: () => void
-  retryCount?: number
-}
-
-function ErrorFallback({ error, resetError, retryCount = 0 }: ErrorFallbackProps) {
-  const [isRetrying, setIsRetrying] = useState(false)
-
-  const handleRetry = useCallback(async () => {
-    setIsRetrying(true)
-    try {
-      await resetError()
-    } finally {
-      setIsRetrying(false)
-    }
-  }, [resetError])
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="min-h-[400px] flex items-center justify-center p-4"
-    >
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <AlertCircle className="h-12 w-12 text-destructive" />
-          </div>
-          <CardTitle className="text-lg">Something went wrong</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Alert>
-            <Bug className="h-4 w-4" />
-            <AlertDescription className="text-sm">
-              {error.message || 'An unexpected error occurred'}
-            </AlertDescription>
-          </Alert>
-
-          {retryCount > 0 && (
-            <p className="text-sm text-muted-foreground text-center">
-              Retry attempts: {retryCount}
-            </p>
-          )}
-
-          <div className="flex gap-2">
-            <Button
-              onClick={handleRetry}
-              disabled={isRetrying}
-              className="flex-1"
-              variant="outline"
-            >
-              {isRetrying ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Retrying...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Try Again
-                </>
-              )}
-            </Button>
-            <Button
-              onClick={() => window.location.href = '/'}
-              variant="default"
-              className="flex-1"
-            >
-              <Home className="h-4 w-4 mr-2" />
-              Go Home
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  )
-}
+/**
+ * EnhancedErrorBoundary - A robust error boundary with retry logic
+ * 
+ * FIXED: Removed ErrorFallback component that used hooks (useState, useCallback)
+ * which caused "Rendered fewer hooks than expected" error.
+ * 
+ * Error boundaries are class components and cannot use hooks in their render output.
+ * The fallback UI is now rendered directly in the render() method.
+ */
 
 interface EnhancedErrorBoundaryProps {
   children: ReactNode
@@ -182,12 +112,63 @@ export class EnhancedErrorBoundary extends Component<
         return fallback(error, this.resetError)
       }
 
+      // Fixed: Removed ErrorFallback component with hooks
+      // Render fallback UI directly in class component (no hooks!)
       return (
-        <ErrorFallback
-          error={error}
-          resetError={this.resetError}
-          retryCount={retryCount}
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="min-h-[400px] flex items-center justify-center p-4"
+        >
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <AlertCircle className="h-12 w-12 text-destructive" />
+              </div>
+              <CardTitle className="text-lg">Something went wrong</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert>
+                <Bug className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  {error.message || 'An unexpected error occurred'}
+                </AlertDescription>
+              </Alert>
+
+              {retryCount > 0 && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Retry attempts: {retryCount}
+                </p>
+              )}
+
+              {retryCount >= maxRetries && (
+                <p className="text-sm text-destructive text-center font-medium">
+                  Maximum retry attempts reached
+                </p>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={this.resetError}
+                  className="flex-1"
+                  variant="outline"
+                  disabled={retryCount >= maxRetries}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Try Again
+                </Button>
+                <Button
+                  onClick={() => window.location.href = '/dashboard'}
+                  variant="default"
+                  className="flex-1"
+                >
+                  <Home className="h-4 w-4 mr-2" />
+                  Go Home
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       )
     }
 

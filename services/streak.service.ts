@@ -1,3 +1,23 @@
+/**
+ * @deprecated This service is being replaced by universal-streak.ts
+ * 
+ * Old Streak Service - FLASHCARD ONLY
+ * Manages daily review streaks for flashcards specifically
+ * 
+ * ⚠️ DEPRECATION NOTICE:
+ * This service only tracks flashcard reviews and is being replaced by
+ * services/universal-streak.ts which handles ALL quiz types.
+ * 
+ * Migration path:
+ * - Replace streakService.updateStreak() with updateUniversalStreak()
+ * - Replace streakService.getStreakInfo() with getUserStreakStats()
+ * - Use the same User.streak and User.lastReviewDate fields
+ * 
+ * Files still using this (need migration):
+ * - app/api/flashcards/streak/route.ts
+ * - app/api/flashcards/review/route.ts
+ */
+
 import prisma from "@/lib/db"
 import { startOfDay, sub, differenceInHours } from "date-fns"
 

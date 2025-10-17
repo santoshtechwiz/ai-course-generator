@@ -1,7 +1,9 @@
 "use client"
 
 import type { DashboardUser, UserStats } from "@/app/types/types"
+import { useEffect } from "react"
 import useSWR from "swr"
+import { CACHE_EVENTS } from "@/utils/cache-invalidation"
 
 const fetcher = async (url: string) => {
   const res = await fetch(url, {
@@ -34,6 +36,36 @@ export function useUserData(userId: string) {
       }
     },
   )
+  
+  // Listen for cache invalidation events to trigger immediate refetch
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const handleQuizCompleted = () => {
+      console.log('[useUserData] Quiz completed event received, revalidating user data...')
+      mutate()
+    }
+    
+    const handleCourseProgress = () => {
+      console.log('[useUserData] Course progress updated event received, revalidating user data...')
+      mutate()
+    }
+    
+    const handleUserDataUpdated = () => {
+      console.log('[useUserData] User data updated event received, revalidating...')
+      mutate()
+    }
+    
+    window.addEventListener(CACHE_EVENTS.QUIZ_COMPLETED, handleQuizCompleted)
+    window.addEventListener(CACHE_EVENTS.COURSE_PROGRESS_UPDATED, handleCourseProgress)
+    window.addEventListener(CACHE_EVENTS.USER_DATA_UPDATED, handleUserDataUpdated)
+    
+    return () => {
+      window.removeEventListener(CACHE_EVENTS.QUIZ_COMPLETED, handleQuizCompleted)
+      window.removeEventListener(CACHE_EVENTS.COURSE_PROGRESS_UPDATED, handleCourseProgress)
+      window.removeEventListener(CACHE_EVENTS.USER_DATA_UPDATED, handleUserDataUpdated)
+    }
+  }, [mutate])
 
   return {
     data,
@@ -57,6 +89,22 @@ export function useUserStats(userId: string, options?: { enabled?: boolean; stal
       }
     },
   )
+  
+  // Listen for cache invalidation events to trigger stats refetch
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const handleQuizCompleted = () => {
+      console.log('[useUserStats] Quiz completed event received, revalidating stats...')
+      mutate()
+    }
+    
+    window.addEventListener(CACHE_EVENTS.QUIZ_COMPLETED, handleQuizCompleted)
+    
+    return () => {
+      window.removeEventListener(CACHE_EVENTS.QUIZ_COMPLETED, handleQuizCompleted)
+    }
+  }, [mutate])
 
   return {
     data,
