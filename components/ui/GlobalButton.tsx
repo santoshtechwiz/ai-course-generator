@@ -22,8 +22,8 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        success: "bg-green-600 text-white hover:bg-green-700",
-        warning: "bg-orange-600 text-white hover:bg-orange-700",
+  success: "bg-success text-success-foreground hover:bg-success/90",
+  warning: "bg-warning text-warning-foreground hover:bg-warning/90",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -34,8 +34,8 @@ const buttonVariants = cva(
       state: {
         idle: "",
         loading: "cursor-wait",
-        success: "bg-green-600 hover:bg-green-600",
-        error: "bg-red-600 hover:bg-red-600",
+        success: "bg-success hover:bg-success/90",
+        error: "bg-destructive hover:bg-destructive/90",
       }
     },
     defaultVariants: {
@@ -191,7 +191,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       if (currentState === "success") {
         return (
           <motion.div
-            className="absolute inset-0 bg-green-600"
+            className="absolute inset-0 bg-success"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 1.2, opacity: 0 }}
@@ -202,7 +202,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       if (currentState === "error") {
         return (
           <motion.div
-            className="absolute inset-0 bg-red-600"
+            className="absolute inset-0 bg-destructive"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 1.2, opacity: 0 }}

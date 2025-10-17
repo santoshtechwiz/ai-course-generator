@@ -141,9 +141,10 @@ function QuizCardComponent({
       >
         <Card
           className={cn(
-            "group relative h-full flex flex-col overflow-hidden border transition-all duration-200",
-            "hover:shadow-xl hover:shadow-primary/5",
-            "bg-gradient-to-br from-card via-card to-card/95",
+            "group relative h-full flex flex-col overflow-hidden border-3 transition-transform duration-200 rounded-none",
+            "hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.2)]",
+            "active:translate-x-[0px] active:translate-y-[0px] active:shadow-none",
+            "bg-card",
             config.border,
             loading && "opacity-70 cursor-progress",
           )}
@@ -152,15 +153,7 @@ function QuizCardComponent({
           aria-labelledby={`quiz-title-${slug}`}
           aria-live="polite"
         >
-          <div className={cn("absolute top-0 left-0 right-0 h-1", "bg-gradient-to-r", config.accent)} />
-
-          <div
-            className={cn(
-              "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300",
-              "bg-gradient-to-br",
-              config.gradient || "from-primary/5 via-transparent to-accent/5",
-            )}
-          />
+          <div className={cn("absolute top-0 left-0 right-0 h-2 border-b-3 border-border", config.bg)} />
 
           {loading && (
             <div className="absolute inset-0 bg-background/90 backdrop-blur-md flex items-center justify-center z-20 rounded-xl">
@@ -176,22 +169,16 @@ function QuizCardComponent({
             </div>
           )}
 
-          <div className={cn("relative px-4 pt-4 pb-3 border-b transition-colors", config.bg, config.border)}>
+          <div className={cn("relative px-4 pt-4 pb-3 border-b-3 transition-colors", config.bg, config.border)}>
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div
                   className={cn(
-                    "p-3 rounded-xl border shadow-sm relative overflow-hidden shrink-0 transition-transform hover:scale-105",
+                    "p-3 rounded-none border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.1)] relative overflow-hidden shrink-0",
                     config.bg,
                     config.border,
                   )}
                 >
-                  <div
-                    className={cn(
-                      "absolute inset-0 opacity-20 bg-gradient-to-br",
-                      config.gradient || "from-primary to-accent",
-                    )}
-                  />
                   <QuizTypeIcon className={cn("h-5 w-5 relative z-10", config.color)} aria-hidden />
                 </div>
 
@@ -212,10 +199,10 @@ function QuizCardComponent({
               <button
                 onClick={handleBookmarkClick}
                 className={cn(
-                  "p-2 rounded-lg border transition-all shrink-0 shadow-sm hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                  "p-2 rounded-none border-2 transition-transform shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none focus-visible:ring-4 focus-visible:ring-primary",
                   isBookmarked
-                    ? "bg-primary border-primary text-primary-foreground shadow-md shadow-primary/20"
-                    : "bg-card/80 backdrop-blur-sm border-border hover:border-primary/50 text-muted-foreground hover:text-primary hover:bg-primary/5",
+                    ? "bg-primary border-border text-primary-foreground"
+                    : "bg-card border-border text-foreground hover:bg-primary/10",
                 )}
                 aria-label={isBookmarked ? "Remove bookmark" : "Bookmark quiz"}
               >
@@ -230,9 +217,9 @@ function QuizCardComponent({
                 onTypeClick?.(quizType)
               }}
               className={cn(
-                "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all border shadow-sm hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+                "inline-flex items-center gap-2 px-3 py-1.5 rounded-none text-sm font-bold transition-transform border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none focus-visible:ring-4 focus-visible:ring-primary",
                 config.pill,
-                isTypeActive && "ring-2 ring-primary ring-offset-1 shadow-md",
+                isTypeActive && "ring-4 ring-primary shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]",
               )}
               aria-label={`Filter by ${config.label}`}
             >
@@ -253,17 +240,17 @@ function QuizCardComponent({
 
             {/* Stats Grid - Redesigned */}
             <div className="grid grid-cols-3 gap-2 py-4">
-              <div className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-none bg-primary/10 border-2 border-border shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.05)]">
                 <Clock className="w-4 h-4 text-primary" aria-hidden />
-                <span className="text-xs font-bold text-foreground">{estimatedTime}</span>
+                <span className="text-xs font-black text-foreground">{estimatedTime}</span>
               </div>
-              <div className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-none bg-primary/10 border-2 border-border shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.05)]">
                 <BookOpen className="w-4 h-4 text-primary" aria-hidden />
-                <span className="text-xs font-bold text-foreground">{questionCount} Qs</span>
+                <span className="text-xs font-black text-foreground">{questionCount} Qs</span>
               </div>
-              <div className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-none bg-primary/10 border-2 border-border shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.05)]">
                 <Users className="w-4 h-4 text-primary" aria-hidden />
-                <span className="text-xs font-bold text-foreground">{attemptCount}</span>
+                <span className="text-xs font-black text-foreground">{attemptCount}</span>
               </div>
             </div>
 
@@ -276,7 +263,7 @@ function QuizCardComponent({
                     <span className="font-black text-base text-primary">{Math.round(completionRate)}%</span>
                   </div>
                   <div
-                    className="w-full bg-muted/50 rounded-full h-2.5 overflow-hidden shadow-inner border border-border/30"
+                    className="w-full bg-muted rounded-none h-3 overflow-hidden border-2 border-border"
                     role="progressbar"
                     aria-valuemin={0}
                     aria-valuemax={100}
@@ -286,8 +273,8 @@ function QuizCardComponent({
                     <div
                       style={{ width: `${completionRate}%` }}
                       className={cn(
-                        "h-full rounded-full bg-gradient-to-r shadow-sm transition-all duration-500",
-                        config.accent,
+                        "h-full rounded-none transition-all duration-500",
+                        config.bg,
                       )}
                     />
                   </div>
@@ -326,12 +313,12 @@ function QuizCardComponent({
                 variant="default"
                 size="lg"
                 className={cn(
-                  "w-full gap-2 text-sm font-bold shadow-lg transition-all",
-                  "bg-primary",
-                  "hover:bg-primary/90",
-                  "hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02]",
-                  "active:scale-[0.98]",
-                  isHovered && "shadow-xl shadow-primary/25",
+                  "w-full gap-2 text-sm font-black rounded-none border-3 border-border transition-transform",
+                  "bg-primary text-primary-foreground",
+                  "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]",
+                  "hover:translate-x-[-2px] hover:translate-y-[-2px]",
+                  "hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.2)]",
+                  "active:translate-x-[0px] active:translate-y-[0px] active:shadow-none",
                 )}
                 disabled={loading}
               >

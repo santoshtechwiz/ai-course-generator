@@ -371,9 +371,11 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
     <Card
       onClick={handleCardClick}
       className={cn(
-        "group relative overflow-hidden rounded-xl bg-card shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer border border-border/50",
-        "hover:border-primary/30 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-        isNavigating && "opacity-75 scale-[0.98]",
+        "group relative overflow-hidden rounded-none bg-card cursor-pointer border-3 border-border transition-transform duration-200",
+        "hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.2)]",
+        "focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-0",
+        "active:translate-x-[0px] active:translate-y-[0px] active:shadow-none",
+        isNavigating && "opacity-75",
         variant === "list" && "flex flex-col sm:flex-row sm:h-36",
         variant === "grid" && "flex flex-col",
         className,
@@ -392,8 +394,8 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
     >
       <div
         className={cn(
-          "relative overflow-hidden bg-muted",
-          variant === "list" && "w-full h-32 sm:w-40 sm:h-full sm:shrink-0",
+          "relative overflow-hidden bg-muted border-b-3 border-border",
+          variant === "list" && "w-full h-32 sm:w-40 sm:h-full sm:shrink-0 sm:border-b-0 sm:border-r-3",
           variant === "grid" && "w-full h-48",
         )}
       >
@@ -403,57 +405,51 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
               src={image || "/placeholder.svg"}
               alt={`${title} course thumbnail`}
               fill
-              className="object-cover group-hover:scale-110 transition-transform duration-700"
+              className="object-cover transition-transform duration-200"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-            <div
-              className={cn(
-                "absolute inset-0 bg-gradient-to-br opacity-20 group-hover:opacity-30 transition-opacity duration-300",
-                categoryConfig.gradient,
-              )}
             />
           </div>
         ) : (
           <div
-            className={cn("w-full h-full flex items-center justify-center bg-gradient-to-br", categoryConfig.gradient)}
+            className={cn("w-full h-full flex items-center justify-center", categoryConfig.bgColor)}
           >
-            <div className="p-6 text-white/90">
-              <CategoryIcon className="w-16 h-16" />
+            <div className="p-6">
+              <CategoryIcon className={cn("w-16 h-16", categoryConfig.accentColor)} />
             </div>
           </div>
         )}
 
         <div
           className={cn(
-            "absolute top-3 right-3 flex gap-2 transition-all duration-300",
-            "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-hover:translate-y-0 sm:translate-y-[-8px]",
+            "absolute top-3 right-3 flex gap-2 transition-all duration-200",
+            "opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
           )}
         >
           <Button
             variant="secondary"
             size="sm"
-            className="h-8 w-8 p-0 bg-white/95 dark:bg-gray-900/95 hover:bg-white dark:hover:bg-gray-900 shadow-lg backdrop-blur-sm focus:ring-2 focus:ring-primary"
+            className="h-8 w-8 p-0 bg-card border-2 border-border shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
             onClick={handleFavoriteClick}
             aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart
               className={cn(
                 "h-4 w-4 transition-all",
-                isFavorite ? "fill-red-500 text-red-500 scale-110" : "text-muted-foreground",
+                isFavorite ? "fill-red-500 text-red-500" : "text-foreground",
               )}
             />
           </Button>
           <Button
             variant="secondary"
             size="sm"
-            className="h-8 w-8 p-0 bg-white/95 dark:bg-gray-900/95 hover:bg-white dark:hover:bg-gray-900 shadow-lg backdrop-blur-sm focus:ring-2 focus:ring-primary"
+            className="h-8 w-8 p-0 bg-card border-2 border-border shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none"
             onClick={handleBookmarkClick}
             aria-label={isBookmarked ? "Remove bookmark" : "Bookmark course"}
           >
             <Bookmark
               className={cn(
                 "h-4 w-4 transition-all",
-                isBookmarked ? "fill-primary text-primary scale-110" : "text-muted-foreground",
+                isBookmarked ? "fill-primary text-primary" : "text-foreground",
               )}
             />
           </Button>
@@ -462,7 +458,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
         <div className="absolute top-3 left-3 flex flex-col gap-2">
           {isPopular && (
             <Badge
-              className="bg-primary text-primary-foreground text-xs font-semibold border-0 px-2.5 py-1 shadow-lg backdrop-blur-sm flex items-center gap-1"
+              className="bg-primary text-primary-foreground text-xs font-bold border-2 border-border px-2.5 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] flex items-center gap-1 rounded-none"
               aria-label="Popular course"
             >
               <TrendingUp className="w-3 h-3" />
@@ -471,7 +467,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
           )}
           {isTrending && (
             <Badge
-              className="bg-primary text-primary-foreground text-xs font-semibold border-0 px-2.5 py-1 shadow-lg backdrop-blur-sm flex items-center gap-1"
+              className="bg-warning text-warning-foreground text-xs font-bold border-2 border-border px-2.5 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] flex items-center gap-1 rounded-none"
               aria-label="Trending course"
             >
               🔥 Trending
@@ -482,7 +478,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
         <div className="absolute bottom-3 left-3">
           <Badge
             className={cn(
-              "text-xs font-semibold border shadow-lg backdrop-blur-sm flex items-center gap-1.5 px-2.5 py-1",
+              "text-xs font-bold border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] flex items-center gap-1.5 px-2.5 py-1 rounded-none",
               categoryConfig.bgColor,
               categoryConfig.accentColor,
               categoryConfig.borderColor,
@@ -505,7 +501,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
           <Badge
             variant="secondary"
             className={cn(
-              "text-xs font-semibold border px-2.5 py-1 flex items-center gap-1.5",
+              "text-xs font-bold border-2 px-2.5 py-1 flex items-center gap-1.5 rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.1)]",
               DIFFICULTY_CONFIG[difficultyLevel].badge,
             )}
           >
@@ -514,14 +510,14 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
           </Badge>
           {price !== undefined && (
             <div className="flex items-center gap-2">
-              <span className="font-bold text-foreground text-lg">${price}</span>
+              <span className="font-black text-foreground text-lg">${price}</span>
               {originalPrice && originalPrice > price && (
                 <span className="text-sm text-muted-foreground line-through">${originalPrice}</span>
               )}
             </div>
           )}
           {price === undefined && (
-            <Badge className="bg-success text-success-foreground font-semibold px-2.5 py-1 text-xs border-0">Free</Badge>
+            <Badge className="bg-success text-success-foreground font-bold px-2.5 py-1 text-xs border-2 border-border rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.1)]">Free</Badge>
           )}
         </div>
 
@@ -589,15 +585,15 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
 
         {isEnrolled && (
           <div
-            className={cn("rounded-lg p-3 border-2", categoryConfig.bgColor, categoryConfig.borderColor)}
+            className={cn("rounded-none p-3 border-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.1)]", categoryConfig.bgColor, categoryConfig.borderColor)}
             role="region"
             aria-label="Course progress"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className={cn("text-sm font-bold", categoryConfig.accentColor)}>
+              <span className={cn("text-sm font-black", categoryConfig.accentColor)}>
                 {progressPercentage > 0 ? `${progressPercentage}% Complete` : "Not started"}
               </span>
-              <span className="text-xs text-muted-foreground font-medium">
+              <span className="text-xs text-muted-foreground font-bold">
                 {typeof totalChapters === "number" && totalChapters > 0
                   ? `${completedChapters}/${totalChapters} chapters`
                   : "N/A"}
@@ -605,11 +601,11 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
             </div>
             <Progress
               value={progressPercentage}
-              className={cn("h-2.5", categoryConfig.accentColor)}
+              className={cn("h-3 border-2 border-border rounded-none", categoryConfig.accentColor)}
               aria-label={`${progressPercentage}% complete`}
             />
             {lastAccessedAt && (
-              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1 font-semibold">
                 <Clock className="w-3 h-3" />
                 Last accessed {new Date(lastAccessedAt).toLocaleDateString()}
               </p>
