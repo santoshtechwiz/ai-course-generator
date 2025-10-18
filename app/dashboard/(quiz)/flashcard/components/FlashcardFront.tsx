@@ -45,19 +45,19 @@ export function FlashcardFront({
         <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
           <div className="flex items-center gap-4">
             {/* Icon Badge */}
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-cyan-500 border-3 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-              <BookOpen className="w-6 h-6 text-white" />
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-primary text-primary-foreground border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]">
+              <BookOpen className="w-6 h-6" />
             </div>
             
             {/* Type Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-100 border-3 border-black shadow-[3px_3px_0px_rgba(0,0,0,1)]">
-              <span className="text-sm font-bold text-black tracking-wide">FLASHCARD</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 dark:bg-primary/20 text-primary border-3 border-primary/30 shadow-[3px_3px_0px_0px_hsl(var(--primary)/0.3)]">
+              <span className="text-sm font-black tracking-wide">FLASHCARD</span>
             </div>
             
             {type === 'code' && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-100 border-2 border-black">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-3 border-emerald-600 dark:border-emerald-400 shadow-[2px_2px_0px_0px_hsl(var(--border))]">
                 <Code2 className="w-4 h-4" />
-                <span className="text-xs font-bold">Code</span>
+                <span className="text-xs font-black">Code</span>
               </div>
             )}
           </div>
@@ -66,10 +66,10 @@ export function FlashcardFront({
             <button
               onClick={onToggleHint}
               className={cn(
-                'inline-flex items-center gap-2 px-4 py-2 border-3 border-black font-bold text-sm transition-all duration-150',
+                'inline-flex items-center gap-2 px-4 py-2 border-3 border-border font-black text-sm transition-all duration-150 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[2px_2px_0px_0px_hsl(var(--border))] hover:translate-x-[2px] hover:translate-y-[2px]',
                 showHint 
-                  ? 'bg-yellow-300 shadow-[3px_3px_0px_rgba(0,0,0,1)] transform translate-x-[3px] translate-y-[3px]'
-                  : 'bg-yellow-100 shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]'
+                  ? 'bg-primary/20 dark:bg-primary/30 text-primary border-primary/50 shadow-[3px_3px_0px_0px_hsl(var(--primary)/0.3)] transform translate-x-[3px] translate-y-[3px]'
+                  : 'bg-primary/10 dark:bg-primary/20 text-primary border-primary/30 hover:border-primary/50'
               )}
               aria-label="Show hint keywords"
             >
@@ -95,8 +95,9 @@ export function FlashcardFront({
           {type === 'code' && codeSnippet && (
             <div className="border-3 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] overflow-hidden">
               {/* Code Editor Header */}
-              <div className="bg-gray-900 px-4 py-3 flex items-center justify-between border-b-3 border-black">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-500 border-2 border-black">
+              <div className="bg-gray-900 dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-b-3 border-border">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-600 dark:bg-emerald-500 text-white border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]">
+                  <Code2 className="w-3.5 h-3.5" />
                   <Code2 className="w-3.5 h-3.5 text-white" />
                   <span className="text-xs font-bold text-white">{language}</span>
                 </div>

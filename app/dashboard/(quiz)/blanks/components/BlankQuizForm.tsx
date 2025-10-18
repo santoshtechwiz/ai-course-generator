@@ -248,7 +248,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
               transition={{ delay: 0.2 }}
             >
               <Label htmlFor="title" className="text-base font-medium text-foreground flex items-center gap-2">
-                <div className="p-1.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+                <div className="p-1.5 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] rounded-lg">
                   <Sparkles className="w-3.5 h-3.5 text-white" />
                 </div>
                 Title *
@@ -290,7 +290,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                   aria-invalid={errors.title ? "true" : "false"}
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="p-1.5 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg group-focus-within:from-blue-500/20 group-focus-within:to-purple-500/20 transition-all duration-300">
+                  <div className="p-1.5 bg-gradient-to-r from-[hsl(var(--primary))]/10 to-[hsl(var(--accent))]/10 rounded-lg group-focus-within:from-[hsl(var(--primary))]/20 group-focus-within:to-[hsl(var(--accent))]/20 transition-all duration-300">
                     <Sparkles className="h-4 w-4 text-blue-500 group-focus-within:text-blue-600" />
                   </div>
                 </div>
@@ -308,7 +308,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                   {errors.title.message}
                 </motion.p>
               )}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/50">
+              <div className="bg-gradient-to-r from-[hsl(var(--muted))] to-[hsl(var(--muted))] dark:from-[hsl(var(--muted))]/50 dark:to-[hsl(var(--muted))]/50 rounded-xl p-4 border border-[hsl(var(--border))]">
                 <p className="text-sm text-slate-700 dark:text-slate-300" id="title-description">
                   <span className="font-medium text-blue-700 dark:text-blue-300">💡 Examples:</span> "The process of photosynthesis in green plants", "Key principles of quantum mechanics", "Benefits of renewable energy sources", or simply "World War II Events"
                 </p>

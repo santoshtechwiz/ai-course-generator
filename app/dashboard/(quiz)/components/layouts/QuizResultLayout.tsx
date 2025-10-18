@@ -48,7 +48,7 @@ const getDifficultyColor = (difficulty: string) => {
     case 'easy': return 'from-green-500 to-emerald-500'
     case 'medium': return 'from-yellow-500 to-orange-500'
     case 'hard': return 'from-red-500 to-pink-500'
-    default: return 'from-blue-500 to-purple-500'
+    default: return 'from-[hsl(var(--primary))] to-[hsl(var(--accent))]'
   }
 }
 
@@ -77,7 +77,7 @@ export default function QuizResultLayout({
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-[hsl(var(--primary-foreground))] shadow-lg">
                 <QuizIcon className="w-6 h-6" />
               </div>
               <div>
@@ -87,7 +87,7 @@ export default function QuizResultLayout({
                 <div className="flex items-center gap-3 mt-1">
                   <Badge 
                     variant="secondary" 
-                    className="bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 dark:from-blue-900/30 dark:to-purple-900/30 dark:text-blue-300 border-blue-200/50 dark:border-blue-700/50"
+                    className="bg-gradient-to-r from-[hsl(var(--primary))]/10 to-[hsl(var(--accent))]/10 text-[hsl(var(--primary))] dark:from-[hsl(var(--primary))]/20 dark:to-[hsl(var(--accent))]/20 dark:text-[hsl(var(--primary))] border-[hsl(var(--primary))]/30 dark:border-[hsl(var(--primary))]/40"
                   >
                     {quizTypeLabels[quizType] || "Quiz"}
                   </Badge>

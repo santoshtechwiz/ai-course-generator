@@ -444,7 +444,7 @@ export default function CreateQuizForm({
 
         {/* Available Credits */}
         <motion.div
-          className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-xl p-6 space-y-4"
+          className="bg-gradient-to-r from-[hsl(var(--muted))] to-[hsl(var(--muted))] dark:from-[hsl(var(--muted))]/50 dark:to-[hsl(var(--muted))]/50 rounded-xl p-6 space-y-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}

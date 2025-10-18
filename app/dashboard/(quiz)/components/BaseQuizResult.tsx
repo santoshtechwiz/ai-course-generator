@@ -39,8 +39,8 @@ const PERFORMANCE_LEVELS = {
     celebration: "🎉✨🌟",
   },
   good: {
-    gradient: "from-blue-400 via-indigo-400 to-purple-400",
-    bgGradient: "from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30",
+    gradient: "from-[hsl(var(--primary))] via-[hsl(var(--accent))] to-[hsl(var(--primary))]",
+    bgGradient: "from-[hsl(var(--primary))]/10 via-[hsl(var(--accent))]/10 to-[hsl(var(--primary))]/10 dark:from-[hsl(var(--primary))]/20 dark:via-[hsl(var(--accent))]/20 dark:to-[hsl(var(--primary))]/20",
     border: "border-blue-300 dark:border-blue-700",
     icon: Trophy,
     emoji: "🎯",

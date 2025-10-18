@@ -403,7 +403,7 @@ function QuizHeader({
       case "Excellent":
         return "from-emerald-500/20 via-green-500/20 to-teal-500/20"
       case "Good":
-        return "from-blue-500/20 via-indigo-500/20 to-purple-500/20"
+        return "from-[hsl(var(--primary))]/20 via-[hsl(var(--accent))]/20 to-[hsl(var(--primary))]/20"
       case "Average":
         return "from-amber-500/20 via-orange-500/20 to-yellow-500/20"
       default:
@@ -451,7 +451,7 @@ function QuizHeader({
                 variant="secondary"
                 className={cn(
                   "text-sm px-3 py-1 font-semibold",
-                  quizType === 'blanks' ? 'bg-violet-600 text-white border-transparent' : ''
+                  quizType === 'blanks' ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-transparent' : ''
                 )}
               >
                 {quizType === "open-ended" ? "Open-Ended" : "Fill in the Blanks"}
@@ -851,8 +851,8 @@ function QuestionItem({
                   </Badge>
                 </div>
 
-                <Progress value={similarityPercentage} className="h-2 mb-2 bg-purple-50">
-                  <div className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded" style={{ width: `${similarityPercentage}%` }} />
+                <Progress value={similarityPercentage} className="h-2 mb-2 bg-[hsl(var(--muted))]">
+                  <div className="bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] h-2 rounded" style={{ width: `${similarityPercentage}%` }} />
                 </Progress>
 
                 <p className={cn("text-xs", getSimilarityColor(question.similarity || 0))}>

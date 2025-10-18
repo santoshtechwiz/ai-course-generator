@@ -9,10 +9,7 @@ import {
   Search,
   Plus,
   RefreshCw,
-  Grid3X3,
-  List,
   Sparkles,
-  Target,
   Brain,
   X,
   SlidersHorizontal,
@@ -25,11 +22,10 @@ import { QuizCard } from "./QuizCard"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn, getColorClasses } from "@/lib/utils"
 import type { QuizListItem } from "@/app/actions/getQuizes"
 import type { QuizType } from "@/app/types/quiz-types"
-import { QUIZ_TYPE_CONFIG } from "./quizTypeConfig"
+import { QuizSidebar } from "./QuizSidebar"
 import { Card, CardContent } from "@/components/ui/card"
 import { useDeleteQuiz } from "@/hooks/use-delete-quiz"
 import { ConfirmDeleteDialog } from "@/components/common/ConfirmDeleteDialog"
@@ -296,37 +292,32 @@ function QuizListComponent({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.2 }}
+        transition={{ duration: 0.1 }}
         className="min-h-[500px] flex items-center justify-center"
       >
         <Card className={cn(
           cardSecondary,
-          "border-2 border-dashed border-border/50 relative overflow-hidden max-w-2xl w-full"
+          "border-3 border-dashed border-border shadow-[6px_6px_0px_0px_hsl(var(--border))] max-w-2xl w-full"
         )}>
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-pink-500/5" />
-          <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-blue-400/20 to-transparent rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tl from-purple-400/20 to-transparent rounded-full blur-3xl animate-pulse delay-1000" />
-          
-          <CardContent className="flex flex-col items-center justify-center p-16 text-center relative z-10">
+          <CardContent className="flex flex-col items-center justify-center p-16 text-center">
             {isSearching ? (
               <>
                 <div className="relative mb-8">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-full blur-2xl animate-pulse" />
                   <div className={cn(
-                    "relative w-28 h-28 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20",
-                    "flex items-center justify-center border-4 border-border",
-                    "shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+                    "w-28 h-28 rounded-xl bg-[hsl(var(--muted))]/50 dark:bg-[hsl(var(--muted))]/30",
+                    "flex items-center justify-center border-4 border-[hsl(var(--primary))]",
+                    "shadow-[4px_4px_0px_0px] shadow-[hsl(var(--primary))]/50"
                   )}>
-                    <Search className="h-14 w-14 text-muted-foreground" />
+                    <Search className="h-14 w-14 text-[hsl(var(--primary))]" />
                   </div>
                 </div>
-                <h3 className="font-black text-3xl mb-3">
+                <h3 className="font-black text-3xl mb-3 text-foreground">
                   No quizzes found
                 </h3>
                 <p className="text-muted-foreground font-medium mb-8 max-w-md text-lg leading-relaxed">
                   Try adjusting your search terms or filters to discover more quizzes.
                 </p>
-                <Button onClick={() => window.location.reload()} size="lg" className={cn(buttonSecondary, "gap-2 px-8 font-bold")}>
+                <Button onClick={() => window.location.reload()} size="lg" className={cn(buttonSecondary, "gap-2 px-8 font-bold shadow-[4px_4px_0px_0px_hsl(var(--border))]")}>
                   <RefreshCw className="mr-2 h-5 w-5" />
                   Clear Filters
                 </Button>
@@ -334,38 +325,35 @@ function QuizListComponent({
             ) : (
               <>
                 <div className="relative mb-8">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-secondary/30 rounded-full blur-2xl animate-pulse" />
                   <div className={cn(
-                    "relative w-32 h-32 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20",
-                    "flex items-center justify-center border-4 border-border",
-                    "shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+                    "w-32 h-32 rounded-xl bg-[hsl(var(--muted))]/50 dark:bg-[hsl(var(--muted))]/30",
+                    "flex items-center justify-center border-4 border-[hsl(var(--primary))]",
+                    "shadow-[4px_4px_0px_0px] shadow-[hsl(var(--primary))]/50",
+                    "animate-bounce"
                   )}>
-                    <Sparkles className="h-16 w-16 text-primary animate-pulse" />
+                    <Sparkles className="h-16 w-16 text-[hsl(var(--primary))]" />
                   </div>
                 </div>
-                <h3 className="font-black text-4xl mb-3 bg-gradient-to-r from-primary via-purple-600 to-secondary bg-clip-text text-transparent">
+                <h3 className="font-black text-4xl mb-3 text-foreground">
                   Ready to start learning?
                 </h3>
                 <p className="text-muted-foreground font-medium mb-10 max-w-lg text-lg leading-relaxed">
                   Create your first quiz and begin your journey of knowledge discovery with AI-powered learning.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary rounded-xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity" />
-                    <Button
-                      onClick={onCreateQuiz}
-                      size="lg"
-                      className={cn(
-                        buttonPrimary,
-                        "relative gap-3 px-8 py-6 text-base font-bold",
-                        "shadow-[4px_4px_0px_0px_hsl(var(--border))]"
-                      )}
-                    >
-                      <Plus className="h-5 w-5" />
-                      Create Your First Quiz
-                    </Button>
-                  </div>
-                  <Button onClick={() => window.location.reload()} size="lg" className={cn(buttonSecondary, "gap-3 px-8 py-6 text-base font-bold border-2")}>
+                  <Button
+                    onClick={onCreateQuiz}
+                    size="lg"
+                    className={cn(
+                      buttonPrimary,
+                      "gap-3 px-8 py-6 text-base font-bold",
+                      "shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+                    )}
+                  >
+                    <Plus className="h-5 w-5" />
+                    Create Your First Quiz
+                  </Button>
+                  <Button onClick={() => window.location.reload()} size="lg" className={cn(buttonSecondary, "gap-3 px-8 py-6 text-base font-bold border-3 shadow-[4px_4px_0px_0px_hsl(var(--border))]")}>
                     <TrendingUp className="h-5 w-5" />
                     Explore Quizzes
                   </Button>
@@ -391,90 +379,14 @@ function QuizListComponent({
       onCreateClick={onCreateQuiz}
       createButtonText="Create Quiz"
       filterSidebar={
-        <div className="space-y-6">
-          {/* Quiz Type Filters */}
-          <div>
-            <h4 className="text-lg font-black text-[hsl(var(--foreground))] mb-4 flex items-center gap-2">
-              <Target className="h-5 w-5 text-[hsl(var(--primary))]" />
-              Quiz Types
-            </h4>
-            <TooltipProvider>
-              <div className="space-y-3">
-                {Object.entries(QUIZ_TYPE_CONFIG).map(([type, config]) => {
-                  const IconComponent = config.icon
-                  const normalizedType = type as QuizType
-                  const isSelected = currentSelectedTypes.includes(normalizedType)
-                  const count = quizCounts ? (quizCounts as any)[type] : undefined
-                  return (
-                    <Tooltip key={type}>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          onClick={() => toggleQuizType(normalizedType)}
-                          className={cn(
-                            "w-full flex items-center gap-3 rounded-2xl border-4 px-4 py-3 text-sm font-bold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/50 hover:scale-105 shadow-[4px_4px_0_0_rgba(0,0,0,0.9)]",
-                            isSelected
-                              ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary-foreground))]"
-                              : "bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]"
-                          )}
-                          aria-pressed={isSelected}
-                        >
-                          <div className={cn(
-                            "p-2 rounded-xl",
-                            isSelected ? "bg-[hsl(var(--primary-foreground))]" : "bg-[hsl(var(--muted))]"
-                          )}>
-                            <IconComponent className={cn("h-5 w-5", isSelected ? config.color : "text-[hsl(var(--muted-foreground))]")} />
-                          </div>
-                          <div className="flex-1 text-left">
-                            <span>{config.label}</span>
-                            {typeof count === "number" && (
-                              <span className="ml-2 text-xs bg-[hsl(var(--muted))] px-2 py-1 rounded-lg">
-                                {count}
-                              </span>
-                            )}
-                          </div>
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{config.label} Quizzes</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )
-                })}
-              </div>
-            </TooltipProvider>
-          </div>
-
-          {/* View Mode Toggle */}
-          {onViewModeChange && (
-            <div>
-              <h4 className="text-lg font-black text-[hsl(var(--foreground))] mb-4 flex items-center gap-2">
-                <Grid3X3 className="h-5 w-5 text-[hsl(var(--primary))]" />
-                View Mode
-              </h4>
-              <div className="flex gap-2">
-                <Button
-                  variant={viewMode === "grid" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => onViewModeChange("grid")}
-                  className="flex-1 border-2 shadow-[2px_2px_0_0_rgba(0,0,0,0.9)]"
-                >
-                  <Grid3X3 className="h-4 w-4 mr-2" />
-                  Grid
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => onViewModeChange("list")}
-                  className="flex-1 border-2 shadow-[2px_2px_0_0_rgba(0,0,0,0.9)]"
-                >
-                  <List className="h-4 w-4 mr-2" />
-                  List
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
+        <QuizSidebar
+          search={localSearch}
+          onSearchChange={(e) => handleSearchChange(e.target.value)}
+          onClearSearch={() => setLocalSearch("")}
+          isSearching={isSearching}
+          selectedTypes={currentSelectedTypes}
+          toggleQuizType={toggleQuizType}
+        />
       }
       contentGrid={
         <div className="space-y-8">
@@ -488,7 +400,7 @@ function QuizListComponent({
                   <ChevronDown className="h-4 w-4 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52 rounded-xl border-2 shadow-xl">
+              <DropdownMenuContent align="end" className="w-52 rounded-xl border-2 shadow-xl z-[100]">
                 <DropdownMenuItem
                   onClick={() => setSortBy("default")}
                   className={cn(sortBy === "default" && "bg-primary/10 text-primary", "text-sm font-medium rounded-lg")}
@@ -549,7 +461,7 @@ function QuizListComponent({
           {/* Loading more - Enhanced */}
           {isFetchingNextPage && (
             <div className="flex justify-center py-12">
-              <div className="flex items-center gap-4 px-8 py-4 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 border-2 border-border/50 shadow-lg backdrop-blur-sm">
+              <div className="flex items-center gap-4 px-8 py-4 rounded-2xl bg-primary/10 dark:bg-primary/20 border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]">
                 <div className="relative">
                   <div className="w-6 h-6 border-3 border-primary border-r-transparent rounded-full animate-spin" aria-hidden="true" />
                   <div className="absolute inset-0 w-6 h-6 border-3 border-primary/20 border-r-transparent rounded-full animate-ping" aria-hidden="true" />
@@ -562,11 +474,9 @@ function QuizListComponent({
           {/* End message - Enhanced */}
           {!hasNextPage && quizzes.length > 0 && (
             <div ref={endMessageRef} className="text-center py-12">
-              <div className="relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl border-2 border-border/50 shadow-xl overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-purple-500/10 group-hover:opacity-80 transition-opacity" />
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-purple-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                <Sparkles className="relative h-5 w-5 text-primary animate-pulse" />
-                <span className="relative text-base font-bold text-foreground">You've seen them all! 🎉</span>
+              <div className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 border-3 border-emerald-600 dark:border-emerald-400 shadow-[4px_4px_0px_0px] shadow-emerald-600/50 dark:shadow-emerald-400/50">
+                <Sparkles className="h-5 w-5 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+                <span className="text-base font-bold text-emerald-600 dark:text-emerald-400">You've seen them all! 🎉</span>
               </div>
             </div>
           )}

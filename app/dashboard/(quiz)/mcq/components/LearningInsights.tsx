@@ -54,9 +54,9 @@ export function LearningInsights({ performance, stats, extraInfo }: LearningInsi
 
         {/* Additional tips if provided */}
         {extraInfo?.tips && extraInfo.tips.length > 0 && (
-          <div className="p-6 rounded-2xl bg-violet-50 border-2 border-violet-200 mt-6">
-            <h4 className="font-bold text-violet-700 mb-3">Additional Tips</h4>
-            <ul className="text-violet-600 space-y-2">
+          <div className="p-6 rounded-2xl bg-[hsl(var(--muted))] border-2 border-[hsl(var(--border))] mt-6">
+            <h4 className="font-bold text-[hsl(var(--foreground))] mb-3">Additional Tips</h4>
+            <ul className="text-[hsl(var(--muted-foreground))] space-y-2">
               {extraInfo.tips.map((tip, index) => (
                 <li key={index}>• {tip}</li>
               ))}

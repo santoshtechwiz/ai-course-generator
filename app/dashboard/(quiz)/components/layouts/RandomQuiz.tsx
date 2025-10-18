@@ -51,7 +51,7 @@ const QUIZ_ICONS = {
   flashcard: Brain,
 } as const
 
-// Simplified difficulty colors - less saturated, more subtle
+// Simplified difficulty colors - Neobrutalism compliant, no yellow/amber
 const DIFFICULTY_COLORS = {
   easy: {
     bg: "bg-emerald-50 dark:bg-emerald-950/30",
@@ -60,10 +60,10 @@ const DIFFICULTY_COLORS = {
     accent: "bg-emerald-600"
   },
   medium: {
-    bg: "bg-amber-50 dark:bg-amber-950/30",
-    text: "text-amber-700 dark:text-amber-300",
-    border: "border-amber-200 dark:border-amber-800",
-    accent: "bg-amber-600"
+    bg: "bg-blue-50 dark:bg-blue-950/30",
+    text: "text-blue-700 dark:text-blue-300",
+    border: "border-blue-200 dark:border-blue-800",
+    accent: "bg-blue-600"
   },
   hard: {
     bg: "bg-red-50 dark:bg-red-950/30",
@@ -155,7 +155,7 @@ const QuizStats = memo(({
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
         {rating && (
           <div className="flex items-center gap-1">
-            <Star className="w-3 h-3 fill-warning text-warning" />
+            <Star className="w-3 h-3 fill-muted-foreground text-muted-foreground" />
             <span>{rating.toFixed(1)}</span>
           </div>
         )}
@@ -353,7 +353,7 @@ const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
     <Card className="border-3 border-destructive/20 bg-destructive/5 shadow-[4px_4px_0px_0px_hsl(var(--destructive)/0.2)]">
       <CardContent className="p-12 text-center">
         <motion.div 
-          className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-destructive/10 to-destructive/5 border-3 border-destructive/20 flex items-center justify-center shadow-[4px_4px_0px_0px_hsl(var(--destructive)/0.2)]"
+          className="w-20 h-20 mx-auto mb-6 rounded-full bg-destructive/10 dark:bg-destructive/20 border-3 border-destructive/20 flex items-center justify-center shadow-[4px_4px_0px_0px_hsl(var(--destructive)/0.2)]"
           animate={{ x: [0, -6, 6, 0] }}
           transition={{ duration: 0.5, repeat: 3 }}
         >

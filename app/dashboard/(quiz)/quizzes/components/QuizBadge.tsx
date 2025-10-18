@@ -16,12 +16,12 @@ interface QuizBadgeProps {
 export function QuizBadge({ children, className, variant = "secondary", tone, icon, ...props }: QuizBadgeProps) {
   const toneClasses =
     tone === "success"
-      ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+      ? "bg-emerald-500/10 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 dark:border-emerald-400/30"
       : tone === "warning"
-      ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30"
+      ? "bg-[hsl(var(--warning))]/10 dark:bg-[hsl(var(--warning))]/20 text-[hsl(var(--warning))] dark:text-[hsl(var(--warning-foreground))] border-[hsl(var(--warning))]/30 dark:border-[hsl(var(--warning))]/40"
       : tone === "danger"
-      ? "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30"
-      : "bg-muted/5 text-muted-foreground border-border/50"
+      ? "bg-rose-500/10 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border-rose-500/30 dark:border-rose-400/30"
+      : "bg-muted/5 dark:bg-muted/10 text-muted-foreground border-border/50"
 
   return (
     <Badge

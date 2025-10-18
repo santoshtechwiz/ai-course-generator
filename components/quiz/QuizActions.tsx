@@ -487,7 +487,7 @@ const quizTypeConfig = {
   },
   blanks: {
     label: "Fill in Blanks",
-    color: "bg-amber-600",
+    color: "bg-orange-600",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M12 2v20M2 12h20" />
@@ -692,47 +692,73 @@ const QuizActions = memo(
 
     if (variant === "compact") {
       return (
-        <div className={cn("flex items-center gap-2 flex-wrap", className)}>
-          {/* Status Badge */}
-          <Badge variant={isPublic ? "default" : "secondary"} className="text-xs">
+        <div className={cn("flex items-center gap-3 flex-wrap", className)}>
+          {/* Status Badge - Neobrutalism styling */}
+          <Badge 
+            variant={isPublic ? "default" : "secondary"} 
+            className={cn(
+              "text-xs font-black border-3 shadow-[3px_3px_0px_0px_hsl(var(--border))] px-3 py-1.5 h-10 flex items-center gap-2",
+              isPublic 
+                ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-600 dark:border-emerald-400" 
+                : "bg-muted dark:bg-muted/50 text-muted-foreground border-border"
+            )}
+          >
             {isPublic ? (
               <>
-                <Globe className="w-3 h-3 mr-1" />
+                <Globe className="w-3.5 h-3.5" />
                 Public
               </>
             ) : (
               <>
-                <Lock className="w-3 h-3 mr-1" />
+                <Lock className="w-3.5 h-3.5" />
                 Private
               </>
             )}
           </Badge>
 
-          {/* Primary Actions */}
+          {/* Primary Actions - Improved sizing and spacing */}
           {primaryActions
             .filter((action) => action.show)
             .map((action) => (
-              <ActionButton
+              <motion.div
                 key={action.key}
-                icon={action.icon}
-                label={action.label}
-                onClick={action.onClick}
-                loading={action.loading}
-                className={action.className}
-                variant={action.variant}
-              />
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={action.onClick}
+                  disabled={action.loading}
+                  className={cn(
+                    "h-10 px-4 border-3 shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:shadow-[4px_4px_0px_0px_hsl(var(--border))] transition-all duration-100 font-bold",
+                    action.className
+                  )}
+                >
+                  {action.loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <action.icon className="w-4 h-4" />
+                  )}
+                  <span className="sr-only">{action.label}</span>
+                </Button>
+              </motion.div>
             ))}
 
-          {/* More Actions Dropdown */}
+          {/* More Actions Dropdown - Improved button styling */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button variant="ghost" size="sm" className="h-9 px-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-10 px-3 border-3 shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:shadow-[4px_4px_0px_0px_hsl(var(--border))] transition-all duration-100 font-bold"
+                >
                   <MoreVertical className="w-4 h-4" />
                 </Button>
               </motion.div>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-52 border-3 shadow-[4px_4px_0px_0px_hsl(var(--border))]">
               {(() => {
                 const visibleActions = secondaryActions.filter((action) => action.show)
                 return visibleActions.map((action, index) => (

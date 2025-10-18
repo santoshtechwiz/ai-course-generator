@@ -40,8 +40,8 @@ export function FlashcardBack({
       label: "Still learning",
       shortLabel: "Learning",
       icon: BookOpen,
-      bg: "bg-amber-500",
-      hover: "hover:bg-amber-600",
+      bg: "bg-[hsl(var(--primary))]",
+      hover: "hover:bg-[hsl(var(--primary))]/90",
       emoji: "📚",
     },
     {
@@ -122,12 +122,12 @@ export function FlashcardBack({
 
           {/* Explanation */}
           {explanation && (
-            <div className="bg-blue-100 border-3 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] p-6 mx-4">
+            <div className="bg-[hsl(var(--muted))]/50 border-3 border-[hsl(var(--border))] shadow-[4px_4px_0px_rgba(0,0,0,1)] p-6 mx-4">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-blue-500 border-2 border-black flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white" />
+                <div className="w-8 h-8 bg-[hsl(var(--primary))] border-2 border-[hsl(var(--border))] flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-[hsl(var(--primary-foreground))]" />
                 </div>
-                <h4 className="text-sm font-bold text-black">Explanation</h4>
+                <h4 className="text-sm font-bold text-[hsl(var(--foreground))]">Explanation</h4>
               </div>
               <p className="text-base text-black leading-relaxed">{explanation}</p>
             </div>

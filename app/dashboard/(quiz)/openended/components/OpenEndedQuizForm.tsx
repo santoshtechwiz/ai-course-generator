@@ -86,7 +86,7 @@ const TOPIC_CATEGORIES = {
   Creative: {
     icon: PenTool,
     color:
-      "bg-gradient-to-r from-purple-400 to-pink-500 text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 border-0",
+      "bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-[hsl(var(--primary-foreground))] shadow-lg shadow-[hsl(var(--primary))]/25 hover:shadow-[hsl(var(--primary))]/40 border-0",
     topics: [
       "Creative Writing Prompts",
       "Digital Art Techniques",

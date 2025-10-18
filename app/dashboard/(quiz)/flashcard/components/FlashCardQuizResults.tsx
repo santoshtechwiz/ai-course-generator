@@ -276,9 +276,9 @@ export default function FlashCardResults({
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-2 border-purple-200 dark:border-purple-800 shadow-xl">
+        <Card className="bg-gradient-to-br from-[hsl(var(--primary))]/10 to-[hsl(var(--accent))]/10 dark:from-[hsl(var(--primary))]/20 dark:to-[hsl(var(--accent))]/20 border-2 border-[hsl(var(--primary))]/30 dark:border-[hsl(var(--primary))]/40 shadow-xl">
           <CardHeader className="pb-3">
-            <CardTitle className="text-purple-700 dark:text-purple-300">Performance</CardTitle>
+            <CardTitle className="text-[hsl(var(--primary))] dark:text-[hsl(var(--primary))]">Performance</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-3 text-center text-sm gap-4">
             <div className="space-y-2">

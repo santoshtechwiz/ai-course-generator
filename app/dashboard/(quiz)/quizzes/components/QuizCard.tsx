@@ -37,11 +37,11 @@ const getDifficulty = (questionCount: number) => {
   if (questionCount <= 5)
     return {
       label: "Beginner",
-      color: "bg-success/10 text-success border-success/20",
+      color: "bg-success/10 dark:bg-success/20 text-success border-success/20 dark:border-success/30",
     }
   if (questionCount <= 15)
-    return { label: "Intermediate", color: "bg-warning/10 text-warning border-warning/20" }
-  return { label: "Advanced", color: "bg-destructive/10 text-destructive border-destructive/20" }
+    return { label: "Intermediate", color: "bg-[hsl(var(--primary))]/10 dark:bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] dark:text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]/20 dark:border-[hsl(var(--primary))]/30" }
+  return { label: "Advanced", color: "bg-destructive/10 dark:bg-destructive/20 text-destructive border-destructive/20 dark:border-destructive/30" }
 }
 
 function QuizCardComponent({
@@ -137,11 +137,11 @@ function QuizCardComponent({
       <div
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="h-full transition-transform duration-200 hover:-translate-y-1 hover:scale-[1.01]"
+        className="h-full transition-transform duration-100 hover:-translate-y-1 hover:scale-[1.01]"
       >
         <Card
           className={cn(
-            "group relative h-full flex flex-col overflow-hidden border-3 transition-transform duration-200 rounded-none",
+            "group relative h-full flex flex-col overflow-hidden border-3 transition-transform duration-100 rounded-none",
             "hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.2)]",
             "active:translate-x-[0px] active:translate-y-[0px] active:shadow-none",
             "bg-card",
@@ -260,7 +260,7 @@ function QuizCardComponent({
                 <div className="space-y-2 w-full">
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground font-medium">Your progress</span>
-                    <span className="font-black text-base text-primary">{Math.round(completionRate)}%</span>
+                    <span className="font-black text-base bg-gradient-to-r from-blue-500 to-emerald-500 dark:from-blue-400 dark:to-emerald-400 bg-clip-text text-transparent">{Math.round(completionRate)}%</span>
                   </div>
                   <div
                     className="w-full bg-muted rounded-none h-3 overflow-hidden border-2 border-border"
@@ -273,8 +273,7 @@ function QuizCardComponent({
                     <div
                       style={{ width: `${completionRate}%` }}
                       className={cn(
-                        "h-full rounded-none transition-all duration-500",
-                        config.bg,
+                        "h-full rounded-none transition-all duration-500 bg-gradient-to-r from-blue-500 to-emerald-500 dark:from-blue-400 dark:to-emerald-400",
                       )}
                     />
                   </div>

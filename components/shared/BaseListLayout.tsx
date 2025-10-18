@@ -115,39 +115,20 @@ export function BaseListLayout({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6 md:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[256px_1fr] gap-8">
           {/* Filter Sidebar */}
           <div className={cn(
-            "lg:col-span-1",
             showFiltersOnMobile ? "block" : "hidden lg:block"
           )}>
-            <div className="sticky top-6">
-              <div className="bg-[hsl(var(--card))] border-4 border-[hsl(var(--border))] rounded-2xl p-6 shadow-[4px_4px_0_0_rgba(0,0,0,0.9)]">
-                {filterSidebar}
-              </div>
-            </div>
+            {filterSidebar}
           </div>
 
           {/* Content Grid */}
-          <div className="lg:col-span-4">
+          <div className="min-w-0">
             {contentGrid}
           </div>
         </div>
       </div>
-
-      {/* Floating Create Button */}
-      {onCreateClick && (
-        <div className="fixed bottom-6 right-6 lg:top-6 lg:bottom-auto z-50">
-          <Button
-            onClick={onCreateClick}
-            size="lg"
-            className="h-14 w-14 rounded-2xl bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 border-4 border-[hsl(var(--primary-foreground))] shadow-[4px_4px_0_0_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0_0_rgba(0,0,0,0.9)] transition-all duration-200 hover:scale-105"
-            aria-label={createButtonText}
-          >
-            <Plus className="h-6 w-6 text-[hsl(var(--primary-foreground))]" />
-          </Button>
-        </div>
-      )}
     </div>
   )
 }

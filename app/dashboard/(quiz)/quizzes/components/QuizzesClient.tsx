@@ -356,9 +356,9 @@ function EnhancedQuizzesClientComponent({ initialQuizzesData, userId }: Enhanced
           <Button 
             onClick={handleCreateQuiz}
             size="lg"
-            className="w-14 h-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 hover:scale-110 transition-all"
+            className="w-14 h-14 rounded-full shadow-lg bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 border-3 border-[hsl(var(--border))] shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all"
           >
-            <Zap className="h-6 w-6" />
+            <Zap className="h-6 w-6 text-[hsl(var(--primary-foreground))]" />
           </Button>
         </motion.div>
       </div>

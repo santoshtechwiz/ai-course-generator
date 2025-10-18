@@ -52,8 +52,6 @@ export function FlashcardController({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-   
-    
       {/* Settings Panel */}
       {showSettings && (
         <motion.div
@@ -89,7 +87,7 @@ export function FlashcardController({
           variant="outline" 
           onClick={onRestartQuiz}
           size="sm"
-          className="text-xs flex items-center gap-1"
+          className="text-xs flex items-center gap-1 border-2 hover:border-border"
         >
           <RotateCcw className="w-3 h-3" />
           Restart
@@ -100,7 +98,7 @@ export function FlashcardController({
             variant="default"
             onClick={onFinishQuiz}
             size="sm"
-            className="text-xs flex items-center gap-1"
+            className="text-xs flex items-center gap-1 border-2 border-primary/50 bg-primary text-primary-foreground hover:bg-primary/90 shadow-[2px_2px_0px_0px_hsl(var(--border))]"
           >
             Finish Quiz
           </Button>
@@ -110,7 +108,7 @@ export function FlashcardController({
               variant="default"
               onClick={onNextCard}
               size="sm"
-              className="text-xs flex items-center gap-1 ml-2"
+              className="text-xs flex items-center gap-1 ml-2 border-2 border-primary/50 bg-primary text-primary-foreground hover:bg-primary/90 shadow-[2px_2px_0px_0px_hsl(var(--border))]"
             >
               Next
               <ChevronRight className="w-3 h-3" />

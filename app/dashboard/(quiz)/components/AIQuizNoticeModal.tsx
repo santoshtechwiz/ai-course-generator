@@ -214,7 +214,7 @@ const AIQuizNoticeModal = ({
             aria-describedby="modal-description"
           >
             {/* Decorative gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-pink-500/5 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--primary))]/5 via-[hsl(var(--accent))]/5 to-[hsl(var(--primary))]/5 pointer-events-none" />
             
             {/* Floating sparkles */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -261,7 +261,7 @@ const AIQuizNoticeModal = ({
               >
                 <div className={cn(
                   "w-16 h-16 mx-auto",
-                  "bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500",
+                  "bg-gradient-to-br from-[hsl(var(--primary))] via-[hsl(var(--accent))] to-[hsl(var(--primary))]",
                   "rounded-2xl shadow-lg",
                   "flex items-center justify-center",
                   "relative overflow-hidden"
@@ -270,7 +270,7 @@ const AIQuizNoticeModal = ({
                   
                   {/* Animated background */}
                   <motion.div
-                    className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400"
+                    className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--primary))]/80 via-[hsl(var(--accent))]/80 to-[hsl(var(--primary))]/80"
                     animate={{
                       scale: [1, 1.1, 1],
                       opacity: [0.8, 1, 0.8]

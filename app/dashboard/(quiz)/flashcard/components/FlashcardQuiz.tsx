@@ -298,9 +298,9 @@ export default function FlashCardQuiz({
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
       {/* Simple Header */}
       <div className="text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-800 rounded-full mb-4">
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 dark:bg-primary/20 text-primary border-3 border-primary/30 rounded-xl shadow-[2px_2px_0px_0px_hsl(var(--primary)/0.3)] mb-4">
           <Brain className="w-4 h-4" />
-          <span className="text-sm font-medium">Flashcard Quiz</span>
+          <span className="text-sm font-black">Flashcard Quiz</span>
         </div>
       </div>
 
@@ -399,10 +399,10 @@ export default function FlashCardQuiz({
           >
             <motion.div
               className={cn(
-                "px-8 py-6 rounded-2xl text-white font-bold text-xl shadow-2xl",
-                ratingAnimation === "correct" && "bg-green-500",
-                ratingAnimation === "still_learning" && "bg-yellow-500",
-                ratingAnimation === "incorrect" && "bg-red-500"
+                "px-8 py-6 rounded-2xl text-white font-bold text-xl shadow-2xl border-3",
+                ratingAnimation === "correct" && "bg-emerald-500 dark:bg-emerald-600 border-emerald-600",
+                ratingAnimation === "still_learning" && "bg-[hsl(var(--primary))] dark:bg-[hsl(var(--primary))]/90 border-[hsl(var(--primary))]",
+                ratingAnimation === "incorrect" && "bg-red-500 dark:bg-red-600 border-red-600"
               )}
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}

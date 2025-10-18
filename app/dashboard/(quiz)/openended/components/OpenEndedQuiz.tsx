@@ -374,12 +374,12 @@ export default function OpenEndedQuiz({
             className="w-full"
           >
             <Card className="w-full h-full border-0 shadow-lg bg-white dark:bg-gray-900">
-              <div className="bg-gradient-to-r from-violet-500 to-purple-500 h-1"></div>
+              <div className="bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] h-1"></div>
               <CardContent className="w-full h-full p-6 sm:p-8">
                 <div className="w-full space-y-6">
                   {/* Header Section */}
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
+                    <div className="w-12 h-12 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
                       <BookOpen className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -443,7 +443,7 @@ export default function OpenEndedQuiz({
                   ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300"
                   : showValidation
                     ? "border-red-500 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300"
-                    : "border-gray-300 hover:border-violet-400 focus:border-violet-500 focus:shadow-violet-200/30",
+                    : "border-border hover:border-primary focus:border-primary focus:shadow-primary/30",
               )}
               inputMode="text" // Better mobile keyboard
               autoCapitalize="sentences"
