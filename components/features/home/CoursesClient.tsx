@@ -7,7 +7,7 @@ import { BookOpen, LayoutGrid, List, Search, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useDebounce } from "@/lib/utils/hooks"
-import { cn } from "@/lib/utils"
+import { cn, getColorClasses } from "@/lib/utils"
 import { CourseCard } from "./CourseCard"
 import { CategoryTagCloud } from "./CategoryTagCloud"
 import type { CategoryId } from "@/config/categories"
@@ -62,6 +62,9 @@ export default function CoursesClient({
 
   // Hooks
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
+  
+  // Get Neobrutalism utility classes
+  const { buttonPrimary, buttonSecondary, buttonIcon, cardSecondary } = getColorClasses()
 
   // Query
   const queryResult: UseInfiniteQueryResult<any, Error> = useInfiniteQuery({
@@ -164,15 +167,11 @@ export default function CoursesClient({
       >
         <div className="flex flex-col items-center gap-6">
           <div className="relative">
-            <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-            <div
-              className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-accent rounded-full animate-spin animate-reverse"
-              style={{ animationDelay: "0.5s" }}
-            />
+            <div className="w-16 h-16 border-4 border-border rounded-full animate-spin border-t-primary" />
           </div>
           <div className="text-center space-y-2">
-            <h3 className="text-lg font-medium text-foreground">Discovering courses</h3>
-            <p className="text-sm text-muted-foreground">Finding the perfect learning experiences for you...</p>
+            <h3 className="text-lg font-black text-foreground">Discovering courses</h3>
+            <p className="text-sm font-medium text-muted-foreground">Finding the perfect learning experiences for you...</p>
           </div>
         </div>
       </motion.div>
@@ -187,17 +186,24 @@ export default function CoursesClient({
         animate={{ opacity: 1, scale: 1 }}
         className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center"
       >
-        <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-8 mb-6 max-w-md">
-          <div className="bg-destructive/10 rounded-full p-4 w-fit mx-auto mb-4">
+        <div className={cn(
+          cardSecondary,
+          "p-8 mb-6 max-w-md bg-destructive/5"
+        )}>
+          <div className="bg-destructive/10 rounded-xl p-4 w-fit mx-auto mb-4 border-2 border-border">
             <Search className="w-8 h-8 text-destructive" />
           </div>
-          <h3 className="text-xl font-semibold mb-3 text-foreground">Something went wrong</h3>
-          <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+          <h3 className="text-xl font-black mb-3 text-foreground">Something went wrong</h3>
+          <p className="text-muted-foreground text-sm font-medium leading-relaxed mb-6">
             {error instanceof Error
               ? error.message
               : "We encountered an issue while loading courses. Please try again."}
           </p>
-          <Button variant="outline" onClick={() => window.location.reload()} className="w-full">
+          <Button 
+            variant="outline" 
+            onClick={() => window.location.reload()} 
+            className={cn(buttonSecondary, "w-full")}
+          >
             Try again
           </Button>
         </div>
@@ -214,18 +220,21 @@ export default function CoursesClient({
         transition={{ duration: 0.3, ease: "easeOut" }}
         className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center"
       >
-        <div className="bg-primary/5 border border-primary/10 rounded-3xl p-12 max-w-lg">
-          <div className="bg-primary/10 rounded-full p-6 w-fit mx-auto mb-6">
+        <div className={cn(
+          cardSecondary,
+          "p-12 max-w-lg bg-primary/5"
+        )}>
+          <div className="bg-primary/10 rounded-xl p-6 w-fit mx-auto mb-6 border-2 border-border">
             {hasFilters ? (
               <Search className="w-12 h-12 text-primary" />
             ) : (
               <BookOpen className="w-12 h-12 text-primary" />
             )}
           </div>
-          <h3 className="text-2xl font-semibold mb-4 text-foreground text-balance">
+          <h3 className="text-2xl font-black mb-4 text-foreground text-balance">
             {hasFilters ? "No courses match your search" : "Your learning journey awaits"}
           </h3>
-          <p className="text-muted-foreground leading-relaxed mb-8 text-pretty">
+          <p className="text-muted-foreground font-medium leading-relaxed mb-8 text-pretty">
             {hasFilters
               ? "Try adjusting your search terms or exploring different categories to discover new learning opportunities."
               : "New courses are being added regularly. Check back soon to discover exciting new learning paths."}
@@ -236,7 +245,7 @@ export default function CoursesClient({
               onClick={() => {
                 window.location.href = "/courses"
               }}
-              className="px-6"
+              className={cn(buttonSecondary, "px-6")}
             >
               <Sparkles className="w-4 h-4 mr-2" />
               Explore all courses
@@ -255,14 +264,42 @@ export default function CoursesClient({
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div className="flex items-center gap-3">
             <Tabs value={activeTab} onValueChange={setActiveTab as any} className="w-auto">
-              <TabsList className="bg-muted/50 p-1 h-auto">
-                <TabsTrigger value="all" className="px-4 py-2 text-sm font-medium">
+              <TabsList className={cn(
+                "bg-background p-1.5 h-auto",
+                "border-3 border-border rounded-xl",
+                "shadow-[3px_3px_0px_0px_hsl(var(--border))]"
+              )}>
+                <TabsTrigger 
+                  value="all" 
+                  className={cn(
+                    "px-4 py-2 text-sm font-bold rounded-lg transition-all duration-100",
+                    "data-[state=active]:bg-main data-[state=active]:text-main-foreground",
+                    "data-[state=active]:border-2 data-[state=active]:border-border",
+                    "data-[state=active]:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+                  )}
+                >
                   All Courses
                 </TabsTrigger>
-                <TabsTrigger value="popular" className="px-4 py-2 text-sm font-medium">
+                <TabsTrigger 
+                  value="popular" 
+                  className={cn(
+                    "px-4 py-2 text-sm font-bold rounded-lg transition-all duration-100",
+                    "data-[state=active]:bg-main data-[state=active]:text-main-foreground",
+                    "data-[state=active]:border-2 data-[state=active]:border-border",
+                    "data-[state=active]:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+                  )}
+                >
                   Popular
                 </TabsTrigger>
-                <TabsTrigger value="newest" className="px-4 py-2 text-sm font-medium">
+                <TabsTrigger 
+                  value="newest" 
+                  className={cn(
+                    "px-4 py-2 text-sm font-bold rounded-lg transition-all duration-100",
+                    "data-[state=active]:bg-main data-[state=active]:text-main-foreground",
+                    "data-[state=active]:border-2 data-[state=active]:border-border",
+                    "data-[state=active]:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+                  )}
+                >
                   Latest
                 </TabsTrigger>
               </TabsList>
@@ -270,13 +307,17 @@ export default function CoursesClient({
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+            <div className={cn(
+              "flex items-center gap-1 bg-background rounded-lg p-1",
+              "border-3 border-border",
+              "shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+            )}>
               <Button
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "px-3 py-2 h-auto text-xs font-medium transition-all",
-                  viewMode === "grid" && "bg-background shadow-sm",
+                  "px-3 py-2 h-auto text-xs font-bold transition-all duration-100 rounded-md",
+                  viewMode === "grid" && "bg-main text-main-foreground shadow-[2px_2px_0px_0px_hsl(var(--border))]",
                 )}
                 onClick={() => setViewMode("grid")}
               >
@@ -287,8 +328,8 @@ export default function CoursesClient({
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "px-3 py-2 h-auto text-xs font-medium transition-all",
-                  viewMode === "list" && "bg-background shadow-sm",
+                  "px-3 py-2 h-auto text-xs font-bold transition-all duration-100 rounded-md",
+                  viewMode === "list" && "bg-main text-main-foreground shadow-[2px_2px_0px_0px_hsl(var(--border))]",
                 )}
                 onClick={() => setViewMode("list")}
               >
@@ -324,8 +365,8 @@ export default function CoursesClient({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{
-                    duration: 0.3,
-                    delay: (courseIndex % 12) * 0.05,
+                    duration: 0.2,
+                    delay: (courseIndex % 12) * 0.02,
                     ease: "easeOut",
                   }}
                 >
@@ -365,15 +406,15 @@ export default function CoursesClient({
         >
           {isFetchingNextPage ? (
             <div className="flex items-center gap-3 text-muted-foreground">
-              <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-              <span className="text-sm font-medium">Loading more courses...</span>
+              <div className="w-5 h-5 border-2 border-border border-t-primary rounded-full animate-spin" />
+              <span className="text-sm font-bold">Loading more courses...</span>
             </div>
           ) : (
             <Button
               variant="outline"
               onClick={() => fetchNextPage()}
               disabled={!hasNextPage || isFetchingNextPage}
-              className="px-8 py-3 h-auto font-medium"
+              className={cn(buttonSecondary, "px-8 py-3 h-auto")}
             >
               <Sparkles className="w-4 h-4 mr-2" />
               Discover more courses

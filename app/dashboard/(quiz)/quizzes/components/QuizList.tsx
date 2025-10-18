@@ -26,7 +26,7 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
+import { cn, getColorClasses } from "@/lib/utils"
 import type { QuizListItem } from "@/app/actions/getQuizes"
 import type { QuizType } from "@/app/types/quiz-types"
 import { QUIZ_TYPE_CONFIG } from "./quizTypeConfig"
@@ -131,6 +131,8 @@ function QuizListComponent({
   selectedTypes = [],
   showPublicOnly = false,
 }: QuizListProps) {
+  const { buttonPrimary, buttonSecondary, buttonIcon, cardPrimary, cardSecondary } = getColorClasses()
+  
   const [endMessageRef, endMessageInView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
@@ -265,15 +267,21 @@ function QuizListComponent({
 
   if (isError) {
     return (
-      <Card className="border-destructive/50 bg-destructive/5">
+      <Card className={cn(cardSecondary, "border-destructive/50 bg-destructive/5")}>
         <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-          <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-          <h3 className="font-semibold text-lg mb-2">Failed to load quizzes</h3>
-          <p className="text-sm text-muted-foreground mb-4 max-w-md">
+          <div className={cn(
+            "h-12 w-12 mb-4 rounded-xl bg-destructive/10",
+            "border-2 border-border",
+            "flex items-center justify-center"
+          )}>
+            <AlertCircle className="h-6 w-6 text-destructive" />
+          </div>
+          <h3 className="font-black text-lg mb-2">Failed to load quizzes</h3>
+          <p className="text-sm text-muted-foreground font-medium mb-4 max-w-md">
             We encountered an error while loading your quizzes. Please check your connection and try again.
           </p>
           {onRetry && (
-            <Button onClick={onRetry} variant="outline">
+            <Button onClick={onRetry} className={cn(buttonSecondary)}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Try Again
             </Button>
@@ -288,10 +296,13 @@ function QuizListComponent({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.2 }}
         className="min-h-[500px] flex items-center justify-center"
       >
-        <Card className="border-2 border-dashed border-border/50 relative overflow-hidden shadow-xl max-w-2xl w-full">
+        <Card className={cn(
+          cardSecondary,
+          "border-2 border-dashed border-border/50 relative overflow-hidden max-w-2xl w-full"
+        )}>
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-pink-500/5" />
           <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-blue-400/20 to-transparent rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tl from-purple-400/20 to-transparent rounded-full blur-3xl animate-pulse delay-1000" />
@@ -301,17 +312,21 @@ function QuizListComponent({
               <>
                 <div className="relative mb-8">
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-full blur-2xl animate-pulse" />
-                  <div className="relative w-28 h-28 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full flex items-center justify-center border-4 border-border/50 shadow-2xl">
+                  <div className={cn(
+                    "relative w-28 h-28 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20",
+                    "flex items-center justify-center border-4 border-border",
+                    "shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+                  )}>
                     <Search className="h-14 w-14 text-muted-foreground" />
                   </div>
                 </div>
-                <h3 className="font-black text-3xl mb-3 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                <h3 className="font-black text-3xl mb-3">
                   No quizzes found
                 </h3>
-                <p className="text-muted-foreground mb-8 max-w-md text-lg leading-relaxed">
+                <p className="text-muted-foreground font-medium mb-8 max-w-md text-lg leading-relaxed">
                   Try adjusting your search terms or filters to discover more quizzes.
                 </p>
-                <Button variant="outline" onClick={() => window.location.reload()} size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-all rounded-xl px-8">
+                <Button onClick={() => window.location.reload()} size="lg" className={cn(buttonSecondary, "gap-2 px-8 font-bold")}>
                   <RefreshCw className="mr-2 h-5 w-5" />
                   Clear Filters
                 </Button>
@@ -320,14 +335,18 @@ function QuizListComponent({
               <>
                 <div className="relative mb-8">
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-secondary/30 rounded-full blur-2xl animate-pulse" />
-                  <div className="relative w-32 h-32 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center border-4 border-border/50 shadow-2xl">
+                  <div className={cn(
+                    "relative w-32 h-32 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20",
+                    "flex items-center justify-center border-4 border-border",
+                    "shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+                  )}>
                     <Sparkles className="h-16 w-16 text-primary animate-pulse" />
                   </div>
                 </div>
                 <h3 className="font-black text-4xl mb-3 bg-gradient-to-r from-primary via-purple-600 to-secondary bg-clip-text text-transparent">
                   Ready to start learning?
                 </h3>
-                <p className="text-muted-foreground mb-10 max-w-lg text-lg leading-relaxed">
+                <p className="text-muted-foreground font-medium mb-10 max-w-lg text-lg leading-relaxed">
                   Create your first quiz and begin your journey of knowledge discovery with AI-powered learning.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -336,13 +355,17 @@ function QuizListComponent({
                     <Button
                       onClick={onCreateQuiz}
                       size="lg"
-                      className="relative gap-3 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 shadow-xl hover:shadow-2xl transition-all px-8 py-6 text-base font-bold rounded-xl"
+                      className={cn(
+                        buttonPrimary,
+                        "relative gap-3 px-8 py-6 text-base font-bold",
+                        "shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+                      )}
                     >
                       <Plus className="h-5 w-5" />
                       Create Your First Quiz
                     </Button>
                   </div>
-                  <Button variant="outline" onClick={() => window.location.reload()} size="lg" className="gap-3 shadow-lg hover:shadow-xl transition-all px-8 py-6 text-base font-semibold rounded-xl border-2">
+                  <Button onClick={() => window.location.reload()} size="lg" className={cn(buttonSecondary, "gap-3 px-8 py-6 text-base font-bold border-2")}>
                     <TrendingUp className="h-5 w-5" />
                     Explore Quizzes
                   </Button>

@@ -67,18 +67,33 @@ export default function PlanCards({
   const bestPlan = plans.find((plan: any) => plan.name === "PREMIUM")
   const normalizedStatus = subscriptionStatus ? subscriptionStatus.toUpperCase().replace('CANCELLED','CANCELED') : null
 
-  // Animation variants for cards
+  // Enhanced animation variants with neobrutalism
   const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 30, scale: 0.95 },
     visible: (i: number) => ({
       opacity: 1,
       y: 0,
+      scale: 1,
       transition: {
-        delay: 0.1 * i,
-        duration: 0.5,
-        ease: "easeOut",
+        delay: 0.15 * i,
+        duration: 0.6,
+        ease: [0.25, 0.46, 0.45, 0.94],
+        type: "spring",
+        stiffness: 120,
+        damping: 15
       },
     }),
+    hover: {
+      y: -8,
+      scale: 1.02,
+      rotate: 0.5,
+      transition: {
+        duration: 0.3,
+        type: "spring",
+        stiffness: 300,
+        damping: 20
+      }
+    }
   }
 
   return (
@@ -173,9 +188,11 @@ export default function PlanCards({
             custom={index}
           >
             <Card
-              className={`flex flex-col h-full transition-all duration-300 hover:shadow-md ${
+              className={`flex flex-col h-full transition-all duration-500 border-4 hover:shadow-2xl hover:shadow-black/20 relative overflow-hidden group rounded-xl ${
                 cardHighlightClass
-              } ${isPlanDisabled ? "opacity-75" : ""}`}
+              } ${isPlanDisabled ? "opacity-75" : ""} ${
+                isBestValue ? "shadow-[6px_6px_0px_0px_var(--border)] hover:shadow-[8px_8px_0px_0px_var(--border)]" : "shadow-[4px_4px_0px_0px_var(--border)] hover:shadow-[6px_6px_0px_0px_var(--border)]"
+              }`}
             >
               {statusConfig.bannerText && (
                 <div className={`${statusConfig.bannerClass} text-white text-center py-1.5 text-sm font-medium`}>
@@ -227,12 +244,12 @@ export default function PlanCards({
                     <motion.div
                       className={`absolute top-0 left-0 h-full rounded-full ${
                         plan.id === "FREE"
-                          ? "bg-slate-400"
+                          ? "bg-muted"
                           : plan.id === "BASIC"
-                            ? "bg-blue-500"
+                            ? "bg-primary"
                             : plan.id === "PREMIUM"
-                              ? "bg-purple-500"
-                              : "bg-gradient-to-r from-amber-500 to-orange-500"
+                              ? "bg-gradient-to-r from-primary to-purple-600"
+                              : "bg-accent"
                       }`}
                       initial={{ width: 0 }}
                       animate={{ width: `${(plan.tokens / 600) * 100}%` }}
@@ -263,19 +280,17 @@ export default function PlanCards({
                             onClick={() => handleSubscribe(plan.id as SubscriptionPlanType, duration)}
                             disabled={isPlanDisabled}
                             variant={isCurrentActivePlan ? "outline" : "default"}
-                            className={`w-full text-primary-foreground ${
+                            className={`w-full text-primary-foreground font-bold transition-all duration-300 ${
                               plan.id === "FREE"
-                                ? isCurrentActivePlan 
-                                  ? "bg-slate-300 dark:bg-slate-600 text-slate-600 dark:text-slate-300 cursor-not-allowed"
-                                  : "bg-slate-500 hover:bg-slate-600"
+                                ? isCurrentActivePlan
+                                  ? "bg-muted text-muted-foreground border-2 border-border shadow-[2px_2px_0px_0px_var(--border)] cursor-not-allowed"
+                                  : "bg-muted hover:bg-muted/80 text-foreground shadow-[4px_4px_0px_0px_var(--border)] hover:shadow-[6px_6px_0px_0px_var(--border)]"
                                 : plan.id === "BASIC"
-                                  ? "bg-blue-500 hover:bg-blue-600"
+                                  ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-[4px_4px_0px_0px_var(--border)] hover:shadow-[6px_6px_0px_0px_var(--border)]"
                                   : plan.id === "PREMIUM"
-                                    ? "bg-purple-500 hover:bg-purple-600"
-                                    : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-                            } shadow-md transition-all duration-300 ${
-                              isCurrentActivePlan ? "!bg-transparent !text-foreground border-2" : ""
-                            } ${
+                                    ? "bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-primary-foreground shadow-[4px_4px_0px_0px_var(--border)] hover:shadow-[6px_6px_0px_0px_var(--border)]"
+                                    : "bg-accent hover:bg-accent/90 text-accent-foreground shadow-[4px_4px_0px_0px_var(--border)] hover:shadow-[6px_6px_0px_0px_var(--border)]"
+                            } ${isCurrentActivePlan ? "!bg-transparent !text-foreground border-2 border-border" : ""} ${
                               isPlanDisabled && !isCurrentActivePlan ? "opacity-50 cursor-not-allowed" : ""
                             }`}
                           >

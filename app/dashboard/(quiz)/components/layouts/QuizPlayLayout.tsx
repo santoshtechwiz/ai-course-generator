@@ -642,7 +642,7 @@ export default function QuizPlayLayout({
                   </motion.div>
 
                   <motion.div 
-                    className="rounded-3xl border border-border bg-card/80 backdrop-blur-xl p-6 shadow-xl"
+                    className="rounded-3xl border-3 border-border bg-card/80 backdrop-blur-xl p-6 shadow-[6px_6px_0px_0px_hsl(var(--border))]"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
@@ -673,33 +673,33 @@ export default function QuizPlayLayout({
                     <motion.a
                       key={rq.id}
                       href={`/dashboard/${rq.quizType}/${rq.slug}`}
-                      className="group rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-5 hover:shadow-xl transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                      className="group rounded-2xl border-3 border-border bg-card/60 backdrop-blur-xl p-5 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.7 + index * 0.1 }}
                       whileHover={{ y: -5, scale: 1.02 }}
                     >
                       <div className="flex items-start justify-between mb-4">
-                        <div className="p-2 rounded-xl bg-primary text-primary-foreground">
+                        <div className="p-2 rounded-xl bg-primary text-primary-foreground border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]">
                           <BookOpen className="w-5 h-5" />
                         </div>
                         {/* isFavorite removed (not on RelatedQuizItem) */}
                       </div>
                       
-                      <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors mb-2">
+                      <h3 className="font-black text-foreground line-clamp-2 group-hover:text-primary transition-colors mb-2">
                         {rq.title}
                       </h3>
                       
                       <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs font-bold border-2">
                           {rq.quizType?.toUpperCase()}
                         </Badge>
-                        <span>{rq.questionCount} questions</span>
+                        <span className="font-bold">{rq.questionCount} questions</span>
                         {/* estimatedTime removed (not on RelatedQuizItem) */}
                       </div>
                       
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-primary font-medium">
+                        <span className="text-sm text-primary font-black">
                           Start Quiz
                         </span>
                         <Play className="w-4 h-4 text-primary group-hover:text-primary/80 transition-colors" />

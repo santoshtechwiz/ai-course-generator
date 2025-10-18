@@ -50,15 +50,15 @@ export function UpgradeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md border-4 border-border shadow-[8px_8px_0px_0px_var(--border)] rounded-xl">
         <DialogHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/50 dark:to-yellow-900/50 rounded-full flex items-center justify-center">
-            <Crown className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+          <div className="mx-auto w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center shadow-[4px_4px_0px_0px_var(--border)]">
+            <Crown className="w-8 h-8 text-white" />
           </div>
           <div>
-            <DialogTitle className="text-xl font-bold">Upgrade Required</DialogTitle>
-            <DialogDescription className="mt-2">
-              {feature 
+            <DialogTitle className="text-xl font-bold text-foreground">Upgrade Required</DialogTitle>
+            <DialogDescription className="mt-2 text-muted-foreground">
+              {feature
                 ? `${feature} requires a ${requiredPlanConfig.name} plan or higher.`
                 : `This feature requires a ${requiredPlanConfig.name} plan or higher.`
               }
@@ -70,11 +70,11 @@ export function UpgradeDialog({
             </DialogDescription>
           </div>
         </DialogHeader>
-        
+
         <div className="space-y-4">
-          <div className="p-4 bg-muted/30 rounded-lg border">
-            <h4 className="font-semibold text-sm mb-2 flex items-center">
-              <Sparkles className="w-4 h-4 mr-2 text-primary" />
+          <div className="p-4 bg-accent/5 border-2 border-accent/20 rounded-lg">
+            <h4 className="font-semibold text-sm mb-2 flex items-center text-accent">
+              <Sparkles className="w-4 h-4 mr-2" />
               What you get with {requiredPlanConfig.name}:
             </h4>
             <ul className="text-sm text-muted-foreground space-y-1">
@@ -89,14 +89,14 @@ export function UpgradeDialog({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="flex-1"
+            className="flex-1 border-2 hover:shadow-[2px_2px_0px_0px_var(--border)]"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Maybe Later
           </Button>
           <Button
             onClick={handleUpgrade}
-            className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
+            className="flex-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground font-bold shadow-[4px_4px_0px_0px_var(--border)] hover:shadow-[6px_6px_0px_0px_var(--border)]"
           >
             <Crown className="w-4 h-4 mr-2" />
             Upgrade Now

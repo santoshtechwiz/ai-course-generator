@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo, memo, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { cn } from "@/lib/utils"
+import { cn, getColorClasses } from "@/lib/utils"
 import { CheckCircle2, Target, Loader2, AlertCircle, Lightbulb, FileText, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -79,7 +79,7 @@ interface UnifiedQuizQuestionProps {
   enableAdaptiveFeedback?: boolean
 }
 
-// Memoized option component with clean, high-contrast styling
+// Memoized option component with enterprise Neobrutalism design
 const MCQOption = memo(({
   option,
   index,
@@ -87,6 +87,7 @@ const MCQOption = memo(({
   isAnswering,
   isSubmitting,
   onSelect,
+  quizType = 'mcq',
 }: {
   option: { id: string; text: string; letter: string }
   index: number
@@ -94,28 +95,83 @@ const MCQOption = memo(({
   isAnswering: boolean
   isSubmitting: boolean
   onSelect: (id: string) => void
+  quizType?: QuizQuestionType
 }) => {
+  const styles = getColorClasses(quizType) // Dynamic color based on quiz type
   const isDisabled = isAnswering || isSubmitting
+
+  // Color mappings for different quiz types
+  const colorMap = {
+    mcq: { 
+      base: '#3B82F6',      // Blue
+      light: 'bg-blue-50', 
+      hover: 'hover:bg-blue-100',
+      text: 'text-blue-600',
+      bg: 'bg-blue-500'
+    },
+    code: { 
+      base: '#10B981',      // Green
+      light: 'bg-green-50', 
+      hover: 'hover:bg-green-100',
+      text: 'text-green-600',
+      bg: 'bg-green-500'
+    },
+    blanks: { 
+      base: '#F59E0B',      // Amber
+      light: 'bg-amber-50', 
+      hover: 'hover:bg-amber-100',
+      text: 'text-amber-600',
+      bg: 'bg-amber-500'
+    },
+    openended: { 
+      base: '#A855F7',      // Purple
+      light: 'bg-purple-50', 
+      hover: 'hover:bg-purple-100',
+      text: 'text-purple-600',
+      bg: 'bg-purple-500'
+    },
+  }
+
+  const colors = colorMap[quizType as keyof typeof colorMap] || colorMap.mcq
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
+      transition={{ delay: index * 0.05, duration: 0.15 }}
       className="group"
     >
-      <label
+      <motion.label
         htmlFor={`option-${option.id}`}
         className={cn(
-          "relative flex items-center gap-4 p-4 w-full rounded-lg cursor-pointer transition-all duration-200 border-2",
-          "bg-card hover:bg-accent/5",
+          "relative flex items-center gap-4 p-4 w-full cursor-pointer transition-all duration-100 overflow-hidden",
+          "bg-background dark:bg-card border-3 border-border rounded-lg",
           isSelected
-            ? "border-accent bg-accent/10 shadow-sm"
-            : "border-border hover:border-accent/30",
+            ? `shadow-[6px_6px_0px_0px_${colors.base}]`
+            : "shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] hover:bg-accent/50 dark:hover:bg-accent/30",
           isDisabled && "opacity-60 cursor-not-allowed"
         )}
+        style={isSelected ? { 
+          boxShadow: `6px 6px 0px 0px ${colors.base}`,
+          borderColor: colors.base
+        } : undefined}
         onClick={() => !isDisabled && onSelect(option.id)}
+        whileHover={!isDisabled ? { y: -2 } : undefined}
+        whileTap={!isDisabled ? { scale: 0.98 } : undefined}
       >
+        {/* Selection background animation */}
+        <AnimatePresence>
+          {isSelected && (
+            <motion.div
+              className={cn("absolute inset-0 rounded-lg", colors.light)}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            />
+          )}
+        </AnimatePresence>
+
         <input
           type="radio"
           name="mcq-option"
@@ -127,34 +183,70 @@ const MCQOption = memo(({
           className="sr-only"
         />
 
-        {/* Letter indicator - simplified */}
-        <div
+        {/* Letter indicator with Neobrutalism styling */}
+        <motion.div
           className={cn(
-            "flex items-center justify-center w-8 h-8 rounded-md font-bold text-sm transition-colors border-2",
+            "flex items-center justify-center w-10 h-10 rounded-md font-black text-base transition-all duration-100 border-2 border-border relative z-10 uppercase",
             isSelected
-              ? "bg-accent text-accent-foreground border-accent"
-              : "bg-muted text-muted-foreground border-border group-hover:border-accent/50"
+              ? `${colors.bg} text-white shadow-[2px_2px_0px_0px_hsl(var(--border))]`
+              : `bg-secondary text-foreground hover:bg-accent`
           )}
+          animate={isSelected ? { scale: [1, 1.1, 1] } : undefined}
+          transition={{ duration: 0.2 }}
         >
           {option.letter}
-        </div>
+        </motion.div>
 
-        {/* Option text - improved hierarchy */}
-        <div className="flex-1 text-sm font-medium leading-relaxed text-foreground">
+        {/* Option text with enhanced typography */}
+        <div className={cn(
+          "flex-1 text-base font-medium leading-relaxed transition-colors relative z-10",
+          isSelected ? `${colors.text} font-bold` : "text-foreground"
+        )}>
           {option.text}
         </div>
 
-        {/* Selection indicator - simplified */}
-        {isSelected && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="text-accent"
-          >
-            <CheckCircle2 className="w-5 h-5" />
-          </motion.div>
-        )}
-      </label>
+        {/* Enhanced selection indicator */}
+        <AnimatePresence>
+          {isSelected && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0, rotate: -180 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              exit={{ scale: 0, opacity: 0, rotate: 180 }}
+              transition={{ duration: 0.2, type: "spring", stiffness: 200 }}
+              className="relative z-10"
+            >
+              <div className={cn(
+                "p-1 border-2 border-border rounded-full shadow-[2px_2px_0px_0px_hsl(var(--border))]",
+                colors.bg
+              )}>
+                <CheckCircle2 className="w-4 h-4 text-white" />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Loading state overlay */}
+        <AnimatePresence>
+          {isAnswering && isSelected && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className={cn(
+                "absolute inset-0 backdrop-blur-sm rounded-lg flex items-center justify-center z-20",
+                `${colors.light}/80`
+              )}
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              >
+                <Loader2 className={cn("w-6 h-6", colors.text)} />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.label>
     </motion.div>
   )
 })
@@ -304,45 +396,53 @@ function UnifiedQuizQuestionComponent({
             isAnswering={isAnswering}
             isSubmitting={isSubmitting}
             onSelect={handleMCQSelect}
+            quizType={question.type}
           />
         ))}
       </div>
     )
-  }, [mcqOptions, selectedAnswer, isAnswering, isSubmitting, handleMCQSelect])
+  }, [mcqOptions, selectedAnswer, isAnswering, isSubmitting, handleMCQSelect, question.type])
 
   const renderBlanksContent = useCallback(() => {
     const blanksQuestion = question as BlanksQuestion
+    const styles = getColorClasses('blanks')
 
     return (
       <div className="w-full max-w-3xl mx-auto space-y-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <FileText className="w-5 h-5 text-primary" />
-              <span className="text-sm font-medium text-muted-foreground">Fill in the blanks</span>
-            </div>
-            <div className="text-base leading-relaxed">
-              {blanksQuestion.template.split('___').map((part, index, array) => (
-                <React.Fragment key={index}>
-                  {part}
-                  {index < array.length - 1 && (
-                    <Input
-                      className="inline-block w-24 mx-2 text-center border-2 border-dashed border-primary/50 focus:border-primary"
-                      placeholder={`Blank ${index + 1}`}
-                      value={selectedAnswer.split('___')[index] || ''}
-                      onChange={(e) => {
-                        const answers = selectedAnswer.split('___')
-                        answers[index] = e.target.value
-                        handleTextInput(answers.join('___'))
-                      }}
-                      disabled={isAnswering || isSubmitting}
-                    />
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className={`${styles.cardPrimary} p-8`}>
+          {/* Icon Badge */}
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-amber-500 border-3 border-border dark:border-border shadow-[4px_4px_0px_rgba(0,0,0,0.5)] dark:shadow-[4px_4px_0px_rgba(255,255,255,0.1)] mb-6">
+            <FileText className="w-6 h-6 text-white" />
+          </div>
+          
+          {/* Instruction Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 border-2 border-border shadow-[3px_3px_0px_hsl(var(--border))] mb-6">
+            <span className="text-sm font-bold text-foreground">Fill in the blanks</span>
+          </div>
+
+          {/* Blanks Content */}
+          <div className="text-lg leading-relaxed font-medium text-foreground">
+            {blanksQuestion.template.split('___').map((part, index, array) => (
+              <React.Fragment key={index}>
+                {part}
+                {index < array.length - 1 && (
+                  <input
+                    type="text"
+                    className={`${styles.inputText} inline-block w-32 mx-2 text-center`}
+                    placeholder={`Blank ${index + 1}`}
+                    value={selectedAnswer.split('___')[index] || ''}
+                    onChange={(e) => {
+                      const answers = selectedAnswer.split('___')
+                      answers[index] = e.target.value
+                      handleTextInput(answers.join('___'))
+                    }}
+                    disabled={isAnswering || isSubmitting}
+                  />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
 
         {question.hints && question.hints.length > 0 && (
           <HintSystem
@@ -368,36 +468,50 @@ function UnifiedQuizQuestionComponent({
     const wordCount = selectedAnswer.trim().split(/\s+/).filter(word => word.length > 0).length
     const minWords = openEndedQuestion.minWords || 10
     const maxWords = openEndedQuestion.maxWords || 200
+    const styles = getColorClasses('openended')
 
     return (
       <div className="w-full max-w-3xl mx-auto space-y-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <BookOpen className="w-5 h-5 text-primary" />
-              <span className="text-sm font-medium text-muted-foreground">Write your answer</span>
-            </div>
-            <Textarea
-              placeholder="Type your answer here..."
-              value={selectedAnswer}
-              onChange={(e) => handleTextInput(e.target.value)}
-              className="min-h-[120px] text-base leading-relaxed resize-none"
-              disabled={isAnswering || isSubmitting}
-            />
-            <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-              <span>Word count: {wordCount}</span>
-              <span className={cn(
-                wordCount < minWords && "text-warning",
-                wordCount > maxWords && "text-destructive",
-                wordCount >= minWords && wordCount <= maxWords && "text-success"
-              )}>
-                {wordCount < minWords ? `${minWords - wordCount} more words needed` :
-                 wordCount > maxWords ? `${wordCount - maxWords} words over limit` :
-                 "Good length"}
+        <div className={`${styles.cardPrimary} p-8`}>
+          {/* Icon Badge */}
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-500 border-3 border-border dark:border-border shadow-[4px_4px_0px_rgba(0,0,0,0.5)] dark:shadow-[4px_4px_0px_rgba(255,255,255,0.1)] mb-6">
+            <BookOpen className="w-6 h-6 text-white" />
+          </div>
+          
+          {/* Instruction Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 border-2 border-border shadow-[3px_3px_0px_hsl(var(--border))] mb-6">
+            <span className="text-sm font-bold text-foreground">Write your answer</span>
+          </div>
+
+          {/* Textarea */}
+          <textarea
+            placeholder="Type your answer here..."
+            value={selectedAnswer}
+            onChange={(e) => handleTextInput(e.target.value)}
+            className={`${styles.inputTextarea} min-h-[180px] w-full text-base leading-relaxed resize-none`}
+            disabled={isAnswering || isSubmitting}
+          />
+
+          {/* Character Counter */}
+          <div className="flex items-center justify-between mt-4 pt-4 border-t-2 border-border">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-foreground">Word count:</span>
+              <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 border-2 border-border text-sm font-bold text-foreground">
+                {wordCount}
               </span>
             </div>
-          </CardContent>
-        </Card>
+            <div className={cn(
+              "px-3 py-1 border-2 border-border text-sm font-bold",
+              wordCount < minWords && "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200",
+              wordCount > maxWords && "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200",
+              wordCount >= minWords && wordCount <= maxWords && "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
+            )}>
+              {wordCount < minWords ? `${minWords - wordCount} more words needed` :
+               wordCount > maxWords ? `${wordCount - maxWords} words over limit` :
+               "Good length ✓"}
+            </div>
+          </div>
+        </div>
 
         {question.hints && question.hints.length > 0 && (
           <HintSystem
@@ -420,41 +534,60 @@ function UnifiedQuizQuestionComponent({
 
   const renderCodeContent = useCallback(() => {
     const codeQuestion = question as CodeQuestion
+    const styles = getColorClasses('code') // Code uses green accent (#10B981)
 
     return (
       <div className="w-full max-w-4xl mx-auto space-y-6">
         {codeQuestion.codeSnippet && (
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Target className="w-5 h-5 text-primary" />
-                <span className="text-sm font-medium text-muted-foreground">Code Snippet</span>
-                <Badge variant="secondary" className="text-xs font-mono ml-auto">
-                  {codeQuestion.language || 'javascript'}
-                </Badge>
+          <div className={cn(
+            styles.cardPrimary,
+            "p-6 bg-white"
+          )}>
+            {/* Code snippet header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "p-2 bg-green-500 border-2 border-black rounded-md shadow-[2px_2px_0px_0px_#000000]"
+                )}>
+                  <BookOpen className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-base font-bold text-black uppercase">Code Snippet</span>
               </div>
-              <div className="rounded-lg overflow-hidden">
-                <SyntaxHighlighter
-                  language={codeQuestion.language || 'javascript'}
-                  style={atomOneDark}
-                  customStyle={{
-                    margin: 0,
-                    padding: '1rem',
-                    borderRadius: '0.5rem',
-                    fontSize: '0.875rem',
-                    lineHeight: '1.5',
-                  }}
-                >
-                  {codeQuestion.codeSnippet}
-                </SyntaxHighlighter>
-              </div>
-            </CardContent>
-          </Card>
+              
+              {/* Language badge */}
+              <span className={cn(
+                styles.badgeStatus,
+                "text-xs font-mono font-black"
+              )} style={{ backgroundColor: styles.bgColor }}>
+                {codeQuestion.language || 'JAVASCRIPT'}
+              </span>
+            </div>
+            
+            {/* Code editor with Neobrutalism border */}
+            <div className="rounded-lg overflow-hidden border-3 border-black shadow-[4px_4px_0px_0px_#000000]">
+              <SyntaxHighlighter
+                language={codeQuestion.language || 'javascript'}
+                style={atomOneDark}
+                customStyle={{
+                  margin: 0,
+                  padding: '1.5rem',
+                  borderRadius: '0',
+                  fontSize: '0.875rem',
+                  lineHeight: '1.6',
+                  fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+                }}
+              >
+                {codeQuestion.codeSnippet}
+              </SyntaxHighlighter>
+            </div>
+          </div>
         )}
 
         {codeQuestion.options && codeQuestion.options.length > 0 && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-center">Select the correct option:</h3>
+            <h3 className="text-xl font-black text-center text-black uppercase">
+              Select the correct option:
+            </h3>
             {renderMCQContent()}
           </div>
         )}
@@ -469,39 +602,56 @@ function UnifiedQuizQuestionComponent({
       exit={{ opacity: 0 }}
       className={cn("w-full space-y-8", className)}
     >
-      {/* Question Header */}
-      <div className="text-center space-y-4">
-        <div className="flex items-center justify-center gap-4 mb-4">
-          <Badge variant="secondary" className="text-sm">
-            Question {questionNumber} of {totalQuestions}
-          </Badge>
+      {/* Question Header with Enterprise Neobrutalism */}
+      <div className="text-center space-y-6">
+        <div className="flex items-center justify-center gap-3 mb-4">
+          {/* Question Progress Badge */}
+          <span 
+            className={cn(
+              getColorClasses(question.type).badgeType,
+              "inline-flex items-center gap-2"
+            )}
+          >
+            <Target className="w-3 h-3" />
+            Question {questionNumber} / {totalQuestions}
+          </span>
+          
+          {/* Difficulty Badge */}
           {question.difficulty && (
-            <Badge 
-              variant="outline"
-              className={cn(
-                "text-sm",
-                question.difficulty === 'easy' && "text-success",
-                question.difficulty === 'medium' && "text-warning",
-                question.difficulty === 'hard' && "text-destructive"
-              )}
+            <span 
+              className={getColorClasses(question.type, question.difficulty).badgeStatus}
+              style={{ 
+                backgroundColor: getColorClasses(question.type, question.difficulty).difficultyColor 
+              }}
             >
-              {question.difficulty}
-            </Badge>
+              {question.difficulty.toUpperCase()}
+            </span>
           )}
         </div>
 
+        {/* Question Text */}
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-3xl sm:text-4xl font-black text-foreground leading-tight px-4 max-w-4xl mx-auto"
+          transition={{ duration: 0.2 }}
+          className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground leading-tight px-4 max-w-4xl mx-auto"
         >
           {questionText}
         </motion.h2>
 
+        {/* Quiz Type Indicator with Dynamic Colors */}
         <div className="flex items-center justify-center">
-          <div className="flex items-center gap-2 px-4 py-2 bg-accent/10 border border-accent/20 rounded-lg">
-            <Target className="w-4 h-4 text-accent" />
-            <span className="text-sm font-semibold text-accent">
+          <div 
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 border-2 border-border rounded-md shadow-[2px_2px_0px_0px_hsl(var(--border))]",
+              "bg-secondary/50"
+            )}
+          >
+            <CheckCircle2 
+              className="w-4 h-4" 
+              style={{ color: getColorClasses(question.type).bgColor }}
+            />
+            <span className="text-sm font-bold text-foreground uppercase">
               {question.type === 'mcq' && 'Multiple Choice'}
               {question.type === 'blanks' && 'Fill in the Blanks'}
               {question.type === 'openended' && 'Open Ended'}
@@ -520,17 +670,20 @@ function UnifiedQuizQuestionComponent({
           <Button
             onClick={handleTextSubmit}
             disabled={!selectedAnswer.trim() || isAnswering || isSubmitting}
-            className="min-w-[160px]"
+            className={cn(
+              getColorClasses(question.type).buttonPrimary,
+              "min-w-[180px]"
+            )}
             size="lg"
           >
             {isAnswering ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                 Submitting...
               </>
             ) : (
               <>
-                <CheckCircle2 className="w-4 h-4 mr-2" />
+                <CheckCircle2 className="w-5 h-5 mr-2" />
                 Submit Answer
               </>
             )}

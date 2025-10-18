@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -228,21 +228,162 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <h2 className="text-2xl font-bold">My Quizzes</h2>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search quizzes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 w-64"
-            />
-          </div>
-        </div>
+    <div className="flex flex-col lg:flex-row gap-6">
+      {/* Left Sidebar - Filters */}
+      <div className="lg:w-80 xl:w-96 flex-shrink-0">
+        <Card className="sticky top-6 border-2 shadow-[4px_4px_0px_0px_var(--border)]">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-bold flex items-center gap-2">
+              <Search className="h-5 w-5 text-primary" />
+              Filters & Search
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Search Input */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Search Quizzes</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by title..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 border-2 focus:border-accent"
+                />
+              </div>
+            </div>
+
+            {/* Quiz Type Filter */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground">Quiz Types</label>
+              <div className="space-y-2">
+                {[
+                  { type: 'mcq', label: 'Multiple Choice', count: filteredAllQuizzes.filter(q => q.quizType === 'mcq').length },
+                  { type: 'openended', label: 'Open Ended', count: filteredAllQuizzes.filter(q => q.quizType === 'openended').length },
+                  { type: 'blanks', label: 'Fill in Blanks', count: filteredAllQuizzes.filter(q => q.quizType === 'blanks').length },
+                  { type: 'code', label: 'Code Quizzes', count: filteredAllQuizzes.filter(q => q.quizType === 'code').length },
+                  { type: 'flashcard', label: 'Flashcards', count: filteredAllQuizzes.filter(q => q.quizType === 'flashcard').length },
+                ].map(({ type, label, count }) => (
+                  <div key={type} className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-primary transition-colors">
+                      <Checkbox
+                        checked={true} // For now, show all - can be made filterable later
+                        readOnly
+                      />
+                      {label}
+                    </label>
+                    <Badge variant="secondary" className="text-xs">
+                      {count}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Status Filter */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground">Status</label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-primary transition-colors">
+                    <Checkbox
+                      checked={true}
+                      readOnly
+                    />
+                    Completed
+                  </label>
+                  <Badge variant="secondary" className="text-xs">
+                    {filteredCompletedQuizzes.length}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-warning transition-colors">
+                    <Checkbox
+                      checked={true}
+                      readOnly
+                    />
+                    In Progress
+                  </label>
+                  <Badge variant="secondary" className="text-xs">
+                    {filteredInProgressQuizzes.length}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="space-y-3 pt-4 border-t border-border">
+              <label className="text-sm font-medium text-foreground">Quick Actions</label>
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start border-2 hover:shadow-[2px_2px_0px_0px_var(--border)]"
+                  onClick={() => setSearchTerm('')}
+                  disabled={!searchTerm}
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Clear Filters
+                </Button>
+                {attempts.length > 0 && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="w-full justify-start border-2 shadow-[2px_2px_0px_0px_var(--border)] hover:shadow-[4px_4px_0px_0px_var(--border)]"
+                        disabled={isResetting}
+                      >
+                        {isResetting ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <RotateCcw className="h-4 w-4 mr-2" />
+                        )}
+                        Reset All Attempts
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="border-4 border-border shadow-[8px_8px_0px_0px_var(--border)]">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Reset All Quiz Attempts?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete all your quiz attempts and progress. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="border-2">Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleResetAttempts}
+                          className="bg-destructive hover:bg-destructive/90 border-2 shadow-[2px_2px_0px_0px_var(--border)]"
+                        >
+                          Reset All
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Main Content */}
+      <div className="flex-1 min-w-0">
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <h2 className="text-2xl font-bold">My Quizzes</h2>
+            <div className="flex items-center gap-2">
+              <div className="relative lg:hidden">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search quizzes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 w-64"
+                />
+              </div>
+            </div>
+          </div>
 
       {/* Performance Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -695,6 +836,8 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
           onClose={() => setSelectedAttempt(null)}
         />
       )}
+        </div>
+      </div>
     </div>
   )
 }

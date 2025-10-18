@@ -20,6 +20,7 @@ import { signOut } from "next-auth/react"
 import { useAuth } from "@/modules/auth"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { useState, useCallback, useEffect } from "react"
+import { cn, getColorClasses } from "@/lib/utils"
 
 interface CreditInfo {
   hasCredits: boolean
@@ -112,18 +113,28 @@ export function UserMenu() {
 
   const subscriptionPlan = plan || "FREE"
   const isPremium = subscriptionPlan !== "FREE"
+  
+  // Get Neobrutalism utility classes
+  const { buttonSecondary, badgeCount, cardSecondary } = getColorClasses()
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild suppressHydrationWarning>
         <Button
           variant="ghost"
-          className="relative h-8 w-8 rounded-full hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          className={cn(
+            "relative h-10 w-10 rounded-full border-3 border-border",
+            "shadow-[2px_2px_0px_0px_hsl(var(--border))]",
+            "hover:shadow-[4px_4px_0px_0px_hsl(var(--border))]",
+            "hover:translate-y-[-2px]",
+            "transition-all duration-100",
+            "focus:outline-none focus:ring-4 focus:ring-primary/50"
+          )}
           suppressHydrationWarning
         >
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-8 w-8 border-2 border-border">
             <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? "User"} />
-            <AvatarFallback>
+            <AvatarFallback className="bg-main text-main-foreground font-bold">
               {user?.name?.[0]?.toUpperCase() ?? "U"}
             </AvatarFallback>
           </Avatar>
@@ -131,28 +142,35 @@ export function UserMenu() {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        className="w-72 p-0 shadow-lg border border-border/50"
+        className={cn(
+          "w-72 p-0",
+          "bg-background border-4 border-border rounded-xl",
+          "shadow-[8px_8px_0px_0px_hsl(var(--border))]"
+        )}
         align="end"
         side="bottom"
-        sideOffset={8}
+        sideOffset={12}
       >
         {/* Header */}
-        <div className="p-4 border-b bg-gradient-to-r from-primary/5 to-secondary/5">
+        <div className="p-4 border-b-3 border-border bg-secondary-background">
           <div className="flex items-center space-x-3">
-            <Avatar className="h-12 w-12 ring-2 ring-primary/20">
+            <Avatar className="h-12 w-12 border-3 border-border shadow-[3px_3px_0px_0px_hsl(var(--border))]">
               <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? "User"} />
-              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+              <AvatarFallback className="bg-main text-main-foreground font-black">
                 {user?.name?.[0]?.toUpperCase() ?? "U"}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="text-sm font-semibold">{user?.name}</p>
+              <p className="text-sm font-bold">{user?.name}</p>
               <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               <div className="flex items-center gap-2 mt-2">
-                <Badge variant={isPremium ? "default" : "outline"} className="text-xs">
+                <Badge 
+                  variant={isPremium ? "default" : "outline"} 
+                  className="text-xs border-2 border-border font-black px-2 py-0.5"
+                >
                   {subscriptionPlan}
                 </Badge>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs font-bold text-muted-foreground">
                   {creditInfo?.remainingCredits ?? 0}/{creditInfo?.totalCredits ?? 0} credits
                 </div>
               </div>
@@ -164,14 +182,32 @@ export function UserMenu() {
         <div className="p-2">
           <DropdownMenuGroup>
             <DropdownMenuItem asChild>
-              <Link href="/dashboard/account" className="flex items-center w-full p-3">
+              <Link 
+                href="/dashboard/account" 
+                className={cn(
+                  "flex items-center w-full p-3 font-bold rounded-md",
+                  "border-2 border-transparent",
+                  "hover:border-border hover:bg-secondary-background",
+                  "hover:shadow-[2px_2px_0px_0px_hsl(var(--border))]",
+                  "transition-all duration-100"
+                )}
+              >
                 <User className="mr-3 h-4 w-4" />
                 Account Settings
               </Link>
             </DropdownMenuItem>
 
             <DropdownMenuItem asChild>
-              <Link href="/dashboard/subscription" className="flex items-center w-full p-3">
+              <Link 
+                href="/dashboard/subscription" 
+                className={cn(
+                  "flex items-center w-full p-3 font-bold rounded-md",
+                  "border-2 border-transparent",
+                  "hover:border-border hover:bg-secondary-background",
+                  "hover:shadow-[2px_2px_0px_0px_hsl(var(--border))]",
+                  "transition-all duration-100"
+                )}
+              >
                 <CreditCard className="mr-3 h-4 w-4" />
                 Subscription
               </Link>
@@ -179,7 +215,16 @@ export function UserMenu() {
 
             {user?.isAdmin && (
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/admin" className="flex items-center w-full p-3">
+                <Link 
+                  href="/dashboard/admin" 
+                  className={cn(
+                    "flex items-center w-full p-3 font-bold rounded-md",
+                    "border-2 border-transparent",
+                    "hover:border-border hover:bg-secondary-background",
+                    "hover:shadow-[2px_2px_0px_0px_hsl(var(--border))]",
+                    "transition-all duration-100"
+                  )}
+                >
                   <Shield className="mr-3 h-4 w-4" />
                   Admin
                 </Link>
@@ -187,10 +232,16 @@ export function UserMenu() {
             )}
           </DropdownMenuGroup>
 
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className="bg-border h-[3px] my-2" />
 
           <DropdownMenuItem
-            className="cursor-pointer p-3 hover:bg-destructive/5 text-destructive"
+            className={cn(
+              "cursor-pointer p-3 font-bold rounded-md",
+              "border-2 border-transparent",
+              "hover:border-destructive hover:bg-destructive/10",
+              "hover:shadow-[2px_2px_0px_0px_hsl(var(--destructive))]",
+              "text-destructive transition-all duration-100"
+            )}
             onClick={handleSignOut}
             disabled={isLoggingOut}
           >

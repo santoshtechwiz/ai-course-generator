@@ -31,7 +31,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import { useAuth } from "@/modules/auth"
 import ActionButtons from "./ActionButtons"
 import ReviewsSection from "./ReviewsSection"
-import { cn } from "@/lib/utils"
+import { cn, getColorClasses } from "@/lib/utils"
 import type { BookmarkData } from "./video/types"
 import { useCourseProgressSync } from "@/hooks/useCourseProgressSync"
 import { useVideoState } from "./video/hooks/useVideoState"
@@ -169,6 +169,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const dispatch = useAppDispatch()
   const { user } = useAuth()
   const { status } = useSession()
+  const { buttonPrimary, buttonSecondary, buttonIcon, cardPrimary, cardSecondary, badgeType, badgeStatus } = getColorClasses()
 
   // Guest system hooks
   const {
@@ -1242,19 +1243,28 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center justify-between gap-2 px-1.5 py-1 bg-card/50 backdrop-blur-sm rounded-lg border shadow-sm"
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className={cn(
+                    "flex items-center justify-between gap-2 px-1.5 py-1",
+                    "bg-card/50 backdrop-blur-sm rounded-lg",
+                    "border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+                  )}
                 >
                   {/* Progress Info */}
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <div className={cn(
+                        "h-8 w-8 rounded-xl bg-primary/10",
+                        "border-2 border-border",
+                        "flex items-center justify-center"
+                      )}>
                         <CheckCircle className="h-4 w-4 text-primary" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-sm font-semibold">
+                        <span className="text-sm font-black">
                           {courseStats.completedCount}/{courseStats.totalChapters} Complete
                         </span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground font-medium">
                           {courseStats.totalChapters - courseStats.completedCount} remaining
                         </span>
                       </div>
@@ -1263,7 +1273,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                     {/* Progress Bar */}
                     <div className="hidden md:flex items-center gap-3 flex-1 max-w-xs">
                       <Progress value={courseStats.progressPercentage} className="h-2 flex-1" />
-                      <Badge variant="secondary" className="bg-primary/10 text-primary font-semibold shrink-0">
+                      <Badge className={cn(badgeStatus, "bg-primary/10 text-primary font-bold shrink-0")}>
                         {courseStats.progressPercentage}%
                       </Badge>
                     </div>
@@ -1272,24 +1282,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   {/* Sidebar Toggle Button */}
                   {state.sidebarCollapsed ? (
                     <Button
-                      variant="outline"
-                      size="sm"
                       onClick={() => dispatch2({ type: 'SET_SIDEBAR_COLLAPSED', payload: false })}
-                      className="gap-2 shrink-0"
+                      className={cn(buttonSecondary, "gap-2 shrink-0")}
+                      size="sm"
                       aria-label="Show course content"
                     >
                       <ChevronLeft className="h-4 w-4" />
-                      <span className="hidden sm:inline">Show Chapters</span>
+                      <span className="hidden sm:inline font-bold">Show Chapters</span>
                     </Button>
                   ) : (
                     <Button
-                      variant="ghost"
-                      size="sm"
                       onClick={() => dispatch2({ type: 'SET_SIDEBAR_COLLAPSED', payload: true })}
-                      className="gap-2 shrink-0"
+                      className={cn(buttonIcon, "gap-2 shrink-0")}
+                      size="sm"
                       aria-label="Hide course content"
                     >
-                      <span className="hidden sm:inline">Hide</span>
+                      <span className="hidden sm:inline font-bold">Hide</span>
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   )}
@@ -1300,20 +1308,25 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
                 className="relative"
               >
                 {state.isPiPActive ? (
-                  <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <Card className={cn(cardSecondary, "overflow-hidden")}>
                     <div className={cn(
                       "bg-muted flex items-center justify-center transition-all duration-300",
                       state.isTheaterMode ? "aspect-[21/9]" : "aspect-video"
                     )}>
                       <div className="text-center p-8">
-                        <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
+                        <div className={cn(
+                          "w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-xl",
+                          "border-2 border-border",
+                          "flex items-center justify-center"
+                        )}>
                           <Play className="h-8 w-8 text-primary" />
                         </div>
-                        <h3 className="text-lg font-semibold mb-2">Picture-in-Picture Active</h3>
-                        <p className="text-muted-foreground text-sm">
+                        <h3 className="text-lg font-black mb-2">Picture-in-Picture Active</h3>
+                        <p className="text-muted-foreground text-sm font-medium">
                           Video is playing in a separate window. Click the PIP button to return.
                         </p>
                       </div>
@@ -1321,7 +1334,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   </Card>
                 ) : (
                   <Card className={cn(
-                    "overflow-hidden shadow-sm w-full aspect-video",
+                    cardPrimary,
+                    "overflow-hidden w-full aspect-video",
                     state.isTheaterMode && "bg-transparent border-0 shadow-none"
                   )}>  
                     <div className={cn(
@@ -1449,11 +1463,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                       {/* Progress Stats */}
                       <div className="mt-4 space-y-3">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-sm font-medium">
+                          <div className="flex items-center gap-2 text-sm font-bold">
                             <CheckCircle className="h-4 w-4 text-emerald-500" />
                             <span>{courseStats.completedCount} of {courseStats.totalChapters} chapters</span>
                           </div>
-                          <Badge variant="secondary" className="bg-primary/10 text-primary font-semibold">
+                          <Badge className={cn(badgeStatus, "bg-primary/10 text-primary font-bold")}>
                             {courseStats.progressPercentage}% Complete
                           </Badge>
                         </div>
@@ -1469,13 +1483,13 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   </Card>
 
                   {/* Playlist */}
-                  <Card className="flex-1 h-full shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <Card className={cn(cardSecondary, "flex-1 h-full")}>
                     <CardContent className="p-0">
                       {sidebarCourse.chapters.length === 0 ? (
                         <div className="p-6 text-center">
                           <BookOpen className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-                          <h3 className="font-medium mb-1">No Videos Available</h3>
-                          <p className="text-sm text-muted-foreground">
+                          <h3 className="font-bold mb-1">No Videos Available</h3>
+                          <p className="text-sm text-muted-foreground font-medium">
                             This course doesn't have any video content yet.
                           </p>
                         </div>
@@ -1530,15 +1544,16 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="fixed bottom-6 right-6 z-40"
           >
             <Button
               size="lg"
               onClick={() => (window.location.href = "/dashboard/subscription")}
-              className="shadow-lg hover:shadow-xl transition-all duration-200"
+              className={cn(buttonPrimary, "shadow-[4px_4px_0px_0px_hsl(var(--border))]")}
             >
               <Zap className="h-4 w-4 mr-2" />
-              Subscribe to Unlock
+              <span className="font-bold">Subscribe to Unlock</span>
             </Button>
           </motion.div>
         )}

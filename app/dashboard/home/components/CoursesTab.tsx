@@ -31,7 +31,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import type { DashboardUser, Course } from "@/app/types/types"
-import { cn } from "@/lib/utils"
+import { cn, getColorClasses } from "@/lib/utils"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { getImageWithFallback } from "@/utils/image-utils"
 import { CategoryIcon } from "@/app/category-icon"
@@ -109,6 +109,9 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value)
   }, [])
+  
+  // Get Neobrutalism utility classes
+  const { inputText, buttonIcon, badgeCount, cardPrimary } = getColorClasses()
 
   return (
     <div className="space-y-6">
@@ -149,17 +152,24 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
       {/* Search and Controls (sticky) */}
       <motion.div
         {...fadeInUp(0.15)}
-        className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sticky top-0 z-20 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 border-b border-border/50 py-4 px-1 rounded-lg shadow-sm"
+        className={cn(
+          "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between",
+          "sticky top-0 z-20 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80",
+          "py-4"
+        )}
       >
         <div className="relative flex-1 max-w-md">
           <Search
-            className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none z-10"
             aria-hidden="true"
           />
           <Input
             type="search"
             placeholder="Search courses..."
-            className="pl-11 h-11 shadow-sm bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 rounded-xl"
+            className={cn(
+              inputText,
+              "pl-11 h-11"
+            )}
             value={searchTerm}
             onChange={handleSearchChange}
             aria-label="Search courses by title, description, or category"
@@ -169,7 +179,10 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
         <div className="flex items-center gap-2">
           {/* Enhanced View Mode Toggle */}
           <div
-            className="flex items-center rounded-xl border border-border/50 p-1 bg-background/50"
+            className={cn(
+              "flex items-center gap-1 rounded-lg border-2 border-border p-1 bg-background",
+              "shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+            )}
             role="group"
             aria-label="Course view mode"
           >
@@ -177,7 +190,10 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
               variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("grid")}
-              className="h-9 w-9 p-0 rounded-lg transition-all duration-200"
+              className={cn(
+                "h-9 w-9 p-0 rounded-md transition-all duration-100",
+                viewMode === "grid" && "bg-main text-main-foreground shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+              )}
               aria-label="Grid view"
               aria-pressed={viewMode === "grid"}
             >
@@ -187,7 +203,10 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
               variant={viewMode === "list" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("list")}
-              className="h-9 w-9 p-0 rounded-lg transition-all duration-200"
+              className={cn(
+                "h-9 w-9 p-0 rounded-md transition-all duration-100",
+                viewMode === "list" && "bg-main text-main-foreground shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+              )}
               aria-label="List view"
               aria-pressed={viewMode === "list"}
             >
@@ -205,61 +224,97 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
           aria-label="Course filter tabs"
         >
           <TabsList
-            className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4 bg-muted/30 p-1 rounded-xl backdrop-blur-sm"
+            className={cn(
+              "grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4",
+              "bg-secondary/50 p-1.5 rounded-lg",
+              "border-2 border-border",
+              "shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+            )}
             role="tablist"
           >
             <TabsTrigger
               value="all"
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg transition-all duration-200"
+              className={cn(
+                "flex items-center gap-2 rounded-md transition-all duration-100 font-bold",
+                "data-[state=active]:bg-background data-[state=active]:text-foreground",
+                "data-[state=active]:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+              )}
               role="tab"
               aria-selected={activeTab === "all"}
             >
               <BookOpen className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline font-medium">All</span>
+              <span className="hidden sm:inline">All</span>
               <motion.div variants={badgeVariants} initial="hidden" animate="visible">
-                <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs font-semibold">
+                <Badge 
+                  variant="secondary" 
+                  className="ml-1 bg-background text-foreground border-2 border-border text-xs font-black px-1.5 py-0.5"
+                >
                   {courseData.all.length}
                 </Badge>
               </motion.div>
             </TabsTrigger>
             <TabsTrigger
               value="in-progress"
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg transition-all duration-200"
+              className={cn(
+                "flex items-center gap-2 rounded-lg transition-all duration-100 font-bold",
+                "data-[state=active]:bg-main data-[state=active]:text-main-foreground",
+                "data-[state=active]:border-2 data-[state=active]:border-border",
+                "data-[state=active]:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+              )}
               role="tab"
               aria-selected={activeTab === "in-progress"}
             >
               <Clock className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline font-medium">In Progress</span>
+              <span className="hidden sm:inline">In Progress</span>
               <motion.div variants={badgeVariants} initial="hidden" animate="visible">
-                <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs font-semibold">
+                <Badge 
+                  variant="secondary" 
+                  className="ml-1 bg-background text-foreground border-2 border-border text-xs font-black px-1.5 py-0.5"
+                >
                   {courseData.inProgress.length}
                 </Badge>
               </motion.div>
             </TabsTrigger>
             <TabsTrigger
               value="completed"
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg transition-all duration-200"
+              className={cn(
+                "flex items-center gap-2 rounded-lg transition-all duration-100 font-bold",
+                "data-[state=active]:bg-main data-[state=active]:text-main-foreground",
+                "data-[state=active]:border-2 data-[state=active]:border-border",
+                "data-[state=active]:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+              )}
               role="tab"
               aria-selected={activeTab === "completed"}
             >
               <CheckCircle className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline font-medium">Completed</span>
+              <span className="hidden sm:inline">Completed</span>
               <motion.div variants={badgeVariants} initial="hidden" animate="visible">
-                <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs font-semibold">
+                <Badge 
+                  variant="secondary" 
+                  className="ml-1 bg-background text-foreground border-2 border-border text-xs font-black px-1.5 py-0.5"
+                >
                   {courseData.completed.length}
                 </Badge>
               </motion.div>
             </TabsTrigger>
             <TabsTrigger
               value="favorites"
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg transition-all duration-200"
+              className={cn(
+                "flex items-center gap-2 rounded-lg transition-all duration-100 font-bold",
+                "data-[state=active]:bg-main data-[state=active]:text-main-foreground",
+                "data-[state=active]:border-2 data-[state=active]:border-border",
+                "data-[state=active]:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+              )}
               role="tab"
               aria-selected={activeTab === "favorites"}
             >
               <Star className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline font-medium">Favorites</span>
+              <span className="hidden sm:inline">Favorites</span>
               <motion.div variants={badgeVariants} initial="hidden" animate="visible">
-                <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs font-semibold">
+                <Badge 
+                  variant="secondary" 
+                  className="ml-1 bg-background text-foreground border-2 border-border text-xs font-black px-1.5 py-0.5"
+                >
                   {courseData.favorites.length}
                 </Badge>
               </motion.div>
@@ -369,6 +424,9 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
         month: "short",
       })
     : null
+    
+  // Get Neobrutalism utility classes
+  const { cardPrimary, badgeStatus, iconContainer } = getColorClasses()
 
   return (
     <motion.div
@@ -381,20 +439,24 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
     >
       <Card
         className={cn(
-          "cursor-pointer border border-border/50",
-          "shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300",
-          "bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-sm",
-          "rounded-2xl h-full flex items-center justify-center overflow-hidden",
-          "group-hover:ring-2 group-hover:ring-primary/10",
+          cardPrimary,
+          "cursor-pointer transition-all duration-100",
+          "hover:shadow-[8px_8px_0px_0px_hsl(var(--border))]",
+          "hover:translate-y-[-4px]",
+          "h-full flex items-center justify-center overflow-hidden",
           isLoading && "opacity-70",
         )}
         onClick={onClick}
       >
         <CardContent className="p-6 flex flex-col gap-4 text-center relative h-full">
-          {/* Decorative gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
           
-          <div className="relative flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 text-primary shadow-sm group-hover:shadow-md transition-shadow duration-300">
+          <div className={cn(
+            iconContainer,
+            "relative mx-auto w-16 h-16 rounded-xl",
+            "shadow-[3px_3px_0px_0px_hsl(var(--border))]",
+            "group-hover:shadow-[4px_4px_0px_0px_hsl(var(--border))]",
+            "transition-all duration-100"
+          )}>
             {course.category ? (
               (() => {
                 const cat = typeof course.category === 'object' && course.category?.name ? String(course.category.name) : String(course.category)
@@ -413,12 +475,12 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
           </div>
 
           <div className="relative space-y-2 flex-1 flex flex-col justify-center min-h-[4rem]">
-            <h3 className="text-base font-semibold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors duration-200">
+            <h3 className="text-base font-black leading-tight text-foreground line-clamp-2">
               {course.title}
             </h3>
             
             {course.description && (
-              <p className="text-xs text-muted-foreground line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <p className="text-xs text-muted-foreground line-clamp-2 font-medium">
                 {course.description}
               </p>
             )}
@@ -429,17 +491,18 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
             {progress !== undefined && progress > 0 ? (
               <>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground font-medium">Progress</span>
-                  <span className="font-semibold text-primary">{Math.round(progress)}%</span>
+                  <span className="text-muted-foreground font-bold">Progress</span>
+                  <span className="font-black text-foreground">{Math.round(progress)}%</span>
                 </div>
                 <div className="relative">
-                  <Progress value={progress} className="h-2 bg-muted" />
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="absolute top-0 left-0 h-2 bg-gradient-to-r from-primary to-primary/80 rounded-full"
-                  />
+                  <div className="h-3 bg-background border-3 border-border rounded-md overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress}%` }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                      className="h-full bg-main"
+                    />
+                  </div>
                 </div>
               </>
             ) : (
@@ -451,7 +514,7 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
           {/* Metadata section - always present for consistent height */}
           <div className="flex items-center justify-center text-xs text-muted-foreground w-full min-h-[2rem]">
             {(chapterCount > 0 || totalDuration) ? (
-              <div className="flex items-center gap-3 opacity-70 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-3 font-bold">
                 {chapterCount > 0 && (
                   <span className="flex items-center gap-1">
                     <GraduationCap className="h-3 w-3" />

@@ -355,13 +355,13 @@ export function PricingPage({
             <X className="h-4 w-4" />
           </Button>
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="h-14 w-14 rounded-full bg-blue-600 flex items-center justify-center">
+            <div className="h-14 w-14 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center shadow-[4px_4px_0px_0px_var(--border)]">
               <Sparkles className="text-white h-7 w-7" />
             </div>
             <div className="flex-1">
-              <h3 className="font-bold text-lg">Limited Time Offer</h3>
+              <h3 className="font-bold text-lg text-foreground">Limited Time Offer</h3>
               <p className="text-muted-foreground">
-                Use <span className="bg-muted px-2 py-0.5 rounded font-mono font-bold">AILAUNCH20</span> for 20% off
+                Use <span className="bg-accent/10 text-accent px-2 py-0.5 rounded font-mono font-bold border border-accent/20">AILAUNCH20</span> for 20% off
               </p>
               <div className="flex flex-col sm:flex-row gap-2 mt-3">
                 <Input
@@ -369,8 +369,12 @@ export function PricingPage({
                   placeholder="Enter promo code"
                   onChange={(e) => setPromoCode(e.target.value)}
                 />
-                <Button onClick={handleApplyPromoCode} disabled={isPromoValid || isApplyingPromo}>
-                  {isApplyingPromo ? <Loader2 className="h-4 w-4 mr-2" /> : <Gift className="mr-2" />}
+                <Button
+                  onClick={handleApplyPromoCode}
+                  disabled={isPromoValid || isApplyingPromo}
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold shadow-[2px_2px_0px_0px_var(--border)] hover:shadow-[4px_4px_0px_0px_var(--border)]"
+                >
+                  {isApplyingPromo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Gift className="mr-2 h-4 w-4" />}
                   {isPromoValid ? "Applied" : "Apply"}
                 </Button>
               </div>
@@ -380,12 +384,22 @@ export function PricingPage({
       )}
 
       <div className="text-center">
-        <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
+        <motion.h2
+          className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-primary via-purple-600 to-accent text-transparent bg-clip-text leading-tight"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
           Choose Your Plan
-        </h2>
-        <p className="text-muted-foreground mt-2">
-          Get more tokens, features, and support by upgrading to a paid plan.
-        </p>
+        </motion.h2>
+        <motion.p
+          className="text-muted-foreground mt-4 text-lg max-w-2xl mx-auto"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          Unlock unlimited potential with AI-powered educational tools. Get more tokens, advanced features, and priority support.
+        </motion.p>
       </div>
 
       <div className="flex items-center justify-center gap-4">
@@ -476,23 +490,26 @@ export function PricingPage({
         />
       )}
 
-      {/* Token Usage Explanation - Inline */}
       <motion.div
-        className="mt-12 p-8 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-md"
+        className="mt-12 p-8 bg-gradient-to-r from-card to-accent/5 border-2 border-border rounded-xl shadow-[4px_4px_0px_0px_var(--border)]"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true, margin: "-100px" }}
       >
         <div className="flex flex-col md:flex-row gap-6 items-center">
           <div className="md:w-1/4 flex justify-center">
-            <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-6 rounded-full shadow-lg transform hover:scale-105 transition-transform duration-300">
+            <div className="bg-gradient-to-r from-primary to-accent p-6 rounded-full shadow-[4px_4px_0px_0px_var(--border)] transform hover:scale-105 transition-transform duration-300">
               <Zap className="h-12 w-12 text-white" />
             </div>
           </div>
           <div className="md:w-3/4 text-left">
-            <h3 className="text-2xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+            <h3 className="text-2xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
               Understanding Token Usage
             </h3>
+            <p className="text-muted-foreground mb-4">
+              Tokens are used to generate quizzes and access various features on our platform. Each quiz you generate
+              consumes a certain number of tokens based on the complexity and type of questions.
+            </p>
             <p className="text-muted-foreground mb-4">
               Tokens are used to generate quizzes and access various features on our platform. Each quiz you generate
               consumes a certain number of tokens based on the complexity and type of questions.

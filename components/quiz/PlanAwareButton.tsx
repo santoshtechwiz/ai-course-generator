@@ -416,9 +416,16 @@ export default function PlanAwareButton({
               disabled={state.disabled}
               variant={state.variant}
               className={cn(
-                "relative min-w-[120px] transition-all duration-200",
+                "relative min-w-[120px] transition-all duration-100 font-bold uppercase border-4 border-black shadow-[4px_4px_0px_0px_#000000] hover:shadow-[6px_6px_0px_0px_#000000] hover:translate-y-[-2px]",
+                // Neobrutalism color palette
+                state.variant === "default" && "bg-black text-white hover:bg-gray-800",
+                state.variant === "outline" && "bg-white text-black border-black hover:bg-gray-100",
+                state.variant === "destructive" && "bg-red-500 text-white hover:bg-red-600",
+                state.variant === "secondary" && "bg-gray-200 text-black hover:bg-gray-300",
+                // Disabled state styling
+                state.disabled && "opacity-70 cursor-not-allowed shadow-[2px_2px_0px_0px_#000000] hover:shadow-[2px_2px_0px_0px_#000000] hover:translate-y-[0px]",
+                // Loading state adjustments
                 (isLoading || isLoadingState) && "opacity-80 cursor-not-allowed",
-                state.disabled && "opacity-70",
                 className,
               )}
               {...buttonProps}

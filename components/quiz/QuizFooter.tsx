@@ -4,7 +4,7 @@ import type React from "react"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import { ArrowLeft, ArrowRight, Check, RotateCcw, Loader2, CheckCircle2, Flag, SkipForward } from 'lucide-react'
-import { cn } from "@/lib/utils"
+import { cn, getColorClasses } from "@/lib/utils"
 
 interface QuizFooterProps {
   onNext?: () => void | Promise<void>
@@ -96,11 +96,14 @@ export function QuizFooter({
 }: QuizFooterProps) {
   const isLoading = isSubmitting || submitState === "loading" || nextState === "loading"
   const isSuccess = submitState === "success" || nextState === "success"
+  
+  // Get Neobrutalism utilities
+  const { buttonPrimary, buttonSecondary } = getColorClasses()
 
   return (
     <motion.div
       className={cn(
-        "w-full flex flex-col sm:flex-row items-center justify-between gap-6 pt-10 mt-10 border-t border-border/30",
+        "w-full flex flex-col sm:flex-row items-center justify-between gap-6 pt-10 mt-10 border-t-3 border-border",
         className
       )}
       variants={containerVariants}
@@ -118,9 +121,10 @@ export function QuizFooter({
         {canGoPrevious && onPrevious ? (
           <Button
             onClick={onPrevious}
-            variant="outline"
-            size="lg"
-            className="min-w-[160px] h-14 px-6 text-base font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg border-2 hover:border-primary/50"
+            className={cn(
+              buttonSecondary,
+              "min-w-[160px] h-12 px-6 text-base transition-all duration-100"
+            )}
             disabled={isLoading || disabled}
             aria-label="Go to previous question"
           >
@@ -138,12 +142,17 @@ export function QuizFooter({
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-2 px-4 py-2 bg-success/10 dark:bg-success/5 border border-success/20 dark:border-success/20 rounded-full"
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-lg",
+              "bg-success/10 dark:bg-success/5",
+              "border-2 border-success/20",
+              "shadow-[2px_2px_0px_0px_hsl(var(--success)/0.2)]"
+            )}
             role="status"
             aria-live="polite"
           >
             <CheckCircle2 className="w-5 h-5 text-success" aria-hidden="true" />
-            <span className="font-medium text-success">Answer recorded</span>
+            <span className="font-bold text-success">Answer recorded</span>
           </motion.div>
         )}
 
@@ -157,7 +166,11 @@ export function QuizFooter({
               onClick={onSkip}
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-primary"
+              className={cn(
+                "text-muted-foreground hover:text-primary font-bold",
+                "border-2 border-transparent hover:border-border",
+                "hover:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+              )}
               disabled={isLoading || disabled}
               aria-label="Skip this question"
             >
@@ -176,9 +189,10 @@ export function QuizFooter({
         {showRetake && onRetake ? (
           <Button
             onClick={onRetake}
-            variant="outline"
-            size="lg"
-            className="min-w-[160px] h-14 px-6 text-base font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg border-2 hover:border-primary/50"
+            className={cn(
+              buttonSecondary,
+              "min-w-[160px] h-12 px-6 text-base transition-all duration-100"
+            )}
             disabled={isLoading || disabled}
             aria-label="Retake the quiz"
           >
@@ -188,10 +202,9 @@ export function QuizFooter({
         ) : isLastQuestion ? (
           <Button
             onClick={onSubmit}
-            size="lg"
             className={cn(
-              "min-w-[160px] h-14 px-6 text-base font-bold transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg",
-              "bg-primary hover:bg-primary/90 text-primary-foreground border-0"
+              buttonPrimary,
+              "min-w-[160px] h-12 px-6 text-base"
             )}
             disabled={!hasAnswer || isLoading || disabled}
             aria-label={submitLabel}
@@ -216,10 +229,9 @@ export function QuizFooter({
         ) : (
           <Button
             onClick={onNext}
-            size="lg"
             className={cn(
-              "min-w-[160px] h-14 px-6 text-base font-bold transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg",
-              "bg-primary hover:bg-primary/90 text-primary-foreground border-0"
+              buttonPrimary,
+              "min-w-[160px] h-12 px-6 text-base"
             )}
             disabled={!canGoNext || isLoading || disabled}
             aria-label={nextLabel}

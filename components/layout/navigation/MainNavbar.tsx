@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 import { useAuth } from "@/modules/auth"
-import { cn } from "@/lib/utils"
+import { cn, getColorClasses } from "@/lib/utils"
 import Logo from "@/components/shared/Logo"
 import { CreditsDisplay } from "./CreditsDisplay"
 import { UserAvatar } from "./UserAvatar"
@@ -102,13 +102,16 @@ export function MainNavbar() {
     [router],
   )
 
+  // Get Neobrutalism utility classes
+  const { buttonPrimary, buttonIcon, badgeCount } = getColorClasses()
+
   return (
     <>
       <motion.header
         className={cn(
           "fixed top-0 left-0 right-0 z-50",
-          "bg-background border-b-2 border-border",
-          isScrolled && "shadow-[var(--shadow)]",
+          "bg-background border-b-4 border-border",
+          isScrolled && "shadow-[0_4px_0px_0px_rgba(0,0,0,0.1)]",
         )}
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -129,11 +132,11 @@ export function MainNavbar() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "relative px-4 py-2 text-sm font-semibold",
-                    "border-2 border-transparent",
+                    "relative px-4 py-2 text-sm font-bold transition-all duration-100",
+                    "border-3 border-transparent rounded-lg",
                     active 
-                      ? "border-border bg-main text-main-foreground" 
-                      : "hover:border-border hover:bg-secondary-background",
+                      ? "border-border bg-main text-main-foreground shadow-[3px_3px_0px_0px_hsl(var(--border))]" 
+                      : "hover:border-border hover:bg-secondary-background hover:shadow-[2px_2px_0px_0px_hsl(var(--border))]",
                   )}
                 >
                   {item.name}
@@ -157,7 +160,10 @@ export function MainNavbar() {
               size="icon"
               aria-label="Search"
               onClick={() => setIsSearchModalOpen(true)}
-              className="border-2 border-transparent hover:border-border hover:bg-secondary-background"
+              className={cn(
+                buttonIcon,
+                "hover:translate-y-[-2px] transition-all duration-100"
+              )}
             >
               <Search className="h-4 w-4" />
             </Button>
@@ -178,7 +184,11 @@ export function MainNavbar() {
             ) : (
               <Button
                 onClick={handleSignIn}
-                className="hidden sm:flex bg-main text-main-foreground border-2 border-border shadow-[var(--shadow)] hover:translate-x-[3px] hover:translate-y-[-3px] hover:shadow-none font-semibold"
+                className={cn(
+                  "hidden sm:flex",
+                  buttonPrimary,
+                  "min-h-[40px]"
+                )}
                 size="sm"
               >
                 Sign in
@@ -191,17 +201,21 @@ export function MainNavbar() {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="md:hidden border-2 border-transparent hover:border-border hover:bg-secondary-background" 
+                  className={cn(
+                    "md:hidden",
+                    buttonIcon,
+                    "hover:translate-y-[-2px] transition-all duration-100"
+                  )}
                   suppressHydrationWarning
                   aria-label="Toggle menu"
                 >
                   {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[85vw] max-w-sm p-0 bg-background border-l-2 border-border">
+              <SheetContent side="right" className="w-[85vw] max-w-sm p-0 bg-background border-l-4 border-border">
                 <div className="h-full flex flex-col">
                   {/* Header */}
-                  <div className="p-4 border-b-2 border-border flex items-center justify-between">
+                  <div className="p-4 border-b-4 border-border flex items-center justify-between">
                     <Logo />
                     <div className="flex items-center gap-2">
                       <ThemeToggle />
@@ -218,10 +232,10 @@ export function MainNavbar() {
                           href={item.href}
                           onClick={() => setIsMobileMenuOpen(false)}
                           className={cn(
-                            "block px-4 py-3 min-h-[48px] flex items-center font-semibold border-2",
+                            "block px-4 py-3 min-h-[48px] flex items-center font-bold border-3 rounded-lg transition-all duration-100",
                             active 
-                              ? "bg-main text-main-foreground border-border" 
-                              : "border-transparent hover:border-border hover:bg-secondary-background",
+                              ? "bg-main text-main-foreground border-border shadow-[3px_3px_0px_0px_hsl(var(--border))]" 
+                              : "border-transparent hover:border-border hover:bg-secondary-background hover:shadow-[2px_2px_0px_0px_hsl(var(--border))]",
                           )}
                         >
                           {item.name}
@@ -231,21 +245,21 @@ export function MainNavbar() {
                   </nav>
                   
                   {/* Footer */}
-                  <div className="p-4 border-t-2 border-border space-y-3">
+                  <div className="p-4 border-t-4 border-border space-y-3">
                     {isAuthenticated ? (
                       <>
                         {availableCredits !== null && (
-                          <div className="flex items-center justify-between p-3 bg-secondary-background border-2 border-border">
+                          <div className="flex items-center justify-between p-3 bg-secondary-background border-3 border-border rounded-lg shadow-[3px_3px_0px_0px_hsl(var(--border))]">
                             <div className="flex items-center space-x-2">
                               <CreditCard className="h-4 w-4" />
-                              <span className="text-sm font-semibold">Credits</span>
+                              <span className="text-sm font-bold">Credits</span>
                             </div>
                             <div className="flex items-center space-x-2">
-                              <span className="text-sm font-bold tabular-nums">
+                              <span className="text-sm font-black tabular-nums">
                                 {availableCredits.toLocaleString()}
                               </span>
                               {subscriptionPlan !== "FREE" && (
-                                <Badge variant="secondary" className="text-xs px-1.5 py-0.5 border-2 border-border font-bold">
+                                <Badge variant="secondary" className="text-xs px-1.5 py-0.5 border-2 border-border font-black">
                                   {subscriptionPlan}
                                 </Badge>
                               )}
@@ -261,7 +275,10 @@ export function MainNavbar() {
                       </>
                     ) : (
                       <Button 
-                        className="w-full min-h-[48px] bg-main text-main-foreground border-2 border-border shadow-[var(--shadow)] hover:translate-x-[3px] hover:translate-y-[-3px] hover:shadow-none font-semibold" 
+                        className={cn(
+                          "w-full min-h-[48px]",
+                          buttonPrimary
+                        )}
                         onClick={() => {
                           handleSignIn()
                           setIsMobileMenuOpen(false)

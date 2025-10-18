@@ -215,9 +215,9 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
       className="w-full"
     >
       <Card className={cn(
-        "border-2 transition-all duration-200 hover:shadow-lg",
+        "border-3 transition-all duration-200 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]",
         isActive
-          ? `${difficultyColors.bg} ${difficultyColors.border} border-2`
+          ? `${difficultyColors.bg} ${difficultyColors.border} border-3`
           : "bg-card border-border hover:border-accent/50"
       )}>
         <CardContent className="p-4">
@@ -225,16 +225,16 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className={cn(
-                "p-2 rounded-lg flex-shrink-0",
+                "p-2 rounded-lg flex-shrink-0 border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]",
                 difficultyColors.accent, "text-white"
               )}>
                 <QuizIcon type={quiz.quizType} className="w-4 h-4" />
               </div>
               <div className="min-w-0 flex-1">
-                <Badge variant="outline" className="mb-1 text-xs">
+                <Badge variant="outline" className="mb-1 text-xs font-bold border-2">
                   {quiz.quizType.toUpperCase()}
                 </Badge>
-                <h3 className="font-semibold text-sm leading-tight text-foreground line-clamp-2">
+                <h3 className="font-black text-sm leading-tight text-foreground line-clamp-2">
                   {quiz.title}
                 </h3>
               </div>
@@ -244,7 +244,7 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
 
           {/* Stats - simplified */}
           <div className="mb-3">
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground font-bold">
               <div className="flex items-center gap-1">
                 <BookOpen className="w-3 h-3" />
                 <span>{quiz.questionCount} questions</span>
@@ -263,7 +263,7 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
             <Button
               size="sm"
               className={cn(
-                "w-full font-medium text-white border-0 h-8",
+                "w-full font-black text-white border-2 border-border h-9 shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:shadow-[4px_4px_0px_0px_hsl(var(--border))] transition-all",
                 difficultyColors.accent, "hover:opacity-90"
               )}
             >
@@ -315,24 +315,24 @@ const EmptyState = memo(() => (
     animate={{ opacity: 1, scale: 1 }}
     transition={{ duration: 0.5 }}
   >
-    <Card className="border-2 border-dashed border-gray-300 dark:border-gray-600">
+    <Card className="border-3 border-dashed border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]">
       <CardContent className="p-12 text-center">
         <motion.div 
-          className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center"
+          className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary/10 border-3 border-primary/20 flex items-center justify-center shadow-[4px_4px_0px_0px_hsl(var(--primary)/0.2)]"
           animate={{ rotate: [0, 10, -10, 0] }}
           transition={{ duration: 4, repeat: Infinity }}
         >
           <Zap className="w-10 h-10 text-primary" />
         </motion.div>
         
-        <h3 className="text-xl font-bold mb-3 text-foreground">
+        <h3 className="text-xl font-black mb-3 text-foreground">
           No Quizzes Available
         </h3>
-        <p className="text-muted-foreground mb-6 max-w-sm mx-auto leading-relaxed">
+        <p className="text-muted-foreground mb-6 max-w-sm mx-auto leading-relaxed font-medium">
           We're fetching fresh quiz recommendations for you. Check back in a moment!
         </p>
         
-        <Button variant="outline" asChild className="hover:shadow-lg transition-all duration-300">
+        <Button variant="outline" asChild className="hover:shadow-[4px_4px_0px_0px_hsl(var(--border))] transition-all duration-300 border-2 font-bold">
           <Link href="/dashboard/quizzes" className="flex items-center gap-2">
             <BookOpen className="w-4 h-4" />
             Browse All Quizzes
@@ -350,26 +350,26 @@ const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
     animate={{ opacity: 1, scale: 1 }}
     transition={{ duration: 0.5 }}
   >
-    <Card className="border-2 border-destructive/20 bg-destructive/5">
+    <Card className="border-3 border-destructive/20 bg-destructive/5 shadow-[4px_4px_0px_0px_hsl(var(--destructive)/0.2)]">
       <CardContent className="p-12 text-center">
         <motion.div 
-          className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-destructive/10 to-destructive/5 flex items-center justify-center"
+          className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-destructive/10 to-destructive/5 border-3 border-destructive/20 flex items-center justify-center shadow-[4px_4px_0px_0px_hsl(var(--destructive)/0.2)]"
           animate={{ x: [0, -6, 6, 0] }}
           transition={{ duration: 0.5, repeat: 3 }}
         >
           <Zap className="w-10 h-10 text-destructive" />
         </motion.div>
         
-        <h3 className="text-xl font-bold mb-3 text-foreground">
+        <h3 className="text-xl font-black mb-3 text-foreground">
           Oops! Something went wrong
         </h3>
-        <p className="text-muted-foreground mb-6 max-w-sm mx-auto leading-relaxed">
+        <p className="text-muted-foreground mb-6 max-w-sm mx-auto leading-relaxed font-medium">
           We couldn't load the quiz recommendations. Let's try again!
         </p>
         
         <Button 
           onClick={onRetry} 
-          className="bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg hover:shadow-xl transition-all duration-300"
+          className="bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-[4px_4px_0px_0px_hsl(var(--destructive)/0.3)] hover:shadow-[6px_6px_0px_0px_hsl(var(--destructive)/0.3)] transition-all duration-300 border-2 border-border font-black"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
           Try Again
@@ -526,7 +526,7 @@ export const RandomQuiz = memo(({
 
   return (
     <motion.div
-      className={cn("w-full border border-border rounded-lg bg-card/50", className)}
+      className={cn("w-full border-3 border-border rounded-lg bg-card/50 shadow-[4px_4px_0px_0px_hsl(var(--border))]", className)}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
@@ -534,14 +534,14 @@ export const RandomQuiz = memo(({
       {/* Simplified Header with Collapse Toggle */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="p-1.5 rounded-md bg-accent/10">
+          <div className="p-1.5 rounded-md bg-accent/10 border-2 border-accent/20 shadow-[2px_2px_0px_0px_hsl(var(--accent)/0.2)]">
             <Zap className="w-4 h-4 text-accent" />
           </div>
           <div>
-            <h3 className="font-semibold text-sm text-foreground">
+            <h3 className="font-black text-sm text-foreground">
               Recommended Quiz
             </h3>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground font-bold">
               {currentQuiz ? `${currentQuiz.questionCount} questions` : 'Loading...'}
             </p>
           </div>

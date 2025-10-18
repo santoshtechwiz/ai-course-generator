@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import VideoNavigationSidebar from "./VideoNavigationSidebar";
+import { cn, getColorClasses } from "@/lib/utils";
 
 interface PlaylistSidebarProps {
   course: {
@@ -53,6 +54,8 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
   isPiPActive = false,
   isProgressLoading = false
 }) => {
+  const { cardSecondary } = getColorClasses()
+  
   // Handler for chapter selection that ensures proper formatting - optimized memoization
   const handleChapterSelect = useMemo(() => (chapter: any) => {
     onChapterSelect({
@@ -73,10 +76,10 @@ const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
     >
       <div className="sticky top-4">
-        <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
+        <div className={cn(cardSecondary, "rounded-xl")}>
           <VideoNavigationSidebar
             course={course}
             currentChapter={currentChapter}
