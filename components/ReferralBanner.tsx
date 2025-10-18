@@ -24,16 +24,16 @@ export function ReferralBanner({ referralCode, onDismiss }: ReferralBannerProps)
   }
 
   return (
-    <Alert className="mb-6 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-5 duration-300">
-      <Gift className="h-5 w-5 text-green-600 dark:text-green-400" />
-      <AlertTitle className="text-green-700 dark:text-green-300 font-semibold">Referral Code Applied!</AlertTitle>
-      <AlertDescription className="text-green-600 dark:text-green-400 flex items-center justify-between">
+    <Alert className="mb-6 bg-success/10 dark:bg-success/5 border-success/20 dark:border-success/20 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-5 duration-300">
+      <Gift className="h-5 w-5 text-success" />
+      <AlertTitle className="text-success font-semibold">Referral Code Applied!</AlertTitle>
+      <AlertDescription className="text-success/80 dark:text-success/90 flex items-center justify-between">
         <div>
           <p>
             You're using a referral code{" "}
             <Badge
               variant="outline"
-              className="bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800 ml-1"
+              className="bg-success/20 dark:bg-success/10 border-success/30 dark:border-success/30 ml-1"
             >
               {referralCode}
             </Badge>

@@ -390,7 +390,7 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
         )}
         onClick={onClick}
       >
-        <CardContent className="p-6 flex items-center justify-center flex-col gap-4 text-center relative">
+        <CardContent className="p-6 flex flex-col gap-4 text-center relative h-full">
           {/* Decorative gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
           
@@ -412,7 +412,7 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
             )}
           </div>
 
-          <div className="relative space-y-2 w-full">
+          <div className="relative space-y-2 flex-1 flex flex-col justify-center min-h-[4rem]">
             <h3 className="text-base font-semibold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors duration-200">
               {course.title}
             </h3>
@@ -424,42 +424,52 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
             )}
           </div>
           
-          {/* Display progress if available */}
-          {progress !== undefined && progress > 0 && (
-            <div className="w-full space-y-2 relative">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground font-medium">Progress</span>
-                <span className="font-semibold text-primary">{Math.round(progress)}%</span>
-              </div>
-              <div className="relative">
-                <Progress value={progress} className="h-2 bg-muted" />
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="absolute top-0 left-0 h-2 bg-gradient-to-r from-primary to-primary/80 rounded-full"
-                />
-              </div>
-            </div>
-          )}
+          {/* Progress section - always present for consistent height */}
+          <div className="w-full space-y-2 relative min-h-[3rem] flex flex-col justify-center">
+            {progress !== undefined && progress > 0 ? (
+              <>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground font-medium">Progress</span>
+                  <span className="font-semibold text-primary">{Math.round(progress)}%</span>
+                </div>
+                <div className="relative">
+                  <Progress value={progress} className="h-2 bg-muted" />
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="absolute top-0 left-0 h-2 bg-gradient-to-r from-primary to-primary/80 rounded-full"
+                  />
+                </div>
+              </>
+            ) : (
+              // Placeholder for consistent height when no progress
+              <div className="h-8" />
+            )}
+          </div>
           
-          {/* Metadata */}
-          {(chapterCount > 0 || totalDuration) && (
-            <div className="flex items-center gap-3 text-xs text-muted-foreground w-full justify-center opacity-70 group-hover:opacity-100 transition-opacity">
-              {chapterCount > 0 && (
-                <span className="flex items-center gap-1">
-                  <GraduationCap className="h-3 w-3" />
-                  {chapterCount} chapters
-                </span>
-              )}
-              {totalDuration && (
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {totalDuration}h
-                </span>
-              )}
-            </div>
-          )}
+          {/* Metadata section - always present for consistent height */}
+          <div className="flex items-center justify-center text-xs text-muted-foreground w-full min-h-[2rem]">
+            {(chapterCount > 0 || totalDuration) ? (
+              <div className="flex items-center gap-3 opacity-70 group-hover:opacity-100 transition-opacity">
+                {chapterCount > 0 && (
+                  <span className="flex items-center gap-1">
+                    <GraduationCap className="h-3 w-3" />
+                    {chapterCount} chapters
+                  </span>
+                )}
+                {totalDuration && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {totalDuration}h
+                  </span>
+                )}
+              </div>
+            ) : (
+              // Placeholder for consistent height when no metadata
+              <div className="h-6" />
+            )}
+          </div>
         </CardContent>
       </Card>
     </motion.div>

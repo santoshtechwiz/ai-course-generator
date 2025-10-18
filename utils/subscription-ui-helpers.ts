@@ -511,7 +511,7 @@ export function getFeatureIcon(available: boolean): 'check' | 'x' {
  * @returns Tailwind color class
  */
 export function getFeatureIconColor(available: boolean): string {
-  return available ? 'text-green-500' : 'text-muted-foreground'
+  return available ? 'text-success' : 'text-muted-foreground'
 }
 
 /**

@@ -227,9 +227,9 @@ function QuizCardComponent({
             </button>
           </div>
 
-          <CardContent className="p-5 relative z-10 flex-1 flex flex-col">
-            {/* Title & Description - Fixed height */}
-            <div className="space-y-2 h-[88px] flex flex-col">
+          <CardContent className="p-5 relative z-10 flex-1 flex flex-col min-h-0">
+            {/* Title & Description - Flexible height with max constraints */}
+            <div className="space-y-2 min-h-[4rem] flex flex-col mb-4">
               <h3 className="font-bold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
                 {title}
               </h3>
@@ -254,8 +254,8 @@ function QuizCardComponent({
               </div>
             </div>
 
-            {/* Progress Bar - Fixed height section to maintain alignment */}
-            <div className="min-h-[60px] flex items-center">
+            {/* Progress Bar - Flexible height section */}
+            <div className="flex-1 flex items-center min-h-[3rem] mb-4">
               {completionRate > 0 ? (
                 <div className="space-y-2 w-full">
                   <div className="flex justify-between items-center text-sm">

@@ -29,19 +29,19 @@ const variantStyles = {
     value: "text-primary",
   },
   success: {
-    card: "bg-emerald-500/5 border-emerald-500/20",
-    icon: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    value: "text-emerald-600 dark:text-emerald-400",
+    card: "bg-success/5 border-success/20",
+    icon: "bg-success/10 text-success",
+    value: "text-success",
   },
   warning: {
-    card: "bg-amber-500/5 border-amber-500/20",
-    icon: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    value: "text-amber-600 dark:text-amber-400",
+    card: "bg-warning/5 border-warning/20",
+    icon: "bg-warning/10 text-warning",
+    value: "text-warning",
   },
   destructive: {
-    card: "bg-red-500/5 border-red-500/20",
-    icon: "bg-red-500/10 text-red-600 dark:text-red-400",
-    value: "text-red-600 dark:text-red-400",
+    card: "bg-destructive/5 border-destructive/20",
+    icon: "bg-destructive/10 text-destructive",
+    value: "text-destructive",
   },
 }
 
@@ -84,8 +84,8 @@ export function StatCard({
                   className={cn(
                     "font-medium",
                     trend.isPositive
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-red-600 dark:text-red-400"
+                      ? "text-success"
+                      : "text-destructive"
                   )}
                 >
                   {trend.isPositive ? "+" : ""}

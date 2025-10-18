@@ -51,10 +51,10 @@ AnimatedQuestions.displayName = 'AnimatedQuestions'
 
 const WelcomeScreen = memo(({ onSuggestionClick, canUseChat }: WelcomeScreenProps) => {
   const suggestions = React.useMemo(() => [
-    { text: "Show me Python courses", icon: BookOpen, color: "text-green-600", href: "/dashboard/courses" },
-    { text: "What can I learn here?", icon: Sparkles, color: "text-blue-600" },
-    { text: "Help me find JavaScript tutorials", icon: Search, color: "text-purple-600", href: "/dashboard/courses" },
-    { text: "Show available quizzes", icon: Target, color: "text-orange-600", href: "/dashboard/quizzes" },
+    { text: "Show me Python courses", icon: BookOpen, color: "text-success", href: "/dashboard/courses" },
+    { text: "What can I learn here?", icon: Sparkles, color: "text-primary" },
+    { text: "Help me find JavaScript tutorials", icon: Search, color: "text-accent", href: "/dashboard/courses" },
+    { text: "Show available quizzes", icon: Target, color: "text-warning", href: "/dashboard/quizzes" },
   ], [])
 
   return (

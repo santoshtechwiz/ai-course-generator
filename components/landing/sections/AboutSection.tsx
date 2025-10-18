@@ -50,9 +50,9 @@ const AboutSection = () => {
       icon: "sparkles",
     },
     {
-      title: "Designed for Everyone",
+      title: "Simple & Accessible",
       description:
-        "From classroom educators to corporate trainers, CourseAI adapts to your needs. No technical expertise required—just your knowledge and our platform.",
+        "CourseAI is designed for anyone who wants to create learning content. No technical expertise required—just your knowledge and our AI tools.",
       color: "from-blue-500 to-sky-500",
       icon: "users",
     },
@@ -83,11 +83,9 @@ const AboutSection = () => {
           transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="text-3xl md:text-5xl font-bold mb-6"
         >
-          Redefining Education
+          AI-Powered Learning
           <br />
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-            Through Innovation
-          </span>
+          Made Simple
         </motion.h2>
 
         <motion.p
@@ -96,10 +94,9 @@ const AboutSection = () => {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed"
         >
-          CourseAI represents the future of educational content creation.
-          By combining artificial intelligence with thoughtful design, we empower
-          educators and organizations to create extraordinary learning experiences
-          that engage, inspire, and transform.
+          CourseAI combines artificial intelligence with intuitive design to help you
+          create courses and quizzes quickly. Generate content, track progress, and
+          build effective learning experiences.
         </motion.p>
       </div>
 
@@ -115,13 +112,13 @@ const AboutSection = () => {
               ease: APPLE_EASING,
             }}
           >
-            <div className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-2 h-full rounded-2xl border border-border/10 bg-card/30 backdrop-blur-sm">
+            <div className="overflow-hidden transition-none hover:translate-x-[2px] hover:translate-y-[-2px] h-full rounded-sm border-2 border-border bg-card shadow-[4px_4px_0px_0px_var(--border)] hover:shadow-[6px_6px_0px_0px_var(--border)]">
               <div className="p-6 sm:p-8 space-y-5 h-full flex flex-col">
                 <div className="flex items-center space-x-4">
-                  <div className={`p-3 rounded-full bg-gradient-to-br ${section.color} text-white shadow-lg`}>
+                  <div className="p-3 rounded-sm bg-main text-main-foreground border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]">
                     <section.icon className="w-6 h-6" />
                   </div>
-                  <h3 className="text-xl font-semibold tracking-tight">{section.title}</h3>
+                  <h3 className="text-xl font-bold tracking-tight">{section.title}</h3>
                 </div>
                 <p className="text-muted-foreground flex-grow leading-relaxed text-base">{section.description}</p>
               </div>
@@ -141,8 +138,8 @@ const AboutSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {values.map((value, index) => (
             <RevealAnimation key={value.title} delay={0.9 + index * 0.1}>
-              <div className="bg-card/30 backdrop-blur-sm rounded-xl p-6 border border-border/10 h-full flex flex-col items-center hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
-                <div className={`p-4 rounded-full bg-gradient-to-br ${value.color} text-white mb-4 shadow-lg`}>
+              <div className="bg-card rounded-sm p-6 border-2 border-border h-full flex flex-col items-center shadow-[4px_4px_0px_0px_var(--border)] hover:translate-x-[2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_var(--border)] transition-none">
+                <div className="p-4 rounded-sm bg-muted border-2 border-border mb-4 shadow-[2px_2px_0px_0px_var(--border)]">
                   {value.icon === "sparkles" && (
                     <motion.div>
                       <svg className="w-8 h-8">

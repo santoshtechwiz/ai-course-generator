@@ -76,13 +76,13 @@ export function CreditGuidanceBanner() {
         transition={{ duration: 0.3, ease: 'easeOut' }}
         className="mb-6"
       >
-        <div className="bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/20 dark:via-yellow-900/20 dark:to-orange-900/20 border-l-4 border-amber-500 dark:border-amber-400 rounded-r-lg shadow-md overflow-hidden">
+        <div className="bg-warning/10 border-l-3 border-warning rounded-sm shadow-[4px_4px_0px_0px_var(--border)] overflow-hidden">
           <div className="p-5">
             <div className="flex items-start gap-4">
               {/* Icon */}
               <div className="flex-shrink-0">
-                <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                <div className="w-10 h-10 rounded-sm bg-warning border-2 border-border flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-warning-foreground" />
                 </div>
               </div>
               
@@ -143,7 +143,7 @@ export function CreditGuidanceBanner() {
           </div>
           
           {/* Bottom accent */}
-          <div className="h-1 bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-400" />
+          <div className="h-1 bg-warning" />
         </div>
       </motion.div>
     </AnimatePresence>

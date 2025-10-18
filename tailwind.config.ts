@@ -1,7 +1,7 @@
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
-  darkMode: ["class"],
+  darkMode: "class",
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -16,11 +16,11 @@ const config: Config = {
     './services/**/*.{js,ts,jsx,tsx}',
   ],
   // Safelist only critical utilities that may be dynamically generated
-  safelist: [
-    'animate-spin',
-    'animate-pulse',
-    'animate-bounce',
-  ],
+  // safelist: [
+  //   'animate-spin',
+  //   'animate-pulse',
+  //   'animate-bounce',
+  // ],
   prefix: "",
   theme: {
     container: {
@@ -268,18 +268,19 @@ const config: Config = {
     // Simplified plugin for essential utilities only
     function({ addUtilities }: { addUtilities: any }) {
       const newUtilities = {
-        // Glass Morphism for modern UI
-        '.glass': {
-          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+        // Neobrutalism utilities for consistent design
+        '.brutal-card': {
+          border: '3px solid hsl(var(--border))',
+          boxShadow: '6px 6px 0px 0px hsl(var(--border))',
         },
-        '.glass-dark': {
-          background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.05))',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+        '.brutal-card-lg': {
+          border: '4px solid hsl(var(--border))',
+          boxShadow: '8px 8px 0px 0px hsl(var(--border))',
+        },
+        '.brutal-inset': {
+          background: 'hsl(var(--muted))',
+          border: '2px solid hsl(var(--border))',
+          boxShadow: 'inset 2px 2px 0px 0px hsl(var(--border))',
         },
         // Touch-friendly utilities
         '.touch-manipulation': {

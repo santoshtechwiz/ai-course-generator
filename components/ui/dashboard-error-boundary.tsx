@@ -43,13 +43,13 @@ function DashboardErrorFallback({
 
   return (
     <div className="flex min-h-[400px] items-center justify-center p-6">
-      <div className="max-w-md w-full bg-card rounded-lg border shadow-lg p-6">
+      <div className="max-w-md w-full bg-card rounded-sm border-2 border-border shadow-[6px_6px_0px_0px_var(--border)] p-6">
         <div className="flex items-center mb-4">
           <div className="flex-shrink-0">
             <AlertTriangle className="h-8 w-8 text-destructive" />
           </div>
           <div className="ml-3">
-            <h2 className="text-lg font-semibold text-foreground">
+            <h2 className="text-lg font-bold text-foreground">
               Something went wrong
             </h2>
             {componentName && (

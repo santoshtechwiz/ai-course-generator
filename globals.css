@@ -1,34 +1,63 @@
-@import url("https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
-
-html {
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-}
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* OKLch color definitions for custom theme colors */
   --background: oklch(94.27% 0.0268 242.57);
   --secondary-background: oklch(100% 0 0);
   --foreground: oklch(0% 0 0);
   --main-foreground: oklch(0% 0 0);
   --main: oklch(66.9% 0.18368 248.8066);
-  --main-light: oklch(94.3% 0.0268 242.57);
   --border: oklch(0% 0 0);
   --ring: oklch(0% 0 0);
   --overlay: oklch(0% 0 0 / 0.8);
+
+  /* HSL color tokens for shadcn/ui compatibility - REDUCED BLUE USAGE */
+  --primary: 262 83% 58%; /* Purple instead of blue */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 0%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 142 76% 36%; /* Green accent for high contrast */
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 100%;
+  --warning: 48 96% 53%;
+  --warning-foreground: 0 0% 0%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 0%;
+  --input: 0 0% 0%;
+
+  /* Neobrutalism design tokens */
   --shadow: 4px 4px 0px 0px var(--border);
-  --chart-1: #0099ff;
-  --chart-2: #ff4d50;
-  --chart-3: #facc00;
-  --chart-4: #05e17a;
-  --chart-5: #7a83ff;
-  --chart-active-dot: #000;
+  --radius: 0px;
+
+  /* Category color tokens */
+  --category-programming: 220 70% 60%;
+  --category-web-development: 180 70% 50%;
+  --category-data-science: 45 70% 60%;
+  --category-devops: 0 0% 50%;
+  --category-cloud-computing: 240 70% 60%;
+  --category-mobile-development: 120 70% 50%;
+  --category-ui-ux-design: 320 70% 60%;
+  --category-digital-marketing: 30 70% 60%;
+  --category-business: 270 70% 60%;
+  --category-health-fitness: 160 70% 50%;
+  --category-music: 280 70% 60%;
+  --category-photography: 170 70% 50%;
+  --category-version-control: 210 20% 50%;
+  --category-algorithms: 140 70% 50%;
 }
 
 .dark {
+  /* OKLch color definitions for custom theme colors */
   --background: oklch(27.08% 0.0336 240.69);
   --secondary-background: oklch(23.93% 0 0);
   --foreground: oklch(92.49% 0 0);
@@ -36,18 +65,51 @@ html {
   --main: oklch(61.9% 0.16907 248.5982);
   --border: oklch(0% 0 0);
   --ring: oklch(100% 0 0);
+
+  /* HSL color tokens for shadcn/ui compatibility - REDUCED BLUE USAGE */
+  --primary: 262 83% 55%; /* Purple instead of blue */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 15%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 20%;
+  --muted-foreground: 0 0% 65%;
+  --accent: 142 70% 40%; /* Green accent for high contrast */
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 72% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 142 70% 40%;
+  --success-foreground: 0 0% 100%;
+  --warning: 48 90% 50%;
+  --warning-foreground: 0 0% 0%;
+  --card: 0 0% 15%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 15%;
+  --popover-foreground: 0 0% 100%;
+  --input: 0 0% 100%;
+
+  /* Neobrutalism design tokens */
   --shadow: 4px 4px 0px 0px var(--border);
-  --chart-1: #008ae5;
-  --chart-2: #ff6669;
-  --chart-3: #e0b700;
-  --chart-4: #04c86d;
-  --chart-5: #7a83ff;
-  --chart-active-dot: #fff;
+  --radius: 0px;
+
+  /* Category color tokens */
+  --category-programming: 220 70% 55%;
+  --category-web-development: 180 70% 45%;
+  --category-data-science: 45 70% 55%;
+  --category-devops: 0 0% 45%;
+  --category-cloud-computing: 240 70% 55%;
+  --category-mobile-development: 120 70% 45%;
+  --category-ui-ux-design: 320 70% 55%;
+  --category-digital-marketing: 30 70% 55%;
+  --category-business: 270 70% 55%;
+  --category-health-fitness: 160 70% 45%;
+  --category-music: 280 70% 55%;
+  --category-photography: 170 70% 45%;
+  --category-version-control: 210 20% 45%;
+  --category-algorithms: 140 70% 45%;
 }
 
 @theme inline {
   --color-main: var(--main);
-  --color-main-light: var(--main-light);
   --color-background: var(--background);
   --color-secondary-background: var(--secondary-background);
   --color-foreground: var(--foreground);
@@ -69,42 +131,14 @@ html {
   --shadow-shadow: var(--shadow);
   --font-weight-base: 500;
   --font-weight-heading: 700;
-
-  --animate-marquee: marquee 20s linear infinite;
-  --animate-marquee2: marquee2 20s linear infinite;
-
-  @keyframes marquee {
-    0% {
-      transform: translateX(0%);
-    }
-    100% {
-      transform: translateX(-100%);
-    }
-  }
-
-  @keyframes marquee2 {
-    0% {
-      transform: translateX(100%);
-    }
-    100% {
-      transform: translateX(0%);
-    }
-  }
 }
-
+  
 @layer base {
   body {
     @apply text-foreground font-base bg-background;
-    font-family: "Yusei Magic", sans-serif;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
+  h1, h2, h3, h4, h5, h6{
     @apply font-heading;
-    font-family: "Yusei Magic", sans-serif;
   }
 }

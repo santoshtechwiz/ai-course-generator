@@ -166,15 +166,15 @@ export function FeatureGate({
                   transition={{ duration: 0.3 }}
                   className={`absolute inset-0 z-[5] flex items-center justify-center ${
                     overlayPlacement === 'below' 
-                      ? 'bg-gradient-to-t from-background via-background/90 to-background/60' 
-                      : 'bg-gradient-to-b from-background/50 via-background/85 to-background'
-                  } backdrop-blur-md`}
+                      ? 'bg-background/95' 
+                      : 'bg-background/90'
+                  }`}
                 >
                   <motion.div
                     initial={{ scale: 0.8, y: 20 }}
                     animate={{ scale: 1, y: 0 }}
                     transition={{ duration: 0.4, type: 'spring' }}
-                    className={`backdrop-blur-xl bg-card/98 border-2 border-primary/40 rounded-2xl p-4 md:p-6 shadow-2xl relative z-[3] ${
+                    className={`bg-card border-3 border-primary rounded-sm p-4 md:p-6 shadow-[8px_8px_0px_0px_var(--border)] relative z-[3] ${
                       overlayFullWidth ? 'w-full max-w-2xl mx-4' : 'max-w-md mx-4'
                     }`}
                   >

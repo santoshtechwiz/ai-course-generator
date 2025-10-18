@@ -342,7 +342,7 @@ export function HintSystem({
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground pl-11">
-                    <span className="text-gray-500 dark:text-gray-400 italic">
+                    <span className="text-muted-foreground italic">
                       {index === 0 
                         ? "High-level topic direction" 
                         : index === 1 
@@ -389,9 +389,9 @@ export function HintSystem({
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">{positiveBadge}</span>
+                    <span className="text-sm font-semibold text-primary">{positiveBadge}</span>
                   </div>
-                  <p className="text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
+                  <p className="text-sm text-primary/80 dark:text-primary/90 leading-relaxed">
                     {revealedCount > 0 
                       ? getEncouragementMessage(revealedCount - 1)
                       : 'Use hints to build your understanding step-by-step. Each hint is designed to guide you without giving away the full answer.'}
@@ -479,8 +479,8 @@ export function HintSystem({
                   <div className="w-16 h-16 bg-accent/10 dark:bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <AlertTriangle className="h-8 w-8 text-accent" />
                   </div>
-                  <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-gray-100">Reveal Complete Answer?</h3>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+                  <h3 className="text-lg font-bold mb-2 text-foreground">Reveal Complete Answer?</h3>
+                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                     This hint will reveal more helpful detail to guide your understanding. We record hint usage to improve personalized learning — no punitive messages are shown here.
                   </p>
                   <div className="flex gap-3">
@@ -517,8 +517,8 @@ export function HintSystem({
                   <div className="w-16 h-16 bg-accent/10 dark:bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <AlertTriangle className="h-8 w-8 text-accent" />
                   </div>
-                  <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-gray-100">Reveal Example Answer?</h3>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+                  <h3 className="text-lg font-bold mb-2 text-foreground">Reveal Example Answer?</h3>
+                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                     Revealing the example answer will show a completed solution for study. This helps with learning and will be recorded anonymously to improve future hints.
                   </p>
                   <div className="flex gap-3">
@@ -571,25 +571,25 @@ export function HintSystem({
                   <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Sparkles className="h-8 w-8 text-primary" />
                   </div>
-                  <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-gray-100">
+                  <h3 className="text-lg font-bold mb-2 text-foreground">
                     {isAuthenticated ? "Unlock Premium Learning" : "Join Our Learning Community"}
                   </h3>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                     {isAuthenticated
                       ? "Upgrade to access complete solutions, unlimited hints, and personalized learning analytics. Join thousands of learners accelerating their progress!"
                       : "Create your free account to access detailed hints and example answers. Upgrade anytime for unlimited learning features and AI-powered insights."
                     }
                   </p>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                       <Sparkles className="w-4 h-4" />
                       <span>Complete example answers</span>
                     </div>
-                    <div className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                       <Target className="w-4 h-4" />
                       <span>Unlimited personalized hints</span>
                     </div>
-                    <div className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                       <Lightbulb className="w-4 h-4" />
                       <span>AI-powered learning analytics</span>
                     </div>

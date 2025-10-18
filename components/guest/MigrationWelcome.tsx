@@ -53,15 +53,15 @@ export function MigrationWelcome() {
   
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md mx-auto shadow-xl border-green-200">
+      <Card className="w-full max-w-md mx-auto shadow-xl border-success/20">
         <CardHeader className="text-center pb-4">
-          <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle2 className="w-6 h-6 text-green-600" />
+          <div className="mx-auto w-12 h-12 bg-success/10 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle2 className="w-6 h-6 text-success" />
           </div>
-          <CardTitle className="text-xl font-semibold text-gray-900">
+          <CardTitle className="text-xl font-semibold text-foreground">
             {welcomeData.title}
           </CardTitle>
-          <CardDescription className="text-gray-600 mt-2">
+          <CardDescription className="text-muted-foreground mt-2">
             {welcomeData.message}
           </CardDescription>
         </CardHeader>
@@ -85,7 +85,7 @@ export function MigrationWelcome() {
             <Button 
               variant="ghost" 
               onClick={handleDismiss}
-              className="w-full text-gray-600 hover:text-gray-800"
+              className="w-full text-muted-foreground hover:text-foreground"
             >
               <X className="w-4 h-4 mr-2" />
               Dismiss

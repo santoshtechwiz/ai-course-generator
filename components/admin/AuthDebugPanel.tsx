@@ -31,10 +31,10 @@ export function AuthDebugPanel() {
 
         {session ? (
           <div className="space-y-4">
-            <div className="border rounded-lg p-4 bg-green-50 dark:bg-green-900/20">
+            <div className="border rounded-lg p-4 bg-success/10 dark:bg-success/5">
               <div className="flex items-center gap-2 mb-2">
-                <User className="h-4 w-4 text-green-600" />
-                <span className="font-medium text-green-600">Authenticated</span>
+                <User className="h-4 w-4 text-success" />
+                <span className="font-medium text-success">Authenticated</span>
               </div>
               <div className="space-y-2 text-sm">
                 <p><strong>Name:</strong> {session.user?.name}</p>
@@ -52,10 +52,10 @@ export function AuthDebugPanel() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="border rounded-lg p-4 bg-red-50 dark:bg-red-900/20">
+            <div className="border rounded-lg p-4 bg-destructive/10 dark:bg-destructive/5">
               <div className="flex items-center gap-2 mb-2">
-                <LogIn className="h-4 w-4 text-red-600" />
-                <span className="font-medium text-red-600">Not Authenticated</span>
+                <LogIn className="h-4 w-4 text-destructive" />
+                <span className="font-medium text-destructive">Not Authenticated</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 Please sign in to access admin features.

@@ -92,7 +92,7 @@ export function QuizResultsSummary({
       >
         <motion.div
           variants={itemVariants}
-          className="flex flex-col items-center p-4 border rounded-lg bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 shadow-sm"
+          className="flex flex-col items-center p-4 border-2 border-border rounded-sm bg-card shadow-[4px_4px_0px_0px_var(--border)]"
         >
           {getQuizTypeIcon()}
           <p className="text-sm text-muted-foreground">Score</p>
@@ -102,9 +102,9 @@ export function QuizResultsSummary({
 
         <motion.div
           variants={itemVariants}
-          className="flex flex-col items-center p-4 border rounded-lg bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 shadow-sm"
+          className="flex flex-col items-center p-4 border-2 border-border rounded-sm bg-card shadow-[4px_4px_0px_0px_var(--border)]"
         >
-          <CheckCircle className="h-8 w-8 text-green-600 mb-2" />
+          <CheckCircle className="h-8 w-8 text-success mb-2" />
           <p className="text-sm text-muted-foreground">Correct Answers</p>
           <p className="text-2xl font-bold">
             {correctAnswers}/{totalQuestions}
@@ -116,9 +116,9 @@ export function QuizResultsSummary({
 
         <motion.div
           variants={itemVariants}
-          className="flex flex-col items-center p-4 border rounded-lg bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 shadow-sm"
+          className="flex flex-col items-center p-4 border-2 border-border rounded-sm bg-card shadow-[4px_4px_0px_0px_var(--border)]"
         >
-          <XCircle className="h-8 w-8 text-red-600 mb-2" />
+          <XCircle className="h-8 w-8 text-destructive mb-2" />
           <p className="text-sm text-muted-foreground">Incorrect Answers</p>
           <p className="text-2xl font-bold">
             {totalQuestions - correctAnswers}/{totalQuestions}
@@ -130,9 +130,9 @@ export function QuizResultsSummary({
 
         <motion.div
           variants={itemVariants}
-          className="flex flex-col items-center p-4 border rounded-lg bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 shadow-sm"
+          className="flex flex-col items-center p-4 border-2 border-border rounded-sm bg-card shadow-[4px_4px_0px_0px_var(--border)]"
         >
-          <Clock className="h-8 w-8 text-blue-600 mb-2" />
+          <Clock className="h-8 w-8 text-primary mb-2" />
           <p className="text-sm text-muted-foreground">Time Spent</p>
           <p className="text-2xl font-bold">{formattedTimeSpent}</p>
           <p className="text-xs text-muted-foreground mt-1">

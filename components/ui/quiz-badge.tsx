@@ -21,44 +21,44 @@ const quizTypeColors = {
   mcq: {
     bg: "bg-primary/10",
     text: "text-primary",
-    border: "border-primary/20",
+    border: "border-primary",
     gradient: "from-primary to-primary",
-    fullGradient: "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0 shadow-md shadow-primary/25"
+    fullGradient: "bg-primary text-primary-foreground border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]"
   },
   openended: {
     bg: "bg-primary/10",
     text: "text-primary",
-    border: "border-primary/20",
+    border: "border-primary",
     gradient: "from-primary to-primary",
-    fullGradient: "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0 shadow-md shadow-primary/25"
+    fullGradient: "bg-primary text-primary-foreground border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]"
   },
   code: {
     bg: "bg-primary/10",
     text: "text-primary",
-    border: "border-primary/20",
+    border: "border-primary",
     gradient: "from-primary to-primary",
-    fullGradient: "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0 shadow-md shadow-primary/25"
+    fullGradient: "bg-primary text-primary-foreground border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]"
   },
   blanks: {
     bg: "bg-primary/10",
     text: "text-primary",
-    border: "border-primary/20",
+    border: "border-primary",
     gradient: "from-primary to-primary",
-    fullGradient: "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0 shadow-md shadow-primary/25"
+    fullGradient: "bg-primary text-primary-foreground border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]"
   },
   flashcard: {
     bg: "bg-primary/10",
     text: "text-primary",
-    border: "border-primary/20",
+    border: "border-primary",
     gradient: "from-primary to-primary",
-    fullGradient: "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0 shadow-md shadow-primary/25"
+    fullGradient: "bg-primary text-primary-foreground border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]"
   },
   quiz: {
     bg: "bg-muted",
     text: "text-muted-foreground",
     border: "border-border",
     gradient: "from-muted-foreground to-muted-foreground",
-    fullGradient: "bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0 shadow-md shadow-gray-500/25"
+    fullGradient: "bg-muted text-foreground border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]"
   }
 }
 

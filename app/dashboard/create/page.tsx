@@ -146,7 +146,7 @@ const Page = async ({
                       AI Powered
                     </Badge>
                     <div className="flex items-center text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full border">
-                      <Lightbulb className="h-3 w-3 mr-1.5 text-yellow-500" />
+                      <Lightbulb className="h-3 w-3 mr-1.5 text-warning" />
                       Be specific with your topic
                     </div>
                   </div>
@@ -184,9 +184,9 @@ const Page = async ({
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200/50 dark:border-green-800/50">
-                    <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/50">
-                      <Clock className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-success/10 dark:bg-success/5 border border-success/20 dark:border-success/20">
+                    <div className="p-2 rounded-full bg-success/20 dark:bg-success/10">
+                      <Clock className="h-4 w-4 text-success" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">Quick Setup</p>
@@ -194,9 +194,9 @@ const Page = async ({
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50">
-                    <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/50">
-                      <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 dark:bg-primary/5 border border-primary/20 dark:border-primary/20">
+                    <div className="p-2 rounded-full bg-primary/20 dark:bg-primary/10">
+                      <Users className="h-4 w-4 text-primary" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">Engage Learners</p>
@@ -263,16 +263,7 @@ const Page = async ({
                 </div>
 
                 {/* Quick Stats */}
-                <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border/30">
-                  <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <div className="text-lg font-bold text-primary">1,200+</div>
-                    <div className="text-xs text-muted-foreground">Active Courses</div>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <div className="text-lg font-bold text-primary">50k+</div>
-                    <div className="text-xs text-muted-foreground">Happy Learners</div>
-                  </div>
-                </div>
+              
               </CardContent>
             </Card>
           </div>

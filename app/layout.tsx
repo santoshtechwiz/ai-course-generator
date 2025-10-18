@@ -107,10 +107,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <ClientGuestProvider>
                 {/* Simplified noscript message */}
                 <noscript>
-                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 m-4">
+                  <div className="bg-warning/10 border-l-4 border-warning p-4 m-4">
                     <div className="flex">
                       <div className="ml-3">
-                        <p className="text-sm text-yellow-700">
+                        <p className="text-sm text-warning">
                           JavaScript is required for CourseAI to work properly. Please enable JavaScript and refresh the page.
                         </p>
                       </div>
@@ -119,7 +119,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </noscript>
 
                 <Suspense fallback={<SuspenseGlobalFallback />}>
-                  <div className="relative min-h-screen flex flex-col bg-background">
+                  <div className="relative min-h-screen flex flex-col ">
                     {/* Main Content */}
                     <main id="main-content" className="flex-1 w-full">
                       <MotionProvider>

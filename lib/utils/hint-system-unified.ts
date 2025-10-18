@@ -499,19 +499,19 @@ export function formatHintForDisplay(
   const colors = {
     contextual: {
       badge: 'Context',
-      color: 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/10 dark:text-blue-300 dark:border-blue-800'
+      color: 'bg-primary/10 text-primary border-primary/20 dark:bg-primary/5 dark:text-primary dark:border-primary/20'
     },
     structural: {
       badge: 'Structure',
-      color: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800'
+      color: 'bg-warning/10 text-warning border-warning/20 dark:bg-warning/5 dark:text-warning dark:border-warning/20'
     },
     semantic: {
       badge: 'Semantic',
-      color: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/10 dark:text-emerald-300 dark:border-emerald-800'
+      color: 'bg-success/10 text-success border-success/20 dark:bg-success/5 dark:text-success dark:border-success/20'
     },
     direct: {
       badge: 'Direct',
-      color: 'bg-red-50 text-red-800 border-red-200 dark:bg-red-950/10 dark:text-red-300 dark:border-red-800'
+      color: 'bg-destructive/10 text-destructive border-destructive/20 dark:bg-destructive/5 dark:text-destructive dark:border-destructive/20'
     }
   }
 

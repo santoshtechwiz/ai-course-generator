@@ -36,7 +36,7 @@ export function useBadgeNotifications(userId: string | undefined, enabled = true
           toast.success(
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 mt-0.5">
-                <Trophy className="h-5 w-5 text-yellow-500" />
+                <Trophy className="h-5 w-5 text-warning" />
               </div>
               <div>
                 <p className="font-semibold">Badge Unlocked!</p>

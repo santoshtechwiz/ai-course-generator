@@ -56,27 +56,27 @@ export function BreadcrumbWelcome() {
           exit={{ opacity: 0, y: -20 }}
           className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-md w-full mx-4"
         >
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 border border-green-200 dark:border-green-800 rounded-lg shadow-lg p-4">
+          <div className="bg-gradient-to-r from-success/10 to-success/5 dark:from-success/5 dark:to-success/10 border border-success/20 dark:border-success/20 rounded-lg shadow-lg p-4">
             <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-10 h-10 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <div className="flex-shrink-0 w-10 h-10 bg-success/20 dark:bg-success/10 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-success" />
               </div>
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-semibold text-sm text-green-900 dark:text-green-100">
+                  <h4 className="font-semibold text-sm text-success">
                     Welcome back!
                   </h4>
-                  <Sparkles className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  <Sparkles className="w-4 h-4 text-success" />
                 </div>
-                <p className="text-sm text-green-800 dark:text-green-200">
+                <p className="text-sm text-success/80 dark:text-success/90">
                   Let&apos;s continue {action.description}
                 </p>
               </div>
               
               <button
                 onClick={handleDismiss}
-                className="flex-shrink-0 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 transition-colors"
+                className="flex-shrink-0 text-success hover:text-success/80 dark:hover:text-success/70 transition-colors"
                 aria-label="Dismiss"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

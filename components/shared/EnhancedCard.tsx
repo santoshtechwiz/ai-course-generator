@@ -120,7 +120,7 @@ export function EnhancedCard({
       {/* Image Section */}
       <div className="relative aspect-video overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
+        <div className="absolute inset-0 bg-muted" />
         
         {/* Image */}
         <Image
@@ -128,13 +128,13 @@ export function EnhancedCard({
           alt={`${title} thumbnail`}
           fill
           className={cn(
-            "object-cover transition-transform duration-700",
-            "group-hover:scale-110 group-hover:brightness-110"
+            "object-cover transition-transform duration-300",
+            "group-hover:scale-105 group-hover:brightness-105"
           )}
         />
 
-        {/* Overlay Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-60" />
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black/40" />
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-wrap gap-2">
@@ -142,8 +142,8 @@ export function EnhancedCard({
           {badge && (
             <Badge 
               className={cn(
-                "px-3 py-1 rounded-full text-xs font-semibold",
-                difficulty && `bg-gradient-to-r ${difficultyConfig[difficulty]} text-white border-0`
+                "px-3 py-1 rounded-sm text-xs font-bold border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]",
+                difficulty && difficultyConfig[difficulty]
               )}
             >
               {badge.text}

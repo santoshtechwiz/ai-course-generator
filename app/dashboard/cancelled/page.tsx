@@ -65,9 +65,9 @@ async function CancelledPageContent({ userId }: { userId: string | undefined }) 
           </Alert>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+            <div className="bg-card p-4 rounded-lg border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]">
               <h3 className="font-medium mb-2 flex items-center">
-                <RefreshCw className="h-5 w-5 mr-2 text-blue-500" /> Try Again
+                <RefreshCw className="h-5 w-5 mr-2 text-primary" /> Try Again
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
                 You can try the payment process again. Sometimes temporary issues with payment processors can be
@@ -75,20 +75,20 @@ async function CancelledPageContent({ userId }: { userId: string | undefined }) 
               </p>
               <Button
                 asChild
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                className="w-full"
               >
                 <Link href="/dashboard/subscription">Try Again</Link>
               </Button>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+            <div className="bg-card p-4 rounded-lg border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]">
               <h3 className="font-medium mb-2 flex items-center">
-                <CreditCard className="h-5 w-5 mr-2 text-green-500" /> Payment Methods
+                <CreditCard className="h-5 w-5 mr-2 text-success" /> Payment Methods
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Consider using a different payment method if you're experiencing issues with your current one.
               </p>
-              <Button asChild variant="outline" className="w-full border-slate-300 dark:border-slate-600">
+              <Button asChild variant="outline" className="w-full">
                 <Link href="/dashboard/account">Manage Payment Methods</Link>
               </Button>
             </div>

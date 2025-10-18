@@ -16,7 +16,7 @@ export const QuizContainer = ({ children, className, ...rest }: QuizContainerPro
   // Forwarding unknown props causes React warnings when they reach the DOM.
   return (
     <Card className={cn(
-      "w-full max-w-4xl mx-auto p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 lg:space-y-6 bg-white/50 backdrop-blur-sm dark:bg-gray-950/50",
+      "w-full max-w-4xl mx-auto p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 lg:space-y-6 bg-card/50 backdrop-blur-sm dark:bg-card/50",
       className
     )}>
       {children}

@@ -37,7 +37,7 @@ const RadioGroupItem = React.forwardRef<
   const stableProps = React.useMemo(
     () => ({
       className: cn(
-        "aspect-square h-4 w-4 rounded-full border border-primary text-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "aspect-square h-5 w-5 rounded-sm border-2 border-border bg-background shadow-[2px_2px_0px_0px_var(--border)] text-main ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-main data-[state=checked]:text-main-foreground transition-none",
         className
       ),
       ...props
@@ -51,7 +51,7 @@ const RadioGroupItem = React.forwardRef<
       {...stableProps}
     >
       <RadioGroupPrimitive.Indicator className="flex items-center justify-center">
-        <Circle className="h-2.5 w-2.5 fill-current text-current" />
+        <Circle className="h-3 w-3 fill-current text-current" />
       </RadioGroupPrimitive.Indicator>
       {children}
     </RadioGroupPrimitive.Item>

@@ -101,7 +101,7 @@ export function OfflineIndicator({
                     // Implement retry logic
                   }}
                 >
-                  <XCircle className="w-4 h-4 text-red-500 mr-1" />
+                  <XCircle className="w-4 h-4 text-destructive mr-1" />
                   <span className="text-xs">{status.failed} Failed</span>
                 </Button>
               </TooltipTrigger>

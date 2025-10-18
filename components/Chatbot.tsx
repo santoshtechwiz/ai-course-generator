@@ -166,7 +166,7 @@ export function Chatbot({ userId }: ChatbotProps) {
             variants={chatContainerVariants}
             className="relative"
           >
-            <Card className="w-[350px] sm:w-[400px] h-[500px] flex flex-col shadow-lg border-primary/20 rounded-2xl overflow-hidden">
+            <Card className="w-[350px] sm:w-[400px] h-[500px] flex flex-col border-3 border-border shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.1)] rounded-lg overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b px-4 py-3">
                 <div className="flex items-center gap-2">
                   <motion.div
@@ -211,7 +211,7 @@ export function Chatbot({ userId }: ChatbotProps) {
                             variant="ghost"
                             size="sm"
                             onClick={clearConversation}
-                            className="h-8 w-8 p-0 rounded-full hover:bg-muted transition-colors"
+                            className="h-8 w-8 p-0 rounded-sm hover:bg-muted transition-none border-2 border-transparent hover:border-border"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
@@ -226,7 +226,7 @@ export function Chatbot({ userId }: ChatbotProps) {
                     variant="ghost"
                     size="sm"
                     onClick={toggleChat}
-                    className="h-8 w-8 p-0 rounded-full hover:bg-muted transition-colors"
+                    className="h-8 w-8 p-0 rounded-sm hover:bg-muted transition-none border-2 border-transparent hover:border-border"
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -323,9 +323,9 @@ export function Chatbot({ userId }: ChatbotProps) {
                   <Button
                     onClick={toggleChat}
                     size="icon"
-                    className="rounded-full h-12 w-12 shadow-lg bg-primary hover:bg-primary/90 transition-colors"
+                    className="rounded-full h-12 w-12 border-3 border-border shadow-[4px_4px_0px_0px_var(--border)] bg-main hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_var(--border)] active:shadow-[2px_2px_0px_0px_var(--border)] transition-none"
                   >
-                    <MessageSquare className="h-5 w-5 text-primary-foreground" />
+                    <MessageSquare className="h-5 w-5 text-main-foreground" />
                   </Button>
                 </motion.div>
               </TooltipTrigger>

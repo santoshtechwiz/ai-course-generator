@@ -43,8 +43,8 @@ export const PageHeader = ({
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="space-y-3 flex-1">
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl lg:text-4xl flex items-center gap-3" id="page-title">
-            {icon && <span className="text-purple-600 dark:text-purple-400">{icon}</span>}
-            <span className="bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
+            {icon && <span className="text-accent">{icon}</span>}
+            <span className="bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
               {title}
             </span>
           </h1>

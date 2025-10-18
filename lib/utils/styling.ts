@@ -1,25 +1,29 @@
 /**
  * Styling Utilities
- * 
+ *
  * Consolidated styling utilities for consistent class name handling.
  */
 
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 /**
  * Combine class names with Tailwind merge
  * Consolidates the cn function from multiple files
  */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 /**
  * Conditional class names helper
  */
-export function conditionalClass(condition: boolean, trueClass: string, falseClass?: string): string {
-  return condition ? trueClass : (falseClass || '')
+export function conditionalClass(
+  condition: boolean,
+  trueClass: string,
+  falseClass?: string
+): string {
+  return condition ? trueClass : falseClass || '';
 }
 
 /**
@@ -29,7 +33,7 @@ export function buildClasses(classMap: Record<string, boolean>): string {
   return Object.entries(classMap)
     .filter(([, condition]) => condition)
     .map(([className]) => className)
-    .join(' ')
+    .join(' ');
 }
 
-export type { ClassValue } from "clsx"
+export type { ClassValue } from 'clsx';

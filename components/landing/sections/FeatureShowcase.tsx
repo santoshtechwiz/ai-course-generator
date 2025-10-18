@@ -8,7 +8,7 @@ const APPLE_EASING = [0.25, 0.1, 0.25, 1]
 
 // Clean SVG icons for features
 const FeatureIcon = ({ type }: { type: string }) => {
-  const iconClass = "h-6 w-6 text-blue-600 dark:text-blue-400"
+  const iconClass = "h-6 w-6 text-primary"
 
   switch (type) {
     case "create":
@@ -89,7 +89,7 @@ const FeatureShowcase = () => {
   const isInView = useInView(containerRef, { once: true, amount: 0.1 })
 
   return (
-    <div ref={containerRef} className="py-24 bg-white dark:bg-gray-900">
+    <div ref={containerRef} className="py-24 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header - More like n8n */}
         <motion.div
@@ -98,10 +98,10 @@ const FeatureShowcase = () => {
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6, ease: APPLE_EASING }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             Everything you need to create extraordinary courses
           </h2>
-          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             From content creation to learner analytics, CourseAI provides all the tools
             you need to build engaging, effective learning experiences.
           </p>
@@ -121,17 +121,17 @@ const FeatureShowcase = () => {
               ease: APPLE_EASING
             }}
           >
-            <div className="h-full bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 group-hover:-translate-y-1">
+            <div className="h-full bg-card rounded-2xl p-8 border border-border shadow-sm hover:shadow-xl transition-all duration-300 group-hover:-translate-y-1">
               {/* Icon */}
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/50 mb-6 group-hover:scale-110 transition-transform duration-300">
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 mb-6 group-hover:scale-110 transition-transform duration-300">
                 <FeatureIcon type={feature.icon} />
               </div>
 
               {/* Content */}
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
+              <h3 className="text-xl font-semibold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
                 {feature.title}
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed">
                 {feature.description}
               </p>
 
@@ -149,14 +149,14 @@ const FeatureShowcase = () => {
         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
         transition={{ duration: 0.6, delay: 0.8, ease: APPLE_EASING }}
       >
-        <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-lg text-muted-foreground mb-6">
           Ready to transform your teaching?
         </p>
-        <div className="inline-flex items-center gap-2 px-6 py-3 bg-blue-50 dark:bg-blue-950/50 rounded-full border border-blue-200 dark:border-blue-800">
-          <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div className="inline-flex items-center gap-2 px-6 py-3 bg-primary/10 rounded-full border border-primary/20">
+          <svg className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+          <span className="text-sm font-medium text-primary">
             Start creating in under 5 minutes
           </span>
         </div>

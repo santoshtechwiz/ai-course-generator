@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button"
 import { Crown, LogIn, Info, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { SignInPrompt } from "@/app/auth/signin/components/SignInPrompt"
+import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
 
 type ModalType = "sign-in" | "upgrade" | "info"
 
@@ -126,9 +126,9 @@ export function UnifiedModal({
           <div className="flex items-center gap-3">
             <div className={cn(
               "p-2 rounded-full",
-              type === "sign-in" && "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
-              type === "upgrade" && "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
-              type === "info" && "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+              type === "sign-in" && "bg-primary/10 text-primary",
+              type === "upgrade" && "bg-warning/10 text-warning",
+              type === "info" && "bg-muted text-muted-foreground"
             )}>
               {content.icon}
             </div>
@@ -150,18 +150,22 @@ export function UnifiedModal({
           {children ? (
             children
           ) : type === "sign-in" ? (
-            <SignInPrompt callbackUrl={callbackUrl} />
+            <SignInPrompt 
+              onSignIn={() => onAction?.()} 
+              onRetake={() => {}} 
+              quizType="mcq" 
+            />
           ) : type === "upgrade" ? (
             <div className="space-y-4">
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg p-4 border border-amber-200/50 dark:border-amber-800/50">
+              <div className="bg-gradient-to-r from-warning/10 to-warning/5 dark:from-warning/5 dark:to-warning/10 rounded-lg p-4 border border-warning/20 dark:border-warning/20">
                 <h4 className="font-medium text-sm mb-2 text-foreground">Premium Features</h4>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
-                    <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-warning" />
                     Unlimited access to all courses
                   </li>
                   <li className="flex items-center gap-2">
-                    <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-warning" />
                     Unlimited quiz attempts
                   </li>
                   <li className="flex items-center gap-2">

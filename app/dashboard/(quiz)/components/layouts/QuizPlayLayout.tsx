@@ -106,22 +106,17 @@ const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) =
   }
 
   return (
-    <motion.div 
+    <motion.div
       className={cn(
-        "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
-        isPaused 
-          ? "bg-warning/10 text-warning border border-warning/30" 
-          : "bg-primary/10 text-primary border border-primary/20"
+        "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200",
+        isPaused
+          ? "bg-warning/10 text-warning border border-warning/30"
+          : "bg-accent/10 text-accent border border-accent/20"
       )}
-      whileHover={{ scale: 1.05 }}
+      whileHover={{ scale: 1.02 }}
       layout
     >
-      <motion.div
-        animate={isPaused ? { rotate: 0 } : { rotate: 360 }}
-        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-      >
-        <Clock className="h-4 w-4" />
-      </motion.div>
+      <Clock className="h-4 w-4" />
       <span className="tabular-nums font-mono">{formatTime(seconds)}</span>
       {isPaused && <Pause className="h-3 w-3" />}
     </motion.div>
@@ -130,121 +125,42 @@ const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) =
 
 const ProgressBar = ({ progress, questionNumber, totalQuestions }: { progress: number; questionNumber: number; totalQuestions: number }) => (
   <motion.div
-    className="mb-8 p-6 rounded-2xl bg-card/60 backdrop-blur-sm border border-border shadow-lg"
-    initial={{ opacity: 0, y: -20 }}
+    className="mb-6 p-4 rounded-lg bg-card border border-border"
+    initial={{ opacity: 0, y: -10 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5 }}
+    transition={{ duration: 0.3 }}
   >
-    <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center gap-4">
-        <motion.div
-          className="flex items-center gap-3 px-4 py-2.5 bg-primary rounded-full text-primary-foreground shadow-lg"
-          whileHover={{ scale: 1.05 }}
-          transition={{ type: "spring", stiffness: 400, damping: 10 }}
-        >
-          <motion.div
-            animate={{ rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <Target className="w-5 h-5" />
-          </motion.div>
-          <span className="text-sm font-bold">
-            {/* Question counter removed for cleaner layout */}
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-accent/10 border border-accent/20 rounded-full">
+          <Target className="w-4 h-4 text-accent" />
+          <span className="text-sm font-semibold text-accent">
+            Question {questionNumber} of {totalQuestions}
           </span>
-        </motion.div>
-        <motion.div
-          className="flex items-center gap-2 px-3 py-1.5 bg-success/10 border border-success/30 rounded-full"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <CheckCircle className="w-4 h-4 text-success" />
-          </motion.div>
-          <span className="text-sm font-semibold text-success">
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-full">
+          <CheckCircle className="w-4 h-4 text-success" />
+          <span className="text-sm font-medium text-muted-foreground">
             {progress}% Complete
           </span>
-        </motion.div>
+        </div>
       </div>
-      <motion.div
-        className="flex items-center gap-2 text-sm text-muted-foreground px-4 py-2 bg-muted rounded-full border border-border"
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        <Award className="h-4 w-4 text-warning" />
-        <span className="font-medium">{questionNumber - 1} completed</span>
-        <span className="text-muted-foreground/60">•</span>
-        <span className="text-muted-foreground/80">{totalQuestions - questionNumber + 1} remaining</span>
-      </motion.div>
     </div>
 
     <div className="relative">
-      <div className="flex justify-between text-xs text-muted-foreground mb-2 px-1">
-        <span>Start</span>
+      <div className="flex justify-between text-xs text-muted-foreground mb-2">
+        <span>Progress</span>
         <span className="font-medium">{progress}%</span>
-        <span>Finish</span>
       </div>
-      <div className="relative h-6 bg-muted/50 border border-border rounded-full overflow-hidden shadow-inner backdrop-blur-sm">
+      <div className="relative h-3 bg-muted border border-border rounded-full overflow-hidden">
         <motion.div
-          className="h-full bg-primary rounded-full relative overflow-hidden shadow-lg"
+          className="h-full bg-accent rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-        >
-          {/* Enhanced shimmer effect */}
-          <motion.div
-            className="absolute inset-0 bg-white/20 rounded-full"
-            animate={{ x: [-300, 300] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-          />
-          {/* Pulse effect */}
-          <motion.div
-            className="absolute inset-0 bg-primary/30 rounded-full"
-            animate={{ opacity: [0.3, 0.8, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </motion.div>
-
-        {/* Progress indicator dot */}
-        <motion.div
-          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-primary-foreground rounded-full shadow-lg border-2 border-primary"
-          style={{ left: `calc(${progress}% - 8px)` }}
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
-        >
-          <motion.div
-            className="absolute inset-0 bg-primary rounded-full"
-            animate={{ scale: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </motion.div>
+          transition={{ duration: 0.8, ease: "easeOut" }}
+        />
       </div>
     </div>
-
-    {/* Motivational message */}
-    <motion.div
-      className="mt-4 text-center"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: 0.8 }}
-    >
-      <motion.p
-        className="text-sm text-muted-foreground font-medium"
-        animate={{ scale: [1, 1.05, 1] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-      >
-        {progress < 25 ? "🚀 Great start! Keep going!" :
-         progress < 50 ? "💪 You're doing amazing!" :
-         progress < 75 ? "🎯 Almost there!" :
-         progress < 100 ? "🏁 Final push!" :
-         "🎉 Congratulations! Quiz completed!"}
-      </motion.p>
-    </motion.div>
   </motion.div>
 )
 

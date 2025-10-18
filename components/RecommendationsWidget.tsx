@@ -126,17 +126,17 @@ function RecommendationItem({ recommendation }: { recommendation: Recommendation
     ? `/dashboard/course/${slug}`
     : `/dashboard/${buildQuizSlug(category || quizType || "quiz")}/${slug}`
 
-  const confidenceColor = confidence >= 0.8 ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" :
-                         confidence >= 0.6 ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" :
-                         "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
+  const confidenceColor = confidence >= 0.8 ? "bg-success/10 text-success dark:bg-success/5 dark:text-success" :
+                         confidence >= 0.6 ? "bg-warning/10 text-warning dark:bg-warning/5 dark:text-warning" :
+                         "bg-muted text-muted-foreground dark:bg-muted/50 dark:text-muted-foreground"
 
   return (
-    <div className="flex items-start gap-3 p-4 rounded-lg border hover:shadow-md transition-all duration-200 bg-gradient-to-r from-card/50 to-card/80">
+    <div className="flex items-start gap-3 p-4 rounded-sm border-2 border-border hover:translate-x-[2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_var(--border)] transition-none bg-card shadow-[4px_4px_0px_0px_var(--border)]">
       <div className="flex-shrink-0 mt-1">
         {type === "course" ? (
-          <BookOpen className="h-5 w-5 text-blue-500" />
+          <BookOpen className="h-5 w-5 text-primary" />
         ) : (
-          <Brain className="h-5 w-5 text-purple-500" />
+          <Brain className="h-5 w-5 text-secondary" />
         )}
       </div>
 
@@ -224,7 +224,7 @@ function RecommendationsSkeleton() {
 function RecommendationsWidgetWithErrorBoundary() {
   return (
     <EnhancedErrorBoundary
-      fallback={
+      fallback={(error, reset) => (
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="text-center text-muted-foreground">
@@ -234,7 +234,7 @@ function RecommendationsWidgetWithErrorBoundary() {
             </div>
           </CardContent>
         </Card>
-      }
+      )}
     >
       <RecommendationsWidget />
     </EnhancedErrorBoundary>

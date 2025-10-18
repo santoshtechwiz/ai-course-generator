@@ -79,7 +79,7 @@ interface UnifiedQuizQuestionProps {
   enableAdaptiveFeedback?: boolean
 }
 
-// Memoized option component with clean animations
+// Memoized option component with clean, high-contrast styling
 const MCQOption = memo(({
   option,
   index,
@@ -99,22 +99,19 @@ const MCQOption = memo(({
 
   return (
     <motion.div
-      key={option.id}
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      whileHover={!isDisabled ? { scale: 1.02 } : undefined}
-      whileTap={!isDisabled ? { scale: 0.98 } : undefined}
-      className="group relative"
+      transition={{ delay: index * 0.05 }}
+      className="group"
     >
       <label
         htmlFor={`option-${option.id}`}
         className={cn(
-          "relative flex items-center gap-4 p-4 w-full rounded-xl cursor-pointer transition-all duration-200 border-2",
-          "bg-card hover:bg-accent/50",
+          "relative flex items-center gap-4 p-4 w-full rounded-lg cursor-pointer transition-all duration-200 border-2",
+          "bg-card hover:bg-accent/5",
           isSelected
-            ? "border-primary bg-primary/5 shadow-md"
-            : "border-border hover:border-primary/50",
+            ? "border-accent bg-accent/10 shadow-sm"
+            : "border-border hover:border-accent/30",
           isDisabled && "opacity-60 cursor-not-allowed"
         )}
         onClick={() => !isDisabled && onSelect(option.id)}
@@ -130,35 +127,31 @@ const MCQOption = memo(({
           className="sr-only"
         />
 
-        {/* Letter indicator */}
+        {/* Letter indicator - simplified */}
         <div
           className={cn(
-            "flex items-center justify-center w-10 h-10 rounded-lg font-semibold transition-colors",
+            "flex items-center justify-center w-8 h-8 rounded-md font-bold text-sm transition-colors border-2",
             isSelected
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground group-hover:bg-primary/20"
+              ? "bg-accent text-accent-foreground border-accent"
+              : "bg-muted text-muted-foreground border-border group-hover:border-accent/50"
           )}
         >
           {option.letter}
         </div>
 
-        {/* Option text */}
+        {/* Option text - improved hierarchy */}
         <div className="flex-1 text-sm font-medium leading-relaxed text-foreground">
           {option.text}
         </div>
 
-        {/* Selection indicator */}
+        {/* Selection indicator - simplified */}
         {isSelected && (
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="text-primary"
+            className="text-accent"
           >
-            {isAnswering ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <CheckCircle2 className="w-5 h-5" />
-            )}
+            <CheckCircle2 className="w-5 h-5" />
           </motion.div>
         )}
       </label>
@@ -357,6 +350,7 @@ function UnifiedQuizQuestionComponent({
               level: index < 2 ? "low" : "medium" as const,
               type: "contextual" as const,
               content: hint,
+              icon: "Lightbulb",
               spoilerLevel: index < 2 ? "low" : "medium" as const,
               penalty: 5 + (index * 3),
               description: `Hint ${index + 1}`
@@ -393,9 +387,9 @@ function UnifiedQuizQuestionComponent({
             <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
               <span>Word count: {wordCount}</span>
               <span className={cn(
-                wordCount < minWords && "text-orange-500",
-                wordCount > maxWords && "text-red-500",
-                wordCount >= minWords && wordCount <= maxWords && "text-green-500"
+                wordCount < minWords && "text-warning",
+                wordCount > maxWords && "text-destructive",
+                wordCount >= minWords && wordCount <= maxWords && "text-success"
               )}>
                 {wordCount < minWords ? `${minWords - wordCount} more words needed` :
                  wordCount > maxWords ? `${wordCount - maxWords} words over limit` :
@@ -411,6 +405,7 @@ function UnifiedQuizQuestionComponent({
               level: index < 2 ? "low" : "medium" as const,
               type: "contextual" as const,
               content: hint,
+              icon: "Lightbulb",
               spoilerLevel: index < 2 ? "low" : "medium" as const,
               penalty: 5 + (index * 3),
               description: `Hint ${index + 1}`
@@ -485,9 +480,9 @@ function UnifiedQuizQuestionComponent({
               variant="outline"
               className={cn(
                 "text-sm",
-                question.difficulty === 'easy' && "text-green-600",
-                question.difficulty === 'medium' && "text-yellow-600",
-                question.difficulty === 'hard' && "text-red-600"
+                question.difficulty === 'easy' && "text-success",
+                question.difficulty === 'medium' && "text-warning",
+                question.difficulty === 'hard' && "text-destructive"
               )}
             >
               {question.difficulty}
@@ -498,15 +493,15 @@ function UnifiedQuizQuestionComponent({
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-2xl sm:text-3xl font-bold text-foreground leading-tight px-4"
+          className="text-3xl sm:text-4xl font-black text-foreground leading-tight px-4 max-w-4xl mx-auto"
         >
           {questionText}
         </motion.h2>
 
         <div className="flex items-center justify-center">
-          <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-lg">
-            <Target className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-muted-foreground">
+          <div className="flex items-center gap-2 px-4 py-2 bg-accent/10 border border-accent/20 rounded-lg">
+            <Target className="w-4 h-4 text-accent" />
+            <span className="text-sm font-semibold text-accent">
               {question.type === 'mcq' && 'Multiple Choice'}
               {question.type === 'blanks' && 'Fill in the Blanks'}
               {question.type === 'openended' && 'Open Ended'}

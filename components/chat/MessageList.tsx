@@ -86,7 +86,7 @@ const MessageBubble = memo(({ message, index, onCopy, copiedMessageId }: Message
                 {message.content}
               </ReactMarkdown>
             ) : (
-              <div className="text-red-500 italic text-xs">
+              <div className="text-destructive italic text-xs">
                 Message could not be displayed. Please try again.
               </div>
             )}
@@ -103,7 +103,7 @@ const MessageBubble = memo(({ message, index, onCopy, copiedMessageId }: Message
               aria-label="Copy message"
             >
               {isCopied ? (
-                <Check className="h-3 w-3 text-green-600" />
+                <Check className="h-3 w-3 text-success" />
               ) : (
                 <Copy className="h-3 w-3" />
               )}
@@ -188,30 +188,30 @@ const markdownComponents: Partial<Components> = {
   h3: ({ node, children, ...props }) => {
     const headingText = String(children)
     let Icon = ChevronRight
-    let bgColor = 'bg-blue-50 dark:bg-blue-900/20'
-    let textColor = 'text-blue-700 dark:text-blue-300'
-    let borderColor = 'border-blue-200 dark:border-blue-700'
+    let bgColor = 'bg-primary/10 dark:bg-primary/5'
+    let textColor = 'text-primary'
+    let borderColor = 'border-primary/20 dark:border-primary/20'
 
     if (headingText.includes('Quiz')) {
       Icon = Target
-      bgColor = 'bg-purple-50 dark:bg-purple-900/20'
-      textColor = 'text-purple-700 dark:text-purple-300'
-      borderColor = 'border-purple-200 dark:border-purple-700'
+      bgColor = 'bg-accent/10 dark:bg-accent/5'
+      textColor = 'text-accent'
+      borderColor = 'border-accent/20 dark:border-accent/20'
     } else if (headingText.includes('Course')) {
       Icon = BookOpen
-      bgColor = 'bg-green-50 dark:bg-green-900/20'
-      textColor = 'text-green-700 dark:text-green-300'
-      borderColor = 'border-green-200 dark:border-green-700'
+      bgColor = 'bg-success/10 dark:bg-success/5'
+      textColor = 'text-success'
+      borderColor = 'border-success/20 dark:border-success/20'
     } else if (headingText.includes('Key Concepts') || headingText.includes('Concepts')) {
       Icon = Sparkles
-      bgColor = 'bg-orange-50 dark:bg-orange-900/20'
-      textColor = 'text-orange-700 dark:text-orange-300'
-      borderColor = 'border-orange-200 dark:border-orange-700'
+      bgColor = 'bg-warning/10 dark:bg-warning/5'
+      textColor = 'text-warning'
+      borderColor = 'border-warning/20 dark:border-warning/20'
     } else if (headingText.includes('Create') || headingText.includes('Build')) {
       Icon = Plus
-      bgColor = 'bg-emerald-50 dark:bg-emerald-900/20'
-      textColor = 'text-emerald-700 dark:text-emerald-300'
-      borderColor = 'border-emerald-200 dark:border-emerald-700'
+      bgColor = 'bg-success/10 dark:bg-success/5'
+      textColor = 'text-success'
+      borderColor = 'border-success/20 dark:border-success/20'
     }
 
     return (
@@ -229,7 +229,7 @@ const markdownComponents: Partial<Components> = {
     // Style special paragraphs
     if (text.includes('Practice might help') || text.includes('comprehensive coverage')) {
       return (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-md p-2 mb-2 text-sm text-blue-700 dark:text-blue-300 italic" {...props}>
+        <div className="bg-primary/10 dark:bg-primary/5 border border-primary/20 dark:border-primary/20 rounded-md p-2 mb-2 text-sm text-primary italic" {...props}>
           💡 {children}
         </div>
       )
@@ -248,25 +248,25 @@ const markdownComponents: Partial<Components> = {
   ),
   li: ({ node, children, ...props }) => {
     const text = String(children)
-    let bulletColor = 'text-blue-500'
+    let bulletColor = 'text-primary'
     let bullet = '•'
 
     // Different bullets and colors based on content
     if (text.includes('Quiz') || text.includes('Take Quiz')) {
       bullet = '🎯'
-      bulletColor = 'text-purple-500'
+      bulletColor = 'text-accent'
     } else if (text.includes('Course') || text.includes('View Course')) {
       bullet = '📚'
-      bulletColor = 'text-green-500'
+      bulletColor = 'text-success'
     } else if (text.includes('Create')) {
       bullet = '✨'
-      bulletColor = 'text-orange-500'
+      bulletColor = 'text-warning'
     } else if (text.includes('Explore') || text.includes('Browse')) {
       bullet = '🔍'
-      bulletColor = 'text-blue-500'
+      bulletColor = 'text-primary'
     } else if (text.includes('Flashcard') || text.includes('Study')) {
       bullet = '🧠'
-      bulletColor = 'text-teal-500'
+      bulletColor = 'text-accent'
     }
 
     return (
@@ -277,7 +277,7 @@ const markdownComponents: Partial<Components> = {
     )
   },
   strong: ({ node, children, ...props }) => (
-    <strong className="font-semibold text-foreground bg-yellow-100 dark:bg-yellow-900/30 px-1 py-0.5 rounded text-xs" {...props}>
+    <strong className="font-semibold text-foreground bg-warning/20 dark:bg-warning/10 px-1 py-0.5 rounded text-xs" {...props}>
       {children}
     </strong>
   ),
@@ -298,7 +298,7 @@ const markdownComponents: Partial<Components> = {
     </blockquote>
   ),
   code: ({ node, children, ...props }) => (
-    <code className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-1.5 py-0.5 rounded text-xs font-mono" {...props}>
+    <code className="bg-muted text-muted-foreground px-1.5 py-0.5 rounded text-xs font-mono" {...props}>
       {children}
     </code>
   ),

@@ -152,7 +152,7 @@ export default function PrivacyPolicy() {
       </p>
 
       <p className="mt-8">
-        <Link href="/terms" className="text-blue-600 hover:underline">
+        <Link href="/terms" className="text-primary hover:underline">
           View our Terms and Conditions
         </Link>
       </p>

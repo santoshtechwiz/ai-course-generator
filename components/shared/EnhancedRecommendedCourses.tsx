@@ -177,9 +177,9 @@ const EnhancedRecommendedCourses: React.FC<EnhancedRecommendedCoursesProps> = ({
       whileHover={{ y: -4 }}
       className="group"
     >
-      <Card className="overflow-hidden border-border/50 hover:shadow-lg transition-all duration-300 h-full">
+      <Card className="overflow-hidden border-2 border-border hover:translate-x-[2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_var(--border)] transition-none shadow-[6px_6px_0px_0px_var(--border)] h-full">
         <div className="relative">
-          <div className="aspect-video bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
+          <div className="aspect-video bg-muted flex items-center justify-center">
             {course.image ? (
               <Image 
                 src={getImageWithFallback(course.image)} 
@@ -188,8 +188,8 @@ const EnhancedRecommendedCourses: React.FC<EnhancedRecommendedCoursesProps> = ({
                 className="object-cover"
               />
             ) : (
-              <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
-                <BookOpen className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 bg-main border-2 border-border rounded-sm flex items-center justify-center">
+                <BookOpen className="w-8 h-8 text-main-foreground" />
               </div>
             )}
           </div>
@@ -197,19 +197,19 @@ const EnhancedRecommendedCourses: React.FC<EnhancedRecommendedCoursesProps> = ({
           {/* Badges */}
           <div className="absolute top-2 left-2 flex flex-wrap gap-1">
             {course.isNew && (
-              <Badge variant="secondary" className="bg-green-500/20 text-green-600 text-xs">
+              <Badge variant="secondary" className="bg-success/20 text-success text-xs">
                 <Sparkles className="w-3 h-3 mr-1" />
                 New
               </Badge>
             )}
             {course.isTrending && (
-              <Badge variant="secondary" className="bg-orange-500/20 text-orange-600 text-xs">
+              <Badge variant="secondary" className="bg-warning/20 text-warning text-xs">
                 <TrendingUp className="w-3 h-3 mr-1" />
                 Trending
               </Badge>
             )}
             {course.isPopular && (
-              <Badge variant="secondary" className="bg-purple-500/20 text-purple-600 text-xs">
+              <Badge variant="secondary" className="bg-accent/20 text-accent text-xs">
                 <Star className="w-3 h-3 mr-1" />
                 Popular
               </Badge>
@@ -222,9 +222,9 @@ const EnhancedRecommendedCourses: React.FC<EnhancedRecommendedCoursesProps> = ({
               variant="outline" 
               className={cn(
                 "text-xs",
-                course.level === "Beginner" && "bg-green-500/10 text-green-600 border-green-500/20",
-                course.level === "Intermediate" && "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
-                course.level === "Advanced" && "bg-red-500/10 text-red-600 border-red-500/20"
+                course.level === "Beginner" && "bg-success/10 text-success border-success/20",
+                course.level === "Intermediate" && "bg-warning/10 text-warning border-warning/20",
+                course.level === "Advanced" && "bg-destructive/10 text-destructive border-destructive/20"
               )}
             >
               {course.level}
@@ -263,7 +263,7 @@ const EnhancedRecommendedCourses: React.FC<EnhancedRecommendedCoursesProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+              <Star className="w-3 h-3 fill-warning text-warning" />
               <span>{course.rating?.toFixed(1)}</span>
             </div>
           </div>

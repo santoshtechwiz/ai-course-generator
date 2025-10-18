@@ -138,12 +138,12 @@ export function QuizFooter({
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-full"
+            className="flex items-center gap-2 px-4 py-2 bg-success/10 dark:bg-success/5 border border-success/20 dark:border-success/20 rounded-full"
             role="status"
             aria-live="polite"
           >
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-            <span className="font-medium text-emerald-700 dark:text-emerald-300">Answer recorded</span>
+            <CheckCircle2 className="w-5 h-5 text-success" aria-hidden="true" />
+            <span className="font-medium text-success">Answer recorded</span>
           </motion.div>
         )}
 

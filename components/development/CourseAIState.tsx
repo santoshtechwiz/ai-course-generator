@@ -15,7 +15,7 @@ export default function CourseAIState() {
   const course = useSelector((state: RootState) => state.course);
   
   // New session-based auth
-  const { user: authUser, subscription: authSubscription, isAuthenticated, isLoading } = useAuth();
+  const { user: authUser, plan, credits, isAuthenticated, isLoading } = useAuth();
   const { data: session, status } = useSession();
   
   // Add time tracking to see when states update
@@ -94,7 +94,7 @@ export default function CourseAIState() {
       {open && (
         <div className="max-h-[60vh] overflow-y-auto p-3 bg-white dark:bg-black/90 rounded-b-lg">
           {/* Enhanced navigation debug info */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 mb-2 p-2 rounded text-xs border border-blue-200">
+          <div className="bg-primary/10 dark:bg-primary/5 mb-2 p-2 rounded text-xs border border-primary/20">
             <p>
               <strong>Quiz Navigation Debug:</strong>{" "}
               {new Date(lastUpdated).toLocaleTimeString()}
@@ -109,7 +109,7 @@ export default function CourseAIState() {
           </div>
           
           {/* Video Progress Debug Section */}
-          <div className="bg-orange-50 dark:bg-orange-900/20 mb-3 p-2 rounded text-xs border border-orange-200">
+          <div className="bg-warning/10 dark:bg-warning/5 mb-3 p-2 rounded text-xs border border-warning/20">
             <p>
               <strong>Video Progress Debug:</strong>{" "}
               {new Date(lastUpdated).toLocaleTimeString()}
@@ -142,7 +142,7 @@ export default function CourseAIState() {
           
           {/* Session-based Auth Info */}
           <details open>
-            <summary className="font-bold text-green-600 mb-1 cursor-pointer">Session Auth (NEW)</summary>
+            <summary className="font-bold text-success mb-1 cursor-pointer">Session Auth (NEW)</summary>
             <div className="space-y-2">
               <div>
                 <div className="font-semibold text-sm">Session Status: {status}</div>
@@ -154,7 +154,7 @@ export default function CourseAIState() {
               </div>
               <div>
                 <div className="font-semibold text-sm">Auth Subscription:</div>
-                <pre className="overflow-x-auto bg-muted p-2 rounded text-xs">{JSON.stringify(authSubscription, null, 2)}</pre>
+                <pre className="overflow-x-auto bg-muted p-2 rounded text-xs">{JSON.stringify({ plan, credits }, null, 2)}</pre>
               </div>
               <div>
                 <div className="font-semibold text-sm">Is Authenticated: {isAuthenticated.toString()}</div>

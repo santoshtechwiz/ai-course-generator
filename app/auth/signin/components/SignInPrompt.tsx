@@ -56,7 +56,7 @@ const quizTypeConfig = {
 }
 
 export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData }: SignInPromptProps) {
-  const config = quizTypeConfig[quizType] || quizTypeConfig.mcq
+  const config = (quizTypeConfig as any)[quizType] || quizTypeConfig.mcq
   const IconComponent = config.icon
 
   const renderPreviewStats = () => {
