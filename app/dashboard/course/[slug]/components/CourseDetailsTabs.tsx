@@ -12,14 +12,9 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
 import {
-  Search,
-  Filter,
-  BookOpen,
-  Tag
-} from "lucide-react"
-import {
   FileText,
   MessageSquare,
+  BookOpen,
   BarChart3,
   Award,
   TrendingUp,
@@ -30,7 +25,6 @@ import {
   Trophy,
   Star,
   PlayCircle,
-  Lock,
   CheckCircle,
   Calendar,
   Flame,
@@ -296,32 +290,32 @@ export default function CourseDetailsTabs({
     [onSeekToBookmark],
   )
 
-  // Get skill level styling
+  // Get skill level styling with theme-aware Neobrutalism colors
   const getSkillLevelStyling = (level: string) => {
     switch (level) {
       case "Expert":
         return {
-          badge: "bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200 dark:from-purple-900/30 dark:to-pink-900/30 dark:text-purple-300 dark:border-purple-800",
+          badge: "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-2 border-purple-600 dark:border-purple-400 shadow-[3px_3px_0px_0px] shadow-purple-600/50 dark:shadow-purple-400/50",
           icon: Star,
         }
       case "Advanced":
         return {
-          badge: "bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 border-emerald-200 dark:from-emerald-900/30 dark:to-teal-900/30 dark:text-emerald-300 dark:border-emerald-800",
+          badge: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-2 border-emerald-600 dark:border-emerald-400 shadow-[3px_3px_0px_0px] shadow-emerald-600/50 dark:shadow-emerald-400/50",
           icon: Trophy,
         }
       case "Intermediate":
         return {
-          badge: "bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border-blue-200 dark:from-blue-900/30 dark:to-cyan-900/30 dark:text-blue-300 dark:border-blue-800",
+          badge: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-2 border-blue-600 dark:border-blue-400 shadow-[3px_3px_0px_0px] shadow-blue-600/50 dark:shadow-blue-400/50",
           icon: Target,
         }
       case "Novice":
         return {
-          badge: "bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 border-amber-200 dark:from-amber-900/30 dark:to-orange-900/30 dark:text-amber-300 dark:border-amber-800",
+          badge: "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-2 border-amber-600 dark:border-amber-400 shadow-[3px_3px_0px_0px] shadow-amber-600/50 dark:shadow-amber-400/50",
           icon: Zap,
         }
       default:
         return {
-          badge: "bg-gradient-to-r from-slate-100 to-gray-100 text-slate-800 border-slate-200 dark:from-slate-900/30 dark:to-gray-900/30 dark:text-slate-300 dark:border-slate-800",
+          badge: "bg-gray-100 dark:bg-gray-800/30 text-gray-800 dark:text-gray-300 border-2 border-gray-600 dark:border-gray-400 shadow-[3px_3px_0px_0px] shadow-gray-600/50 dark:shadow-gray-400/50",
           icon: PlayCircle,
         }
     }
@@ -431,25 +425,25 @@ export default function CourseDetailsTabs({
           </div>
         </div>
 
-        {/* Enhanced Progress Statistics Grid */}
+        {/* Enhanced Progress Statistics Grid - Neobrutalism style */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl p-6 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:border-primary/30 group cursor-pointer"
-            whileHover={{ scale: 1.02 }}
+            className="bg-card border-3 border-border rounded-xl p-6 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] transition-all duration-100 hover:border-green-600 group cursor-pointer"
+            whileHover={{ y: -2 }}
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 border-2 border-green-600 dark:border-green-400 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-100">
+                <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-foreground group-hover:text-green-600 transition-colors duration-300">
+                <div className="text-2xl font-black text-foreground group-hover:text-green-600 transition-colors duration-100">
                   {courseStats.completedChapters}
                 </div>
-                <div className="text-sm text-muted-foreground font-medium">Completed</div>
-                <div className="text-xs text-muted-foreground mt-1">Chapters done</div>
+                <div className="text-sm text-muted-foreground font-bold">Completed</div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">Chapters done</div>
               </div>
             </div>
           </motion.div>
@@ -458,19 +452,19 @@ export default function CourseDetailsTabs({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl p-6 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 hover:border-blue-500/30 group cursor-pointer"
-            whileHover={{ scale: 1.02 }}
+            className="bg-card border-3 border-border rounded-xl p-6 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] transition-all duration-100 hover:border-blue-600 group cursor-pointer"
+            whileHover={{ y: -2 }}
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <Clock className="h-6 w-6 text-blue-600" />
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-600 dark:border-blue-400 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-100">
+                <Clock className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-foreground group-hover:text-blue-600 transition-colors duration-300">
+                <div className="text-2xl font-black text-foreground group-hover:text-blue-600 transition-colors duration-100">
                   {formatDuration(courseStats.estimatedTimeLeft)}
                 </div>
-                <div className="text-sm text-muted-foreground font-medium">Remaining</div>
-                <div className="text-xs text-muted-foreground mt-1">Time to finish</div>
+                <div className="text-sm text-muted-foreground font-bold">Remaining</div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">Time to finish</div>
               </div>
             </div>
           </motion.div>
@@ -479,19 +473,19 @@ export default function CourseDetailsTabs({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl p-6 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300 hover:border-orange-500/30 group cursor-pointer"
-            whileHover={{ scale: 1.02 }}
+            className="bg-card border-3 border-border rounded-xl p-6 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] transition-all duration-100 hover:border-orange-600 group cursor-pointer"
+            whileHover={{ y: -2 }}
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <Flame className="h-6 w-6 text-orange-600" />
+              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 border-2 border-orange-600 dark:border-orange-400 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-100">
+                <Flame className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-foreground group-hover:text-orange-600 transition-colors duration-300">
+                <div className="text-2xl font-black text-foreground group-hover:text-orange-600 transition-colors duration-100">
                   {courseStats.learningStreak}
                 </div>
-                <div className="text-sm text-muted-foreground font-medium">Day Streak</div>
-                <div className="text-xs text-muted-foreground mt-1">Keep it up!</div>
+                <div className="text-sm text-muted-foreground font-bold">Day Streak</div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">Keep it up!</div>
               </div>
             </div>
           </motion.div>
@@ -500,45 +494,45 @@ export default function CourseDetailsTabs({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl p-6 hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300 hover:border-amber-500/30 group cursor-pointer"
-            whileHover={{ scale: 1.02 }}
+            className="bg-card border-3 border-border rounded-xl p-6 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] transition-all duration-100 hover:border-amber-600 group cursor-pointer"
+            whileHover={{ y: -2 }}
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <BookmarkIcon className="h-6 w-6 text-amber-600" />
+              <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 border-2 border-amber-600 dark:border-amber-400 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-100">
+                <BookmarkIcon className="h-6 w-6 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-foreground group-hover:text-amber-600 transition-colors duration-300">
+                <div className="text-2xl font-black text-foreground group-hover:text-amber-600 transition-colors duration-100">
                   {courseStats.totalBookmarks}
                 </div>
-                <div className="text-sm text-muted-foreground font-medium">Bookmarks</div>
-                <div className="text-xs text-muted-foreground mt-1">Saved items</div>
+                <div className="text-sm text-muted-foreground font-bold">Bookmarks</div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">Saved items</div>
               </div>
             </div>
           </motion.div>
         </div>
 
-        {/* Enhanced Additional Stats */}
+        {/* Enhanced Additional Stats - Neobrutalism style */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl p-6 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:border-primary/30 group cursor-pointer"
-            whileHover={{ scale: 1.02 }}
+            className="bg-card border-3 border-border rounded-xl p-6 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] transition-all duration-100 hover:border-primary group cursor-pointer"
+            whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-4">
-              <span className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
+              <span className="text-lg font-black text-foreground group-hover:text-primary transition-colors duration-100 uppercase">
                 Study Time This Week
               </span>
-              <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+              <div className="w-10 h-10 bg-primary/10 dark:bg-primary/20 border-2 border-primary rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-100">
                 <Calendar className="h-5 w-5 text-primary" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-primary mb-2 group-hover:scale-105 transition-transform duration-300">
+            <div className="text-3xl font-black text-primary mb-2 group-hover:scale-105 transition-transform duration-100">
               {formatDuration(courseStats.studyTimeThisWeek)}
             </div>
-            <div className="text-sm text-muted-foreground group-hover:text-muted-foreground/80 transition-colors duration-300">
+            <div className="text-sm text-muted-foreground font-medium group-hover:text-muted-foreground/80 transition-colors duration-100">
               Keep up the great work!
             </div>
           </motion.div>
@@ -547,27 +541,27 @@ export default function CourseDetailsTabs({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl p-6 hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300 hover:border-amber-500/30 group cursor-pointer"
-            whileHover={{ scale: 1.02 }}
+            className="bg-card border-3 border-border rounded-xl p-6 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] transition-all duration-100 hover:border-amber-600 group cursor-pointer"
+            whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-4">
-              <span className="text-lg font-semibold text-foreground group-hover:text-amber-600 transition-colors duration-300">
+              <span className="text-lg font-black text-foreground group-hover:text-amber-600 transition-colors duration-100 uppercase">
                 Quiz Average
               </span>
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-500/20 to-amber-500/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <Star className="h-5 w-5 text-amber-600" />
+              <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 border-2 border-amber-600 dark:border-amber-400 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-100">
+                <Star className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-amber-600 mb-2 group-hover:scale-105 transition-transform duration-300">
+            <div className="text-3xl font-black text-amber-600 dark:text-amber-400 mb-2 group-hover:scale-105 transition-transform duration-100">
               {courseStats.averageScore}%
             </div>
-            <div className="text-sm text-muted-foreground group-hover:text-muted-foreground/80 transition-colors duration-300">
+            <div className="text-sm text-muted-foreground font-medium group-hover:text-muted-foreground/80 transition-colors duration-100">
               {courseStats.averageScore >= 80 ? "Excellent!" : courseStats.averageScore >= 60 ? "Good work!" : "Keep practicing!"}
             </div>
           </motion.div>
         </div>
 
-        {/* Enhanced Skill Level Badge */}
+        {/* Enhanced Skill Level Badge - Neobrutalism style */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -577,11 +571,11 @@ export default function CourseDetailsTabs({
           <Badge
             variant="secondary"
             className={cn(
-              "px-8 py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer group",
+              "px-8 py-4 text-lg font-black uppercase tracking-wide hover:shadow-[6px_6px_0px_0px] transition-all duration-100 hover:scale-105 cursor-pointer group",
               skillStyling.badge
             )}
           >
-            <SkillIcon className="h-6 w-6 mr-3 group-hover:scale-110 transition-transform duration-300" />
+            <SkillIcon className="h-6 w-6 mr-3 group-hover:scale-110 transition-transform duration-100" />
             {courseStats.skillLevel} Level
             <motion.div
               className="ml-2 inline-block"
