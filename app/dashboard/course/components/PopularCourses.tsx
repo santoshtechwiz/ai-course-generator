@@ -23,9 +23,9 @@ interface Props {
 }
 
 const categoryColors: Record<string, string> = {
-  "cloud-computing": "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800",
-  "web-development": "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800",
-  "data-science": "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800",
+  "cloud-computing": "bg-[hsl(var(--category-cloud-computing))] text-white border-[hsl(var(--category-cloud-computing))]",
+  "web-development": "bg-[hsl(var(--category-web-development))] text-white border-[hsl(var(--category-web-development))]",
+  "data-science": "bg-[hsl(var(--category-data-science))] text-black border-[hsl(var(--category-data-science))]",
 }
 
 const categoryGradients: Record<string, string> = {

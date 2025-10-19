@@ -1237,20 +1237,15 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         {playerState.canPlayVideo && !shouldHideMainPlayer && (
           <div
             className={cn(
-              "absolute bottom-0 left-0 right-0 z-40 transition-opacity duration-300",
+              "absolute bottom-0 left-0 right-0 z-40 transition-all duration-200",
               !playerState.showControlsState &&
               !playerState.isHovering &&
               state.playing &&
               !overlayState.showChapterStart &&
-              !overlayState.showChapterEnd && "opacity-0",
+              !overlayState.showChapterEnd && "opacity-50",
             )}
             style={{
-              pointerEvents:
-                playerState.showControlsState ||
-                  playerState.isHovering ||
-                  !state.playing ||
-                  overlayState.showChapterStart ||
-                  overlayState.showChapterEnd ? "auto" : "none",
+              pointerEvents: "auto",
             }}
           >
             <PlayerControls

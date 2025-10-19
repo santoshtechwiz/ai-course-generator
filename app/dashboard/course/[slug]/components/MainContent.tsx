@@ -1238,71 +1238,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                 </motion.div>
               )}
               
-              {/* Progress Stats Bar - Above Video */}
-              {!state.isTheaterMode && currentChapter && user && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className={cn(
-                    "flex items-center justify-between gap-2 px-1.5 py-1",
-                    "bg-card/50 backdrop-blur-sm rounded-lg",
-                    "border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]"
-                  )}
-                >
-                  {/* Progress Info */}
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "h-8 w-8 rounded-xl bg-primary/10",
-                        "border-2 border-border",
-                        "flex items-center justify-center"
-                      )}>
-                        <CheckCircle className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-black">
-                          {courseStats.completedCount}/{courseStats.totalChapters} Complete
-                        </span>
-                        <span className="text-xs text-muted-foreground font-medium">
-                          {courseStats.totalChapters - courseStats.completedCount} remaining
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Progress Bar */}
-                    <div className="hidden md:flex items-center gap-3 flex-1 max-w-xs">
-                      <Progress value={courseStats.progressPercentage} className="h-2 flex-1" />
-                      <Badge className={cn(badgeStatus, "bg-primary/10 text-primary font-bold shrink-0")}>
-                        {courseStats.progressPercentage}%
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {/* Sidebar Toggle Button */}
-                  {state.sidebarCollapsed ? (
-                    <Button
-                      onClick={() => dispatch2({ type: 'SET_SIDEBAR_COLLAPSED', payload: false })}
-                      className={cn(buttonSecondary, "gap-2 shrink-0")}
-                      size="sm"
-                      aria-label="Show course content"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      <span className="hidden sm:inline font-bold">Show Chapters</span>
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => dispatch2({ type: 'SET_SIDEBAR_COLLAPSED', payload: true })}
-                      className={cn(buttonIcon, "gap-2 shrink-0")}
-                      size="sm"
-                      aria-label="Hide course content"
-                    >
-                      <span className="hidden sm:inline font-bold">Hide</span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  )}
-                </motion.div>
-              )}
+            
 
               {/* Video player section */}
               <motion.div

@@ -128,13 +128,13 @@ export default function ActionButtons({ slug, title, isOwner, className = "", va
       {/* Enhanced Favorite Button */}
       {isAuthenticated && (
         <Button
-          variant="outline"
+          variant="neutral"
           size="sm"
           onClick={handleFavoriteToggle}
           disabled={loading === "favorite"}
           className={cn(
             "flex items-center gap-2 transition-all duration-200 hover:shadow-md",
-            status.isFavorite && "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 dark:bg-red-950 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900",
+            status.isFavorite && "bg-[hsl(var(--accent))]/10 text-[hsl(var(--accent))] border-[hsl(var(--accent))]/20 hover:bg-[hsl(var(--accent))]/20 dark:bg-[hsl(var(--accent))]/10 dark:text-[hsl(var(--accent))] dark:border-[hsl(var(--accent))]/30 dark:hover:bg-[hsl(var(--accent))]/20",
             variant === "compact" && "px-3"
           )}
         >
@@ -156,7 +156,7 @@ export default function ActionButtons({ slug, title, isOwner, className = "", va
           className={cn(
             "hidden md:inline-flex items-center gap-1 transition-all duration-200",
             status.isPublic
-              ? "bg-green-100 text-green-700 border-green-200 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-700"
+              ? "bg-[hsl(var(--success))]/10 text-[hsl(var(--success))] border-[hsl(var(--success))]/20 hover:bg-[hsl(var(--success))]/20 dark:bg-[hsl(var(--success))]/10 dark:text-[hsl(var(--success))] dark:border-[hsl(var(--success))]/30"
               : "bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
           )}
         >
@@ -206,7 +206,7 @@ export default function ActionButtons({ slug, title, isOwner, className = "", va
             <DropdownMenuItem
               onClick={handleDelete}
               disabled={loading === "delete"}
-              className="text-red-600 focus:text-red-600 cursor-pointer"
+              className="text-[hsl(var(--destructive))] focus:text-[hsl(var(--destructive))] cursor-pointer"
             >
               {loading === "delete" ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

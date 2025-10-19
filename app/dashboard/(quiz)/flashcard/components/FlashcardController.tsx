@@ -19,11 +19,8 @@ interface FlashcardControllerProps {
   autoAdvance: boolean
   showSettings: boolean
   onToggleFlip: () => void
-  onNextCard: () => void
   onSetAutoAdvance: (value: boolean) => void
   onSetShowSettings: (value: boolean) => void
-  onRestartQuiz: () => void
-  onFinishQuiz: () => void
 }
 
 export function FlashcardController({
@@ -36,11 +33,8 @@ export function FlashcardController({
   autoAdvance,
   showSettings,
   onToggleFlip,
-  onNextCard,
   onSetAutoAdvance,
   onSetShowSettings,
-  onRestartQuiz,
-  onFinishQuiz,
 }: FlashcardControllerProps) {
   const progress = totalCards > 0 ? ((currentIndex + 1) / totalCards) * 100 : 0
   const isLastCard = currentIndex >= totalCards - 1
@@ -71,10 +65,7 @@ export function FlashcardController({
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={onRestartQuiz} className="flex-1 bg-transparent">
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Restart
-                </Button>
+                {/* Action buttons removed as requested */}
               </div>
             </CardContent>
           </Card>
@@ -83,38 +74,7 @@ export function FlashcardController({
 
          {/* Navigation and Finish Buttons */}
       <div className="flex justify-between items-center gap-3 mb-4">
-        <Button 
-          variant="outline" 
-          onClick={onRestartQuiz}
-          size="sm"
-          className="text-xs flex items-center gap-1 border-2 hover:border-border"
-        >
-          <RotateCcw className="w-3 h-3" />
-          Restart
-        </Button>
-        
-        <div className="flex items-center gap-1">
-          <Button
-            variant="default"
-            onClick={onFinishQuiz}
-            size="sm"
-            className="text-xs flex items-center gap-1 border-2 border-primary/50 bg-primary text-primary-foreground hover:bg-primary/90 shadow-[2px_2px_0px_0px_hsl(var(--border))]"
-          >
-            Finish Quiz
-          </Button>
-          
-          {!isLastCard && (
-            <Button
-              variant="default"
-              onClick={onNextCard}
-              size="sm"
-              className="text-xs flex items-center gap-1 ml-2 border-2 border-primary/50 bg-primary text-primary-foreground hover:bg-primary/90 shadow-[2px_2px_0px_0px_hsl(var(--border))]"
-            >
-              Next
-              <ChevronRight className="w-3 h-3" />
-            </Button>
-          )}
-        </div>
+        {/* Action buttons removed as requested */}
       </div>
       
       {/* Keyboard Shortcuts */}

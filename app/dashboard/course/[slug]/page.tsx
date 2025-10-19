@@ -74,7 +74,7 @@ export default async function Page({ params }: CoursePageParams) {
             <p className="text-gray-600 mb-6">The course URL appears to be malformed.</p>
             <a
               href="/dashboard/explore"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
             >
               Browse Courses
             </a>
@@ -102,7 +102,7 @@ export default async function Page({ params }: CoursePageParams) {
             <div className="space-y-3">
               <a
                 href="/dashboard/explore"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 mr-3"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 mr-3"
               >
                 Browse All Courses
               </a>
@@ -128,7 +128,7 @@ export default async function Page({ params }: CoursePageParams) {
             <p className="text-gray-600 mb-6">This course appears to have incomplete data.</p>
             <a
               href="/dashboard/explore"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
             >
               Browse Courses
             </a>
@@ -151,7 +151,7 @@ export default async function Page({ params }: CoursePageParams) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="mb-6">
-            <svg className="mx-auto h-24 w-24 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="mx-auto h-24 w-24 text-[hsl(var(--destructive))]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
@@ -159,7 +159,7 @@ export default async function Page({ params }: CoursePageParams) {
           <p className="text-gray-600 mb-6">We encountered an error while loading this course.</p>
           <a
             href="/dashboard/explore"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
           >
             Browse Courses
           </a>

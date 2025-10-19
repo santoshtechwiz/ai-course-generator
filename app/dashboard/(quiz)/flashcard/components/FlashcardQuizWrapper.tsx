@@ -36,6 +36,7 @@ import { useAuth } from "@/modules/auth";
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
 import { UnifiedLoader } from "@/components/loaders";
 import { LOADER_MESSAGES } from "@/constants/loader-messages";
+import { useQuizContext } from "../../components/layouts/QuizPlayLayout";
 
 interface FlashcardQuizWrapperProps {
   slug: string;
@@ -48,6 +49,7 @@ export default function FlashcardQuizWrapper({
 }: FlashcardQuizWrapperProps) {
   const hasInitialized = useRef(false);
   const lastSlug = useRef<string>("");
+  const { isFocusMode } = useQuizContext();
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -387,6 +389,7 @@ export default function FlashcardQuizWrapper({
         quizId={slug}
         slug={slug}
         title={quizTitle || title || "Flashcard Quiz"}
+        isFocusMode={isFocusMode}
         onSaveCard={(card) => {
           const idNum = parseInt(String(card.id));
           if (!isNaN(idNum)) {

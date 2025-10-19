@@ -44,6 +44,7 @@ interface FlashCardComponentProps {
   onSaveCard?: (card: FlashCard) => void
   onComplete?: (results: any) => void
   isReviewMode?: boolean
+  isFocusMode?: boolean
 }
 
 const swipeConfidenceThreshold = 10000
@@ -58,6 +59,7 @@ export default function FlashCardQuiz({
   title,
   onSaveCard,
   isReviewMode = false,
+  isFocusMode = false,
   onComplete,
 }: FlashCardComponentProps) {
   const dispatch = useAppDispatch()
@@ -295,17 +297,25 @@ export default function FlashCardQuiz({
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-      {/* Simple Header */}
-      <div className="text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 dark:bg-primary/20 text-primary border-3 border-primary/30 rounded-xl shadow-[2px_2px_0px_0px_hsl(var(--primary)/0.3)] mb-4">
-          <Brain className="w-4 h-4" />
-          <span className="text-sm font-black">Flashcard Quiz</span>
+    <div className={cn(
+      "w-full space-y-6",
+      isFocusMode
+        ? "min-h-screen flex flex-col justify-center px-0"
+        : "w-full px-4 sm:px-6 lg:px-8"
+    )}>
+      {/* Simple Header - Hidden in focus mode */}
+      {!isFocusMode && (
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 dark:bg-primary/20 text-primary border-3 border-primary/30 rounded-xl shadow-[2px_2px_0px_0px_hsl(var(--primary)/0.3)] mb-4">
+            <Brain className="w-4 h-4" />
+            <span className="text-sm font-black">Flashcard Quiz</span>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Controller */}
-      <FlashcardController
+      {/* Controller - Hidden in focus mode */}
+      {!isFocusMode && (
+        <FlashcardController
         title={title}
         currentIndex={currentQuestionIndex}
         totalCards={cards.length}
@@ -315,16 +325,10 @@ export default function FlashCardQuiz({
         autoAdvance={autoAdvance}
         showSettings={showSettings}
         onToggleFlip={toggleFlip}
-        onNextCard={moveToNextCard}
         onSetAutoAdvance={setAutoAdvance}
         onSetShowSettings={setShowSettings}
-        onRestartQuiz={() => {
-          dispatch(setCurrentFlashCard(0))
-          setFlipped(false)
-          setStreak(0)
-        }}
-        onFinishQuiz={handleQuizCompletion}
       />
+      )}
 
       {/* Main Card */}
       <div className="relative">
@@ -342,7 +346,11 @@ export default function FlashCardQuiz({
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
         >
           <AnimatePresence mode="wait">
-            {!flipped ? (
+            <motion.div
+              style={{ perspective: 1000 }}
+              className="w-full h-full"
+            >
+              {!flipped ? (
               <FlashcardFront
                 key="front"
                 question={currentCard?.question || ""}
@@ -371,19 +379,39 @@ export default function FlashCardQuiz({
                 animationsEnabled={animationsEnabled}
               />
             )}
+            </motion.div>
           </AnimatePresence>
         </motion.div>
       </div>
 
       {/* Simple Action Bar - Flip and Save only (navigation moved to controller) */}
-      <div className="flex justify-center gap-3">
-        <Button variant="outline" onClick={toggleFlip}>
-          <RotateCcw className="w-4 h-4 mr-2" />
+      <div className={cn(
+        "flex justify-center gap-3",
+        isFocusMode && "mt-8"
+      )}>
+        <Button 
+          variant="neutral" 
+          onClick={toggleFlip}
+          size="lg"
+          className={cn(
+            "px-8 py-4 text-lg font-black",
+            isFocusMode && "min-w-[200px]"
+          )}
+        >
+          <RotateCcw className="w-5 h-5 mr-2" />
           {flipped ? "Show Question" : "Show Answer"}
         </Button>
         
-        <Button variant="ghost" onClick={handleSaveCard}>
-          <Heart className={`w-4 h-4 mr-2 ${isSaved ? "fill-red-500 text-red-500" : ""}`} />
+        <Button 
+          variant="noShadow" 
+          onClick={handleSaveCard}
+          size="lg"
+          className={cn(
+            "px-8 py-4 text-lg font-black",
+            isFocusMode && "min-w-[200px]"
+          )}
+        >
+          <Heart className={`w-5 h-5 mr-2 ${isSaved ? "fill-red-500 text-red-500" : ""}`} />
           {isSaved ? "Saved" : "Save"}
         </Button>
       </div>

@@ -131,11 +131,11 @@ const PlayerControls = (props) => {
       </div>
 
       {/* unified control bar */}
-      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-3 py-2 bg-gray-200/90 rounded-full shadow-md backdrop-blur-md mx-auto w-fit">
+      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-4 py-3 bg-black/80 rounded-full shadow-lg backdrop-blur-md mx-auto w-fit border-2 border-white/20">
         {/* Play / Pause */}
         <Button variant="ghost" size="icon"
           onClick={onPlayPause}
-          className="h-8 w-8 rounded-full hover:bg-gray-300"
+          className="h-8 w-8 rounded-full hover:bg-white/20 text-white hover:text-white"
         >
           {isBuffering ? (
             <motion.div
@@ -153,17 +153,17 @@ const PlayerControls = (props) => {
         {/* Rewind */}
         <Button variant="ghost" size="icon"
           onClick={() => onSeekChange(Math.max(0, duration * played - 10))}
-          className="h-8 w-8 rounded-full hover:bg-gray-300"
+          className="h-8 w-8 rounded-full hover:bg-white/20 text-white hover:text-white"
         >
-          <RewindIcon className="h-5 w-5 text-black" />
+          <RewindIcon className="h-5 w-5" />
         </Button>
 
         {/* Forward */}
         <Button variant="ghost" size="icon"
           onClick={() => onSeekChange(Math.min(duration, duration * played + 10))}
-          className="h-8 w-8 rounded-full hover:bg-gray-300"
+          className="h-8 w-8 rounded-full hover:bg-white/20 text-white hover:text-white"
         >
-          <FastForwardIcon className="h-5 w-5 text-black" />
+          <FastForwardIcon className="h-5 w-5" />
         </Button>
 
         {/* Next video */}
@@ -171,33 +171,33 @@ const PlayerControls = (props) => {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 rounded-full hover:bg-gray-300"
+            className="h-8 w-8 rounded-full hover:bg-white/20 text-white hover:text-white"
             onClick={onNextVideo}
             disabled={!canAccessNextVideo}
             title={nextVideoTitle}
           >
-            <SkipForward className="h-5 w-5 text-black" />
+            <SkipForward className="h-5 w-5" />
           </Button>
         )}
 
         {/* Volume */}
         <Button variant="ghost" size="icon"
           onClick={onMute}
-          className="h-8 w-8 rounded-full hover:bg-gray-300"
+          className="h-8 w-8 rounded-full hover:bg-white/20 text-white hover:text-white"
         >
-          {React.createElement(getVolumeIcon, { className: "h-5 w-5 text-black" })}
+          {React.createElement(getVolumeIcon, { className: "h-5 w-5" })}
         </Button>
 
         {/* Time */}
-        <div className="text-xs sm:text-sm text-black font-medium tabular-nums min-w-[70px] text-center">
+        <div className="text-xs sm:text-sm text-white font-medium tabular-nums min-w-[70px] text-center">
           {formatTime(duration * played)} / {formatTime(duration)}
         </div>
 
         {/* Settings */}
         <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-300">
-              <Settings className="h-5 w-5 text-black" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-white/20 text-white hover:text-white">
+              <Settings className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48 bg-black/90 border-white/10">
@@ -225,10 +225,10 @@ const PlayerControls = (props) => {
             variant="ghost"
             size="icon"
             onClick={onToggleNotesPanel}
-            className={cn("h-8 w-8 rounded-full hover:bg-gray-300 relative",
-              notesPanelOpen && "bg-green-200/60")}
+            className={cn("h-8 w-8 rounded-full hover:bg-white/20 text-white hover:text-white relative",
+              notesPanelOpen && "bg-[hsl(var(--success))]/30")}
           >
-            <StickyNote className="h-5 w-5 text-black" />
+            <StickyNote className="h-5 w-5" />
             {notesCount > 0 && (
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
                 className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full text-[10px] text-white flex items-center justify-center">
@@ -244,10 +244,10 @@ const PlayerControls = (props) => {
             variant="ghost"
             size="icon"
             onClick={onToggleBookmarkPanel}
-            className={cn("h-8 w-8 rounded-full hover:bg-gray-300",
-              bookmarkPanelOpen && "bg-yellow-200/60")}
+            className={cn("h-8 w-8 rounded-full hover:bg-white/20 text-white hover:text-white",
+              bookmarkPanelOpen && "bg-[hsl(var(--warning))]/30")}
           >
-            <BookmarkIcon className="h-5 w-5 text-black" />
+            <BookmarkIcon className="h-5 w-5" />
           </Button>
         )}
 
@@ -257,10 +257,10 @@ const PlayerControls = (props) => {
             variant="ghost"
             size="icon"
             onClick={onPictureInPicture}
-            className={cn("h-8 w-8 rounded-full hover:bg-gray-300",
-              isPiPActive && "bg-blue-200/60")}
+            className={cn("h-8 w-8 rounded-full hover:bg-white/20 text-white hover:text-white",
+              isPiPActive && "bg-[hsl(var(--primary))]/30")}
           >
-            <PictureInPicture2 className="h-5 w-5 text-black" />
+            <PictureInPicture2 className="h-5 w-5" />
           </Button>
         )}
 
@@ -270,10 +270,10 @@ const PlayerControls = (props) => {
             variant="ghost"
             size="icon"
             onClick={onToggleTheaterMode}
-            className={cn("h-8 w-8 rounded-full hover:bg-gray-300",
-              isTheaterMode && "bg-orange-200/60")}
+            className={cn("h-8 w-8 rounded-full hover:bg-white/20 text-white hover:text-white",
+              isTheaterMode && "bg-[hsl(var(--accent))]/30")}
           >
-            <Maximize className="h-5 w-5 text-black" />
+            <Maximize className="h-5 w-5" />
           </Button>
         )}
 
@@ -282,13 +282,13 @@ const PlayerControls = (props) => {
           variant="ghost"
           size="icon"
           onClick={onToggleFullscreen}
-          className={cn("h-8 w-8 rounded-full hover:bg-gray-300",
-            isFullscreen && "bg-green-200/60")}
+          className={cn("h-8 w-8 rounded-full hover:bg-white/20 text-white hover:text-white",
+            isFullscreen && "bg-[hsl(var(--success))]/30")}
         >
           {isFullscreen ? (
-            <Minimize className="h-5 w-5 text-black" />
+            <Minimize className="h-5 w-5" />
           ) : (
-            <Maximize className="h-5 w-5 text-black" />
+            <Maximize className="h-5 w-5" />
           )}
         </Button>
       </div>

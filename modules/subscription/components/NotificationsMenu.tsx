@@ -78,7 +78,7 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
     <DropdownMenu open={isOpen} onOpenChange={handleOpen}>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
+          variant="neutral"
           size="icon"
           className="relative rounded-full hover:bg-accent hover:text-accent-foreground transition-all duration-300"
         >
@@ -118,7 +118,7 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
         <DropdownMenuItem className="cursor-pointer flex flex-col items-start p-4 sm:p-3 min-h-[44px] hover:bg-accent rounded-lg transition-colors duration-200 touch-manipulation">
           <div className="flex w-full justify-between items-center">
             <span className="font-medium">Subscription Status</span>
-            <Badge variant="outline" className="ml-2">
+            <Badge variant="neutral" className="ml-2">
               {subscriptionPlan} ({subscriptionStatus})
             </Badge>          </div>
           <p className="text-xs text-muted-foreground mt-1">

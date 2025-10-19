@@ -35,12 +35,13 @@ export function FlashcardFront({
   
   return (
     <motion.div
-      className="w-full h-full flex items-center justify-center px-4"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.15, ease: 'easeOut' }}
+      className="w-full h-full flex items-center justify-center"
+      initial={{ opacity: 0, rotateY: 0 }}
+      animate={{ opacity: 1, rotateY: 0 }}
+      exit={{ opacity: 0, rotateY: -90 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
     >
-      <div className={`${styles.cardPrimary} w-full max-w-4xl p-8 lg:p-12`}>
+      <div className="w-full bg-card border-3 border-border rounded-2xl shadow-[4px_4px_0px_0px_hsl(var(--border))] p-4 sm:p-6 hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] transition-all duration-200">
         {/* Header with Icon Badge */}
         <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
           <div className="flex items-center gap-4">
@@ -83,7 +84,7 @@ export function FlashcardFront({
         <div className="space-y-6">
           <div className="text-center">
             <motion.h2
-              className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black leading-tight break-words"
+              className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground leading-tight break-words"
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.05, duration: 0.15 }}
@@ -93,7 +94,7 @@ export function FlashcardFront({
           </div>
 
           {type === 'code' && codeSnippet && (
-            <div className="border-3 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] overflow-hidden">
+            <div className="border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))] overflow-hidden">
               {/* Code Editor Header */}
               <div className="bg-gray-900 dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-b-3 border-border">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-600 dark:bg-emerald-500 text-white border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]">
@@ -126,22 +127,22 @@ export function FlashcardFront({
 
           {showHint && keywords.length > 0 && (
             <motion.div
-              className="bg-yellow-100 border-3 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] p-5"
+              className="bg-[hsl(var(--warning))]/10 dark:bg-[hsl(var(--warning))]/20 border-3 border-[hsl(var(--warning))]/40 dark:border-[hsl(var(--warning))]/30 shadow-[4px_4px_0px_0px_hsl(var(--border))] p-5"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               transition={{ duration: 0.15 }}
             >
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-yellow-300 border-2 border-black flex items-center justify-center">
-                  <Lightbulb className="w-4 h-4 text-black" />
+                <div className="w-8 h-8 bg-[hsl(var(--warning))]/20 dark:bg-[hsl(var(--warning))]/30 border-2 border-[hsl(var(--warning))]/40 dark:border-[hsl(var(--warning))]/30 flex items-center justify-center">
+                  <Lightbulb className="w-4 h-4 text-[hsl(var(--warning))]" />
                 </div>
-                <span className="text-sm font-bold text-black">Keywords</span>
+                <span className="text-sm font-bold text-foreground">Keywords</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {keywords.map((keyword, index) => (
                   <span
                     key={index}
-                    className="px-3 py-1.5 bg-white border-2 border-black text-xs font-bold text-black"
+                    className="px-3 py-1.5 bg-card border-2 border-border text-xs font-bold text-foreground"
                   >
                     {keyword}
                   </span>
@@ -152,7 +153,7 @@ export function FlashcardFront({
         </div>
 
         {/* Footer with Flip Button */}
-        <div className="mt-10 pt-6 border-t-3 border-black flex flex-col items-center space-y-4">
+        <div className="mt-10 pt-6 border-t-3 border-border flex flex-col items-center space-y-4">
           <button
             onClick={onFlip}
             className={`${styles.buttonPrimary} w-full sm:w-auto min-w-[240px] px-8 py-4 text-base`}
@@ -162,9 +163,9 @@ export function FlashcardFront({
             Show Answer
           </button>
           
-          <p className="text-xs font-medium text-black/60 flex items-center gap-2 select-none">
+          <p className="text-xs font-medium text-muted-foreground flex items-center gap-2 select-none">
             <Sparkles className="w-3 h-3" />
-            Tap or press <kbd className="px-2 py-1 text-xs font-bold bg-white border-2 border-black">Space</kbd> to flip
+            Tap or press <kbd className="px-2 py-1 text-xs font-bold bg-card border-2 border-border">Space</kbd> to flip
           </p>
         </div>
       </div>

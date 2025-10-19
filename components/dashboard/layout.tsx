@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useEffect } from "react"
+import { useEffect, Suspense } from "react"
 import { Provider } from "react-redux"
 import { ThemeProvider } from "next-themes"
 import store from "@/store"
@@ -12,6 +12,7 @@ import CourseAIState from "@/components/development/CourseAIState"
 import { MainNavbar } from "@/components/layout/navigation/MainNavbar"
 import { CreditGuidanceBanner } from "@/components/shared/CreditGuidanceBanner"
 import { cn } from "@/lib/utils"
+import { SuspenseGlobalFallback } from "@/components/loaders"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -103,7 +104,9 @@ export function DashboardLayout({
             <CreditGuidanceBanner />
             
             <ReduxErrorBoundary>
-              {children}
+              <Suspense fallback={<SuspenseGlobalFallback text="Loading page..." />}>
+                {children}
+              </Suspense>
             </ReduxErrorBoundary>
           </main>
 

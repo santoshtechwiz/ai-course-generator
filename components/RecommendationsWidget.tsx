@@ -8,7 +8,7 @@ import { BookOpen, Brain, RefreshCw, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import { useSmartRecommendations } from "@/hooks/useRecommendations"
 import { EnhancedErrorBoundary } from "@/components/error-boundary"
-import { Loader } from "@/components/loader"
+import { UnifiedLoader } from "@/components/loaders"
 
 interface Recommendation {
   type: "course" | "quiz"
@@ -40,7 +40,13 @@ function RecommendationsWidget() {
           <CardTitle className="text-lg">Recommended for You</CardTitle>
         </CardHeader>
         <CardContent>
-          <Loader message="Generating personalized recommendations..." />
+          <UnifiedLoader
+            state="loading"
+            variant="spinner"
+            size="md"
+            message="Generating personalized recommendations..."
+            className="py-8"
+          />
         </CardContent>
       </Card>
     )

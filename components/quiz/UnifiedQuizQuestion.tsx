@@ -100,35 +100,35 @@ const MCQOption = memo(({
   const styles = getColorClasses(quizType) // Dynamic color based on quiz type
   const isDisabled = isAnswering || isSubmitting
 
-  // Color mappings for different quiz types
+  // Color mappings for different quiz types using theme colors
   const colorMap = {
     mcq: { 
-      base: '#3B82F6',      // Blue
-      light: 'bg-blue-50', 
-      hover: 'hover:bg-blue-100',
-      text: 'text-blue-600',
-      bg: 'bg-blue-500'
+      base: 'hsl(var(--primary))',
+      light: 'bg-[hsl(var(--primary))]/10 dark:bg-[hsl(var(--primary))]/20', 
+      hover: 'hover:bg-[hsl(var(--primary))]/20 dark:hover:bg-[hsl(var(--primary))]/30',
+      text: 'text-[hsl(var(--primary))]',
+      bg: 'bg-[hsl(var(--primary))]'
     },
     code: { 
-      base: '#10B981',      // Green
-      light: 'bg-green-50', 
-      hover: 'hover:bg-green-100',
-      text: 'text-green-600',
-      bg: 'bg-green-500'
+      base: 'hsl(var(--success))',
+      light: 'bg-[hsl(var(--success))]/10 dark:bg-[hsl(var(--success))]/20', 
+      hover: 'hover:bg-[hsl(var(--success))]/20 dark:hover:bg-[hsl(var(--success))]/30',
+      text: 'text-[hsl(var(--success))]',
+      bg: 'bg-[hsl(var(--success))]'
     },
     blanks: { 
-      base: '#F59E0B',      // Amber
-      light: 'bg-amber-50', 
-      hover: 'hover:bg-amber-100',
-      text: 'text-amber-600',
-      bg: 'bg-amber-500'
+      base: 'hsl(var(--warning))',
+      light: 'bg-[hsl(var(--warning))]/10 dark:bg-[hsl(var(--warning))]/20', 
+      hover: 'hover:bg-[hsl(var(--warning))]/20 dark:hover:bg-[hsl(var(--warning))]/30',
+      text: 'text-[hsl(var(--warning))]',
+      bg: 'bg-[hsl(var(--warning))]'
     },
     openended: { 
-      base: '#A855F7',      // Purple
-      light: 'bg-purple-50', 
-      hover: 'hover:bg-purple-100',
-      text: 'text-purple-600',
-      bg: 'bg-purple-500'
+      base: 'hsl(var(--accent))',
+      light: 'bg-[hsl(var(--accent))]/10 dark:bg-[hsl(var(--accent))]/20', 
+      hover: 'hover:bg-[hsl(var(--accent))]/20 dark:hover:bg-[hsl(var(--accent))]/30',
+      text: 'text-[hsl(var(--accent))]',
+      bg: 'bg-[hsl(var(--accent))]'
     },
   }
 
@@ -547,11 +547,11 @@ function UnifiedQuizQuestionComponent({
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className={cn(
-                  "p-2 bg-green-500 border-2 border-black rounded-md shadow-[2px_2px_0px_0px_#000000]"
+                  "p-2 bg-green-500 border-2 border-border rounded-md shadow-[2px_2px_0px_0px_hsl(var(--border))]"
                 )}>
                   <BookOpen className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-base font-bold text-black uppercase">Code Snippet</span>
+                <span className="text-base font-bold text-foreground uppercase">Code Snippet</span>
               </div>
               
               {/* Language badge */}
@@ -564,7 +564,7 @@ function UnifiedQuizQuestionComponent({
             </div>
             
             {/* Code editor with Neobrutalism border */}
-            <div className="rounded-lg overflow-hidden border-3 border-black shadow-[4px_4px_0px_0px_#000000]">
+            <div className="rounded-lg overflow-hidden border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]">
               <SyntaxHighlighter
                 language={codeQuestion.language || 'javascript'}
                 style={atomOneDark}
@@ -585,7 +585,7 @@ function UnifiedQuizQuestionComponent({
 
         {codeQuestion.options && codeQuestion.options.length > 0 && (
           <div className="space-y-4">
-            <h3 className="text-xl font-black text-center text-black uppercase">
+            <h3 className="text-xl font-black text-center text-foreground uppercase">
               Select the correct option:
             </h3>
             {renderMCQContent()}

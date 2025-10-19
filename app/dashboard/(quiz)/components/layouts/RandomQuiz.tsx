@@ -215,9 +215,9 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
       className="w-full"
     >
       <Card className={cn(
-        "border-3 transition-all duration-200 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]",
+        "border transition-all duration-200",
         isActive
-          ? `${difficultyColors.bg} ${difficultyColors.border} border-3`
+          ? `${difficultyColors.bg} ${difficultyColors.border} border-2`
           : "bg-card border-border hover:border-accent/50"
       )}>
         <CardContent className="p-4">
@@ -225,13 +225,13 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className={cn(
-                "p-2 rounded-lg flex-shrink-0 border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]",
+                "p-2 rounded-lg flex-shrink-0",
                 difficultyColors.accent, "text-white"
               )}>
                 <QuizIcon type={quiz.quizType} className="w-4 h-4" />
               </div>
               <div className="min-w-0 flex-1">
-                <Badge variant="outline" className="mb-1 text-xs font-bold border-2">
+                <Badge variant="outline" className="mb-1 text-xs font-bold">
                   {quiz.quizType.toUpperCase()}
                 </Badge>
                 <h3 className="font-black text-sm leading-tight text-foreground line-clamp-2">
@@ -263,8 +263,8 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
             <Button
               size="sm"
               className={cn(
-                "w-full font-black text-white border-2 border-border h-9 shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:shadow-[4px_4px_0px_0px_hsl(var(--border))] transition-all",
-                difficultyColors.accent, "hover:opacity-90"
+                "w-full font-black text-white h-9 hover:opacity-90 transition-all",
+                difficultyColors.accent
               )}
             >
               Start Quiz
@@ -278,7 +278,7 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
 QuizCard.displayName = "QuizCard"
 
 const LoadingCard = memo(() => (
-  <Card className="border-2 border-gray-200 dark:border-gray-700">
+  <Card className="border border-gray-200 dark:border-gray-700">
     <CardContent className="p-6">
       <div className="flex items-center gap-3 mb-4">
         <Skeleton className="w-12 h-12 rounded-2xl" />
@@ -315,10 +315,10 @@ const EmptyState = memo(() => (
     animate={{ opacity: 1, scale: 1 }}
     transition={{ duration: 0.5 }}
   >
-    <Card className="border-3 border-dashed border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]">
+    <Card className="border border-dashed border-border">
       <CardContent className="p-12 text-center">
         <motion.div 
-          className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary/10 border-3 border-primary/20 flex items-center justify-center shadow-[4px_4px_0px_0px_hsl(var(--primary)/0.2)]"
+          className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center"
           animate={{ rotate: [0, 10, -10, 0] }}
           transition={{ duration: 4, repeat: Infinity }}
         >
@@ -332,7 +332,7 @@ const EmptyState = memo(() => (
           We're fetching fresh quiz recommendations for you. Check back in a moment!
         </p>
         
-        <Button variant="outline" asChild className="hover:shadow-[4px_4px_0px_0px_hsl(var(--border))] transition-all duration-300 border-2 font-bold">
+        <Button variant="outline" asChild className="hover:opacity-90 transition-all duration-300 font-bold">
           <Link href="/dashboard/quizzes" className="flex items-center gap-2">
             <BookOpen className="w-4 h-4" />
             Browse All Quizzes
@@ -350,10 +350,10 @@ const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
     animate={{ opacity: 1, scale: 1 }}
     transition={{ duration: 0.5 }}
   >
-    <Card className="border-3 border-destructive/20 bg-destructive/5 shadow-[4px_4px_0px_0px_hsl(var(--destructive)/0.2)]">
+    <Card className="border border-destructive/20 bg-destructive/5">
       <CardContent className="p-12 text-center">
         <motion.div 
-          className="w-20 h-20 mx-auto mb-6 rounded-full bg-destructive/10 dark:bg-destructive/20 border-3 border-destructive/20 flex items-center justify-center shadow-[4px_4px_0px_0px_hsl(var(--destructive)/0.2)]"
+          className="w-20 h-20 mx-auto mb-6 rounded-full bg-destructive/10 dark:bg-destructive/20 border border-destructive/20 flex items-center justify-center"
           animate={{ x: [0, -6, 6, 0] }}
           transition={{ duration: 0.5, repeat: 3 }}
         >
@@ -369,7 +369,7 @@ const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
         
         <Button 
           onClick={onRetry} 
-          className="bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-[4px_4px_0px_0px_hsl(var(--destructive)/0.3)] hover:shadow-[6px_6px_0px_0px_hsl(var(--destructive)/0.3)] transition-all duration-300 border-2 border-border font-black"
+          className="bg-destructive hover:bg-destructive/90 text-destructive-foreground hover:opacity-90 transition-all duration-300 font-black"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
           Try Again
@@ -526,15 +526,15 @@ export const RandomQuiz = memo(({
 
   return (
     <motion.div
-      className={cn("w-full border-3 border-border rounded-lg bg-card/50 shadow-[4px_4px_0px_0px_hsl(var(--border))]", className)}
+      className={cn("w-full border border-border rounded-lg bg-card", className)}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
       {/* Simplified Header with Collapse Toggle */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="flex items-center justify-between p-4 border-b border-border/50">
         <div className="flex items-center gap-3">
-          <div className="p-1.5 rounded-md bg-accent/10 border-2 border-accent/20 shadow-[2px_2px_0px_0px_hsl(var(--accent)/0.2)]">
+          <div className="p-1.5 rounded-md bg-accent/10">
             <Zap className="w-4 h-4 text-accent" />
           </div>
           <div>

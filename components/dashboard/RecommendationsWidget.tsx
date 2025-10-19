@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, BookOpen, Brain, AlertCircle } from 'lucide-react'
-import { Loader } from '@/components/loader'
+import { UnifiedLoader } from '@/components/loaders'
 
 interface Recommendation {
   id: string
@@ -46,7 +46,13 @@ export function RecommendationsWidget() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Loader message="Analyzing your learning patterns..." />
+          <UnifiedLoader
+            state="loading"
+            variant="spinner"
+            size="md"
+            message="Analyzing your learning patterns..."
+            className="py-8"
+          />
         </CardContent>
       </Card>
     )

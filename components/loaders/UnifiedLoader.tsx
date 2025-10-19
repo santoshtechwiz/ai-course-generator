@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { CheckCircle, AlertCircle, Brain, Loader } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { progressApi } from "./progress-api"
 
 export type LoaderVariant = "spinner" | "dots" | "progress" | "skeleton" | "pulse"
 export type LoaderSize = "xs" | "sm" | "md" | "lg" | "xl"
@@ -74,6 +75,22 @@ export function UnifiedLoader({
 
     if (state === "loading") setVisible(true)
   }, [autoHide, autoHideDelay, state])
+
+  // Integrate with progress bar for better UX
+  useEffect(() => {
+    if (state === "loading" && !inline) {
+      progressApi.start()
+    } else if (state === "success" || state === "error" || state === "idle") {
+      progressApi.done()
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (progressApi.isStarted()) {
+        progressApi.done()
+      }
+    }
+  }, [state, inline])
 
   // Consistent size mapping with predictable dimensions
   const sizeMap: Record<LoaderSize, { container: string; icon: string; text: string }> = {

@@ -1,7 +1,6 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from "react"
 import Image from 'next/image'
 import { CheckCircle, Clock, Play, Lock, Video, VideoOff, ChevronDown, ChevronRight, Trophy, Target, BookOpen, Zap, Star, Loader2 } from "lucide-react"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -409,7 +408,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
         </motion.div>
 
         {/* Chapter List */}
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
           <motion.div 
             variants={containerVariants}
             initial="hidden"
@@ -835,7 +834,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
               );
             })}
           </motion.div>
-        </ScrollArea>
+        </div>
 
         {/* Achievement Section */}
         {overallProgress > 0 && (
