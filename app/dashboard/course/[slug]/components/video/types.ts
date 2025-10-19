@@ -94,7 +94,9 @@ export interface VideoPlayerProps {
   hasPrevVideo?: boolean
   isFullscreen?: boolean
   onFullscreenToggle?: () => void
-  onPictureInPictureToggle?: (iPiPActive: boolean) => void
+  onPictureInPictureToggle?: (iPiPActive: boolean, currentTime?: number) => void
+  isPiPActive?: boolean
+  isCustomPiPActive?: boolean
   onTheaterModeToggle?: (isTheater: boolean) => void
   isTheaterMode?: boolean
   isLoading?: boolean

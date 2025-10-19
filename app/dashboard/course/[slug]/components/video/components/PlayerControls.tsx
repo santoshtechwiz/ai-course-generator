@@ -100,7 +100,7 @@ const PlayerControls = (props) => {
   return (
     <div
       className={cn(
-        "absolute bottom-0 left-0 right-0 z-30 transition-opacity duration-300",
+        "absolute bottom-2 left-0 right-0 z-50 transition-opacity duration-300",
         !show && "opacity-0 pointer-events-none"
       )}
       onClick={(e) => e.stopPropagation()}
@@ -108,7 +108,7 @@ const PlayerControls = (props) => {
       {/* progress bar (red) */}
       <div
         ref={progressBarRef}
-        className="relative h-1 bg-gray-400/60 rounded-full cursor-pointer mx-4 mb-2 group"
+        className="relative h-2 bg-black/40 rounded-full cursor-pointer mx-4 mb-3 group border border-white/10"
         onClick={handleSeek}
         onMouseMove={handleProgressHover}
         onMouseDown={handleMouseDown}
@@ -131,7 +131,7 @@ const PlayerControls = (props) => {
       </div>
 
       {/* unified control bar */}
-      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-4 py-3 bg-black/80 rounded-full shadow-lg backdrop-blur-md mx-auto w-fit border-2 border-white/20">
+      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-4 py-3 bg-black/90 rounded-full shadow-lg backdrop-blur-md mx-auto w-fit border-2 border-white/30">
         {/* Play / Pause */}
         <Button variant="ghost" size="icon"
           onClick={onPlayPause}
@@ -141,17 +141,17 @@ const PlayerControls = (props) => {
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="h-4 w-4 border-2 border-black border-t-transparent rounded-full"
+              className="h-4 w-4 border-2 border-white border-t-transparent rounded-full"
             />
           ) : playing ? (
-            <Pause className="h-5 w-5 text-black" />
+            <Pause className="h-5 w-5" />
           ) : (
-            <Play className="h-5 w-5 text-black" />
+            <Play className="h-5 w-5" />
           )}
         </Button>
 
         {/* Rewind */}
-        <Button variant="ghost" size="icon"
+        <Button variant="neutral" size="icon"
           onClick={() => onSeekChange(Math.max(0, duration * played - 10))}
           className="h-8 w-8 rounded-full hover:bg-white/20 text-white hover:text-white"
         >
@@ -187,6 +187,30 @@ const PlayerControls = (props) => {
         >
           {React.createElement(getVolumeIcon, { className: "h-5 w-5" })}
         </Button>
+
+        {/* Auto-play video toggle */}
+        {onToggleAutoPlayVideo && (
+          <div className="hidden lg:flex items-center mr-3 px-2 py-1 rounded-md bg-white/10">
+            <span className="text-xs text-white mr-2">Auto-play</span>
+            <SimpleSwitch
+              checked={autoPlayVideo}
+              onCheckedChange={onToggleAutoPlayVideo}
+              aria-label="Toggle auto-play video on page load"
+            />
+          </div>
+        )}
+
+        {/* Enhanced Autoplay next toggle */}
+        {hasNextVideo && onToggleAutoPlayNext && (
+          <div className="hidden lg:flex items-center mr-3 px-2 py-1 rounded-md bg-white/10">
+            <span className="text-xs text-white mr-2">Auto-next</span>
+            <SimpleSwitch
+              checked={autoPlayNext}
+              onCheckedChange={onToggleAutoPlayNext}
+              aria-label="Toggle autoplay next video"
+            />
+          </div>
+        )}
 
         {/* Time */}
         <div className="text-xs sm:text-sm text-white font-medium tabular-nums min-w-[70px] text-center">

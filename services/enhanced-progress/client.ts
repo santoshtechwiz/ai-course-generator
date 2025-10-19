@@ -68,26 +68,69 @@ class ClientProgressQueue {
     const events = this.coalesceEvents([...this.queue])
     this.queue = []
 
+    console.log(`Flushing ${events.length} events:`, events)
+
+    if (events.length === 0) {
+      console.warn('No events to flush after coalescing')
+      this.isProcessing = false
+      return
+    }
+
+    // Validate events before sending
+    const validEvents = events.filter(event => {
+      const isValid = event.userId && event.courseId && event.chapterId && event.eventType
+      if (!isValid) {
+        console.error('Invalid event found:', event)
+      }
+      return isValid
+    })
+
+    if (validEvents.length === 0) {
+      console.warn('No valid events to flush after validation')
+      this.isProcessing = false
+      return
+    }
+
+    console.log(`Sending ${validEvents.length} valid events`)
+
     try {
+      const requestBody = { events: validEvents }
+      let jsonString: string
+      try {
+        jsonString = JSON.stringify(requestBody)
+        console.log('Sending request body:', jsonString)
+      } catch (stringifyError) {
+        console.error('JSON stringify error:', stringifyError, 'Request body:', requestBody)
+        this.isProcessing = false
+        return
+      }
+
+      // Additional validation
+      if (!jsonString || jsonString === '{}' || jsonString === '{"events":[]}') {
+        console.error('Invalid JSON string generated:', jsonString)
+        this.isProcessing = false
+        return
+      }
+
       const response = await fetch('/api/progress/enhanced-update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ events }),
+        body: jsonString,
       })
 
       if (response.ok) {
-        console.log(`Successfully flushed ${events.length} progress events`)
+        console.log(`Successfully flushed ${validEvents.length} progress events`)
       } else {
         console.error('Failed to flush progress events:', await response.text())
         // Re-queue events on failure
-        this.queue.unshift(...events)
+        this.queue.unshift(...validEvents)
       }
     } catch (error) {
       console.error('Error flushing progress events:', error)
       // Re-queue events on error
-      this.queue.unshift(...events)
+      this.queue.unshift(...validEvents)
     } finally {
       this.isProcessing = false
     }

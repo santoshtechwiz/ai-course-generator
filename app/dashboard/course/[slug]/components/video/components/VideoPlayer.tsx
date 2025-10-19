@@ -96,6 +96,8 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
   hasNextVideo,
   isFullscreen = false,
   onPictureInPictureToggle,
+  isPiPActive = false,
+  isCustomPiPActive = false,
   className,
   bookmarks = [],
   isAuthenticated = false,
@@ -358,16 +360,11 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
       return videoService.getVideoElement(containerRef)
     }, [containerRef])
 
-    // Enhanced PIP handling using video service
+    // Enhanced PIP handling - toggle custom PiP mode
     const handlePictureInPicture = useCallback(async () => {
-      await videoService.handlePictureInPictureToggle(
-        containerRef,
-        playerState.isMiniPlayerActive,
-        playerState.isNativePiPActive,
-        handlers.handlePictureInPictureToggle,
-        onPictureInPictureToggle
-      )
-    }, [containerRef, playerState.isMiniPlayerActive, playerState.isNativePiPActive, handlers.handlePictureInPictureToggle, onPictureInPictureToggle])
+      // Toggle custom PiP mode by calling the parent callback with current time
+      onPictureInPictureToggle?.(true, state.lastPlayedTime)
+    }, [onPictureInPictureToggle, state.lastPlayedTime])
 
     // Format time helper using video service
     const formatTime = useCallback((seconds: number): string => {
@@ -477,7 +474,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
             if (!playerState.isHovering) {
               setPlayerState(prev => ({ ...prev, showControlsState: false }))
             }
-          }, 3000)
+          }, 8000) // Increased from 3000 to 8000 milliseconds
         }
       }
 
@@ -993,6 +990,55 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
     // Determine if main player should be completely hidden
     const shouldHideMainPlayer = shouldShowMiniPlayer || playerState.isNativePiPActive
 
+    // If this is a custom PiP instance, render only the video content
+    if (isCustomPiPActive) {
+      return (
+        <div className="w-full h-full bg-black">
+          <ReactPlayer
+            ref={playerRef}
+            url={youtubeUrl}
+            width="100%"
+            height="100%"
+            playing={state.playing && playerState.canPlayVideo}
+            volume={state.volume}
+            muted={state.muted}
+            playbackRate={state.playbackRate}
+            onProgress={handleProgress}
+            onPlay={handlers.onPlay}
+            onPause={handlers.onPause}
+            onBuffer={handlers.onBuffer}
+            onBufferEnd={handlers.onBufferEnd}
+            onError={handlers.onError}
+            onEnded={handleVideoEnd}
+            onReady={handlePlayerReady}
+            onDuration={onDurationHandler}
+            config={{
+              youtube: {
+                playerVars: {
+                  autoplay: 0,
+                  modestbranding: 1,
+                  rel: 0,
+                  showinfo: 0,
+                  iv_load_policy: 3,
+                  fs: 0,
+                  controls: 0,
+                  disablekb: 0,
+                  playsinline: 1,
+                  enablejsapi: 1,
+                  origin: typeof window !== "undefined" ? window.location.origin : "",
+                  widget_referrer: typeof window !== "undefined" ? window.location.origin : "",
+                },
+              },
+              attributes: {
+                allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
+                allowFullScreen: false,
+              },
+            } as any}
+          />
+        </div>
+      )
+    }
+
     return (
       <div
         ref={containerRef as any}
@@ -1238,11 +1284,6 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
           <div
             className={cn(
               "absolute bottom-0 left-0 right-0 z-40 transition-all duration-200",
-              !playerState.showControlsState &&
-              !playerState.isHovering &&
-              state.playing &&
-              !overlayState.showChapterStart &&
-              !overlayState.showChapterEnd && "opacity-50",
             )}
             style={{
               pointerEvents: "auto",
@@ -1281,7 +1322,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
               onToggleAutoPlayVideo={handleToggleAutoPlayVideo}
               onPictureInPicture={handlePictureInPicture}
               isPiPSupported={state.isPiPSupported}
-              isPiPActive={shouldHideMainPlayer}
+              isPiPActive={isPiPActive}
               isTheaterMode={isTheaterMode}
               onToggleTheaterMode={handleTheaterModeToggle}
               notesCount={chapterNotes.length}

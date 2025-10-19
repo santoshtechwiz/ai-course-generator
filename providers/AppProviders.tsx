@@ -10,6 +10,7 @@ import { SubscriptionProvider } from '@/modules/subscription'
 import { AnimationProvider } from './animation-provider'
 import { ClientGuestProvider } from '@/components/guest/ClientGuestProvider'
 import { storage, migrateStorageData, performStorageCleanup, validateStorageMigration } from '@/lib/storage'
+import PiPProvider from '@/app/components/PiPProvider'
 
 interface AppProvidersProps {
   children: ReactNode
@@ -144,8 +145,10 @@ export function AppProviders({ children, session }: AppProvidersProps) {
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
               <AnimationProvider>
                 <ClientGuestProvider>
-                  {children}
-                  <Toaster />
+                  <PiPProvider>
+                    {children}
+                    <Toaster />
+                  </PiPProvider>
                 </ClientGuestProvider>
               </AnimationProvider>
             </ThemeProvider>

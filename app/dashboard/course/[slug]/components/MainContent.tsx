@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { selectCourseProgressById } from "@/store/slices/courseProgress-slice"
 import { markChapterCompleted } from "@/store/slices/courseProgress-slice"
+import { setPiPActive, setPiPVideoData } from "@/store/slices/course-slice"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { 
@@ -48,10 +49,11 @@ import { GuestProgressIndicator, ContextualSignInPrompt } from "@/components/gue
 import { useSession } from "next-auth/react"
 
 // Import components
+import DraggablePiPPlayer from "./video/components/DraggablePiPPlayer"
+import VideoPlayer from "./video/components/VideoPlayer"
 import CertificateModal from "./CertificateModal"
 import PlaylistSidebar from "./PlaylistSidebar"
 import MobilePlaylistOverlay from "./MobilePlaylistOverlay"
-import VideoPlayer from "./video/components/VideoPlayer"
 import { storageManager } from "@/utils/storage-manager"
 import { useBookmarks } from "@/hooks/use-bookmarks"
 
@@ -68,7 +70,6 @@ interface ComponentState {
   isVideoLoading: boolean
   hasPlayedFreeVideo: boolean
   showAuthPrompt: boolean
-  isPiPActive: boolean
   mobilePlaylistOpen: boolean
   autoplayMode: boolean
   headerCompact: boolean
@@ -83,7 +84,6 @@ type ComponentAction =
   | { type: 'SET_VIDEO_LOADING'; payload: boolean }
   | { type: 'SET_FREE_VIDEO_PLAYED'; payload: boolean }
   | { type: 'SET_AUTH_PROMPT'; payload: boolean }
-  | { type: 'SET_PIP_ACTIVE'; payload: boolean }
   | { type: 'SET_MOBILE_PLAYLIST_OPEN'; payload: boolean }
   | { type: 'SET_AUTOPLAY_MODE'; payload: boolean }
   | { type: 'SET_HEADER_COMPACT'; payload: boolean }
@@ -97,7 +97,6 @@ const initialState: ComponentState = {
   isVideoLoading: true,
   hasPlayedFreeVideo: false,
   showAuthPrompt: false,
-  isPiPActive: false,
   mobilePlaylistOpen: false,
   autoplayMode: false,
   headerCompact: false,
@@ -118,8 +117,6 @@ function stateReducer(state: ComponentState, action: ComponentAction): Component
       return { ...state, hasPlayedFreeVideo: action.payload }
     case 'SET_AUTH_PROMPT':
       return { ...state, showAuthPrompt: action.payload }
-    case 'SET_PIP_ACTIVE':
-      return { ...state, isPiPActive: action.payload }
     case 'SET_MOBILE_PLAYLIST_OPEN':
       return { ...state, mobilePlaylistOpen: action.payload }
     case 'SET_AUTOPLAY_MODE':
@@ -170,6 +167,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const { user } = useAuth()
   const { status } = useSession()
   const { buttonPrimary, buttonSecondary, buttonIcon, cardPrimary, cardSecondary, badgeType, badgeStatus } = getColorClasses()
+
+  // Global PiP state
+  const { isPiPActive } = useAppSelector((state) => state.course)
 
   // Guest system hooks
   const {
@@ -709,15 +709,32 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     console.log(`Chapter completed: ${chapterId}`)
   }, [])
 
-  const handlePIPToggle = useCallback((isPiPActive: boolean) => {
-    dispatch2({ type: 'SET_PIP_ACTIVE', payload: isPiPActive })
-    if (isPiPActive) {
+  const handlePIPToggle = useCallback((activatePiP?: boolean, currentTime?: number) => {
+    const shouldActivate = activatePiP ?? false
+
+    dispatch(setPiPActive(shouldActivate))
+    if (shouldActivate) {
+      // Get current video time from parameter or fallback to video state store
+      const videoTime = currentTime || videoStateStore.getState().videoProgress[currentVideoId || '']?.playedSeconds || 0
+
+      // Set PiP video data with current playback time
+      dispatch(setPiPVideoData({
+        youtubeVideoId: currentVideoId || '',
+        chapterId: currentChapter?.id?.toString(),
+        courseId: course.id,
+        courseName: course.title,
+        chapterTitle: currentChapter?.title || '',
+        currentTime: videoTime
+      }))
       toast({
         title: "Picture-in-Picture",
         description: "Video is now playing in a separate window."
       })
+    } else {
+      // Clear PiP video data
+      dispatch(setPiPVideoData(undefined))
     }
-  }, [toast])
+  }, [currentVideoId, currentChapter, course.id, course.title, videoStateStore])
 
   const handleTheaterModeToggle = useCallback((newTheaterMode: boolean) => {
     dispatch2({ type: 'SET_THEATER_MODE', payload: newTheaterMode })
@@ -1247,7 +1264,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                 transition={{ duration: 0.2, ease: "easeOut" }}
                 className="relative"
               >
-                {state.isPiPActive ? (
+                {isPiPActive ? (
                   <Card className={cn(cardSecondary, "overflow-hidden")}>
                     <div className={cn(
                       "bg-muted flex items-center justify-center transition-all duration-300",
@@ -1288,6 +1305,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                         onVideoLoad={handleVideoLoad}
                         onPlayerReady={handlePlayerReady}
                         onPictureInPictureToggle={handlePIPToggle}
+                        isPiPActive={isPiPActive}
                         onTheaterModeToggle={handleTheaterModeToggle}
                         isTheaterMode={state.isTheaterMode}
                         isLoading={state.isVideoLoading}
@@ -1442,7 +1460,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                           videoDurations={videoDurations}
                           courseStats={courseStats}
                           onChapterSelect={handleChapterSelect}
-                          isPiPActive={state.isPiPActive}
+                          isPiPActive={isPiPActive}
                         />
                       )}
                     </CardContent>

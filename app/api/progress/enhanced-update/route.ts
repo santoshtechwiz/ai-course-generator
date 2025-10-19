@@ -39,7 +39,47 @@ export async function DELETE() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: ProgressUpdateRequest = await request.json()
+    // Debug: Log request details
+    const contentType = request.headers.get('content-type')
+    const contentLength = request.headers.get('content-length')
+    console.log('Enhanced progress update request:', {
+      contentType,
+      contentLength,
+      method: request.method,
+      url: request.url
+    })
+
+    // Try to get the raw body first
+    let rawBody: string
+    try {
+      rawBody = await request.text()
+      console.log('Raw request body:', rawBody)
+    } catch (textError) {
+      console.error('Failed to read request as text:', textError)
+      return NextResponse.json(
+        { error: 'Failed to read request body' },
+        { status: 400 }
+      )
+    }
+
+    if (!rawBody || rawBody.trim() === '') {
+      console.error('Empty request body received')
+      return NextResponse.json(
+        { error: 'Empty request body' },
+        { status: 400 }
+      )
+    }
+
+    let body: ProgressUpdateRequest
+    try {
+      body = JSON.parse(rawBody)
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError, 'Raw body:', rawBody)
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body', details: parseError.message },
+        { status: 400 }
+      )
+    }
     
     if (!body.events || !Array.isArray(body.events)) {
       return NextResponse.json(

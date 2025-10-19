@@ -75,6 +75,16 @@ export interface CourseState {
   analytics?: {
     events: any[]
   }
+  // PiP state
+  isPiPActive: boolean
+  pipVideoData?: {
+    youtubeVideoId: string
+    chapterId?: string
+    courseId?: string | number
+    courseName?: string
+    chapterTitle?: string
+    currentTime?: number // Current playback time in seconds
+  }
 }
 
 // Initial state with strong typing
@@ -102,7 +112,10 @@ const initialState: CourseState = {
   nextVideoId: null,
   prevVideoId: null,
   isLoading: true,
-  certificateStatus: { generated: false }
+  certificateStatus: { generated: false },
+  // PiP state
+  isPiPActive: false,
+  pipVideoData: undefined
 }
 
 // --- Optimized slice with improved type safety ---
@@ -466,6 +479,20 @@ const courseSlice = createSlice({
       // Also update the global settings for backwards compatibility
       state.playbackSettings = action.payload;
     },
+    // PiP actions
+    setPiPActive(state, action: PayloadAction<boolean>) {
+      state.isPiPActive = action.payload;
+    },
+    setPiPVideoData(state, action: PayloadAction<{
+      youtubeVideoId: string;
+      chapterId?: string;
+      courseId?: string | number;
+      courseName?: string;
+      chapterTitle?: string;
+      currentTime?: number;
+    } | undefined>) {
+      state.pipVideoData = action.payload;
+    },
     // Add a reset state action
     resetState: () => {
       return initialState
@@ -541,6 +568,9 @@ export const {
   setUserPreferences,
   trackAnalytics,
   optimizeState,
+  // PiP actions
+  setPiPActive,
+  setPiPVideoData,
   // New exports:
   updateUserProgress,
   setUserPlaybackSettings,
