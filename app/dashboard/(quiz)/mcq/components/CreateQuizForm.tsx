@@ -295,14 +295,14 @@ export default function CreateQuizForm({
           transition={{ delay: 0.1 }}
         >
           <div className="flex items-center gap-2">
-            <Label htmlFor="title" className="text-base md:text-lg font-semibold text-slate-900 dark:text-slate-100">
+            <Label htmlFor="title" className="text-base md:text-lg font-semibold text-foreground">
               Topic
             </Label>
             <span className="text-rose-500">*</span>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <HelpCircle className="w-4 h-4 text-slate-400 cursor-help flex-shrink-0" />
+                  <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help flex-shrink-0" />
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-xs text-xs md:text-sm">
                   <p>Enter any topic you'd like to be quizzed on. Use multiple words like "calculus derivatives" or "world history renaissance"</p>
@@ -329,7 +329,7 @@ export default function CreateQuizForm({
               </p>
             )}
 
-            <p className="text-sm text-slate-600 dark:text-slate-400" id="topic-description">
+            <p className="text-sm text-muted-foreground" id="topic-description">
               Be specific for more focused questions. Multi-word topics work great!
             </p>
           </div>
@@ -342,12 +342,12 @@ export default function CreateQuizForm({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Label className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <Label className="text-lg font-semibold text-foreground flex items-center gap-2">
             Number of Questions
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <HelpCircle className="w-4 h-4 text-slate-400 cursor-help" />
+                  <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-xs">
                   <p>Select how many questions you want in your quiz</p>
@@ -358,7 +358,7 @@ export default function CreateQuizForm({
 
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <Timer className="w-6 h-6 text-slate-400" />
+              <Timer className="w-6 h-6 text-muted-foreground" />
               <motion.span
                 className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums"
                 key={amount}
@@ -382,14 +382,14 @@ export default function CreateQuizForm({
               )}
             />
 
-            <p className="text-sm text-slate-600 dark:text-slate-400 text-center">
+            <p className="text-sm text-muted-foreground text-center">
               Select between 1 and {maxQuestions} questions
             </p>
           </div>
 
           {errors.amount && <p className="text-sm text-red-600 dark:text-red-400">{errors.amount.message}</p>}
 
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p className="text-sm text-muted-foreground">
             {isLoggedIn ? "Unlimited quizzes available" : `This quiz will use ${amount} credit${amount > 1 ? "s" : ""}`}
           </p>
         </motion.div>
@@ -401,13 +401,13 @@ export default function CreateQuizForm({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Label className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <Label className="text-lg font-semibold text-foreground flex items-center gap-2">
             Difficulty
             <span className="text-rose-500">*</span>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <HelpCircle className="w-4 h-4 text-slate-400 cursor-help" />
+                  <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-xs">
                   <p>Choose how challenging the questions should be</p>
@@ -449,12 +449,12 @@ export default function CreateQuizForm({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2 text-slate-900 dark:text-slate-100">
+          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2 text-foreground">
             <Sparkles className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             Available Credits
           </h3>
           <Progress value={creditInfo.totalCredits > 0 ? (creditInfo.remainingCredits / creditInfo.totalCredits) * 100 : 0} className="h-3" />
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p className="text-sm text-muted-foreground">
             {creditInfo.usedCredits} used of {creditInfo.totalCredits} total credits. <span className="font-bold text-indigo-600 dark:text-indigo-400">{creditInfo.remainingCredits} remaining</span>.
           </p>
         </motion.div>
