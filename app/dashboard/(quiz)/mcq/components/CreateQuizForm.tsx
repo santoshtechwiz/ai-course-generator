@@ -316,11 +316,11 @@ export default function CreateQuizForm({
               <Input
                 id="title"
                 placeholder="Enter the quiz topic (e.g., 'math algebra basics', 'javascript functions')"
-                className="w-full h-12 text-base bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 pr-12"
+                className="w-full h-12 text-base bg-background border-border focus:border-primary focus:ring-primary/20 pr-12"
                 {...register("title")}
                 aria-describedby="topic-description"
               />
-              <Lightbulb className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+              <Lightbulb className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             </div>
 
             {errors.title && (
@@ -484,7 +484,7 @@ export default function CreateQuizForm({
             isEnabled={!isDisabled}
             isLoading={isLoading}
             loadingLabel="Generating Quiz..."
-            className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg hover:shadow-xl disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed"
+            className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] hover:opacity-90 text-primary-foreground border-0 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             customStates={{
               default: {
                 tooltip: "Click to generate your quiz",

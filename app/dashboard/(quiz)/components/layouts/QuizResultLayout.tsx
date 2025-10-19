@@ -62,9 +62,9 @@ export default function QuizResultLayout({
   const QuizIcon = quizTypeIcons[quizType] || Award
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <motion.header 
-        className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm"
+        className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-sm"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
@@ -81,7 +81,7 @@ export default function QuizResultLayout({
                 <QuizIcon className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground">
                   {title}
                 </h1>
                 <div className="flex items-center gap-3 mt-1">
@@ -102,7 +102,7 @@ export default function QuizResultLayout({
                     </Badge>
                   )}
                   {slug && (
-                    <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
+                    <span className="text-sm text-muted-foreground truncate max-w-[200px]">
                       {slug}
                     </span>
                   )}
@@ -131,7 +131,7 @@ export default function QuizResultLayout({
       <main className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Detailed Results - Direct display without duplicate hero banner */}
         <motion.div
-          className="rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl shadow-xl p-8"
+          className="rounded-3xl border border-border/50 bg-card/80 backdrop-blur-xl shadow-xl p-8"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}

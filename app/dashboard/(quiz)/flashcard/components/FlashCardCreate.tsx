@@ -501,7 +501,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
                 hasCredits={creditInfo.remainingCredits > 0}
                 creditsRequired={1}
                 loadingLabel="Generating Flashcards..."
-                className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg hover:shadow-xl disabled:bg-gradient-to-r disabled:from-sky-300 disabled:to-cyan-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed"
+                className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] hover:opacity-90 text-primary-foreground border-0 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 customStates={{
                   default: {
                     tooltip: "Click to generate your quiz",
