@@ -373,14 +373,14 @@ export default function OpenEndedQuiz({
             transition={{ delay: 0.1 }}
             className="w-full"
           >
-            <Card className="w-full h-full border-0 shadow-lg bg-white dark:bg-gray-900">
+            <Card className="w-full h-full border-0 shadow-lg bg-card">
               <div className="bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] h-1"></div>
               <CardContent className="w-full h-full p-6 sm:p-8">
                 <div className="w-full space-y-6">
                   {/* Header Section */}
                   <div className="flex items-center gap-4 mb-6">
                     <div className="w-12 h-12 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
-                      <BookOpen className="w-6 h-6 text-white" />
+                      <BookOpen className="w-6 h-6 text-primary-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-xl font-bold text-foreground">Open-Ended Question</h3>

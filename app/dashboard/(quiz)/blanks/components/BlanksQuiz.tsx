@@ -427,7 +427,7 @@ export default function BlanksQuiz(props: any) {
                     className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"
                     aria-label="Correct answer indicator"
                   >
-                    <CheckCircle className="w-4 h-4 text-white" aria-hidden="true" />
+                    <CheckCircle className="w-4 h-4 text-primary-foreground" aria-hidden="true" />
                   </motion.div>
                 )}
               </motion.div>
@@ -478,7 +478,7 @@ export default function BlanksQuiz(props: any) {
                     className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"
                     aria-label="Correct answer indicator"
                   >
-                    <CheckCircle className="w-4 h-4 text-white" aria-hidden="true" />
+                    <CheckCircle className="w-4 h-4 text-primary-foreground" aria-hidden="true" />
                   </motion.div>
                 )}
               </motion.div>
@@ -497,7 +497,7 @@ export default function BlanksQuiz(props: any) {
             >
               <div className="flex items-center gap-3 text-emerald-700 dark:text-emerald-300 bg-gradient-to-r from-emerald-50 to-green-100 dark:from-emerald-950/40 dark:to-green-900/30 px-4 py-3 rounded-xl border-2 border-emerald-200 dark:border-emerald-800 shadow-lg shadow-emerald-100/50 dark:shadow-emerald-900/20">
                 <div className="p-1 bg-emerald-500 rounded-full">
-                  <CheckCircle className="w-4 h-4 text-white" aria-hidden="true" />
+                  <CheckCircle className="w-4 h-4 text-primary-foreground" aria-hidden="true" />
                 </div>
                 <span className="text-sm font-semibold">Perfect! That's the correct answer!</span>
               </div>
@@ -516,7 +516,7 @@ export default function BlanksQuiz(props: any) {
               aria-live="assertive"
             >
               <div className="p-1 bg-rose-500 rounded-full">
-                <AlertCircle className="w-4 h-4 text-white" aria-hidden="true" />
+                <AlertCircle className="w-4 h-4 text-primary-foreground" aria-hidden="true" />
               </div>
               <span className="text-sm font-semibold">Please enter an answer before continuing</span>
             </motion.div>

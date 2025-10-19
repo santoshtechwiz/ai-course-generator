@@ -30,7 +30,7 @@ const Checkbox = ({
       className
     )}
   >
-    {checked && <Check className="w-3 h-3 text-white" />}
+    {checked && <Check className="w-3 h-3 text-primary-foreground" />}
   </button>
 )
 
@@ -239,15 +239,15 @@ const AIQuizNoticeModal = ({
               className={cn(
                 "absolute top-4 right-4 z-10",
                 "w-8 h-8 rounded-full",
-                "bg-gray-100 dark:bg-gray-800",
-                "hover:bg-gray-200 dark:hover:bg-gray-700",
+                "bg-muted",
+                "hover:bg-muted/80",
                 "flex items-center justify-center",
                 "transition-colors duration-200",
-                "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
               )}
               aria-label="Close modal"
             >
-              <X className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              <X className="w-4 h-4 text-muted-foreground" />
             </button>
 
             {/* Content */}
@@ -266,7 +266,7 @@ const AIQuizNoticeModal = ({
                   "flex items-center justify-center",
                   "relative overflow-hidden"
                 )}>
-                  <Brain className="w-8 h-8 text-white relative z-10" />
+                  <Brain className="w-8 h-8 text-primary-foreground relative z-10" />
                   
                   {/* Animated background */}
                   <motion.div
@@ -303,7 +303,7 @@ const AIQuizNoticeModal = ({
               {/* Title */}
               <motion.h2
                 id="modal-title"
-                className="text-2xl font-bold text-gray-900 dark:text-white mb-4"
+                className="text-2xl font-bold text-foreground mb-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
@@ -314,7 +314,7 @@ const AIQuizNoticeModal = ({
               {/* Description */}
               <motion.p
                 id="modal-description"
-                className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed"
+                className="text-muted-foreground mb-8 leading-relaxed"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
@@ -337,7 +337,7 @@ const AIQuizNoticeModal = ({
                     "w-full h-12",
                     "bg-gradient-to-r from-green-500 to-emerald-500",
                     "hover:from-green-600 hover:to-emerald-600",
-                    "text-white font-semibold",
+                    "text-primary-foreground font-semibold",
                     "shadow-lg hover:shadow-xl",
                     "transition-all duration-200",
                     "focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
@@ -384,7 +384,7 @@ const AIQuizNoticeModal = ({
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-2">
+                <p className="text-xs text-muted-foreground text-center mb-2">
                   How often would you like to see this?
                 </p>
                 <div className="flex gap-2 justify-center">
