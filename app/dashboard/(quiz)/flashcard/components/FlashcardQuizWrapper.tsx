@@ -218,8 +218,8 @@ export default function FlashcardQuizWrapper({
         <div className="text-center space-y-6 max-w-md">
           <div className="text-6xl">❌</div>
           <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-gray-900">Oops! Something went wrong</h3>
-            <p className="text-gray-600">{error || "Unable to load flashcards at this moment."}</p>
+            <h3 className="text-xl font-semibold text-foreground">Oops! Something went wrong</h3>
+            <p className="text-muted-foreground">{error || "Unable to load flashcards at this moment."}</p>
           </div>
           <div className="flex gap-3 justify-center">
             <button
@@ -227,13 +227,13 @@ export default function FlashcardQuizWrapper({
                 dispatch(clearQuizState());
                 dispatch(fetchFlashCardQuiz(slug));
               }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
             >
               Try Again
             </button>
             <button
               onClick={() => router.push("/dashboard/quizzes")}
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+              className="px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors"
             >
               Browse Topics
             </button>
@@ -266,10 +266,10 @@ export default function FlashcardQuizWrapper({
         <div className="text-center space-y-6 max-w-md">
           <div className="text-6xl">✨</div>
           <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-gray-900">
+            <h3 className="text-xl font-semibold text-foreground">
               {cardsParam ? "Cards Not Found" : "All Clear!"}
             </h3>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               {cardsParam
                 ? `We couldn't find the specific cards you requested (IDs: ${cardsParam}). They may have been removed or updated.`
                 : "You've reviewed all cards that need attention. Great job!"}
@@ -281,13 +281,13 @@ export default function FlashcardQuizWrapper({
                 dispatch(clearQuizState());
                 router.push(`/dashboard/flashcard/${slug}?reset=true`);
               }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
             >
               Take Full Quiz
             </button>
             <button
               onClick={() => router.push(`/dashboard/flashcard/${slug}/results`)}
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+              className="px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors"
             >
               Back to Results
             </button>
@@ -304,8 +304,8 @@ export default function FlashcardQuizWrapper({
         <div className="text-center space-y-6 max-w-md">
           <div className="text-6xl">📚</div>
           <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-gray-900">No Flashcards Available</h3>
-            <p className="text-gray-600">We couldn't find any flashcards for this topic.</p>
+            <h3 className="text-xl font-semibold text-foreground">No Flashcards Available</h3>
+            <p className="text-muted-foreground">We couldn't find any flashcards for this topic.</p>
           </div>
           <div className="flex gap-3 justify-center">
             <button
@@ -313,13 +313,13 @@ export default function FlashcardQuizWrapper({
                 dispatch(clearQuizState());
                 router.push(`/dashboard/flashcard/${slug}?reset=true`);
               }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
             >
               Try Again
             </button>
             <button
               onClick={() => router.push("/dashboard/quizzes")}
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+              className="px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors"
             >
               Browse Topics
             </button>
