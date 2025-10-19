@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { ChevronDown, ArrowRight, Play } from "lucide-react"
 
 import { FeedbackButton } from "@/components/ui/feedback-button"
-import { useMobile } from "@/hooks"
+import { HeroSkeleton } from "../skeletons"
 
 // Apple-style easing
 const APPLE_EASING = [0.25, 0.1, 0.25, 1]
@@ -19,6 +19,11 @@ interface HeroSectionProps {
 const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false }: HeroSectionProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isInView, setIsInView] = useState(true)
+
+  // Show skeleton loader while hydrating
+  if (!isHydrated) {
+    return <HeroSkeleton />
+  }
 
   // Simplified scroll effects
   const { scrollYProgress } = useScroll({
@@ -56,8 +61,8 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
       className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20 pb-16 bg-main text-main-foreground"
     >
 
-      {/* Content */}
-      <div className="container max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 z-10 text-center">
+  {/* Content - Full Width */}
+  <div className="w-full max-w-none">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{
@@ -68,7 +73,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           className="mb-6"
         >
           <motion.span
-            className="inline-block px-4 py-2 rounded-sm bg-background text-foreground text-sm font-bold mb-6 border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]"
+            className="inline-block px-4 sm:px-6 py-3 border-4 border-main-foreground text-main-foreground text-sm font-black mb-6 shadow-[4px_4px_0px_0px_var(--main-foreground)]"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{
               opacity: isInView ? 1 : 0,
@@ -76,43 +81,42 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
             }}
             transition={{ duration: 0.6, delay: 0.2, ease: APPLE_EASING }}
           >
-            AI-Powered Learning Platform
+            AI-POWERED COURSE CREATION PLATFORM
           </motion.span>
         </motion.div>
 
         {/* Main heading - Clear and honest */}
         <motion.h1
-          className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight mb-4 sm:mb-6 max-w-4xl mx-auto leading-tight"
+          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tight mb-6 sm:mb-8 max-w-5xl mx-auto leading-none text-center"
           initial={{ opacity: 0, y: 15 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
           transition={{ duration: 0.7, delay: 0.3, ease: APPLE_EASING }}
           id="hero-heading"
         >
-          Create Courses and Quizzes
+          CREATE VIDEO COURSES AND
           <br />
-          with AI Assistance
+          <span className="text-main-foreground">GENERATE QUIZZES</span>
         </motion.h1>
 
         <motion.p
-          className="text-base sm:text-lg md:text-xl lg:text-2xl opacity-90 max-w-3xl mx-auto mb-8 sm:mb-12 leading-relaxed"
+          className="text-lg sm:text-xl md:text-2xl max-w-4xl mx-auto mb-8 sm:mb-12 leading-relaxed text-center font-medium"
           initial={{ opacity: 0, y: 15 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
           transition={{ duration: 0.7, delay: 0.4, ease: APPLE_EASING }}
           id="hero-description"
         >
-          Generate courses, create quizzes with multiple choice and open-ended questions,
-          and track your learning progress—all powered by AI.
+          Build structured courses with YouTube videos and automatically generate multiple-choice, coding, fill-in-the-blank, and open-ended quizzes.
+          Track progress and get AI-driven recommendations for personalized learning.
         </motion.p>
 
         <motion.div
-          className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 lg:gap-6"
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6"
           initial={{ opacity: 0, y: 15 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
           transition={{ duration: 0.7, delay: 0.5, ease: APPLE_EASING }}
         >
           <FeedbackButton
-            size="lg"
-            className="h-12 px-6 py-3 text-base sm:text-lg min-h-[48px] rounded-sm bg-background text-foreground border-3 border-border shadow-[4px_4px_0px_0px_var(--border)] hover:translate-x-[2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_var(--border)] transition-none w-full sm:w-auto font-bold"
+            className="h-14 px-4 sm:px-8 py-4 text-lg font-black border-4 border-main-foreground shadow-[6px_6px_0px_0px_var(--main-foreground)] hover:translate-x-[3px] hover:translate-y-[-3px] hover:shadow-[9px_9px_0px_0px_var(--main-foreground)] transition-none w-full sm:w-auto bg-main-foreground text-main"
             loadingText="Opening..."
             successText="Let's go!"
             onClickAsync={async () => {
@@ -122,19 +126,11 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
             }}
             aria-label="Get started with CourseAI"
           >
-            <span className="relative z-10">Get Started</span>
-            <motion.span
-              className="inline-block ml-2 relative z-10"
-              aria-hidden="true"
-            >
-              <ArrowRight className="h-5 w-5" />
-            </motion.span>
+            GET STARTED
           </FeedbackButton>
 
           <FeedbackButton
-            size="lg"
-            variant="outline"
-            className="h-12 px-6 py-3 text-base sm:text-lg min-h-[48px] rounded-sm border-2 border-border bg-transparent hover:bg-background/10 transition-none w-full sm:w-auto justify-center font-semibold"
+            className="h-14 px-4 sm:px-8 py-4 text-lg font-black border-4 border-main-foreground bg-transparent text-main-foreground hover:bg-main-foreground hover:text-main transition-none w-full sm:w-auto justify-center"
             loadingText="Loading..."
             successText="Enjoy!"
             onClickAsync={async () => {
@@ -144,8 +140,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
             }}
             aria-label="See how CourseAI works"
           >
-            <Play className="h-4 w-4 mr-2" />
-            See How It Works
+            SEE HOW IT WORKS
           </FeedbackButton>
         </motion.div>
 
@@ -159,11 +154,11 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 lg:gap-8 text-sm text-muted-foreground">
             <div className="flex items-center gap-2" role="text">
               <div className="w-2 h-2 rounded-sm bg-success" aria-hidden="true"></div>
-              <span>AI course builder</span>
+              <span>Video course builder</span>
             </div>
             <div className="flex items-center gap-2" role="text">
               <div className="w-2 h-2 rounded-sm bg-primary" aria-hidden="true"></div>
-              <span>Multiple quiz types</span>
+              <span>AI quiz generation</span>
             </div>
             <div className="flex items-center gap-2" role="text">
               <div className="w-2 h-2 rounded-sm bg-warning" aria-hidden="true"></div>
@@ -195,8 +190,8 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
         >
           <motion.div className="flex flex-col items-center" whileHover={{ y: 3, transition: { duration: 0.2 } }}>
             <motion.span
-              className="text-sm opacity-75 mb-2 font-medium"
-              animate={{ opacity: [0.6, 1, 0.6] }}
+              className="text-sm mb-2 font-medium"
+              animate={{ opacity: [0.8, 1, 0.8] }}
               transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
             >
               Explore features

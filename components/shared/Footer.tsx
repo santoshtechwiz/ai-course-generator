@@ -91,8 +91,8 @@ export default function Footer() {
             <Logo />
           </Link>
           <p className="text-muted-foreground text-base leading-relaxed max-w-sm">
-            Empowering education through AI-driven learning experiences. Create and take quizzes,
-            generate courses, and enhance your educational journey.
+            Create courses using YouTube videos and generate intelligent quizzes with AI assistance. Build engaging
+            learning experiences and track progress effectively.
           </p>
           <nav className="flex gap-3 pt-1" role="navigation" aria-label="Social media links">
             {socialLinks.map(({ icon: Icon, href, label }) => (

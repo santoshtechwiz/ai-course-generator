@@ -246,7 +246,7 @@ const ProductGallery = () => {
 
   return (
     <div
-      className="container max-w-6xl mx-auto px-4 md:px-6"
+  className="w-full"
       ref={containerRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -256,7 +256,7 @@ const ProductGallery = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
+          className="inline-block px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
         >
           AI-Powered Learning Solutions
         </motion.div>
@@ -644,7 +644,7 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
           {/* Fix button display on mobile */}
           <div className="flex flex-wrap gap-3 justify-center md:justify-start">
             <FeedbackButton
-              className="rounded-full px-6 py-2 w-full sm:w-auto"
+              className="rounded-full px-4 sm:px-6 py-2 w-full sm:w-auto"
               onClickAsync={handleNavigation}
               loadingText={product.type === "course" ? "Creating course..." : "Generating quiz..."}
               successText={product.type === "course" ? "Course ready" : "Quiz ready"}
@@ -754,29 +754,29 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
 const mockProducts: CourseQuizCard[] = [
   {
     id: "1",
-    name: "Video-to-Course Converter",
-    slug: "video-to-course",
+    name: "YouTube Course Builder",
+    slug: "youtube-course-builder",
     description:
-      "Upload any video and automatically generate a complete course with chapters, sections, and learning objectives based on the content.",
-    tagline: "Transform videos into structured courses",
+      "Create structured courses using YouTube video links. Enter a course title, add YouTube videos, and organize them into chapters with a logical learning path.",
+    tagline: "Build courses with YouTube videos",
     type: "course",
   },
   {
     id: "2",
-    name: "Transcript Generator",
-    slug: "transcript-generator",
+    name: "YouTube Quiz Generator",
+    slug: "youtube-quiz-generator",
     description:
-      "Automatically transcribe video content with high accuracy, creating the foundation for your courses and quizzes.",
-    tagline: "Accurate video transcription in minutes",
+      "Automatically generate quizzes from YouTube video transcripts. Create multiple-choice, coding challenges, fill-in-the-blanks, and open-ended questions.",
+    tagline: "AI quiz generation from YouTube transcripts",
     type: "course",
   },
   {
     id: "3",
-    name: "Course Structure Optimizer",
-    slug: "course-optimizer",
+    name: "Learning Path Creator",
+    slug: "learning-path-creator",
     description:
-      "AI analyzes your content and organizes it into the most effective learning structure with proper pacing and sequencing.",
-    tagline: "Optimized learning pathways",
+      "Organize YouTube videos into a logical learning structure with chapters and sections. Create effective learning pathways for your courses.",
+    tagline: "Structure your YouTube videos into courses",
     type: "course",
   },
   {

@@ -1,8 +1,7 @@
 "use client"
 import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { useTheme } from "next-themes"
-import Link from "next/link"
+
 import { cn } from "@/lib/utils"
 import { Menu, X, ArrowUp, ArrowRight } from "lucide-react"
 import { FeedbackButton } from "@/components/ui/feedback-button"
@@ -17,6 +16,8 @@ import AboutSection from "./sections/AboutSection"
 import FaqAccordion from "./sections/FaqAccordion"
 import { useRouter } from "next/navigation"
 import { useMobile } from "@/hooks"
+import { useTheme } from "next-themes"
+import Link from "next/link"
 
 // Apple-style easing
 const APPLE_EASING = [0.25, 0.1, 0.25, 1]
@@ -114,57 +115,38 @@ const CourseAILandingPage = () => {
 			{/* Skip to main content */}
 			<a
 				href="#main-content"
-				className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 bg-primary text-primary-foreground px-4 py-2 rounded-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary border-2 border-border"
+				className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 bg-primary text-primary-foreground px-2 py-2 rounded-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary border-2 border-border"
 			>
 				Skip to main content
 			</a>
 
 			{/* Header */}
-			<motion.header
-				className="fixed top-0 left-0 right-0 z-50 bg-background border-b-2 border-border"
-				initial={{ y: -20, opacity: 0 }}
-				animate={{ y: 0, opacity: 1 }}
-				transition={{ duration: 0.6, ease: APPLE_EASING, delay: 0.2 }}
-				role="banner"
-			>
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="flex items-center justify-between h-16">
+			<header className="fixed top-0 left-0 right-0 z-50 bg-background border-b-4 border-border">
+				<div className="flex items-center justify-between h-16 px-2 sm:px-4">
 						{/* Logo */}
-						<motion.div
-							className="flex items-center"
-							whileHover={{ scale: 1.02 }}
-							transition={{ type: "spring", stiffness: 400, damping: 10 }}
-						>
-							<Link href="/" className="text-xl font-semibold" aria-label="CourseAI Home">
-								<span className="text-primary font-bold">CourseAI</span>
+						<div className="flex items-center">
+							<Link href="/" className="text-xl font-black" aria-label="CourseAI Home">
+								<span className="text-primary">CourseAI</span>
 							</Link>
-						</motion.div>
+						</div>
 
 						{/* Desktop Navigation */}
-						<nav className="flex items-center space-x-4 sm:space-x-6 md:space-x-8 overflow-x-auto" aria-label="Main navigation" role="navigation">
+						<nav className="hidden md:flex items-center space-x-6" aria-label="Main navigation" role="navigation">
 							{navItems.map((item) => (
-								<motion.button
+								<button
 									key={item.id}
 									onClick={() => scrollToSection(item.id)}
-									className={cn(
-										"text-sm font-medium transition-none relative px-2 py-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-primary",
-										"text-muted-foreground hover:text-foreground hover:bg-muted",
-									)}
-									whileHover={{
-										scale: 1.03,
-										transition: { duration: 0.2, ease: APPLE_EASING },
-									}}
-									whileTap={{ scale: 0.98 }}
+									className="text-sm font-bold px-2 py-2 border-2 border-transparent hover:border-border hover:bg-muted transition-none"
 								>
 									{item.label}
-								</motion.button>
+								</button>
 							))}
 						</nav>
 
 						{/* CTA Button */}
 						<div className="hidden md:block">
 							<FeedbackButton
-								className="px-6 py-2 text-sm font-semibold"
+								className="px-4 sm:px-6 py-2 text-sm font-bold border-4 border-border shadow-[4px_4px_0px_0px_var(--border)] hover:translate-x-[2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_var(--border)] transition-none"
 								loadingText="Redirecting..."
 								successText="Redirecting..."
 								onClickAsync={async () => {
@@ -190,9 +172,8 @@ const CourseAILandingPage = () => {
 						>
 							<Menu className="h-6 w-6" aria-hidden="true" />
 						</motion.button>
-					</div>
 				</div>
-			</motion.header>
+			</header>
 
 			{/* Mobile Menu */}
 			<AnimatePresence>
@@ -240,7 +221,7 @@ const CourseAILandingPage = () => {
 									<motion.button
 										key={item.id}
 										onClick={() => scrollToSection(item.id)}
-										className="text-left py-3 px-4 rounded-sm transition-none text-muted-foreground hover:bg-muted hover:text-foreground"
+										className="text-left py-3 px-3 rounded-sm transition-none text-muted-foreground hover:bg-muted hover:text-foreground"
 										initial={{ opacity: 0, x: 20 }}
 										animate={{ opacity: 1, x: 0 }}
 										transition={{
@@ -297,7 +278,7 @@ const CourseAILandingPage = () => {
 				{/* Features Section */}
 				<motion.section
 					id="features"
-					className="py-24 md:py-32 border-t-2 border-border"
+					className="py-12 md:py-16 border-t-2 border-border bg-secondary/20"
 					aria-labelledby="features-heading"
 					initial={{ opacity: 0, y: 20 }}
 					whileInView={{ opacity: 1, y: 0 }}
@@ -310,7 +291,7 @@ const CourseAILandingPage = () => {
 				{/* How It Works Section */}
 				<motion.section
 					id="how-it-works"
-					className="py-24 md:py-32"
+					className="py-12 md:py-16 bg-background"
 					initial={{ opacity: 0, y: 20 }}
 					whileInView={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.6, ease: APPLE_EASING, delay: 0.1 }}
@@ -322,7 +303,7 @@ const CourseAILandingPage = () => {
 				{/* Testimonials Section */}
 				<motion.section
 					id="testimonials"
-					className="py-24 md:py-32 border-t-2 border-border"
+					className="py-12 md:py-16 border-t-2 border-border bg-secondary/10"
 					initial={{ opacity: 0, y: 20 }}
 					whileInView={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.6, ease: APPLE_EASING, delay: 0.2 }}
@@ -334,7 +315,7 @@ const CourseAILandingPage = () => {
 				{/* About Us Section */}
 				<motion.section
 					id="about"
-					className="py-24 md:py-32"
+					className="py-12 md:py-16 bg-background"
 					initial={{ opacity: 0, y: 20 }}
 					whileInView={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.6, ease: APPLE_EASING, delay: 0.3 }}
@@ -346,7 +327,7 @@ const CourseAILandingPage = () => {
 				{/* FAQ Section */}
 				<motion.section
 					id="faq"
-					className="py-24 md:py-32 border-t-2 border-border"
+					className="py-12 md:py-16 border-t-2 border-border bg-secondary/20"
 					initial={{ opacity: 0, y: 20 }}
 					whileInView={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.6, ease: APPLE_EASING, delay: 0.4 }}
@@ -358,13 +339,13 @@ const CourseAILandingPage = () => {
 				{/* CTA Section */}
 				<motion.section
 					id="cta"
-					className="py-24 md:py-32 bg-main text-main-foreground border-t-3 border-border"
+					className="py-12 md:py-16 bg-main text-main-foreground border-t-3 border-border"
 					initial={{ opacity: 0, y: 20 }}
 					whileInView={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.6, ease: APPLE_EASING, delay: 0.5 }}
 					viewport={{ once: true, amount: 0.1 }}
 				>
-					<div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+					<div className="max-w-4xl mx-auto text-center">
 						<motion.div
 							initial={{ opacity: 0, y: 20 }}
 							whileInView={{ opacity: 1, y: 0 }}
@@ -396,7 +377,7 @@ const CourseAILandingPage = () => {
 						>
 							<FeedbackButton
 								size="lg"
-								className="bg-background text-foreground hover:bg-background/90 px-8 py-4 text-lg rounded-sm border-3 border-border shadow-[4px_4px_0px_0px_var(--border)] hover:translate-x-[2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_var(--border)] transition-none font-semibold"
+								className="bg-background text-foreground hover:bg-background/90 px-4 sm:px-8 py-4 text-lg rounded-sm border-3 border-border shadow-[4px_4px_0px_0px_var(--border)] hover:translate-x-[2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_var(--border)] transition-none font-semibold"
 								loadingText="Opening dashboard..."
 								successText="Redirecting..."
 								errorText="Please try again"

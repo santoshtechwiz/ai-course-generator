@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { motion, useInView } from "framer-motion"
+import { useEffect, useState } from "react"
+import { motion } from "framer-motion"
+import { FeaturesSkeleton } from "../skeletons"
 
 // Apple-style easing
 const APPLE_EASING = [0.25, 0.1, 0.25, 1]
@@ -56,87 +57,93 @@ const FeatureIcon = ({ type }: { type: string }) => {
   }
 }
 
-// Features data with cleaner descriptions
+// Features data with cleaner descriptions - Neobrutalism style
 const features = [
   {
     icon: "create",
-    title: "Instant Course Creation",
-    description: "Simply enter any topic and watch as CourseAI transforms it into a comprehensive, structured course with engaging lessons and interactive content.",
-    gradient: "from-blue-500 to-blue-600",
+    title: "YOUTUBE COURSE CREATION",
+    description: "Create structured courses using YouTube video links. Organize lessons into chapters and build comprehensive learning paths from existing video content.",
   },
   {
     icon: "quiz",
-    title: "Smart Quiz Generation",
-    description: "AI-powered quiz creation that adapts to your content. Generate multiple choice, coding challenges, and open-ended questions automatically.",
-    gradient: "from-purple-500 to-purple-600",
+    title: "AI QUIZ GENERATION",
+    description: "Generate intelligent quizzes from YouTube video transcripts. Create multiple-choice, coding challenges, fill-in-the-blanks, and open-ended questions automatically.",
   },
   {
     icon: "custom",
-    title: "Custom Learning Paths",
-    description: "Design personalized learning journeys with flexible modules, prerequisites, and branching paths that adapt to learner progress.",
-    gradient: "from-green-500 to-green-600",
+    title: "PERSONALIZED LEARNING",
+    description: "Get AI-driven recommendations for course content and quiz questions. Tailor learning experiences based on individual progress and preferences.",
   },
   {
     icon: "track",
-    title: "Advanced Analytics",
-    description: "Deep insights into learner engagement, completion rates, and knowledge retention with beautiful, actionable dashboards.",
-    gradient: "from-orange-500 to-orange-600",
+    title: "PROGRESS TRACKING",
+    description: "Monitor learner engagement and completion rates. Track quiz performance and video progress with detailed analytics and insights.",
   },
 ]
 
 const FeatureShowcase = () => {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const isInView = useInView(containerRef, { once: true, amount: 0.1 })
+  // we rely on framer-motion's built-in viewport detection via `whileInView`
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    // Simulate loading time for better UX
+    const timer = setTimeout(() => setIsLoading(false), 100)
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (isLoading) {
+    return <FeaturesSkeleton />
+  }
 
   return (
-    <div ref={containerRef} className="py-24 bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="w-full">
+      <div className="max-w-none">
         {/* Header - More like n8n */}
         <motion.div
           className="text-center mb-20"
           initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.1 }}
           transition={{ duration: 0.6, ease: APPLE_EASING }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Everything you need to create extraordinary courses
+          <h2 id="features-heading" className="text-4xl md:text-6xl font-black text-foreground mb-6 tracking-tight">
+            BUILD COURSES AND GENERATE
+            <br />
+            INTELLIGENT QUIZZES
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            From content creation to learner analytics, CourseAI provides all the tools
-            you need to build engaging, effective learning experiences.
+          <p className="text-xl text-muted-foreground max-w-4xl mx-auto font-medium">
+            Create video-based learning experiences with AI assistance. Generate quizzes from transcripts and track learner progress effectively.
           </p>
         </motion.div>
 
-      {/* Features Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {/* Features Grid - Full width */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {features.map((feature, index) => (
           <motion.div
             key={feature.title}
-            className="group relative"
+            className="group"
             initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.1 }}
             transition={{
               duration: 0.6,
               delay: index * 0.1,
               ease: APPLE_EASING
             }}
           >
-            <div className="h-full bg-card rounded-2xl p-8 border border-border shadow-sm hover:shadow-xl transition-all duration-300 group-hover:-translate-y-1">
+            <div className="h-full bg-card p-8 border-4 border-border shadow-[8px_8px_0px_0px_var(--border)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[10px_10px_0px_0px_var(--border)] transition-none">
               {/* Icon */}
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 mb-6 group-hover:scale-110 transition-transform duration-300">
+              <div className="flex items-center justify-center w-16 h-16 border-4 border-primary bg-primary text-primary-foreground mb-6 shadow-[4px_4px_0px_0px_var(--primary)]">
                 <FeatureIcon type={feature.icon} />
               </div>
 
               {/* Content */}
-              <h3 className="text-xl font-semibold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+              <h3 className="text-2xl font-black text-foreground mb-4 tracking-tight">
                 {feature.title}
               </h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed font-medium">
                 {feature.description}
               </p>
-
-              {/* Subtle gradient overlay */}
-              <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none`} />
             </div>
           </motion.div>
         ))}
@@ -144,20 +151,15 @@ const FeatureShowcase = () => {
 
       {/* Bottom CTA */}
       <motion.div
-        className="text-center mt-16"
+        className="text-center mt-20"
         initial={{ opacity: 0, y: 20 }}
-        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.1 }}
         transition={{ duration: 0.6, delay: 0.8, ease: APPLE_EASING }}
       >
-        <p className="text-lg text-muted-foreground mb-6">
-          Ready to transform your teaching?
-        </p>
-        <div className="inline-flex items-center gap-2 px-6 py-3 bg-primary/10 rounded-full border border-primary/20">
-          <svg className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          <span className="text-sm font-medium text-primary">
-            Start creating in under 5 minutes
+  <div className="inline-flex items-center gap-4 px-4 sm:px-6 py-3 border-4 border-primary bg-primary text-primary-foreground shadow-[6px_6px_0px_0px_var(--primary)] hover:translate-x-[2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_var(--primary)] transition-none">
+          <span className="text-lg font-black">
+            START BUILDING YOUR COURSE
           </span>
         </div>
       </motion.div>

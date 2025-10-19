@@ -2,14 +2,10 @@
 
 import type React from "react"
 
-import { useEffect } from "react"
-
-import { useRef, useState, useCallback, useMemo } from "react"
-import { motion, AnimatePresence, useInView } from "framer-motion"
-import { Plus, Minus, Search } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { FeedbackButton } from "@/components/ui/feedback-button"
-import { useDebounce } from "@/hooks"
+import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Plus, Minus } from "lucide-react"
+import { FAQSkeleton } from "../skeletons"
 
 
 // FAQ data
@@ -18,119 +14,93 @@ const faqs = [
 		id: "faq-1",
 		question: "How does CourseAI work?",
 		answer:
-			"CourseAI uses AI to help you create educational content quickly. Enter a topic, and our AI generates course structures, quizzes, and learning materials. You can then customize and edit everything to match your teaching style.",
+			"CourseAI automatically creates structured courses and intelligent quizzes using AI. You simply enter a course title or topic, and the AI uses the YouTube API to find relevant public videos, analyze available transcripts, and generate learning paths with quizzes. You can review everything before publishing.",
 	},
 	{
 		id: "faq-2",
-		question: "Can I create both courses and quizzes?",
+		question: "Do I have to provide YouTube links?",
 		answer:
-			"Yes! CourseAI supports multiple content types including full courses with chapters, multiple-choice quizzes, open-ended questions, fill-in-the-blanks, code challenges, and flashcards. Create what works best for your learners.",
+			"No, you don’t need to provide any YouTube links. CourseAI automatically searches and organizes public YouTube videos related to your topic. You can adjust the generated content before publishing, but after it’s published, the course becomes read-only.",
 	},
 	{
 		id: "faq-3",
-		question: "Can I upload YouTube videos with transcripts?",
+		question: "Can CourseAI generate quizzes from videos?",
 		answer:
-			"Yes, you can add YouTube videos to your courses. If YouTube provides transcripts for the video, our AI can use them to generate relevant quizzes and summaries. Interactive elements depend on transcript availability.",
+			"Yes. When videos have transcripts available, CourseAI uses those transcripts to automatically generate relevant quiz questions such as multiple-choice, coding, fill-in-the-blank, and open-ended types.",
 	},
 	{
 		id: "faq-4",
-		question: "Is there a limit on how many learners I can invite?",
+		question: "What types of quizzes can I create?",
 		answer:
-			"The number of learners you can invite depends on your subscription plan. Free accounts have basic sharing capabilities, while paid plans offer expanded access and collaboration features. Check the pricing page for specific limits.",
+			"CourseAI supports multiple quiz types including multiple-choice, coding challenges, fill-in-the-blank, and open-ended questions. The AI tailors quiz difficulty and style based on the analyzed video content.",
 	},
 	{
 		id: "faq-5",
-		question: "How can I track learner progress?",
+		question: "Who is CourseAI for?",
 		answer:
-			"CourseAI provides progress tracking for your courses and quizzes. Monitor completion rates, quiz scores, and time spent on content. Access analytics from your dashboard to see how learners engage with your materials.",
+			"CourseAI is designed for individuals and teams who want to build video-based learning paths and assessments using AI assistance. It’s a course and quiz creation tool, not a teaching marketplace or platform for educators.",
 	},
 	{
 		id: "faq-6",
-		question: "Can I edit AI-generated content?",
+		question: "How do I track learner progress?",
 		answer:
-			"Absolutely! All AI-generated content is fully editable. You have complete control to modify, add, or remove any part of your courses and quizzes. The AI serves as a starting point that you can refine to perfection.",
+			"CourseAI includes built-in progress tracking for each course and quiz. You can view completion rates, quiz scores, and learner activity analytics to understand engagement and performance.",
 	},
 	{
 		id: "faq-7",
-		question: "How do I share my courses?",
+		question: "Can I edit AI-generated content?",
 		answer:
-			"You can share courses by generating a unique link or inviting learners via email. Set your courses as public, private, or password-protected based on your needs. Manage access controls from your dashboard.",
+			"No, AI-generated courses and quizzes cannot be edited after publishing. You can review and make adjustments before publishing, but once a course is finalized, it becomes read-only to maintain integrity and consistency.",
 	},
 	{
 		id: "faq-8",
-		question: "What types of quizzes can I create?",
+		question: "How can I share my courses?",
 		answer:
-			"Create multiple quiz types: multiple-choice questions, open-ended questions, fill-in-the-blanks, code challenges, and flashcards. Each type supports AI generation and full customization to match your learning objectives.",
+			"You can share your courses via unique links or by inviting learners through email. Courses can be public, private, or password-protected. Shared quizzes can be played externally, with results visible upon sign-in.",
 	},
 	{
 		id: "faq-9",
 		question: "Is my content secure and private?",
 		answer:
-			"Yes. All your data is encrypted and stored securely. Your courses and quizzes are private by default—only you control who can access them. We follow industry-standard security practices to protect your content.",
+			"Yes. Your courses and quizzes are private by default and only accessible to users you share them with. CourseAI follows modern security standards to protect your content and user data.",
 	},
 	{
 		id: "faq-10",
-		question: "Do I need technical skills to use CourseAI?",
+		question: "Is CourseAI free or paid?",
 		answer:
-			"No technical skills required! CourseAI is designed to be simple and intuitive. Just provide a topic or content, and the AI handles the heavy lifting. The interface is user-friendly for educators, trainers, and anyone creating learning content.",
+			"CourseAI offers free basic features to start with, along with premium plans for advanced analytics, more AI features, and higher usage limits. Pricing details will be announced soon.",
 	},
-]
+];
 
 // Apple-style easing
 const APPLE_EASING = [0.25, 0.1, 0.25, 1]
 
 const FaqAccordion = () => {
 	const [openItem, setOpenItem] = useState<string | null>(null)
-	const [searchQuery, setSearchQuery] = useState("")
-	const [isSearching, setIsSearching] = useState(false)
-	const containerRef = useRef<HTMLDivElement>(null)
-	const isInView = useInView(containerRef, { once: true, amount: 0.2 })
-
-	// Debounce search input
-	const debouncedSearchQuery = useDebounce(searchQuery, 300)
-
-	// Memoize filtered FAQs
-	const filteredFaqs = useMemo(() => {
-		if (!debouncedSearchQuery) return faqs
-
-		return faqs.filter(
-			(faq) =>
-				faq.question.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-				faq.answer.toLowerCase().includes(debouncedSearchQuery.toLowerCase()),
-		)
-	}, [debouncedSearchQuery])
-
-	const toggleItem = useCallback(async (id: string) => {
-		setIsSearching(true)
-		await new Promise((resolve) => setTimeout(resolve, 300))
+	const toggleItem = (id: string) => {
 		setOpenItem((prevOpenItem) => (prevOpenItem === id ? null : id))
-		setIsSearching(false)
-		return true
-	}, [])
-
-	const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-		setIsSearching(true)
-		setSearchQuery(e.target.value)
-		setTimeout(() => setIsSearching(false), 500)
-	}, [])
+	}
 
 	return (
-		<div className="container max-w-4xl mx-auto px-4 md:px-6" ref={containerRef}>
+		<div className="w-full">
 			<div className="text-center mb-16">
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
-					animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+					whileInView={{ opacity: 1, y: 0 }}
+					viewport={{ once: true, amount: 0.2 }}
 					transition={{ duration: 0.6, ease: APPLE_EASING }}
-					className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
+					className="inline-block px-3 py-1.5 rounded-sm border-4 border-border bg-primary/10 text-primary text-sm font-medium mb-6"
 				>
 					FAQ
 				</motion.div>
 
-				<motion.h2
+					<motion.h2
+					id="faq-heading"
 					initial={{ opacity: 0, y: 20 }}
-					animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+					whileInView={{ opacity: 1, y: 0 }}
+					viewport={{ once: true, amount: 0.2 }}
 					transition={{ duration: 0.6, delay: 0.1, ease: APPLE_EASING }}
-					className="text-3xl md:text-5xl font-bold mb-6"
+					className="text-3xl md:text-5xl font-black mb-6 max-w-4xl mx-auto"
 				>
 					Everything you need
 					<br />
@@ -141,7 +111,8 @@ const FaqAccordion = () => {
 
 				<motion.p
 					initial={{ opacity: 0, y: 20 }}
-					animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+					whileInView={{ opacity: 1, y: 0 }}
+					viewport={{ once: true, amount: 0.2 }}
 					transition={{ duration: 0.6, delay: 0.2, ease: APPLE_EASING }}
 					className="text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed"
 				>
@@ -150,138 +121,95 @@ const FaqAccordion = () => {
 				</motion.p>
 			</div>
 
-			{/* Search with improved accessibility */}
+			{/* FAQ Grid - Two Columns */}
 			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-				transition={{ duration: 0.6, delay: 0.3, ease: APPLE_EASING }}
-				className="relative mb-10"
-			>
-				<label htmlFor="faq-search" className="sr-only">
-					Search questions
-				</label>
-				<div className="relative">
-					<Search
-						className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5"
-						aria-hidden="true"
-					/>
-					<Input
-						id="faq-search"
-						type="text"
-						placeholder="Search questions..."
-						value={searchQuery}
-						onChange={handleSearch}
-						className="pl-10 py-6 rounded-full bg-card/30 backdrop-blur-sm border-border/10"
-					/>
-					{isSearching && (
-							<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-								<span className="sr-only">Loading</span>
-							</div>
-						)}
-				</div>
-			</motion.div>
-
-			{/* FAQ items */}
-			<motion.div
-				className="space-y-4"
+				className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 max-w-5xl mx-auto"
 				role="region"
 				aria-label="Frequently Asked Questions"
 				initial={{ opacity: 0 }}
-				animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-				transition={{ duration: 0.6, delay: 0.4, ease: APPLE_EASING }}
+				whileInView={{ opacity: 1 }}
+				viewport={{ once: true, amount: 0.1 }}
+				transition={{ duration: 0.6, delay: 0.3, ease: APPLE_EASING }}
 			>
-				{filteredFaqs.length > 0 ? (
-					filteredFaqs.map((faq, index) => (
-						<motion.div
-							key={faq.id}
-							initial={{ opacity: 0, y: 20 }}
-							animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-							transition={{ duration: 0.6, delay: 0.5 + index * 0.1, ease: APPLE_EASING }}
+				{faqs.map((faq, index) => (
+					<motion.div
+						key={faq.id}
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true, amount: 0.15 }}
+						transition={{ duration: 0.5, delay: 0.4 + index * 0.05, ease: APPLE_EASING }}
+						className="h-full"
+					>
+						<div
+							className="bg-card rounded-2xl p-6 border-3 border-border shadow-[6px_6px_0px_0px_hsl(var(--border))] hover:shadow-[8px_8px_0px_0px_hsl(var(--border))] hover:translate-y-[-2px] transition-all duration-200 cursor-pointer h-full flex flex-col"
+							onClick={() => toggleItem(faq.id)}
+							role="button"
+							aria-expanded={openItem === faq.id}
+							aria-controls={`faq-answer-${faq.id}`}
+							tabIndex={0}
+							onKeyDown={(e) => {
+								if (e.key === "Enter" || e.key === " ") {
+									toggleItem(faq.id)
+									e.preventDefault()
+								}
+							}}
 						>
-							<div
-								className="bg-card/30 backdrop-blur-sm rounded-xl border border-border/10 overflow-hidden"
-								onClick={() => toggleItem(faq.id)}
-							>
-								<div
-									className="flex justify-between items-center p-6 cursor-pointer"
-									role="button"
-									aria-expanded={openItem === faq.id}
-									aria-controls={`faq-answer-${faq.id}`}
-									tabIndex={0}
-									onKeyDown={(e) => {
-										if (e.key === "Enter" || e.key === " ") {
-											toggleItem(faq.id)
-											e.preventDefault()
-										}
-									}}
+							<div className="flex justify-between items-start gap-4 mb-3">
+								<h3 className="text-base font-bold text-foreground leading-tight flex-1">
+									{faq.question}
+								</h3>
+								<motion.div
+									animate={{ rotate: openItem === faq.id ? 180 : 0 }}
+									transition={{ duration: 0.2, ease: APPLE_EASING }}
+									className="flex-shrink-0 mt-1"
 								>
-									<h3 className="text-lg font-medium">{faq.question}</h3>
-									<FeedbackButton
-										className="flex items-center justify-center h-8 w-8 rounded-full bg-muted/50 text-foreground"
-										aria-label={openItem === faq.id ? "Collapse answer" : "Expand answer"}
-										onClick={(e) => {
-											e.stopPropagation()
-											toggleItem(faq.id)
-										}}
-										onClickAsync={async () => {
-											await new Promise((resolve) => setTimeout(resolve, 600))
-											return true
-										}}
-										variant="ghost"
-										size="icon"
-										showIcon={false}
-										feedbackDuration={300}
-									>
-										{openItem === faq.id ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-									</FeedbackButton>
-								</div>
-
-								<AnimatePresence>
-									{openItem === faq.id && (
-										<motion.div
-											id={`faq-answer-${faq.id}`}
-											initial={{ height: 0, opacity: 0 }}
-											animate={{ height: "auto", opacity: 1 }}
-											exit={{ height: 0, opacity: 0 }}
-											transition={{ duration: 0.3, ease: APPLE_EASING }}
-										>
-											<div className="px-6 pb-6 text-muted-foreground">{faq.answer}</div>
-										</motion.div>
-									)}
-								</AnimatePresence>
+									<div className="w-6 h-6 rounded-lg bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
+										{openItem === faq.id ? (
+											<Minus className="h-4 w-4 text-primary" />
+										) : (
+											<Plus className="h-4 w-4 text-primary" />
+										)}
+									</div>
+								</motion.div>
 							</div>
-						</motion.div>
-					))
-				) : (
-					<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
-						<p className="text-muted-foreground">No matching questions found. Please try a different search term.</p>
+
+							{/* Answer - Animated Expand */}
+							<AnimatePresence initial={false}>
+								{openItem === faq.id && (
+									<motion.div
+										initial={{ opacity: 0, height: 0, marginTop: 0 }}
+										animate={{ opacity: 1, height: "auto", marginTop: 12 }}
+										exit={{ opacity: 0, height: 0, marginTop: 0 }}
+										transition={{ duration: 0.3, ease: APPLE_EASING }}
+										id={`faq-answer-${faq.id}`}
+									>
+										<div className="text-sm leading-relaxed font-medium text-muted-foreground">
+											{faq.answer}
+										</div>
+									</motion.div>
+								)}
+							</AnimatePresence>
+						</div>
 					</motion.div>
-				)}
+				))}
 			</motion.div>
 
 			{/* Additional help section */}
 			<motion.div
 				initial={{ opacity: 0, y: 20 }}
-				animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+				whileInView={{ opacity: 1, y: 0 }}
+				viewport={{ once: true, amount: 0.2 }}
 				transition={{ duration: 0.6, delay: 0.8, ease: APPLE_EASING }}
 				className="mt-12 text-center"
 			>
 				<p className="text-muted-foreground">
 					Still have questions?{" "}
-					<FeedbackButton
-						variant="link"
+					<a
+						href="/contactus"
 						className="text-primary font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 rounded-sm p-0"
-						onClickAsync={async () => {
-							await new Promise((resolve) => setTimeout(resolve, 800))
-							window.location.href = "/contactus"
-						 return true
-						}}
-						loadingText="Contacting support..."
-						successText="Opening contact page"
-						showIcon={false}
 					>
 						Contact our support team
-					</FeedbackButton>
+					</a>
 				</p>
 			</motion.div>
 		</div>

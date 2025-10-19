@@ -12,31 +12,27 @@ const APPLE_EASING = [0.25, 0.1, 0.25, 1]
 // Step data
 const steps = [
   {
-    id: "choose",
-    title: "Choose your topic",
-    description: "Simply enter any subject that interests you. From quantum physics to gourmet cooking, CourseAI transforms your topic into a comprehensive learning experience.",
-    color: "from-blue-500 to-indigo-500",
+    id: "upload",
+    title: "Enter course title",
+    description: "Simply enter a title for your course. CourseAI will help you build a structured learning experience around your chosen topic.",
     icon: FileText,
   },
   {
-    id: "generate",
-    title: "AI creates your course",
-    description: "Our advanced AI analyzes your topic, researches relevant content, and structures it into engaging lessons with interactive quizzes and assessments.",
-    color: "from-purple-500 to-pink-500",
-    icon: Sparkles,
-  },
-  {
-    id: "customize",
-    title: "Personalize & enhance",
-    description: "Refine the AI-generated content with your expertise. Add your unique insights, rearrange sections, and customize the learning path for your audience.",
-    color: "from-green-500 to-teal-500",
+    id: "structure",
+    title: "Add YouTube videos",
+    description: "Add YouTube video links to your course. CourseAI will organize them into chapters and create a logical learning path.",
     icon: Layers,
   },
   {
-    id: "publish",
-    title: "Share & inspire",
-    description: "Publish your course instantly and share it with the world. Track engagement, gather feedback, and watch your learners succeed.",
-    color: "from-orange-500 to-red-500",
+    id: "generate",
+    title: "Generate quizzes",
+    description: "Use AI to automatically create quizzes from YouTube video transcripts. Generate multiple-choice, coding, and open-ended questions.",
+    icon: Sparkles,
+  },
+  {
+    id: "share",
+    title: "Share & track progress",
+    description: "Share your course with learners and monitor their progress. Track quiz performance and engagement with detailed analytics.",
     icon: CheckCircle,
   },
 ]
@@ -49,10 +45,8 @@ const HowItWorksSection = () => {
   const animationRef = useRef<number | null>(null)
   const lastTimeRef = useRef<number>(0)
 
-  // Animation speed control - adjust this value to change animation speed
-  // Lower values = faster animations, Higher values = slower animations
-  // Default: 5000 (5 seconds per step)
-  const stepDuration = 3500 // Changed to 3.5 seconds per step for faster animations
+  // Animation speed control
+  const stepDuration = 4000
 
   // Handle step navigation
   const nextStep = useCallback(() => {
@@ -70,14 +64,13 @@ const HowItWorksSection = () => {
     setProgress(0)
   }, [])
 
-  // Animation loop using requestAnimationFrame for smoother performance
+  // Animation loop
   const animate = useCallback(
     (timestamp: number) => {
       if (!lastTimeRef.current) lastTimeRef.current = timestamp
 
       const elapsed = timestamp - lastTimeRef.current
-      // Apply speed multiplier to make animations smoother with the new duration
-      const newProgress = Math.min(progress + (elapsed / stepDuration) * 100 * 1.2, 100)
+      const newProgress = Math.min(progress + (elapsed / stepDuration) * 100, 100)
 
       setProgress(newProgress)
 
@@ -121,33 +114,37 @@ const HowItWorksSection = () => {
     switch (step) {
       case 0:
         return (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-            <div className="font-medium text-lg">Enter your topic to create a course</div>
-            <div className="bg-card p-4 rounded-lg border border-border/20">
-              <div className="h-8 w-full bg-primary/10 rounded-md flex items-center px-3">
-                <motion.span
-                  animate={{ opacity: [0, 1, 1, 0] }}
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            className="space-y-4"
+          >
+            <div className="font-medium text-lg">Enter a course title</div>
+            <div className="bg-card p-4 rounded-lg border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]">
+              <div className="flex items-center justify-center h-20 border-2 border-dashed border-border rounded-lg">
+                <motion.div
+                  animate={{ opacity: [0.6, 1, 0.6] }}
                   transition={{
                     repeat: Number.POSITIVE_INFINITY,
-                    duration: stepDuration / 1250, // Scale based on step duration
-                    times: [0, 0.1, 0.9, 1],
+                    duration: 2,
                   }}
-                  className="text-primary"
+                  className="text-center"
                 >
-                  Web Development with React
-                </motion.span>
+                  <FileText className="h-8 w-8 mx-auto mb-2 text-primary" />
+                  <span className="text-sm text-muted-foreground">Enter course title</span>
+                </motion.div>
               </div>
             </div>
             <div className="flex flex-wrap gap-2 mt-6">
-              {["JavaScript", "React", "Web Development", "Frontend"].map((tag) => (
+              {["MP4", "MOV", "AVI", "WebM"].map((format) => (
                 <motion.div
-                  key={tag}
+                  key={format}
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: Math.random() * 0.5 }}
-                  className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm"
+                  transition={{ delay: Math.random() * 0.3 }}
+                  className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium border-2 border-primary/20"
                 >
-                  {tag}
+                  {format}
                 </motion.div>
               ))}
             </div>
@@ -155,70 +152,94 @@ const HowItWorksSection = () => {
         )
       case 1:
         return (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-            <div className="font-medium text-lg">AI is generating your course content...</div>
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            className="space-y-4"
+          >
+            <div className="font-medium text-lg">Add YouTube video links</div>
             <div className="space-y-3">
               {[
-                "Analyzing topic requirements",
-                "Gathering relevant information",
-                "Structuring course outline",
-                "Creating assessment questions",
+                "Course Introduction",
+                "Chapter 1: Getting Started",
+                "Chapter 2: Core Concepts",
+                "Chapter 3: Advanced Topics",
+                "Final Assessment",
               ].map((item, i) => (
                 <motion.div
                   key={i}
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: i * (stepDuration / 16000) }} // Scale delay based on step duration
-                  className="flex items-center"
+                  initial={{ y: 5, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: i * 0.1 }}
+                  className={cn(
+                    "bg-card p-4 rounded-lg border-3 border-border flex items-center transition-all duration-200",
+                    i === Math.floor(progress / 25) 
+                      ? "shadow-[4px_4px_0px_0px_hsl(var(--primary))] border-primary/50" 
+                      : "shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+                  )}
                 >
-                  <motion.div
-                    animate={{
-                      scale: progress / 100 > (i + 1) / 4 ? [1, 1.2, 1] : 1,
-                      backgroundColor: progress / 100 > (i + 1) / 4 ? "rgb(var(--primary))" : "rgb(var(--muted))",
-                    }}
-                    transition={{ repeat: progress / 100 > (i + 1) / 4 ? Number.POSITIVE_INFINITY : 0, duration: 1 }}
-                    className="w-4 h-4 rounded-full mr-3 flex items-center justify-center bg-muted"
-                  >
-                    {progress / 100 > (i + 1) / 4 && <CheckCircle className="h-3 w-3 text-primary-foreground" />}
-                  </motion.div>
-                  <span className={progress / 100 > (i + 1) / 4 ? "font-medium" : "text-muted-foreground"}>{item}</span>
+                  <div className="w-6 h-6 rounded-full bg-primary/10 text-primary text-sm font-bold flex items-center justify-center mr-3 border-2 border-primary/20">
+                    {i + 1}
+                  </div>
+                  <div className="flex-grow font-medium">{item}</div>
+                  <Layers className="h-4 w-4 text-muted-foreground" />
                 </motion.div>
               ))}
             </div>
-            <motion.div className="h-2 mt-6 rounded-full bg-primary/20" style={{ overflow: "hidden" }}>
-              <motion.div className="h-full bg-primary" style={{ width: `${progress}%` }} />
-            </motion.div>
           </motion.div>
         )
       case 2:
         return (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-            <div className="font-medium text-lg">Customize your course structure</div>
-            <div className="space-y-2">
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            className="space-y-4"
+          >
+            <div className="font-medium text-lg">AI generates quizzes from YouTube transcripts</div>
+            <div className="space-y-3">
               {[
-                "Introduction to React",
-                "Components & Props",
-                "State & Lifecycle",
-                "Hooks",
-                "Routing",
-                "API Integration",
+                "Analyzing video transcripts",
+                "Generating multiple-choice questions",
+                "Creating coding challenges",
+                "Adding open-ended questions",
               ].map((item, i) => (
                 <motion.div
                   key={i}
-                  initial={{ y: 10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: i * (stepDuration / 50000) }} // Scale delay based on step duration
-                  className="bg-card p-3 rounded-lg border border-border/20 flex items-center"
-                  style={{
-                    transform: i === Math.floor(progress / 20) ? "scale(1.03)" : "scale(1)",
-                    boxShadow: i === Math.floor(progress / 20) ? "0 4px 12px rgba(0,0,0,0.1)" : "none",
-                  }}
+                  initial={{ x: -10, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: i * 0.2 }}
+                  className="flex items-center"
                 >
-                  <div className="mr-3 text-muted-foreground">{i + 1}.</div>
-                  <div className="flex-grow">{item}</div>
-                  <Layers className="h-4 w-4 text-muted-foreground" />
+                  <motion.div
+                    animate={{
+                      scale: progress / 100 > (i + 1) / 4 ? [1, 1.1, 1] : 1,
+                    }}
+                    transition={{ duration: 0.3 }}
+                    className={cn(
+                      "w-5 h-5 rounded-full mr-3 flex items-center justify-center border-2",
+                      progress / 100 > (i + 1) / 4 
+                        ? "bg-primary border-primary text-primary-foreground" 
+                        : "bg-muted border-border"
+                    )}
+                  >
+                    {progress / 100 > (i + 1) / 4 && <CheckCircle className="h-3 w-3" />}
+                  </motion.div>
+                  <span className={cn(
+                    "text-sm",
+                    progress / 100 > (i + 1) / 4 ? "font-medium text-foreground" : "text-muted-foreground"
+                  )}>
+                    {item}
+                  </span>
                 </motion.div>
               ))}
+            </div>
+            <div className="mt-6 p-1 bg-card rounded-lg border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]">
+              <div className="h-3 rounded-full bg-muted overflow-hidden">
+                <motion.div 
+                  className="h-full bg-primary rounded-full"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
             </div>
           </motion.div>
         )
@@ -227,34 +248,43 @@ const HowItWorksSection = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="space-y-4 text-center"
+            className="space-y-6 text-center"
           >
             <motion.div
               initial={{ scale: 0.8 }}
-              animate={{ scale: progress > 50 ? 1 : 0.8 }}
-              className="w-16 h-16 mx-auto rounded-full bg-green-500 text-white flex items-center justify-center"
+              animate={{ scale: progress > 50 ? 1 : 0.9 }}
+              className="w-20 h-20 mx-auto rounded-2xl bg-primary text-primary-foreground flex items-center justify-center border-4 border-border shadow-[8px_8px_0px_0px_hsl(var(--border))]"
             >
-              <CheckCircle className="h-8 w-8" />
+              <CheckCircle className="h-10 w-10" />
             </motion.div>
-            <div className="font-medium text-lg">
-              {progress < 50 ? "Publishing your course..." : "Course Published!"}
+            <div className="font-bold text-xl">
+              {progress < 50 ? "Setting up your course..." : "Course Ready to Share!"}
             </div>
-            <motion.div className="h-2 rounded-full bg-primary/20 max-w-xs mx-auto" style={{ overflow: "hidden" }}>
-              <motion.div className="h-full bg-primary" style={{ width: `${progress}%` }} />
-            </motion.div>
+            
+            <div className="p-1 bg-card rounded-lg border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))] max-w-xs mx-auto">
+              <div className="h-4 rounded-full bg-muted overflow-hidden">
+                <motion.div 
+                  className="h-full bg-primary rounded-full"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
 
             {progress > 70 && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 space-y-2">
-                <div className="text-muted-foreground">Share your course:</div>
-                <div className="flex justify-center space-x-2">
-                  {["Copy Link", "Email", "Twitter", "Facebook"].map((platform, i) => (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6 space-y-3"
+              >
+                <div className="text-muted-foreground font-medium">Share your course:</div>
+                <div className="flex justify-center flex-wrap gap-2">
+                  {["Copy Link", "Email", "Facebook", "LinkedIn"].map((platform, i) => (
                     <motion.div
                       key={platform}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * (stepDuration / 50000) }} // Scale delay based on step duration
-                      className="px-3 py-1 rounded-full bg-card border border-border/20 text-sm cursor-pointer"
+                      transition={{ delay: i * 0.1 }}
+                      className="px-4 py-2 rounded-lg bg-card border-3 border-border text-sm font-medium cursor-pointer shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:shadow-[4px_4px_0px_0px_hsl(var(--primary))] hover:border-primary/50 transition-all duration-200"
                     >
                       {platform}
                     </motion.div>
@@ -270,14 +300,15 @@ const HowItWorksSection = () => {
   }
 
   return (
-    <div className="container max-w-6xl mx-auto px-4 md:px-6 py-16" ref={containerRef}>
-      <div className="text-center mb-16">
+    <section className="w-full py-16 md:py-24 bg-background" ref={containerRef}>
+      <div className="max-w-6xl mx-auto px-4 md:px-6 text-center mb-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6, ease: APPLE_EASING }}
-          className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary text-sm font-black border-3 border-primary/20 shadow-[3px_3px_0px_0px_hsl(var(--border))] mb-6"
         >
+          <Sparkles className="h-4 w-4" />
           How It Works
         </motion.div>
 
@@ -285,11 +316,11 @@ const HowItWorksSection = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6, delay: 0.1, ease: APPLE_EASING }}
-          className="text-3xl md:text-5xl font-bold mb-6"
+          className="text-4xl md:text-6xl font-black mb-6"
         >
           From idea to
           <br />
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
             extraordinary course
           </span>
         </motion.h2>
@@ -298,7 +329,7 @@ const HowItWorksSection = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6, delay: 0.2, ease: APPLE_EASING }}
-          className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
+          className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
         >
           Creating exceptional educational content has never been this simple.
           Our intelligent platform handles the complexity while you focus on
@@ -307,77 +338,68 @@ const HowItWorksSection = () => {
       </div>
 
       {/* Step Navigation */}
-      <div className="relative max-w-5xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <motion.div whileHover={{ scale: 1.05, x: -2 }} whileTap={{ scale: 0.95 }} className="hidden md:block">
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full bg-background/80 backdrop-blur-sm shadow-lg"
-              onClick={prevStep}
-              aria-label="Previous step"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-          </motion.div>
-
-          <div className="flex-1 mx-4">
-            {/* Progress bar */}
-            <div
-              className="relative h-2 bg-muted rounded-full overflow-hidden"
+      <div className="relative max-w-5xl mx-auto px-4">
+        <div className="flex flex-col gap-8 mb-12">
+          {/* Progress bar */}
+          <div className="relative">
+            <div 
+              className="relative h-4 bg-card rounded-2xl border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))] overflow-hidden"
               role="progressbar"
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={progress}
             >
               <motion.div
-                className={`absolute top-0 left-0 h-full rounded-full bg-gradient-to-r ${steps[activeStep].color}`}
+                className="absolute top-0 left-0 h-full bg-primary rounded-xl"
                 style={{ width: `${progress}%` }}
               />
             </div>
 
-            <div className="flex justify-between mt-4">
+            <div className="flex justify-between mt-6">
               {steps.map((step, index) => (
                 <motion.button
                   key={index}
                   onClick={() => goToStep(index)}
                   className={cn(
-                    "flex flex-col items-center transition-all duration-300",
-                    "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 rounded-lg p-1",
-                    index === activeStep ? "scale-110" : "scale-100 opacity-70 hover:opacity-100",
+                    "flex flex-col items-center transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-primary/20 rounded-2xl p-3",
+                    index === activeStep ? "scale-110" : "scale-100 opacity-80 hover:opacity-100 hover:scale-105",
                   )}
-                  whileHover={{ scale: index === activeStep ? 1.1 : 1.05 }}
+                  whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   aria-label={`Go to step ${index + 1}: ${step.title}`}
                   aria-current={index === activeStep ? "step" : undefined}
                 >
                   <motion.div
                     className={cn(
-                      "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center mb-2",
+                      "w-14 h-14 rounded-2xl flex items-center justify-center mb-3 border-3 shadow-[4px_4px_0px_0px_hsl(var(--border))] transition-all duration-300",
                       index === activeStep
-                        ? `bg-gradient-to-br ${step.color} text-white shadow-lg`
+                        ? "bg-primary text-primary-foreground border-primary shadow-[4px_4px_0px_0px_hsl(var(--primary))]"
                         : index < activeStep
-                          ? "bg-primary/20 text-primary"
-                          : "bg-muted text-muted-foreground",
+                          ? "bg-primary/20 text-primary border-primary/30"
+                          : "bg-card text-muted-foreground border-border",
                     )}
                     animate={
                       index === activeStep
                         ? {
-                            scale: [1, 1.05, 1],
+                            y: [0, -4, 0],
                           }
                         : {}
                     }
                     transition={{
                       repeat: index === activeStep ? Number.POSITIVE_INFINITY : 0,
                       repeatType: "reverse",
-                      duration: stepDuration / 2500, // Scale duration based on step duration
+                      duration: 2,
                     }}
                   >
-                    {index < activeStep ? <CheckCircle className="h-5 w-5" /> : <step.icon className="h-5 w-5" />}
+                    {index < activeStep ? (
+                      <CheckCircle className="h-6 w-6" />
+                    ) : (
+                      <step.icon className="h-6 w-6" />
+                    )}
                   </motion.div>
                   <span
                     className={cn(
-                      "text-xs sm:text-sm font-medium text-center block md:block",
+                      "text-sm font-black text-center max-w-24",
                       index === activeStep ? "text-foreground" : "text-muted-foreground",
                     )}
                   >
@@ -387,88 +409,72 @@ const HowItWorksSection = () => {
               ))}
             </div>
           </div>
-
-          <motion.div whileHover={{ scale: 1.05, x: 2 }} whileTap={{ scale: 0.95 }} className="hidden md:block">
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full bg-background/80 backdrop-blur-sm shadow-lg"
-              onClick={nextStep}
-              aria-label="Next step"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </motion.div>
         </div>
 
         {/* Main Content Area */}
         <motion.div
-          className="relative bg-card/30 backdrop-blur-sm rounded-2xl p-6 md:p-10 border border-border/10 shadow-lg overflow-hidden"
-          style={{ minHeight: "400px" }}
+          className="relative bg-card rounded-3xl p-6 md:p-8 border-3 border-border shadow-[8px_8px_0px_0px_hsl(var(--border))] overflow-hidden"
+          style={{ minHeight: "480px" }}
           layout
         >
-          {/* Background gradient */}
-          <motion.div
-            className={`absolute inset-0 opacity-10 bg-gradient-to-br ${steps[activeStep].color}`}
-            animate={{ opacity: [0.05, 0.1, 0.05] }}
-            transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, repeatType: "reverse" }}
-            aria-hidden="true"
-          />
-
           {/* Step Content */}
           <motion.div
             key={`step-${activeStep}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.5, ease: APPLE_EASING }}
-            className="relative z-10"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, ease: APPLE_EASING }}
+            className="relative z-10 h-full"
           >
-            <div className="flex flex-col md:flex-row gap-8 md:gap-16 items-center">
-              <div className="md:w-1/2">
+            <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start h-full">
+              <div className="lg:w-1/2">
                 <motion.div
-                  className={`inline-flex items-center justify-center p-4 rounded-full bg-gradient-to-br ${steps[activeStep].color} text-white text-2xl font-bold mb-6 relative z-10 shadow-lg`}
+                  className="inline-flex items-center justify-center p-5 rounded-2xl bg-primary text-primary-foreground text-2xl font-black mb-6 border-4 border-border shadow-[8px_8px_0px_0px_hsl(var(--border))]"
                   animate={{
-                    scale: [1, 1.03, 1],
+                    y: [0, -4, 0],
                   }}
                   transition={{
-                    duration: 2,
+                    duration: 3,
                     repeat: Number.POSITIVE_INFINITY,
                     repeatType: "reverse",
                   }}
                 >
                   {React.createElement(steps[activeStep].icon, { className: "h-8 w-8" })}
                 </motion.div>
-                <h3 className="text-2xl md:text-3xl font-bold mb-4">{steps[activeStep].title}</h3>
-                <p className="text-muted-foreground text-lg mb-6 leading-relaxed">{steps[activeStep].description}</p>
+                <h3 className="text-3xl md:text-4xl font-black mb-4">{steps[activeStep].title}</h3>
+                <p className="text-muted-foreground text-lg mb-8 leading-relaxed">{steps[activeStep].description}</p>
 
-                <div className="flex space-x-4">
+                <div className="flex gap-4 flex-wrap">
                   <Button
                     variant="default"
-                    className={`rounded-full bg-gradient-to-r ${steps[activeStep].color} text-white border-none px-6 py-2`}
+                    className="rounded-xl bg-primary text-primary-foreground border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] hover:translate-y-[-2px] transition-all duration-200 px-6 py-3 font-black text-base"
                     onClick={nextStep}
                   >
                     {activeStep === steps.length - 1 ? "Get Started" : "Next Step"}
-                    <motion.span
-                      className="inline-block ml-2"
-                      animate={{ x: [0, 3, 0] }}
-                      transition={{ repeat: Number.POSITIVE_INFINITY, duration: stepDuration / 3500 }}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </motion.span>
+                    <ChevronRight className="h-5 w-5 ml-2" />
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    className="rounded-xl border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] hover:translate-y-[-2px] transition-all duration-200 px-6 py-3 font-black text-base"
+                    onClick={prevStep}
+                  >
+                    <ChevronLeft className="h-5 w-5 mr-2" />
+                    Previous
                   </Button>
                 </div>
               </div>
 
-              <div className="md:w-1/2">
-                <div className="bg-background/80 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/20">
-                  <div className="flex items-center mb-4">
-                    <div className="flex space-x-2">
-                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              <div className="lg:w-1/2 w-full">
+                <div className="bg-background rounded-2xl p-6 border-3 border-border shadow-[6px_6px_0px_0px_hsl(var(--border))]">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500 border-2 border-border"></div>
+                      <div className="w-3 h-3 rounded-full bg-yellow-500 border-2 border-border"></div>
+                      <div className="w-3 h-3 rounded-full bg-green-500 border-2 border-border"></div>
                     </div>
-                    <div className="ml-4 text-sm font-medium">Step {activeStep + 1}</div>
+                    <div className="px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-black border-2 border-primary/20">
+                      Step {activeStep + 1} of {steps.length}
+                    </div>
                   </div>
 
                   {getStepContent(activeStep)}
@@ -479,18 +485,26 @@ const HowItWorksSection = () => {
         </motion.div>
 
         {/* Mobile Navigation */}
-        <div className="flex justify-between mt-6 md:hidden">
-          <Button variant="outline" size="sm" onClick={prevStep} className="rounded-full">
-            <ChevronLeft className="mr-2 h-4 w-4" />
+        <div className="flex justify-between gap-4 mt-8 md:hidden">
+          <Button 
+            variant="outline" 
+            onClick={prevStep} 
+            className="rounded-xl border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))] flex-1 font-black py-3"
+          >
+            <ChevronLeft className="mr-2 h-5 w-5" />
             Previous
           </Button>
-          <Button variant="outline" size="sm" onClick={nextStep} className="rounded-full">
+          <Button 
+            variant="default" 
+            onClick={nextStep} 
+            className="rounded-xl bg-primary text-primary-foreground border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))] flex-1 font-black py-3"
+          >
             Next
-            <ChevronRight className="ml-2 h-4 w-4" />
+            <ChevronRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
       </div>
-    </div>
+    </section>
   )
 }
 

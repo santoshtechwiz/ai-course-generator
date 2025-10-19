@@ -28,11 +28,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
     const title = userName
       ? `${userName}'s Dashboard • CourseAI`
-      : "CourseAI - AI-Powered Educational Content Creator"
+      : "CourseAI - Create Courses and Quizzes with AI"
 
     const description = session?.user
       ? "Access your personalized dashboard to create courses, quizzes, and educational content with AI-powered tools."
-      : "Create professional courses, quizzes, and educational content with AI. Transform learning with intelligent content generation for educators and trainers."
+      : "Build video-based courses and generate intelligent quizzes with AI assistance. Create engaging learning experiences with automated quiz generation."
 
     return generateBaseMetadata({
       title,
@@ -51,8 +51,8 @@ export async function generateMetadata(): Promise<Metadata> {
   } catch (error) {
     console.error("Metadata generation error:", error)
     return generateBaseMetadata({
-      title: "CourseAI - AI-Powered Educational Content Creator",
-      description: "Create professional courses, quizzes, and educational content with AI.",
+      title: "CourseAI - Create Courses and Quizzes with AI",
+      description: "Build video-based courses and generate intelligent quizzes with AI assistance.",
       canonical: siteUrl,
       type: "website",
     })

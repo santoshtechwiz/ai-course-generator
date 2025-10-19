@@ -134,7 +134,7 @@ const CTASVG = () => {
           transition={{ duration: 0.2 }}
         />
         <motion.text x="575" y="205" textAnchor="middle" fill="white" fontWeight="bold" fontSize="16">
-          Start Free Trial
+          Get Started
         </motion.text>
       </motion.g>
 

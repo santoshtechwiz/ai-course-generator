@@ -7,30 +7,27 @@ import { generateMetadata } from "@/lib/seo"
 import { JsonLD } from "@/lib/seo"
 
 export const metadata = generateMetadata({
-  title: 'CourseAI - Create Extraordinary Courses with AI',
-  description: 'Transform any topic into engaging, interactive courses in minutes. CourseAI combines AI-powered content creation with beautiful design to help educators, trainers, and organizations create extraordinary learning experiences.',
+  title: 'CourseAI - Create Interactive Courses and Quizzes',
+  description: 'Build video-based courses with structured learning paths and generate intelligent quizzes. Create engaging educational content with AI assistance for personalized learning experiences.',
   keywords: [
-    'AI course creator',
-    'AI quiz generator',
-    'educational content creator',
+    'course creation platform',
+    'quiz generator',
+    'video course builder',
     'interactive learning platform',
+    'AI quiz maker',
+    'learning management',
+    'educational technology',
     'course builder',
     'quiz maker',
-    'AI education tools',
-    'online learning',
-    'educational technology',
-    'e-learning platform',
-    'training materials',
-    'assessment tools',
+    'online learning platform',
+    'e-learning tools',
     'courseai',
-    'automated content generation',
-    'learning management system',
-    'educational innovation',
-    'AI-powered education',
-    'course creation platform'
+    'automated quiz generation',
+    'learning path creator'
   ],
   canonical: '/',
   type: 'website',
+  image: '/images/og-image.png', // Add proper OG image path
 })
 
 export default function HomePage() {
@@ -48,7 +45,7 @@ export default function HomePage() {
           "@context": "https://schema.org",
           "@type": "WebApplication",
           "name": "CourseAI",
-          "description": "AI-powered educational content creator for courses and quizzes",
+          "description": "AI-powered platform for creating video courses and generating intelligent quizzes",
           "applicationCategory": "EducationalApplication",
           "operatingSystem": "All",
           "offers": {

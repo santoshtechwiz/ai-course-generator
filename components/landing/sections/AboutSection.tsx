@@ -19,23 +19,23 @@ const AboutSection = () => {
 
   const sections = [
     {
-      title: "Effortless Creation",
+      title: "YouTube Course Creation",
       description:
-        "Transform any topic into a comprehensive course in minutes. CourseAI's advanced AI understands context, structure, and learning objectives to create engaging content that resonates with your audience.",
+        "Create structured courses using YouTube video links. Organize lessons from existing videos into chapters and build comprehensive learning paths that engage your audience.",
       icon: MissionIcon,
       color: "from-blue-500 to-indigo-500",
     },
     {
-      title: "Beautiful Learning Experiences",
+      title: "AI Quiz Generation",
       description:
-        "We believe great design enhances learning. CourseAI combines sophisticated AI with stunning visuals and intuitive interfaces to create courses that captivate and educate.",
+        "Generate intelligent quizzes from YouTube video transcripts. Create multiple-choice, coding challenges, fill-in-the-blanks, and open-ended questions with AI assistance.",
       icon: VisionIcon,
       color: "from-purple-500 to-pink-500",
     },
     {
-      title: "Innovation Through Passion",
+      title: "Progress Tracking",
       description:
-        "Every feature is crafted with deep care for education and user experience. We're not just building tools—we're reimagining how the world creates and shares knowledge.",
+        "Monitor learner engagement and completion rates. Track quiz performance, video viewing progress, and provide detailed analytics for effective learning management.",
       icon: TeamIcon,
       color: "from-green-500 to-teal-500",
     },
@@ -43,41 +43,42 @@ const AboutSection = () => {
 
   const values = [
     {
-      title: "Innovation First",
+      title: "AI-Powered Assistance",
       description:
-        "We push the boundaries of what's possible with AI and education. Every update brings new capabilities that make course creation more powerful and intuitive.",
+        "Leverage AI to generate quizzes from transcripts and get personalized recommendations. Our AI tools enhance your course creation process without replacing your expertise.",
       color: "from-purple-500 to-indigo-500",
       icon: "sparkles",
     },
     {
-      title: "Simple & Accessible",
+      title: "User-Friendly Design",
       description:
-        "CourseAI is designed for anyone who wants to create learning content. No technical expertise required—just your knowledge and our AI tools.",
+        "CourseAI features modern Neobrutalism design that's clean, bold, and responsive. Create and manage courses with an intuitive interface that works seamlessly.",
       color: "from-blue-500 to-sky-500",
       icon: "users",
     },
     {
-      title: "Privacy & Trust",
+      title: "Secure & Private",
       description:
-        "Your content is yours. We provide enterprise-grade security with complete control over access, ensuring your courses remain private and protected.",
+        "Your content remains secure and private. Control access to your courses and quizzes, with enterprise-grade security ensuring your educational materials are protected.",
       color: "from-green-500 to-emerald-500",
       icon: "star",
     },
   ]
 
   return (
-    <div className="container max-w-6xl mx-auto px-4 md:px-6" ref={containerRef}>
+    <div className="w-full" ref={containerRef}>
       <div className="text-center mb-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
+          className="inline-block px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
         >
           About CourseAI
         </motion.div>
 
         <motion.h2
+          id="about-heading"
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
@@ -94,13 +95,12 @@ const AboutSection = () => {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed"
         >
-          CourseAI combines artificial intelligence with intuitive design to help you
-          create courses and quizzes quickly. Generate content, track progress, and
-          build effective learning experiences.
+          CourseAI helps you create courses using YouTube videos and generate intelligent quizzes using AI.
+          Build structured learning experiences, track progress, and share your content effectively.
         </motion.p>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-2 lg:gap-12">
+  <div className="grid gap-8 md:grid-cols-2 lg:gap-12 max-w-6xl mx-auto">
         {sections.map((section, index) => (
           <motion.div
             key={section.title}
@@ -184,7 +184,7 @@ const AboutSection = () => {
       >
         <Button
           size="lg"
-          className="px-8 py-3 text-lg font-medium rounded-full hover:shadow-lg hover:-translate-y-1 transition-all"
+          className="px-4 sm:px-6 py-3 text-lg font-medium rounded-full hover:shadow-lg hover:-translate-y-1 transition-all"
           onClick={() => (window.location.href = "/contactus")}
         >
           Get in Touch

@@ -6,9 +6,9 @@ import { useInterval } from "@/hooks/useInterval"
 
 const benefits = [
   {
-    title: "Create Complete Courses Instantly",
+    title: "Create Video Courses",
     description:
-      "Generate full-featured courses from any topic or video transcript with built-in MCQs, open-ended questions, fill-in-the-blanks, document uploads, PDF downloads, and AI-powered quizzes.",
+      "Build structured courses with your video content. Organize lessons into chapters and create comprehensive learning paths that engage your audience.",
     icon: "📚",
   },
 
@@ -28,8 +28,8 @@ const benefits = [
     icon: "📊",
   },
   {
-    title: "AI-Powered Content Generation",
-    description: "Automatically generate course content and quizzes from transcripts using AI.",
+    title: "AI Quiz Generation",
+    description: "Generate intelligent quizzes from video transcripts. Create multiple-choice, coding challenges, fill-in-the-blanks, and open-ended questions automatically.",
     icon: "🤖",
   },
   {

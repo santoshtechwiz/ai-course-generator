@@ -76,7 +76,7 @@ const AboutSection = () => {
     {
       title: "Effortless Course Creation",
       description:
-        "CourseAI empowers educators and creators to generate complete courses from a single topic. Our advanced AI organizes content into structured lessons and interactive quizzes in seconds.",
+        "CourseAI helps you create courses using YouTube videos and generate intelligent quizzes. Build structured learning experiences with YouTube integration and AI assistance for quiz generation.",
       icon: MissionIcon,
       color: "from-rose-500 to-rose-600",
     },

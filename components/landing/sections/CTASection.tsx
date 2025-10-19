@@ -51,7 +51,7 @@ const CTASection = () => {
   if (!isInView) return null
 
   return (
-    <div className="container max-w-6xl mx-auto px-4 md:px-6" ref={containerRef}>
+  <div className="w-full" ref={containerRef}>
       <div className="relative rounded-3xl overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5" />
         <div className="relative p-8 md:p-16">
@@ -59,7 +59,7 @@ const CTASection = () => {
             <div className="text-center lg:text-left">
               <MaskReveal direction="left">
                 <ProgressiveText
-                  text="Turn any topic into an interactive course — instantly."
+                  text="Create video courses and generate AI quizzes."
                   tag="h2"
                   className="text-3xl md:text-5xl font-bold mb-6 tracking-tight"
                   delay={0.2}
@@ -68,9 +68,8 @@ const CTASection = () => {
 
               <MaskReveal direction="left" delay={0.3}>
                 <p className="text-lg sm:text-xl text-muted-foreground mb-6 sm:mb-8">
-                  CourseAI helps you create structured courses from any topic in seconds. Generate quizzes automatically
-                  or build your own using MCQs, coding questions, fill-in-the-blanks, and open-ended types. Track
-                  progress, and even create private courses for your audience.
+                  CourseAI helps you create structured courses using YouTube video links and generate intelligent quizzes using AI.
+                  Build engaging learning experiences with multiple-choice, coding, fill-in-the-blank, and open-ended questions.
                 </p>
               </MaskReveal>
 
@@ -94,7 +93,7 @@ const CTASection = () => {
               <MaskReveal direction="left" delay={0.5}>
                 <FeedbackButton
                   size="lg"
-                  className="px-6 sm:px-8 py-4 sm:py-6 text-base sm:text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
+                  className="px-4 sm:px-6 py-4 sm:py-6 text-base sm:text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
                   loadingText="Redirecting..."
                   successText="Redirected!"
                   errorText="Please try again"
@@ -123,7 +122,7 @@ const CTASection = () => {
                     {" "}
                     {/* Reduced from 1.05 */}
                     <Check className="h-5 w-5 text-primary mr-2" />
-                    <span className="text-sm">Create from any topic</span>
+                    <span className="text-sm">Video course builder</span>
                   </motion.div>
                   <motion.div className="flex items-center" whileHover={{ scale: 1.03 }} transition={{ duration: 0.3 }}>
                     {" "}

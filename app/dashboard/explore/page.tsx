@@ -132,7 +132,7 @@ export default function ExplorePage() {
     {
       question: "How does CourseAI generate educational content?",
       answer:
-        "CourseAI uses advanced artificial intelligence to analyze your topic and generate high-quality educational content including multiple-choice questions, open-ended questions, fill-in-the-blank exercises, and complete courses.",
+        "CourseAI helps you create courses using YouTube videos and generate intelligent quizzes. Add YouTube video links, organize them into chapters, and use AI to automatically generate quizzes from video transcripts.",
     },
     {
       question: "Can I create programming quizzes with CourseAI?",

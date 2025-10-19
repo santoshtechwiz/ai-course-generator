@@ -89,12 +89,12 @@ const VideoSection = () => {
     return () => clearInterval(interval)
   }, [isInView, features.length])
 
-  return (
+    return (
     <div
       ref={containerRef}
-      className="relative py-20 md:py-32 overflow-hidden bg-gradient-to-b from-background to-muted/20"
+      className="relative py-12 md:py-16 overflow-hidden bg-gradient-to-b from-background to-muted/20"
     >
-      <div className="container max-w-6xl mx-auto px-4 md:px-6">
+  <div className="w-full">
         <div className="text-center mb-12">
           <RevealAnimation>
             <h2 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight">Smarter Coding. Faster Learning.</h2>
@@ -181,7 +181,7 @@ const VideoSection = () => {
               {/* Feature badge */}
               <div className="absolute top-4 left-4">
                 <Badge
-                  className="px-3 py-1.5 text-sm bg-primary/80 backdrop-blur-sm text-white border-none"
+                  className="px-2 py-1.5 text-sm bg-primary/80 backdrop-blur-sm text-white border-none"
                   variant="outline"
                 >
                   AI Coding Coach
