@@ -198,10 +198,10 @@ export default function FlashCardResults({
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 300, delay: 0.2 }}
         >
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] bg-clip-text text-transparent">
             {title}
           </h1>
-          <p className="text-gray-600 dark:text-gray-300 text-lg mt-2">Quiz Complete!</p>
+          <p className="text-muted-foreground text-lg mt-2">Quiz Complete!</p>
         </motion.div>
 
         <motion.div
@@ -212,8 +212,8 @@ export default function FlashCardResults({
         >
           <div className="text-6xl">{performance.emoji}</div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{performance.title}</div>
-            <div className="text-lg text-gray-600 dark:text-gray-400">{Math.round(percentage)}% Score</div>
+            <div className="text-2xl font-bold text-foreground">{performance.title}</div>
+            <div className="text-lg text-muted-foreground">{Math.round(percentage)}% Score</div>
           </div>
         </motion.div>
       </motion.div>
@@ -229,7 +229,7 @@ export default function FlashCardResults({
           <CardHeader className="pb-3">
             <CardTitle className="flex gap-3 items-center text-blue-700 dark:text-blue-300">
               <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center">
-                <Flame className="w-5 h-5 text-white" />
+                <Flame className="w-5 h-5 text-primary-foreground" />
               </div>
               Your Score
             </CardTitle>
@@ -240,11 +240,11 @@ export default function FlashCardResults({
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.6, type: "spring" }}
-              className="text-5xl font-bold text-blue-600 dark:text-blue-400 mb-2"
+              className="text-5xl font-bold text-primary mb-2"
             >
               {Math.round(percentage)}%
             </motion.div>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-muted-foreground">
               <motion.span
                 key={`correct-count-${correctAnswers}`}
                 initial={{ opacity: 0.6 }}
@@ -263,7 +263,7 @@ export default function FlashCardResults({
           <CardHeader className="pb-3">
             <CardTitle className="flex gap-3 items-center text-emerald-700 dark:text-emerald-300">
               <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-green-500 rounded-xl flex items-center justify-center">
-                <Clock className="w-5 h-5 text-white" />
+                <Clock className="w-5 h-5 text-primary-foreground" />
               </div>
               Time Spent
             </CardTitle>
@@ -286,7 +286,7 @@ export default function FlashCardResults({
                 whileHover={{ scale: 1.1 }}
                 className="w-12 h-12 mx-auto bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center"
               >
-                <CheckCircle className="text-white w-6 h-6" />
+                <CheckCircle className="text-primary-foreground w-6 h-6" />
               </motion.div>
               <motion.div
                 key={`correct-${correctAnswers}`}
@@ -297,14 +297,14 @@ export default function FlashCardResults({
               >
                 {correctAnswers}
               </motion.div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Known</div>
+              <div className="text-xs text-muted-foreground">Known</div>
             </div>
             <div className="space-y-2">
               <motion.div
                 whileHover={{ scale: 1.1 }}
                 className="w-12 h-12 mx-auto bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center"
               >
-                <HelpCircle className="text-white w-6 h-6" />
+                <HelpCircle className="text-primary-foreground w-6 h-6" />
               </motion.div>
               <motion.div
                 key={`learning-${stillLearningAnswers}`}
@@ -315,14 +315,14 @@ export default function FlashCardResults({
               >
                 {stillLearningAnswers}
               </motion.div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Learning</div>
+              <div className="text-xs text-muted-foreground">Learning</div>
             </div>
             <div className="space-y-2">
               <motion.div
                 whileHover={{ scale: 1.1 }}
                 className="w-12 h-12 mx-auto bg-gradient-to-r from-red-500 to-rose-500 rounded-full flex items-center justify-center"
               >
-                <XCircle className="text-white w-6 h-6" />
+                <XCircle className="text-primary-foreground w-6 h-6" />
               </motion.div>
               <motion.div
                 key={`incorrect-${incorrectAnswers}`}
@@ -333,7 +333,7 @@ export default function FlashCardResults({
               >
                 {incorrectAnswers}
               </motion.div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Need Study</div>
+              <div className="text-xs text-muted-foreground">Need Study</div>
             </div>
           </CardContent>
         </Card>
@@ -342,12 +342,12 @@ export default function FlashCardResults({
       {/* Review Tabs */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
         <Tabs defaultValue="correct" value={tab} onValueChange={setTab}>
-          <TabsList className="w-full grid grid-cols-3 max-w-2xl mx-auto h-14 bg-gray-100 dark:bg-gray-800 rounded-2xl p-1">
+          <TabsList className="w-full grid grid-cols-3 max-w-2xl mx-auto h-14 bg-muted rounded-2xl p-1">
             {tabs.map((t) => (
               <TabsTrigger
                 key={t.key}
                 value={t.key}
-                className="flex items-center gap-2 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-lg dark:data-[state=active]:bg-gray-700"
+                className="flex items-center gap-2 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-lg"
               >
                 {t.icon}
                 <span className="hidden sm:inline">{t.label}</span>
@@ -365,7 +365,7 @@ export default function FlashCardResults({
                   <div className="text-6xl mb-4">
                     {t.key === "correct" ? "🎉" : t.key === "still_learning" ? "📚" : "🤔"}
                   </div>
-                  <p className="text-gray-500 dark:text-gray-400 text-lg">No {t.label.toLowerCase()} cards yet</p>
+                  <p className="text-muted-foreground text-lg">No {t.label.toLowerCase()} cards yet</p>
                 </motion.div>
               ) : (
                 <div className="grid gap-4">
@@ -376,15 +376,15 @@ export default function FlashCardResults({
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
                     >
-                      <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-gray-300 dark:hover:border-gray-600">
+                      <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-border">
                         <CardHeader className="pb-3">
-                          <CardTitle className="text-lg font-semibold text-gray-800 dark:text-gray-200 leading-relaxed">
+                          <CardTitle className="text-lg font-semibold text-foreground leading-relaxed">
                             {q.question}
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-                            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{q.answer}</p>
+                          <div className="bg-muted rounded-xl p-4 border border-border">
+                            <p className="text-foreground leading-relaxed">{q.answer}</p>
                           </div>
                         </CardContent>
                       </Card>
@@ -404,7 +404,7 @@ export default function FlashCardResults({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.7 }}
       >
-        <h3 className="text-center text-2xl font-semibold text-gray-800 dark:text-gray-200">What's next?</h3>
+        <h3 className="text-center text-2xl font-semibold text-foreground">What's next?</h3>
 
         {/* Review Options */}
         {(reviewCardsState.length > 0 || stillLearningCardsState.length > 0) && (
@@ -418,11 +418,11 @@ export default function FlashCardResults({
                 <Card className="border-2 border-amber-200 dark:border-amber-800 hover:border-amber-400 dark:hover:border-amber-600 transition-all duration-300 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 shadow-xl hover:shadow-2xl">
                   <CardContent className="p-8 flex flex-col items-center text-center space-y-4">
                     <div className="w-16 h-16 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
-                      <HelpCircle className="h-8 w-8 text-white" />
+                      <HelpCircle className="h-8 w-8 text-primary-foreground" />
                     </div>
                     <div>
                       <motion.h3
-                        className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2"
+                        className="text-xl font-bold text-foreground mb-2"
                         key={`still-learning-${stillLearningCardsCount}`}
                         initial={{ opacity: 0.8 }}
                         animate={{ opacity: 1 }}
@@ -430,11 +430,11 @@ export default function FlashCardResults({
                       >
                         Review {stillLearningCardsCount} Learning Cards
                       </motion.h3>
-                      <p className="text-gray-600 dark:text-gray-400">Focus on cards you're still mastering</p>
+                      <p className="text-muted-foreground">Focus on cards you're still mastering</p>
                     </div>
                     <Button
                       size="lg"
-                      className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-0"
+                      className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-primary-foreground px-8 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-0"
                       onClick={() => onReviewStillLearning(stillLearningCardsState)}
                     >
                       <BookOpen className="w-5 h-5 mr-2" />
@@ -454,11 +454,11 @@ export default function FlashCardResults({
                 <Card className="border-2 border-red-200 dark:border-red-800 hover:border-red-400 dark:hover:border-red-600 transition-all duration-300 bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/20 dark:to-rose-950/20 shadow-xl hover:shadow-2xl">
                   <CardContent className="p-8 flex flex-col items-center text-center space-y-4">
                     <div className="w-16 h-16 bg-gradient-to-r from-red-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg">
-                      <XCircle className="h-8 w-8 text-white" />
+                      <XCircle className="h-8 w-8 text-primary-foreground" />
                     </div>
                     <div>
                       <motion.h3
-                        className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2"
+                        className="text-xl font-bold text-foreground mb-2"
                         key={`review-${reviewCardsCount}`}
                         initial={{ opacity: 0.8 }}
                         animate={{ opacity: 1 }}
@@ -466,11 +466,11 @@ export default function FlashCardResults({
                       >
                         Study {reviewCardsCount} Difficult Cards
                       </motion.h3>
-                      <p className="text-gray-600 dark:text-gray-400">Focus on cards that need more attention</p>
+                      <p className="text-muted-foreground">Focus on cards that need more attention</p>
                     </div>
                     <Button
                       size="lg"
-                      className="bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-0"
+                      className="bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-primary-foreground px-8 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-0"
                       onClick={() => onReview(reviewCardsState)}
                     >
                       <RefreshCw className="w-5 h-5 mr-2" />
@@ -490,7 +490,7 @@ export default function FlashCardResults({
               onClick={onRestart}
               size="lg"
               variant="outline"
-              className="px-8 py-3 rounded-2xl font-semibold border-2 border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 bg-transparent"
+              className="px-8 py-3 rounded-2xl font-semibold border-2 border-border hover:border-primary transition-all duration-300 bg-transparent"
             >
               <RefreshCw className="w-5 h-5 mr-2" />
               Restart Quiz
@@ -502,7 +502,7 @@ export default function FlashCardResults({
               variant="ghost"
               onClick={handleShare}
               size="lg"
-              className="px-8 py-3 rounded-2xl font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300"
+              className="px-8 py-3 rounded-2xl font-semibold hover:bg-muted transition-all duration-300"
             >
               <Share2 className="w-5 h-5 mr-2" />
               {copied ? "Link Copied!" : "Share Results"}
