@@ -16,7 +16,7 @@ export function AuthButtonGroup({ providers, callbackUrl }: AuthButtonGroupProps
 
   if (validProviders.length === 0) {
     return (
-      <div className="text-center text-gray-500 py-4">
+      <div className="text-center text-muted-foreground py-4">
         No authentication providers available. Please check your configuration.
       </div>
     )

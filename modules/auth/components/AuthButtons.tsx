@@ -14,7 +14,7 @@ export function AuthButtons({ className = "" }: AuthButtonsProps) {
   if (isLoading) {
     return (
       <div className={`animate-pulse ${className}`}>
-        <div className="h-11 w-full max-w-[80px] sm:max-w-[100px] bg-gray-200 rounded min-h-[44px]"></div>
+        <div className="h-11 w-full max-w-[80px] sm:max-w-[100px] bg-muted rounded min-h-[44px]"></div>
       </div>
     )
   }

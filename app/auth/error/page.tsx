@@ -115,7 +115,7 @@ export default function AuthError() {
             <p className="text-sm text-amber-700 dark:text-amber-400">
               If you continue to experience issues, please contact our support team with the following error details:
               <br />
-              <code className="mt-2 block p-2 bg-slate-100 dark:bg-slate-800 rounded font-mono text-xs overflow-x-auto">
+              <code className="mt-2 block p-2 bg-muted rounded font-mono text-xs overflow-x-auto">
                 Error: {searchParams.get("error") || "Unknown"}
               </code>
             </p>

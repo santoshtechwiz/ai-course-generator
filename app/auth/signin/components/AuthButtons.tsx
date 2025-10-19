@@ -35,8 +35,8 @@ interface AuthButtonProps {
 
 function AuthButtonSkeleton() {
   return (
-    <div className="w-full h-12 flex items-center justify-center bg-gray-100 rounded-lg">
-      <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
+    <div className="w-full h-12 flex items-center justify-center bg-muted rounded-lg">
+      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
     </div>
   )
 }

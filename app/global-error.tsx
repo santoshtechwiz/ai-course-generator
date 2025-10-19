@@ -135,7 +135,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
       return { type: 'network', icon: Zap, color: 'text-yellow-500' }
     }
     if (message.includes('auth') || message.includes('unauthorized')) {
-      return { type: 'auth', icon: Shield, color: 'text-blue-500' }
+      return { type: 'auth', icon: Shield, color: 'text-primary' }
     }
     return { type: 'unknown', icon: Bug, color: 'text-red-500' }
   }

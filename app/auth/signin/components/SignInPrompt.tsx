@@ -79,15 +79,15 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
 
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-        <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <div className="text-xl sm:text-2xl font-bold text-blue-700">{previewData.percentage || 0}%</div>
-          <div className="text-xs text-blue-600 font-medium">Score</div>
+        <div className="text-center p-3 bg-primary/10 rounded-lg border border-primary/20">
+          <div className="text-xl sm:text-2xl font-bold text-primary">{previewData.percentage || 0}%</div>
+          <div className="text-xs text-primary font-medium">Score</div>
         </div>
-        <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
-          <div className="text-xl sm:text-2xl font-bold text-green-700">
+        <div className="text-center p-3 bg-accent/10 rounded-lg border border-accent/20">
+          <div className="text-xl sm:text-2xl font-bold text-accent">
             {previewData.score || 0}/{previewData.maxScore || 0}
           </div>
-          <div className="text-xs text-green-600 font-medium">Points</div>
+          <div className="text-xs text-accent font-medium">Points</div>
         </div>
       </div>
     )
@@ -142,14 +142,14 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
             {/* Sign In Benefits */}
             <div className="space-y-3 sm:space-y-4">
               <h3 className="font-semibold text-center flex items-center justify-center gap-2 text-sm sm:text-base">
-                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 Sign In to Unlock
               </h3>
 
               <div className="space-y-2 sm:space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Trophy className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                    <Trophy className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="font-medium text-sm">Detailed Results</div>
@@ -157,9 +157,9 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                <div className="flex items-center gap-3 p-3 bg-accent/10 rounded-lg border border-accent/20">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-accent rounded-full flex items-center justify-center flex-shrink-0">
+                    <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-accent-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="font-medium text-sm">Progress Tracking</div>
