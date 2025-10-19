@@ -916,10 +916,10 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
 
                   {/* Label and description */}
                   <div className="space-y-1">
-                    <div className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
+                    <div className="text-sm font-bold text-foreground uppercase tracking-wider">
                       {stat.label}
                     </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400 font-medium leading-tight">
+                    <div className="text-xs text-muted-foreground font-medium leading-tight">
                       {stat.description}
                     </div>
                   </div>
@@ -1007,9 +1007,9 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-amber-200 dark:border-amber-700 hover:shadow-md transition-all duration-300"
+              className="bg-card rounded-xl p-4 border border-border hover:shadow-md transition-all duration-300"
             >
-              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 line-clamp-2 leading-relaxed">
+              <div className="text-sm font-semibold text-foreground mb-3 line-clamp-2 leading-relaxed">
                 {question.question}
               </div>
               <div className="space-y-2">

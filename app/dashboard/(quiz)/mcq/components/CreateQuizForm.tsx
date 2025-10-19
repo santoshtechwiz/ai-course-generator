@@ -430,7 +430,7 @@ export default function CreateQuizForm({
                       : level === "medium"
                         ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25 border-0 hover:scale-105"
                         : "bg-gradient-to-r from-rose-500 to-red-500 text-white shadow-lg shadow-rose-500/25 border-0 hover:scale-105"
-                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600",
+                    : "bg-card border-border hover:bg-muted hover:border-border/80",
                 )}
                 onClick={() => setValue("difficulty", level as "easy" | "medium" | "hard")}
                 aria-pressed={difficulty === level}
