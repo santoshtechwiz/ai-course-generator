@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart, Mail, Settings, Home } from "lucide-react"
+import { BarChart, Mail, Settings, Home, Bot } from "lucide-react"
 
 interface AdminNavProps {
   user: {
@@ -18,6 +18,11 @@ export default function AdminNav({ user }: AdminNavProps) {
       href: "/dashboard/admin",
       label: "Overview",
       icon: <BarChart className="h-4 w-4 mr-2" />,
+    },
+    {
+      href: "/dashboard/admin/ai-debug",
+      label: "AI Debug",
+      icon: <Bot className="h-4 w-4 mr-2" />,
     },
     {
       href: "/dashboard/admin/email",

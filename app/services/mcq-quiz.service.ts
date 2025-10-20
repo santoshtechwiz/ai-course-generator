@@ -1,6 +1,6 @@
 import { BaseQuizService } from "./base-quiz.service";
-import { generateQuestions } from "@/lib/chatgpt/generateQuestions";
 import { generateSlug } from "@/lib/utils";
+import { generateMCQ } from "@/lib/ai/simple-ai-service";
 
 export class McqQuizService extends BaseQuizService {
     constructor() {
@@ -8,20 +8,20 @@ export class McqQuizService extends BaseQuizService {
     }
 
     /**
-     * Generate MCQ quiz using the existing generation logic
+     * Generate MCQ quiz using the simple AI service
      */
-    public async generateQuiz(params: { amount: number; title: string; type?: string; difficulty?: string }) {
-        const { amount, title, difficulty = "medium" } = params;
+    public async generateQuiz(params: { amount: number; title: string; type?: string; difficulty?: string; userId?: string; userType?: string }) {
+        const { amount, title, difficulty = "medium", userId, userType = "FREE" } = params;
         
         try {
-            // Use the existing generateQuestions function
-            const questions = await generateQuestions({
-                amount,
+            const questions = await generateMCQ(
                 title,
-                type: "mcq",
-                difficulty
-            });
-
+                amount,
+                difficulty as 'easy' | 'medium' | 'hard',
+                userId,
+                userType as any
+            );
+            
             return questions;
         } catch (error) {
             console.error("Error generating MCQ quiz:", error);

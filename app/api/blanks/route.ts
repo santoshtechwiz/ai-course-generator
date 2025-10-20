@@ -51,7 +51,13 @@ export async function POST(req: Request) {
 
     // Move quiz and slug generation outside the main transaction
     const blanksQuizService = new BlanksQuizService()
-    const quiz = await blanksQuizService.generateQuiz({ title, amount })
+    const quiz = await blanksQuizService.generateQuiz({ 
+      title, 
+      amount,
+      userId,
+      userType: session.user?.userType || 'FREE',
+      difficulty
+    })
     let baseSlug = generateSlug(title)
     let slug = baseSlug
     let suffix = 2

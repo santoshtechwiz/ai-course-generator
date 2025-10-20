@@ -1,4 +1,5 @@
-import type { Quiz, QuizGenerationParams } from "@/app/types/types"
+import type { Quiz } from "@/app/types/types"
+import type { ChatCompletionParams } from "@/lib/ai/interfaces"
 import { OpenAI } from "openai"
 import https from "https"
 import { defaultAIProvider } from "@/lib/ai"
@@ -21,14 +22,14 @@ const openai = new OpenAI({
 /**
  * @deprecated Use defaultAIProvider.generateOpenEndedQuiz or defaultAIProvider.generateFillInTheBlanksQuiz instead
  */
-export const generateQuizFlexible = async (params: QuizGenerationParams): Promise<Quiz> => {
+export const generateQuizFlexible = async (params: ChatCompletionParams): Promise<Quiz> => {
   const { model, messages, functions, functionCall } = params
 
   const response = await openai.chat.completions.create({
     model,
-    messages,
+    messages: messages as any,
     functions,
-    function_call: functionCall,
+    function_call: functionCall as any,
   })
 
   const result = JSON.parse(response.choices[0].message?.function_call?.arguments || "{}")

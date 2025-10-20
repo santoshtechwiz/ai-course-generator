@@ -9,7 +9,6 @@ import { CodeQuizService } from "@/app/services/code-quiz.service"
 import { QuestionRepository } from "@/app/repositories/question.repository"
 import { QuizRepository } from "@/app/repositories/quiz.repository"
 import { UserRepository } from "@/app/repositories/user.repository"
-import { generateFlashCards } from "@/lib/chatgpt/ai-service"
 import { creditService, CreditOperationType } from "@/services/credit-service"
 import type { QuizType } from "@/app/types/quiz-types"
 
@@ -96,7 +95,8 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
 
     if (normalizedType === "mcq") {
       const service = new McqQuizService()
-      const gen = await service.generateQuiz({ amount, title, difficulty, type: "mcq" })
+      const userType = session.user?.userType || 'FREE'
+      const gen = await service.generateQuiz({ amount, title, difficulty, type: "mcq", userId, userType })
       const questions = Array.isArray(gen?.questions) ? gen.questions : gen
 
       const created = await quizRepo.createUserQuiz(userId, title, "mcq", slug)
@@ -118,7 +118,8 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
 
     if (normalizedType === "openended") {
       const service = new OpenEndedQuizService()
-      const quiz = await service.generateQuiz({ title, amount, difficulty })
+      const userType = session.user?.userType || 'FREE'
+      const quiz = await service.generateQuiz({ title, amount, difficulty, userType, userId })
       const qList: any[] = Array.isArray((quiz as any)?.questions) ? (quiz as any).questions : []
 
       const created = await quizRepo.createUserQuiz(userId, title, "openended", slug)
@@ -169,7 +170,8 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
 
     if (normalizedType === "blanks") {
       const service = new BlanksQuizService()
-      const quiz = await service.generateQuiz({ title, amount })
+      const userType = session.user?.userType || 'FREE'
+      const quiz = await service.generateQuiz({ title, amount, userType, userId })
       const qList: any[] = Array.isArray((quiz as any)?.questions) ? (quiz as any).questions : []
 
       const created = await quizRepo.createUserQuiz(userId, title, "blanks", slug)
@@ -220,7 +222,22 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
 
     if (normalizedType === "flashcard") {
       const count = amount
-      const cards = await generateFlashCards(title, count)
+      
+      // Use simple AI service
+      const { generateFlashcards } = await import("@/lib/ai/simple-ai-service");
+      
+      const flashcardsQuiz = await generateFlashcards(
+        title,
+        count,
+        userId,
+        'FREE' as any
+      );
+      
+      const cards = flashcardsQuiz.flashcards.map((card: any, index: number) => ({
+        id: index + 1,
+        question: card.question,
+        answer: card.answer,
+      }));
 
       console.log(`[Quiz API] Generated ${cards?.length || 0} flashcards for "${title}"`)
 

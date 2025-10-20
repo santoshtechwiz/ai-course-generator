@@ -7,11 +7,8 @@ import {
   CheckCircle2,
   XCircle,
   GripVertical,
-  RotateCcw,
   ChevronUp,
   ChevronDown,
-  AlertCircle,
-  Zap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -120,6 +117,14 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
     setTimeout(() => setIsInitialized(true), 100)
   }, [question.steps])
 
+  // Reference props that may be unused at the moment so TypeScript doesn't complain
+  useEffect(() => {
+    void onSubmit
+    void onRetry
+    void isSubmitting
+    void hideSubmitButton
+  }, [onSubmit, onRetry, isSubmitting, hideSubmitButton])
+
   const handleDragStart = useCallback((index: number) => {
     setDraggedIndex(index)
   }, [])
@@ -208,7 +213,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
   }, [userOrder, shuffledSteps.length])
 
   return (
-    <div className={cn("w-full max-w-3xl mx-auto", className)}>
+    <div className={cn("w-full max-w-3xl mx-auto", className)} data-has-reordered={hasUserReordered}>
       <Card className="border-2 border-primary/50">
         <CardHeader className="border-b pb-4">
           <div className="space-y-3">
@@ -246,10 +251,10 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                 {currentSteps.map((step, index) => {
                   if (!step) return null
                   const isCorrectPosition =
-                    submitted &&
+                    showResult &&
                     step.id === correctOrder[index]
                   const isWrongPosition =
-                    submitted &&
+                    showResult &&
                     step.id !== correctOrder[index]
 
                   return (
@@ -272,7 +277,8 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                         draggedIndex === index
                           ? "opacity-50 border-primary bg-primary/20 shadow-lg scale-105"
                           : "border-border hover:border-primary/50 bg-card",
-                        draggedIndex !== null && draggedIndex !== index && "opacity-70"
+                        draggedIndex !== null && draggedIndex !== index && "opacity-70",
+                        showResult && isWrongPosition && "ring-1 ring-red-200"
                       )}
                       role="button"
                       aria-label={`Step ${index + 1}: ${step.description}`}
@@ -299,7 +305,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                       </div>
 
                       <div className="flex-shrink-0">
-                        {submitted && (
+                        {showResult && (
                           <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
@@ -319,7 +325,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                         )}
                       </div>
 
-                      {!submitted && (
+                      {!showResult && (
                         <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button
                             size="sm"
@@ -351,8 +357,11 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                         </div>
                       )}
                     </motion.div>
+                  )
+                })}
+              </AnimatePresence>
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>

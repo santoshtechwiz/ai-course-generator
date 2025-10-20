@@ -81,7 +81,8 @@ export async function POST(req: Request) {
     const parsedData = createChaptersSchema.parse(data)
 
     // Use service to create the course
-    const result = await courseService.createCourse(session.user.id, parsedData)
+    const userType = session.user?.userType || 'FREE'
+    const result = await courseService.createCourse(session.user.id, parsedData, userType)
     
     // Ensure we're returning the slug in the response
     if (!result.slug) {

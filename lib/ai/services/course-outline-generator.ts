@@ -1,5 +1,5 @@
 import { AIProvider } from "../interfaces";
-import { defaultAIProvider } from "../provider-factory";
+import { getDefaultAIProvider } from "../provider-factory";
 
 /**
  * Represents a course learning objective
@@ -58,7 +58,7 @@ export interface CourseOutlineParams {
 export class CourseOutlineGenerator {
   private aiProvider: AIProvider;
 
-  constructor(aiProvider: AIProvider = defaultAIProvider) {
+  constructor(aiProvider: AIProvider = getDefaultAIProvider()) {
     this.aiProvider = aiProvider;
   }
 

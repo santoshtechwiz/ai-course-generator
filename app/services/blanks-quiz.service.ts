@@ -1,5 +1,5 @@
 import { BaseQuizService } from "./base-quiz.service";
-import { generateOpenEndedFillIntheBlanks } from "@/lib/chatgpt/userMcqQuiz";
+import { generateFillInBlanks } from "@/lib/ai/simple-ai-service";
 
 export class BlanksQuizService extends BaseQuizService {
   constructor() {
@@ -7,21 +7,24 @@ export class BlanksQuizService extends BaseQuizService {
   }
 
   /**
-   * Generate Blanks quiz using the existing generation logic
+   * Generate Blanks quiz using simple AI service
    */
   public async generateQuiz(params: {
     title: string;
     amount: number;
     userType?: string;
+    userId?: string;
+    difficulty?: 'easy' | 'medium' | 'hard';
   }) {
-    const { title, amount, userType = "FREE" } = params;
+    const { title, amount, userType = "FREE", userId, difficulty = 'medium' } = params;
 
     try {
-      // Use the existing generateOpenEndedFillIntheBlanks function
-      const quiz = await generateOpenEndedFillIntheBlanks(
+      const quiz = await generateFillInBlanks(
         title,
         amount,
-        userType
+        difficulty,
+        userId,
+        userType as any
       );
 
       return quiz;

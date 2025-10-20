@@ -11,7 +11,10 @@
 
 // Constants and configuration
 export { BASE_URL, defaultSiteInfo, defaultFAQItems } from "./constants";
+export const generateSEOMetadata=()=>{
 
+  return {};  
+}
 // Core utility functions
 export {
   extractKeywords,

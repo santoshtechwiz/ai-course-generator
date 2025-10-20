@@ -8,125 +8,130 @@ import {
 import { Quiz } from "@/app/types/types";
 
 /**
- * Google AI provider implementation using Gemini API
+ * Anthropic AI provider implementation using Claude API
  * 
- * Integrates with Google's Generative AI (Gemini) models
- * to provide AI-powered quiz generation and chat completion.
+ * Integrates with Anthropic's Claude models to provide AI-powered
+ * quiz generation and chat completion.
  * 
- * @see https://ai.google.dev/docs
+ * @see https://docs.anthropic.com/claude/reference
  */
-export class GoogleAIProvider implements AIProvider {
+export class AnthropicProvider implements AIProvider {
   private apiKey: string;
   private baseUrl: string;
   private defaultModel: string;
+  private apiVersion: string;
 
-  constructor(apiKey: string = process.env.GOOGLE_AI_API_KEY || "") {
+  constructor(apiKey: string = process.env.ANTHROPIC_API_KEY || "") {
     if (!apiKey) {
-      console.warn('Google AI API key not provided. GoogleAIProvider will fail at runtime.');
+      console.warn('Anthropic API key not provided. AnthropicProvider will fail at runtime.');
     }
     this.apiKey = apiKey;
-    this.baseUrl = "https://generativelanguage.googleapis.com/v1beta";
-    this.defaultModel = "gemini-pro"; // Default to Gemini Pro
+    this.baseUrl = "https://api.anthropic.com/v1";
+    this.defaultModel = "claude-3-sonnet-20240229"; // Claude 3 Sonnet
+    this.apiVersion = "2023-06-01";
   }
 
   /**
-   * Convert our AIMessage format to Google AI format
+   * Convert our AIMessage format to Anthropic format
    */
-  private mapToGeminiMessage(message: AIMessage): { role: string; parts: { text: string }[] } {
-    // Google AI uses 'user' and 'model' roles, map our roles accordingly
-    const role = message.role === 'assistant' ? 'model' : 'user';
-    const content = message.role === 'system' 
-      ? `[System Instructions] ${message.content}` // Prepend system messages
-      : message.content;
+  private mapToClaudeMessages(messages: AIMessage[]): {
+    system?: string;
+    messages: Array<{ role: string; content: string }>;
+  } {
+    // Extract system message (Anthropic requires separate system parameter)
+    const systemMessages = messages
+      .filter(msg => msg.role === 'system')
+      .map(msg => msg.content)
+      .join('\n\n');
+
+    // Convert user and assistant messages
+    const claudeMessages = messages
+      .filter(msg => msg.role !== 'system')
+      .map(msg => ({
+        role: msg.role === 'assistant' ? 'assistant' : 'user',
+        content: msg.content,
+      }));
 
     return {
-      role,
-      parts: [{ text: content }],
+      system: systemMessages || undefined,
+      messages: claudeMessages,
     };
   }
 
   /**
-   * Generate a chat completion using Google Gemini API
+   * Generate a chat completion using Anthropic Claude API
    */
   async generateChatCompletion(params: ChatCompletionParams): Promise<ChatCompletionResult> {
     try {
-      // Map model name to Google AI model
+      // Map model name to Anthropic model
       const model = this.mapModelName(params.model);
       
-      // Convert messages to Gemini format
-      const geminiMessages = params.messages.map(msg => this.mapToGeminiMessage(msg));
+      // Convert messages to Claude format
+      const { system, messages } = this.mapToClaudeMessages(params.messages);
 
-      // Separate system messages from conversation
-      const systemMessages = params.messages
-        .filter(msg => msg.role === 'system')
-        .map(msg => msg.content)
-        .join('\n\n');
-
-      const userMessages = geminiMessages.filter(msg => msg.role === 'user' || msg.role === 'model');
-
-      const requestBody = {
-        contents: userMessages,
-        systemInstruction: systemMessages ? { parts: [{ text: systemMessages }] } : undefined,
-        generationConfig: {
-          temperature: params.temperature || 0.7,
-          maxOutputTokens: params.maxTokens || 2048,
-          topP: 0.8,
-          topK: 40,
-        },
+      const requestBody: any = {
+        model,
+        messages,
+        max_tokens: params.maxTokens || 2048,
+        temperature: params.temperature || 0.7,
       };
 
-      const url = `${this.baseUrl}/models/${model}:generateContent?key=${this.apiKey}`;
+      if (system) {
+        requestBody.system = system;
+      }
 
-      const response = await fetch(url, {
+      const response = await fetch(`${this.baseUrl}/messages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-api-key": this.apiKey,
+          "anthropic-version": this.apiVersion,
         },
         body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(`Google AI API error: ${error.error?.message || response.statusText}`);
+        throw new Error(`Anthropic API error: ${error.error?.message || response.statusText}`);
       }
 
       const data = await response.json();
 
-      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      const usage = data.usageMetadata;
+      const content = data.content?.[0]?.text;
+      const usage = data.usage;
 
       return {
         content: content || undefined,
         usage: usage ? {
-          promptTokens: usage.promptTokenCount || 0,
-          completionTokens: usage.candidatesTokenCount || 0,
-          totalTokens: usage.totalTokenCount || 0,
+          promptTokens: usage.input_tokens || 0,
+          completionTokens: usage.output_tokens || 0,
+          totalTokens: (usage.input_tokens || 0) + (usage.output_tokens || 0),
         } : undefined,
       };
     } catch (error) {
-      console.error('[GoogleAIProvider] Chat completion error:', error);
+      console.error('[AnthropicProvider] Chat completion error:', error);
       throw error;
     }
   }
 
   /**
-   * Map generic model names to Google AI model names
+   * Map generic model names to Anthropic model names
    */
   private mapModelName(model: string): string {
     const modelMap: Record<string, string> = {
-      'gpt-3.5-turbo': 'gemini-pro',
-      'gpt-4': 'gemini-pro',
-      'gpt-4-turbo': 'gemini-1.5-pro',
-      'gemini-pro': 'gemini-pro',
-      'gemini-1.5-pro': 'gemini-1.5-pro',
-      'gemini-1.5-flash': 'gemini-1.5-flash',
+      'gpt-3.5-turbo': 'claude-3-haiku-20240307',    // Fast, inexpensive
+      'gpt-4': 'claude-3-sonnet-20240229',            // Balanced
+      'gpt-4-turbo': 'claude-3-opus-20240229',        // Most capable
+      'claude-3-haiku': 'claude-3-haiku-20240307',
+      'claude-3-sonnet': 'claude-3-sonnet-20240229',
+      'claude-3-opus': 'claude-3-opus-20240229',
     };
 
     return modelMap[model] || this.defaultModel;
   }
 
   /**
-   * Generate multiple choice questions using Google AI
+   * Generate multiple choice questions using Anthropic Claude
    */
   async generateMCQQuiz(params: QuizGenerationParams): Promise<any[]> {
     const { title, amount, difficulty = "medium" } = params;
@@ -150,7 +155,7 @@ Return ONLY a JSON array with this exact structure:
 ]`;
 
     const result = await this.generateChatCompletion({
-      model: "gemini-pro",
+      model: "claude-3-sonnet",
       messages: [
         { role: "system", content: "You are an AI that generates educational multiple-choice questions. Always respond with valid JSON only." },
         { role: "user", content: prompt },
@@ -173,7 +178,7 @@ Return ONLY a JSON array with this exact structure:
   }
 
   /**
-   * Generate open-ended questions using Google AI
+   * Generate open-ended questions using Anthropic Claude
    */
   async generateOpenEndedQuiz(params: QuizGenerationParams): Promise<Quiz> {
     const { title, amount, difficulty = "medium" } = params;
@@ -196,7 +201,7 @@ Return ONLY a JSON object with this structure:
 }`;
 
     const result = await this.generateChatCompletion({
-      model: "gemini-pro",
+      model: "claude-3-sonnet",
       messages: [
         { role: "system", content: "You are an AI that generates educational questions. Always respond with valid JSON only." },
         { role: "user", content: prompt },
@@ -224,7 +229,7 @@ Return ONLY a JSON object with this structure:
   }
 
   /**
-   * Generate fill-in-the-blanks questions using Google AI
+   * Generate fill-in-the-blanks questions using Anthropic Claude
    */
   async generateFillInTheBlanksQuiz(params: QuizGenerationParams): Promise<Quiz> {
     const { title, amount } = params;
@@ -246,7 +251,7 @@ Return ONLY a JSON object with this structure:
 }`;
 
     const result = await this.generateChatCompletion({
-      model: "gemini-pro",
+      model: "claude-3-sonnet",
       messages: [
         { role: "system", content: "You are an AI that generates educational fill-in-the-blank questions. Always respond with valid JSON only." },
         { role: "user", content: prompt },
@@ -273,4 +278,3 @@ Return ONLY a JSON object with this structure:
     };
   }
 }
-

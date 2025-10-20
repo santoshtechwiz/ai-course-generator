@@ -11,6 +11,8 @@ export type FeatureType =
   | 'quiz-code'
   | 'quiz-flashcard'
   | 'quiz-ordering'
+  | 'quiz-video'
+  | 'document-quiz'
   | 'course-videos'
   | 'course-premium-content'
   | 'course-creation'
@@ -117,6 +119,20 @@ export const FEATURE_REQUIREMENTS: Record<FeatureType, FeatureRequirement> = {
     minimumPlan: 'FREE',
     requiresCredits: false, // Uses daily quiz generation limits instead of credits
     requireFeature: (plan) => true // All plans can access (FREE tier has 2/day, PREMIUM 10/day, PRO 50/day)
+  },
+  'quiz-video': {
+    requiresAuth: true, // Auth required to generate video quizzes
+    requiresSubscription: false, // Available on FREE plan
+    minimumPlan: 'FREE',
+    requiresCredits: true, // Costs 2 credits
+    requireFeature: (plan) => true // All plans can access video quiz generation
+  },
+  'document-quiz': {
+    requiresAuth: true,
+    requiresSubscription: true,
+    minimumPlan: 'PREMIUM',
+    requiresCredits: true,
+    requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].contentCreation && hasMinimumPlan(plan, 'PREMIUM')
   },
   'course-videos': {
     requiresAuth: false, // Allow viewing free chapters without auth

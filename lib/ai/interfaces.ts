@@ -60,6 +60,11 @@ export interface ChatCompletionResult {
     name: string;
     arguments: string;
   };
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
 }
 
 /**

@@ -4,7 +4,7 @@ import { generateMcqForUserInput } from "./userMcqQuiz"
 
 import { getQuestionsSchema } from "@/schema/schema"
 
-import type { Question } from "@/app/types/types"
+import type { Question } from "@/app/types/result-types"
 
 export async function generateQuestions(req: unknown): Promise<{ questions: Question[] }> {
   try {

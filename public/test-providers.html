@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Functions Test Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .function-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .function-card {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      border-radius: 8px;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 2px solid transparent;
+    }
+    
+    .function-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+      border-color: #667eea;
+    }
+    
+    .function-card h3 {
+      margin-bottom: 0.5rem;
+      color: #333;
+      font-size: 1rem;
+    }
+    
+    .function-card p {
+      font-size: 0.875rem;
+      color: #666;
+      margin-bottom: 0.75rem;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      margin-right: 0.25rem;
+    }
+    
+    .badge-free { background: #28a745; color: white; }
+    .badge-premium { background: #ffc107; color: #333; }
+    .badge-enterprise { background: #dc3545; color: white; }
+    
+    .btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+      width: 100%;
+    }
+    
+    .btn:hover {
+      background: #5568d3;
+    }
+    
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .result {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-top: 1rem;
+      white-space: pre-wrap;
+      font-family: 'Courier New', monospace;
+      max-height: 500px;
+      overflow-y: auto;
+      font-size: 0.875rem;
+    }
+    
+    .success {
+      border-left: 4px solid #28a745;
+    }
+    
+    .error {
+      border-left: 4px solid #dc3545;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #666;
+    }
+    
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #ddd;
+    }
+    
+    .stat {
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #667eea;
+    }
+    
+    .stat-label {
+      font-size: 0.875rem;
+      color: #666;
+    }
+    
+    .section-title {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: #333;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🤖 AI Functions Test Dashboard</h1>
+    
+    <div class="card">
+      <h2 class="section-title">Quiz Generation Functions</h2>
+      <div class="function-grid">
+        <div class="function-card" onclick="testFunction('mcq')">
+          <h3>📝 Multiple Choice Quiz</h3>
+          <p>Generate MCQ questions from a topic</p>
+          <span class="badge badge-free">FREE</span>
+          <button class="btn">Test generateMultipleChoiceQuiz</button>
+        </div>
+        
+        <div class="function-card" onclick="testFunction('flashcards')">
+          <h3>🎴 Flashcards</h3>
+          <p>Create question-answer flashcards</p>
+          <span class="badge badge-free">FREE</span>
+          <button class="btn">Test generateFlashcards</button>
+        </div>
+        
+        <div class="function-card" onclick="testFunction('ordering')">
+          <h3>🔢 Ordering Quiz</h3>
+          <p>Generate step-by-step sequencing questions</p>
+          <span class="badge badge-free">FREE</span>
+          <button class="btn">Test generateOrderingQuiz</button>
+        </div>
+        
+        <div class="function-card" onclick="testFunction('blanks')">
+          <h3>📋 Fill in the Blanks</h3>
+          <p>Create fill-in-the-blank questions</p>
+          <span class="badge badge-free">FREE</span>
+          <button class="btn">Test generateFillInTheBlanksQuiz</button>
+        </div>
+        
+        <div class="function-card" onclick="testFunction('openended')">
+          <h3>✍️ Open-Ended Questions</h3>
+          <p>Generate essay-style questions</p>
+          <span class="badge badge-premium">PREMIUM</span>
+          <button class="btn">Test generateOpenEndedQuestionsQuiz</button>
+        </div>
+        
+        <div class="function-card" onclick="testFunction('code')">
+          <h3>💻 Code Quiz</h3>
+          <p>Programming questions with code</p>
+          <span class="badge badge-premium">PREMIUM</span>
+          <button class="btn">Test generateCodeBasedQuiz</button>
+        </div>
+        
+        <div class="function-card" onclick="testFunction('video')">
+          <h3>🎥 Video Quiz</h3>
+          <p>Generate quiz from video transcript</p>
+          <span class="badge badge-free">FREE</span>
+          <button class="btn">Test generateVideoQuiz</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2 class="section-title">Content Generation Functions</h2>
+      <div class="function-grid">
+        <div class="function-card" onclick="testFunction('course')">
+          <h3>📚 Course Content</h3>
+          <p>Generate structured course outline</p>
+          <span class="badge badge-enterprise">ENTERPRISE</span>
+          <button class="btn">Test generateCourseContent</button>
+        </div>
+        
+        <div class="function-card" onclick="testFunction('summary')">
+          <h3>📄 Text Summary</h3>
+          <p>Create concise summaries from text</p>
+          <span class="badge badge-free">FREE</span>
+          <button class="btn">Test generateSummary</button>
+        </div>
+        
+        <div class="function-card" onclick="testFunction('document')">
+          <h3>📑 Document Quiz</h3>
+          <p>Generate quiz from document</p>
+          <span class="badge badge-premium">PREMIUM</span>
+          <button class="btn">Test generateDocumentQuiz</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2 class="section-title">Test Results</h2>
+      <div id="results">
+        <p style="text-align: center; color: #666; padding: 2rem;">
+          Click any function above to test it
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const testConfigs = {
+      mcq: {
+        name: 'Multiple Choice Quiz',
+        endpoint: '/api/quizzes/mcq/create',
+        payload: { title: 'JavaScript Basics', amount: 3, difficulty: 'medium' }
+      },
+      flashcards: {
+        name: 'Flashcards',
+        endpoint: '/api/quizzes/flashcard/create',
+        payload: { title: 'React Hooks', amount: 5 }
+      },
+      ordering: {
+        name: 'Ordering Quiz',
+        endpoint: '/api/ordering-quizzes/generate',
+        payload: { topic: 'Git Workflow', numberOfSteps: 5 }
+      },
+      blanks: {
+        name: 'Fill in the Blanks',
+        endpoint: '/api/blanks',
+        payload: { title: 'Python Variables', amount: 4, difficulty: 'easy' }
+      },
+      openended: {
+        name: 'Open-Ended Questions',
+        endpoint: '/api/quizzes/openended/create',
+        payload: { title: 'Machine Learning', amount: 3, difficulty: 'hard' }
+      },
+      code: {
+        name: 'Code Quiz',
+        endpoint: '/api/quizzes/code/create',
+        payload: { title: 'JavaScript Functions', amount: 3, difficulty: 'medium' }
+      },
+      video: {
+        name: 'Video Quiz',
+        endpoint: '/api/video',
+        payload: { 
+          courseTitle: 'React Tutorial',
+          transcript: 'React is a JavaScript library for building user interfaces. Components are the building blocks of React applications. Props allow you to pass data to components.',
+          numberOfQuestions: 3
+        }
+      },
+      course: {
+        name: 'Course Content',
+        endpoint: '/api/course',
+        payload: { title: 'Web Development Fundamentals', units: 3, category: 'Programming' }
+      },
+      summary: {
+        name: 'Text Summary',
+        endpoint: '/api/summary',
+        payload: { 
+          transcript: 'Artificial Intelligence is transforming how we interact with technology. Machine learning algorithms can analyze vast amounts of data to identify patterns and make predictions. Deep learning, a subset of machine learning, uses neural networks with multiple layers to process complex information.',
+          summaryLength: 100
+        }
+      },
+      document: {
+        name: 'Document Quiz',
+        endpoint: '/api/document',
+        payload: { 
+          documentText: 'The water cycle describes how water evaporates from the surface of the earth, rises into the atmosphere, cools and condenses into rain or snow in clouds, and falls again to the surface as precipitation.',
+          numberOfQuestions: 3
+        }
+      }
+    };
+
+    async function testFunction(functionType) {
+      const config = testConfigs[functionType];
+      const resultsDiv = document.getElementById('results');
+      
+      // Show loading
+      resultsDiv.innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Testing ${config.name}...</p>
+          <p style="font-size: 0.875rem; margin-top: 0.5rem;">Endpoint: ${config.endpoint}</p>
+        </div>
+      `;
+      
+      try {
+        const startTime = Date.now();
+        const response = await fetch(config.endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(config.payload)
+        });
+        
+        const data = await response.json();
+        const duration = Date.now() - startTime;
+        
+        if (response.ok && (data.success !== false)) {
+          resultsDiv.innerHTML = `
+            <div class="result success">
+              <strong>✅ ${config.name.toUpperCase()} TEST PASSED</strong>
+              
+              <div style="margin-top: 1rem;">
+                <strong>Request:</strong>
+                ${JSON.stringify(config.payload, null, 2)}
+              </div>
+              
+              <div style="margin-top: 1rem;">
+                <strong>Response:</strong>
+                ${JSON.stringify(data, null, 2)}
+              </div>
+              
+              <div class="stats">
+                <div class="stat">
+                  <div class="stat-value">${duration}ms</div>
+                  <div class="stat-label">Total Duration</div>
+                </div>
+                <div class="stat">
+                  <div class="stat-value">${response.status}</div>
+                  <div class="stat-label">HTTP Status</div>
+                </div>
+                ${data.creditsRemaining !== undefined ? `
+                <div class="stat">
+                  <div class="stat-value">${data.creditsRemaining}</div>
+                  <div class="stat-label">Credits Remaining</div>
+                </div>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        } else {
+          resultsDiv.innerHTML = `
+            <div class="result error">
+              <strong>❌ ${config.name.toUpperCase()} TEST FAILED</strong>
+              
+              <div style="margin-top: 1rem;">
+                <strong>Request:</strong>
+                ${JSON.stringify(config.payload, null, 2)}
+              </div>
+              
+              <div style="margin-top: 1rem;">
+                <strong>Error:</strong>
+                ${data.error || data.message || 'Unknown error'}
+              </div>
+              
+              ${data.details ? `
+              <div style="margin-top: 1rem;">
+                <strong>Details:</strong>
+                ${JSON.stringify(data.details, null, 2)}
+              </div>
+              ` : ''}
+              
+              <div class="stats">
+                <div class="stat">
+                  <div class="stat-value">${duration}ms</div>
+                  <div class="stat-label">Duration</div>
+                </div>
+                <div class="stat">
+                  <div class="stat-value">${response.status}</div>
+                  <div class="stat-label">HTTP Status</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      } catch (error) {
+        resultsDiv.innerHTML = `
+          <div class="result error">
+            <strong>❌ REQUEST FAILED</strong>
+            
+            <div style="margin-top: 1rem;">
+              <strong>Function:</strong>
+              ${config.name}
+            </div>
+            
+            <div style="margin-top: 1rem;">
+              <strong>Endpoint:</strong>
+              ${config.endpoint}
+            </div>
+            
+            <div style="margin-top: 1rem;">
+              <strong>Error:</strong>
+              ${error.message}
+            </div>
+          </div>
+        `;
+      }
+    }
+    
+    // Add keyboard shortcut to test all functions
+    document.addEventListener('keydown', async (e) => {
+      if (e.ctrlKey && e.key === 't') {
+        e.preventDefault();
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>Running all tests...</p></div>';
+        
+        for (const [key, config] of Object.entries(testConfigs)) {
+          await testFunction(key);
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s between tests
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 2.5rem;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .provider-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .provider-card {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .provider-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    
+    .provider-card h3 {
+      margin-bottom: 1rem;
+      color: #333;
+    }
+    
+    .btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin: 0.5rem;
+      transition: background 0.2s;
+    }
+    
+    .btn:hover {
+      background: #5568d3;
+    }
+    
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .result {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-top: 1rem;
+      white-space: pre-wrap;
+      font-family: 'Courier New', monospace;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .success {
+      border-left: 4px solid #28a745;
+    }
+    
+    .error {
+      border-left: 4px solid #dc3545;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #666;
+    }
+    
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #ddd;
+    }
+    
+    .stat {
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #667eea;
+    }
+    
+    .stat-label {
+      font-size: 0.875rem;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🤖 AI Provider Test Dashboard</h1>
+    
+    <div class="card">
+      <h2>Select Provider to Test</h2>
+      <div class="provider-grid">
+        <div class="provider-card" onclick="testProvider('openai', 'chat')">
+          <h3>🔵 OpenAI</h3>
+          <p>GPT-3.5 / GPT-4</p>
+          <button class="btn">Test Chat</button>
+          <button class="btn" onclick="event.stopPropagation(); testProvider('openai', 'quiz')">Test Quiz</button>
+        </div>
+        
+        <div class="provider-card" onclick="testProvider('google', 'chat')">
+          <h3>🔴 Google AI</h3>
+          <p>Gemini Pro</p>
+          <button class="btn">Test Chat</button>
+          <button class="btn" onclick="event.stopPropagation(); testProvider('google', 'quiz')">Test Quiz</button>
+        </div>
+        
+        <div class="provider-card" onclick="testProvider('anthropic', 'chat')">
+          <h3>🟣 Anthropic</h3>
+          <p>Claude 3</p>
+          <button class="btn">Test Chat</button>
+          <button class="btn" onclick="event.stopPropagation(); testProvider('anthropic', 'quiz')">Test Quiz</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2>Test Results</h2>
+      <div id="results">
+        <p style="text-align: center; color: #666;">Click a provider above to start testing</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function testProvider(provider, testType) {
+      const resultsDiv = document.getElementById('results');
+      
+      // Show loading
+      resultsDiv.innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Testing ${provider.toUpperCase()} provider (${testType} mode)...</p>
+        </div>
+      `;
+      
+      try {
+        const startTime = Date.now();
+        const response = await fetch(`/api/test-provider?provider=${provider}&test=${testType}`);
+        const data = await response.json();
+        const duration = Date.now() - startTime;
+        
+        if (data.success) {
+          let resultHTML = `
+            <div class="result success">
+              <strong>✅ ${provider.toUpperCase()} - ${testType.toUpperCase()} TEST PASSED</strong>
+              
+              ${testType === 'chat' ? `
+              <div style="margin-top: 1rem;">
+                <strong>Response:</strong>
+                ${data.result.content}
+              </div>
+              ` : `
+              <div style="margin-top: 1rem;">
+                <strong>Generated ${data.result.questionCount} questions:</strong>
+                ${JSON.stringify(data.result.questions, null, 2)}
+              </div>
+              `}
+              
+              <div class="stats">
+                <div class="stat">
+                  <div class="stat-value">${data.duration}ms</div>
+                  <div class="stat-label">API Response Time</div>
+                </div>
+                <div class="stat">
+                  <div class="stat-value">${duration}ms</div>
+                  <div class="stat-label">Total Duration</div>
+                </div>
+                ${data.result.usage ? `
+                <div class="stat">
+                  <div class="stat-value">${data.result.usage.totalTokens}</div>
+                  <div class="stat-label">Tokens Used</div>
+                </div>
+                ` : ''}
+              </div>
+            </div>
+          `;
+          resultsDiv.innerHTML = resultHTML;
+        } else {
+          resultsDiv.innerHTML = `
+            <div class="result error">
+              <strong>❌ ${provider.toUpperCase()} TEST FAILED</strong>
+              
+              <div style="margin-top: 1rem;">
+                <strong>Error:</strong>
+                ${data.error}
+              </div>
+              
+              ${data.details ? `
+              <div style="margin-top: 1rem;">
+                <strong>Details:</strong>
+                ${JSON.stringify(data.details, null, 2)}
+              </div>
+              ` : ''}
+            </div>
+          `;
+        }
+      } catch (error) {
+        resultsDiv.innerHTML = `
+          <div class="result error">
+            <strong>❌ REQUEST FAILED</strong>
+            
+            <div style="margin-top: 1rem;">
+              <strong>Error:</strong>
+              ${error.message}
+            </div>
+          </div>
+        `;
+      }
+    }
+  </script>
+</body>
+</html>

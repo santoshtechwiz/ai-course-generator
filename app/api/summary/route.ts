@@ -3,7 +3,7 @@ import { z } from "zod"
 import NodeCache from "node-cache"
 import { CourseService } from "@/app/services"
 import YoutubeService from "@/services/youtubeService"
-import { generateVideoSummary } from "@/lib/chatgptAndGoogleAi"
+import { generateVideoSummaryFromTranscript } from "@/lib/ai/services/video-summary.service"
 
 const summaryCache = new NodeCache({ stdTTL: 3600 }) // Cache summaries for 1 hour
 const processingCache = new NodeCache({ stdTTL: 300 }) // Cache processing status for 5 minutes
@@ -94,7 +94,7 @@ async function fetchAndGenerateSummary(videoId: string): Promise<string | null> 
   }
 
   try {
-    return await generateVideoSummary(transcriptResponse.transcript.slice(0, 10000))
+    return await generateVideoSummaryFromTranscript(transcriptResponse.transcript.slice(0, 10000))
   } catch (error) {
     console.error(`Error generating summary for video ID ${videoId}:`, error)
     return null

@@ -10,6 +10,8 @@
     "build": "next build",
     "test": "vitest",
     "test:watch": "vitest --watch",
+    "test:providers": "tsx scripts/test-ai-providers.ts",
+    "test:provider": "tsx scripts/test-provider-quick.ts",
     "start": "next start",
     "lint": "next lint",
     "server": "node server",

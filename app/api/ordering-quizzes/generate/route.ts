@@ -8,7 +8,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { authOptions } from "@/lib/auth"
 import { getServerSession } from "next-auth"
-import { generateOrderingQuiz, checkOrderingQuizAccess } from "@/lib/chatgpt/ai-service"
 import { prisma } from "@/lib/db"
 
 interface GenerateQuizRequest {
@@ -185,13 +184,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateQ
     // Get today's generation count
     const generatedToday = await getTodayGenerationCount(userId)
 
-    // Check if user can generate more quizzes
-    const canAccess = await checkOrderingQuizAccess(userPlan, generatedToday)
+    // Check if user can generate more quizzes - inline limit check
+    const LIMITS = { FREE: 2, PREMIUM: 10, PRO: 50 }
+    const limit = LIMITS[userPlan]
+    const canAccess = generatedToday < limit
 
     if (!canAccess) {
-      const LIMITS = { FREE: 2, PREMIUM: 10, PRO: 50 }
-      const limit = LIMITS[userPlan]
-
       return NextResponse.json(
         {
           success: false,
@@ -203,11 +201,19 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateQ
       )
     }
 
-    // Generate quiz using AI service
+    // Generate quiz using simple AI service
     let quiz: any
 
     try {
-      quiz = await generateOrderingQuiz(topic, numberOfSteps, userPlan)
+      const { generateOrderingQuiz } = await import("@/lib/ai/simple-ai-service");
+      
+      quiz = await generateOrderingQuiz(
+        topic,
+        numberOfSteps,
+        difficulty,
+        userId,
+        userPlan as any
+      );
     } catch (error) {
       console.error("Error generating quiz:", error)
 
@@ -254,8 +260,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateQ
       // This ensures better UX
     }
 
-    const LIMITS = { FREE: 2, PREMIUM: 10, PRO: 50 }
-    const limit = LIMITS[userPlan]
     const remainingQuizzes = limit - (generatedToday + 1) // +1 for current generation
 
     return NextResponse.json(

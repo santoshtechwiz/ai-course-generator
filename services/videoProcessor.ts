@@ -1,9 +1,7 @@
 import pLimit from "p-limit"
 
-import type { MultipleChoiceQuestion } from "@/app/types/quiz-types"
-
-import generateMultipleChoiceQuestions from "@/lib/chatgpt/videoQuiz"
 import YoutubeService from "./youtubeService"
+import { MultipleChoiceQuestion } from "@/app/types/quiz-types";
 
 const limit = pLimit(1) // Limit concurrency to 1
 
@@ -101,7 +99,7 @@ function extractRelevantContent(transcript: string, maxWords: number = 800): str
 export async function getQuestionsFromTranscript(
   transcript: string,
   courseTitle: string,
-): Promise<MultipleChoiceQuestion[]> {
+): Promise<any[]> {
   try {
     // Preprocess transcript to remove unwanted content and focus on relevant material
     const cleanedTranscript = preprocessTranscript(transcript);
@@ -109,8 +107,20 @@ export async function getQuestionsFromTranscript(
     // Extract most relevant content to stay within token limits
     const relevantContent = extractRelevantContent(cleanedTranscript);
 
-    // Generate questions with the improved transcript
-    return await limit(() => generateMultipleChoiceQuestions(courseTitle, relevantContent, 5));
+    // Generate questions with the improved transcript using simple AI service
+    return await limit(async () => {
+      const { generateMCQ } = await import("@/lib/ai/simple-ai-service");
+      
+      const quiz = await generateMCQ(
+        `${courseTitle}: ${relevantContent.substring(0, 200)}`,
+        5,
+        'medium',
+        undefined,
+        'FREE' as any
+      );
+      
+      return quiz.questions || [];
+    });
   } catch (error) {
     console.error("Error generating questions:", error);
     return [];
@@ -120,7 +130,7 @@ export async function getQuestionsFromTranscript(
 export async function processVideoAndGenerateQuestions(
   searchQuery: string,
   courseTitle: string,
-): Promise<MultipleChoiceQuestion[] | null> {
+): Promise<any[] | null> {
   const videoId = await YoutubeService.searchYoutube(searchQuery)
   if (!videoId) {
     console.log("No suitable video found")

@@ -1,5 +1,4 @@
 import { courseRepository } from "@/app/repositories/course.repository";
-import { generateCourseContent } from "@/lib/chatgpt/generateCourseContent";
 import { creditService, CreditOperationType } from "@/services/credit-service";
 import type { OutputUnits, CourseUpdateData, CourseChaptersUpdate } from "@/app/types/course-types";
 import { z } from "zod";
@@ -244,7 +243,7 @@ export class CourseService {
   /**
    * Create a new course from title, units, and category
    */
-  async createCourse(userId: string, courseData: z.infer<typeof createChaptersSchema>): Promise<CourseCreationResult> {
+  async createCourse(userId: string, courseData: z.infer<typeof createChaptersSchema>, userType: string = 'FREE'): Promise<CourseCreationResult> {
     const { title, units, category, description } = courseData;
 
     // SECURE: Atomic credit validation and deduction to prevent race conditions
@@ -268,8 +267,17 @@ export class CourseService {
     // Generate unique slug
     const slug = await courseRepository.generateUniqueSlug(title);
 
-    // Generate course content
-    const outputUnits = await generateCourseContent(title, units);
+    // Generate course content using simple AI service
+    const { generateCourse } = await import("@/lib/ai/simple-ai-service");
+    
+    const generatedCourse = await generateCourse(
+      title,
+      units.length,
+      userId,
+      userType as any
+    );
+    
+    const outputUnits = generatedCourse.units;
 
     // Use existing image instead of Unsplash API call
     const courseImage = getExistingCourseImage(category);
