@@ -6,6 +6,7 @@ import dynamic from "next/dynamic"
 const ReactPlayer: any = dynamic(() => import("react-player/youtube"), { ssr: false })
 import { useAuth } from "@/modules/auth"
 import { useVideoPlayer } from "../hooks/useVideoPlayer"
+import { useToastThrottle } from "../hooks/useToastThrottle"
 import PlayerControls from "./PlayerControls"
 
 import VideoErrorState from "./VideoErrorState"
@@ -119,6 +120,9 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
     // Derive effective authentication (prop can override but auth state acts as fallback)
      const youtubeVideoIdRef = useRef(youtubeVideoId)
 
+    // Initialize throttled toast for bookmark notifications (1.5 second throttle)
+    const { showThrottledToast, cleanup: cleanupThrottle } = useToastThrottle(1500)
+
     // Consolidated state management with performance optimizations
     const [overlayState, setOverlayState] = useState({
       showBookmarkPanel: false,
@@ -205,18 +209,6 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
       )
     }, [onEnded, isAuthenticated, playerState.hasPlayedFreeVideo, progressStats?.progressPercentage, onNextVideo, playerState.autoPlayVideo])
 
-    // Safe deferred call to onNextVideo to avoid updating parent while rendering this component
-    const safeOnNextVideo = useCallback(() => {
-      if (!onNextVideo) return
-      setTimeout(() => {
-        try {
-          onNextVideo()
-        } catch (e) {
-          console.warn('safeOnNextVideo failed', e)
-        }
-      }, 0)
-    }, [onNextVideo])
-
     // Initialize video player hook
     const { state, playerRef, containerRef, bufferHealth, youtubeUrl, handleProgress, handlers } =
       useVideoPlayer({
@@ -236,6 +228,25 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         onVideoLoad,
         onCertificateClick,
       })
+
+    // Safe deferred call to onNextVideo to avoid updating parent while rendering this component
+    // CRITICAL: Pause video before transitioning to prevent video playing while loading overlay shows
+    const safeOnNextVideo = useCallback(() => {
+      if (!onNextVideo) return
+      
+      // Pause video immediately when user clicks next
+      if (playerRef.current && state.playing) {
+        handlers.onPause()
+      }
+      
+      setTimeout(() => {
+        try {
+          onNextVideo()
+        } catch (e) {
+          console.warn('safeOnNextVideo failed', e)
+        }
+      }, 0)
+    }, [onNextVideo, state.playing, handlers, playerRef])
 
     // Initialize notes hook for chapter-specific notes
     const { notes: chapterNotes, createNote, loading: notesLoading } = useNotes({
@@ -279,6 +290,11 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
       window.addEventListener('resize', onResize)
       return () => window.removeEventListener('resize', onResize)
     }, [])
+
+    // Cleanup throttle hook on unmount
+    useEffect(() => {
+      return () => cleanupThrottle()
+    }, [cleanupThrottle])
 
     // Initialize component state
     useEffect(() => {
@@ -644,10 +660,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
               const prevBookmarks = bookmarks.filter(b => b.time < currentTime).sort((a, b) => b.time - a.time)
               if (prevBookmarks.length > 0) {
                 handlers.onSeek(prevBookmarks[0].time)
-                toast({
-                  title: "Jumped to previous bookmark",
-                  description: `At ${formatTime(prevBookmarks[0].time)}`,
-                })
+                // Removed toast notification to reduce UI noise
               }
             }
             break
@@ -659,10 +672,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
               const nextBookmarks = bookmarks.filter(b => b.time > currentTime).sort((a, b) => a.time - b.time)
               if (nextBookmarks.length > 0) {
                 handlers.onSeek(nextBookmarks[0].time)
-                toast({
-                  title: "Jumped to next bookmark",
-                  description: `At ${formatTime(nextBookmarks[0].time)}`,
-                })
+                // Removed toast notification to reduce UI noise
               }
             }
             break
@@ -810,39 +820,36 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
           // Add to local state using handler
           handlers.addBookmark(time, chapterTitle)
 
-          toast({
-            title: "Bookmark added",
-            description: `Bookmark added at ${formatTime(time)}`,
+          showThrottledToast({
+            title: "✓ Bookmark saved",
+            description: `${formatTime(time)}`,
           })
         } catch (error) {
           console.error('Error adding bookmark:', error)
-          toast({
-            title: "Error",
-            description: "Failed to save bookmark. Please try again.",
+          showThrottledToast({
+            title: "⚠ Bookmark failed",
+            description: "Try again in a moment.",
             variant: "destructive",
           })
         }
       },
-      [handlers, effectiveIsAuthenticated, toast, formatTime, chapterTitle, courseId, chapterId],
+      [handlers, effectiveIsAuthenticated, showThrottledToast, formatTime, chapterTitle, courseId, chapterId],
     )
 
     const handleRemoveBookmark = useCallback(
       (bookmarkId: string) => {
         try {
           handlers.removeBookmark(bookmarkId)
-          toast({
-            title: "Bookmark removed",
-            description: "The bookmark has been removed.",
-          })
+          // Removed toast notification for delete to reduce UI noise
         } catch (error) {
-          toast({
-            title: "Error",
-            description: "Failed to remove bookmark. Please try again.",
+          showThrottledToast({
+            title: "⚠ Failed",
+            description: "Could not remove bookmark.",
             variant: "destructive",
           })
         }
       },
-      [handlers, toast],
+      [handlers, showThrottledToast],
     )
 
     const handleSeekToBookmark = useCallback(
@@ -869,7 +876,12 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         })
         return
       }
-      setOverlayState(prev => ({ ...prev, showBookmarkPanel: !prev.showBookmarkPanel }))
+      setOverlayState(prev => ({ 
+        ...prev, 
+        showBookmarkPanel: !prev.showBookmarkPanel,
+        // Close notes panel when opening bookmarks to prevent UI overlap
+        showNotesPanel: !prev.showBookmarkPanel ? false : prev.showNotesPanel
+      }))
     }, [effectiveIsAuthenticated, toast])
 
     const handleToggleNotesPanel = useCallback(() => {
@@ -881,7 +893,12 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         })
         return
       }
-      setOverlayState(prev => ({ ...prev, showNotesPanel: !prev.showNotesPanel }))
+      setOverlayState(prev => ({ 
+        ...prev, 
+        showNotesPanel: !prev.showNotesPanel,
+        // Close bookmarks panel when opening notes to prevent UI overlap
+        showBookmarkPanel: !prev.showNotesPanel ? false : prev.showBookmarkPanel
+      }))
     }, [effectiveIsAuthenticated, toast])
 
     const handleCreateNote = useCallback(async () => {
@@ -1104,9 +1121,9 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
           </div>
         )}
 
-        {/* Loading Overlay */}
+        {/* Loading Overlay - blocks all interactions during video load/transition */}
         {(isLoading || (!playerState.playerReady && youtubeVideoId)) && !shouldHideMainPlayer && (
-          <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-20">
+          <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-50 pointer-events-auto">
             <div className="flex flex-col items-center gap-3 text-white">
               <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin" />
               <p className="text-sm font-medium">Loading video...</p>
@@ -1336,7 +1353,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
 
         {/* Bookmark Panel */}
         {overlayState.showBookmarkPanel && effectiveIsAuthenticated && !shouldHideMainPlayer && (
-          <div className="absolute top-0 right-0 bottom-16 w-64 sm:w-72 bg-black/80 backdrop-blur-sm z-30 border-l border-white/10 flex flex-col">
+          <div className="fixed lg:absolute top-0 right-0 bottom-16 z-30 w-full lg:w-64 xl:w-72 max-w-sm bg-black/80 lg:bg-black/80 backdrop-blur-sm lg:border-l border-white/10 flex flex-col shadow-lg lg:shadow-none">
             <div className="p-3 border-b border-white/10 flex-shrink-0">
               <div className="text-xs text-muted-foreground space-y-1">
                 <div><kbd className="px-1 py-0.5 bg-white/10 rounded text-xs">B</kbd> Add bookmark</div>

@@ -136,7 +136,11 @@ export async function GET(req: NextRequest) {
     }
 
     // Security: Ensure user can only view their own progress
-    if (userId !== session.user.id) {
+    // Use trim and exact comparison to handle potential string formatting issues
+    const requestUserId = String(userId).trim();
+    const sessionUserId = String(session.user.id).trim();
+    
+    if (requestUserId !== sessionUserId) {
       return NextResponse.json(
         { error: "Unauthorized: Cannot view progress for different user" },
         { status: 403 }

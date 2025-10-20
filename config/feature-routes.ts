@@ -95,6 +95,12 @@ export const ROUTE_FEATURE_MAP: Record<string, RouteFeatureConfig> = {
     fallbackRoute: '/dashboard/subscription?feature=quiz-flashcard',
     allowPublicAccess: true // Explore freely, auth on create button click
   },
+  '/dashboard/ordering': {
+    feature: 'quiz-ordering',
+    featureFlag: 'quiz-creation',
+    fallbackRoute: '/dashboard/subscription?feature=quiz-ordering',
+    allowPublicAccess: true // Explore freely, auth on create button click
+  },
   '/dashboard/document': {
     feature: 'pdf-generation',
     featureFlag: 'quiz-creation',
@@ -128,7 +134,7 @@ export const ROUTE_FEATURE_MAP: Record<string, RouteFeatureConfig> = {
 // Route patterns for matching
 export const ROUTE_PATTERNS = {
   ADMIN: /^\/admin(\/.*)?$/,
-  QUIZ_CREATION: /^\/dashboard\/(mcq|openended|blanks|code|flashcard)$/,
+  QUIZ_CREATION: /^\/dashboard\/(mcq|openended|blanks|code|flashcard|ordering)$/,
   COURSE_CREATION: /^\/dashboard\/create\/course$/,
   ANALYTICS: /^\/dashboard\/analytics/,
   DASHBOARD: /^\/dashboard$/,

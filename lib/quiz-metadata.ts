@@ -9,7 +9,7 @@ import { generateQuizMetadata as generateSEOQuizMetadata } from "@/lib/seo"
  */
 
 export interface QuizMetadataOptions {
-  quizType: "mcq" | "code" | "blanks" | "openended" | "flashcard" | "document"
+  quizType: "mcq" | "code" | "blanks" | "openended" | "flashcard" | "ordering" | "document"
   slug?: string
   title?: string
   description?: string
@@ -45,6 +45,11 @@ const quizTypeConfigs = {
     name: "Flashcards",
     description: "Quick study cards for effective memorization and review",
     keywords: ["flashcards", "study cards", "memory test", "quick review"]
+  },
+  ordering: {
+    name: "Ordering Quiz",
+    description: "Arrange steps in the correct sequence to master the process",
+    keywords: ["ordering quiz", "sequencing", "step ordering", "process assessment"]
   },
   document: {
     name: "Document Quiz",

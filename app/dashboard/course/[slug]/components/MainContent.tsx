@@ -52,7 +52,7 @@ import { useSession } from "next-auth/react"
 import DraggablePiPPlayer from "./video/components/DraggablePiPPlayer"
 import VideoPlayer from "./video/components/VideoPlayer"
 import CertificateModal from "./CertificateModal"
-import PlaylistSidebar from "./PlaylistSidebar"
+import VideoNavigationSidebar from "./VideoNavigationSidebar"
 import MobilePlaylistOverlay from "./MobilePlaylistOverlay"
 import { storageManager } from "@/utils/storage-manager"
 import { useBookmarks } from "@/hooks/use-bookmarks"
@@ -395,11 +395,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     return user?.subscriptionPlan || null
   }, [user?.subscriptionPlan])
 
-  // Video access permission
+  // Video access permission - allow all videos for shared courses
   const canPlayVideo = useMemo(() => {
+    if (course.isShared) return true // All videos accessible for shared courses
     const allowedByChapter = currentChapter?.isFree === true
     return allowedByChapter || !!userSubscription
-  }, [currentChapter?.isFree, userSubscription])
+  }, [course.isShared, currentChapter?.isFree, userSubscription])
 
   // Course statistics
   const courseStats = useMemo(() => ({
@@ -455,8 +456,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
     console.log(`Advancing to next video: ${nextVid} for chapter ${nextVideoEntry.chapter?.id}`)
     
-    // Mark current chapter as completed when manually advancing to next video - ONLY if authenticated
-    if (currentChapter && user?.id) {
+    // Mark current chapter as completed when manually advancing to next video - ONLY if authenticated AND not a shared view
+    if (currentChapter && user?.id && !course.isShared) {
       const currentChapterId = Number(currentChapter.id);
       const isAlreadyCompleted = completedChapters.includes(String(currentChapter.id));
       
@@ -503,8 +504,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     try {
       videoStateStore.getState().setCurrentVideo(nextVid, course.id)
       
-      // Track transition to next video with enhanced progress system - ONLY if authenticated
-      if (user?.id && nextVideoEntry.chapter?.id) {
+      // Track transition to next video with enhanced progress system - ONLY if authenticated AND not a shared view
+      if (user?.id && !course.isShared && nextVideoEntry.chapter?.id) {
         console.log(`[Authenticated] Recording video start event for chapter ${nextVideoEntry.chapter.id}`)
         
         // Mark video as started in enhanced progress system
@@ -577,7 +578,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         }
 
         const allowed = Boolean(safeChapter.isFree || userSubscription)
-        if (!allowed) {
+        if (!allowed && !course.isShared) {
           dispatch2({ type: 'SET_AUTH_PROMPT', payload: true })
           return
         }
@@ -595,8 +596,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         dispatch(setCurrentVideoApi(videoId))
         videoStateStore.getState().setCurrentVideo(videoId, course.id)
 
-        // Track chapter selection event - ONLY if authenticated
-        if (user?.id) {
+        // Track chapter selection event - ONLY if authenticated AND not a shared view
+        if (user?.id && !course.isShared) {
           console.log(`[Authenticated] Video selected: ${videoId} for chapter ${safeChapter.id}`)
           
           // Mark video as started in enhanced progress system
@@ -653,8 +654,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       }))
       dispatch2({ type: 'SET_VIDEO_LOADING', payload: false })
       
-      // Record video load event - ONLY if authenticated
-      if (user?.id && currentChapter?.id && currentVideoId) {
+      // Record video load event - ONLY if authenticated AND not a shared view
+      if (user?.id && !course.isShared && currentChapter?.id && currentVideoId) {
         console.log(`[Authenticated] Video loaded: ${currentVideoId} with duration ${metadata.duration}s for chapter ${currentChapter.id}`)
         
         // Update the initial video watched event with actual duration using enhanced progress system
@@ -682,7 +683,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         console.log(`[Unauthenticated] Video loaded: ${currentVideoId} - skipping progress tracking`)
       }
     },
-    [currentVideoId, user?.id, currentChapter?.id, course.id, enqueueProgress]
+    [currentVideoId, user?.id, course.isShared, currentChapter?.id, course.id, enqueueProgress]
   )
 
   const handlePlayerReady = useCallback((player: React.RefObject<any>) => {
@@ -769,8 +770,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     if (progressState.played > 0.05) { // Skip first 5% to reduce noise
       if (currentChapter?.id && currentVideoId) {
         
-        if (user?.id) {
-          // Authenticated user - track in database
+        if (user?.id && !course.isShared) {
+          // Authenticated user - track in database (ONLY if not a shared view)
           console.log(`[Authenticated] Video progress: ${progressState.played * 100}% for chapter ${currentChapter.id}`)
           
           // Update Redux store for immediate UI feedback
@@ -830,8 +831,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             }
           }
         } else {
-          // Guest user - track in local storage
-          console.log(`[Guest] Video progress: ${progressState.played * 100}% for chapter ${currentChapter.id}`)
+          // Guest user OR shared view - track in local storage
+          console.log(`[Guest/Shared] Video progress: ${progressState.played * 100}% for chapter ${currentChapter.id}`)
           
           trackGuestVideoWithCourse(
             currentVideoId,
@@ -843,7 +844,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         }
       }
     }
-  }, [user?.id, currentChapter?.id, course.id, currentVideoId, videoDurations, setCurrentVideoProgress, dispatch, enqueueProgress, trackGuestVideoWithCourse])
+  }, [user?.id, course.isShared, currentChapter?.id, course.id, currentVideoId, videoDurations, setCurrentVideoProgress, dispatch, enqueueProgress, trackGuestVideoWithCourse])
 
   const handleVideoEnded = useCallback(() => {
     console.log(`Video ended handler called - currentChapter: ${currentChapter?.id}, isCompleted: ${completedChapters.includes(String(currentChapter?.id))}`)
@@ -853,8 +854,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       const chapterId = Number(currentChapter.id);
       const courseId = Number(course.id);
       
-      if (user?.id) {
-        // Authenticated user - handle database completion
+      if (user?.id && !course.isShared) {
+        // Authenticated user - handle database completion (ONLY if not a shared view)
         const isAlreadyCompleted = completedChapters.includes(String(currentChapter.id));
         
         if (!isAlreadyCompleted) {
@@ -901,8 +902,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           console.error('Failed to queue chapter completion')
         }
       } else {
-        // Guest user - handle local storage completion
-        console.log(`[Guest] Marking chapter ${chapterId} as completed for course ${courseId}`);
+        // Guest user OR shared view - handle local storage completion
+        console.log(`[Guest/Shared] Marking chapter ${chapterId} as completed for course ${courseId}`);
         
         markGuestChapterCompleted(chapterId);
         
@@ -938,6 +939,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     completedChapters,
     dispatch,
     course.id,
+    course.isShared,
     currentVideoProgress,
     videoDurations,
     currentVideoId,
@@ -1007,18 +1009,31 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [])
 
-  // Sidebar course data
-  const sidebarCourse = useMemo(() => ({
-    id: String(course.id),
-    title: course.title,
-    chapters: videoPlaylist.map(v => ({
-      id: String(v.chapter.id),
-      title: v.chapter.title,
-      videoId: v.chapter.videoId || undefined,
-      duration: typeof v.chapter.duration === 'number' ? v.chapter.duration : undefined,
-      isFree: v.chapter.isFree
-    }))
-  }), [course.id, course.title, videoPlaylist])
+  // Sidebar course data - deduplicated by videoId
+  const sidebarCourse = useMemo(() => {
+    // Deduplicate chapters by videoId to prevent YouTube-style playlist duplication
+    const seen = new Set<string>()
+    const uniqueChapters = videoPlaylist
+      .filter(v => {
+        const vid = v.chapter.videoId
+        if (!vid || seen.has(vid)) return false
+        seen.add(vid)
+        return true
+      })
+      .map(v => ({
+        id: String(v.chapter.id),
+        title: v.chapter.title,
+        videoId: v.chapter.videoId || undefined,
+        duration: typeof v.chapter.duration === 'number' ? v.chapter.duration : undefined,
+        isFree: v.chapter.isFree
+      }))
+
+    return {
+      id: String(course.id),
+      title: course.title,
+      chapters: uniqueChapters
+    }
+  }, [course.id, course.title, videoPlaylist])
   
   const sidebarCurrentChapter = currentChapter ? {
     id: String(currentChapter.id),
@@ -1054,6 +1069,23 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Main content
   return (
     <div className="min-h-screen bg-background relative">
+      {/* Share course notice banner */}
+      {course.isShared && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3 }}
+          className="bg-blue-50 border-l-4 border-blue-500 p-3 mb-2"
+        >
+          <div className="max-w-screen-2xl mx-auto px-1 sm:px-2">
+            <p className="text-sm font-medium text-blue-900">
+              📚 <strong>Shared Course Preview</strong> — Watch all videos • Take quiz • Save bookmarks (local only)
+            </p>
+          </div>
+        </motion.div>
+      )}
+
       {/* Debug indicator for testing - REMOVE IN PRODUCTION */}
      
       
@@ -1126,6 +1158,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                 isOwner={isOwner}
                 variant="compact"
                 title={course.title}
+                courseId={course.id}
               />
             </div>
           </div>
@@ -1448,7 +1481,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                           </p>
                         </div>
                       ) : (
-                        <PlaylistSidebar
+                        <VideoNavigationSidebar
                           course={sidebarCourse}
                           currentChapter={sidebarCurrentChapter}
                           courseId={course.id.toString()}
@@ -1460,7 +1493,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                           videoDurations={videoDurations}
                           courseStats={courseStats}
                           onChapterSelect={handleChapterSelect}
-                          isPiPActive={isPiPActive}
+                          progress={{}}
                         />
                       )}
                     </CardContent>

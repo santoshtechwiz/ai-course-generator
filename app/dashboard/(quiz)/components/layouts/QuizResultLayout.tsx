@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils"
 interface QuizResultLayoutProps {
   children: React.ReactNode
   title?: string
-  quizType?: "mcq" | "code" | "blanks" | "openended" | "flashcard" | "quiz" | "others"
+  quizType?: "mcq" | "code" | "blanks" | "openended" | "flashcard" | "ordering" | "quiz" | "others"
   slug?: string
   difficulty?: string
 }
@@ -29,6 +29,7 @@ const quizTypeLabels: Record<string, string> = {
   blanks: "Fill Blanks",
   openended: "Open Ended",
   flashcard: "Flashcards",
+  ordering: "Ordering Quiz",
   quiz: "Quiz",
   others: "Mixed Quiz",
 }
@@ -39,6 +40,7 @@ const quizTypeIcons: Record<string, React.ComponentType<any>> = {
   blanks: FileText,
   openended: BookOpen,
   flashcard: Brain,
+  ordering: Award,
   quiz: Award,
   others: Award,
 }

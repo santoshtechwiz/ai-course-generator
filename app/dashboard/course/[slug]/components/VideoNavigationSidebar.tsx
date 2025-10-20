@@ -65,6 +65,9 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
 }) => {
   const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set())
   const [hoveredChapter, setHoveredChapter] = useState<string | null>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  
 
   // Track progress with debounced updates
   const progressUpdateTimeout = useRef<NodeJS.Timeout>();
@@ -143,9 +146,21 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
 
     const moduleRegex = /^(Module\s+\d+|Unit\s+\d+|Chapter\s+\d+|Section\s+\d+):\s*(.+)$/i;
     const modules: Record<string, ModuleInfo> = {};
+    const seenVideoIds = new Set<string>();  // Deduplicate by videoId
     
     // First pass - identify modules with enhanced completion tracking
     course.chapters.forEach(chapter => {
+      // Skip duplicate videos (same videoId)
+      if (chapter.videoId && seenVideoIds.has(chapter.videoId)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[Sidebar] Skipping duplicate video: ${chapter.videoId} (${chapter.title})`);
+        }
+        return;
+      }
+      if (chapter.videoId) {
+        seenVideoIds.add(chapter.videoId);
+      }
+
       const match = chapter.title.match(moduleRegex);
       if (match) {
         const [, moduleKey, chapterTitle] = match;
@@ -165,11 +180,11 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
       }
     });
     
-    // If no modules found, return chapters as a single module
+    // If no modules found, create a default module  
     if (Object.keys(modules).length === 0) {
-      const defaultModule: ModuleInfo = {
+      modules["Course Content"] = {
         title: "Course Content",
-        chapters: course.chapters,
+        chapters: [],
         moduleNumber: 1,
         completedCount: 0,
         totalCount: course.chapters.length,
@@ -179,8 +194,19 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
       };
     }
     
-    // Second pass - group chapters
+    // Reset seen set for second pass
+    seenVideoIds.clear();
+
+    // Second pass - group chapters (skip duplicates)
     course.chapters.forEach(chapter => {
+      // Skip duplicate videos
+      if (chapter.videoId && seenVideoIds.has(chapter.videoId)) {
+        return;
+      }
+      if (chapter.videoId) {
+        seenVideoIds.add(chapter.videoId);
+      }
+
       const match = chapter.title.match(moduleRegex);
       if (match) {
         const [, moduleKey, chapterTitle] = match;
@@ -259,7 +285,55 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
       return newSet;
     });
   }, []);
+// Auto-collapse non-current modules for cleaner view
+  useEffect(() => {
+    if (!currentChapter?.id || !groupedChapters.length) return;
 
+    // Find which module contains the current chapter
+    const currentModuleTitle = groupedChapters.find(module =>
+      module.chapters.some(ch => String(ch.id) === String(currentChapter.id))
+    )?.title;
+
+    if (currentModuleTitle) {
+      // Collapse all modules except the current one
+      setCollapsedModules(prevCollapsed => {
+        const newCollapsed = new Set(prevCollapsed);
+        groupedChapters.forEach(module => {
+          if (module.title !== currentModuleTitle) {
+            newCollapsed.add(module.title);
+          } else {
+            newCollapsed.delete(module.title); // Expand current module
+          }
+        });
+        return newCollapsed;
+      });
+
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[Module Auto-Collapse] Expanded module:', currentModuleTitle);
+      }
+    }
+  }, [currentChapter?.id, groupedChapters.length]);
+
+  // Auto-scroll to current chapter when it changes
+  useEffect(() => {
+    if (!currentChapter?.id || !scrollContainerRef.current) return;
+
+    const chapterElement = scrollContainerRef.current.querySelector(
+      `[data-chapter-id="${currentChapter.id}"]`
+    );
+
+    if (chapterElement) {
+      chapterElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'nearest'
+      });
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[AutoScroll] Scrolled to chapter:', currentChapter.id);
+      }
+    }
+  }, [currentChapter?.id]);
   const handleChapterClick = useCallback((chapter: Chapter, index: number) => {
     // Don't allow navigation if chapter is locked
     if (chapter.locked) return;
@@ -309,7 +383,7 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-full bg-gradient-to-b from-background to-muted/20">
+      <div className="flex flex-col h-full bg-gradient-to-b from-background to-muted/20 overflow-hidden">
         {/* Loading overlay when progress is loading */}
         {isProgressLoading && (
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
@@ -320,11 +394,11 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
           </div>
         )}
         
-        {/* Enhanced Course Progress Header */}
+        {/* Enhanced Course Progress Header - Sticky on scroll */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 p-4 border-b border-border/50"
+          className="sticky top-0 z-40 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 p-4 border-b border-border/50 flex-shrink-0 backdrop-blur-sm"
         >
           <div className="space-y-4">
             {/* Course Title */}
@@ -407,8 +481,21 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
           </div>
         </motion.div>
 
-        {/* Chapter List */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        {/* Chapter List - Single scroll container with auto-scroll */}
+        <div 
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 scrollbar-hide"
+          style={{
+            scrollBehavior: 'smooth',
+            msOverflowStyle: 'none' as any,
+            scrollbarWidth: 'none' as any,
+          }}
+        >
+          <style>{`
+            .scrollbar-hide::-webkit-scrollbar {
+              display: none;
+            }
+          `}</style>
           <motion.div 
             variants={containerVariants}
             initial="hidden"
@@ -417,6 +504,9 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
           >
             {groupedChapters.map((module, moduleIndex) => {
               const isCollapsed = collapsedModules.has(module.title);
+              const hasCurrentChapter = module.chapters.some(ch => 
+                String(ch.id) === String(currentChapter?.id)
+              );
               const moduleProgress = module.chapters.length > 0 
                 ? (module.chapters.filter(ch => 
                     completedChapters?.includes(String(ch.id)) || 
@@ -438,6 +528,8 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                       className={cn(
                         "w-full justify-between p-4 h-auto group relative overflow-hidden",
                         "hover:bg-muted/50 transition-all duration-300 hover:shadow-md",
+                        hasCurrentChapter && !isCollapsed && 
+                        "bg-gradient-to-r from-primary/15 to-primary/8 border border-primary/30 hover:bg-gradient-to-r hover:from-primary/20 hover:to-primary/10",
                         module.completedCount === module.totalCount && 
                         "bg-gradient-to-r from-green-500/10 to-emerald-500/5 hover:from-green-500/15 hover:to-emerald-500/10 border border-green-500/20"
                       )}
@@ -836,12 +928,12 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
           </motion.div>
         </div>
 
-        {/* Achievement Section */}
+        {/* Achievement Section - Sticky at bottom */}
         {overallProgress > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-4 border-t border-border/50 bg-gradient-to-r from-primary/8 via-primary/5 to-primary/8 shadow-inner"
+            className="sticky bottom-0 z-40 p-4 border-t border-border/50 bg-gradient-to-r from-primary/8 via-primary/5 to-primary/8 shadow-inner backdrop-blur-sm flex-shrink-0"
           >
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0">

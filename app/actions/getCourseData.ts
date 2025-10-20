@@ -86,11 +86,12 @@ export async function getCourseData(slug: string): Promise<FullCourseType | null
           chapters: unit.chapters.map(
             (chapter, chapterIndex): FullChapter => {
               // Calculate a reasonable duration - approx 5 minutes per chapter
-              const estimatedDuration = 5 * 60; // 5 minutes in seconds
-              
+              const estimatedDuration = 5 * 60 // 5 minutes in seconds
+
+
               // Determine if chapter is free: first two chapters overall
-              const isFree = freeChapterIds.has(chapter.id);
-              
+              const isFree = freeChapterIds.has(chapter.id)
+
               return {
                 id: chapter.id,
                 title: chapter.title,
@@ -112,15 +113,15 @@ export async function getCourseData(slug: string): Promise<FullCourseType | null
                     question: quiz.question,
                     answer: quiz.answer,
                     // Handle options - convert from string to string[] if needed
-                    options:
-                      typeof quiz.options === "string"
-                        ? quiz.options.split(",").map((opt) => opt.trim())
-                        : quiz.options || [],
-                  }),
+                    options: typeof quiz.options === "string"
+                      ? quiz.options.split(",").map((opt) => opt.trim())
+                      : quiz.options || [],
+                  })
                 ),
-              };
+              }
             }
           ),
+          name: ""
         }),
       ),
     }

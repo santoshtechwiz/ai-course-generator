@@ -10,6 +10,7 @@ export type FeatureType =
   | 'quiz-openended'
   | 'quiz-code'
   | 'quiz-flashcard'
+  | 'quiz-ordering'
   | 'course-videos'
   | 'course-premium-content'
   | 'course-creation'
@@ -109,6 +110,13 @@ export const FEATURE_REQUIREMENTS: Record<FeatureType, FeatureRequirement> = {
     minimumPlan: 'FREE',
     requiresCredits: true,
     requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].mcqGenerator
+  },
+  'quiz-ordering': {
+    requiresAuth: true, // Auth required to CREATE ordering quizzes
+    requiresSubscription: false, // Available on FREE plan with daily limits
+    minimumPlan: 'FREE',
+    requiresCredits: false, // Uses daily quiz generation limits instead of credits
+    requireFeature: (plan) => true // All plans can access (FREE tier has 2/day, PREMIUM 10/day, PRO 50/day)
   },
   'course-videos': {
     requiresAuth: false, // Allow viewing free chapters without auth

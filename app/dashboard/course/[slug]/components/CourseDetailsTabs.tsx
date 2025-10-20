@@ -32,6 +32,9 @@ import {
   Edit3,
   Trash2,
   Plus,
+  Lock,
+  Tag,
+  Search,
 } from "lucide-react"
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks"

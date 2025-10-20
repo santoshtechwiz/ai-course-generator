@@ -1,6 +1,6 @@
 // Unified quiz types for the entire application
-export type QuizType = 'blanks' | 'openended' | 'mcq' | 'code' | 'flashcard';
-export type QuestionType = 'mcq' | 'blanks' | 'openended' | 'code';
+export type QuizType = 'blanks' | 'openended' | 'mcq' | 'code' | 'flashcard' | 'ordering';
+export type QuestionType = 'mcq' | 'blanks' | 'openended' | 'code' | 'ordering';
 
 // Base question interface that all quiz question types extend
 export interface BaseQuestion {
@@ -61,6 +61,23 @@ export interface CodeQuizQuestion extends BaseQuestion {
   type?: 'code';
 }
 
+// Ordering/Sequencing quiz questions
+export interface OrderingQuizStep {
+  id: number;
+  description: string;
+  explanation?: string;
+}
+
+export interface OrderingQuizQuestion extends BaseQuestion {
+  id: string | number;
+  title: string;
+  topic: string;
+  steps: OrderingQuizStep[];
+  description?: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  type: 'ordering';
+}
+
 // Quiz data structure
 export interface QuizData {
   slug: string; // Primary identifier
@@ -71,7 +88,7 @@ export interface QuizData {
 }
 
 // Union type for all question types
-export type QuizQuestion = BlankQuizQuestion | OpenEndedQuestion | McqQuestion | CodeQuizQuestion;
+export type QuizQuestion = BlankQuizQuestion | OpenEndedQuestion | McqQuestion | CodeQuizQuestion | OrderingQuizQuestion;
 
 // UnifiedQuizQuestion component props
 export interface UnifiedQuizQuestionProps {

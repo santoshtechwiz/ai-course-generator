@@ -32,6 +32,7 @@ import { useAuth } from "@/modules/auth"
 import { useDeleteQuiz } from "@/hooks/use-delete-quiz"
 import { useFeatureAccess } from "@/hooks/useFeatureAccess"
 import { SubscriptionUpgradeModal } from "@/components/shared"
+import { ShareButton } from "@/components/features/share"
 
 // Types
 interface QuizActionsProps {
@@ -715,6 +716,20 @@ const QuizActions = memo(
               </>
             )}
           </Badge>
+
+          {/* Share with Friends Button (using Share Module) */}
+          {quizId && (
+            <ShareButton
+              resourceType="quiz"
+              resourceId={quizId}
+              resourceTitle={title}
+              resourceSlug={quizSlug}
+              variant="noShadow"
+              size="sm"
+              showLabel={false}
+              className="h-10 px-3 border-3 shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:shadow-[4px_4px_0px_0px_hsl(var(--border))] transition-all duration-100"
+            />
+          )}
 
           {/* Primary Actions - Improved sizing and spacing */}
           {primaryActions

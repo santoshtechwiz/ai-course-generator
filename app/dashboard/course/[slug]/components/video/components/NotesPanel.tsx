@@ -1,11 +1,11 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
-import { StickyNote, Plus, Edit3, Trash2, Clock } from "lucide-react"
+import { StickyNote, Plus, Edit3, Trash2, Clock, Loader2 } from "lucide-react"
 import { useNotes } from "@/hooks/use-notes"
 import { NoteModal } from "../../modals/NoteModal"
 import type { Bookmark } from "@prisma/client"
@@ -33,6 +33,8 @@ export function NotesPanel({
     limit: 5 // Limit to 5 notes
   })
 
+  const [isAddingNote, setIsAddingNote] = useState(false)
+
   const handleDeleteNote = async (noteId: string) => {
     try {
       await deleteNote(noteId)
@@ -53,7 +55,7 @@ export function NotesPanel({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 300 }}
       transition={{ duration: 0.3 }}
-      className="absolute top-0 right-0 bottom-16 w-64 sm:w-72 bg-black/90 backdrop-blur-sm z-30 border-l border-white/10 flex flex-col"
+      className="fixed lg:absolute top-0 right-0 bottom-16 z-30 w-full lg:w-64 xl:w-72 max-w-sm bg-black/70 lg:bg-black/70 backdrop-blur-sm lg:border-l border-white/10 flex flex-col shadow-lg lg:shadow-none"
     >
       {/* Header */}
       <div className="p-4 border-b border-white/10">
@@ -62,7 +64,7 @@ export function NotesPanel({
             <StickyNote className="h-5 w-5 text-green-400" />
             <h3 className="text-lg font-semibold text-white">Notes</h3>
           </div>
-          <Badge variant="secondary" className="bg-green-500/20 text-green-300 border-green-500/30">
+          <Badge variant="neutral" className="bg-green-500/30 text-green-300 border-green-500/50">
             {notes.length}
           </Badge>
         </div>
@@ -71,11 +73,21 @@ export function NotesPanel({
           courseId={courseId}
           chapterId={chapterId}
           trigger={
-            <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Note
+            <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={isAddingNote}>
+              {isAddingNote ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Note
+                </>
+              )}
             </Button>
           }
+          onLoadingChange={setIsAddingNote}
         />
       </div>
 
@@ -94,11 +106,20 @@ export function NotesPanel({
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center py-8"
+              className="text-center py-8 space-y-3"
             >
-              <StickyNote className="h-12 w-12 text-white/30 mx-auto mb-3" />
-              <p className="text-white/60 text-sm">No notes yet</p>
-              <p className="text-white/40 text-xs mt-1">Add notes to remember key points</p>
+              <div className="flex justify-center">
+                <div className="p-3 bg-green-500/10 rounded-lg">
+                  <StickyNote className="h-8 w-8 text-green-400/50" />
+                </div>
+              </div>
+              <div>
+                <p className="text-white/60 text-sm font-semibold text-green-200">No notes yet</p>
+                <p className="text-white/40 text-xs mt-1">Create notes at specific timestamps to capture key points</p>
+              </div>
+              <div className="pt-2 border-t border-white/10 text-xs text-white/30">
+                💡 Tip: Click "Add Note" above or press N to create a note at the current timestamp
+              </div>
             </motion.div>
           ) : (
             <div className="space-y-3">

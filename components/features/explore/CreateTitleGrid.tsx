@@ -280,6 +280,28 @@ const tiles = [
       "Study mode included"
     ],
   },
+  {
+    icon: Target,
+    title: "Ordering Quiz",
+    description: "Master sequences with AI-generated ordering and sequencing challenges.",
+    url: "/dashboard/ordering",
+    color: "rose",
+    category: "assessment",
+    quizType: 'mcq' as const,
+    requiredPlan: 'FREE' as SubscriptionPlanType,
+    featureType: 'quiz-ordering' as FeatureType,
+    taglines: [
+      "Order sequences correctly",
+      "Logic & sequence thinking",
+      "Instant feedback"
+    ],
+    difficulty: "Medium" as const,
+    benefits: [
+      "Ordering challenges",
+      "Process learning",
+      "Daily quiz limits"
+    ],
+  },
 ];
 
 // Animation variants

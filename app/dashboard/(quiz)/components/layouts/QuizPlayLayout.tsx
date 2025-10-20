@@ -66,7 +66,7 @@ export const useQuizContext = () => {
 interface QuizPlayLayoutProps {
   children: React.ReactNode
   quizSlug?: string
-  quizType?: "mcq" | "code" | "blanks" | "quiz" | "openended" | "flashcard" | "others"
+  quizType?: "mcq" | "code" | "blanks" | "quiz" | "openended" | "flashcard" | "ordering" | "others"
   quizId?: string
   isPublic?: boolean
   isFavorite?: boolean
@@ -80,6 +80,7 @@ const quizTypeLabel: Record<string, string> = {
   blanks: "Fill Blanks",
   openended: "Open Ended",
   flashcard: "Flashcards",
+  ordering: "Ordering Quiz",
   quiz: "Quiz",
   others: "Mixed Quiz",
 }
@@ -90,6 +91,7 @@ const quizTypeIcons: Record<string, React.ComponentType<any>> = {
   blanks: Edit3,
   openended: MessageSquare,
   flashcard: Brain,
+  ordering: Zap,
   quiz: Award,
   others: Zap,
 }

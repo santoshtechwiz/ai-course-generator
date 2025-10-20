@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -30,16 +30,19 @@ import { cn } from "@/lib/utils"
 import { useCourseActions } from "@/hooks/useCourseActions"
 import { useAuth } from "@/modules/auth"
 import { toast } from "@/components/ui/use-toast"
+import { ShareButton } from "@/components/features/share"
+import { useAppSelector } from "@/store/hooks"
 
 interface ActionButtonsProps {
   slug: string
   title: string
   isOwner: boolean
+  courseId?: number | string
   className?: string
   variant?: "default" | "compact"
 }
 
-export default function ActionButtons({ slug, title, isOwner, className = "", variant = "compact" }: ActionButtonsProps) {
+export default function ActionButtons({ slug, title, isOwner, courseId, className = "", variant = "compact" }: ActionButtonsProps) {
   const { isAuthenticated } = useAuth()
   const { status, loading, handleAction } = useCourseActions({ slug })
 
@@ -111,18 +114,36 @@ export default function ActionButtons({ slug, title, isOwner, className = "", va
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {/* Enhanced Share Button */}
+      {/* Share with Friends Button (using Share Module) */}
+      {courseId && (
+        <ShareButton
+          resourceType="course"
+          resourceId={courseId}
+          resourceTitle={title}
+          resourceSlug={slug}
+          variant="noShadow"
+          size="sm"
+          showLabel={variant === "default"}
+          className={cn(
+            "transition-all duration-200 hover:shadow-md",
+            variant === "compact" && "px-3"
+          )}
+        />
+      )}
+
+      {/* Enhanced Share Button (Device Share) */}
       <Button
-        variant="outline"
+        variant="noShadow"
         size="sm"
         onClick={handleShare}
         className={cn(
           "flex items-center gap-2 transition-all duration-200 hover:shadow-md",
           variant === "compact" && "px-3"
         )}
+        title="Share with device options"
       >
         <Share2 className="h-4 w-4" />
-        {variant === "default" && <span>Share</span>}
+        {variant === "default" && <span>Quick Share</span>}
       </Button>
 
       {/* Enhanced Favorite Button */}

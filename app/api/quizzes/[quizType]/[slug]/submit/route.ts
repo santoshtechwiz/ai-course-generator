@@ -229,8 +229,8 @@ function validateAnswersFormat(
   // Log first answer for debugging (development only)
   logDebug(`Validating ${type} answer format. First answer:`, JSON.stringify(answers[0], null, 2))
 
-  // For code and MCQ quizzes, we're more lenient with validation
-  if (type === "code" || type === "mcq") {
+  // For code, MCQ, and ordering quizzes, we're more lenient with validation
+  if (type === "code" || type === "mcq" || type === "ordering") {
     // As long as we have an array with at least one item with timeSpent and answer, we'll accept it
     const hasValidAnswers = answers.every(a => {
       // Every answer type has timeSpent
@@ -548,7 +548,7 @@ async function getQuizWithQuestions(quizId: string): Promise<QuizWithQuestions |
     const cacheKey = `quiz:${quizId}`;
     const cachedQuiz = quizCache.get<QuizWithQuestions>(cacheKey);
     if (cachedQuiz) {
-      logDebug(`Cache hit for quiz: ${quizId}`);
+      logDebug(`Cached quiz: ${quizId}`);
       return cachedQuiz;
     }
 
@@ -557,6 +557,35 @@ async function getQuizWithQuestions(quizId: string): Promise<QuizWithQuestions |
       where: { slug: quizId },
       include: { questions: true },
     });
+
+    if (!quiz) {
+      return null;
+    }
+
+    // For ordering quizzes, questions are stored in metadata JSON column
+    if (quiz.quizType === 'ordering' && quiz.metadata) {
+      const metadata = quiz.metadata as any;
+      
+      // Parse metadata to extract questions (each object in array = question)
+      if (Array.isArray(metadata)) {
+        quiz.questions = metadata
+          .filter((q: any) => q.type === 'ordering' && q.steps)
+          .map((q: any) => ({
+            id: q.id || 0,
+            question: q.title || '',
+            answer: JSON.stringify(q.correctOrder || []),
+            userQuizId: quiz.id,
+            questionType: 'ordering',
+            options: JSON.stringify(q.steps || []),
+            codeSnippet: null,
+            generatedBy: 'system',
+            version: 1,
+            parentId: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }));
+      }
+    }
 
     // Cache the result (shorter TTL for quiz data since it might change)
     if (quiz) {
@@ -576,6 +605,93 @@ interface QuizSubmissionResult {
   quizAttempt: any;
   percentageScore: number;
   totalQuestions: number;
+}
+
+// Process ordering quiz submission using dedicated OrderingQuiz tables
+async function processOrderingQuizSubmission(
+  userId: string,
+  submission: QuizSubmission,
+  slug: string,
+  percentageScore: number,
+  accuracyScore: number
+): Promise<QuizSubmissionResult> {
+  try {
+    // Find the ordering quiz
+    const orderingQuiz = await prisma.orderingQuiz.findUnique({
+      where: { slug },
+      include: { questions: true },
+    });
+
+    if (!orderingQuiz) {
+      throw new Error(`Ordering quiz not found with slug: ${slug}`);
+    }
+
+    // Create the attempt record
+    const attempt = await prisma.orderingQuizAttempt.create({
+      data: {
+        userId,
+        orderingQuizId: orderingQuiz.id,
+        score: Math.round(percentageScore),
+        correctAnswers: submission.answers.filter((a: any) => a.isCorrect).length,
+        totalQuestions: submission.answers.length,
+        timeSpent: Math.round(submission.totalTime),
+      },
+    });
+
+    // Save individual question answers
+    const questionAnswers = submission.answers.map((answer: any) => {
+      // Find the matching question
+      const question = orderingQuiz.questions.find(
+        (q) => String(q.id) === String(answer.questionId)
+      );
+
+      if (!question) {
+        console.warn(`Question not found for ID: ${answer.questionId}`);
+        return null;
+      }
+
+      // Ensure userAnswer is an array
+      let userAnswerArray = answer.userAnswer || answer.answer;
+      if (!Array.isArray(userAnswerArray)) {
+        // If it's a string like "20431", convert to array [2,0,4,3,1]
+        userAnswerArray = String(userAnswerArray).split('').map(Number);
+      }
+
+      // Compare with correct order
+      const correctOrder = Array.isArray(question.correctOrder) 
+        ? question.correctOrder 
+        : [];
+      const isCorrect = JSON.stringify(userAnswerArray) === JSON.stringify(correctOrder);
+
+      return {
+        attemptId: attempt.id,
+        questionId: question.id,
+        userAnswer: userAnswerArray, // Save as JSON array
+        isCorrect,
+        timeSpent: Math.round(answer.timeSpent || 0),
+      };
+    }).filter(Boolean);
+
+    // Batch insert question answers
+    if (questionAnswers.length > 0) {
+      await prisma.orderingQuizAttemptQuestion.createMany({
+        data: questionAnswers as any[],
+        skipDuplicates: true,
+      });
+    }
+
+    logDebug(`Saved ordering quiz attempt ${attempt.id} with ${questionAnswers.length} questions`);
+
+    return {
+      updatedUserQuiz: null, // Ordering quizzes don't use UserQuiz
+      quizAttempt: attempt,
+      percentageScore,
+      totalQuestions: orderingQuiz.questions.length,
+    };
+  } catch (error) {
+    console.error("Error processing ordering quiz submission:", error);
+    throw error;
+  }
 }
 
 async function processQuizSubmission(
@@ -632,7 +748,10 @@ async function processQuizSubmission(
           },
         })
 
-        await processQuestionAnswersBatch(tx, quiz.questions, submission.answers, quizAttempt.id, submission.type)
+        // Skip detailed question tracking for ordering quizzes (questions in metadata, not DB)
+        if (submission.type !== 'ordering') {
+          await processQuestionAnswersBatch(tx, quiz.questions, submission.answers, quizAttempt.id, submission.type)
+        }
         
         return {
           updatedUserQuiz,
@@ -776,6 +895,12 @@ async function processQuestionAnswersBatch(
             // For multiple choice, simple string comparison
             const correctAnswer = question.answer || question.correctAnswer;
             isCorrect = correctAnswer === userAnswer;
+            break;
+
+          case 'ordering':
+            // For ordering quizzes, isCorrect should be provided by the client
+            // (it's already checked client-side and sent in the answer)
+            isCorrect = answer.isCorrect === true;
             break;
 
           case 'openended':
@@ -1029,17 +1154,76 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
     })
 
     try {
-      const result = await retryTransaction(() => processQuizSubmission(userId, submission, quiz, percentageScore, accuracyScore))
+      let result;
+      
+      // Use dedicated ordering quiz handler for ordering type
+      if (submission.type === 'ordering') {
+        result = await retryTransaction(() => 
+          processOrderingQuizSubmission(userId, submission, submission.quizId, percentageScore, accuracyScore)
+        );
+        
+        // Fetch full quiz data for response
+        const orderingQuiz = await prisma.orderingQuiz.findUnique({
+          where: { slug: submission.quizId },
+          include: { questions: { orderBy: { orderIndex: 'asc' } } },
+        });
 
-  // Ensure all required fields are included in the response
-      return NextResponse.json({
-        success: true,
-        result: {
-          ...result,
-          score: percentageScore,
-          totalTime: Math.round(submission.totalTime),
-        },
-      })
+        if (orderingQuiz) {
+          // Build detailed results with proper formatting
+          const responseResult: any = {
+            ...result,
+            score: percentageScore,
+            totalTime: Math.round(submission.totalTime),
+            results: submission.answers.map((answer, index) => {
+              const question = orderingQuiz.questions[index];
+              
+              // Ensure userAnswer is properly formatted as array
+              let userAnswerArray = answer.userAnswer || answer.answer;
+              if (!Array.isArray(userAnswerArray)) {
+                userAnswerArray = String(userAnswerArray).split('').map(Number);
+              }
+              
+              const correctOrder = Array.isArray(question?.correctOrder) 
+                ? question.correctOrder 
+                : [];
+              const isCorrect = JSON.stringify(userAnswerArray) === JSON.stringify(correctOrder);
+
+              return {
+                questionId: String(question?.id || index + 1),
+                question: question?.title || `Question ${index + 1}`,
+                userAnswer: userAnswerArray, // Array format
+                correctAnswer: correctOrder, // Array format
+                isCorrect,
+                explanation: question?.description || '',
+                type: 'ordering',
+                steps: question?.steps || [],
+              };
+            }),
+            totalQuestions: orderingQuiz.questions.length,
+            correctAnswers: submission.answers.filter((a: any) => a.isCorrect).length,
+          };
+
+          return NextResponse.json({
+            success: true,
+            result: responseResult,
+          });
+        }
+      } else {
+        // Use regular quiz submission handler
+        result = await retryTransaction(() => 
+          processQuizSubmission(userId, submission, quiz, percentageScore, accuracyScore)
+        );
+        
+        // Return standard result
+        return NextResponse.json({
+          success: true,
+          result: {
+            ...result,
+            score: percentageScore,
+            totalTime: Math.round(submission.totalTime),
+          },
+        });
+      }
     } catch (processingError: unknown) {
       console.error("Error in quiz submission processing:", processingError)
       

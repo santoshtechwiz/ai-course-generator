@@ -160,6 +160,7 @@ export interface FullCourseType {
   slug: string;
   userId?: string;
   isCompleted: boolean;
+  isShared?: boolean; // Flag to indicate course is being viewed via share link
   description?: string;
   image?: string;
   courseUnits: FullCourseUnit[]; // Ensure this is properly typed

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
+import { useToastThrottle } from "../video/hooks/useToastThrottle"
 import { Loader2, StickyNote, Edit3 } from "lucide-react"
 import { useNotes } from "@/hooks/use-notes"
 import type { Bookmark } from "@prisma/client"
@@ -17,6 +18,7 @@ interface NoteModalProps {
   existingNote?: Bookmark
   trigger?: React.ReactNode
   onSuccess?: () => void
+  onLoadingChange?: (loading: boolean) => void
 }
 
 export function NoteModal({ 
@@ -24,13 +26,15 @@ export function NoteModal({
   chapterId, 
   existingNote, 
   trigger,
-  onSuccess 
+  onSuccess,
+  onLoadingChange
 }: NoteModalProps) {
   const [open, setOpen] = useState(false)
   const [note, setNote] = useState(existingNote?.note || "")
   const [isLoading, setIsLoading] = useState(false)
   const [draftSaved, setDraftSaved] = useState(false)
   const { toast } = useToast()
+  const { showThrottledToast } = useToastThrottle(1500)
   const { createNote, updateNote } = useNotes({ courseId, chapterId })
 
   const isEditing = Boolean(existingNote)
@@ -73,7 +77,7 @@ export function NoteModal({
     e.preventDefault()
     
     if (!note.trim()) {
-      toast({
+      showThrottledToast({
         title: "Error",
         description: "Please enter some content for your note",
         variant: "destructive",
@@ -83,7 +87,7 @@ export function NoteModal({
 
     // Additional validation to prevent course/chapter info from being saved as notes
     if (note.includes(" - ")) {
-      toast({
+      showThrottledToast({
         title: "Error",
         description: "Note content cannot contain course or chapter information. Please enter your own notes.",
         variant: "destructive",
@@ -92,16 +96,14 @@ export function NoteModal({
     }
 
     if (note.includes("Introduction to")) {
-      toast({
+      showThrottledToast({
         title: "Error", 
         description: "Note content cannot contain course titles. Please enter your own notes.",
         variant: "destructive",
       })
       return
-    }
-
-    if (note.trim().length < 5) {
-      toast({
+    }    if (note.trim().length < 5) {
+      showThrottledToast({
         title: "Error",
         description: "Note content must be at least 5 characters long",
         variant: "destructive",
@@ -110,18 +112,19 @@ export function NoteModal({
     }
 
     setIsLoading(true)
+    onLoadingChange?.(true)
 
     try {
       if (isEditing && existingNote) {
         await updateNote(existingNote.id.toString(), { note })
-        toast({
-          title: "Note updated",
+        showThrottledToast({
+          title: "✓ Note updated",
           description: "Your note has been updated successfully",
         })
       } else {
         await createNote({ courseId, chapterId, note })
-        toast({
-          title: "Note created",
+        showThrottledToast({
+          title: "✓ Note created",
           description: "Your note has been saved successfully",
         })
       }
@@ -138,13 +141,14 @@ export function NoteModal({
       setNote("")
       onSuccess?.()
     } catch (error: any) {
-      toast({
-        title: "Error",
+      showThrottledToast({
+        title: "⚠ Error",
         description: error.message || `Failed to ${isEditing ? "update" : "create"} note`,
         variant: "destructive",
       })
     } finally {
       setIsLoading(false)
+      onLoadingChange?.(false)
     }
   }
 

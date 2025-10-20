@@ -12,6 +12,7 @@ import certificateReducer from "./slices/certificate-slice"
 import courseProgressReducer from "./slices/courseProgress-slice"
 import progressEventsReducer from "./slices/progress-events-slice"
 import subscriptionReducer from "./slices/subscriptionSlice"
+import orderingQuizReducer from "./slices/ordering-quiz-slice"
 
 // Storage with fallback - proper implementation to avoid redux-persist warnings
 const createStorage = () => {
@@ -121,6 +122,7 @@ const rootReducer = combineReducers({
   courseProgress: courseProgressReducer,
   progressEvents: progressEventsReducer,
   subscription: subscriptionReducer, // Redux single source of truth
+  orderingQuiz: orderingQuizReducer,
 })
 
 // ---------------------

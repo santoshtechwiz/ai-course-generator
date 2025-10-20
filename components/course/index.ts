@@ -1,7 +1,6 @@
 // Centralized exports for course-related components
 export { default as CertificateModal } from './CertificateModal'
 export { default as MobilePlaylistOverlay } from './MobilePlaylistOverlay'
-export { default as PlaylistSidebar } from './PlaylistSidebar'
 
 export { default as AutoPlayNotification } from './video/components/AutoPlayNotification'
 export { default as CompletedVideoOverlay } from './video/components/CompletedVideoOverlay'

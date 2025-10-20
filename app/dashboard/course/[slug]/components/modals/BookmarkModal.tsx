@@ -77,7 +77,7 @@ export function BookmarkModal({
   }
 
   const defaultTrigger = (
-    <Button variant="outline" size="sm">
+    <Button variant="neutral" size="sm">
       {isEditing ? (
         <>
           <Edit3 className="h-4 w-4 mr-2" />
@@ -128,7 +128,7 @@ export function BookmarkModal({
           <DialogFooter>
             <Button 
               type="button" 
-              variant="outline" 
+              variant="neutral" 
               onClick={() => setOpen(false)}
               disabled={isLoading}
             >
