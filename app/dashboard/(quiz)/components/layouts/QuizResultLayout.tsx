@@ -47,10 +47,10 @@ const quizTypeIcons: Record<string, React.ComponentType<any>> = {
 
 const getDifficultyColor = (difficulty: string) => {
   switch (difficulty?.toLowerCase()) {
-    case 'easy': return 'from-green-500 to-emerald-500'
-    case 'medium': return 'from-yellow-500 to-orange-500'
-    case 'hard': return 'from-red-500 to-pink-500'
-    default: return 'from-[hsl(var(--primary))] to-[hsl(var(--accent))]'
+    case 'easy': return 'bg-green-600 text-white'
+    case 'medium': return 'bg-yellow-600 text-white'
+    case 'hard': return 'bg-red-600 text-white'
+    default: return 'bg-primary text-primary-foreground'
   }
 }
 
@@ -72,39 +72,39 @@ export default function QuizResultLayout({
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <motion.div 
-              className="flex items-center gap-4"
+              className="flex items-center gap-4 w-full sm:w-auto"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <div className="p-3 rounded-2xl bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-[hsl(var(--primary-foreground))] shadow-lg">
+              <div className="p-3 rounded-2xl bg-main border-2 border-border shadow-shadow text-main-foreground">
                 <QuizIcon className="w-6 h-6" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <h1 className="text-xl sm:text-2xl font-bold text-foreground">
                   {title}
                 </h1>
-                <div className="flex items-center gap-3 mt-1">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
                   <Badge 
-                    variant="secondary" 
-                    className="bg-gradient-to-r from-[hsl(var(--primary))]/10 to-[hsl(var(--accent))]/10 text-[hsl(var(--primary))] dark:from-[hsl(var(--primary))]/20 dark:to-[hsl(var(--accent))]/20 dark:text-[hsl(var(--primary))] border-[hsl(var(--primary))]/30 dark:border-[hsl(var(--primary))]/40"
+                    variant="neutral" 
+                    className="bg-secondary-background text-foreground border-2 border-border shadow-shadow"
                   >
                     {quizTypeLabels[quizType] || "Quiz"}
                   </Badge>
                   {difficulty && (
                     <Badge 
                       className={cn(
-                        "text-white border-0",
-                        `bg-gradient-to-r ${getDifficultyColor(difficulty)}`
+                        "text-white border-2 border-border shadow-shadow font-bold",
+                        getDifficultyColor(difficulty)
                       )}
                     >
                       {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
                     </Badge>
                   )}
                   {slug && (
-                    <span className="text-sm text-muted-foreground truncate max-w-[200px]">
+                    <span className="text-sm text-muted-foreground truncate max-w-[200px] sm:max-w-none">
                       {slug}
                     </span>
                   )}
@@ -116,11 +116,12 @@ export default function QuizResultLayout({
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
+              className="w-full sm:w-auto"
             >
               <Button 
                 onClick={() => window.history.back()}
-                variant="outline"
-                className="flex items-center gap-2 hover:scale-105 transition-transform"
+                variant="neutral"
+                className="flex items-center gap-2 hover:scale-105 transition-transform w-full sm:w-auto justify-center"
               >
                 <ArrowLeft className="w-5 h-5" />
                 Back to Quizzes
@@ -130,10 +131,10 @@ export default function QuizResultLayout({
         </div>
       </motion.header>
 
-      <main className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Detailed Results - Direct display without duplicate hero banner */}
         <motion.div
-          className="rounded-3xl border border-border/50 bg-card/80 backdrop-blur-xl shadow-xl p-8"
+          className="rounded-3xl border-2 border-border bg-card shadow-shadow p-4 sm:p-6 lg:p-8"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}

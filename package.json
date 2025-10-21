@@ -13,7 +13,10 @@
     "test:providers": "tsx scripts/test-ai-providers.ts",
     "test:provider": "tsx scripts/test-provider-quick.ts",
     "start": "next start",
-    "lint": "next lint",
+      "lint:fast": "eslint --cache --cache-location .eslintcache src",
+  "find-unused:fast": "ts-prune 'app/components'",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "server": "node server",
     "postinstall": "prisma generate",
     "dev:migrate": "npx prisma migrate dev",
@@ -179,7 +182,7 @@
     "@types/react-syntax-highlighter": "15.5.13",
     "@typescript-eslint/eslint-plugin": "8.45.0",
     "autoprefixer": "10.4.21",
-    "eslint": "^8.57.0",
+    "eslint": "8.57.1",
     "eslint-config-next": "^15.4.5",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.5.4",
@@ -192,6 +195,7 @@
     "stylelint": "16.10.0",
     "stylelint-config-tailwindcss": "1.0.0",
     "tailwindcss": "4.1.14",
+    "ts-prune": "0.10.3",
     "vitest": "^1.0.0"
   },
   "overrides": {

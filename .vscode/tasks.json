@@ -1,13 +1,39 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "Start Development Server",
-			"type": "shell",
-			"command": "npm run dev",
-			"isBackground": true,
-			"group": "build",
-			"problemMatcher": []
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Lint (Fast)",
+      "type": "shell",
+      "command": "npx eslint --cache --cache-location .eslintcache components app/components",
+      "problemMatcher": "$eslint-stylish",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Find Unused Components",
+      "type": "shell",
+      "command": "npx ts-prune \"components/**\" \"app/components/**\"",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Find and Archive Unused Components",
+      "type": "shell",
+      "command": "npm run find-unused",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    }
+  ]
 }

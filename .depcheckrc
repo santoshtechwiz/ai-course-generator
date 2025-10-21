@@ -1,0 +1,4 @@
+{
+  "ignoreMatches": ["next", "react", "react-dom"],
+  "specials": ["next"]
+}

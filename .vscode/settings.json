@@ -1,4 +1,15 @@
 {
+    "editor.defaultFormatter": null,
+    "[javascript]": {
+        "editor.defaultFormatter": null
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": null
+    },
+    "[typescriptreact]": {
+        "editor.defaultFormatter": null
+    },
+    "editor.formatOnSave": false,
     "sqltools.connections": [
         {
             "previewLimit": 50,
@@ -9,9 +20,7 @@
         }
     ],
     "workbench.editor.enablePreview": false,
-    "microsoft-sovereign-cloud.customEnvironment": {
-        
-    },
+    "microsoft-sovereign-cloud.customEnvironment": {},
     "chat.mcp.serverSampling": {
         "ai-learning/.vscode/mcp.json: Sentry": {
             "allowedModels": [

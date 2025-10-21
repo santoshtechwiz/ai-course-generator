@@ -1,6 +1,6 @@
 import { BaseQuizService } from "./base-quiz.service";
 import { generateSlug } from "@/lib/utils";
-import { generateMCQ } from "@/lib/ai/course-ai-service";
+import { AIServiceFactory } from "@/lib/ai/services/AIServiceFactory";
 
 export class McqQuizService extends BaseQuizService {
     constructor() {
@@ -8,22 +8,35 @@ export class McqQuizService extends BaseQuizService {
     }
 
     /**
-     * Generate MCQ quiz using the simple AI service
+     * Generate MCQ quiz using AIServiceFactory
      */
     public async generateQuiz(params: { amount: number; title: string; type?: string; difficulty?: string; userId?: string; userType?: string; credits?: number }) {
         const { amount, title, difficulty = "medium", userId, userType = "FREE", credits } = params;
-        
+
         try {
-            const questions = await generateMCQ(
-                title,
-                amount,
-                difficulty as 'easy' | 'medium' | 'hard',
+            // Create AI service context
+            const context = {
                 userId,
-                userType as any,
-                credits
-            );
-            
-            return questions;
+                subscriptionPlan: userType as any,
+                isAuthenticated: !!userId,
+                credits: credits || 0,
+            };
+
+            // Create AI service using factory
+            const aiService = AIServiceFactory.createService(context);
+
+            // Generate quiz using the service
+            const result = await aiService.generateMultipleChoiceQuiz({
+                topic: title,
+                numberOfQuestions: amount,
+                difficulty: difficulty as 'easy' | 'medium' | 'hard',
+            });
+
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to generate MCQ quiz');
+            }
+
+            return result.data;
         } catch (error) {
             console.error("Error generating MCQ quiz:", error);
             throw new Error(`Failed to generate MCQ quiz: ${error instanceof Error ? error.message : String(error)}`);
