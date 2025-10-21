@@ -17,14 +17,14 @@ import type React from "react"
 // CORE SCHEMA TYPES
 // ============================================================================
 
-export interface BaseSchema {
+interface BaseSchema {
   "@context": "https://schema.org"
   "@type": string
   "@id"?: string
   [key: string]: any
 }
 
-export interface ImageObject {
+interface ImageObject {
   "@type": "ImageObject"
   url: string
   width?: number
@@ -33,7 +33,7 @@ export interface ImageObject {
   caption?: string
 }
 
-export interface PostalAddress {
+interface PostalAddress {
   "@type": "PostalAddress"
   streetAddress?: string
   addressLocality?: string
@@ -42,7 +42,7 @@ export interface PostalAddress {
   addressCountry?: string
 }
 
-export interface ContactPoint {
+interface ContactPoint {
   "@type": "ContactPoint"
   contactType: string
   email?: string
@@ -52,7 +52,7 @@ export interface ContactPoint {
   hoursAvailable?: OpeningHoursSpecification[]
 }
 
-export interface OpeningHoursSpecification {
+interface OpeningHoursSpecification {
   "@type": "OpeningHoursSpecification"
   dayOfWeek: string | string[]
   opens: string
@@ -61,7 +61,7 @@ export interface OpeningHoursSpecification {
   validThrough?: string
 }
 
-export interface Person {
+interface Person {
   "@type": "Person"
   name: string
   url?: string
@@ -74,7 +74,7 @@ export interface Person {
   telephone?: string
 }
 
-export interface Organization {
+interface Organization {
 "@context": "https://schema.org"
   "@type": "Organization"
   "@id"?: string
@@ -93,20 +93,20 @@ export interface Organization {
   hasOfferCatalog?: OfferCatalog
 }
 
-export interface Place {
+interface Place {
   "@type": "Place"
   name: string
   address?: PostalAddress
   geo?: GeoCoordinates
 }
 
-export interface GeoCoordinates {
+interface GeoCoordinates {
   "@type": "GeoCoordinates"
   latitude: number
   longitude: number
 }
 
-export interface Offer {
+interface Offer {
   "@type": "Offer"
   price?: string | number
   priceCurrency?: string
@@ -117,13 +117,13 @@ export interface Offer {
   itemCondition?: string
 }
 
-export interface OfferCatalog {
+interface OfferCatalog {
   "@type": "OfferCatalog"
   name: string
   itemListElement: Offer[]
 }
 
-export interface AggregateRating {
+interface AggregateRating {
   "@type": "AggregateRating"
   ratingValue: number
   reviewCount: number
@@ -131,7 +131,7 @@ export interface AggregateRating {
   worstRating?: number
 }
 
-export interface Review {
+interface Review {
   "@type": "Review"
   author: Person | Organization
   datePublished?: string
@@ -139,7 +139,7 @@ export interface Review {
   reviewRating?: Rating
 }
 
-export interface Rating {
+interface Rating {
   "@type": "Rating"
   ratingValue: number
   bestRating?: number
@@ -150,7 +150,7 @@ export interface Rating {
 // SPECIFIC SCHEMA TYPES
 // ============================================================================
 
-export interface WebSiteSchema extends BaseSchema {
+interface WebSiteSchema extends BaseSchema {
   "@type": "WebSite"
   name: string
   url: string
@@ -162,36 +162,36 @@ export interface WebSiteSchema extends BaseSchema {
   copyrightHolder?: Organization | Person
 }
 
-export interface SearchAction {
+interface SearchAction {
   "@type": "SearchAction"
   target: string
   "query-input": string
 }
 
-export interface BreadcrumbListSchema extends BaseSchema {
+interface BreadcrumbListSchema extends BaseSchema {
   "@type": "BreadcrumbList"
   itemListElement: ListItem[]
 }
 
-export interface ListItem {
+interface ListItem {
   "@type": "ListItem"
   position: number
   name: string
   item: string
 }
 
-export interface FAQPageSchema extends BaseSchema {
+interface FAQPageSchema extends BaseSchema {
   "@type": "FAQPage"
   mainEntity: Question[]
 }
 
-export interface Question {
+interface Question {
   "@type": "Question"
   name: string
   acceptedAnswer: Answer
 }
 
-export interface Answer {
+interface Answer {
   "@type": "Answer"
   text: string
   author?: Person | Organization
@@ -199,7 +199,7 @@ export interface Answer {
   upvoteCount?: number
 }
 
-export interface CourseSchema extends BaseSchema {
+interface CourseSchema extends BaseSchema {
   "@type": "Course"
   name: string
   description: string
@@ -224,7 +224,7 @@ export interface CourseSchema extends BaseSchema {
 
 }
 
-export interface CourseInstance {
+interface CourseInstance {
   "@type": "CourseInstance"
   name?: string
   description?: string
@@ -235,7 +235,7 @@ export interface CourseInstance {
   instructor?: Person | Person[]
 }
 
-export interface Thing {
+interface Thing {
   "@type": "Thing"
   name: string
   description?: string
@@ -243,14 +243,14 @@ export interface Thing {
   image?: string | ImageObject
 }
 
-export interface AlignmentObject {
+interface AlignmentObject {
   "@type": "AlignmentObject"
   alignmentType: string
   targetName: string
   targetUrl?: string
 }
 
-export interface QuizSchema extends BaseSchema {
+interface QuizSchema extends BaseSchema {
   "@type": "Quiz"
   name: string
   description: string
@@ -270,7 +270,7 @@ export interface QuizSchema extends BaseSchema {
   inLanguage?: string
 }
 
-export interface ArticleSchema extends BaseSchema {
+interface ArticleSchema extends BaseSchema {
   "@type": "Article" | "BlogPosting" | "NewsArticle" | "TechArticle"
   headline: string
   description?: string
@@ -288,7 +288,7 @@ export interface ArticleSchema extends BaseSchema {
   mentions?: Thing | Thing[]
 }
 
-export interface ProductSchema extends BaseSchema {
+interface ProductSchema extends BaseSchema {
   "@type": "Product" | "SoftwareApplication"
   name: string
   description: string
@@ -313,7 +313,7 @@ export interface ProductSchema extends BaseSchema {
   releaseNotes?: string
 }
 
-export interface EventSchema extends BaseSchema {
+interface EventSchema extends BaseSchema {
   "@type": "Event" | "EducationEvent" | "BusinessEvent"
   name: string
   description: string
@@ -331,7 +331,7 @@ export interface EventSchema extends BaseSchema {
   remainingAttendeeCapacity?: number
 }
 
-export interface LocalBusinessSchema extends BaseSchema {
+interface LocalBusinessSchema extends BaseSchema {
   "@type": "LocalBusiness" | "EducationalOrganization"
   name: string
   description?: string
@@ -351,7 +351,7 @@ export interface LocalBusinessSchema extends BaseSchema {
   sameAs?: string[]
 }
 
-export interface VideoObjectSchema extends BaseSchema {
+interface VideoObjectSchema extends BaseSchema {
   "@type": "VideoObject"
   name: string
   description: string
@@ -369,7 +369,7 @@ export interface VideoObjectSchema extends BaseSchema {
   caption?: string
 }
 
-export interface HowToSchema extends BaseSchema {
+interface HowToSchema extends BaseSchema {
   "@type": "HowTo"
   name: string
   description: string
@@ -382,7 +382,7 @@ export interface HowToSchema extends BaseSchema {
   video?: VideoObjectSchema
 }
 
-export interface HowToStep {
+interface HowToStep {
   "@type": "HowToStep"
   name: string
   text: string
@@ -391,19 +391,19 @@ export interface HowToStep {
   video?: VideoObjectSchema
 }
 
-export interface HowToSupply {
+interface HowToSupply {
   "@type": "HowToSupply"
   name: string
   image?: string | ImageObject
 }
 
-export interface HowToTool {
+interface HowToTool {
   "@type": "HowToTool"
   name: string
   image?: string | ImageObject
 }
 
-export interface MonetaryAmount {
+interface MonetaryAmount {
   "@type": "MonetaryAmount"
   currency: string
   value: number
@@ -419,7 +419,7 @@ export interface SiteInfo {
   logoUrl?: string
 }
 
-export interface BreadcrumbItem {
+interface BreadcrumbItem {
   position: number
   name: string
   url: string
@@ -485,7 +485,7 @@ export interface CombinedSchemaProps {
   includeFAQ?: boolean
 }
 
-export interface MetadataOptions {
+interface MetadataOptions {
   title?: string
   description?: string
   canonicalPath?: string
@@ -509,7 +509,7 @@ export interface MetadataOptions {
 // SCHEMA FACTORY TYPES
 // ============================================================================
 
-export type SchemaType =
+type SchemaType =
   | "WebSite"
   | "BreadcrumbList"
   | "Organization"
@@ -525,7 +525,7 @@ export type SchemaType =
   | "Person"
   | "Review"
 
-export interface SchemaFactoryConfig {
+interface SchemaFactoryConfig {
   type: SchemaType
   data: Record<string, any>
   validation?: boolean

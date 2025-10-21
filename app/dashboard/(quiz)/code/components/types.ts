@@ -1,4 +1,4 @@
-export interface CodeOption {
+interface CodeOption {
   id: string;
   text: string;
   code: string;
@@ -18,7 +18,7 @@ export interface CodeQuestion {
   correctAnswer?: string; // Added correctAnswer as an alternative for backward compatibility
 }
 
-export interface CodeAnswer {
+interface CodeAnswer {
   questionId: string | number;
   selectedOptionId: string;
   timestamp: number;
@@ -26,7 +26,7 @@ export interface CodeAnswer {
   isCorrect: boolean;
 }
 
-export interface CodeQuizResult {
+interface CodeQuizResult {
   quizId: string | number;
   slug: string;
   title: string;

@@ -6,7 +6,7 @@
 
 import type { AIMessage } from '@/lib/ai/interfaces'
 
-export interface SummaryPromptOptions {
+interface SummaryPromptOptions {
   transcript: string
   summaryLength?: number
   focusAreas?: string[]
@@ -114,10 +114,4 @@ export function truncateTranscript(transcript: string, maxTokens: number): strin
   return truncatedWords.join(' ')
 }
 
-export default {
-  buildSummaryPrompt,
-  getSummaryFunctionSchema,
-  buildSummaryPromptWithSchema,
-  estimateTokenCount,
-  truncateTranscript,
-}
+

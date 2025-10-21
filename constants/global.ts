@@ -19,7 +19,7 @@ export const STORAGE_KEYS = {
 };
 
 // Storage prefixes for organized localStorage management
-export const STORAGE_PREFIXES = {
+const STORAGE_PREFIXES = {
   USER_PREFERENCES: 'user_prefs_',
   QUIZ_HISTORY: 'quiz_history_',
   QUIZ_PROGRESS: 'quiz_progress_',
@@ -29,7 +29,7 @@ export const STORAGE_PREFIXES = {
 } as const
 
 // Status Constants
-export const STATUS = {
+const STATUS = {
   // Common Status
   IDLE: "idle",
   LOADING: "loading",
@@ -60,7 +60,7 @@ export const STATUS = {
 };
 
 // Auth status values (deprecated, use STATUS instead)
-export const AUTH_STATUS = {
+const AUTH_STATUS = {
   CHECKING: STATUS.CHECKING,
   AUTHENTICATED: STATUS.AUTHENTICATED,
   UNAUTHENTICATED: STATUS.UNAUTHENTICATED,
@@ -68,7 +68,7 @@ export const AUTH_STATUS = {
 };
 
 // Quiz status values (deprecated, use STATUS instead)
-export const QUIZ_STATUS = {
+const QUIZ_STATUS = {
   IDLE: STATUS.IDLE,
   LOADING: STATUS.LOADING,
   SUCCEEDED: STATUS.SUCCEEDED,
@@ -100,14 +100,14 @@ export const API_PATHS = {
 };
 
 // Default values
-export const DEFAULT_VALUES = {
+const DEFAULT_VALUES = {
   UNTITLED_QUIZ: "Untitled Quiz",
   QUIZ_NOT_AVAILABLE: "Quiz Not Available",
   DEFAULT_TIME_SPENT: 30
 };
 
 // Question types
-export const QUESTION_TYPES = {
+const QUESTION_TYPES = {
   MCQ: "mcq",
   CODE: "code",
   BLANKS: "blanks",
@@ -115,14 +115,14 @@ export const QUESTION_TYPES = {
 };
 
 // Answer types
-export const ANSWER_TYPES = {
+const ANSWER_TYPES = {
   CORRECT: "correct",
   INCORRECT: "incorrect",
   STILL_LEARNING: "still_learning"
 };
 
 // Quiz types
-export const QUIZ_TYPES = {
+const QUIZ_TYPES = {
   FLASHCARD: "flashcard",
   MCQ: "mcq",
   CODE: "code",
@@ -131,7 +131,7 @@ export const QUIZ_TYPES = {
 };
 
 // Default quiz titles
-export const QUIZ_TITLES = {
+const QUIZ_TITLES = {
   FLASHCARD: "Flashcard Quiz",
   UNTITLED: "Untitled Quiz"
 };
@@ -147,7 +147,7 @@ export const HTTP_STATUS = {
 };
 
 // Subscription Plans
-export const SUBSCRIPTION_PLANS = {
+const SUBSCRIPTION_PLANS = {
   FREE: "FREE",
   BASIC: "BASIC",
   PREMIUM: "PREMIUM",
@@ -157,7 +157,7 @@ export const SUBSCRIPTION_PLANS = {
 };
 
 // Role types
-export const ROLES = {
+const ROLES = {
   USER: "USER",
   ADMIN: "ADMIN",
   INSTRUCTOR: "INSTRUCTOR",
@@ -165,14 +165,14 @@ export const ROLES = {
 };
 
 // Cache keys
-export const CACHE_KEYS = {
+const CACHE_KEYS = {
   USER_SETTINGS: "user_settings",
   SUBSCRIPTION: "subscription_data",
   TOKEN_USAGE: "token_usage"
 };
 
 // Time constants in milliseconds
-export const TIME = {
+const TIME = {
   SECOND: 1000,
   MINUTE: 60 * 1000,
   HOUR: 60 * 60 * 1000,

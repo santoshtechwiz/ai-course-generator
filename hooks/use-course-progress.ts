@@ -23,7 +23,7 @@ interface CourseProgressMap {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-export function useCourseProgress(userId?: string) {
+function useCourseProgress(userId?: string) {
   const { data, error, isLoading, mutate } = useSWR<CourseProgressMap>(
     userId ? `/api/progress/course/user/${userId}` : null,
     fetcher,

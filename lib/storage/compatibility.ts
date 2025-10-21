@@ -11,13 +11,13 @@ import { SimpleStorageService, simpleStorage, asyncVideoProgressSave, asyncChapt
 // COMPATIBILITY TYPES (matching the complex system's interface)
 // ============================================================================
 
-export interface TransactionResult {
+interface TransactionResult {
   success: boolean
   operations?: any[]
   errors?: string[]
 }
 
-export interface StorageOperation {
+interface StorageOperation {
   id: string
   type: string
   data: any
@@ -133,10 +133,10 @@ export const conflictDetector = {
   getConflictHistory: () => []
 }
 
-export const storageStartup = {
+const storageStartup = {
   initialize: async () => ({ success: true }),
   getStatus: () => ({ initialized: true, healthy: true })
 }
 
 // Re-export simple storage for direct usage
-export { simpleStorage, asyncVideoProgressSave, asyncChapterCompletion }
+export { simpleStorage }

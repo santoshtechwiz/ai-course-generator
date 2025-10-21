@@ -14,7 +14,7 @@ export type UpgradeTrigger =
   | 'feature_limit' // Hit feature limit
   | 'milestone' // Usage milestone reached
 
-export interface UpgradePromptContext {
+interface UpgradePromptContext {
   trigger: UpgradeTrigger
   feature?: string
   achievement?: string

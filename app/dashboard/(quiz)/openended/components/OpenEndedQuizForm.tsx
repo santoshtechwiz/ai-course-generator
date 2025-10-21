@@ -534,6 +534,6 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   )
 }
 
-export const OpenEndedQuizForm = memo(TopicFormComponent)
+const OpenEndedQuizForm = memo(TopicFormComponent)
 
 export default OpenEndedQuizForm

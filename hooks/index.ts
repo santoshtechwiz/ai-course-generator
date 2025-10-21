@@ -10,25 +10,25 @@
 
 export {
   // Core utility hooks
-  useDebounce,
-  useDebouncedCallback,
-  useInterval,
+  
+  
+  
   useMediaQuery,
-  useResponsive,
+  
   useMobile,
-  usePersistentState,
+  
 } from "@/lib/utils/hooks"
 
 // Quiz-specific hooks
-export { useQuizAttempts } from "./useQuizAttempts"
-export { useDeleteQuiz } from "./use-delete-quiz"
+
+
 
 // ============================================================================
 // TOAST UTILITIES
 // ============================================================================
 
 // Re-export unified toast to keep imports stable
-export { useToast, toast } from "@/components/ui/use-toast"
+export { useToast,  } from "@/components/ui/use-toast"
 
 // ============================================================================
 // TEXT UTILITIES
@@ -58,14 +58,14 @@ export * from "./useRandomQuizzes"
 // GUEST STATE HOOKS (Week 1 Foundation)
 // ============================================================================
 
-export { useGuestState } from "./useGuestState"
-export { useGuestProgress } from "./useGuestProgress"
-export { useGuestVideoProgress } from "./useGuestVideoProgress"
+
+
+
 
 // ============================================================================
 // GUEST STATE MIGRATION HOOKS (Week 2 Migration)
 // ============================================================================
 
-export { useGuestStateMigration } from "./useGuestStateMigration"
-export { useContextPreservation } from "./useContextPreservation"
+
+
 

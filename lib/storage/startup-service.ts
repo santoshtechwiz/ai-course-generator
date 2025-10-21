@@ -299,7 +299,7 @@ export class StorageStartupService {
 }
 
 // Export singleton instance
-export const storageStartup = StorageStartupService.getInstance()
+const storageStartup = StorageStartupService.getInstance()
 
 /**
  * Initialize storage system - call this in your app startup

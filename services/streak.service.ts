@@ -25,7 +25,7 @@ import { startOfDay, sub, differenceInHours } from "date-fns"
  * Streak Service
  * Manages daily review streaks and habit formation
  */
-export class StreakService {
+class StreakService {
   /**
    * Track daily review streak
    */

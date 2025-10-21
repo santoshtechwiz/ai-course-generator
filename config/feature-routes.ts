@@ -5,7 +5,7 @@
 
 import type { RouteFeatureConfig } from '../lib/featureFlags/types'
 
-export const ROUTE_FEATURE_MAP: Record<string, RouteFeatureConfig> = {
+const ROUTE_FEATURE_MAP: Record<string, RouteFeatureConfig> = {
   // Public Exploration Routes (no auth required for browsing)
   '/explore': {
     feature: 'course-browsing',
@@ -132,7 +132,7 @@ export const ROUTE_FEATURE_MAP: Record<string, RouteFeatureConfig> = {
 }
 
 // Route patterns for matching
-export const ROUTE_PATTERNS = {
+const ROUTE_PATTERNS = {
   ADMIN: /^\/admin(\/.*)?$/,
   QUIZ_CREATION: /^\/dashboard\/(mcq|openended|blanks|code|flashcard|ordering)$/,
   COURSE_CREATION: /^\/dashboard\/create\/course$/,
@@ -177,7 +177,7 @@ export function matchRouteToFeature(pathname: string): RouteFeatureConfig | null
 /**
  * Get all protected routes
  */
-export function getProtectedRoutes(): string[] {
+function getProtectedRoutes(): string[] {
   return Object.keys(ROUTE_FEATURE_MAP).filter(route => {
     const config = ROUTE_FEATURE_MAP[route]
     return !config.allowPublicAccess
@@ -187,7 +187,7 @@ export function getProtectedRoutes(): string[] {
 /**
  * Get public routes that still need auth
  */
-export function getPublicAuthRoutes(): string[] {
+function getPublicAuthRoutes(): string[] {
   return Object.keys(ROUTE_FEATURE_MAP).filter(route => {
     const config = ROUTE_FEATURE_MAP[route]
     return config.allowPublicAccess === true

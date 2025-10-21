@@ -9,7 +9,7 @@ import { logger } from "@/lib/logger"
 import { EmbeddingManager } from "../core/embedding-manager"
 import { UserProfile } from "./user-analyzer"
 
-export interface ContentItem {
+interface ContentItem {
   id: string
   title: string
   description?: string
@@ -25,14 +25,14 @@ export interface ContentItem {
   content?: string // Full content for embedding
 }
 
-export interface MatchScore {
+interface MatchScore {
   contentId: string
   score: number
   reasons: string[]
   matchType: 'similarity' | 'collaborative' | 'knowledge_gap' | 'trending' | 'personalized'
 }
 
-export interface MatchingOptions {
+interface MatchingOptions {
   maxResults?: number
   minScore?: number
   includeTypes?: Array<'course' | 'quiz' | 'tutorial' | 'article'>

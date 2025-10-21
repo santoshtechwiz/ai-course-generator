@@ -656,4 +656,4 @@ const UnifiedPdfGenerator: React.FC<UnifiedPdfGeneratorProps> = ({
 }
 
 export default UnifiedPdfGenerator
-export type { PdfData, PdfConfig, PdfContentType, UnifiedPdfGeneratorProps }
+export type { PdfData, PdfConfig,   }

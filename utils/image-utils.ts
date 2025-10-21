@@ -2,7 +2,7 @@
  * Utility functions for handling image URLs and fallbacks
  */
 
-export function normalizeImageUrl(imageUrl: string | null | undefined): string {
+function normalizeImageUrl(imageUrl: string | null | undefined): string {
   // Treat missing or known placeholder image names as empty so callers will use a proper fallback
   if (!imageUrl) {
     return ""
@@ -40,7 +40,7 @@ export function getImageWithFallback(
   return normalized || fallbackImage
 }
 
-export function isValidImageUrl(url: string | null | undefined): boolean {
+function isValidImageUrl(url: string | null | undefined): boolean {
   if (!url) return false
 
   // Check if it's a proper URL

@@ -6,7 +6,7 @@ import { startOfDay, sub, differenceInHours } from "date-fns"
  * Flashcard Scheduler Service
  * Integrates SM-2 spaced repetition algorithm with flashcard reviews
  */
-export class FlashcardSchedulerService {
+class FlashcardSchedulerService {
   /**
    * Schedule next review after user rates a card
    * Maps UI ratings to SM-2 quality scores (0-5)

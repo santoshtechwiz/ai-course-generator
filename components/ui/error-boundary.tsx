@@ -133,7 +133,7 @@ function QuizErrorFallback({ error, resetErrorBoundary, quizType, slug }: QuizEr
   )
 }
 
-export function QuizErrorBoundary({ 
+function QuizErrorBoundary({ 
   children, 
   quizType, 
   slug,

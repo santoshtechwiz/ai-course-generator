@@ -8,7 +8,7 @@ import { getErrorMessage } from "@/store/utils/async-state"
  * Provides consistent error handling with user feedback via toast notifications
  */
 
-export interface ErrorOptions {
+interface ErrorOptions {
   /** Custom error message to show to user */
   userMessage?: string
   /** Whether to show error as toast (default: true) */
@@ -63,7 +63,7 @@ export function handleError(error: unknown, options: ErrorOptions = {}) {
 /**
  * Handle async operation errors with retry option
  */
-export function handleAsyncError(
+function handleAsyncError(
   error: unknown,
   retryFn?: () => void | Promise<void>,
   options: ErrorOptions & { retryLabel?: string } = {}
@@ -104,7 +104,7 @@ export function handleSuccess(message: string, options: { duration?: number } = 
 /**
  * Handle loading state with toast
  */
-export function handleLoading(message: string, options: { id?: string | number } = {}) {
+function handleLoading(message: string, options: { id?: string | number } = {}) {
   const { id } = options
   return toast.loading(message, { id })
 }
@@ -112,6 +112,6 @@ export function handleLoading(message: string, options: { id?: string | number }
 /**
  * Dismiss a specific toast
  */
-export function dismissToast(id: string | number) {
+function dismissToast(id: string | number) {
   toast.dismiss(id)
 }

@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 import { BASE_URL, defaultSiteInfo, SEO_CONFIG } from "./constants";
 import { extractKeywords, generateMetaDescription, getSocialImageUrl, getQuizTypeLabel } from "./core-utils";
 
-export interface MetadataConfig {
+interface MetadataConfig {
   title: string;
   description?: string;
   keywords?: string[];
@@ -126,7 +126,7 @@ export function generateMetadata(config: MetadataConfig): Metadata {
 /**
  * Generate metadata for courses
  */
-export function generateCourseMetadata(course: {
+function generateCourseMetadata(course: {
   title: string;
   description?: string;
   slug: string;

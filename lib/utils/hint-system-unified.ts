@@ -44,7 +44,7 @@ export interface QuestionMetadata {
   maxWords?: number
 }
 
-export interface HintSystemConfig {
+interface HintSystemConfig {
   maxHints: number
   progressiveReveal: boolean
   allowDirectAnswer: boolean
@@ -650,8 +650,3 @@ function maskSentence(text: string, revealWords = 1): string {
     .join(' ')
 }
 
-export default {
-  generateHints,
-  selectAdaptiveHint,
-  formatHintForDisplay
-}

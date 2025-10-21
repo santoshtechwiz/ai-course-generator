@@ -3,14 +3,10 @@ import { prisma } from '@/lib/db';
 
 // Credit operation types
 export enum CreditOperationType {
-  DEDUCT = 'DEDUCT',
   REFUND = 'REFUND',
-  GRANT = 'GRANT',
   QUIZ_CREATION = 'QUIZ_CREATION',
   COURSE_GENERATION = 'COURSE_GENERATION',
-  SUBSCRIPTION_CREDIT = 'SUBSCRIPTION_CREDIT',
-  ADMIN_ADJUSTMENT = 'ADMIN_ADJUSTMENT'
-}
+  }
 
 // Credit operation result
 interface CreditOperationResult {
@@ -404,11 +400,11 @@ class CreditService {
 export const creditService = new CreditService();
 
 // Legacy method for backward compatibility
-export async function getCreditInfo(userId: string) {
+async function getCreditInfo(userId: string) {
   return creditService.getCreditDetails(userId);
 }
 
 // Legacy method for backward compatibility
-export async function deductCredits(userId: string, amount: number, type: string = 'QUIZ_CREATION') {
+async function deductCredits(userId: string, amount: number, type: string = 'QUIZ_CREATION') {
   return creditService.deductCredits(userId, amount, type as CreditOperationType);
 }

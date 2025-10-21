@@ -13,7 +13,7 @@ function Skeleton({
 }
 
 // Specialized skeleton components for different content types
-export function QuizSkeleton() {
+function QuizSkeleton() {
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       {/* Header */}
@@ -53,7 +53,7 @@ export function QuizSkeleton() {
   )
 }
 
-export function FlashcardSkeleton() {
+function FlashcardSkeleton() {
   return (
     <div className="max-w-2xl mx-auto p-6">
       {/* Header */}
@@ -86,7 +86,7 @@ export function FlashcardSkeleton() {
   )
 }
 
-export function CardSkeleton() {
+function CardSkeleton() {
   return (
     <div className="bg-white rounded-lg shadow p-6 space-y-4">
       <Skeleton className="h-6 w-3/4" />

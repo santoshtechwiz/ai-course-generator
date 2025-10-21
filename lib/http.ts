@@ -23,7 +23,7 @@ export const fetchWithTimeout = async (
   }
 }
 
-export const fetchJsonWithTimeout = async <T>(
+const fetchJsonWithTimeout = async <T>(
   input: RequestInfo,
   init: RequestInit = {},
   timeoutMs = 10000

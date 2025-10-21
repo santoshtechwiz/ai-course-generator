@@ -54,11 +54,11 @@ const subscriptionSlice = createSlice({
 
 export const {
   setSubscriptionData,
-  setLoading,
-  setError,
-  clearSubscriptionData,
-  updateCredits,
-  updateTokensUsed,
+  
+  
+  
+  
+  
 } = subscriptionSlice.actions;
 
 export default subscriptionSlice.reducer;

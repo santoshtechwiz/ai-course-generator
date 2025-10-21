@@ -62,7 +62,7 @@ export interface StorageOptions {
   sanitize?: boolean
 }
 
-export interface StorageItem<T = any> {
+interface StorageItem<T = any> {
   value: T
   timestamp: number
   ttl?: number
@@ -577,7 +577,7 @@ export class UnifiedStorageService {
 export const storage = UnifiedStorageService.getInstance()
 
 // Safe storage utilities (backward compatibility)
-export const safeStorage = {
+const safeStorage = {
   getItem: <T>(key: string, defaultValue: T | null = null): T | null => 
     storage.getItem<T>(key) ?? defaultValue,
   
@@ -591,7 +591,7 @@ export const safeStorage = {
     storage.clear()
 }
 
-export const safeSessionStorage = {
+const safeSessionStorage = {
   getItem: <T>(key: string, defaultValue: T | null = null): T | null => 
     storage.getTemporary<T>(key) ?? defaultValue,
   
@@ -606,4 +606,4 @@ export const safeSessionStorage = {
 }
 
 // Default export
-export default storage
+

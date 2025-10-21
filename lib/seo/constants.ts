@@ -15,8 +15,8 @@ export const BASE_URL =
     ? `https://${process.env.VERCEL_URL}`
     : "https://courseai.io"
 
-export const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "CourseAI"
-export const SITE_DESCRIPTION =
+const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "CourseAI"
+const SITE_DESCRIPTION =
   process.env.NEXT_PUBLIC_SITE_DESCRIPTION ||
   "AI-powered coding education platform with interactive courses, quizzes, and learning tools"
 
@@ -94,7 +94,7 @@ export const defaultSocialProfiles: string[] = [
 // COMPREHENSIVE DEFAULT METADATA
 // ============================================================================
 
-export const defaultMetadata: Metadata = {
+const defaultMetadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
     default: `${SITE_NAME} - Interactive Programming Quizzes and Learning`,
@@ -243,7 +243,7 @@ export const DEFAULT_ORGANIZATION_DATA = {
   },
 }
 
-export const DEFAULT_WEBSITE_DATA = {
+const DEFAULT_WEBSITE_DATA = {
   name: SITE_NAME,
   url: BASE_URL,
   description: SITE_DESCRIPTION,

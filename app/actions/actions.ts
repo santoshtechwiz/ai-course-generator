@@ -27,7 +27,7 @@ async function executeDbOperation<T>(
   }
 }
 
-export async function createUser(formData: FormData) {
+async function createUser(formData: FormData) {
   const name = formData.get("name") as string
   const email = formData.get("email") as string
   const credits = Number.parseInt(formData.get("credits") as string)
@@ -58,7 +58,7 @@ export async function createUser(formData: FormData) {
   }
 }
 
-export async function updateUser(userId: string, data: any) {
+async function updateUser(userId: string, data: any) {
   try {
     const previousUser = await prisma.user.findUnique({
       where: { id: userId },
@@ -102,7 +102,7 @@ export async function updateUser(userId: string, data: any) {
 }
 
 // Optimize the deleteUser function to use transactions more efficiently
-export async function deleteUser(userId: string) {
+async function deleteUser(userId: string) {
   try {
     // Use a transaction to ensure all operations succeed or fail together
     await prisma.$transaction(async (tx) => {
@@ -163,7 +163,7 @@ export async function deleteUser(userId: string) {
   }
 }
 
-export async function getCreditHistory(userId: string) {
+async function getCreditHistory(userId: string) {
   return executeDbOperation(async () => {
     const transactions = await prisma.tokenTransaction.findMany({
       where: { userId },

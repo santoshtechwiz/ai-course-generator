@@ -6,7 +6,7 @@ import { fetchWithTimeout } from '@/lib/http';
 // Exporting QuizType so it can be imported in other files
 export type QuizType = 'blanks' | 'openended' | 'mcq' | 'code' | 'flashcard';
 
-export function copyToClipboard(text: string): Promise<void> {
+function copyToClipboard(text: string): Promise<void> {
   return navigator.clipboard.writeText(text);
 }
 
@@ -30,7 +30,7 @@ export function generateSlug(title: string): string {
  * @param seconds - Number of seconds to format
  * @returns Formatted time string (e.g., "5:23")
  */
-export function formatDuration(seconds: number): string {
+function formatDuration(seconds: number): string {
   if (!seconds) return '--:--';
 
   const minutes = Math.floor(seconds / 60);
@@ -39,15 +39,15 @@ export function formatDuration(seconds: number): string {
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 }
 
-export function saveToken(token: string) {
+function saveToken(token: string) {
   migratedStorage.setItem('authToken', token, { secure: true });
 }
 
-export function getToken() {
+function getToken() {
   return migratedStorage.getItem<string>('authToken', { secure: true });
 }
 
-export const fetchSubscriptionStatus = async (timeout = 15000) => {
+const fetchSubscriptionStatus = async (timeout = 15000) => {
   const res = await fetchWithTimeout(
     '/api/subscriptions/status',
     {
@@ -65,7 +65,7 @@ export const fetchSubscriptionStatus = async (timeout = 15000) => {
   return await res.json();
 };
 
-export const getAIModel = (userType: string): string => {
+const getAIModel = (userType: string): string => {
   switch (userType) {
     case 'FREE':
     case 'BASIC':
@@ -84,7 +84,7 @@ export const getAIModel = (userType: string): string => {
  * @param userType The user type (FREE, BASIC, PREMIUM, ULTIMATE)
  * @returns The AI model to use
  */
-export const getAIModelFromConfig = (userType: string): string => {
+const getAIModelFromConfig = (userType: string): string => {
   // Import this way to avoid circular dependencies
   const { getAIProviderConfig } = require('./ai/config/config');
   const config = getAIProviderConfig();

@@ -1,12 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { RecommendationsService } from "@/app/services/recommendations/RecommendationsService"
 
 interface UseRecommendationsOptions {
   enabled?: boolean
   refetchInterval?: number
 }
 
-export function useRecommendations(options: UseRecommendationsOptions = {}) {
+function useRecommendations(options: UseRecommendationsOptions = {}) {
   const {
     enabled = true,
     refetchInterval = 60 * 60 * 1000 // 60 minutes (increased from 30)
@@ -28,7 +27,7 @@ export function useRecommendations(options: UseRecommendationsOptions = {}) {
   })
 }
 
-export function useInvalidateRecommendations() {
+function useInvalidateRecommendations() {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -49,7 +48,7 @@ export function useInvalidateRecommendations() {
   })
 }
 
-export function useUpdateUserActivity() {
+function useUpdateUserActivity() {
   const queryClient = useQueryClient()
 
   return useMutation({

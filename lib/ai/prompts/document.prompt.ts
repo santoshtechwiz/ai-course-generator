@@ -6,7 +6,7 @@
 
 import type { AIMessage } from '@/lib/ai/interfaces'
 
-export interface DocumentPromptOptions {
+interface DocumentPromptOptions {
   documentText: string
   numberOfQuestions: number
   quizType: 'mcq' | 'openended' | 'mixed'
@@ -49,7 +49,7 @@ ${documentText}
 /**
  * Document quiz function schema for structured output
  */
-export function getDocumentQuizFunctionSchema(quizType: 'mcq' | 'openended' | 'mixed') {
+function getDocumentQuizFunctionSchema(quizType: 'mcq' | 'openended' | 'mixed') {
   const baseQuestion = {
     question: { type: 'string', description: 'The question text' },
     reference: { 
@@ -103,8 +103,4 @@ export function buildDocumentPromptWithSchema(options: DocumentPromptOptions) {
   }
 }
 
-export default {
-  buildDocumentPrompt,
-  getDocumentQuizFunctionSchema,
-  buildDocumentPromptWithSchema,
-}
+

@@ -366,5 +366,5 @@ function EnhancedQuizzesClientComponent({ initialQuizzesData, userId }: Enhanced
   )
 }
 
-export const EnhancedQuizzesClient = EnhancedQuizzesClientComponent
+const EnhancedQuizzesClient = EnhancedQuizzesClientComponent
 export default EnhancedQuizzesClient

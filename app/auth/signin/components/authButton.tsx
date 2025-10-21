@@ -9,7 +9,7 @@ import { useToast } from "@/hooks"
 import { signIn } from "next-auth/react"
 import { cn } from "@/lib/utils"
 
-export interface AuthButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface AuthButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   provider: string
   logo: string | StaticImageData
   text: string

@@ -120,7 +120,7 @@ export function validateStorageMigration() {
 /**
  * Generate storage report
  */
-export function generateStorageReport() {
+function generateStorageReport() {
   const report = {
     timestamp: new Date().toISOString(),
     localStorage: {
@@ -206,8 +206,4 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   }, 5000) // Increased delay to 5 seconds
 }
 
-export default {
-  performStorageCleanup,
-  validateStorageMigration,
-  generateStorageReport
-}
+

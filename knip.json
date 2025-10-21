@@ -1,0 +1,24 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "app/**/*.tsx",
+    "app/**/*.ts"
+  ],
+  "project": ["**/*.ts", "**/*.tsx"],
+  "ignore": [
+    "next-env.d.ts",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "**/__tests__/**",
+    "**/*.stories.tsx",
+    "node_modules/**",
+    ".next/**",
+    "dist/**",
+    "build/**"
+  ],
+  "ignoreBinaries": [
+    "deepcheck",
+    "tsx",
+    "knip"
+  ]
+}

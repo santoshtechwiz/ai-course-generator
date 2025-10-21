@@ -400,4 +400,4 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
   )
 }
 
-export default OrderingQuizForm
+

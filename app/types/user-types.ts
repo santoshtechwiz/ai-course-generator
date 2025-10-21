@@ -2,7 +2,7 @@
 import { QuizType } from "./quiz-types"
 
 // User dashboard data
-export interface DashboardUser {
+interface DashboardUser {
   id: string
   name?: string
   email?: string
@@ -21,7 +21,7 @@ export interface DashboardUser {
 }
 
 // User stats
-export interface UserStats {
+interface UserStats {
   totalQuizzes: number
   totalAttempts: number
   averageScore: number
@@ -52,7 +52,7 @@ export interface UserStats {
 }
 
 // Course structure
-export interface Course {
+interface Course {
   id: string
   title: string
   description?: string
@@ -68,20 +68,20 @@ export interface Course {
 }
 
 // Course unit
-export interface CourseUnit {
+interface CourseUnit {
   id: string
   title: string
   chapters?: Chapter[]
 }
 
 // Chapter structure
-export interface Chapter {
+interface Chapter {
   id: string
   title: string
 }
 
 // Full chapter type for course page
-export interface FullChapterType extends Chapter {
+interface FullChapterType extends Chapter {
   content?: string
   videoUrl?: string
   questions?: CourseQuestion[]
@@ -89,14 +89,14 @@ export interface FullChapterType extends Chapter {
 }
 
 // Full course type for course page
-export interface FullCourseType extends Course {
+interface FullCourseType extends Course {
   chapters?: FullChapterType[]
   courseUnits?: CourseUnit[]
   difficulty?: string
 }
 
 // Course question type
-export interface CourseQuestion {
+interface CourseQuestion {
   id: string
   question: string
   options?: string[]
@@ -105,7 +105,7 @@ export interface CourseQuestion {
 }
 
 // Course progress
-export interface CourseProgress {
+interface CourseProgress {
   id: string
   progress: number
   currentChapterId?: string
@@ -118,7 +118,7 @@ export interface CourseProgress {
 }
 
 // User quiz
-export interface UserQuiz {
+interface UserQuiz {
   id: string
   title: string
   slug: string
@@ -132,7 +132,7 @@ export interface UserQuiz {
 }
 
 // User subscription
-export interface UserSubscription {
+interface UserSubscription {
   id: string
   status: string
   currentPeriodStart: Date
@@ -145,13 +145,13 @@ export interface UserSubscription {
 }
 
 // Favorite
-export interface Favorite {
+interface Favorite {
   id: string
   course?: Course
 }
 
 // User quiz attempt
-export interface UserQuizAttempt {
+interface UserQuizAttempt {
   id: string | number
   userId: string
   userQuizId: number
@@ -182,7 +182,7 @@ export interface UserQuizAttempt {
 }
 
 // Attempt question
-export interface AttemptQuestion {
+interface AttemptQuestion {
   id: number
   questionId: number
   userAnswer?: string
@@ -191,7 +191,7 @@ export interface AttemptQuestion {
 }
 
 // Topic performance
-export interface TopicPerformance {
+interface TopicPerformance {
   topic: string
   title?: string
   averageScore: number
@@ -201,7 +201,7 @@ export interface TopicPerformance {
 }
 
 // Common query parameters
-export interface QueryParams {
+interface QueryParams {
   [key: string]: string | string[] | undefined
   title?: string
   amount?: string
@@ -212,7 +212,7 @@ export interface QueryParams {
 export type UserType = "FREE" | "BASIC" | "PREMIUM" | "PREMIUM" | "ULTIMATE"
 
 // User with transactions for admin
-export interface UserWithTransactions {
+interface UserWithTransactions {
   id: string
   name: string
   email: string
@@ -222,7 +222,7 @@ export interface UserWithTransactions {
 }
 
 // Quiz list item for quiz listing
-export interface QuizListItem {
+interface QuizListItem {
   id: string
   title: string
   quizType: QuizType

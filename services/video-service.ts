@@ -1,7 +1,7 @@
 import { storageManager } from "@/utils/storage-manager"
 import { toast } from "@/components/ui/use-toast"
 
-export interface VideoSettings {
+interface VideoSettings {
   hasPlayedFreeVideo?: boolean
   autoplay?: boolean
   volume?: number
@@ -11,7 +11,7 @@ export interface VideoSettings {
   [key: string]: any // Allow dynamic keys for course-specific data
 }
 
-export interface AuthenticationState {
+interface AuthenticationState {
   hasPlayedFreeVideo: boolean
   canPlayVideo: boolean
   showAuthPrompt: boolean

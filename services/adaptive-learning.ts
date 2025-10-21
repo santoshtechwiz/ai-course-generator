@@ -7,7 +7,7 @@
 
 import { prisma } from '@/lib/db'
 
-export interface PerformanceMetrics {
+interface PerformanceMetrics {
   topic: string
   isCorrect: boolean
   timeSpent: number // seconds
@@ -15,7 +15,7 @@ export interface PerformanceMetrics {
   hintsUsed: number
 }
 
-export interface TopicProgress {
+interface TopicProgress {
   topic: string
   correctAnswers: number
   totalAttempts: number
@@ -36,7 +36,7 @@ export interface TopicProgress {
  * - Time efficiency (15% weight)
  * - Difficulty level (15% weight)
  */
-export function calculateMasteryScore(
+function calculateMasteryScore(
   correctAnswers: number,
   totalAttempts: number,
   currentStreak: number,
@@ -81,7 +81,7 @@ export function calculateMasteryScore(
  * - 50-70% success → decrease difficulty if struggling for 5+ attempts
  * - <50% success → decrease difficulty immediately
  */
-export function recommendDifficulty(
+function recommendDifficulty(
   correctAnswers: number,
   totalAttempts: number,
   currentDifficulty: 'EASY' | 'MEDIUM' | 'HARD'
@@ -224,7 +224,7 @@ export async function trackPerformance(
 /**
  * Get user's progress for a specific topic
  */
-export async function getTopicProgress(
+async function getTopicProgress(
   userId: string,
   topic: string
 ): Promise<TopicProgress | null> {
@@ -269,7 +269,7 @@ export async function getTopicProgress(
 /**
  * Get all topics for a user sorted by mastery score
  */
-export async function getUserTopicsOverview(
+async function getUserTopicsOverview(
   userId: string
 ): Promise<TopicProgress[]> {
   try {
@@ -305,7 +305,7 @@ export async function getUserTopicsOverview(
 /**
  * Get topics where user needs improvement (mastery < 50)
  */
-export async function getWeakTopics(userId: string): Promise<TopicProgress[]> {
+async function getWeakTopics(userId: string): Promise<TopicProgress[]> {
   try {
     const topics = await prisma.userTopicProgress.findMany({
       where: {
@@ -345,7 +345,7 @@ export async function getWeakTopics(userId: string): Promise<TopicProgress[]> {
 /**
  * Reset topic progress (useful for retaking topics from scratch)
  */
-export async function resetTopicProgress(
+async function resetTopicProgress(
   userId: string,
   topic: string
 ): Promise<boolean> {

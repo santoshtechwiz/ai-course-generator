@@ -11,7 +11,7 @@
 import type { ChatMessage } from "./types"
 import { logger } from "@/lib/logger"
 
-export interface MemoryConfig {
+interface MemoryConfig {
   maxMessagesPerSession: number
   sessionTimeoutHours: number
   compressionThreshold: number

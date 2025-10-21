@@ -47,7 +47,7 @@ export interface QuizListItem {
   userId: string
 }
 
-export interface GetQuizzesResult {
+interface GetQuizzesResult {
   quizzes: QuizListItem[]
   totalCount: number
   nextCursor: number | null
@@ -213,7 +213,7 @@ export async function getQuizzes({
   }
 }
 
-export const invalidateQuizCache = async (slug?: string) => {
+const invalidateQuizCache = async (slug?: string) => {
   if (slug) {
     const keys = quizCache.keys()
     keys.forEach((key) => {
@@ -230,7 +230,7 @@ export const invalidateQuizCache = async (slug?: string) => {
   })
 }
 
-export async function fetchQuizWithCache(quizId: string): Promise<Quiz | null> {
+async function fetchQuizWithCache(quizId: string): Promise<Quiz | null> {
   const cacheKey = `quiz_${quizId}`
 
   // Check cache first

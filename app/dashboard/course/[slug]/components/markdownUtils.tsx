@@ -141,7 +141,7 @@ export const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => 
     </ReactMarkdown>
   )
 }
-export const markdownToHtml = async (markdown: any) => {
+const markdownToHtml = async (markdown: any) => {
   const result = await remark().use(html).process(markdown)
   return result.toString()
 }

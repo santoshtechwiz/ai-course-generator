@@ -17,7 +17,7 @@ export interface BookmarkFilters {
   offset?: number
 }
 
-export interface NoteFilters {
+interface NoteFilters {
   courseId?: number
   chapterId?: number
   limit?: number
@@ -218,4 +218,4 @@ class BookmarkService {
 }
 
 export const bookmarkService = new BookmarkService()
-export default bookmarkService
+

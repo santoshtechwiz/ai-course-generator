@@ -6,7 +6,7 @@
 
 import type { AIMessage } from '@/lib/ai/interfaces'
 
-export interface CodePromptOptions {
+interface CodePromptOptions {
   topic: string
   numberOfQuestions: number
   programmingLanguage: string
@@ -42,7 +42,7 @@ export function buildCodePrompt(options: CodePromptOptions): AIMessage[] {
 /**
  * Code quiz function schema for structured output
  */
-export function getCodeFunctionSchema() {
+function getCodeFunctionSchema() {
   return {
     name: 'generate_code_quiz',
     description: 'Generates code-based quiz questions with code snippets',
@@ -73,7 +73,4 @@ export function getCodeFunctionSchema() {
   }
 }
 
-export default {
-  buildCodePrompt,
-  getCodeFunctionSchema,
-}
+

@@ -6,7 +6,7 @@ import { toast } from "@/components/ui/use-toast"
 import { HTTP_STATUS } from "@/constants/global"
 
 // Types
-export interface ApiResponse<T = any> {
+interface ApiResponse<T = any> {
   data: T
   error?: string
   status: number
@@ -111,4 +111,4 @@ export const api = {
 }
 
 // Export singleton instance
-export default api
+

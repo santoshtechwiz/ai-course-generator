@@ -20,7 +20,7 @@ const quotes = [
   { text: "Education is the most powerful weapon which you can use to change the world.", author: "Nelson Mandela" },
 ]
 
-export const RandomQuote = () => {
+const RandomQuote = () => {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [direction, setDirection] = useState(0)
   const [hasMounted, setHasMounted] = useState(false)

@@ -5,7 +5,7 @@ export interface User {
   image?: string | null
 }
 
-export interface AuthState {
+interface AuthState {
   isAuthenticated: boolean
   user: User | null
   loading: boolean

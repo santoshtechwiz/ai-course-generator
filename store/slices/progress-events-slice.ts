@@ -12,9 +12,8 @@ import type {
   VideoWatchedEvent,
 } from '@/types/progress-events';
 
-// Make the imports available
-export type { BaseProgressEvent };
-export { ProgressEventType };
+// Make the imports available;
+;
 
 // ... (keeping all your existing interfaces)
 
@@ -287,7 +286,7 @@ export const syncEventsWithServer = createAsyncThunk<
   }
 });
 
-export const loadEventsFromStorage = createAsyncThunk(
+const loadEventsFromStorage = createAsyncThunk(
   'progressEvents/loadFromStorage',
   async (userId: string) => {
     const stored = storage.getItem(`progress_events_${userId}`) || [];
@@ -415,17 +414,17 @@ const progressEventsSlice = createSlice({
 
 export const {
   addEvent,
-  retryFailedEvents,
-  setOnlineStatus,
-  clearError
+  
+  
+  
 } = progressEventsSlice.actions;
 
 // Base selectors
-export const selectEventLog = (state: RootState) => state.progressEvents.events;
-export const selectPendingEvents = (state: RootState) => state.progressEvents.pendingEvents;
-export const selectFailedEvents = (state: RootState) => state.progressEvents.failedEvents;
-export const selectLastSyncedAt = (state: RootState) => state.progressEvents.lastSyncedAt;
-export const selectIsOnline = (state: RootState) => state.progressEvents.isOnline;
+const selectEventLog = (state: RootState) => state.progressEvents.events;
+const selectPendingEvents = (state: RootState) => state.progressEvents.pendingEvents;
+const selectFailedEvents = (state: RootState) => state.progressEvents.failedEvents;
+const selectLastSyncedAt = (state: RootState) => state.progressEvents.lastSyncedAt;
+const selectIsOnline = (state: RootState) => state.progressEvents.isOnline;
 
 // Course progress selectors
 export const selectCourseProgressFromEvents = createSelector(

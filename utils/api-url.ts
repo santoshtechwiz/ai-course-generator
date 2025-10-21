@@ -32,7 +32,7 @@ export function getApiUrl(endpoint: string): string {
  * @param options - Fetch options
  * @returns Promise with the fetch response
  */
-export async function apiFetch(endpoint: string, options?: RequestInit): Promise<Response> {
+async function apiFetch(endpoint: string, options?: RequestInit): Promise<Response> {
   const url = getApiUrl(endpoint)
   return fetch(url, {
     ...options,
@@ -43,13 +43,13 @@ export async function apiFetch(endpoint: string, options?: RequestInit): Promise
 /**
  * Determine if we're running on the server side
  */
-export function isServerSide(): boolean {
+function isServerSide(): boolean {
   return typeof window === 'undefined'
 }
 
 /**
  * Determine if we're running on the client side
  */
-export function isClientSide(): boolean {
+function isClientSide(): boolean {
   return typeof window !== 'undefined'
 }

@@ -15,7 +15,7 @@ import {
   Code,
 } from "lucide-react"
 
-export const categories = [
+const categories = [
   {
     id: "programming",
     label: "Programming",

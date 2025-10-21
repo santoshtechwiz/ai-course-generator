@@ -1,6 +1,6 @@
 import type { QuizQuestion } from "@/app/types/quiz-types"
 
-export type DocumentQuestion = QuizQuestion & {
+type DocumentQuestion = QuizQuestion & {
   id: string
   question: string
   options: string[]
@@ -15,7 +15,7 @@ export interface Quiz {
   createdAt: number
 }
 
-export interface DocumentQuizAttempt {
+interface DocumentQuizAttempt {
   id: string
   quizId: string
   answers: number[]

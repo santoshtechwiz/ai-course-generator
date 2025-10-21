@@ -127,7 +127,7 @@ export async function getQuestionsFromTranscript(
   }
 }
 
-export async function processVideoAndGenerateQuestions(
+async function processVideoAndGenerateQuestions(
   searchQuery: string,
   courseTitle: string,
 ): Promise<any[] | null> {

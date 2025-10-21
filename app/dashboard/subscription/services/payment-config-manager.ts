@@ -11,7 +11,7 @@ import { logger } from "@/lib/logger"
 /**
  * Environment configuration for payment gateways
  */
-export interface PaymentGatewayEnvironmentConfig {
+interface PaymentGatewayEnvironmentConfig {
   readonly provider: PaymentProvider
   readonly apiKey: string
   readonly secretKey?: string
@@ -43,7 +43,7 @@ const DEFAULT_CONFIG = {
 /**
  * Configuration validator
  */
-export class PaymentConfigValidator {
+class PaymentConfigValidator {
   /**
    * Validate payment gateway configuration
    */
@@ -435,4 +435,3 @@ export class PaymentSecurityUtils {
   }
 }
 
-export default PaymentConfigManager

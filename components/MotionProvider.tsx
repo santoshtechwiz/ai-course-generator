@@ -16,7 +16,7 @@ export function MotionProvider({ children }: MotionProviderProps) {
 }
 
 // Higher-order component for wrapping components with motion
-export function withMotion<T extends object>(
+function withMotion<T extends object>(
   Component: React.ComponentType<T>,
   motionProps?: any
 ) {

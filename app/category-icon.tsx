@@ -70,7 +70,7 @@ export function CategoryIcon({
   return iconElement
 }
 
-export function CategoryBadge({
+function CategoryBadge({
   categoryId,
   showIcon = true,
   className,

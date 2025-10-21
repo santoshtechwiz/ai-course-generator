@@ -759,7 +759,7 @@ export const loadQuizResults = createAsyncThunk(
 /**
  * Hydrate quiz state from external data
  */
-export const hydrateQuiz = createAsyncThunk(
+const hydrateQuiz = createAsyncThunk(
   'quiz/hydrate',
   async (payload: { quizData: Partial<QuizState> }, { getState }) => {
     const state = getState() as RootState
@@ -776,7 +776,7 @@ export const hydrateQuiz = createAsyncThunk(
 /**
  * Save quiz results to database (for authenticated users after showing results)
  */
-export const saveQuizResultsToDB = createAsyncThunk(
+const saveQuizResultsToDB = createAsyncThunk(
   'quiz/saveToDB',
   async (results: QuizResults, { rejectWithValue }) => {
     try {
@@ -1256,24 +1256,24 @@ const quizSlice = createSlice({
 })
 
 export const {
-  setQuiz,
+  
   saveAnswer,
   setCurrentQuestionIndex,
-  handleNavigation,
+  
   resetQuiz,
-  clearResults,
-  markRequiresAuth,
-  clearRequiresAuth,
+  
+  
+  
   resetSubmissionState,
-  setQuizCompleted,
+  
   setQuizResults,
   startQuestionTimer,
-  resetQuestionTimers,
+  
 } = quizSlice.actions
 
-export const selectQuizState = (state: RootState) => state.quiz
+const selectQuizState = (state: RootState) => state.quiz
 
-export const selectCurrentQuestion = createSelector(
+const selectCurrentQuestion = createSelector(
   (state: RootState) => state.quiz,
   (quiz: QuizState) => {
     if (!quiz.slug || !quiz.questions.length) return null
@@ -1281,7 +1281,7 @@ export const selectCurrentQuestion = createSelector(
   }
 )
 
-export const selectQuizProgress = createSelector(
+const selectQuizProgress = createSelector(
   (state: RootState) => state.quiz,
   (quiz: QuizState) => {
     const totalQuestions = quiz.questions.length
@@ -1312,12 +1312,12 @@ export const selectQuizResults = createSelector(
   (quiz: QuizState) => quiz.results
 )
 
-export const selectIsQuizCompleted = createSelector(
+const selectIsQuizCompleted = createSelector(
   (state: RootState) => state.quiz,
   (quiz: QuizState) => quiz.isCompleted
 )
 
-export const selectQuizError = createSelector(
+const selectQuizError = createSelector(
   (state: RootState) => state.quiz,
   (quiz: QuizState) => quiz.error
 )

@@ -3,7 +3,7 @@ import type { PlanConfig } from '@/types/subscription-plans'
 import { SUBSCRIPTION_PLANS } from '@/types/subscription-plans'
 
 // Plan hierarchy definition - maps plans to numeric levels
-export const PLAN_HIERARCHY: Record<SubscriptionPlanType, number> = {
+const PLAN_HIERARCHY: Record<SubscriptionPlanType, number> = {
   FREE: 0,
   BASIC: 1,
   PREMIUM: 2,
@@ -34,7 +34,7 @@ function getPlanFeatureList(plan: PlanConfig): string[] {
 }
 
 // Features by plan, derived from subscription plans config
-export const PLAN_FEATURES: Record<SubscriptionPlanType, string[]> = {
+const PLAN_FEATURES: Record<SubscriptionPlanType, string[]> = {
   FREE: getPlanFeatureList(SUBSCRIPTION_PLANS.FREE),
   BASIC: getPlanFeatureList(SUBSCRIPTION_PLANS.BASIC),
   PREMIUM: getPlanFeatureList(SUBSCRIPTION_PLANS.PREMIUM),
@@ -56,14 +56,14 @@ export function hasMinimumPlan(
 /**
  * Get all features available for a plan
  */
-export function getPlanFeatures(plan: SubscriptionPlanType): string[] {
+function getPlanFeatures(plan: SubscriptionPlanType): string[] {
   return PLAN_FEATURES[plan] || []
 }
 
 /**
  * Get next upgrade plan suggestion
  */
-export function getNextPlan(currentPlan: SubscriptionPlanType): SubscriptionPlanType | null {
+function getNextPlan(currentPlan: SubscriptionPlanType): SubscriptionPlanType | null {
   const currentLevel = PLAN_HIERARCHY[currentPlan]
   const nextLevel = currentLevel + 1
   
@@ -76,7 +76,7 @@ export function getNextPlan(currentPlan: SubscriptionPlanType): SubscriptionPlan
  * Compare two plans
  * Returns: -1 if plan1 < plan2, 0 if equal, 1 if plan1 > plan2
  */
-export function comparePlans(
+function comparePlans(
   plan1: SubscriptionPlanType,
   plan2: SubscriptionPlanType
 ): number {

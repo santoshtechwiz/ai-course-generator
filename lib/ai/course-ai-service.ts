@@ -8,7 +8,7 @@
 import type { SubscriptionPlanType } from '@/types/subscription'
 
 // Simple context type
-export interface SimpleAIContext {
+interface SimpleAIContext {
   userId?: string
   subscriptionPlan: SubscriptionPlanType
   isAuthenticated: boolean
@@ -19,7 +19,7 @@ export interface SimpleAIContext {
  * Create AI service and execute a method
  * Uses dynamic imports to avoid circular dependencies
  */
-export async function executeAIService<T = any>(
+async function executeAIService<T = any>(
   context: SimpleAIContext,
   method: string,
   params: any
@@ -280,7 +280,7 @@ export async function generateCourse(
 /**
  * Generate text summary
  */
-export async function generateSummary(
+async function generateSummary(
   transcript: string,
   summaryLength: number = 250,
   userId?: string,
@@ -310,7 +310,7 @@ export async function generateSummary(
 /**
  * Generate video quiz
  */
-export async function generateVideoQuiz(
+async function generateVideoQuiz(
   courseTitle: string,
   transcript: string,
   numberOfQuestions: number = 5,

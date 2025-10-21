@@ -181,4 +181,4 @@ export async function generateVideoSummaryFromTranscript(transcript: string): Pr
  * @deprecated Use generateVideoSummaryFromTranscript instead
  * Backward compatibility export
  */
-export const generateVideoSummary = generateVideoSummaryFromTranscript
+const generateVideoSummary = generateVideoSummaryFromTranscript

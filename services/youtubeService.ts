@@ -6,7 +6,7 @@ import pTimeout from "p-timeout"
 // Lazy import for youtubei.js to avoid Turbopack circular dependency issues
 // import { Innertube } from "youtubei.js"
 
-export interface YoutubeSearchResponse {
+interface YoutubeSearchResponse {
   items: Array<{
     id: {
       videoId: string

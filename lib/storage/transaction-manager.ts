@@ -18,7 +18,7 @@ import { storageManager } from '@/utils/storage-manager'
 // TYPES
 // ============================================================================
 
-export interface StorageOperation {
+interface StorageOperation {
   id: string
   type: 'video_progress' | 'chapter_completion' | 'bookmark' | 'preferences'
   data: any
@@ -26,14 +26,14 @@ export interface StorageOperation {
   version?: number
 }
 
-export interface TransactionResult {
+interface TransactionResult {
   success: boolean
   operations: StorageOperation[]
   errors?: string[]
   rollbackData?: any
 }
 
-export interface LockInfo {
+interface LockInfo {
   key: string
   lockId: string
   timestamp: number

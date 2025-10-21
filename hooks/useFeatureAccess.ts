@@ -89,7 +89,7 @@ export function useFeatureAccess(feature: FeatureType): FeatureAccess {
 /**
  * useCanAccessFeature - Simple boolean check for feature access
  */
-export function useCanAccessFeature(feature: FeatureType): boolean {
+function useCanAccessFeature(feature: FeatureType): boolean {
   const { canAccess } = useFeatureAccess(feature)
   return canAccess
 }
@@ -97,7 +97,7 @@ export function useCanAccessFeature(feature: FeatureType): boolean {
 /**
  * useRequiresUpgrade - Check if user needs to upgrade for a feature
  */
-export function useRequiresUpgrade(feature: FeatureType): boolean {
+function useRequiresUpgrade(feature: FeatureType): boolean {
   const { canAccess, reason } = useFeatureAccess(feature)
   return !canAccess && (reason === 'subscription' || reason === 'expired')
 }
@@ -105,7 +105,7 @@ export function useRequiresUpgrade(feature: FeatureType): boolean {
 /**
  * useRequiresAuth - Check if user needs to sign in for a feature
  */
-export function useRequiresAuth(feature: FeatureType): boolean {
+function useRequiresAuth(feature: FeatureType): boolean {
   const { canAccess, reason } = useFeatureAccess(feature)
   return !canAccess && reason === 'auth'
 }

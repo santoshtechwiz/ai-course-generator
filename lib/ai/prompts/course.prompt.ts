@@ -6,7 +6,7 @@
 
 import type { AIMessage } from '@/lib/ai/interfaces'
 
-export interface CoursePromptOptions {
+interface CoursePromptOptions {
   topic: string
   numberOfModules: number
   difficulty: 'easy' | 'medium' | 'hard'
@@ -46,7 +46,7 @@ export function buildCoursePrompt(options: CoursePromptOptions): AIMessage[] {
 /**
  * Course content function schema for structured output
  */
-export function getCourseFunctionSchema() {
+function getCourseFunctionSchema() {
   return {
     name: 'generate_course_content',
     description: 'Generates complete course content with modules and learning objectives',
@@ -96,8 +96,4 @@ export function buildCoursePromptWithSchema(options: CoursePromptOptions) {
   }
 }
 
-export default {
-  buildCoursePrompt,
-  getCourseFunctionSchema,
-  buildCoursePromptWithSchema,
-}
+

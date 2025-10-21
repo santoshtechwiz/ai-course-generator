@@ -3,7 +3,7 @@
 // providing a clear runtime failure when transcription is attempted in an
 // environment that doesn't have the native tools installed.
 
-export interface VoskTranscriptionResult {
+interface VoskTranscriptionResult {
   status: 'completed' | 'failed';
   transcript?: string;
   error?: string;

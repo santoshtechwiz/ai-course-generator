@@ -296,10 +296,10 @@ export const useVideoState = create<VideoState>()(
 )
 
 // Ensure the hook returns the state object correctly
-export default useVideoState;
+
 
 // Add helper functions to diagnose and fix state issues
-export function debugVideoState() {
+function debugVideoState() {
   const state = useVideoState.getState();
   console.group('Video State Debug');
   console.log('Current Video ID:', state.currentVideoId);
@@ -311,19 +311,19 @@ export function debugVideoState() {
   return state;
 }
 
-export function resetVideoState() {
+function resetVideoState() {
   useVideoState.getState().resetState();
   console.log('Video state has been reset');
 }
 
-export function forceVideoSelection(videoId: string, courseId: string | number) {
+function forceVideoSelection(videoId: string, courseId: string | number) {
   useVideoState.getState().setCurrentVideo(videoId, courseId);
   console.log(`Forced video selection: videoId=${videoId}, courseId=${courseId}`);
   return debugVideoState();
 }
 
 // Add a helper to safely get bookmarks for a video
-export function getVideoBookmarks(videoId: string | null) {
+function getVideoBookmarks(videoId: string | null) {
   if (!videoId) return [];
   
   const state = useVideoState.getState();

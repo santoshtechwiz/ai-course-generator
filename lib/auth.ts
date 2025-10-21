@@ -323,7 +323,7 @@ export async function getAuthSession(options?: { skipCache?: boolean }) {
 // -----------------------------
 // Cache Utilities
 // -----------------------------
-export function invalidateSessionCache(userId?: string) {
+function invalidateSessionCache(userId?: string) {
   try {
     if (userId) SESSION_CACHE.delete(`session:${userId}`)
     else SESSION_CACHE.clear()
@@ -332,7 +332,7 @@ export function invalidateSessionCache(userId?: string) {
   }
 }
 
-export function clearExpiredSessionCache() {
+function clearExpiredSessionCache() {
   const now = Date.now()
   for (const [key, entry] of SESSION_CACHE.entries()) {
     if (now - entry.timestamp > CACHE_TTL) {
@@ -341,7 +341,7 @@ export function clearExpiredSessionCache() {
   }
 }
 
-export function isAdmin() {
+function isAdmin() {
   return new Promise<boolean>(async (resolve) => {
     const session = await getAuthSession()
     resolve(Boolean(session?.user?.isAdmin))

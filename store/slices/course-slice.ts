@@ -3,7 +3,7 @@ import { courseApiClient } from '@/app/dashboard/course/services/course-api-clie
 import { migratedStorage } from '@/lib/storage';
 
 // --- Improved TypeScript interfaces ---
-export interface VideoProgress {
+interface VideoProgress {
   time: number
   playedSeconds: number
   duration: number
@@ -35,7 +35,7 @@ export interface BookmarkItem {
   createdAt: string
 }
 
-export interface BookmarkData {
+interface BookmarkData {
   id: string
   videoId: string
   time: number
@@ -52,7 +52,7 @@ export interface PlaybackSettings {
   preload?: string
 }
 
-export interface CourseState {
+interface CourseState {
   currentVideoId: string | null
   videoProgress: Record<string, VideoProgress>
   autoplayEnabled: boolean
@@ -535,7 +535,7 @@ export const setCurrentVideoApi = (videoId: string, userId?: string) =>
 };
 
 // Update fetchCourseDetails thunk to use courseApiClient
-export const fetchCourseDetails = createAsyncThunk(
+const fetchCourseDetails = createAsyncThunk(
   "course/fetchDetails",
   async (slug: string, { rejectWithValue }) => {
     try {
@@ -549,37 +549,37 @@ export const fetchCourseDetails = createAsyncThunk(
 
 // Export actions
 export const {
-  setCurrentVideo,
+  
   setVideoProgress,
-  setAutoplayEnabled,
+  
   addBookmark,
   removeBookmark,
-  updateProgress,
-  setResumePoint,
-  setLastPlayedAt,
-  markChapterAsStarted,
-  markChapterAsCompleted,
+  
+  
+  
+  
+  
   initializeCourseState,
-  setCourseCompletionStatus,
-  setPlaybackSettings,
-  resetCourseState,
-  cacheVideoData,
-  setPerformanceSettings,
-  setUserPreferences,
-  trackAnalytics,
-  optimizeState,
+  
+  
+  
+  
+  
+  
+  
+  
   // PiP actions
   setPiPActive,
   setPiPVideoData,
   // New exports:
-  updateUserProgress,
+  
   setUserPlaybackSettings,
   initializeGuestProgress,
   setGuestPlaybackSettings,
-  setNextVideoId,
-  setPrevVideoId,
-  setLoading,
-  resetState,
+  
+  
+  
+  
 } = courseSlice.actions
 
 export default courseSlice.reducer

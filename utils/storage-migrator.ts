@@ -336,6 +336,5 @@ export class StorageMigrator {
 // CONVENIENCE EXPORTS
 // ============================================================================
 
-export const getMigrationStatus = () => StorageMigrator.getStatus()
+const getMigrationStatus = () => StorageMigrator.getStatus()
 
-export default StorageMigrator

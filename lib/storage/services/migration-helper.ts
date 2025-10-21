@@ -152,7 +152,7 @@ export function migrateStorageData(): {
 /**
  * Legacy adapter to bridge unified storage with localStorage API
  */
-export function createLegacyStorageAdapter() {
+function createLegacyStorageAdapter() {
   return {
     getItem: (key: string): string | null => {
       const unifiedValue = storage.getItem(key)
@@ -279,4 +279,4 @@ if (typeof window !== 'undefined') {
   }, 1000)
 }
 
-export default migratedStorage
+

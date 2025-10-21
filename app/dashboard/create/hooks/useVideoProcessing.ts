@@ -14,7 +14,7 @@ export interface VideoStatus {
   startTime?: number | string // Added for stuck detection
 }
 
-export interface UseVideoProcessingOptions {
+interface UseVideoProcessingOptions {
   onStatusChange?: (status: VideoStatus) => void
   onComplete?: (status: VideoStatus) => void // Added
   onError?: (status: VideoStatus) => void

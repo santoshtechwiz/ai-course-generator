@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export type NoResultsVariant =
+type NoResultsVariant =
   | "search"
   | "quiz"
   | "data"

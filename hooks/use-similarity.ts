@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 
 // Calculate similarity between two strings
-export function calculateSimilarity(str1: string, str2: string): number {
+function calculateSimilarity(str1: string, str2: string): number {
   const normalize = (str: string) => str.replace(/\s+/g, " ").trim()?.toLowerCase()
   const normalizedStr1 = normalize(str1)
   const normalizedStr2 = normalize(str2)
@@ -56,6 +56,6 @@ export function calculateSimilarity(str1: string, str2: string): number {
  * @param str2 Second string to compare
  * @returns Similarity percentage (0-100)
  */
-export function useSimilarity(str1: string, str2: string): number {
+function useSimilarity(str1: string, str2: string): number {
   return useMemo(() => calculateSimilarity(str1, str2), [str1, str2])
 }

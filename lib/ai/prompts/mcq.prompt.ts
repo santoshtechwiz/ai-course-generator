@@ -6,7 +6,7 @@
 
 import type { AIMessage } from '@/lib/ai/interfaces'
 
-export interface MCQPromptOptions {
+interface MCQPromptOptions {
   topic: string
   numberOfQuestions: number
   difficulty: 'easy' | 'medium' | 'hard'
@@ -88,8 +88,4 @@ export function buildMCQPromptWithSchema(options: MCQPromptOptions) {
   }
 }
 
-export default {
-  buildMCQPrompt,
-  getMCQFunctionSchema,
-  buildMCQPromptWithSchema,
-}
+

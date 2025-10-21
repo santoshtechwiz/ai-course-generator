@@ -9,7 +9,7 @@ import { logger } from "@/lib/logger"
  * Base API Route Handler
  * Provides standardized error handling, validation, and response formatting
  */
-export abstract class BaseApiRoute {
+abstract class BaseApiRoute {
   protected abstract schema: z.ZodType<any>
 
   /**
@@ -123,7 +123,7 @@ export abstract class AuthenticatedApiRoute extends BaseApiRoute {
  * Base Admin API Route Handler
  * Adds admin privilege requirement
  */
-export abstract class AdminApiRoute extends AuthenticatedApiRoute {
+abstract class AdminApiRoute extends AuthenticatedApiRoute {
   public async process(req: NextRequest, params?: any): Promise<NextResponse> {
     try {
       const session = await AuthService.verifySession()

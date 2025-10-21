@@ -6,7 +6,7 @@
 const isDevelopment = process.env.NODE_ENV === 'development'
 const enableProductionLogs = process.env.ENABLE_PRODUCTION_LOGS === 'true'
 
-export const logger = {
+const logger = {
   info: (message: string, ...args: unknown[]) => {
     if (isDevelopment || enableProductionLogs) {
       console.info(`[INFO] ${message}`, ...args)
@@ -45,4 +45,4 @@ export const logger = {
 }
 
 // Export individual functions for convenience
-export const { info, warn, error, debug, nav } = logger
+export const {     nav } = logger

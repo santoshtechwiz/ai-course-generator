@@ -275,7 +275,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
 } as const
 
 // Type-safe feature flag names
-export type FeatureFlagName = keyof typeof FEATURE_FLAGS
+type FeatureFlagName = keyof typeof FEATURE_FLAGS
 
 // Helper to get all route-based features
 export function getRouteFeatures(): Record<string, string[]> {
@@ -296,7 +296,7 @@ export function getRouteFeatures(): Record<string, string[]> {
 }
 
 // Helper to get features by environment
-export function getFeaturesByEnvironment(env: string): string[] {
+function getFeaturesByEnvironment(env: string): string[] {
   return Object.entries(FEATURE_FLAGS)
     .filter(([, flag]) => !flag.environments || flag.environments.includes(env))
     .map(([flagName]) => flagName)

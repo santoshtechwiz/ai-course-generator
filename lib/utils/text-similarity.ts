@@ -241,7 +241,7 @@ export function getSimilarityFeedback(similarity: number): string {
 }
 
 // Check if answer contains key concepts
-export function containsKeyConcepts(
+function containsKeyConcepts(
   answer: string,
   concepts: string[]
 ): boolean {

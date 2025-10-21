@@ -3,14 +3,14 @@
  * Provides credit information for browser components via API calls
  */
 
-export interface ClientCreditInfo {
+interface ClientCreditInfo {
   hasCredits: boolean
   remainingCredits: number
   totalCredits: number
   usedCredits: number
 }
 
-export interface ClientCreditDetails {
+interface ClientCreditDetails {
   hasCredits: boolean
   currentBalance: number
   requiredCredits: number
@@ -92,4 +92,4 @@ export class ClientCreditService {
 }
 
 // Export singleton-like interface for consistency
-export const clientCreditService = ClientCreditService
+const clientCreditService = ClientCreditService

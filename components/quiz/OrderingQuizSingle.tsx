@@ -22,13 +22,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
  */
 
 /* ----------------------------- Types -------------------------------- */
-export interface OrderingQuizStep {
+interface OrderingQuizStep {
   id: number | string
   description: string
   explanation?: string
 }
 
-export interface OrderingQuizQuestion {
+interface OrderingQuizQuestion {
   id?: string | number
   title: string
   topic?: string
@@ -41,7 +41,7 @@ export interface OrderingQuizQuestion {
 /* ----------------------------- Hooks -------------------------------- */
 
 // Lightweight analytics hook (replace sendEvent with your implementation)
-export function useAnalytics() {
+function useAnalytics() {
   const sendEvent = useCallback((name: string, payload: any = {}) => {
     // TODO: wire to your analytics backend (Segment, Posthog, GA4, etc.)
     // Keep this tiny to save tokens and bandwidth in production.
@@ -58,7 +58,7 @@ export function useAnalytics() {
 }
 
 // Local persistence: saves by question id. Namespaced to avoid collisions.
-export function useLocalPersistence(questionId?: string | number) {
+function useLocalPersistence(questionId?: string | number) {
   const key = questionId ? `courseai:ordering:${questionId}` : null
 
   const load = useCallback(() => {
@@ -119,7 +119,7 @@ function DifficultyBadge({ difficulty }: { difficulty?: OrderingQuizQuestion['di
 }
 
 /* Minimal progress ring showing completion percentage */
-export function QuizProgress({ value, size = 56 }: { value: number; size?: number }) {
+function QuizProgress({ value, size = 56 }: { value: number; size?: number }) {
   const radius = (size - 8) / 2
   const circumference = 2 * Math.PI * radius
   const offset = circumference - (value / 100) * circumference
@@ -202,7 +202,7 @@ function StepItem({
 }
 
 /* -------------------- OrderingQuizSingleEnhanced --------------------- */
-export function OrderingQuizSingleEnhanced({
+function OrderingQuizSingleEnhanced({
   question,
   questionNumber = 1,
   totalQuestions = 1,
@@ -406,7 +406,7 @@ export function OrderingQuizSingleEnhanced({
 export default OrderingQuizSingleEnhanced
 
 // Backward compatibility alias
-export const OrderingQuizSingle = OrderingQuizSingleEnhanced
+const OrderingQuizSingle = OrderingQuizSingleEnhanced
 
 /* -------------------- Notes for Integrators ------------------------- */
 

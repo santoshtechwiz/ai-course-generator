@@ -54,7 +54,7 @@ const chapterCache = new Map<number, ChapterVideoData>();
  * Service for handling video processing business logic
  * Manages YouTube video fetching, caching, and status tracking
  */
-export class VideoService {
+class VideoService {
   /**
    * Get the status of a chapter's video
    * @param chapterId - The ID of the chapter

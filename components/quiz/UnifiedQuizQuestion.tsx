@@ -20,9 +20,9 @@ import { HintSystem } from "./HintSystem"
 import { AdaptiveFeedbackWrapper, useAdaptiveFeedback } from "./AdaptiveFeedbackWrapper"
 import { useAuth } from "@/modules/auth"
 
-export type QuizQuestionType = 'mcq' | 'blanks' | 'openended' | 'code'
+type QuizQuestionType = 'mcq' | 'blanks' | 'openended' | 'code'
 
-export interface BaseQuestion {
+interface BaseQuestion {
   id: string
   text?: string
   question?: string
@@ -38,13 +38,13 @@ export interface MCQQuestion extends BaseQuestion {
   options: string[]
 }
 
-export interface BlanksQuestion extends BaseQuestion {
+interface BlanksQuestion extends BaseQuestion {
   type: 'blanks'
   blanks: number
   template: string
 }
 
-export interface OpenEndedQuestion extends BaseQuestion {
+interface OpenEndedQuestion extends BaseQuestion {
   type: 'openended'
   minWords?: number
   maxWords?: number
@@ -57,7 +57,7 @@ export interface CodeQuestion extends BaseQuestion {
   options?: string[]
 }
 
-export type QuizQuestion = MCQQuestion | BlanksQuestion | OpenEndedQuestion | CodeQuestion
+type QuizQuestion = MCQQuestion | BlanksQuestion | OpenEndedQuestion | CodeQuestion
 
 interface UnifiedQuizQuestionProps {
   question: QuizQuestion
@@ -696,4 +696,3 @@ function UnifiedQuizQuestionComponent({
 
 // Export memoized component
 export const UnifiedQuizQuestion = memo(UnifiedQuizQuestionComponent)
-export default UnifiedQuizQuestion

@@ -156,7 +156,7 @@ export function UpgradePrompt({ resource, onClose }: UpgradePromptProps) {
   )
 }
 
-export function UsageStatsWidget() {
+function UsageStatsWidget() {
   const { data, isLoading } = useQuery({
     queryKey: ['usage-stats'],
     queryFn: async () => {

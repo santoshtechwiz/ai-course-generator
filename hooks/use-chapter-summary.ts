@@ -34,7 +34,7 @@ async function generateChapterSummary(chapterId: number): Promise<SummaryRespons
  * @param chapterId Chapter ID
  * @returns Query result with summary data and generation function
  */
-export function useChapterSummary(chapterId: number | undefined) {
+function useChapterSummary(chapterId: number | undefined) {
   const queryClient = useQueryClient()
 
   // Query for fetching the summary
@@ -71,4 +71,4 @@ export function useChapterSummary(chapterId: number | undefined) {
 }
 
 // Backward compatibility
-export default useChapterSummary
+

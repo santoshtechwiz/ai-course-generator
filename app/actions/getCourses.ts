@@ -46,7 +46,7 @@ export const getCourses = async (slug: string) => {
 }
 
 // Get all courses with caching
-export const getAllCourses = async () => {
+const getAllCourses = async () => {
   try {
     const cacheKey = "all_courses"
     const cachedCourses = courseCache.get(cacheKey)
@@ -81,7 +81,7 @@ export const getAllCourses = async () => {
 }
 
 // Add a function to get public courses for better performance in listings
-export const getPublicCourses = async (limit = 10, offset = 0) => {
+const getPublicCourses = async (limit = 10, offset = 0) => {
   try {
     const cacheKey = `public_courses_${limit}_${offset}`
     const cachedCourses = courseCache.get(cacheKey)
@@ -118,7 +118,7 @@ export const getPublicCourses = async (limit = 10, offset = 0) => {
 }
 
 // Add a function to invalidate cache when courses are updated
-export const invalidateCourseCache = (slug?: string) => {
+const invalidateCourseCache = (slug?: string) => {
   if (slug) {
     courseCache.del(`course_${slug}`)
   }

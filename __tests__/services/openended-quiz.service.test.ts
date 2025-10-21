@@ -35,11 +35,12 @@ describe('OpenEndedQuizService', () => {
     it('should generate quiz with valid parameters', async () => {
       // Mock AI response
       const mockResponse = {
-        quiz_title: 'Test Quiz',
+        id: '123',
+        title: 'Test Quiz',
         questions: [
           {
             question: 'What is React?',
-            correct_answer: 'React is a JavaScript library for building UIs',
+            answer: 'React is a JavaScript library for building UIs',
             hints: ['Consider: It uses components', 'Think about: Virtual DOM'],
             tags: ['react', 'javascript', 'frontend', 'web'],
             difficulty: 'medium',
@@ -59,7 +60,7 @@ describe('OpenEndedQuizService', () => {
       })
 
       expect(result).toBeDefined()
-      expect(result.quiz_title).toBe('Test Quiz')
+      expect(result.title).toBe('Test Quiz')
       expect(result.questions).toHaveLength(1)
       expect(result.questions[0].question).toBe('What is React?')
     })
@@ -403,11 +404,12 @@ describe('OpenEndedQuizService', () => {
   describe('Full workflow integration', () => {
     it('should generate and format quiz end-to-end', async () => {
       const mockResponse = {
-        quiz_title: 'Integration Test Quiz',
+        id: '123',
+        title: 'Integration Test Quiz',
         questions: [
           {
             question: 'What is integration testing?',
-            correct_answer:
+            answer:
               'Integration testing is testing multiple components together. It ensures they work as expected when combined.',
             hints: ['Consider: multiple parts', 'Think about: together'],
             tags: ['testing', 'integration', 'qa', 'software'],

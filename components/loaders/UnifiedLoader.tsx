@@ -6,9 +6,9 @@ import { CheckCircle, AlertCircle, Brain, Loader } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { progressApi } from "./progress-api"
 
-export type LoaderVariant = "spinner" | "dots" | "progress" | "skeleton" | "pulse"
-export type LoaderSize = "xs" | "sm" | "md" | "lg" | "xl"
-export type LoaderState = "loading" | "success" | "error" | "idle"
+type LoaderVariant = "spinner" | "dots" | "progress" | "skeleton" | "pulse"
+type LoaderSize = "xs" | "sm" | "md" | "lg" | "xl"
+type LoaderState = "loading" | "success" | "error" | "idle"
 
 interface UnifiedLoaderProps {
   state?: LoaderState
@@ -373,7 +373,7 @@ export function InlineLoader({
 /**
  * ButtonLoader with better layout stability
  */
-export function ButtonLoader({ 
+function ButtonLoader({ 
   loading = false, 
   children, 
   className,
@@ -416,7 +416,7 @@ export function ButtonLoader({
 /**
  * Enhanced SkeletonLoader with better spacing
  */
-export function SkeletonLoader({ 
+function SkeletonLoader({ 
   lines = 3, 
   className,
   spacing = "md"
@@ -447,4 +447,3 @@ export function SkeletonLoader({
   )
 }
 
-export default UnifiedLoader

@@ -3,7 +3,7 @@
  * Provides a consistent way to check credits across the application
  */
 
-export interface CreditInfo {
+interface CreditInfo {
   totalCredits: number
   usedCredits: number
   remainingCredits: number
@@ -37,7 +37,7 @@ export function calculateCreditInfo(
 /**
  * Check if a user has enough credits for an action
  */
-export function hasEnoughCredits(
+function hasEnoughCredits(
   requiredCredits: number,
   userCredits?: number,
   userCreditsUsed?: number,
@@ -57,7 +57,7 @@ export function hasEnoughCredits(
 /**
  * Get a user-friendly message about credit status
  */
-export function getCreditMessage(
+function getCreditMessage(
   requiredCredits: number,
   creditInfo: CreditInfo
 ): string {

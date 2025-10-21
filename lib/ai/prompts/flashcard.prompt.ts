@@ -6,7 +6,7 @@
 
 import type { AIMessage } from '@/lib/ai/interfaces'
 
-export interface FlashcardPromptOptions {
+interface FlashcardPromptOptions {
   topic: string
   count: number
 }
@@ -67,8 +67,4 @@ export function buildFlashcardPromptWithSchema(options: FlashcardPromptOptions) 
   }
 }
 
-export default {
-  buildFlashcardPrompt,
-  getFlashcardFunctionSchema,
-  buildFlashcardPromptWithSchema,
-}
+

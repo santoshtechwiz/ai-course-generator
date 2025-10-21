@@ -156,7 +156,7 @@ export function FAQSkeleton() {
 }
 
 // How It Works Section Skeleton
-export function HowItWorksSkeleton() {
+function HowItWorksSkeleton() {
   return (
     <div className="py-12 md:py-16">
   <div className="max-w-7xl mx-auto">

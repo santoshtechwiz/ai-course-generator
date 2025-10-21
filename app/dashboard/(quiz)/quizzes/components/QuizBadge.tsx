@@ -13,7 +13,7 @@ interface QuizBadgeProps {
   'aria-label'?: string
 }
 
-export function QuizBadge({ children, className, variant = "secondary", tone, icon, ...props }: QuizBadgeProps) {
+function QuizBadge({ children, className, variant = "secondary", tone, icon, ...props }: QuizBadgeProps) {
   const toneClasses =
     tone === "success"
       ? "bg-emerald-500/10 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 dark:border-emerald-400/30"

@@ -99,7 +99,7 @@ export function generateMetaDescription(content: string, maxLength = 160): strin
 /**
  * Optimize image alt text for SEO and accessibility
  */
-export function optimizeImageAlt(alt: string | undefined | null, fallback: string): string {
+function optimizeImageAlt(alt: string | undefined | null, fallback: string): string {
   if (!alt) return fallback;
 
   return alt
@@ -177,7 +177,7 @@ export function getQuizTypeLabel(quizType?: string): string {
 /**
  * Get human-readable course difficulty labels
  */
-export function getCourseDifficultyLabel(difficulty?: string): string {
+function getCourseDifficultyLabel(difficulty?: string): string {
   const difficultyMap: Record<string, string> = {
     beginner: "Beginner",
     intermediate: "Intermediate", 
@@ -196,7 +196,7 @@ export function getCourseDifficultyLabel(difficulty?: string): string {
 /**
  * Validate metadata for SEO issues
  */
-export function validateMetadata(metadata: Metadata): {
+function validateMetadata(metadata: Metadata): {
   isValid: boolean;
   warnings: string[];
   errors: string[];
@@ -243,6 +243,6 @@ export function validateMetadata(metadata: Metadata): {
     errors,
   };
 }
-export function isClient(): boolean {
+function isClient(): boolean {
   return typeof window !== "undefined";
 } 

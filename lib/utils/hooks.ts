@@ -61,7 +61,7 @@ export function useDebounce<T>(value: T, delay: number): T {
  * @param delay The delay in milliseconds
  * @returns The debounced function
  */
-export function useDebouncedCallback<T extends (...args: any[]) => any>(
+function useDebouncedCallback<T extends (...args: any[]) => any>(
   fn: T,
   delay: number,
 ): (...args: Parameters<T>) => void {
@@ -104,7 +104,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
  * @param callback The callback to execute
  * @param delay The delay in milliseconds (null to pause)
  */
-export function useInterval(callback: () => void, delay: number | null) {
+function useInterval(callback: () => void, delay: number | null) {
   const savedCallback = useRef(callback)
 
   // Remember the latest callback
@@ -164,7 +164,7 @@ export function useMediaQuery(query: string): boolean {
  * Hook for responsive behavior with common breakpoints
  * @returns Object containing responsive states and current breakpoint
  */
-export function useResponsive() {
+function useResponsive() {
   const isMobile = useMediaQuery('(max-width: 640px)')
   const isTablet = useMediaQuery('(min-width: 641px) and (max-width: 1024px)')
   const isDesktop = useMediaQuery('(min-width: 1025px)')
@@ -199,4 +199,4 @@ export const useMobile = useResponsive
 // ============================================================================
 
 // Re-export from unified storage system
-export { usePersistentState } from '@/lib/storage'
+

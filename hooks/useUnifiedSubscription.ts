@@ -31,7 +31,7 @@ export function useUnifiedSubscription() {
 /**
  * useSubscriptionPermissions - Check user permissions for features
  */
-export function useSubscriptionPermissions() {
+function useSubscriptionPermissions() {
   const {
     hasCredits,
     hasActiveSubscription,

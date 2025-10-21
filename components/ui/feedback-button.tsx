@@ -8,7 +8,7 @@ import { motion } from "framer-motion"
 import { CheckCircle, XCircle, MessageSquarePlus } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export type FeedbackState = "idle" | "loading" | "success" | "error"
+type FeedbackState = "idle" | "loading" | "success" | "error"
 
 // Ensure ButtonProps is imported or defined
 import { Button, type ButtonProps } from "@/components/ui/button" // Adjust the path as needed

@@ -13,7 +13,7 @@ const quizCache = new NodeCache({
 /**
  * Repository for handling course quiz data operations
  */
-export class CourseQuizRepository extends BaseRepository<any> {
+class CourseQuizRepository extends BaseRepository<any> {
   constructor() {
     super(prisma.courseQuiz);
   }

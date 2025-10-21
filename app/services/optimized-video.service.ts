@@ -90,7 +90,7 @@ const CONFIG = {
  * - Request queuing with concurrency control
  * - Timeout handling with cancellation
  */
-export class OptimizedVideoService {  private cache: MemoryCache
+class OptimizedVideoService {  private cache: MemoryCache
   private processingQueue: PQueue
   private debouncedProcessors: Map<string, any>
   private activeRequests: Map<string, { cancelled: boolean }>

@@ -39,4 +39,4 @@ const getUnitSlug = (unit: CourseUnit) => {
   return `${titleToSlug(unit.name)}-${unit.id}`
 }
 
-export { titleToSlug, getCourseSlug, getUnitSlug, titleSubTopicToSlug }
+export {    titleSubTopicToSlug }

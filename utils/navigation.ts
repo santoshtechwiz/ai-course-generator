@@ -10,7 +10,7 @@ import { storage } from '@/lib/storage';
  * Ensures slug is used in URLs instead of numeric IDs
  * This function will handle converting numeric IDs to proper slugs if available
  */
-export const getNormalizedQuizPath = (
+const getNormalizedQuizPath = (
   quizType: string,
   slugOrId: string | number | null | undefined,
   segment: string = ''
@@ -29,7 +29,7 @@ export const getNormalizedQuizPath = (
 /**
  * Redirect from numeric ID to slug if possible
  */
-export const redirectFromNumericId = async (
+const redirectFromNumericId = async (
   router: any, 
   currentSlugOrId: string,
   quizType: string = 'mcq',
@@ -89,7 +89,7 @@ export const redirectFromNumericId = async (
 /**
  * Navigate to quiz results page
  */
-export const navigateToQuizResults = (
+const navigateToQuizResults = (
   router: any,
   quizType: string,
   slug: string | number | null | undefined
@@ -124,7 +124,7 @@ export const getSafeQuizHref = (
  *  3) id -> /dashboard/mcq/{id} (default to mcq type)
  *  4) fallback -> /dashboard/quizzes
  */
-export const getBestQuizHref = (opts: { slug?: string | null | undefined; type?: string | null | undefined; id?: string | number | null | undefined }) => {
+const getBestQuizHref = (opts: { slug?: string | null | undefined; type?: string | null | undefined; id?: string | number | null | undefined }) => {
   const { slug, type, id } = opts || {};
   if (slug && String(slug).trim()) {
     // If we have a type, use it; otherwise default to mcq

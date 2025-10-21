@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { ReferralBanner } from "@/components/ReferralBanner"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { useAuth } from "@/modules/auth"
-import { progressApi } from "@/components/loaders/progress-api"
 import { migratedStorage } from "@/lib/storage"
 
 import { LoginModal } from "@/app/auth/signin/components/LoginModal"

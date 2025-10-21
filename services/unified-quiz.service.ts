@@ -13,7 +13,7 @@ import { badgeService } from './badge.service'
 import { usageLimitService } from './usage-limit.service'
 import prisma from '@/lib/db'
 
-export type QuizType = 'mcq' | 'blanks' | 'openended' | 'code' | 'flashcard'
+type QuizType = 'mcq' | 'blanks' | 'openended' | 'code' | 'flashcard'
 
 interface QuizCompletionData {
   userId: string
@@ -40,7 +40,7 @@ interface QuizCompletionResult {
   }
 }
 
-export class UnifiedQuizService {
+class UnifiedQuizService {
   /**
    * Handle quiz completion with unified logic
    * 

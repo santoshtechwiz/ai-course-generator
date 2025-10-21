@@ -50,7 +50,7 @@ export interface CourseProgressUpdatedEvent extends BaseProgressEvent {
   };
 }
 
-export interface QuizStartedEvent extends BaseProgressEvent {
+interface QuizStartedEvent extends BaseProgressEvent {
   type: ProgressEventType.QUIZ_STARTED;
   entityType: 'quiz';
   metadata: {
@@ -89,7 +89,7 @@ export interface QuizCompletedEvent extends BaseProgressEvent {
   };
 }
 
-export interface CourseStartedEvent extends BaseProgressEvent {
+interface CourseStartedEvent extends BaseProgressEvent {
   type: ProgressEventType.COURSE_STARTED;
   entityType: 'course';
   metadata: {
@@ -98,7 +98,7 @@ export interface CourseStartedEvent extends BaseProgressEvent {
   };
 }
 
-export interface CourseCompletedEvent extends BaseProgressEvent {
+interface CourseCompletedEvent extends BaseProgressEvent {
   type: ProgressEventType.COURSE_COMPLETED;
   entityType: 'course';
   metadata: {
@@ -121,7 +121,7 @@ export interface VideoWatchedEvent extends BaseProgressEvent {
   };
 }
 
-export interface ChapterCompletedEvent extends BaseProgressEvent {
+interface ChapterCompletedEvent extends BaseProgressEvent {
   type: ProgressEventType.CHAPTER_COMPLETED;
   entityType: 'chapter';
   metadata: {

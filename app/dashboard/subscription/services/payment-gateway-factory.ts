@@ -132,7 +132,7 @@ export function getAvailableProviders(): PaymentProvider[] {
 /**
  * Clear the gateway cache (useful for testing or configuration changes)
  */
-export function clearGatewayCache(): void {
+function clearGatewayCache(): void {
   gatewayCache.clear()
   logger.info('Payment gateway cache cleared')
 }
@@ -157,4 +157,3 @@ export async function getGatewayHealthStatus(): Promise<Record<string, boolean>>
 }
 
 // Re-export the types from the interface for convenience
-export type { PaymentOptions, CheckoutResult } from "./payment-gateway-interface"

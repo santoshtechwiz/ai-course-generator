@@ -5,9 +5,9 @@
  * with proper fallback mechanisms to prevent 404 errors.
  */
 
-export type YouTubeThumbnailQuality = 'maxresdefault' | 'hqdefault' | 'mqdefault' | 'default';
+type YouTubeThumbnailQuality = 'maxresdefault' | 'hqdefault' | 'mqdefault' | 'default';
 
-export interface YouTubeThumbnailOptions {
+interface YouTubeThumbnailOptions {
   videoId: string;
   quality?: YouTubeThumbnailQuality;
   fallback?: string;
@@ -38,7 +38,7 @@ export function getYouTubeThumbnailUrl(
 /**
  * Get all available thumbnail URLs in order of preference (best to worst quality)
  */
-export function getYouTubeThumbnailFallbacks(videoId: string): string[] {
+function getYouTubeThumbnailFallbacks(videoId: string): string[] {
   if (!videoId || typeof videoId !== 'string') {
     return ['/images/placeholder.svg'];
   }
@@ -60,7 +60,7 @@ export function getYouTubeThumbnailFallbacks(videoId: string): string[] {
 /**
  * Validate if a YouTube video ID appears to be valid format
  */
-export function isValidYouTubeVideoId(videoId: string): boolean {
+function isValidYouTubeVideoId(videoId: string): boolean {
   if (!videoId || typeof videoId !== 'string') {
     return false;
   }
@@ -75,7 +75,7 @@ export function isValidYouTubeVideoId(videoId: string): boolean {
 /**
  * Extract video ID from various YouTube URL formats
  */
-export function extractYouTubeVideoId(url: string): string | null {
+function extractYouTubeVideoId(url: string): string | null {
   if (!url || typeof url !== 'string') {
     return null;
   }
@@ -132,7 +132,7 @@ export function createThumbnailErrorHandler(videoId: string) {
  * Pre-validate a YouTube thumbnail URL before using it
  * Returns a Promise that resolves to a working URL or fallback
  */
-export async function validateYouTubeThumbnail(videoId: string): Promise<string> {
+async function validateYouTubeThumbnail(videoId: string): Promise<string> {
   const fallbacks = getYouTubeThumbnailFallbacks(videoId);
   
   for (const url of fallbacks) {
@@ -156,11 +156,3 @@ export async function validateYouTubeThumbnail(videoId: string): Promise<string>
   return '/images/placeholder.svg';
 }
 
-export default {
-  getYouTubeThumbnailUrl,
-  getYouTubeThumbnailFallbacks,
-  isValidYouTubeVideoId,
-  extractYouTubeVideoId,
-  createThumbnailErrorHandler,
-  validateYouTubeThumbnail
-};

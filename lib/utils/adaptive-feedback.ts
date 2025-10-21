@@ -14,7 +14,7 @@
 
 import { calculateAnswerSimilarity } from './text-similarity'
 
-export interface AdaptiveFeedbackConfig {
+interface AdaptiveFeedbackConfig {
   /** Is the user authenticated? */
   isAuthenticated: boolean
   /** Current attempt count for this question */

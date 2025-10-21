@@ -15,7 +15,7 @@ import type { SubscriptionData, SubscriptionPlanType, SubscriptionStatusType } f
 
 // ============= Types =============
 
-export interface SubscriptionContextState {
+interface SubscriptionContextState {
   // Core subscription data
   data: SubscriptionData | null;
   subscription: SubscriptionData | null;
@@ -293,6 +293,6 @@ export function useSubscriptionContext(): SubscriptionContextState {
 }
 
 // Legacy hook for backward compatibility
-export function useUnifiedSubscription(): SubscriptionContextState {
+function useUnifiedSubscription(): SubscriptionContextState {
   return useSubscriptionContext();
 }

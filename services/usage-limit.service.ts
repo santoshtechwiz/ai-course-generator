@@ -3,14 +3,14 @@ import { addDays, addHours, isAfter, startOfDay } from 'date-fns'
 
 const prisma = new PrismaClient()
 
-export type ResourceType = 
+type ResourceType = 
   | 'flashcard_decks' 
   | 'flashcard_cards' 
   | 'flashcard_reviews'
   | 'quiz_attempts'
   | 'course_access'
 
-export interface UsageLimitConfig {
+interface UsageLimitConfig {
   free: number
   basic: number
   pro: number
@@ -18,7 +18,7 @@ export interface UsageLimitConfig {
 }
 
 // Define limits for each resource type
-export const USAGE_LIMITS: Record<ResourceType, UsageLimitConfig> = {
+const USAGE_LIMITS: Record<ResourceType, UsageLimitConfig> = {
   flashcard_decks: {
     free: 3,
     basic: 10,
@@ -51,7 +51,7 @@ export const USAGE_LIMITS: Record<ResourceType, UsageLimitConfig> = {
   }
 }
 
-export class UsageLimitService {
+class UsageLimitService {
   /**
    * Check if user can perform an action
    */

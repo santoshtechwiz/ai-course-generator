@@ -17,7 +17,7 @@ interface OrderingQuizQuestion {
   type: 'ordering'
 }
 
-export interface OrderingQuizState {
+interface OrderingQuizState {
   data: any | null
   currentQuestion: OrderingQuizQuestion | null
   userAnswers: Record<string, number[]>
@@ -190,14 +190,14 @@ const orderingQuizSlice = createSlice({
   },
 })
 
-export const { resetQuiz, saveAnswer, setCurrentQuestion, clearError } =
+export const {  saveAnswer, setCurrentQuestion,  } =
   orderingQuizSlice.actions
 
 export default orderingQuizSlice.reducer
 
 // Selectors
-export const selectOrderingQuizData = (state: RootState) => state.orderingQuiz?.data
-export const selectCurrentQuestion = (state: RootState) =>
+const selectOrderingQuizData = (state: RootState) => state.orderingQuiz?.data
+const selectCurrentQuestion = (state: RootState) =>
   state.orderingQuiz?.currentQuestion
-export const selectIsLoading = (state: RootState) => state.orderingQuiz?.isLoading
-export const selectError = (state: RootState) => state.orderingQuiz?.error
+const selectIsLoading = (state: RootState) => state.orderingQuiz?.isLoading
+const selectError = (state: RootState) => state.orderingQuiz?.error

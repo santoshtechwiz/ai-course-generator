@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation"
 import { api } from "@/lib/api-helper"
 import { Chapter, Course, CourseUnit } from "@/app/types/types"
 
-export type CourseProps = {
+type CourseProps = {
   course: Course & {
     units: (CourseUnit & {
       chapters: Chapter[]

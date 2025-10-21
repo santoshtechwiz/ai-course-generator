@@ -55,7 +55,7 @@ export interface ProgressQueueMetrics {
   errorRate: number
 }
 
-export interface WorkerTask {
+interface WorkerTask {
   id: string
   type: 'process_batch' | 'flush_queue' | 'cleanup'
   payload: any
@@ -63,14 +63,14 @@ export interface WorkerTask {
   createdAt: number
 }
 
-export interface WorkerConfig {
+interface WorkerConfig {
   maxConcurrency: number
   taskTimeout: number
   retryLimit: number
   healthCheckInterval: number
 }
 
-export interface ProgressServiceConfig {
+interface ProgressServiceConfig {
   queue: ProgressQueueConfig
   worker: WorkerConfig
   enableOptimisticUpdates: boolean
@@ -80,13 +80,13 @@ export interface ProgressServiceConfig {
 }
 
 // TanStack Query mutation types
-export interface ProgressMutationContext {
+interface ProgressMutationContext {
   previousProgress?: any
   optimisticUpdate?: any
   rollbackData?: any
 }
 
-export interface ChapterProgressData {
+interface ChapterProgressData {
   progress: number
   completed: boolean
   timeSpent: number
@@ -101,13 +101,13 @@ export interface ProgressQueryData {
 }
 
 // API types
-export interface ProgressUpdateRequest {
+interface ProgressUpdateRequest {
   events: ProgressEvent[]
   batchId?: string
   forceImmediate?: boolean
 }
 
-export interface ProgressUpdateResponse {
+interface ProgressUpdateResponse {
   success: boolean
   processedCount: number
   failedCount: number
@@ -115,7 +115,7 @@ export interface ProgressUpdateResponse {
   errors?: string[]
 }
 
-export interface ProgressSyncRequest {
+interface ProgressSyncRequest {
   userId: string
   courseId?: string | number
   lastSyncTime?: number

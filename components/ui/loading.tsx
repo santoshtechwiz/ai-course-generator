@@ -15,7 +15,7 @@ const sizeClasses = {
   lg: "h-8 w-8",
 };
 
-export function Loading({
+function Loading({
   text = "Loading...",
   className,
   size = "md"
@@ -33,4 +33,4 @@ export function Loading({
   );
 }
 
-export default Loading;
+

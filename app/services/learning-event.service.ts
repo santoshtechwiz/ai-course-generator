@@ -1,6 +1,6 @@
 import prisma from '@/lib/db'
 
-export interface LearningEventData {
+interface LearningEventData {
   userId: string
   courseId: number
   chapterId?: number
@@ -33,4 +33,4 @@ export class LearningEventService {
   }
 }
 
-export const trackLearningEvent = LearningEventService.trackEvent
+const trackLearningEvent = LearningEventService.trackEvent

@@ -19,8 +19,7 @@ import { prisma } from "@/lib/db"
 import { logger } from "@/lib/logger"
 import type { ChatMessage, ChatRequest, ChatResponse, ChatStreamResponse } from "./types"
 
-// Re-export types for backward compatibility
-export type { ChatMessage, ChatRequest, ChatResponse, ChatStreamResponse }
+// Re-export types for backward compatibility
 
 export class ChatService extends BaseAIService {
   private embeddingManager: EmbeddingManager

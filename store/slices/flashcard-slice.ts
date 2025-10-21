@@ -41,15 +41,15 @@ export interface RatingAnswer {
   streak?: number
 }
 
-export interface SavedAnswer {
+interface SavedAnswer {
   questionId: string
   saved: boolean
   timestamp?: number
 }
 
-export type AnswerEntry = RatingAnswer | SavedAnswer
+type AnswerEntry = RatingAnswer | SavedAnswer
 
-export interface FlashCard {
+interface FlashCard {
   id: string
   question: string
   answer: string
@@ -262,7 +262,7 @@ export const saveFlashCardResults = createAsyncThunk(
   }
 )
 
-export const loadFlashcardResults = createAsyncThunk(
+const loadFlashcardResults = createAsyncThunk(
   'flashcard/loadResults',
   async (_, { getState, rejectWithValue }) => {
     const state = getState() as RootState
@@ -627,40 +627,40 @@ clearQuizState: (state) => {
 })
 
 export const {
-  initFlashCardQuiz,
+  
   submitFlashCardAnswer,
   completeFlashCardQuiz,
-  resetFlashCards,
+  
   forceResetFlashCards,
   setCurrentFlashCard,
   nextFlashCard,
-  setRequiresFlashCardAuth,
+  
   setPendingFlashCardAuth,
   clearQuizState,
-  setQuizResults,
-  clearRedirectFlag,
-  completeQuiz,
+  
+  
+  
 } = flashcardSlice.actions
 
 // Selectors (unchanged – still valid)
-export const selectQuizId = (state: RootState) => state.flashcard.quizId
-export const selectQuizSlug = (state: RootState) => state.flashcard.slug
+const selectQuizId = (state: RootState) => state.flashcard.quizId
+const selectQuizSlug = (state: RootState) => state.flashcard.slug
 export const selectQuizTitle = (state: RootState) => state.flashcard.title
 export const selectQuizQuestions = (state: RootState) => state.flashcard.questions
 export const selectIsQuizComplete = (state: RootState) => state.flashcard.isCompleted
 export const selectQuizStatus = (state: RootState) => state.flashcard.status
 export const selectQuizError = (state: RootState) => state.flashcard.error
 export const selectRequiresAuth = (state: RootState) => state.flashcard.requiresAuth
-export const selectPendingAuthRequired = (state: RootState) => state.flashcard.pendingAuthRequired
+const selectPendingAuthRequired = (state: RootState) => state.flashcard.pendingAuthRequired
 export const selectFlashcardState = (state: RootState) => state.flashcard
-export const selectQuizResults = (state: RootState) => state.flashcard.results
-export const selectQuizScore = (state: RootState) => state.flashcard.results?.score ?? 0
-export const selectQuizTotalQuestions = (state: RootState) => state.flashcard.results?.totalQuestions ?? 0
-export const selectQuizTotalTime = (state: RootState) => state.flashcard.results?.totalTime ?? 0
+const selectQuizResults = (state: RootState) => state.flashcard.results
+const selectQuizScore = (state: RootState) => state.flashcard.results?.score ?? 0
+const selectQuizTotalQuestions = (state: RootState) => state.flashcard.results?.totalQuestions ?? 0
+const selectQuizTotalTime = (state: RootState) => state.flashcard.results?.totalTime ?? 0
 export const selectCurrentQuestionIndex = (state: RootState) => state.flashcard.currentQuestion
 export const selectQuizAnswers = (state: RootState) => state.flashcard.answers
 export const selectShouldRedirectToResults = (state: RootState) => state.flashcard.shouldRedirectToResults
-export const selectQuizOwnerId = (state: RootState) => state.flashcard.userId
+const selectQuizOwnerId = (state: RootState) => state.flashcard.userId
 export const selectProcessedResults = createSelector(
   [selectQuizAnswers, selectQuizResults],
   (answers, results) => {

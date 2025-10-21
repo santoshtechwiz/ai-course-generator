@@ -118,4 +118,4 @@ export class FlashcardRepository extends BaseRepository<any> {
   }
 }
 
-export const flashcardRepository = new FlashcardRepository();
+const flashcardRepository = new FlashcardRepository();

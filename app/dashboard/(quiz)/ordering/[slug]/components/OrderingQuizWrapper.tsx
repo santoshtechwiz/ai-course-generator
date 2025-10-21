@@ -81,11 +81,11 @@ export default function OrderingQuizWrapper({ slug }: OrderingQuizWrapperProps) 
 
   // Load quiz data from database on mount
   useEffect(() => {
-    if (!quizData && !isLoading) {
+    if (!quizData && !isLoading && !error) {
       // @ts-ignore - async thunk dispatch type issue
       dispatch(loadOrderingQuiz(slug))
     }
-  }, [slug, dispatch, quizData, isLoading])
+  }, [slug, dispatch, quizData, isLoading, error])
 
   // Set current question in Redux only when index changes (not when question object changes)
   useEffect(() => {
@@ -214,6 +214,7 @@ export default function OrderingQuizWrapper({ slug }: OrderingQuizWrapperProps) 
 
   // Error state
   if (error && !quizData) {
+    const isNotFound = error.toLowerCase().includes('not found') || error === 'Quiz not found'
     return (
       <div className="flex items-center justify-center min-h-[60vh] p-6">
         <Card className="w-full max-w-md">
@@ -221,12 +222,14 @@ export default function OrderingQuizWrapper({ slug }: OrderingQuizWrapperProps) 
             <div className="flex justify-center">
               <AlertCircle className="h-12 w-12 text-red-600" />
             </div>
-            <h3 className="text-lg font-semibold">Failed to Load Quiz</h3>
+            <h3 className="text-lg font-semibold">
+              {isNotFound ? 'Quiz Not Found' : 'Failed to Load Quiz'}
+            </h3>
             <p className="text-sm text-muted-foreground">{error}</p>
             <div className="flex gap-3 justify-center">
               <Button onClick={() => router.back()}>Go Back</Button>
               <Button onClick={() => router.push('/dashboard/ordering')}>
-                Create New Quiz
+                Browse Quizzes
               </Button>
             </div>
           </CardContent>

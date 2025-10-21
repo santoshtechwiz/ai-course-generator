@@ -29,7 +29,7 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
-export interface FlashcardData {
+interface FlashcardData {
   id: string
   front: string
   back: string

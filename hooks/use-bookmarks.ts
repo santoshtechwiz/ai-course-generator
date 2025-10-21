@@ -167,7 +167,7 @@ export function useBookmarks(filters: BookmarkFilters = {}) {
   }
 }
 
-export function useBookmark(courseId: number, chapterId?: number) {
+function useBookmark(courseId: number, chapterId?: number) {
   const cacheKey = useMemo(() => {
     const params = new URLSearchParams()
     params.append("courseId", courseId.toString())

@@ -1,5 +1,5 @@
 // Types for users API route
-export interface UserQueryParams {
+interface UserQueryParams {
   page?: string
   limit?: string
   search?: string
@@ -8,7 +8,7 @@ export interface UserQueryParams {
   sortOrder?: string
 }
 
-export interface UserResponse {
+interface UserResponse {
   id: string
   name: string
   email: string

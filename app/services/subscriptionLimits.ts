@@ -8,9 +8,9 @@
 import { prisma } from '@/lib/db'
 import { logger } from '@/lib/logger'
 
-export type SubscriptionTier = 'free' | 'basic' | 'pro' | 'enterprise'
+type SubscriptionTier = 'free' | 'basic' | 'pro' | 'enterprise'
 
-export interface SubscriptionLimits {
+interface SubscriptionLimits {
   coursesPerMonth: number
   quizzesPerMonth: number
   chaptersPerCourse: number
@@ -68,7 +68,7 @@ const TIER_LIMITS: Record<SubscriptionTier, SubscriptionLimits> = {
 /**
  * Get user's subscription tier
  */
-export async function getUserSubscriptionTier(userId: string): Promise<SubscriptionTier> {
+async function getUserSubscriptionTier(userId: string): Promise<SubscriptionTier> {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },

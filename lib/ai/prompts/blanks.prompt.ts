@@ -6,7 +6,7 @@
 
 import type { AIMessage } from '@/lib/ai/interfaces'
 
-export interface BlanksPromptOptions {
+interface BlanksPromptOptions {
   topic: string
   numberOfQuestions: number
   difficulty?: 'easy' | 'medium' | 'hard'
@@ -85,8 +85,4 @@ export function buildBlanksPromptWithSchema(options: BlanksPromptOptions) {
   }
 }
 
-export default {
-  buildBlanksPrompt,
-  getBlanksFunctionSchema,
-  buildBlanksPromptWithSchema,
-}
+

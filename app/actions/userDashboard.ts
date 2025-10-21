@@ -283,7 +283,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
   }
 }
 
-export async function getRecommendedCourses(userId: string): Promise<Course[]> {
+async function getRecommendedCourses(userId: string): Promise<Course[]> {
   try {
     const userStats = await getUserStats(userId)
     const userTopics = userStats.topPerformingTopics.map((topic) => topic.topic)

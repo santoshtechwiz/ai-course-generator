@@ -1,7 +1,7 @@
 import prisma from "@/lib/db"
 import { LearningEventService } from "./learning-event.service"
 
-export interface ProgressUpdate {
+interface ProgressUpdate {
   userId: string
   courseId: number
   currentChapterId?: number
@@ -11,13 +11,13 @@ export interface ProgressUpdate {
   completedChapters?: number[]
 }
 
-export interface ChapterProgressData {
+interface ChapterProgressData {
   completedChapters: number[]
   lastPositions: Record<number, number>
   [key: string]: any // Add index signature for Prisma JsonValue compatibility
 }
 
-export interface CourseProgressResponse {
+interface CourseProgressResponse {
   id: number
   userId: string
   courseId: number
@@ -30,7 +30,7 @@ export interface CourseProgressResponse {
   quizProgress: any
 }
 
-export interface UserStatsResponse {
+interface UserStatsResponse {
   totalCourses: number
   completedCourses: number
   totalQuizzes: number
@@ -41,7 +41,7 @@ export interface UserStatsResponse {
   lastStreakDate: Date | null
 }
 
-export interface UserCourseResponse {
+interface UserCourseResponse {
   id: number
   title: string
   description: string | null

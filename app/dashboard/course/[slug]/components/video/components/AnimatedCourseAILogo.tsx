@@ -9,7 +9,7 @@ interface AnimatedCourseAILogoProps {
   size?: "sm" | "md" | "lg"
 }
 
-export const AnimatedCourseAILogo: React.FC<AnimatedCourseAILogoProps> = ({
+const AnimatedCourseAILogo: React.FC<AnimatedCourseAILogoProps> = ({
   animated = false,
   className,
   size = "md"

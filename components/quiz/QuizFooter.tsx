@@ -259,4 +259,4 @@ export function QuizFooter({
   )
 }
 
-export default QuizFooter
+

@@ -15,14 +15,14 @@ import prisma from "@/lib/db"
 /**
  * Generate a unique ID
  */
-export function generateId(): string {
+function generateId(): string {
   return nanoid()
 }
 
 /**
  * Generate a unique ID with custom length
  */
-export function generateIdWithLength(length: number = 8): string {
+function generateIdWithLength(length: number = 8): string {
   return nanoid(length)
 }
 
@@ -33,7 +33,7 @@ export function generateIdWithLength(length: number = 8): string {
 /**
  * Generate a URL-friendly slug from a string (using slugify)
  */
-export function generateSlug(title: string): string {
+function generateSlug(title: string): string {
   return slugify(title, {
     lower: true,
     strict: true,
@@ -44,7 +44,7 @@ export function generateSlug(title: string): string {
 /**
  * Alternative slug generation with custom rules
  */
-export function createSlug(title: string): string {
+function createSlug(title: string): string {
   return title
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -54,7 +54,7 @@ export function createSlug(title: string): string {
 /**
  * Legacy alias for compatibility
  */
-export const titleToSlug = generateSlug
+const titleToSlug = generateSlug
 
 // ============================================================================
 // TEXT PROCESSING
@@ -63,7 +63,7 @@ export const titleToSlug = generateSlug
 /**
  * Extract keywords from text
  */
-export function extractKeywords(text: string, maxKeywords: number = 10): string[] {
+function extractKeywords(text: string, maxKeywords: number = 10): string[] {
   const stopWords = new Set([
     'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
     'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did',
@@ -82,14 +82,14 @@ export function extractKeywords(text: string, maxKeywords: number = 10): string[
 /**
  * Normalize whitespace in text
  */
-export function normalizeWhitespace(text: string): string {
+function normalizeWhitespace(text: string): string {
   return text.replace(/\s+/g, ' ').trim()
 }
 
 /**
  * Truncate text to specified length
  */
-export function truncateText(text: string, maxLength: number, suffix: string = '...'): string {
+function truncateText(text: string, maxLength: number, suffix: string = '...'): string {
   if (text.length <= maxLength) return text
   return text.slice(0, maxLength - suffix.length) + suffix
 }
@@ -97,7 +97,7 @@ export function truncateText(text: string, maxLength: number, suffix: string = '
 /**
  * Capitalize first letter of each word
  */
-export function titleCase(text: string): string {
+function titleCase(text: string): string {
   return text.replace(/\w\S*/g, (txt) => 
     txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
   )
@@ -106,14 +106,14 @@ export function titleCase(text: string): string {
 /**
  * Convert camelCase to kebab-case
  */
-export function camelToKebab(text: string): string {
+function camelToKebab(text: string): string {
   return text.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase()
 }
 
 /**
  * Convert kebab-case to camelCase
  */
-export function kebabToCamel(text: string): string {
+function kebabToCamel(text: string): string {
   return text.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
 }
 
@@ -124,7 +124,7 @@ export function kebabToCamel(text: string): string {
 /**
  * Copy text to clipboard with fallback
  */
-export async function copyToClipboard(text: string): Promise<boolean> {
+async function copyToClipboard(text: string): Promise<boolean> {
   try {
     if (navigator?.clipboard) {
       await navigator.clipboard.writeText(text)
@@ -151,12 +151,12 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 // TEXT SIMILARITY (moved from separate file)
 // ============================================================================
 
-export type SimilarityLevel = 'exact' | 'high' | 'medium' | 'low' | 'none'
+type SimilarityLevel = 'exact' | 'high' | 'medium' | 'low' | 'none'
 
 /**
  * Calculate text similarity between two strings
  */
-export function calculateTextSimilarity(str1: string, str2: string): number {
+function calculateTextSimilarity(str1: string, str2: string): number {
   const s1 = str1.toLowerCase().trim()
   const s2 = str2.toLowerCase().trim()
   
@@ -173,7 +173,7 @@ export function calculateTextSimilarity(str1: string, str2: string): number {
 /**
  * Get similarity level from similarity score
  */
-export function getSimilarityLevel(similarity: number): SimilarityLevel {
+function getSimilarityLevel(similarity: number): SimilarityLevel {
   if (similarity >= 0.95) return 'exact'
   if (similarity >= 0.8) return 'high'
   if (similarity >= 0.6) return 'medium'

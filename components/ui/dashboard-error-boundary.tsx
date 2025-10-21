@@ -187,7 +187,7 @@ export function DashboardErrorBoundary({
 }
 
 // Specialized error boundary for course components
-export function CourseErrorBoundary({ children }: { children: React.ReactNode }) {
+function CourseErrorBoundary({ children }: { children: React.ReactNode }) {
   return (
     <DashboardErrorBoundary componentName="Course Component">
       {children}
@@ -196,7 +196,7 @@ export function CourseErrorBoundary({ children }: { children: React.ReactNode })
 }
 
 // Specialized error boundary for quiz components
-export function QuizErrorBoundary({ children }: { children: React.ReactNode }) {
+function QuizErrorBoundary({ children }: { children: React.ReactNode }) {
   return (
     <DashboardErrorBoundary componentName="Quiz Component">
       {children}

@@ -23,16 +23,16 @@ import type {
 
 // Re-export course-related types
 export type {
-  VideoMetadata,
+  
   FullChapterType,
-  CourseUnitType,
+  
   FullCourseUnit,
   FullChapter,
   CourseQuestion,
   FullCourseType,
-  FullCourse,
-  Category,
-  Rating,
+  
+  
+  
   CourseUnit,
   Chapter
 }
@@ -42,11 +42,10 @@ export type {
 import { Prisma } from "@prisma/client"
 import { QuizType } from "./quiz-types";
 
-// Re-export QuizType for convenience
-export type { QuizType } from "./quiz-types";
+// Re-export QuizType for convenience;
 
 // Simplified progress type for internal use
-export interface VideoProgressState {
+interface VideoProgressState {
   time: number;
   played: number;
   playedSeconds: number;
@@ -163,7 +162,7 @@ export interface UserQuizAttempt {
   }>;
 }
 
-export interface TopPerformingTopic {
+interface TopPerformingTopic {
   title: string;
   topic: string;
   averageScore: number;
@@ -180,7 +179,7 @@ export interface UserStats {
   topPerformingTopics: TopPerformingTopic[];
 }
 
-export  interface FlashCard{
+ interface FlashCard{
   id: string;
   question: string;
   options: string[];
@@ -196,7 +195,7 @@ export interface QueryParams {
 
 }
 
-export interface OpenAIMessage {
+interface OpenAIMessage {
   role: "system" | "user" | "assistant" | "function";
   content?: string;
   name?: string;
@@ -228,9 +227,9 @@ export interface CodeChallenge {
   questionType: "standard" | "fill-in-the-blank";
 }
 import type React from "react"
-export type LoadingState = "idle" | "loading" | "success" | "error"
+type LoadingState = "idle" | "loading" | "success" | "error"
 
-export interface LoadingConfig {
+interface LoadingConfig {
   id: string
   message?: string
   timeout?: number
@@ -240,7 +239,7 @@ export interface LoadingConfig {
   persistent?: boolean
 }
 
-export interface LoadingContextValue {
+interface LoadingContextValue {
   // Global loading state
   globalLoading: boolean
 
@@ -259,7 +258,7 @@ export interface LoadingContextValue {
   getLoadingMessage: (id: string) => string | undefined
 }
 
-export interface UnifiedLoaderProps {
+interface UnifiedLoaderProps {
   id?: string
   message?: string
   variant?: "spinner" | "skeleton" | "progress" | "overlay"
@@ -268,13 +267,13 @@ export interface UnifiedLoaderProps {
   className?: string
 }
 
-export interface PageTransitionLoaderProps {
+interface PageTransitionLoaderProps {
   enabled?: boolean
   delay?: number
   timeout?: number
 }
 
-export interface ApiLoadingWrapperProps {
+interface ApiLoadingWrapperProps {
   loadingId: string
   children: React.ReactNode
   fallback?: React.ReactNode

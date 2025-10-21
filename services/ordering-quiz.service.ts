@@ -4,7 +4,7 @@ import { generateUniqueSlug } from "@/lib/utils/string";
 import { creditService, CreditOperationType } from "@/services/credit-service";
 import { getAuthSession } from "@/lib/auth";
 
-export interface OrderingQuizData {
+interface OrderingQuizData {
   title: string;
   description: string;
   topic: string;
@@ -16,7 +16,7 @@ export interface OrderingQuizData {
   }>;
 }
 
-export interface CreateOrderingQuizParams {
+interface CreateOrderingQuizParams {
   topic: string;
   difficulty: "easy" | "medium" | "hard";
   userId: string;
@@ -28,7 +28,7 @@ export interface CreateOrderingQuizParams {
 /**
  * Service for handling ordering quiz operations
  */
-export class OrderingQuizService {
+class OrderingQuizService {
   private repository: OrderingQuizRepository;
 
   constructor() {

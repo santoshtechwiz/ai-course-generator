@@ -208,13 +208,13 @@ export const store = configureStore({
 })
 
 // ✅ Persistor for <PersistGate />
-export const persistor = persistStore(store)
+const persistor = persistStore(store)
 
 // ✅ Typed hooks
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
 export const useAppDispatch: () => AppDispatch = useDispatch
-export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
+const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
 
 // Preserve default export (store) for legacy default imports while also exposing hooks as named exports.
 // Attach hooks for legacy patterns that did: import store from '@/store'; store.useAppSelector(...)
@@ -222,7 +222,7 @@ export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
 ;(store as any).useAppSelector = useAppSelector
 
 // Dedicated named re-export object for clarity
-export const reduxToolkit = {
+const reduxToolkit = {
   store,
   useAppDispatch,
   useAppSelector,

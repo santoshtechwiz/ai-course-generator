@@ -41,4 +41,3 @@ export function StripeSecureCheckout() {
   )
 }
 
-export default StripeSecureCheckout

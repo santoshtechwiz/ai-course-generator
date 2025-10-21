@@ -17,14 +17,14 @@ import { storage, StorageOptions } from "./legacy-storage"
 // TYPES
 // ============================================================================
 
-export interface UsePersistentStateOptions extends StorageOptions {
+interface UsePersistentStateOptions extends StorageOptions {
   /** Whether to sync state across tabs/windows */
   syncAcrossTabs?: boolean
   /** Debounce delay for storage writes (ms) */
   debounceMs?: number
 }
 
-export interface UseStorageOptions {
+interface UseStorageOptions {
   /** Default value if storage is empty */
   defaultValue?: any
   /** Storage type */
@@ -49,7 +49,7 @@ export interface UseStorageOptions {
  * @param options Storage and sync options
  * @returns [state, setState, isLoading, error]
  */
-export function usePersistentState<T>(
+function usePersistentState<T>(
   key: string,
   initialValue: T,
   options: UsePersistentStateOptions = {}
@@ -185,7 +185,7 @@ export function usePersistentState<T>(
 /**
  * Hook for temporary state (sessionStorage only)
  */
-export function useTemporaryState<T>(
+function useTemporaryState<T>(
   key: string,
   initialValue: T,
   options: Omit<UsePersistentStateOptions, 'storage'> = {}
@@ -200,7 +200,7 @@ export function useTemporaryState<T>(
 /**
  * Hook for secure state (encrypted localStorage)
  */
-export function useSecureState<T>(
+function useSecureState<T>(
   key: string,
   initialValue: T,
   options: Omit<UsePersistentStateOptions, 'encrypt'> = {}
@@ -214,7 +214,7 @@ export function useSecureState<T>(
 /**
  * Hook for user preferences
  */
-export function usePreference<T>(
+function usePreference<T>(
   key: string,
   defaultValue: T
 ): [T, (value: T | ((prev: T) => T)) => void, boolean, string | null] {
@@ -233,7 +233,7 @@ export function usePreference<T>(
 /**
  * Hook for quiz data with automatic encryption for sensitive data
  */
-export function useQuizState<T>(
+function useQuizState<T>(
   slug: string,
   initialValue: T,
   isTemporary = false
@@ -255,7 +255,7 @@ export function useQuizState<T>(
 /**
  * Hook for managing user preferences with smart defaults and validation
  */
-export function useUserPreferences() {
+function useUserPreferences() {
   const [preferences, setPreferences, isLoading, error] = usePreference('user_prefs', {
     theme: 'system' as 'light' | 'dark' | 'system',
     autoplay: false,
@@ -285,7 +285,7 @@ export function useUserPreferences() {
 /**
  * Hook for managing quiz history with automatic cleanup (keeps last 2 courses)
  */
-export function useQuizHistory() {
+function useQuizHistory() {
   const [history, setHistory, isLoading, error] = usePreference('quiz_history', [] as QuizHistoryEntry[])
 
   const addQuizEntry = useCallback((entry: QuizHistoryEntry) => {
@@ -323,7 +323,7 @@ export function useQuizHistory() {
  * Hook for managing quiz progress with automatic expiry (30 days)
  * @deprecated Use the event-driven progress system instead
  */
-export function useQuizProgress(courseId: string, chapterId: string) {
+function useQuizProgress(courseId: string, chapterId: string) {
   const key = `quiz_progress_${courseId}_${chapterId}`
   const [progress, setProgress, isLoading, error] = useQuizState(key, null as QuizProgress | null)
 
@@ -362,7 +362,7 @@ export function useQuizProgress(courseId: string, chapterId: string) {
 /**
  * Hook for managing video settings with smart defaults
  */
-export function useVideoSettings() {
+function useVideoSettings() {
   const [settings, setSettings, isLoading, error] = usePreference('video_settings', {
     volume: 1,
     muted: false,
@@ -392,7 +392,7 @@ export function useVideoSettings() {
 /**
  * Hook for managing course-specific settings
  */
-export function useCourseSettings(courseId: string) {
+function useCourseSettings(courseId: string) {
   const key = `course_settings_${courseId}`
   const [settings, setSettings, isLoading, error] = usePreference(key, {
     autoplayMode: false,
@@ -470,7 +470,7 @@ export function useIncompleteQuizzes() {
 /**
  * Hook to get storage stats and status
  */
-export function useStorageStats() {
+function useStorageStats() {
   const [stats, setStats] = useState({ localStorage: 0, sessionStorage: 0, total: 0 })
 
   useEffect(() => {
@@ -490,7 +490,7 @@ export function useStorageStats() {
 /**
  * Hook to clear storage with pattern matching
  */
-export function useStorageCleaner() {
+function useStorageCleaner() {
   const clearByPattern = useCallback((pattern: string, storageType: 'localStorage' | 'sessionStorage' = 'localStorage') => {
     return storage.clear(pattern, { storage: storageType })
   }, [])
@@ -506,7 +506,7 @@ export function useStorageCleaner() {
 // TYPES FOR SPECIALIZED HOOKS
 // ============================================================================
 
-export interface QuizHistoryEntry {
+interface QuizHistoryEntry {
   courseId: string
   courseName: string
   quizType: string
@@ -516,7 +516,7 @@ export interface QuizHistoryEntry {
   timeSpent?: number
 }
 
-export interface QuizProgress {
+interface QuizProgress {
   courseId: string
   chapterId: string
   currentQuestionIndex: number

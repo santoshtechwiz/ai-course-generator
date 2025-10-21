@@ -124,7 +124,7 @@ export function BreadcrumbNavigation({ items, className }: BreadcrumbNavigationP
  * 
  * Floating button to quickly return to dashboard from deep pages
  */
-export function DashboardQuickLink({ className }: { className?: string }) {
+function DashboardQuickLink({ className }: { className?: string }) {
   return (
     <Link
       href="/dashboard"
@@ -163,4 +163,4 @@ export function LearningDashboardLink({ className }: { className?: string }) {
   )
 }
 
-export default BreadcrumbNavigation
+

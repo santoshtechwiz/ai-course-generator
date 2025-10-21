@@ -244,4 +244,4 @@ function ProgressBadgeCard({ item }: { item: BadgeProgress }) {
   )
 }
 
-export default BadgeShowcase
+

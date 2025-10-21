@@ -47,7 +47,7 @@ interface ChatbotProps {
   userId: string
 }
 
-export function Chatbot({ userId }: ChatbotProps) {
+function Chatbot({ userId }: ChatbotProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [input, setInput] = useState("")
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null)

@@ -8,7 +8,7 @@ import { tokenCache } from './token-cache'
 import { isFeatureEnabled, getFeatureResult, type FeatureFlagContext } from '../../lib/featureFlags'
 import { matchRouteToFeature } from '../../config/feature-routes'
 
-export interface MiddlewareContext {
+interface MiddlewareContext {
   request: NextRequest
   pathname: string
   isAuthenticated: boolean
@@ -18,7 +18,7 @@ export interface MiddlewareContext {
   token?: any
 }
 
-export interface MiddlewareResult {
+interface MiddlewareResult {
   response: NextResponse | null
   context: MiddlewareContext
   shouldContinue: boolean

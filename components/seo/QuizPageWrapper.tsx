@@ -20,6 +20,6 @@ export function generateQuizPageMetadata(options: QuizMetadataOptions): Metadata
 /**
  * @deprecated This wrapper component is no longer needed
  */
-export function QuizPageWrapper({ children }: { children: React.ReactNode }) {
+function QuizPageWrapper({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }

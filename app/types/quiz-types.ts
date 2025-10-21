@@ -1,9 +1,9 @@
 // Unified quiz types for the entire application
 export type QuizType = 'blanks' | 'openended' | 'mcq' | 'code' | 'flashcard' | 'ordering';
-export type QuestionType = 'mcq' | 'blanks' | 'openended' | 'code' | 'ordering';
+type QuestionType = 'mcq' | 'blanks' | 'openended' | 'code' | 'ordering';
 
 // Base question interface that all quiz question types extend
-export interface BaseQuestion {
+interface BaseQuestion {
   id: string | number;
   question?: string;
   text?: string;
@@ -25,7 +25,7 @@ export interface OpenEndedQuestion extends BaseQuestion {
 }
 
 // Fill in the blanks questions
-export interface BlankQuizQuestion extends BaseQuestion {
+interface BlankQuizQuestion extends BaseQuestion {
    id: number;
   question: string;
   answer: string;
@@ -37,7 +37,7 @@ export interface BlankQuizQuestion extends BaseQuestion {
 }
 
 // Multiple choice questions
-export interface McqQuestion extends BaseQuestion {
+interface McqQuestion extends BaseQuestion {
   id: string | number;
   text?: string;
   question?: string;
@@ -49,7 +49,7 @@ export interface McqQuestion extends BaseQuestion {
 }
 
 // Code quiz questions
-export interface CodeQuizQuestion extends BaseQuestion {
+interface CodeQuizQuestion extends BaseQuestion {
   id: string | number;
   text?: string;
   question?: string;
@@ -62,7 +62,7 @@ export interface CodeQuizQuestion extends BaseQuestion {
 }
 
 // Ordering/Sequencing quiz questions
-export interface OrderingQuizStep {
+interface OrderingQuizStep {
   id: number;
   description: string;
   explanation?: string;
@@ -79,7 +79,7 @@ export interface OrderingQuizQuestion extends BaseQuestion {
 }
 
 // Quiz data structure
-export interface QuizData {
+interface QuizData {
   slug: string; // Primary identifier
   type: QuizType;
   title: string;
@@ -91,7 +91,7 @@ export interface QuizData {
 export type QuizQuestion = BlankQuizQuestion | OpenEndedQuestion | McqQuestion | CodeQuizQuestion | OrderingQuizQuestion;
 
 // UnifiedQuizQuestion component props
-export interface UnifiedQuizQuestionProps {
+interface UnifiedQuizQuestionProps {
   question: QuizQuestion;
   questionNumber: number;
   totalQuestions: number;
@@ -110,18 +110,18 @@ export interface UnifiedQuizQuestionProps {
 }
 
 // Answer types
-export interface BaseAnswer {
+interface BaseAnswer {
   questionId: string | number;
   timestamp: number;
   type?: QuizType;
 }
 
-export interface BlankQuizAnswer extends BaseAnswer {
+interface BlankQuizAnswer extends BaseAnswer {
   filledBlanks: Record<string, string>;
   type: 'blanks';
 }
 
-export interface OpenEndedQuizAnswer extends BaseAnswer {
+interface OpenEndedQuizAnswer extends BaseAnswer {
   text: string;
   type: 'openended';
   similarity?: number; // Similarity score (0.0-1.0)
@@ -130,14 +130,14 @@ export interface OpenEndedQuizAnswer extends BaseAnswer {
   timeSpent?: number; // Time spent on question in seconds
 }
 
-export interface McqQuizAnswer extends BaseAnswer {
+interface McqQuizAnswer extends BaseAnswer {
   selectedOptionId: string;
   isCorrect?: boolean;
   type: 'mcq';
   timeSpent?: number; // Time spent on question in seconds
 }
 
-export interface CodeQuizAnswer extends BaseAnswer {
+interface CodeQuizAnswer extends BaseAnswer {
   answer: string;
   isCorrect: boolean;
   timeSpent: number;
@@ -145,10 +145,10 @@ export interface CodeQuizAnswer extends BaseAnswer {
 }
 
 // Union type for all answer types
-export type UserAnswer = BlankQuizAnswer | OpenEndedQuizAnswer | McqQuizAnswer | CodeQuizAnswer;
+type UserAnswer = BlankQuizAnswer | OpenEndedQuizAnswer | McqQuizAnswer | CodeQuizAnswer;
 
 // Redux state types
-export interface QuizState {
+interface QuizState {
   quizId: string | number | null;
   quizType: QuizType | null;
   title: string | null;
@@ -164,7 +164,7 @@ export interface QuizState {
 
 
 // Quiz result types
-export interface QuizResult {
+interface QuizResult {
   slug: string; // Primary identifier
   quizId?: string | number; // For backward compatibility
   title: string;
@@ -181,7 +181,7 @@ export interface QuizResult {
   }>;
 }
 
-export interface QuizResultPreview {
+interface QuizResultPreview {
   title: string;
   score: number;
   maxScore: number;
@@ -190,7 +190,7 @@ export interface QuizResultPreview {
   type?: QuizType;
 }
 
-export interface QuizQuestionResult {
+interface QuizQuestionResult {
   id: string | number;
   question: string;
   userAnswer: string | null;
@@ -199,7 +199,7 @@ export interface QuizQuestionResult {
 }
 
 // Component prop types
-export interface CodeQuizOptionsProps {
+interface CodeQuizOptionsProps {
   options: Array<{ id: string; text: string }> | string[];
   selectedOption?: string | null;
   onSelect: (option: string) => void;
@@ -208,32 +208,32 @@ export interface CodeQuizOptionsProps {
 }
 
 // Type guard functions
-export function isOpenEndedQuestion(q: any): q is OpenEndedQuestion {
+function isOpenEndedQuestion(q: any): q is OpenEndedQuestion {
   return typeof q === "object" && q.type === "openended";
 }
 
-export function isBlankQuestion(q: any): q is BlankQuizQuestion {
+function isBlankQuestion(q: any): q is BlankQuizQuestion {
   return typeof q === "object" && q.type === "blanks";
 }
 
-export function isMcqQuestion(q: any): q is McqQuestion {
+function isMcqQuestion(q: any): q is McqQuestion {
   return typeof q === "object" && q.type === "mcq";
 }
 
-export function isCodeQuestion(q: any): q is CodeQuizQuestion {
+function isCodeQuestion(q: any): q is CodeQuizQuestion {
   return typeof q === "object" && q.type === "code";
 }
 
-export function isQuizType(type: any): type is QuizType {
+function isQuizType(type: any): type is QuizType {
   return ["blanks", "openended", "mcq", "code", "flashcard"].includes(type);
 }
 
-export function isValidQuestion(question: any): question is QuizQuestion {
+function isValidQuestion(question: any): question is QuizQuestion {
   return typeof question === "object" && "id" in question && isQuizType(question.type);
 }
 
 // User quiz attempt from user-types.ts
-export interface UserQuizAttempt {
+interface UserQuizAttempt {
   id: string | number;
   userId: string;
   userQuizId: number;
@@ -253,7 +253,7 @@ export interface UserQuizAttempt {
   }
 }
 
-export interface AttemptQuestion {
+interface AttemptQuestion {
   id: number;
   questionId: number;
   userAnswer?: string;
@@ -262,19 +262,19 @@ export interface AttemptQuestion {
 }
 
 // Open-ended quiz data structure
-export interface OpenEndedQuizData extends QuizData {
+interface OpenEndedQuizData extends QuizData {
   questions: OpenEndedQuestion[];
   type: 'openended';
   evaluationMethod?: 'similarity' | 'exact' | 'keywords' | 'ai';
   similarityThreshold?: number; // Default threshold
 }
 
-export interface ProcessedQuestion extends OpenEndedQuestion {
+interface ProcessedQuestion extends OpenEndedQuestion {
   isProcessed: boolean;
   processingTime: number;
 }
 
-export interface BlanksQuizResult {
+interface BlanksQuizResult {
   questionId: string | number;
   userAnswer: string | null;
   correctAnswer: string;
@@ -282,13 +282,13 @@ export interface BlanksQuizResult {
   similarity: number;
   similarityLabel: string;
 }
-export type DifficultyLevel = "easy" | "medium" | "hard"
-export type RatingType = "correct" | "incorrect" | "still_learning"
-export type SwipeDirection = "left" | "right" | "center"
-export type StudyMode = "normal" | "review" | "challenge" | "easy_day"
+type DifficultyLevel = "easy" | "medium" | "hard"
+type RatingType = "correct" | "incorrect" | "still_learning"
+type SwipeDirection = "left" | "right" | "center"
+type StudyMode = "normal" | "review" | "challenge" | "easy_day"
 
 // Core flashcard types with comprehensive type safety
-export interface FlashCard {
+interface FlashCard {
   id: string
   question: string
   answer: string
@@ -312,7 +312,7 @@ export interface MultipleChoiceQuestion {
   options: string[]
   correctAnswer: string
 }
-export interface QuizListItem{
+interface QuizListItem{
   quizType: string;
   id: string
   title: string

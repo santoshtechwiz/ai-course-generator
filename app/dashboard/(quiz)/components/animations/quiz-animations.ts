@@ -65,7 +65,7 @@ export const itemVariants = {
  * Fade-in animation for subtle elements
  * Used for hints, feedback, and secondary UI elements
  */
-export const fadeInVariants = {
+const fadeInVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -81,7 +81,7 @@ export const fadeInVariants = {
  * Slide-up animation for modals and alerts
  * Used for confirmation dialogs, success messages, etc.
  */
-export const slideUpVariants = {
+const slideUpVariants = {
   hidden: { opacity: 0, y: 50 },
   visible: {
     opacity: 1,
@@ -99,7 +99,7 @@ export const slideUpVariants = {
  * Scale animation for buttons and interactive elements
  * Used for hover states and click feedback
  */
-export const scaleVariants = {
+const scaleVariants = {
   initial: { scale: 1 },
   hover: { 
     scale: 1.05, 
@@ -115,7 +115,7 @@ export const scaleVariants = {
  * Stagger children animation
  * Used for lists and groups of elements
  */
-export const staggerContainerVariants = {
+const staggerContainerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -130,7 +130,7 @@ export const staggerContainerVariants = {
  * Quiz progress bar animation
  * Used for smooth progress updates
  */
-export const progressVariants = {
+const progressVariants = {
   initial: { scaleX: 0 },
   animate: (progress: number) => ({
     scaleX: progress / 100,
@@ -145,7 +145,7 @@ export const progressVariants = {
  * Success celebration animation
  * Used when user completes a quiz or gets correct answer
  */
-export const celebrationVariants = {
+const celebrationVariants = {
   hidden: { scale: 0, rotate: -180 },
   visible: {
     scale: 1,
@@ -162,7 +162,7 @@ export const celebrationVariants = {
  * Error shake animation
  * Used for incorrect answers or validation errors
  */
-export const shakeVariants = {
+const shakeVariants = {
   shake: {
     x: [-10, 10, -10, 10, 0],
     transition: { duration: 0.4 },

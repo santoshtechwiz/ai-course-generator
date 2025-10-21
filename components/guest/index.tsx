@@ -32,9 +32,9 @@ export function GuestExperienceProvider({ children }: { children: React.ReactNod
 
 // Re-export components for easy access
 export {
-  MigrationWelcome,
+  
   GuestProgressIndicator,
   ContextualSignInPrompt
 };
 
-export { ClientGuestProvider } from './ClientGuestProvider';
+;

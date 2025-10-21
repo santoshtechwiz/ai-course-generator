@@ -71,7 +71,7 @@ function cacheNotifications(notifications: Notification[]) {
   }
 }
 
-export function useNotifications() {
+function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>(() => getCachedNotifications() || [])
   const [isLoading, setIsLoading] = useState<boolean>(!notifications.length)
   const [error, setError] = useState<Error | null>(null)

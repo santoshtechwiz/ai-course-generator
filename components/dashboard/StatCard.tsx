@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { LucideIcon } from "lucide-react"
 
-export interface StatCardProps {
+interface StatCardProps {
   label: string
   value: string | number
   icon?: LucideIcon
@@ -114,7 +114,7 @@ export function StatCard({
 }
 
 // Preset variants for common use cases
-export const StatCardPresets = {
+const StatCardPresets = {
   totalCourses: (value: number) => ({
     label: "Total Enrolled",
     value,

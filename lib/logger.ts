@@ -101,4 +101,3 @@ const createClientSafeLogger = (options: LoggerOptions = {}) => {
 export const logger = createClientSafeLogger();
 
 // Also export the factory function for creating custom loggers
-export default createClientSafeLogger;

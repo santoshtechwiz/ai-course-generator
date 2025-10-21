@@ -8,7 +8,7 @@ import { Course, Chapter, Favorite } from "@prisma/client";
 /**
  * Type for course with extended relations
  */
-export type CourseWithRelations = Course & {
+type CourseWithRelations = Course & {
   courseUnits: Array<{
     id: number;
     chapters: Array<Chapter>;
@@ -23,7 +23,7 @@ export type CourseWithRelations = Course & {
 /**
  * Type for formatted course data returned to clients
  */
-export interface FormattedCourse {
+interface FormattedCourse {
   id: string;
   name: string;
   title: string;
@@ -50,14 +50,14 @@ export interface FormattedCourse {
 /**
  * Interface for course creation response
  */
-export interface CourseCreationResult {
+interface CourseCreationResult {
   slug: string;
 }
 
 /**
  * Interface for chapter video update response
  */
-export interface ChapterVideoUpdateResult {
+interface ChapterVideoUpdateResult {
   success: boolean;
   message: string;
   chapter: Chapter;
@@ -66,7 +66,7 @@ export interface ChapterVideoUpdateResult {
 /**
  * Interface for course status response
  */
-export interface CourseStatusResult {
+interface CourseStatusResult {
   isPublic: boolean;
   isFavorite: boolean;
   rating: number | null;
@@ -75,7 +75,7 @@ export interface CourseStatusResult {
 /**
  * Interface for course update response
  */
-export interface CourseUpdateResult {
+interface CourseUpdateResult {
   success: boolean;
   course: CourseWithRelations;
 }
@@ -83,7 +83,7 @@ export interface CourseUpdateResult {
 /**
  * Interface for course deletion response
  */
-export interface CourseDeletionResult {
+interface CourseDeletionResult {
   success: boolean;
   message: string;
 }
@@ -91,7 +91,7 @@ export interface CourseDeletionResult {
 /**
  * Interface for pagination and filtering options
  */
-export interface CourseQueryOptions {
+interface CourseQueryOptions {
   search?: string;
   category?: string;
   userId?: string;
@@ -104,7 +104,7 @@ export interface CourseQueryOptions {
 /**
  * Interface for pagination results
  */
-export interface PaginatedCoursesResult {
+interface PaginatedCoursesResult {
   courses: FormattedCourse[];
   totalCount: number;
   page: number;

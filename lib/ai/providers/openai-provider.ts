@@ -327,3 +327,23 @@ Ensure a balanced mix of difficulties based on the requested level (${difficulty
     }
   }
 }
+
+// ============= Standalone Functions for Testing =============
+
+/**
+ * Standalone function to generate open-ended quiz
+ * Creates an OpenAI provider instance and calls the method
+ */
+export async function generateOpenEndedQuiz(params: QuizGenerationParams): Promise<Quiz> {
+  const provider = new OpenAIProvider();
+  return provider.generateOpenEndedQuiz(params);
+}
+
+/**
+ * Standalone function to generate fill-in-the-blanks quiz
+ * Creates an OpenAI provider instance and calls the method
+ */
+export async function generateFillInTheBlanksQuiz(params: QuizGenerationParams): Promise<Quiz> {
+  const provider = new OpenAIProvider();
+  return provider.generateFillInTheBlanksQuiz(params);
+}

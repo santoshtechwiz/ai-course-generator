@@ -2,7 +2,7 @@
  * Simple fetch helper to replace axios calls
  */
 
-export interface FetchOptions extends RequestInit {
+interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>
 }
 

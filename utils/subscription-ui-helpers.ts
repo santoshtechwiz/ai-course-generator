@@ -16,7 +16,7 @@ import { getPlanConfig, type PlanConfig } from '@/types/subscription-plans'
 /**
  * Feature display configuration
  */
-export interface FeatureDisplay {
+interface FeatureDisplay {
   name: string
   available: boolean
   category?: string
@@ -90,7 +90,7 @@ export function buildFeatureList(planConfig: PlanConfig, includeCategories = fal
  * @param features - Array of FeatureDisplay objects
  * @returns Features grouped by category
  */
-export function groupFeaturesByCategory(features: FeatureDisplay[]): Record<string, FeatureDisplay[]> {
+function groupFeaturesByCategory(features: FeatureDisplay[]): Record<string, FeatureDisplay[]> {
   return features.reduce((acc, feature) => {
     const category = feature.category || 'Other'
     if (!acc[category]) {
@@ -116,7 +116,7 @@ export function groupFeaturesByCategory(features: FeatureDisplay[]): Record<stri
  * formatPrice(9.99) // Returns: "$9.99"
  * formatPrice(0) // Returns: "$0"
  */
-export function formatPrice(price: number, currency = '$'): string {
+function formatPrice(price: number, currency = '$'): string {
   if (price === 0) {
     return `${currency}0`
   }
@@ -134,7 +134,7 @@ export function formatPrice(price: number, currency = '$'): string {
  * formatDiscountedPrice(9.99, 20)
  * // Returns: { original: "$9.99", discounted: "$7.99", savings: "$2.00" }
  */
-export function formatDiscountedPrice(
+function formatDiscountedPrice(
   originalPrice: number,
   discountPercent: number
 ): { original: string; discounted: string; savings: string } {
@@ -192,7 +192,7 @@ export function getPriceDisplay(
 /**
  * Context for determining button configuration
  */
-export interface PlanButtonContext {
+interface PlanButtonContext {
   planId: SubscriptionPlanType
   currentPlan: SubscriptionPlanType | null
   status: SubscriptionStatusType | null
@@ -209,7 +209,7 @@ export interface PlanButtonContext {
 /**
  * Button configuration result
  */
-export interface PlanButtonConfig {
+interface PlanButtonConfig {
   text: string
   disabled: boolean
   variant: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost'
@@ -396,7 +396,7 @@ export function getPlanButtonConfig(context: PlanButtonContext): PlanButtonConfi
 /**
  * Context for determining plan status
  */
-export interface PlanStatusContext {
+interface PlanStatusContext {
   planId: SubscriptionPlanType
   currentPlan: SubscriptionPlanType | null
   status: SubscriptionStatusType | null
@@ -409,7 +409,7 @@ export interface PlanStatusContext {
 /**
  * Plan status configuration result
  */
-export interface PlanStatusConfig {
+interface PlanStatusConfig {
   badge?: {
     text: string
     variant: 'default' | 'destructive' | 'outline' | 'secondary'
@@ -500,7 +500,7 @@ export function getPlanStatus(context: PlanStatusContext): PlanStatusConfig {
  * @param available - Whether the feature is available
  * @returns Icon name for Lucide React
  */
-export function getFeatureIcon(available: boolean): 'check' | 'x' {
+function getFeatureIcon(available: boolean): 'check' | 'x' {
   return available ? 'check' : 'x'
 }
 
@@ -510,7 +510,7 @@ export function getFeatureIcon(available: boolean): 'check' | 'x' {
  * @param available - Whether the feature is available
  * @returns Tailwind color class
  */
-export function getFeatureIconColor(available: boolean): string {
+function getFeatureIconColor(available: boolean): string {
   return available ? 'text-success' : 'text-muted-foreground'
 }
 
@@ -525,7 +525,7 @@ export function getFeatureIconColor(available: boolean): string {
  * formatFeatureValue('enhanced') // Returns: { type: 'text', value: 'enhanced' }
  * formatFeatureValue(100) // Returns: { type: 'text', value: '100' }
  */
-export function formatFeatureValue(
+function formatFeatureValue(
   value: boolean | string | number
 ): { type: 'icon' | 'text'; value: boolean | string } {
   if (typeof value === 'boolean') {
@@ -549,7 +549,7 @@ export function formatFeatureValue(
  * @param planId - Plan ID
  * @returns Human-readable plan name
  */
-export function getPlanDisplayName(planId: SubscriptionPlanType): string {
+function getPlanDisplayName(planId: SubscriptionPlanType): string {
   const names: Record<SubscriptionPlanType, string> = {
     FREE: 'Free Plan',
     BASIC: 'Basic Plan',
@@ -566,7 +566,7 @@ export function getPlanDisplayName(planId: SubscriptionPlanType): string {
  * @param planId - Plan ID
  * @returns Short plan description
  */
-export function getPlanDescription(planId: SubscriptionPlanType): string {
+function getPlanDescription(planId: SubscriptionPlanType): string {
   const descriptions: Record<SubscriptionPlanType, string> = {
     FREE: 'Perfect for getting started',
     BASIC: 'Great for individuals and small projects',
@@ -583,7 +583,7 @@ export function getPlanDescription(planId: SubscriptionPlanType): string {
  * @param planId - Plan ID
  * @returns Whether plan is paid
  */
-export function isPaidPlan(planId: SubscriptionPlanType): boolean {
+function isPaidPlan(planId: SubscriptionPlanType): boolean {
   return planId !== 'FREE'
 }
 
@@ -594,7 +594,7 @@ export function isPaidPlan(planId: SubscriptionPlanType): boolean {
  * @param plan2 - Second plan ID
  * @returns -1 if plan1 < plan2, 0 if equal, 1 if plan1 > plan2
  */
-export function comparePlans(plan1: SubscriptionPlanType, plan2: SubscriptionPlanType): number {
+function comparePlans(plan1: SubscriptionPlanType, plan2: SubscriptionPlanType): number {
   const order: SubscriptionPlanType[] = ['FREE', 'BASIC', 'PREMIUM', 'ENTERPRISE']
   const index1 = order.indexOf(plan1)
   const index2 = order.indexOf(plan2)
@@ -611,7 +611,7 @@ export function comparePlans(plan1: SubscriptionPlanType, plan2: SubscriptionPla
  * @param toPlan - Target plan
  * @returns Whether this is an upgrade
  */
-export function isUpgrade(fromPlan: SubscriptionPlanType, toPlan: SubscriptionPlanType): boolean {
+function isUpgrade(fromPlan: SubscriptionPlanType, toPlan: SubscriptionPlanType): boolean {
   return comparePlans(fromPlan, toPlan) < 0
 }
 
@@ -622,6 +622,6 @@ export function isUpgrade(fromPlan: SubscriptionPlanType, toPlan: SubscriptionPl
  * @param toPlan - Target plan
  * @returns Whether this is a downgrade
  */
-export function isDowngrade(fromPlan: SubscriptionPlanType, toPlan: SubscriptionPlanType): boolean {
+function isDowngrade(fromPlan: SubscriptionPlanType, toPlan: SubscriptionPlanType): boolean {
   return comparePlans(fromPlan, toPlan) > 0
 }

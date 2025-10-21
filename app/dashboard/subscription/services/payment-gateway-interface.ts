@@ -24,14 +24,12 @@ export enum PaymentStatus {
   PENDING = "pending",
   FAILED = "failed",
   CANCELED = "canceled",
-  REQUIRES_ACTION = "requires_action",
-  PROCESSING = "processing"
-}
+  }
 
 /**
  * Transaction type enumeration
  */
-export enum TransactionType {
+enum TransactionType {
   SUBSCRIPTION = "subscription",
   ONE_TIME = "one_time",
   UPGRADE = "upgrade",
@@ -229,7 +227,7 @@ export interface PaymentStatusResult {
 /**
  * Payment method information
  */
-export interface PaymentMethodInfo {
+interface PaymentMethodInfo {
   readonly id: string
   readonly type: string
   readonly last4?: string
@@ -242,7 +240,7 @@ export interface PaymentMethodInfo {
 /**
  * Payment error details
  */
-export interface PaymentError {
+interface PaymentError {
   readonly code: string
   readonly message: string
   readonly type: string
@@ -253,7 +251,7 @@ export interface PaymentError {
 /**
  * Billing history item
  */
-export interface BillingHistoryItem {
+interface BillingHistoryItem {
   readonly id: string
   readonly date: Date
   readonly amount: number
@@ -268,7 +266,7 @@ export interface BillingHistoryItem {
 /**
  * Subscription details
  */
-export interface SubscriptionDetails {
+interface SubscriptionDetails {
   readonly id: string
   readonly status: string
   readonly planId: string

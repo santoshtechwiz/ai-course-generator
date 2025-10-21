@@ -75,4 +75,4 @@ const DocumentQuizPDF = memo(function DocumentQuizPDF() {
   return null // This component is now deprecated
 })
 
-export default DocumentQuizPDF
+

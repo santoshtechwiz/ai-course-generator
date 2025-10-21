@@ -14,7 +14,7 @@ import SUBSCRIPTION_PLANS_DATA, {
 } from './subscription-plans'
 
 // Use clean structure directly
-export const UNIFIED_SUBSCRIPTION_PLANS = SUBSCRIPTION_PLANS_DATA
+const UNIFIED_SUBSCRIPTION_PLANS = SUBSCRIPTION_PLANS_DATA
 
 // ============= Core Subscription Types =============
 
@@ -32,7 +32,7 @@ export type SubscriptionStatusType =
   | "TRIALING" 
   | "UNPAID"
 
-export type SubscriptionSource = 
+type SubscriptionSource = 
   | "stripe" 
   | "database" 
   | "cache" 
@@ -64,7 +64,7 @@ export interface SubscriptionData {
   }
 }
 
-export interface SubscriptionState {
+interface SubscriptionState {
   currentSubscription: SubscriptionData | null
   isLoading: boolean
   error: string | null
@@ -80,7 +80,7 @@ export interface SubscriptionState {
 
 // ============= API Response Types =============
 
-export interface ApiResponse<T = any> {
+interface ApiResponse<T = any> {
   success: boolean
   data?: T
   message?: string
@@ -88,11 +88,11 @@ export interface ApiResponse<T = any> {
   timestamp?: string
 }
 
-export interface SubscriptionResponse extends ApiResponse<SubscriptionData> {
+interface SubscriptionResponse extends ApiResponse<SubscriptionData> {
   data: SubscriptionData
 }
 
-export interface BillingHistoryItem {
+interface BillingHistoryItem {
   id: string
   date: Date
   amount: number
@@ -101,7 +101,7 @@ export interface BillingHistoryItem {
   nextBillingDate?: Date
 }
 
-export interface PaymentMethod {
+interface PaymentMethod {
   id: string
   type: string
   card?: {
@@ -115,26 +115,26 @@ export interface PaymentMethod {
 
 // ============= Service Types =============
 
-export interface SubscriptionServiceOptions {
+interface SubscriptionServiceOptions {
   planId?: string
   duration?: number
   metadata?: Record<string, any>
 }
 
-export interface CheckoutSessionResult {
+interface CheckoutSessionResult {
   success: boolean
   sessionId?: string
   url?: string
   message: string
 }
 
-export interface SubscriptionOperationResult {
+interface SubscriptionOperationResult {
   success: boolean
   message: string
   data?: SubscriptionData
 }
 
-export interface CreditOperationResult {
+interface CreditOperationResult {
   success: boolean
   message: string
   newBalance?: number
@@ -142,14 +142,14 @@ export interface CreditOperationResult {
 
 // ============= Hook Types =============
 
-export interface UseSubscriptionOptions {
+interface UseSubscriptionOptions {
   enableRefresh?: boolean
   refreshInterval?: number
   onError?: (error: Error) => void
   onSuccess?: (data: SubscriptionData) => void
 }
 
-export interface UseSubscriptionResult {
+interface UseSubscriptionResult {
   subscription: SubscriptionData
   isLoading: boolean
   error: Error | null
@@ -160,7 +160,7 @@ export interface UseSubscriptionResult {
 
 // ============= Plan Configuration =============
 
-export interface PlanFeatures {
+interface PlanFeatures {
   credits: number
   maxProjects?: number
   apiAccess: boolean
@@ -169,7 +169,7 @@ export interface PlanFeatures {
   analyticsAccess?: boolean
 }
 
-export interface PlanConfiguration {
+interface PlanConfiguration {
   id: SubscriptionPlanType
   name: string
   price: number
@@ -182,7 +182,7 @@ export interface PlanConfiguration {
 
 // ============= Validation & Cache Types =============
 
-export interface CacheConfiguration {
+interface CacheConfiguration {
   ttl: number
   maxAge: number
   staleWhileRevalidate: number
@@ -190,7 +190,7 @@ export interface CacheConfiguration {
   refreshInterval: number
 }
 
-export interface SubscriptionCacheEntry {
+interface SubscriptionCacheEntry {
   data: SubscriptionData
   timestamp: number
   ttl: number
@@ -268,7 +268,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, PlanConfiguration>
  * Get unified plan configuration with all features
  * @preferred Use this instead of SUBSCRIPTION_PLANS for new code
  */
-export function getUnifiedPlanConfig(plan: SubscriptionPlanType): PlanConfig {
+function getUnifiedPlanConfig(plan: SubscriptionPlanType): PlanConfig {
   return UNIFIED_SUBSCRIPTION_PLANS[plan]
 }
 
@@ -362,7 +362,7 @@ export function getRemainingCredits(subscription: SubscriptionData): number {
   return Math.max(0, subscription.credits - subscription.tokensUsed)
 }
 
-export function createSubscriptionCache(data: SubscriptionData, source: SubscriptionSource = 'default'): SubscriptionCacheEntry {
+function createSubscriptionCache(data: SubscriptionData, source: SubscriptionSource = 'default'): SubscriptionCacheEntry {
   return {
     data,
     timestamp: Date.now(),
@@ -373,7 +373,7 @@ export function createSubscriptionCache(data: SubscriptionData, source: Subscrip
 
 // ============= Error Types =============
 
-export class SubscriptionError extends Error {
+class SubscriptionError extends Error {
   constructor(
     message: string,
     public code?: string,
@@ -384,7 +384,7 @@ export class SubscriptionError extends Error {
   }
 }
 
-export class PaymentError extends Error {
+class PaymentError extends Error {
   constructor(
     message: string,
     public code?: string,
@@ -400,7 +400,7 @@ export * from './subscription/utils'
 
 // ============= Webhook Types =============
 
-export interface StripeWebhookEvent {
+interface StripeWebhookEvent {
   id: string
   type: string
   data: {
@@ -409,7 +409,7 @@ export interface StripeWebhookEvent {
   created: number
 }
 
-export interface SubscriptionWebhookPayload {
+interface SubscriptionWebhookPayload {
   userId: string
   subscriptionId: string
   planId: SubscriptionPlanType

@@ -25,21 +25,21 @@ export const SLIDE_UP = {
   transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
 }
 
-export const SLIDE_DOWN = {
+const SLIDE_DOWN = {
   initial: { opacity: 0, y: -20 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: 20 },
   transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
 }
 
-export const SLIDE_LEFT = {
+const SLIDE_LEFT = {
   initial: { opacity: 0, x: 20 },
   animate: { opacity: 1, x: 0 },
   exit: { opacity: 0, x: -20 },
   transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
 }
 
-export const SLIDE_RIGHT = {
+const SLIDE_RIGHT = {
   initial: { opacity: 0, x: -20 },
   animate: { opacity: 1, x: 0 },
   exit: { opacity: 0, x: 20 },
@@ -54,7 +54,7 @@ export const SCALE = {
   transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
 }
 
-export const SCALE_UP = {
+const SCALE_UP = {
   initial: { opacity: 0, scale: 0.8, y: 20 },
   animate: { opacity: 1, scale: 1, y: 0 },
   exit: { opacity: 0, scale: 0.8, y: 20 },
@@ -62,7 +62,7 @@ export const SCALE_UP = {
 }
 
 // Modal/dialog animations
-export const MODAL = {
+const MODAL = {
   initial: { opacity: 0, scale: 0.95 },
   animate: { opacity: 1, scale: 1 },
   exit: { opacity: 0, scale: 0.95 },
@@ -70,13 +70,13 @@ export const MODAL = {
 }
 
 // Attention-grabbing animations
-export const PULSE = {
+const PULSE = {
   initial: { opacity: 1, scale: 1 },
   animate: { opacity: 1, scale: [1, 1.05, 1] },
   transition: { duration: 0.5, ease: "easeInOut" },
 }
 
-export const BOUNCE = {
+const BOUNCE = {
   initial: { opacity: 0, y: -20 },
   animate: { opacity: 1, y: [20, -15, 10, -5, 0] },
   exit: { opacity: 0, y: 20 },
@@ -84,14 +84,14 @@ export const BOUNCE = {
 }
 
 // Page transitions
-export const PAGE_TRANSITION = {
+const PAGE_TRANSITION = {
   initial: { opacity: 0 },
   animate: { opacity: 1 },
   exit: { opacity: 0 },
   transition: { duration: 0.3 },
 }
 
-export const PAGE_SLIDE = {
+const PAGE_SLIDE = {
   initial: { opacity: 0, x: -20 },
   animate: { opacity: 1, x: 0 },
   exit: { opacity: 0, x: 20 },
@@ -125,31 +125,31 @@ export const getStaggeredContainerAnimation = (staggerDuration = 0.05) => ({
 })
 
 // Hover animations
-export const HOVER_SCALE = {
+const HOVER_SCALE = {
   whileHover: { scale: 1.05 },
   whileTap: { scale: 0.98 },
 }
 
-export const HOVER_LIFT = {
+const HOVER_LIFT = {
   whileHover: { y: -5 },
   whileTap: { y: 0 },
 }
 
-export const HOVER_GLOW = {
+const HOVER_GLOW = {
   whileHover: {
     boxShadow: "0 0 8px rgba(var(--primary), 0.6)",
   },
 }
 
 // Toast/notification animations
-export const TOAST_SLIDE_RIGHT = {
+const TOAST_SLIDE_RIGHT = {
   initial: { opacity: 0, x: -100 },
   animate: { opacity: 1, x: 0 },
   exit: { opacity: 0, x: -100 },
   transition: { duration: 0.2, ease: "easeOut" },
 }
 
-export const TOAST_SLIDE_UP = {
+const TOAST_SLIDE_UP = {
   initial: { opacity: 0, y: 50 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: 50 },
@@ -157,7 +157,7 @@ export const TOAST_SLIDE_UP = {
 }
 
 // Accordion/collapse animations
-export const ACCORDION = {
+const ACCORDION = {
   initial: { height: 0, opacity: 0 },
   animate: { height: "auto", opacity: 1 },
   exit: { height: 0, opacity: 0 },
@@ -165,25 +165,25 @@ export const ACCORDION = {
 }
 
 // Utility function to create custom duration variants
-export const withDuration = (preset: any, duration: number) => ({
+const withDuration = (preset: any, duration: number) => ({
   ...preset,
   transition: { ...preset.transition, duration },
 })
 
 // Utility function to create custom ease variants
-export const withEase = (preset: any, ease: string | number[]) => ({
+const withEase = (preset: any, ease: string | number[]) => ({
   ...preset,
   transition: { ...preset.transition, ease },
 })
 
 // Utility function to create custom delay variants
-export const withDelay = (preset: any, delay: number) => ({
+const withDelay = (preset: any, delay: number) => ({
   ...preset,
   transition: { ...preset.transition, delay },
 })
 
 // Spring animations
-export const SPRING_BOUNCE = {
+const SPRING_BOUNCE = {
   initial: { opacity: 0, y: 50 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: 50 },
@@ -194,7 +194,7 @@ export const SPRING_BOUNCE = {
   },
 }
 
-export const SPRING_GENTLE = {
+const SPRING_GENTLE = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: 20 },

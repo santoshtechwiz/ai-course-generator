@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteQuiz, type DeleteQuizRequest, type DeleteQuizResponse } from "@/app/mutations/delete-quiz";
 
-export interface UseDeleteQuizOptions {
+interface UseDeleteQuizOptions {
   onSuccess?: (data: DeleteQuizResponse) => void;
   onError?: (error: Error) => void;
 }

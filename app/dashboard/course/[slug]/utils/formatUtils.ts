@@ -4,7 +4,7 @@
  * @param seconds - The number of seconds to format
  * @returns A formatted time string
  */
-export const formatTime = (seconds: number): string => {
+const formatTime = (seconds: number): string => {
   if (isNaN(seconds)) return "0:00"
 
   const h = Math.floor(seconds / 3600)
@@ -31,7 +31,7 @@ export function formatDuration(seconds: number): string {
 /**
  * Calculate lesson number from chapter ID and course units
  */
-export function getLessonNumber(chapterId: string | number | undefined, courseUnits: any[]): {
+function getLessonNumber(chapterId: string | number | undefined, courseUnits: any[]): {
   current: number;
   total: number;
 } {
@@ -51,7 +51,7 @@ export function getLessonNumber(chapterId: string | number | undefined, courseUn
 /**
  * Check if content is fully loaded
  */
-export function isContentLoaded(chapter?: any, course?: any): boolean {
+function isContentLoaded(chapter?: any, course?: any): boolean {
   return !!(
     chapter && 
     chapter.title && 

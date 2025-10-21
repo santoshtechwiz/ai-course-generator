@@ -12,7 +12,6 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Check, Loader2, AlertTriangle, Calendar, Info } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-import SavingsHighlight from "./SavingsHighlight"
 import { Badge } from "@/components/ui/badge"
 import { FeatureCategoryList } from "../FeatureComparison"
 import type { SubscriptionPlanType, SubscriptionStatusType } from "@/types/subscription"
@@ -233,7 +232,6 @@ export default function PlanCards({
                   </div>
                   <div className="my-2 h-px bg-slate-200 dark:bg-slate-700" />
                   <p className="text-sm text-muted-foreground">{plan.tokens} tokens included</p>
-                  <SavingsHighlight plan={plan} duration={duration} />
                 </div>
               </CardHeader>
 

@@ -34,7 +34,7 @@ export interface ModelConfiguration {
   topP: number
 }
 
-export const SUBSCRIPTION_MODELS: Record<SubscriptionPlanType, ModelConfiguration> = {
+const SUBSCRIPTION_MODELS: Record<SubscriptionPlanType, ModelConfiguration> = {
   FREE: {
     primary: AI_MODELS.GPT_4O_MINI,
     fallback: AI_MODELS.GPT_35_TURBO,
@@ -80,7 +80,7 @@ export interface FeatureAISettings {
   creditCost?: number // Credit cost per generation
 }
 
-export const AI_FEATURE_SETTINGS: Record<string, FeatureAISettings> = {
+const AI_FEATURE_SETTINGS: Record<string, FeatureAISettings> = {
   // MCQ Quiz Generation
   'quiz-mcq': {
     enabled: true,
@@ -177,7 +177,7 @@ export const AI_FEATURE_SETTINGS: Record<string, FeatureAISettings> = {
 
 // ============= Plan-Specific Limits =============
 
-export interface PlanLimits {
+interface PlanLimits {
   maxQuestionsPerQuiz: Record<string, number>
   dailyQuizGenerations: Record<string, number>
   maxCourseLength: number
@@ -185,7 +185,7 @@ export interface PlanLimits {
   maxFlashcardsPerSet: number
 }
 
-export const PLAN_LIMITS: Record<SubscriptionPlanType, PlanLimits> = {
+const PLAN_LIMITS: Record<SubscriptionPlanType, PlanLimits> = {
   FREE: {
     maxQuestionsPerQuiz: {
       'quiz-mcq': 10,
@@ -308,7 +308,7 @@ export const AI_ERROR_MESSAGES = {
 
 // ============= Success Messages =============
 
-export const AI_SUCCESS_MESSAGES = {
+const AI_SUCCESS_MESSAGES = {
   QUIZ_GENERATED: 'Quiz generated successfully!',
   FLASHCARDS_GENERATED: 'Flashcards generated successfully!',
   COURSE_CREATED: 'Course created successfully!',
@@ -317,13 +317,13 @@ export const AI_SUCCESS_MESSAGES = {
 
 // ============= Rate Limiting Configuration =============
 
-export interface RateLimitConfig {
+interface RateLimitConfig {
   requestsPerMinute: number
   requestsPerHour: number
   requestsPerDay: number
 }
 
-export const RATE_LIMITS: Record<SubscriptionPlanType, RateLimitConfig> = {
+const RATE_LIMITS: Record<SubscriptionPlanType, RateLimitConfig> = {
   FREE: {
     requestsPerMinute: 5,
     requestsPerHour: 50,
@@ -379,7 +379,7 @@ export function getRateLimits(plan: SubscriptionPlanType): RateLimitConfig {
 /**
  * Check if a plan can access a feature
  */
-export function canPlanAccessFeature(
+function canPlanAccessFeature(
   userPlan: SubscriptionPlanType,
   featureKey: string
 ): boolean {
@@ -396,17 +396,4 @@ export function canPlanAccessFeature(
   return planHierarchy[userPlan] >= planHierarchy[settings.minimumPlan]
 }
 
-export default {
-  AI_MODELS,
-  SUBSCRIPTION_MODELS,
-  AI_FEATURE_SETTINGS,
-  PLAN_LIMITS,
-  RATE_LIMITS,
-  AI_ERROR_MESSAGES,
-  AI_SUCCESS_MESSAGES,
-  getModelConfig,
-  getFeatureSettings,
-  getPlanLimits,
-  getRateLimits,
-  canPlanAccessFeature,
-}
+

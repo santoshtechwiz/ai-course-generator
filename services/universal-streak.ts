@@ -12,14 +12,14 @@
 
 import { prisma } from '@/lib/db'
 
-export interface StreakResult {
+interface StreakResult {
   streakContinued: boolean
   currentStreak: number
   longestStreak: number
   isNewRecord: boolean
 }
 
-export interface StreakStats {
+interface StreakStats {
   currentStreak: number
   longestStreak: number
   lastActivity: Date | null
@@ -28,7 +28,7 @@ export interface StreakStats {
   daysUntilBreak: number
 }
 
-export interface PerQuizStreak {
+interface PerQuizStreak {
   currentStreak: number
   longestStreak: number
   totalAttempts: number
@@ -138,7 +138,7 @@ export async function updateUniversalStreak(
  * @param userQuizId - Quiz ID
  * @returns Current and longest streak for this specific quiz
  */
-export async function calculatePerQuizStreak(
+async function calculatePerQuizStreak(
   userId: string,
   userQuizId: number
 ): Promise<PerQuizStreak> {
@@ -278,7 +278,7 @@ export async function getUserStreakStats(userId: string): Promise<StreakStats> {
  * 
  * @returns Number of users whose streaks were broken
  */
-export async function checkAndBreakExpiredStreaks(): Promise<number> {
+async function checkAndBreakExpiredStreaks(): Promise<number> {
   const twoDaysAgo = new Date()
   twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
   twoDaysAgo.setHours(0, 0, 0, 0)
@@ -324,7 +324,7 @@ export async function checkAndBreakExpiredStreaks(): Promise<number> {
  * @param userIds - Array of user IDs
  * @returns Array of streak stats
  */
-export async function getBulkStreakStats(userIds: string[]) {
+async function getBulkStreakStats(userIds: string[]) {
   const users = await prisma.user.findMany({
     where: { id: { in: userIds } },
     select: {
@@ -354,7 +354,7 @@ export async function getBulkStreakStats(userIds: string[]) {
  * @param limit - Number of top users to return
  * @returns Top users by current streak
  */
-export async function getTopStreaks(limit: number = 10) {
+async function getTopStreaks(limit: number = 10) {
   const topUsers = await prisma.user.findMany({
     where: { 
       streak: { gt: 0 },
@@ -387,7 +387,7 @@ export async function getTopStreaks(limit: number = 10) {
  * @param streak - Current streak
  * @returns Milestone info if reached, null otherwise
  */
-export function getStreakMilestone(streak: number) {
+function getStreakMilestone(streak: number) {
   const MILESTONES = {
     3: { credits: 10, badge: 'bronze-streak', title: '3-Day Warrior' },
     7: { credits: 25, badge: 'silver-streak', title: 'Week Warrior' },

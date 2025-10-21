@@ -9,7 +9,7 @@
 // TYPES
 // ============================================================================
 
-export interface VideoProgressData {
+interface VideoProgressData {
   courseId: string | number
   chapterId: string | number
   videoId: string
@@ -21,7 +21,7 @@ export interface VideoProgressData {
   completed?: boolean
 }
 
-export interface StorageOptions {
+interface StorageOptions {
   prefix?: string
   encrypt?: boolean
 }

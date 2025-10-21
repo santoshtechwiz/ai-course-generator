@@ -10,7 +10,7 @@ let __cachedRandomQuizzesAt: number | null = null
 let __fetchInProgress: Promise<RandomQuiz[] | null> | null = null
 const CACHE_TTL_MS = 60 * 1000 // 60 seconds
 
-export interface RandomQuiz {
+interface RandomQuiz {
   id: string
   title: string
   quizType: string

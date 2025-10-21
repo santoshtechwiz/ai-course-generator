@@ -37,7 +37,7 @@ export const API_ENDPOINTS = {
   getFlashcardQuiz: API_PATHS.getFlashcardQuiz
 } as const
 
-export class QuizHelpers {
+class QuizHelpers {
   /**
    * Safe string conversion utility to prevent type errors
    */

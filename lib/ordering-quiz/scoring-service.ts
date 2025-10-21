@@ -3,7 +3,7 @@
  * Handles score calculation, accuracy metrics, grading, and analytics
  */
 
-export interface OrderingQuizScore {
+interface OrderingQuizScore {
   isCorrect: boolean
   score: number // 0-100
   accuracy: number // Percentage of correct positions
@@ -43,7 +43,7 @@ const DEFAULT_SCORING_CONFIG: ScoringConfig = {
  * Calculate the ordering quiz score based on user answer vs correct answer
  * Uses all-or-nothing grading: must be in exact correct order
  */
-export function calculateScore(
+function calculateScore(
   userOrder: number[],
   correctOrder: number[],
   config: Partial<ScoringConfig> = {}
@@ -95,7 +95,7 @@ export function calculateScore(
 /**
  * Assign letter grade based on accuracy percentage
  */
-export function assignGrade(
+function assignGrade(
   accuracy: number
 ): "A" | "B" | "C" | "D" | "F" {
   if (accuracy >= 90) return "A"
@@ -108,7 +108,7 @@ export function assignGrade(
 /**
  * Calculate accuracy as percentage of correct positions
  */
-export function calculateAccuracy(
+function calculateAccuracy(
   userOrder: number[],
   correctOrder: number[]
 ): number {
@@ -133,7 +133,7 @@ export function calculateAccuracy(
 /**
  * Calculate speed rating based on time taken
  */
-export function calculateSpeedRating(
+function calculateSpeedRating(
   timeTakenMs: number,
   config: Partial<ScoringConfig> = {}
 ): {
@@ -166,7 +166,7 @@ export function calculateSpeedRating(
 /**
  * Generate detailed step explanations for user feedback
  */
-export function generateStepExplanations(
+function generateStepExplanations(
   userOrder: number[],
   correctOrder: number[],
   stepLabels: string[]
@@ -199,7 +199,7 @@ export function generateStepExplanations(
 /**
  * Calculate comprehensive metrics for quiz attempt
  */
-export function calculateMetrics(
+function calculateMetrics(
   userOrder: number[],
   correctOrder: number[],
   timeTakenMs: number,
@@ -298,13 +298,13 @@ export function formatDuration(ms: number): string {
 /**
  * Compare current performance with user's average
  */
-export interface PerformanceComparison {
+interface PerformanceComparison {
   improvement: "better" | "worse" | "same"
   differencePercent: number
   message: string
 }
 
-export function comparePerformance(
+function comparePerformance(
   currentScore: number,
   averageScore: number
 ): PerformanceComparison {

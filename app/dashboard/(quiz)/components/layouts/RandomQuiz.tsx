@@ -655,4 +655,3 @@ export const RandomQuiz = memo(({
 
 RandomQuiz.displayName = "RandomQuiz"
 
-export default RandomQuiz

@@ -56,7 +56,7 @@ interface OnboardingWizardProps {
   onDismiss?: () => void
 }
 
-export interface OnboardingData {
+interface OnboardingData {
   interests: string[]
   firstAction: 'create' | 'explore' | 'learn'
   tourCompleted: boolean

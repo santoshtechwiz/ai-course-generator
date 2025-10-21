@@ -6,7 +6,7 @@
 
 import type { AIMessage } from '@/lib/ai/interfaces'
 
-export interface OpenEndedPromptOptions {
+interface OpenEndedPromptOptions {
   topic: string
   numberOfQuestions: number
   difficulty: 'easy' | 'medium' | 'hard'
@@ -40,7 +40,7 @@ export function buildOpenEndedPrompt(options: OpenEndedPromptOptions): AIMessage
 /**
  * Open-ended quiz function schema for structured output
  */
-export function getOpenEndedFunctionSchema() {
+function getOpenEndedFunctionSchema() {
   return {
     name: 'generate_openended_quiz',
     description: 'Generates open-ended questions requiring detailed responses',
@@ -82,8 +82,4 @@ export function buildOpenEndedPromptWithSchema(options: OpenEndedPromptOptions) 
   }
 }
 
-export default {
-  buildOpenEndedPrompt,
-  getOpenEndedFunctionSchema,
-  buildOpenEndedPromptWithSchema,
-}
+

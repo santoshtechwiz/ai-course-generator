@@ -15,7 +15,7 @@ const courseCache = new NodeCache({
 /**
  * Repository for handling course data operations
  */
-export class CourseRepository extends BaseRepository<any> {
+class CourseRepository extends BaseRepository<any> {
   constructor() {
     super(prisma.course);
   }

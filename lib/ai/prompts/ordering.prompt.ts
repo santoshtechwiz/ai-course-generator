@@ -6,7 +6,7 @@
 
 import type { AIMessage } from '@/lib/ai/interfaces'
 
-export interface OrderingPromptOptions {
+interface OrderingPromptOptions {
   topic: string
   numberOfSteps: number
   difficulty: 'easy' | 'medium' | 'hard'
@@ -90,8 +90,4 @@ export function buildOrderingPromptWithSchema(options: OrderingPromptOptions) {
   }
 }
 
-export default {
-  buildOrderingPrompt,
-  getOrderingFunctionSchema,
-  buildOrderingPromptWithSchema,
-}
+

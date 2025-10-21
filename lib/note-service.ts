@@ -328,4 +328,4 @@ class ApiRateLimiter {
 const apiRateLimiter = new ApiRateLimiter()
 
 export const noteService = new NoteService()
-export default noteService
+

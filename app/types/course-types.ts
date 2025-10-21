@@ -8,7 +8,7 @@ export type OutputUnits = {
 }[];
 
 // Course search parameters
-export interface CourseSearchParams {
+interface CourseSearchParams {
   search?: string;
   category?: string;
   userId?: string;
@@ -52,7 +52,7 @@ export interface CourseChaptersUpdate {
 /**
  * Type for chapter creation
  */
-export interface ChapterInput {
+interface ChapterInput {
   title: string;
   youtubeSearchQuery?: string;
   videoId?: string | null;
@@ -63,7 +63,7 @@ export interface ChapterInput {
 /**
  * Type for video status
  */
-export type VideoStatus = "pending" | "processing" | "completed" | "error";
+type VideoStatus = "pending" | "processing" | "completed" | "error";
 
 // Video and chapter related types
 export interface VideoMetadata {
@@ -139,7 +139,7 @@ export interface CourseQuestion {
 }
 
 // User progress tracking for courses
-export interface CourseProgress {
+interface CourseProgress {
   id: number | string;
   userId: string;
   courseId: number | string;
@@ -249,7 +249,7 @@ export interface Chapter {
 /**
  * Type for course creation parameters
  */
-export interface CourseCreateParams {
+interface CourseCreateParams {
   title: string;
   description?: string;
   image?: string;
@@ -261,7 +261,7 @@ export interface CourseCreateParams {
 /**
  * Type for course filtering results
  */
-export interface FilteredCourseResult {
+interface FilteredCourseResult {
   courses: any[];
   totalCount: number;
   page: number;
@@ -272,7 +272,7 @@ export interface FilteredCourseResult {
 /**
  * Enum for course difficulty levels
  */
-export enum CourseDifficulty {
+enum CourseDifficulty {
   Beginner = "Beginner",
   Intermediate = "Intermediate",
   Advanced = "Advanced",
@@ -281,7 +281,7 @@ export enum CourseDifficulty {
 /**
  * Interface for course stats
  */
-export interface CourseStats {
+interface CourseStats {
   totalCourses: number;
   completedCourses: number;
   inProgressCourses: number;
@@ -290,7 +290,7 @@ export interface CourseStats {
 }
 
 // Module types - extending CourseUnit concept
-export interface ModuleCreateData {
+interface ModuleCreateData {
   title: string;
   description?: string;
   courseId: number;
@@ -299,7 +299,7 @@ export interface ModuleCreateData {
   estimatedDuration?: number;
 }
 
-export interface ModuleUpdateData {
+interface ModuleUpdateData {
   title?: string;
   description?: string;
   order?: number;
@@ -308,7 +308,7 @@ export interface ModuleUpdateData {
   isCompleted?: boolean;
 }
 
-export interface ModuleWithProgress extends CourseUnit {
+interface ModuleWithProgress extends CourseUnit {
   description?: string;
   isRequired: boolean;
   estimatedDuration: number;
@@ -323,7 +323,7 @@ export interface ModuleWithProgress extends CourseUnit {
   };
 }
 
-export interface ModuleSearchParams {
+interface ModuleSearchParams {
   courseId?: number;
   isCompleted?: boolean;
   isRequired?: boolean;
@@ -331,7 +331,7 @@ export interface ModuleSearchParams {
   sortDirection?: 'asc' | 'desc';
 }
 
-export interface ModuleStats {
+interface ModuleStats {
   totalModules: number;
   completedModules: number;
   inProgressModules: number;
@@ -342,13 +342,13 @@ export interface ModuleStats {
 }
 
 // Module operation result types
-export interface ModuleOperationResult {
+interface ModuleOperationResult {
   success: boolean;
   message: string;
   module?: ModuleWithProgress;
 }
 
-export interface ModuleListResult {
+interface ModuleListResult {
   modules: ModuleWithProgress[];
   totalCount: number;
   stats: ModuleStats;

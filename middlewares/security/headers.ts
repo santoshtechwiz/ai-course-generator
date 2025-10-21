@@ -57,7 +57,7 @@ const SECURITY_HEADERS = {
 /**
  * Apply security headers to response
  */
-export function applySecurityHeaders(response: NextResponse): NextResponse {
+function applySecurityHeaders(response: NextResponse): NextResponse {
   // Apply all security headers
   Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
     if (value) {

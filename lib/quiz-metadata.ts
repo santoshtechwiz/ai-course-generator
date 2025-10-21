@@ -100,7 +100,7 @@ export function generateQuizMetadata({
 /**
  * Generate structured data for quiz content
  */
-export function generateQuizStructuredData({
+function generateQuizStructuredData({
   quizType,
   title,
   topic,

@@ -9,7 +9,7 @@ import { SubscriptionService } from "@/services/subscription-services"
 import type { SubscriptionPlanType } from "@/types/subscription"
 import { prisma } from "@/lib/db"
 
-export interface ValidationResult {
+interface ValidationResult {
   isValid: boolean
   error?: string
   subscription?: {
@@ -121,7 +121,7 @@ export async function validateSubscriptionServer(
 /**
  * Route handler wrapper for subscription validation
  */
-export function withSubscriptionValidation(
+function withSubscriptionValidation(
   handler: Function,
   options: {
     requireSubscription?: boolean

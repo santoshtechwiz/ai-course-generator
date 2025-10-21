@@ -44,4 +44,4 @@ export const LOADER_MESSAGES = {
   REFRESHING: "Refreshing data...",
 } as const
 
-export type LoaderMessage = typeof LOADER_MESSAGES[keyof typeof LOADER_MESSAGES]
+type LoaderMessage = typeof LOADER_MESSAGES[keyof typeof LOADER_MESSAGES]

@@ -19,7 +19,7 @@ export const CACHE_EVENTS = {
  * Invalidate dashboard cache to trigger immediate data refetch
  * Call this after quiz completion or course progress updates
  */
-export function invalidateDashboardCache(eventType: keyof typeof CACHE_EVENTS = 'QUIZ_COMPLETED') {
+function invalidateDashboardCache(eventType: keyof typeof CACHE_EVENTS = 'QUIZ_COMPLETED') {
   if (typeof window === 'undefined') return
   
   console.log(`[CacheInvalidation] Triggering cache invalidation: ${CACHE_EVENTS[eventType]}`)
@@ -38,7 +38,7 @@ export function invalidateDashboardCache(eventType: keyof typeof CACHE_EVENTS = 
  * @param mutate - SWR mutate function to trigger data refetch
  * @param events - Array of event types to listen for (defaults to all)
  */
-export function useCacheInvalidation(
+function useCacheInvalidation(
   mutate: () => void,
   events: Array<keyof typeof CACHE_EVENTS> = ['QUIZ_COMPLETED', 'COURSE_PROGRESS_UPDATED', 'USER_DATA_UPDATED']
 ) {

@@ -19,7 +19,7 @@ import { EmbeddingManager, EmbeddingDocument } from "../core/embedding-manager"
 import { UserAnalyzer, UserProfile } from "./user-analyzer"
 import { ContentMatcher } from "./content-matcher"
 
-export interface RecommendationRequest {
+interface RecommendationRequest {
   userId: string
   type?: 'course' | 'quiz' | 'mixed'
   limit?: number
@@ -36,7 +36,7 @@ export interface RecommendationRequest {
   signal?: AbortSignal // Add abort signal support
 }
 
-export interface Recommendation {
+interface Recommendation {
   id: string
   type: 'course' | 'quiz'
   title: string
@@ -56,7 +56,7 @@ export interface Recommendation {
   }
 }
 
-export interface RecommendationResponse {
+interface RecommendationResponse {
   recommendations: Recommendation[]
   totalCount: number
   generatedAt: Date

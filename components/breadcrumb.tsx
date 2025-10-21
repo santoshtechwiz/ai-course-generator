@@ -19,7 +19,7 @@ import {
 import { cn } from "@/lib/utils"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
-export type BreadcrumbIconType =
+type BreadcrumbIconType =
   | "home"
   | "folder"
   | "file"
@@ -229,4 +229,4 @@ interface BreadcrumbEllipsisProps extends React.ComponentProps<"button"> {
   items?: React.ReactNode[]
 }
 
-export { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbEllipsis }
+export { Breadcrumb,     }

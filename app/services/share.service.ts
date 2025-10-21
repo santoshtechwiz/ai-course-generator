@@ -118,7 +118,7 @@ export function validateShareAccess(
 
   // Link-only and private resources need token
   if (!shareToken) {
-    return { isValid: false, error: 'Share link not configured' };
+    return { isValid: false, error: 'Share link not configured - token required' };
   }
 
   if (!providedToken) {

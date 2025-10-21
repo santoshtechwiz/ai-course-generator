@@ -22,21 +22,21 @@ export interface QuizProgress {
   lastUpdated?: number
 }
 
-export interface VideoSettings {
+interface VideoSettings {
   playbackRate?: number
   volume?: number
   hasPlayedFreeVideo?: boolean
   [key: string]: any
 }
 
-export interface UserPreferences {
+interface UserPreferences {
   hasSeenChatTooltip?: boolean
   darkMode?: boolean
   language?: string
   [key: string]: any
 }
 
-export interface ChatHistory {
+interface ChatHistory {
   messages: Array<{
     id: string
     content: string
@@ -199,4 +199,3 @@ if (typeof window !== 'undefined') {
   storageManager.migrateFromLegacyStorage()
 }
 
-export default storageManager

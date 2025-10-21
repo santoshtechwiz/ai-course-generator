@@ -3,13 +3,13 @@ import { format, addDays, addHours, startOfDay, isAfter, isBefore } from 'date-f
 
 const prisma = new PrismaClient()
 
-export interface EmailTemplate {
+interface EmailTemplate {
   subject: string
   html: string
   text: string
 }
 
-export class EmailService {
+class EmailService {
   /**
    * Schedule a daily review reminder email
    */

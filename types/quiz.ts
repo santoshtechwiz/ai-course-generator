@@ -8,7 +8,7 @@ export interface QuizProgress {
   passed?: boolean
 }
 
-export interface QuizState {
+interface QuizState {
   currentQuiz: any | null
   progress: QuizProgress | null
   loading: boolean
@@ -16,13 +16,13 @@ export interface QuizState {
   results: any | null
 }
 
-export interface QuizAnswer {
+interface QuizAnswer {
   questionId: string
   answer: any
   isCorrect?: boolean
 }
 
-export interface QuizSubmission {
+interface QuizSubmission {
   quizId: string
   answers: QuizAnswer[]
   score: number

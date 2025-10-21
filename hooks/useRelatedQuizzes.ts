@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 
-export interface RelatedQuizItem {
+interface RelatedQuizItem {
   id: string
   title: string
   slug: string

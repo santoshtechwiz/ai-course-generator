@@ -9,14 +9,14 @@ import { Subject } from "rxjs"
 import { Chapter } from "@/app/types/course-types"
 
 // Types
-export interface VideoProcessingOptions {
+interface VideoProcessingOptions {
   useOptimizedService?: boolean
   priority?: number
   timeout?: number
   retries?: number
 }
 
-export interface VideoGenerationStatus {
+interface VideoGenerationStatus {
   chapterId: number
   status: "queued" | "processing" | "completed" | "error"
   progress?: number
@@ -28,7 +28,7 @@ export interface VideoGenerationStatus {
   processingTime?: number
 }
 
-export interface VideoProcessingEvents {
+interface VideoProcessingEvents {
   onStatusChange?: (status: VideoGenerationStatus) => void
   onComplete?: (status: VideoGenerationStatus) => void
   onError?: (status: VideoGenerationStatus) => void
@@ -53,7 +53,7 @@ const DEFAULT_CONFIG = {
  * - Integration with optimized video service
  * - Ability to cancel pending requests
  */
-export class VideoProcessingService {
+class VideoProcessingService {
   private processingQueue: PQueue
   private statusUpdates = new Subject<VideoGenerationStatus>()
   private activeProcesses = new Map<number, { cancel: () => void }>()

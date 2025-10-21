@@ -6,7 +6,7 @@
 import { Variants, Transition } from 'framer-motion'
 
 // ========== TIMING FUNCTIONS ==========
-export const easings = {
+const easings = {
   smooth: [0.4, 0, 0.2, 1],
   bounce: [0.68, -0.55, 0.265, 1.55],
   sharp: [0.4, 0, 0.6, 1],
@@ -46,7 +46,7 @@ export const cardVariants: Variants = {
 }
 
 // ========== BUTTON ANIMATIONS ==========
-export const buttonVariants: Variants = {
+const buttonVariants: Variants = {
   rest: { scale: 1 },
   hover: {
     scale: 1.05,
@@ -112,7 +112,7 @@ export const staggerItemVariants: Variants = {
 }
 
 // ========== PAGE TRANSITION ==========
-export const pageTransitionVariants: Variants = {
+const pageTransitionVariants: Variants = {
   initial: { 
     opacity: 0, 
     y: 20 
@@ -135,7 +135,7 @@ export const pageTransitionVariants: Variants = {
 }
 
 // ========== MODAL/OVERLAY ANIMATIONS ==========
-export const modalVariants: Variants = {
+const modalVariants: Variants = {
   hidden: { 
     opacity: 0, 
     scale: 0.95,
@@ -160,7 +160,7 @@ export const modalVariants: Variants = {
   }
 }
 
-export const overlayVariants: Variants = {
+const overlayVariants: Variants = {
   hidden: { opacity: 0 },
   visible: { 
     opacity: 1,
@@ -177,7 +177,7 @@ export const overlayVariants: Variants = {
 }
 
 // ========== SLIDE ANIMATIONS ==========
-export const slideInVariants = {
+const slideInVariants = {
   fromRight: {
     hidden: { x: 100, opacity: 0 },
     visible: { 
@@ -225,7 +225,7 @@ export const slideInVariants = {
 }
 
 // ========== PROGRESS BAR ANIMATION ==========
-export const progressBarVariants: Variants = {
+const progressBarVariants: Variants = {
   initial: { width: 0, opacity: 0 },
   animate: (progress: number) => ({
     width: `${progress}%`,
@@ -238,7 +238,7 @@ export const progressBarVariants: Variants = {
 }
 
 // ========== ICON ANIMATIONS ==========
-export const iconVariants: Variants = {
+const iconVariants: Variants = {
   rest: { scale: 1, rotate: 0 },
   hover: {
     scale: 1.2,
@@ -257,7 +257,7 @@ export const iconVariants: Variants = {
 }
 
 // ========== NOTIFICATION ANIMATIONS ==========
-export const notificationVariants: Variants = {
+const notificationVariants: Variants = {
   hidden: { 
     x: 400, 
     opacity: 0,
@@ -285,7 +285,7 @@ export const notificationVariants: Variants = {
 }
 
 // ========== LOADING ANIMATIONS ==========
-export const loadingSpinVariants: Variants = {
+const loadingSpinVariants: Variants = {
   animate: {
     rotate: 360,
     transition: {
@@ -296,7 +296,7 @@ export const loadingSpinVariants: Variants = {
   }
 }
 
-export const loadingPulseVariants: Variants = {
+const loadingPulseVariants: Variants = {
   animate: {
     scale: [1, 1.1, 1],
     opacity: [0.5, 1, 0.5],
@@ -313,7 +313,7 @@ export const loadingPulseVariants: Variants = {
 /**
  * Create a custom spring transition
  */
-export const createSpring = (
+const createSpring = (
   stiffness: number = 100,
   damping: number = 15,
   mass: number = 1
@@ -327,7 +327,7 @@ export const createSpring = (
 /**
  * Create a custom tween transition
  */
-export const createTween = (
+const createTween = (
   duration: number = 0.3,
   ease: readonly number[] | string = easings.smooth
 ): Transition => ({
@@ -339,7 +339,7 @@ export const createTween = (
 /**
  * Create a stagger transition config
  */
-export const createStagger = (
+const createStagger = (
   staggerChildren: number = 0.1,
   delayChildren: number = 0
 ): Transition => ({
@@ -350,7 +350,7 @@ export const createStagger = (
 /**
  * Hover scale effect for interactive elements
  */
-export const hoverScale = (scale: number = 1.05) => ({
+const hoverScale = (scale: number = 1.05) => ({
   whileHover: { scale },
   whileTap: { scale: 0.95 },
   transition: { duration: 0.2 }
@@ -375,7 +375,7 @@ export const fadeInUp = (delay: number = 0) => ({
 /**
  * Scale in animation
  */
-export const scaleIn = (delay: number = 0) => ({
+const scaleIn = (delay: number = 0) => ({
   initial: { opacity: 0, scale: 0.9 },
   animate: { 
     opacity: 1, 

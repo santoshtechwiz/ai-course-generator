@@ -20,7 +20,7 @@ export type ActionType =
   | 'access_analytics'
   | null
 
-export interface IntendedAction {
+interface IntendedAction {
   type: ActionType
   context: Record<string, any>
   timestamp: number
@@ -28,7 +28,7 @@ export interface IntendedAction {
   description: string // Human-readable description for welcome message
 }
 
-export interface EngagementSignals {
+interface EngagementSignals {
   pagesViewed: number
   timeOnSite: number // in seconds
   featuresExplored: string[]
@@ -37,7 +37,7 @@ export interface EngagementSignals {
   achievementsMet: string[] // e.g., 'first_quiz_created', 'high_score'
 }
 
-export interface CreditWarning {
+interface CreditWarning {
   shown: boolean
   threshold: number // 80, 90, 100
   timestamp: number
@@ -231,7 +231,7 @@ export const useSessionContext = create<SessionContextState>()(
 /**
  * Hook to track time on site automatically
  */
-export function useTimeTracking() {
+function useTimeTracking() {
   const updateTimeOnSite = useSessionContext((state) => state.updateTimeOnSite)
   
   // Track time every 30 seconds

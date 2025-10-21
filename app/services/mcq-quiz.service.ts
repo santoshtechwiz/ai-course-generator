@@ -15,7 +15,7 @@ export class McqQuizService extends BaseQuizService {
 
         try {
             // Create AI service context
-            const context = {
+            const createContext = {
                 userId,
                 subscriptionPlan: userType as any,
                 isAuthenticated: !!userId,
@@ -23,7 +23,7 @@ export class McqQuizService extends BaseQuizService {
             };
 
             // Create AI service using factory
-            const aiService = AIServiceFactory.createService(context);
+            const aiService = AIServiceFactory.createService(createContext);
 
             // Generate quiz using the service
             const result = await aiService.generateMultipleChoiceQuiz({

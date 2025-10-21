@@ -8,4 +8,4 @@ export function isPrivateError(error?: any): boolean {
   }
 }
 
-export default isPrivateError
+

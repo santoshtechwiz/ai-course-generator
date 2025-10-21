@@ -9,15 +9,15 @@ import type { Course, CourseUnit, Chapter } from "@prisma/client"
 import type { ChapterCardHandler } from "../components/EnhancedChapterCard"
 import { useVideoProcessing } from "./useVideoProcessing"
 
-export type CourseWithUnits = Course & {
+type CourseWithUnits = Course & {
   units: (CourseUnit & {
     chapters: Chapter[]
   })[]
 }
 
-export type ChapterStatus = "idle" | "processing" | "success" | "error"
+type ChapterStatus = "idle" | "processing" | "success" | "error"
 
-export interface ChapterGenerationStatus {
+interface ChapterGenerationStatus {
   status: ChapterStatus
   message?: string
 }

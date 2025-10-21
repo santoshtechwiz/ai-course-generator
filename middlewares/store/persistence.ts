@@ -50,7 +50,7 @@ export function hydrateFromStorage<T = any>(key: string): T | null {
   }
 }
 
-export async function persistToStorage(key: string, data: any): Promise<void> {
+async function persistToStorage(key: string, data: any): Promise<void> {
   try {
     const serialized = JSON.stringify(data)
     await safeStorage.setItem(key, serialized)
@@ -59,9 +59,9 @@ export async function persistToStorage(key: string, data: any): Promise<void> {
   }
 }
 
-export const persistenceListenerMiddleware = createListenerMiddleware()
+const persistenceListenerMiddleware = createListenerMiddleware()
 
-export const storageUtils = {
+const storageUtils = {
   clear: () => {
     if (typeof window !== 'undefined') {
       Object.keys(localStorage).forEach(key => {
@@ -73,4 +73,4 @@ export const storageUtils = {
   }
 }
 
-export default persistenceListenerMiddleware
+

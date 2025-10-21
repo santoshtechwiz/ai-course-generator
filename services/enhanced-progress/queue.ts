@@ -12,7 +12,7 @@ import {
   ProgressQueueMetrics 
 } from './types'
 
-export class ProgressQueue extends EventEmitter {
+class ProgressQueue extends EventEmitter {
   private queue: Map<string, QueuedProgressUpdate> = new Map()
   private batches: Map<string, ProgressBatch> = new Map()
   private processing = false

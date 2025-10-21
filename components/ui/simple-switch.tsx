@@ -3,7 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-export interface SimpleSwitchProps extends React.HTMLAttributes<HTMLButtonElement> {
+interface SimpleSwitchProps extends React.HTMLAttributes<HTMLButtonElement> {
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
   disabled?: boolean;

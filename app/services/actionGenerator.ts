@@ -11,7 +11,7 @@ import { prisma } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { checkSubscriptionLimits, getUpgradeMessage, type SubscriptionStatus } from './subscriptionLimits'
 
-export type ActionType = 'view_course' | 'take_quiz' | 'create_course' | 'create_quiz' | 'upgrade_plan' | 'view_all_courses'
+type ActionType = 'view_course' | 'take_quiz' | 'create_course' | 'create_quiz' | 'upgrade_plan' | 'view_all_courses'
 
 export interface ChatAction {
   type: ActionType
@@ -28,7 +28,7 @@ export interface ChatAction {
   disabledReason?: string
 }
 
-export interface ActionContext {
+interface ActionContext {
   userId: string
   query: string
   relevantDocuments: Array<{
@@ -49,7 +49,7 @@ export interface ActionContext {
 /**
  * Detect user intent from query
  */
-export function detectIntent(query: string): {
+function detectIntent(query: string): {
   wants_to_view: boolean
   wants_to_create: boolean
   wants_to_learn: boolean
@@ -270,7 +270,7 @@ export async function generateActions(context: ActionContext): Promise<ChatActio
 /**
  * Generate course-specific actions after viewing/completing
  */
-export async function generateCourseActions(
+async function generateCourseActions(
   courseId: number,
   userId: string,
   subscriptionStatus: SubscriptionStatus
@@ -360,7 +360,7 @@ export async function generateCourseActions(
 /**
  * Generate quiz-specific actions after completing
  */
-export async function generateQuizActions(
+async function generateQuizActions(
   quizId: number,
   userId: string,
   subscriptionStatus: SubscriptionStatus

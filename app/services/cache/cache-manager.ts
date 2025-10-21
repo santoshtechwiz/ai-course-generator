@@ -45,7 +45,7 @@ export const CACHE_KEYS = {
   REQUEST_DEBOUNCE: (topic: string) => `debounce:${topic}`
 }
 
-export interface CacheManager {
+interface CacheManager {
   get<T>(key: string): Promise<T | null>
   set<T>(key: string, value: T, ttl?: number): Promise<void>
   del(key: string): Promise<void>

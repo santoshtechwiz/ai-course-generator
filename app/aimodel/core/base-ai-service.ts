@@ -11,7 +11,7 @@
 import { rateLimit } from "@/lib/rate-limit"
 import { logger } from "@/lib/logger"
 
-export interface AIServiceConfig {
+interface AIServiceConfig {
   name: string
   rateLimits: {
     free: { limit: number; windowInSeconds: number }
@@ -168,11 +168,11 @@ export abstract class BaseAIService {
 }
 
 // Validation interfaces
-export interface ValidationRule {
+interface ValidationRule {
   validate(input: any): ValidationResult
 }
 
-export interface ValidationResult {
+interface ValidationResult {
   isValid: boolean
   message: string
   errors?: string[]

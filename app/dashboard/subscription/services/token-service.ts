@@ -16,7 +16,7 @@ const CACHE_TTL = 30 * 1000 // 30 seconds
 /**
  * Service for managing user tokens
  */
-export class TokenService {
+class TokenService {
   /**
    * Get the current token balance for a user
    *

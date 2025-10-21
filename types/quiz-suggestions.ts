@@ -14,7 +14,7 @@ export interface QuizSuggestionsResponse {
   error?: string
 }
 
-export interface QuizSuggestionsRequest {
+interface QuizSuggestionsRequest {
   courseId: string
   chapterId: string
 }

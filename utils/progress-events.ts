@@ -35,7 +35,7 @@ const DEBOUNCE_DELAYS: Record<ProgressEventType, number> = {
 }
 const DEFAULT_DEBOUNCE = 1000
 
-export class ProgressEventFactory {
+class ProgressEventFactory {
   static createEvent<T extends ProgressEvent>(
     type: ProgressEventType,
     userId: string,
@@ -390,7 +390,7 @@ export function useProgressEvents() {
 }
 
 // Hook for quiz progress using event-driven system
-export function useQuizProgressEvents(quizId: string) {
+function useQuizProgressEvents(quizId: string) {
   const dispatch = useAppDispatch()
   const { dispatchQuizStarted, dispatchQuestionAnswered, dispatchQuizCompleted } = useProgressEvents()
   
@@ -436,7 +436,7 @@ export function useQuizProgressEvents(quizId: string) {
 }
 
 // Hook for course progress using event-driven system
-export function useCourseProgressEvents(courseId: string) {
+function useCourseProgressEvents(courseId: string) {
   const dispatch = useAppDispatch()
   const { dispatchCourseStarted, dispatchCourseProgressUpdated, dispatchCourseCompleted } = useProgressEvents()
   

@@ -22,7 +22,7 @@ export interface User {
   subscriptionStatus?: string | null;
 }
 
-export interface AuthContextState {
+interface AuthContextState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;

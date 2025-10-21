@@ -8,47 +8,23 @@
  * - User behavior analysis and profiling
  */
 
-export { BaseAIService } from './core/base-ai-service'
-export { EmbeddingManager } from './core/embedding-manager'
 
-export { ChatService } from './chat/chat-service'
-export { ChatMemoryManager } from './chat/memory-manager'
-export { ContextBuilder } from './chat/context-builder'
 
-export { RecommendationService } from './recommendations/recommendation-service'
-export { UserAnalyzer } from './recommendations/user-analyzer'
-export { ContentMatcher } from './recommendations/content-matcher'
 
-// Re-export types
-export type { 
-  AIServiceContext,
-  ValidationRule
-} from './core/base-ai-service'
 
-export type {
-  EmbeddingDocument
-} from './core/embedding-manager'
 
-export type {
-  ChatRequest,
-  ChatResponse,
-  ChatMessage
-} from './chat/chat-service'
 
-export type {
-  RecommendationRequest,
-  Recommendation
-} from './recommendations/recommendation-service'
 
-export type {
-  UserProfile
-} from './recommendations/user-analyzer'
 
-export type {
-  ContentItem,
-  MatchScore,
-  MatchingOptions
-} from './recommendations/content-matcher'
+
+
+
+// Re-export types
+
+
+
+
+
 
 // Import the classes for the initialization function
 import { EmbeddingManager } from './core/embedding-manager'

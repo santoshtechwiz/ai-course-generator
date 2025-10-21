@@ -47,7 +47,7 @@ export interface FeatureFlagResult {
   metadata?: Record<string, any>
 }
 
-export type FeatureFlagName = 
+type FeatureFlagName = 
   | 'route-protection'
   | 'subscription-enforcement'
   | 'admin-panel'

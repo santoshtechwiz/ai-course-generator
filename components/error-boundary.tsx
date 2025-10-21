@@ -177,7 +177,7 @@ export class EnhancedErrorBoundary extends Component<
 }
 
 // Hook version for functional components
-export function useErrorHandler() {
+function useErrorHandler() {
   const [error, setError] = useState<Error | null>(null)
 
   const resetError = useCallback(() => {
@@ -197,7 +197,7 @@ export function useErrorHandler() {
 }
 
 // Higher-order component wrapper
-export function withErrorBoundary<P extends object>(
+function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
   errorBoundaryProps?: Omit<EnhancedErrorBoundaryProps, 'children'>
 ) {

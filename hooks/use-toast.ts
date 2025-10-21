@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react"
 
-export type ToastVariant = "default" | "success" | "error" | "warning" | "info" | "destructive"
+type ToastVariant = "default" | "success" | "error" | "warning" | "info" | "destructive"
 
-export interface Toast {
+interface Toast {
   id: string
   title: string
   description?: string
@@ -86,7 +86,7 @@ if (typeof window !== "undefined") {
 }
 
 // Export a simplified toast function for use outside of React components
-export const toast = (options: ToastOptions) => {
+const toast = (options: ToastOptions) => {
   if (toastInstance) {
     return toastInstance.toast(options)
   }

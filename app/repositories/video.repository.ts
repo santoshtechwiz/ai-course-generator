@@ -13,7 +13,7 @@ const videoCache = new NodeCache({
 /**
  * Repository for handling video data operations
  */
-export class VideoRepository extends BaseRepository<any> {
+class VideoRepository extends BaseRepository<any> {
   constructor() {
     super(prisma.chapter); // Using chapter as the base entity since videos are part of chapters
   }

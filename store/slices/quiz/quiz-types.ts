@@ -79,6 +79,6 @@ export interface QuizState {
 }
 
 // Type aliases for better readability
-export type QuizStatus = "idle" | "loading" | "succeeded" | "failed" | "submitting" | "not-found" | 'requires-auth'
-export type AuthStatus = "checking" | "authenticated" | "unauthenticated" | "idle"
-export type QuestionType = "mcq" | "code" | "blanks" | "openended"
+type QuizStatus = "idle" | "loading" | "succeeded" | "failed" | "submitting" | "not-found" | 'requires-auth'
+type AuthStatus = "checking" | "authenticated" | "unauthenticated" | "idle"
+type QuestionType = "mcq" | "code" | "blanks" | "openended"

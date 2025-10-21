@@ -167,10 +167,10 @@ export function SubscriptionUpgradeModal(props: Omit<SubscriptionUpgradeProps, '
   return <SubscriptionUpgrade {...props} variant="modal" />
 }
 
-export function SubscriptionUpgradePage(props: Omit<SubscriptionUpgradeProps, 'variant'>) {
+function SubscriptionUpgradePage(props: Omit<SubscriptionUpgradeProps, 'variant'>) {
   return <SubscriptionUpgrade {...props} variant="page" />
 }
 
-export function SubscriptionUpgradeCard(props: Omit<SubscriptionUpgradeProps, 'variant'>) {
+function SubscriptionUpgradeCard(props: Omit<SubscriptionUpgradeProps, 'variant'>) {
   return <SubscriptionUpgrade {...props} variant="card" />
 }

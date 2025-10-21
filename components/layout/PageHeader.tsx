@@ -12,7 +12,7 @@ interface PageHeaderProps {
   icon?: ReactNode
 }
 
-export const PageHeader = ({
+const PageHeader = ({
   title,
   description,
   breadcrumbs,
@@ -59,4 +59,3 @@ export const PageHeader = ({
   )
 }
 
-export default PageHeader

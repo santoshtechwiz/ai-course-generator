@@ -99,7 +99,7 @@ export function FeatureCategoryList({ planId }: { planId: SubscriptionPlanType }
  *
  * Displays a comparison table of features across all subscription plans
  */
-export function FeatureComparison() {
+function FeatureComparison() {
   // Get all plans
   const plans: SubscriptionPlanType[] = ['FREE', 'BASIC', 'PREMIUM', 'ENTERPRISE']
   

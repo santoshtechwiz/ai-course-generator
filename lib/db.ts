@@ -1,4 +1,4 @@
-import type { OpenEndedQuestion, QuizType } from "@/app/types/quiz-types"
+import type { QuizType } from "@/app/types/quiz-types"
 import { type Prisma, PrismaClient } from "@prisma/client"
 
 // Create a global object to store the Prisma client instance (for Next.js Fast Refresh)
@@ -28,7 +28,7 @@ if (process.env.NODE_ENV !== "production") {
 export default prisma
 
 // Create a new course
-export const createCourse = async (data: Prisma.CourseCreateInput) => {
+const createCourse = async (data: Prisma.CourseCreateInput) => {
   try {
     return await prisma.course.create({
       data,
@@ -40,7 +40,7 @@ export const createCourse = async (data: Prisma.CourseCreateInput) => {
 }
 
 // Get a single course by slug
-export const getCourseBySlug = async (slug: string) => {
+const getCourseBySlug = async (slug: string) => {
   try {
     return await prisma.course.findUnique({
       where: { slug },
@@ -52,7 +52,7 @@ export const getCourseBySlug = async (slug: string) => {
 }
 
 // Update a course by ID
-export const updateCourse = async (id: number, data: Prisma.CourseUpdateInput) => {
+const updateCourse = async (id: number, data: Prisma.CourseUpdateInput) => {
   try {
     return await prisma.course.update({
       where: { id },
@@ -65,7 +65,7 @@ export const updateCourse = async (id: number, data: Prisma.CourseUpdateInput) =
 }
 
 // Delete a course by ID
-export const deleteCourse = async (id: number) => {
+const deleteCourse = async (id: number) => {
   try {
     return await prisma.course.delete({
       where: { id },
@@ -77,7 +77,7 @@ export const deleteCourse = async (id: number) => {
 }
 
 // Check if a course exists by slug
-export const courseExistsBySlug = async (slug: string) => {
+const courseExistsBySlug = async (slug: string) => {
   try {
     const course = await prisma.course.findUnique({
       where: { slug },
@@ -90,7 +90,7 @@ export const courseExistsBySlug = async (slug: string) => {
 }
 
 // Create a new user
-export const createUser = async (data: Prisma.UserCreateInput) => {
+const createUser = async (data: Prisma.UserCreateInput) => {
   try {
     return await prisma.user.create({
       data,
@@ -102,7 +102,7 @@ export const createUser = async (data: Prisma.UserCreateInput) => {
 }
 
 // Get all users
-export const getUsers = async () => {
+const getUsers = async () => {
   try {
     return await prisma.user.findMany()
   } catch (error) {
@@ -112,7 +112,7 @@ export const getUsers = async () => {
 }
 
 // Get a single user by ID
-export const getUserById = async (id: string) => {
+const getUserById = async (id: string) => {
   try {
     return await prisma.user.findUnique({
       where: { id },
@@ -124,7 +124,7 @@ export const getUserById = async (id: string) => {
 }
 
 // Update a user by ID
-export const updateUser = async (id: string, data: Prisma.UserUpdateInput) => {
+const updateUser = async (id: string, data: Prisma.UserUpdateInput) => {
   try {
     return await prisma.user.update({
       where: { id },
@@ -137,7 +137,7 @@ export const updateUser = async (id: string, data: Prisma.UserUpdateInput) => {
 }
 
 // Delete a user by ID
-export const deleteUser = async (id: string) => {
+const deleteUser = async (id: string) => {
   try {
     return await prisma.user.delete({
       where: { id },
@@ -183,7 +183,7 @@ export async function fetchSlug(type: "course" | "mcq" | "openended" | "code", i
     return null
   }
 }
-export async function getUserWithCourses(userId: string) {
+async function getUserWithCourses(userId: string) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -233,7 +233,7 @@ export async function getUserWithCourses(userId: string) {
   }
 }
 
-export async function getRandomQuestions(count = 5) {
+async function getRandomQuestions(count = 5) {
   const randomQuestions = await prisma.userQuiz.findMany({
     where: {
       quizType: "openended",
@@ -267,7 +267,7 @@ export async function getRandomQuestions(count = 5) {
   }))
 }
 
-export async function clearExpiredSessions() {
+async function clearExpiredSessions() {
   const now = new Date()
   await prisma.session.deleteMany({
     where: {
@@ -276,7 +276,7 @@ export async function clearExpiredSessions() {
   })
 }
 
-export async function fetchRandomQuizzes(count = 3) {
+async function fetchRandomQuizzes(count = 3) {
   try {
     const quizzes = await prisma.userQuiz.findMany({
       where: {
@@ -304,7 +304,7 @@ export async function fetchRandomQuizzes(count = 3) {
   }
 }
 
-export async function createUserQuiz(userId: string, title: string, type: string, slug: string) {
+async function createUserQuiz(userId: string, title: string, type: string, slug: string) {
   let uniqueSlug = slug
   let counter = 1
 
@@ -334,7 +334,7 @@ export async function createUserQuiz(userId: string, title: string, type: string
 
 
 
-export async function updateUserCredits(userId: string, type: QuizType): Promise<void> {
+async function updateUserCredits(userId: string, type: QuizType): Promise<void> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: { subscription: true },
@@ -394,7 +394,7 @@ export async function syncUserCredits(userId: string): Promise<void> {
 }
 
 // Add this function to record token usage
-export async function recordTokenUsage(userId: string, amount: number, description: string): Promise<void> {
+async function recordTokenUsage(userId: string, amount: number, description: string): Promise<void> {
   try {
     // Start a transaction to ensure data consistency
     await prisma.$transaction(async (tx) => {

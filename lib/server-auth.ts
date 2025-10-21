@@ -22,7 +22,7 @@ export async function getServerAuthSession(options?: { skipCache?: boolean }) {
  * @param options Optional configuration
  * @returns Boolean indicating if user is authenticated
  */
-export async function isAuthenticated(options?: { skipCache?: boolean }) {
+async function isAuthenticated(options?: { skipCache?: boolean }) {
   // Use cache for frequent calls to reduce DB load
   if (!options?.skipCache) {
     const cacheKey = 'isAuthenticated';
@@ -50,7 +50,7 @@ export async function isAuthenticated(options?: { skipCache?: boolean }) {
  * @param options Optional configuration 
  * @returns Boolean indicating if user is an admin
  */
-export async function isAdmin(options?: { skipCache?: boolean }) {
+async function isAdmin(options?: { skipCache?: boolean }) {
   // Use cache for frequent calls to reduce DB load
   if (!options?.skipCache) {
     const cacheKey = 'isAdmin';
@@ -78,7 +78,7 @@ export async function isAdmin(options?: { skipCache?: boolean }) {
  * @param options Optional configuration
  * @returns The user ID or undefined if not authenticated
  */
-export async function getUserId(options?: { skipCache?: boolean }) {
+async function getUserId(options?: { skipCache?: boolean }) {
   // This is often used as part of data fetching, so we use a shorter cache
   if (!options?.skipCache) {
     const cacheKey = 'getUserId';

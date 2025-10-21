@@ -19,7 +19,7 @@ const initialState: CertificateState = {
 }
 
 // Async thunk for generating certificate
-export const generateCertificate = createAsyncThunk(
+const generateCertificate = createAsyncThunk(
   "certificate/generate",
   async (payload: {
     courseId?: number
@@ -56,7 +56,7 @@ export const generateCertificate = createAsyncThunk(
 )
 
 // Async thunk for sharing certificate
-export const shareCertificate = createAsyncThunk(
+const shareCertificate = createAsyncThunk(
   "certificate/share",
   async (payload: {
     courseId?: number
@@ -90,7 +90,7 @@ export const shareCertificate = createAsyncThunk(
 )
 
 // Async thunk for tracking certificate downloads
-export const trackCertificateDownload = createAsyncThunk(
+const trackCertificateDownload = createAsyncThunk(
   "certificate/trackDownload",
   async (payload: {
     courseId?: number
@@ -175,6 +175,6 @@ const certificateSlice = createSlice({
   },
 })
 
-export const { resetCertificateState, incrementDownloadCount, setCertificateError } = certificateSlice.actions
+export const {  incrementDownloadCount,  } = certificateSlice.actions
 
 export default certificateSlice.reducer

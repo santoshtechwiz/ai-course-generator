@@ -6,7 +6,7 @@
 import { SerializedError } from '@reduxjs/toolkit'
 
 // Unified async state interface
-export interface AsyncState<T = any> {
+interface AsyncState<T = any> {
   data: T | null
   status: 'idle' | 'loading' | 'succeeded' | 'failed'
   error: string | null
@@ -15,7 +15,7 @@ export interface AsyncState<T = any> {
 }
 
 // Create initial async state
-export function createInitialAsyncState<T = any>(data: T | null = null): AsyncState<T> {
+function createInitialAsyncState<T = any>(data: T | null = null): AsyncState<T> {
   return {
     data,
     status: 'idle',
@@ -38,7 +38,7 @@ export function shouldUpdateState(
 }
 
 // Create pending state update
-export function createPendingUpdate(
+function createPendingUpdate(
   state: AsyncState<any>,
 ): Partial<AsyncState<any>> {
   const update: any = {
@@ -51,7 +51,7 @@ export function createPendingUpdate(
 }
 
 // Create fulfilled state update
-export function createFulfilledUpdate<T>(
+function createFulfilledUpdate<T>(
   data: T,
   timestamp?: number
 ): Partial<AsyncState<T>> {
@@ -65,7 +65,7 @@ export function createFulfilledUpdate<T>(
 }
 
 // Create rejected state update
-export function createRejectedUpdate(
+function createRejectedUpdate(
   error: string | SerializedError,
   preserveData = true
 ): Partial<AsyncState<any>> {
@@ -98,14 +98,14 @@ export function getErrorMessage(error: unknown): string {
 }
 
 // State staleness utilities
-export const STALENESS_THRESHOLDS = {
+const STALENESS_THRESHOLDS = {
   IMMEDIATE: 30 * 1000,      // 30 seconds
   SHORT: 5 * 60 * 1000,      // 5 minutes  
   MEDIUM: 15 * 60 * 1000,    // 15 minutes
   LONG: 60 * 60 * 1000,      // 1 hour
 }
 
-export function isStateStale(
+function isStateStale(
   lastUpdated: number | null, 
   threshold = STALENESS_THRESHOLDS.MEDIUM
 ): boolean {
@@ -113,23 +113,23 @@ export function isStateStale(
   return Date.now() - lastUpdated > threshold
 }
 
-export function markAsStale(state: AsyncState<any>): void {
+function markAsStale(state: AsyncState<any>): void {
   state.isStale = true
 }
 
 // Type guards
-export function isLoadingState(state: AsyncState<any>): boolean {
+function isLoadingState(state: AsyncState<any>): boolean {
   return state.status === 'loading'
 }
 
-export function isSuccessState(state: AsyncState<any>): boolean {
+function isSuccessState(state: AsyncState<any>): boolean {
   return state.status === 'succeeded'
 }
 
-export function isErrorState(state: AsyncState<any>): boolean {
+function isErrorState(state: AsyncState<any>): boolean {
   return state.status === 'failed'
 }
 
-export function hasData<T>(state: AsyncState<T>): state is AsyncState<T> & { data: T } {
+function hasData<T>(state: AsyncState<T>): state is AsyncState<T> & { data: T } {
   return state.data !== null && state.data !== undefined
 }

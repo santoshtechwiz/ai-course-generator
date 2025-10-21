@@ -374,4 +374,4 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
   )
 }
 
-export default OrderingQuizResult
+

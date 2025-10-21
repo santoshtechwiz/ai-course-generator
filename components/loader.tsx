@@ -56,7 +56,7 @@ interface SkeletonLoaderProps {
   className?: string
 }
 
-export const SkeletonLoader = React.memo(function SkeletonLoader({ lines = 1, className }: SkeletonLoaderProps) {
+const SkeletonLoader = React.memo(function SkeletonLoader({ lines = 1, className }: SkeletonLoaderProps) {
   return (
     <div className={cn("space-y-2", className)}>
       {Array.from({ length: lines }).map((_, i) => (

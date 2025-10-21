@@ -8,7 +8,7 @@ import { useSubscriptionContext } from '@/modules/subscription/providers/Subscri
  * Unified state returned by useAuth hook
  * Merges authentication and subscription data into a single interface
  */
-export interface UnifiedAuthState {
+interface UnifiedAuthState {
   // Authentication (from AuthProvider)
   user: User | null;
   isAuthenticated: boolean;
@@ -100,7 +100,7 @@ export function useAuth(): UnifiedAuthState {
 /**
  * useUser - Get current user
  */
-export function useUser(): User | null {
+function useUser(): User | null {
   const { user } = useAuth();
   return user;
 }
@@ -108,7 +108,7 @@ export function useUser(): User | null {
 /**
  * useAuthStatus - Get authentication status
  */
-export function useAuthStatus(): {
+function useAuthStatus(): {
   isAuthenticated: boolean;
   isLoading: boolean;
 } {

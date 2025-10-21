@@ -12,7 +12,7 @@ import { EmbeddingDocument } from "../core/embedding-manager"
 import { prisma } from "@/lib/db"
 import { logger } from "@/lib/logger"
 
-export interface UserLearningContext {
+interface UserLearningContext {
   completedCourses: Array<{ title: string; category?: string }>
   inProgressCourses: Array<{ title: string; progress: number; category?: string }>
   recentQuizAttempts: Array<{ title: string; score: number; quizType: string }>

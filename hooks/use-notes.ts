@@ -145,15 +145,15 @@ export function useNotes(filters: NoteFilters = {}) {
   }
 }
 
-export function useNotesForCourse(courseId: number) {
+function useNotesForCourse(courseId: number) {
   return useNotes({ courseId, limit: 100 })
 }
 
-export function useNotesForChapter(courseId: number, chapterId: number) {
+function useNotesForChapter(courseId: number, chapterId: number) {
   return useNotes({ courseId, chapterId, limit: 100 })
 }
 
-export function useRecentNotes(limit: number = 10) {
+function useRecentNotes(limit: number = 10) {
   const cacheKey = `/api/notes?limit=${limit}`
   
   const {

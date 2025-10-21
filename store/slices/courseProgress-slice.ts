@@ -4,7 +4,7 @@ import {
   getErrorMessage
 } from '../utils/async-state'
 
-export interface VideoProgress {
+interface VideoProgress {
   currentChapterId: string | null // Changed to string to ensure consistent ID handling
   currentUnitId: string | null // Changed to string for consistency
   progress: number // 0-100 percentage
@@ -16,7 +16,7 @@ export interface VideoProgress {
   bookmarks: string[]
 }
 
-export interface CourseProgressData {
+interface CourseProgressData {
   courseId: string
   userId: string
   videoProgress: VideoProgress
@@ -24,10 +24,10 @@ export interface CourseProgressData {
 }
 
 // Type for course progress state
-export type CourseProgressState = Record<string, CourseProgressData>
+type CourseProgressState = Record<string, CourseProgressData>
 
 // Type for the entire course progress slice
-export interface CourseProgressSliceState {
+interface CourseProgressSliceState {
   byCourseId: CourseProgressState
   isLoading: boolean
   error: string | null
@@ -40,7 +40,7 @@ const initialState: CourseProgressSliceState = {
 }
 
 // Async thunk for persisting progress to API
-export const persistVideoProgress = createAsyncThunk(
+const persistVideoProgress = createAsyncThunk(
   "courseProgress/persistVideoProgress",
   async (
     {
@@ -255,75 +255,75 @@ const courseProgressSlice = createSlice({
 export const {
   setVideoProgress,
   markChapterCompleted,
-  addBookmark,
-  removeBookmark,
-  resetCourseProgress,
-  resetAll,
-  setLoading,
-  setError,
+  
+  
+  
+  
+  
+  
 } = courseProgressSlice.actions
 
 export default courseProgressSlice.reducer
 
 // Memoized selectors
-export const selectCourseProgressState = (state: RootState) => state.courseProgress
+const selectCourseProgressState = (state: RootState) => state.courseProgress
 
 export const selectCourseProgressById = (state: RootState, courseId: string | number) =>
   selectCourseProgressState(state).byCourseId[String(courseId)] || null
 
 // Additional selectors for better type safety
-export const selectAllCourseProgress = (state: RootState) => state.courseProgress.byCourseId
+const selectAllCourseProgress = (state: RootState) => state.courseProgress.byCourseId
 
-export const selectIncompleteCourses = createSelector(
+const selectIncompleteCourses = createSelector(
   [selectAllCourseProgress],
   (courseProgress) => {
     return Object.entries(courseProgress).filter(([_, progress]) => !progress.videoProgress.isCompleted)
   }
 )
 
-export const selectCompletedCourses = createSelector(
+const selectCompletedCourses = createSelector(
   [selectAllCourseProgress],
   (courseProgress) => {
     return Object.entries(courseProgress).filter(([_, progress]) => progress.videoProgress.isCompleted)
   }
 )
 
-export const selectCourseProgressByCourseId = (courseId: string | number) =>
+const selectCourseProgressByCourseId = (courseId: string | number) =>
   createSelector(
     [selectCourseProgressState],
     (slice) => slice.byCourseId[String(courseId)] || null
   )
 
 // Utility functions for type-safe course progress operations
-export const getCourseProgress = (state: RootState, courseId: string | number): CourseProgressData | null => {
+const getCourseProgress = (state: RootState, courseId: string | number): CourseProgressData | null => {
   return state.courseProgress.byCourseId[String(courseId)] || null
 }
 
-export const hasCourseProgress = (state: RootState, courseId: string | number): boolean => {
+const hasCourseProgress = (state: RootState, courseId: string | number): boolean => {
   return !!state.courseProgress.byCourseId[String(courseId)]
 }
 
-export const isCourseCompleted = (state: RootState, courseId: string | number): boolean => {
+const isCourseCompleted = (state: RootState, courseId: string | number): boolean => {
   const progress = state.courseProgress.byCourseId[String(courseId)]
   return progress?.videoProgress.isCompleted || false
 }
 
-export const getCompletedChapters = (state: RootState, courseId: string | number): string[] => {
+const getCompletedChapters = (state: RootState, courseId: string | number): string[] => {
   const progress = state.courseProgress.byCourseId[String(courseId)]
   return progress?.videoProgress.completedChapters || []
 }
 
-export const getCurrentChapterId = (state: RootState, courseId: string | number): string | null => {
+const getCurrentChapterId = (state: RootState, courseId: string | number): string | null => {
   const progress = state.courseProgress.byCourseId[String(courseId)]
   return progress?.videoProgress.currentChapterId || null
 }
 
-export const getPlayedSeconds = (state: RootState, courseId: string | number): number => {
+const getPlayedSeconds = (state: RootState, courseId: string | number): number => {
   const progress = state.courseProgress.byCourseId[String(courseId)]
   return progress?.videoProgress.playedSeconds || 0
 }
 
-export const getVideoProgress = (state: RootState, courseId: string | number): number => {
+const getVideoProgress = (state: RootState, courseId: string | number): number => {
   const progress = state.courseProgress.byCourseId[String(courseId)]
   return progress?.videoProgress.progress || 0
 }

@@ -12,7 +12,7 @@
  * - Review scheduling
  */
 
-export interface CardReview {
+interface CardReview {
   cardId: string
   quality: number // 0-5 rating (0=complete blackout, 5=perfect recall)
   reviewedAt: Date
@@ -26,7 +26,7 @@ export interface CardStats {
   lastReview: Date
 }
 
-export interface SpacedRepetitionCard {
+interface SpacedRepetitionCard {
   id: string
   front: string
   back: string
@@ -109,7 +109,7 @@ export function calculateNextReview(
  * 3 = Good (Correct with effort) → 4
  * 4 = Easy (Perfect recall) → 5
  */
-export function difficultyToQuality(difficulty: number): number {
+function difficultyToQuality(difficulty: number): number {
   const mapping: Record<number, number> = {
     1: 0, // Again
     2: 2, // Hard
@@ -125,7 +125,7 @@ export function difficultyToQuality(difficulty: number): number {
  * @param cards - Array of flashcards with review data
  * @returns Cards that need to be reviewed today
  */
-export function getDueCards(cards: SpacedRepetitionCard[]): SpacedRepetitionCard[] {
+function getDueCards(cards: SpacedRepetitionCard[]): SpacedRepetitionCard[] {
   const now = new Date()
 
   return cards.filter((card) => {
@@ -143,7 +143,7 @@ export function getDueCards(cards: SpacedRepetitionCard[]): SpacedRepetitionCard
  * @param cards - Array of flashcards
  * @returns Sorted array with most overdue cards first
  */
-export function sortCardsByPriority(cards: SpacedRepetitionCard[]): SpacedRepetitionCard[] {
+function sortCardsByPriority(cards: SpacedRepetitionCard[]): SpacedRepetitionCard[] {
   const now = new Date()
 
   return [...cards].sort((a, b) => {
@@ -166,7 +166,7 @@ export function sortCardsByPriority(cards: SpacedRepetitionCard[]): SpacedRepeti
  * @param cards - Array of flashcards
  * @returns Statistics about the deck
  */
-export function getDeckStats(cards: SpacedRepetitionCard[]) {
+function getDeckStats(cards: SpacedRepetitionCard[]) {
   const now = new Date()
   const dueCards = getDueCards(cards)
 
@@ -202,7 +202,7 @@ export function getDeckStats(cards: SpacedRepetitionCard[]) {
  * @param totalCards - Total number of cards in deck
  * @returns Recommended number of new cards per day
  */
-export function getRecommendedDailyReviews(totalCards: number): number {
+function getRecommendedDailyReviews(totalCards: number): number {
   if (totalCards <= 20) return 5
   if (totalCards <= 50) return 10
   if (totalCards <= 100) return 15
@@ -215,7 +215,7 @@ export function getRecommendedDailyReviews(totalCards: number): number {
  * @param cards - Array of flashcards with review history
  * @returns Retention percentage (0-100)
  */
-export function calculateRetentionRate(cards: SpacedRepetitionCard[]): number {
+function calculateRetentionRate(cards: SpacedRepetitionCard[]): number {
   const cardsWithHistory = cards.filter((card) => card.repetitions && card.repetitions > 0)
 
   if (cardsWithHistory.length === 0) return 0
@@ -232,7 +232,7 @@ export function calculateRetentionRate(cards: SpacedRepetitionCard[]): number {
  * @param days - Number of days to forecast
  * @returns Array of review counts per day
  */
-export function getForecast(cards: SpacedRepetitionCard[], days: number = 7): number[] {
+function getForecast(cards: SpacedRepetitionCard[], days: number = 7): number[] {
   const forecast: number[] = new Array(days).fill(0)
   const now = new Date()
   now.setHours(0, 0, 0, 0) // Start of today
@@ -261,7 +261,7 @@ export function getForecast(cards: SpacedRepetitionCard[], days: number = 7): nu
  * @param cards - Array of flashcards
  * @returns JSON string of deck data
  */
-export function exportDeck(cards: SpacedRepetitionCard[]): string {
+function exportDeck(cards: SpacedRepetitionCard[]): string {
   return JSON.stringify(
     {
       version: '1.0',
@@ -283,7 +283,7 @@ export function exportDeck(cards: SpacedRepetitionCard[]): string {
  * @param jsonData - JSON string of deck data
  * @returns Array of flashcards
  */
-export function importDeck(jsonData: string): SpacedRepetitionCard[] {
+function importDeck(jsonData: string): SpacedRepetitionCard[] {
   try {
     const data = JSON.parse(jsonData)
 
@@ -304,7 +304,7 @@ export function importDeck(jsonData: string): SpacedRepetitionCard[] {
  * @param card - Flashcard to reset
  * @returns Card with reset stats
  */
-export function resetCard(card: SpacedRepetitionCard): SpacedRepetitionCard {
+function resetCard(card: SpacedRepetitionCard): SpacedRepetitionCard {
   return {
     ...card,
     easeFactor: DEFAULT_EASE_FACTOR,
@@ -321,7 +321,7 @@ export function resetCard(card: SpacedRepetitionCard): SpacedRepetitionCard {
  * @param reviews - Array of card reviews
  * @returns Performance metrics
  */
-export function getPerformanceMetrics(reviews: CardReview[]) {
+function getPerformanceMetrics(reviews: CardReview[]) {
   if (reviews.length === 0) {
     return {
       totalReviews: 0,

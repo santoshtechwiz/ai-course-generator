@@ -15,7 +15,7 @@ import { logger } from "@/lib/logger"
 /**
  * Webhook event types
  */
-export enum WebhookEventType {
+enum WebhookEventType {
   PAYMENT_SUCCEEDED = "payment_succeeded",
   PAYMENT_FAILED = "payment_failed",
   SUBSCRIPTION_CREATED = "subscription_created",
@@ -29,7 +29,7 @@ export enum WebhookEventType {
 /**
  * Webhook event data
  */
-export interface WebhookEvent {
+interface WebhookEvent {
   readonly id: string
   readonly type: WebhookEventType
   readonly provider: PaymentProvider
@@ -41,7 +41,7 @@ export interface WebhookEvent {
 /**
  * Webhook processing result
  */
-export interface WebhookProcessingResult {
+interface WebhookProcessingResult {
   readonly success: boolean
   readonly eventId: string
   readonly eventType: WebhookEventType
@@ -1014,4 +1014,4 @@ export class PaymentWebhookHandler {
   }
 }
 
-export default PaymentWebhookHandler
+

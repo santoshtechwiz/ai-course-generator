@@ -3,7 +3,7 @@ import { userRepository } from "@/app/repositories/user.repository";
 /**
  * Service for handling user-related business logic
  */
-export class UserService {
+class UserService {
   /**
    * Get user profile with subscription information
    */

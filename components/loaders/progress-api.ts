@@ -4,7 +4,7 @@
 import { BProgress } from '@bprogress/core'
 import Router from 'next/router'
 
-export interface ProgressOptions {
+interface ProgressOptions {
   minimum?: number
   template?: string
   easing?: string
@@ -130,5 +130,4 @@ class ProgressAPI {
 // Export singleton instance
 export const progressApi = ProgressAPI.getInstance()
 
-// Export type
-export type { ProgressAPI }
+// Export type

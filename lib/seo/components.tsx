@@ -56,7 +56,7 @@ export const JsonLD = React.memo(function JsonLD({ type, data = {}, scriptProps 
 // WEBSITE SCHEMA COMPONENT
 // ============================================================================
 
-export interface WebsiteSchemaProps {
+interface WebsiteSchemaProps {
   siteName?: string
   siteUrl?: string
   logoUrl?: string
@@ -67,7 +67,7 @@ export interface WebsiteSchemaProps {
   copyrightHolder?: string
 }
 
-export const WebsiteSchema = React.memo(function WebsiteSchema({
+const WebsiteSchema = React.memo(function WebsiteSchema({
   siteName = defaultSiteInfo.name,
   siteUrl = defaultSiteInfo.url,
   logoUrl = defaultSiteInfo.logoUrl,
@@ -115,14 +115,14 @@ export const WebsiteSchema = React.memo(function WebsiteSchema({
 // BREADCRUMB LIST SCHEMA COMPONENT
 // ============================================================================
 
-export interface BreadcrumbListSchemaProps extends BreadcrumbListProps {
+interface BreadcrumbListSchemaProps extends BreadcrumbListProps {
   siteUrl?: string
   autoGenerate?: boolean
   currentPath?: string
   customLabels?: Record<string, string>
 }
 
-export const BreadcrumbListSchema = React.memo(function BreadcrumbListSchema({
+const BreadcrumbListSchema = React.memo(function BreadcrumbListSchema({
   items,
   siteUrl = defaultSiteInfo.url,
   autoGenerate = false,
@@ -205,7 +205,7 @@ export const BreadcrumbListSchema = React.memo(function BreadcrumbListSchema({
 // ORGANIZATION SCHEMA COMPONENT
 // ============================================================================
 
-export interface OrganizationSchemaProps extends OrganizationProps {
+interface OrganizationSchemaProps extends OrganizationProps {
   logoUrl?: string
   email?: string
   telephone?: string
@@ -219,7 +219,7 @@ export interface OrganizationSchemaProps extends OrganizationProps {
   areaServed?: string | string[]
 }
 
-export const OrganizationSchema = React.memo(function OrganizationSchema({
+const OrganizationSchema = React.memo(function OrganizationSchema({
   name = defaultSiteInfo.name,
   url = defaultSiteInfo.url,
   logoUrl = defaultSiteInfo.logoUrl,
@@ -326,7 +326,7 @@ export const FAQSchema = React.memo(function FAQSchema({ items = [] }: FAQProps)
 // COURSE SCHEMA COMPONENT
 // ============================================================================
 
-export interface EnhancedCourseSchemaProps extends CourseSchemaProps {
+interface EnhancedCourseSchemaProps extends CourseSchemaProps {
   difficulty?: "Beginner" | "Intermediate" | "Advanced"
   duration?: string
   prerequisites?: string[]
@@ -347,7 +347,7 @@ export interface EnhancedCourseSchemaProps extends CourseSchemaProps {
   }>
 }
 
-export const CourseSchema = React.memo(function CourseSchema({
+const CourseSchema = React.memo(function CourseSchema({
   courseName,
   courseUrl,
   description,
@@ -563,7 +563,7 @@ export const CourseSchema = React.memo(function CourseSchema({
 // QUIZ SCHEMA COMPONENT
 // ============================================================================
 
-export interface EnhancedQuizSchemaProps extends QuizSchemaProps {
+interface EnhancedQuizSchemaProps extends QuizSchemaProps {
   difficulty?: string
   timeRequired?: string
   educationalUse?: string
@@ -642,7 +642,7 @@ export const QuizSchema = React.memo(function QuizSchema({
 // DEFAULT SEO COMPONENT
 // ============================================================================
 
-export interface EnhancedDefaultSEOProps extends CombinedSchemaProps {
+interface EnhancedDefaultSEOProps extends CombinedSchemaProps {
   enableWebsite?: boolean
   enableBreadcrumbs?: boolean
   enableOrganization?: boolean
@@ -691,7 +691,7 @@ export const DefaultSEO = React.memo(function DefaultSEO({
 // ADDITIONAL SCHEMA COMPONENTS
 // ============================================================================
 
-export interface ArticleSchemaProps {
+interface ArticleSchemaProps {
   headline: string
   description: string
   url: string
@@ -709,7 +709,7 @@ export interface ArticleSchemaProps {
   articleSection?: string
 }
 
-export const ArticleSchema = React.memo(function ArticleSchema({
+const ArticleSchema = React.memo(function ArticleSchema({
   headline,
   description,
   url,
@@ -771,7 +771,7 @@ export const ArticleSchema = React.memo(function ArticleSchema({
   return <JsonLD type="Article" data={schemaData} />
 })
 
-export interface ProductSchemaProps {
+interface ProductSchemaProps {
   name: string
   description: string
   imageUrl?: string
@@ -789,7 +789,7 @@ export interface ProductSchemaProps {
   url?: string
 }
 
-export const ProductSchema = React.memo(function ProductSchema({
+const ProductSchema = React.memo(function ProductSchema({
   name,
   description,
   imageUrl,
@@ -835,7 +835,7 @@ export const ProductSchema = React.memo(function ProductSchema({
   return <JsonLD type="Product" data={schemaData} />
 })
 
-export interface EventSchemaProps {
+interface EventSchemaProps {
   name: string
   description: string
   startDate: string
@@ -859,7 +859,7 @@ export interface EventSchemaProps {
   }
 }
 
-export const EventSchema = React.memo(function EventSchema({
+const EventSchema = React.memo(function EventSchema({
   name,
   description,
   startDate,
@@ -891,7 +891,7 @@ export const EventSchema = React.memo(function EventSchema({
   return <JsonLD type="Event" data={schemaData} />
 })
 
-export interface VideoSchemaProps {
+interface VideoSchemaProps {
   name: string
   description: string
   thumbnailUrl: string
@@ -903,7 +903,7 @@ export interface VideoSchemaProps {
   publisherUrl?: string
 }
 
-export const VideoSchema = React.memo(function VideoSchema({
+const VideoSchema = React.memo(function VideoSchema({
   name,
   description,
   thumbnailUrl,

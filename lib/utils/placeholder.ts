@@ -3,7 +3,7 @@
  * Replaces broken placeholder.svg references with CourseAI-themed placeholders
  */
 
-export interface PlaceholderOptions {
+interface PlaceholderOptions {
   text?: string
   width?: number
   height?: number
@@ -100,7 +100,7 @@ export function getTextColor(text: string): string {
 /**
  * Create a placeholder for user avatars
  */
-export function createUserPlaceholder(name: string, size: number = 100): string {
+function createUserPlaceholder(name: string, size: number = 100): string {
   return generatePlaceholderUrl({
     text: generateInitials(name),
     width: size,
@@ -113,7 +113,7 @@ export function createUserPlaceholder(name: string, size: number = 100): string 
 /**
  * Create a placeholder for course thumbnails
  */
-export function createCoursePlaceholder(title: string, size: number = 100): string {
+function createCoursePlaceholder(title: string, size: number = 100): string {
   return generatePlaceholderUrl({
     text: generateInitials(title),
     width: size,
@@ -126,7 +126,7 @@ export function createCoursePlaceholder(title: string, size: number = 100): stri
 /**
  * Create a placeholder for general content
  */
-export function createDefaultPlaceholder(text: string = "CA", size: number = 100): string {
+function createDefaultPlaceholder(text: string = "CA", size: number = 100): string {
   return generatePlaceholderUrl({
     text,
     width: size,

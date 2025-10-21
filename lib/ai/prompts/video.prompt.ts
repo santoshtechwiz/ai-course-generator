@@ -6,7 +6,7 @@
 
 import type { AIMessage } from '@/lib/ai/interfaces'
 
-export interface VideoPromptOptions {
+interface VideoPromptOptions {
   courseTitle: string
   transcript: string
   numberOfQuestions: number
@@ -104,7 +104,7 @@ export function getVideoQuizMCQFunctionSchema() {
 /**
  * Video quiz function schema for open-ended format
  */
-export function getVideoQuizOpenEndedFunctionSchema() {
+function getVideoQuizOpenEndedFunctionSchema() {
   return {
     name: 'generate_video_quiz_openended',
     description: 'Generates open-ended questions from video transcript',
@@ -151,9 +151,4 @@ export function buildVideoQuizPromptWithSchema(options: VideoPromptOptions) {
   }
 }
 
-export default {
-  buildVideoQuizPrompt,
-  getVideoQuizMCQFunctionSchema,
-  getVideoQuizOpenEndedFunctionSchema,
-  buildVideoQuizPromptWithSchema,
-}
+

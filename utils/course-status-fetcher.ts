@@ -15,7 +15,7 @@ const pending = new Map<string, Promise<{ status: number; data?: any }>>()
 const unauthorized = new Set<string>()
 const unauthorizedNotified = new Set<string>()
 
-export async function getCourseStatus(slug: string, opts?: { force?: boolean }) {
+async function getCourseStatus(slug: string, opts?: { force?: boolean }) {
   if (!slug) return { status: 400 }
 
   // If 401 previously observed for this slug, return quickly
@@ -61,12 +61,12 @@ export async function getCourseStatus(slug: string, opts?: { force?: boolean }) 
   return p
 }
 
-export function clearCourseStatusCache(slug?: string) {
+function clearCourseStatusCache(slug?: string) {
   if (slug) cache.delete(slug)
   else cache.clear()
 }
 
-export function clearUnauthorized(slug?: string) {
+function clearUnauthorized(slug?: string) {
   if (slug) {
     unauthorized.delete(slug)
     unauthorizedNotified.delete(slug)
@@ -83,7 +83,7 @@ export function notifyUnauthorizedOnce(slug: string, cb: () => void) {
   }
 }
 
-export function isUnauthorized(slug: string) {
+function isUnauthorized(slug: string) {
   return unauthorized.has(slug)
 }
 

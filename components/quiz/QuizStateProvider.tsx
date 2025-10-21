@@ -113,7 +113,7 @@ export const QuizStateProvider = ({ children, onError, onSuccess, globalLoading 
   return <QuizStateContext.Provider value={stateManager}>{children}</QuizStateContext.Provider>
 }
 
-export const useQuizState = () => {
+const useQuizState = () => {
   const context = useContext(QuizStateContext)
   if (!context) {
     throw new Error("useQuizState must be used within a QuizStateProvider")

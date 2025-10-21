@@ -23,7 +23,7 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { fadeInUp, cardVariants } from "@/utils/animation-utils"
 
-export interface CrossSellItem {
+interface CrossSellItem {
   type: "course" | "quiz"
   id: string
   title: string

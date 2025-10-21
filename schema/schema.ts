@@ -57,7 +57,7 @@ export const createChaptersSchema = z.object({
   description: z.string().trim().min(1).max(1000),
 })
 
-export const quizCreationSchema = z.object({
+const quizCreationSchema = z.object({
   title: z
     .string()
     .trim()
@@ -76,7 +76,7 @@ export const quizCreationSchema = z.object({
   difficulty: z.enum(["easy", "medium", "hard"]),
   userType: z.enum(["FREE", "BASIC", "PREMIUM"]).default("FREE").optional(),
 })
-export const getQuestionsSchema = z.object({
+const getQuestionsSchema = z.object({
   title: z.string(),
   amount: z.number().int().positive().min(1).max(20),
   type: z.enum(["mcq"]),
@@ -84,12 +84,12 @@ export const getQuestionsSchema = z.object({
 
 })
 
-export const checkAnswerSchema = z.object({
+const checkAnswerSchema = z.object({
   userInput: z.string(),
   questionId: z.string(),
 })
 
-export const endGameSchema = z.object({
+const endGameSchema = z.object({
   gameId: z.string(),
 })
 
@@ -109,4 +109,4 @@ export const blanksQuizSchema = z.object({
 })
 
 export type CreateCourseInput = z.infer<typeof createCourseSchema>
-export { updateSchema, createCourseSchema, quizSchema, codeQuizSchema }
+export {  createCourseSchema, quizSchema, codeQuizSchema }

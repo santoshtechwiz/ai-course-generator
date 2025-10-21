@@ -1,7 +1,7 @@
 import { Compass, Home, BookOpen, BrainCircuit, PlusCircle, CreditCard } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
-export interface NavItem {
+interface NavItem {
   name: string
   href: string
   icon: LucideIcon
@@ -9,7 +9,7 @@ export interface NavItem {
   isPublic?: boolean
 }
 
-export interface SubItem {
+interface SubItem {
   name: string
   href: string
 }

@@ -355,14 +355,14 @@ export default function SignInPrompt({
 
 // ============= Export Named Variants =============
 
-export function SignInPromptModal(props: Omit<SignInPromptProps, 'variant'>) {
+function SignInPromptModal(props: Omit<SignInPromptProps, 'variant'>) {
   return <SignInPrompt {...props} variant="modal" />
 }
 
-export function SignInPromptPage(props: Omit<SignInPromptProps, 'variant'>) {
+function SignInPromptPage(props: Omit<SignInPromptProps, 'variant'>) {
   return <SignInPrompt {...props} variant="page" />
 }
 
-export function SignInPromptCard(props: Omit<SignInPromptProps, 'variant'>) {
+function SignInPromptCard(props: Omit<SignInPromptProps, 'variant'>) {
   return <SignInPrompt {...props} variant="card" />
 }

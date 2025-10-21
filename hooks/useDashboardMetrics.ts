@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import type { DashboardUser } from '@/app/types/types'
 
-export interface DashboardMetrics {
+interface DashboardMetrics {
   courses: {
     total: number
     inProgress: number

@@ -34,7 +34,7 @@ async function getCachedSession() {
 /**
  * Invalidate the session cache (call after login/logout/session updates)
  */
-export function invalidateSessionCache() {
+function invalidateSessionCache() {
   sessionCache = null;
 }
 
@@ -42,7 +42,7 @@ export function invalidateSessionCache() {
  * API client that handles authentication checks before making requests
  * Uses session caching to prevent excessive API calls
  */
-export const apiClient = {
+const apiClient = {
   /**
    * Make a GET request if authenticated, otherwise return null without error
    */
@@ -238,12 +238,12 @@ export function createApiClient<T extends Record<string, Function>>(baseUrl: str
 }
 
 // For backward compatibility, also provide a default export
-export default apiClient;
+
 
 /**
  * Server-side API client that handles authentication checks before making requests
  */
-export const serverApiClient = {
+const serverApiClient = {
   /**
    * Make a GET request if authenticated, otherwise return null without error
    */

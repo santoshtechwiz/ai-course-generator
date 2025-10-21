@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-export interface Badge {
+interface Badge {
   id: string
   name: string
   description: string
@@ -13,7 +13,7 @@ export interface Badge {
   createdAt: Date
 }
 
-export interface UserBadge {
+interface UserBadge {
   id: string
   userId: string
   badgeId: string
@@ -22,7 +22,7 @@ export interface UserBadge {
   badge?: Badge
 }
 
-export class BadgeService {
+class BadgeService {
   /**
    * Check and unlock badges for a user based on their activity
    */

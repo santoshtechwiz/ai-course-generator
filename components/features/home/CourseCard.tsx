@@ -11,7 +11,7 @@ import { Star, Heart, Bookmark, Clock, Users, BookOpen, TrendingUp } from "lucid
 import { cn } from "@/lib/utils"
 import { Progress } from "@/components/ui/progress"
 
-export interface CourseCardProps {
+interface CourseCardProps {
   title: string
   description: string
   rating: number

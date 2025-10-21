@@ -188,7 +188,7 @@ class ClientProgressQueue {
 const clientProgressQueue = new ClientProgressQueue()
 
 // Client-safe progress service
-export const clientProgressService = {
+const clientProgressService = {
   enqueueProgress(
     userId: string,
     courseId: string | number,
@@ -327,5 +327,5 @@ export const useChapterProgress = (userId?: string, courseId?: string | number, 
 }
 
 // Export the main functions
-export const enqueueProgress = clientProgressService.enqueueProgress.bind(clientProgressService)
+const enqueueProgress = clientProgressService.enqueueProgress.bind(clientProgressService)
 export const flushProgress = clientProgressService.flushProgress.bind(clientProgressService)

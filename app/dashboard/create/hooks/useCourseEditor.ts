@@ -9,15 +9,15 @@ import type { Course, CourseUnit, Chapter } from "@prisma/client"
 import type { ChapterCardHandler, ChapterStatus, ChapterGenerationStatus } from "../types"
 
 // Re-export for backward compatibility
-export type { ChapterCardHandler, ChapterStatus, ChapterGenerationStatus }
+export type {   ChapterGenerationStatus }
 
-export type CourseWithUnits = Course & {
+type CourseWithUnits = Course & {
   units: (CourseUnit & {
     chapters: Chapter[]
   })[]
 }
 
-export function useCourseEditor(initialCourse: CourseWithUnits) {
+function useCourseEditor(initialCourse: CourseWithUnits) {
   const router = useRouter()
   const { toast } = useToast()
   const [course, setCourse] = useState<CourseWithUnits>(initialCourse)

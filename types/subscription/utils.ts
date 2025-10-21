@@ -63,7 +63,7 @@ export function isPlanPopular(planName: string): boolean {
  * @param annualPrice - Annual plan price
  * @returns Dollar amount saved annually
  */
-export function calculateAnnualSavingsAmount(monthlyPrice: number, annualPrice: number): number {
+function calculateAnnualSavingsAmount(monthlyPrice: number, annualPrice: number): number {
   const annualMonthlyTotal = monthlyPrice * 12
   return Math.max(0, annualMonthlyTotal - annualPrice)
 }
@@ -85,7 +85,7 @@ export function getRecommendedPlan(monthlyUsage: number): string {
  * @param plans - Array of subscription plans
  * @returns Boolean indicating if pricing is valid
  */
-export function validatePlanPricing(plans: any[]): boolean {
+function validatePlanPricing(plans: any[]): boolean {
   return plans.every(plan => 
     plan.price >= 0 && 
     typeof plan.price === 'number' &&

@@ -1,7 +1,7 @@
 import type React from "react"
 
 // Base video player types
-export interface VideoMetadata {
+interface VideoMetadata {
   title: string
   duration: number
   thumbnail?: string
@@ -17,7 +17,7 @@ export interface BookmarkData {
   createdAt: string
 }
 
-export interface PlayerConfig {
+interface PlayerConfig {
   showCaptions?: boolean
   showCertificateButton?: boolean
   autoAdvance?: boolean
@@ -56,7 +56,7 @@ export interface ProgressState {
   shouldMarkCompleted?: boolean
 }
 
-export type CertificateState = "idle" | "downloading" | "success" | "error"
+type CertificateState = "idle" | "downloading" | "success" | "error"
 
 export interface VideoPlayerProps {
   youtubeVideoId: string
@@ -109,7 +109,7 @@ export interface VideoPlayerProps {
   isKeyChapter?: boolean
 }
 
-export interface PlayerControlsProps {
+interface PlayerControlsProps {
   playing: boolean
   muted: boolean
   volume: number
@@ -155,7 +155,7 @@ export interface PlayerControlsProps {
 
 }
 
-export interface ProgressBarProps {
+interface ProgressBarProps {
   played: number
   loaded: number
   onSeek: (time: number) => void
@@ -166,7 +166,7 @@ export interface ProgressBarProps {
   onSeekToBookmark?: (time: number) => void
 }
 
-export interface BookmarkManagerProps {
+interface BookmarkManagerProps {
   videoId: string
   bookmarks: BookmarkData[]
   currentTime: number
@@ -177,7 +177,7 @@ export interface BookmarkManagerProps {
   formatTime: (seconds: number) => string
 }
 
-export interface BookmarkTimelineProps {
+interface BookmarkTimelineProps {
   bookmarks: BookmarkData[]
   duration: number
   currentTime: number
@@ -185,37 +185,37 @@ export interface BookmarkTimelineProps {
   formatTime: (seconds: number) => string
 }
 
-export interface PlaybackSpeedMenuProps {
+interface PlaybackSpeedMenuProps {
   currentSpeed: number
   onSpeedChange: (speed: number) => void
 }
 
-export interface TheaterModeManagerProps {
+interface TheaterModeManagerProps {
   isTheaterMode: boolean
   onToggle: () => void
   onExit: () => void
   className?: string
 }
 
-export interface VideoErrorStateProps {
+interface VideoErrorStateProps {
   onReload: () => void
   onRetry: () => void
   error?: Error
 }
 
-export interface VideoLoadingOverlayProps {
+interface VideoLoadingOverlayProps {
   isVisible: boolean
   message?: string
 }
 
 // Progress tracking types
-export interface ProgressMilestone {
+interface ProgressMilestone {
   percentage: number
   reached: boolean
   timestamp?: number
 }
 
-export interface CourseProgress {
+interface CourseProgress {
   courseId: string
   currentChapterId?: string
   completedChapters: string[]
@@ -225,7 +225,7 @@ export interface CourseProgress {
 }
 
 // Certificate types
-export interface CertificateData {
+interface CertificateData {
   id: string
   userId: string
   courseId: string
@@ -256,19 +256,19 @@ export interface YouTubePlayerConfig {
 }
 
 // Event handler types
-export type VideoEventHandler = () => void
-export type ProgressEventHandler = (state: ProgressState) => void
-export type TimeUpdateHandler = (time: number) => void
-export type BookmarkEventHandler = (time: number, title?: string) => void
-export type ErrorEventHandler = (error: Error) => void
-export type SeekEventHandler = (time: number) => void
-export type VolumeChangeHandler = (volume: number) => void
-export type PlaybackRateChangeHandler = (rate: number) => void
+type VideoEventHandler = () => void
+type ProgressEventHandler = (state: ProgressState) => void
+type TimeUpdateHandler = (time: number) => void
+type BookmarkEventHandler = (time: number, title?: string) => void
+type ErrorEventHandler = (error: Error) => void
+type SeekEventHandler = (time: number) => void
+type VolumeChangeHandler = (volume: number) => void
+type PlaybackRateChangeHandler = (rate: number) => void
 
 // Utility types
-export type VideoPlayerMode = "normal" | "theater" | "fullscreen"
-export type BufferHealthLevel = "poor" | "fair" | "good" | "excellent"
-export type PlaybackSpeed = 0.25 | 0.5 | 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2
+type VideoPlayerMode = "normal" | "theater" | "fullscreen"
+type BufferHealthLevel = "poor" | "fair" | "good" | "excellent"
+type PlaybackSpeed = 0.25 | 0.5 | 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2
 
 // Hook return types
 export interface UseVideoPlayerReturn {
@@ -303,7 +303,7 @@ export interface UseVideoPlayerReturn {
 }
 
 // Add types for our new overlay components
-export interface ChapterStartOverlayProps {
+interface ChapterStartOverlayProps {
   visible: boolean
   chapterTitle?: string
   courseTitle?: string
@@ -312,7 +312,7 @@ export interface ChapterStartOverlayProps {
   videoId?: string
 }
 
-export interface ChapterEndOverlayProps {
+interface ChapterEndOverlayProps {
   visible: boolean
   chapterTitle?: string
   nextChapterTitle?: string
