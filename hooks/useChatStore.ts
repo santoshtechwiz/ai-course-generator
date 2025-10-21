@@ -2,23 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { storageManager } from "@/utils/storage-manager"
-
-interface ChatAction {
-  type: string
-  label: string
-  url: string
-  disabled?: boolean
-  disabledReason?: string
-  metadata?: any
-}
-
-interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: number
-  actions?: ChatAction[]
-}
+import { ChatMessage, ChatAction } from "@/types/chat.types"
+import { CHAT_CONFIG } from "@/config/chat.config"
 
 interface ChatState {
   messages: ChatMessage[]
@@ -27,6 +12,7 @@ interface ChatState {
   remainingQuestions: number
   lastQuestionTime: number
   lastUserMessage: string
+  totalUserMessages: number // Track total messages even after deletion
 }
 
 interface UseChatStoreReturn {
@@ -37,6 +23,7 @@ interface UseChatStoreReturn {
   remainingQuestions: number
   lastQuestionTime: number
   lastUserMessage: string
+  totalUserMessages: number
 
   // Actions
   sendMessage: (text: string, isRetry?: boolean) => Promise<void>
@@ -49,16 +36,16 @@ interface UseChatStoreReturn {
 }
 
 const CHAT_STORAGE_KEY = 'courseai_chat_history'
-const MAX_STORED_MESSAGES = 50
 
 export function useChatStore(userId: string): UseChatStoreReturn {
   const [state, setState] = useState<ChatState>({
     messages: [],
     isLoading: false,
     error: null,
-    remainingQuestions: 5,
+    remainingQuestions: CHAT_CONFIG.defaultMessageLimit,
     lastQuestionTime: Date.now(),
-    lastUserMessage: ''
+    lastUserMessage: '',
+    totalUserMessages: 0
   })
 
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -70,9 +57,10 @@ export function useChatStore(userId: string): UseChatStoreReturn {
       if (stored && Array.isArray(stored.messages)) {
         setState(prev => ({
           ...prev,
-          messages: stored.messages.slice(-MAX_STORED_MESSAGES),
+          messages: stored.messages.slice(-CHAT_CONFIG.maxStoredMessages),
           lastQuestionTime: stored.lastQuestionTime || Date.now(),
-          remainingQuestions: stored.remainingQuestions || 5
+          remainingQuestions: stored.remainingQuestions || CHAT_CONFIG.defaultMessageLimit,
+          totalUserMessages: stored.totalUserMessages || 0
         }))
       }
     } catch (error) {
@@ -84,14 +72,15 @@ export function useChatStore(userId: string): UseChatStoreReturn {
   useEffect(() => {
     try {
       storageManager.saveChatHistory(userId, {
-        messages: state.messages.slice(-MAX_STORED_MESSAGES),
+        messages: state.messages.slice(-CHAT_CONFIG.maxStoredMessages),
         lastQuestionTime: state.lastQuestionTime,
-        remainingQuestions: state.remainingQuestions
+        remainingQuestions: state.remainingQuestions,
+        totalUserMessages: state.totalUserMessages
       })
     } catch (error) {
       console.warn('Failed to save chat history:', error)
     }
-  }, [state.messages, state.lastQuestionTime, state.remainingQuestions, userId])
+  }, [state.messages, state.lastQuestionTime, state.remainingQuestions, state.totalUserMessages, userId])
 
   // Reset remaining questions every hour
   useEffect(() => {
@@ -100,7 +89,7 @@ export function useChatStore(userId: string): UseChatStoreReturn {
       if (hoursSinceLastQuestion >= 1) {
         setState(prev => ({
           ...prev,
-          remainingQuestions: 5
+          remainingQuestions: CHAT_CONFIG.defaultMessageLimit
         }))
       }
     }, 60000) // Check every minute
@@ -122,7 +111,11 @@ export function useChatStore(userId: string): UseChatStoreReturn {
 
     // Track last user message for retry functionality
     if (!isRetry) {
-      setState(prev => ({ ...prev, lastUserMessage: text.trim() }))
+      setState(prev => ({ 
+        ...prev, 
+        lastUserMessage: text.trim(),
+        totalUserMessages: prev.totalUserMessages + 1 // Increment total count
+      }))
     }
 
     const userMessage: ChatMessage = {
@@ -200,11 +193,13 @@ export function useChatStore(userId: string): UseChatStoreReturn {
   }, [userId])
 
   const clearConversation = useCallback(() => {
+    // Keep totalUserMessages count even when clearing
     setState(prev => ({
       ...prev,
       messages: [],
       error: null,
       lastUserMessage: ''
+      // Don't reset totalUserMessages - persistent count
     }))
   }, [])
 
@@ -248,6 +243,7 @@ export function useChatStore(userId: string): UseChatStoreReturn {
     remainingQuestions: state.remainingQuestions,
     lastQuestionTime: state.lastQuestionTime,
     lastUserMessage: state.lastUserMessage,
+    totalUserMessages: state.totalUserMessages,
     sendMessage,
     clearConversation,
     retryLastMessage,

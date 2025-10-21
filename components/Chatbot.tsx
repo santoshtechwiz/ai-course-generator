@@ -17,6 +17,7 @@ import { storageManager } from "@/utils/storage-manager"
 import { MessageList } from "@/components/chat/MessageList"
 import { ChatInput } from "@/components/chat/ChatInput"
 import { WelcomeScreen } from "@/components/chat/WelcomeScreen"
+import "@/app/styles/chatbot.css"
 
 // Enhanced animation variants
 const chatContainerVariants = {
@@ -54,6 +55,7 @@ function Chatbot({ userId }: ChatbotProps) {
   const [showTooltip, setShowTooltip] = useState(false)
 
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
   const { subscription } = useUnifiedSubscription()
   const { toast } = useToast()
 
@@ -71,17 +73,35 @@ function Chatbot({ userId }: ChatbotProps) {
     setError
   } = useChatStore(userId)
 
-  // Auto-scroll to bottom when new messages arrive
+  // Enhanced auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (!scrollAreaRef.current || messages.length === 0) return
+    if (!scrollAreaRef.current) return
 
     const scrollContainer = scrollAreaRef.current.querySelector("[data-radix-scroll-area-viewport]")
     if (!scrollContainer) return
 
+    // Use smooth scroll for better UX
+    const scrollToBottom = () => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'end',
+          inline: 'nearest' 
+        })
+      } else {
+        // Fallback to direct scroll
+        scrollContainer.scrollTo({
+          top: scrollContainer.scrollHeight,
+          behavior: 'smooth'
+        })
+      }
+    }
+
+    // Use requestAnimationFrame for smooth rendering
     requestAnimationFrame(() => {
-      scrollContainer.scrollTop = scrollContainer.scrollHeight
+      setTimeout(scrollToBottom, 100)
     })
-  }, [messages.length])
+  }, [messages.length, isLoading])
 
   // Show tooltip for new users - only once
   useEffect(() => {
@@ -186,7 +206,7 @@ function Chatbot({ userId }: ChatbotProps) {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Badge
-                          variant={remainingQuestions > 0 ? "outline" : "destructive"}
+                          variant={remainingQuestions > 0 ? "neutral" : "default"}
                           className="ml-2 text-xs font-normal cursor-help"
                         >
                           {subscription?.isSubscribed ? "PREMIUM" : `${remainingQuestions} left`}
@@ -208,7 +228,7 @@ function Chatbot({ userId }: ChatbotProps) {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
-                            variant="ghost"
+                            variant="neutral"
                             size="sm"
                             onClick={clearConversation}
                             className="h-8 w-8 p-0 rounded-sm hover:bg-muted transition-none border-2 border-transparent hover:border-border"
@@ -223,7 +243,7 @@ function Chatbot({ userId }: ChatbotProps) {
                     </TooltipProvider>
                   )}
                   <Button
-                    variant="ghost"
+                    variant="neutral"
                     size="sm"
                     onClick={toggleChat}
                     className="h-8 w-8 p-0 rounded-sm hover:bg-muted transition-none border-2 border-transparent hover:border-border"
@@ -241,15 +261,19 @@ function Chatbot({ userId }: ChatbotProps) {
                       canUseChat={canUseChat()}
                     />
                   ) : (
-                    <MessageList
-                      messages={messages}
-                      isLoading={isLoading}
-                      error={error}
-                      lastUserMessage={lastUserMessage}
-                      onRetry={retryLastMessage}
-                      onCopy={copyToClipboard}
-                      copiedMessageId={copiedMessageId}
-                    />
+                    <>
+                      <MessageList
+                        messages={messages}
+                        isLoading={isLoading}
+                        error={error}
+                        lastUserMessage={lastUserMessage}
+                        onRetry={retryLastMessage}
+                        onCopy={copyToClipboard}
+                        copiedMessageId={copiedMessageId}
+                      />
+                      {/* Invisible div at the end for smooth auto-scroll */}
+                      <div ref={messagesEndRef} className="h-2" aria-hidden="true" />
+                    </>
                   )}
 
                   {/* Error Alert */}
@@ -264,7 +288,7 @@ function Chatbot({ userId }: ChatbotProps) {
                         <AlertDescription className="text-xs flex items-center justify-between">
                           <span>{error}</span>
                           <Button
-                            variant="ghost"
+                            variant="neutral"
                             size="sm"
                             onClick={retryLastMessage}
                             className="h-6 px-2 text-xs"

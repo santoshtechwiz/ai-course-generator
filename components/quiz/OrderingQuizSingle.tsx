@@ -1,12 +1,13 @@
-'use client';
+"use client"
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { cn } from '@/lib/utils'
-import { GripVertical, ChevronUp, ChevronDown, Check, Star, ArrowDownUp } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import type React from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { cn } from "@/lib/utils"
+import { GripVertical, ChevronUp, ChevronDown, Check, Star, ArrowDownUp, Hand } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 /**
  * OrderingQuizEnterprise.tsx
@@ -33,9 +34,9 @@ interface OrderingQuizQuestion {
   title: string
   topic?: string
   description?: string
-  difficulty?: 'easy' | 'medium' | 'hard'
+  difficulty?: "easy" | "medium" | "hard"
   steps: OrderingQuizStep[]
-  type?: 'ordering'
+  type?: "ordering"
 }
 
 /* ----------------------------- Hooks -------------------------------- */
@@ -45,10 +46,10 @@ function useAnalytics() {
   const sendEvent = useCallback((name: string, payload: any = {}) => {
     // TODO: wire to your analytics backend (Segment, Posthog, GA4, etc.)
     // Keep this tiny to save tokens and bandwidth in production.
-    if (typeof window === 'undefined') return
+    if (typeof window === "undefined") return
     try {
       // Example: window.analytics?.track?.(name, payload)
-      console.debug('[analytics]', name, payload)
+      console.debug("[analytics]", name, payload)
     } catch (e) {
       // swallow
     }
@@ -72,18 +73,23 @@ function useLocalPersistence(questionId?: string | number) {
     }
   }, [key])
 
-  const save = useCallback((value: number[]) => {
-    if (!key) return
-    try {
-      localStorage.setItem(key, JSON.stringify(value))
-    } catch (e) {
-      // ignore
-    }
-  }, [key])
+  const save = useCallback(
+    (value: number[]) => {
+      if (!key) return
+      try {
+        localStorage.setItem(key, JSON.stringify(value))
+      } catch (e) {
+        // ignore
+      }
+    },
+    [key],
+  )
 
   const clear = useCallback(() => {
     if (!key) return
-    try { localStorage.removeItem(key) } catch (e) {}
+    try {
+      localStorage.removeItem(key)
+    } catch (e) {}
   }, [key])
 
   return { load, save, clear }
@@ -94,9 +100,10 @@ function shuffleArray<T>(array: T[], seed?: number): T[] {
   // Simple deterministic-ish shuffle when seed provided; otherwise random
   const arr = [...array]
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = seed !== undefined
-      ? Math.floor(((seed + i) * 9301 + 49297) % 233280) % (i + 1)
-      : Math.floor(Math.random() * (i + 1))
+    const j =
+      seed !== undefined
+        ? Math.floor(((seed + i) * 9301 + 49297) % 233280) % (i + 1)
+        : Math.floor(Math.random() * (i + 1))
     ;[arr[i], arr[j]] = [arr[j], arr[i]]
   }
   return arr
@@ -104,18 +111,14 @@ function shuffleArray<T>(array: T[], seed?: number): T[] {
 
 /* ------------------------- Visual Components ------------------------- */
 
-function DifficultyBadge({ difficulty }: { difficulty?: OrderingQuizQuestion['difficulty'] }) {
+function DifficultyBadge({ difficulty }: { difficulty?: OrderingQuizQuestion["difficulty"] }) {
   if (!difficulty) return null
   const colors = {
-    easy: 'bg-green-100 text-green-800 border-green-300',
-    medium: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    hard: 'bg-red-100 text-red-800 border-red-300',
+    easy: "bg-green-100 text-green-800 border-green-300",
+    medium: "bg-yellow-100 text-yellow-800 border-yellow-300",
+    hard: "bg-red-100 text-red-800 border-red-300",
   }
-  return (
-    <Badge className={`text-xs font-semibold border-2 ${colors[difficulty]}` as any}>
-      {difficulty}
-    </Badge>
-  )
+  return <Badge className={`text-xs font-semibold border-2 ${colors[difficulty]}`}>{difficulty}</Badge>
 }
 
 /* Minimal progress ring showing completion percentage */
@@ -126,15 +129,21 @@ function QuizProgress({ value, size = 56 }: { value: number; size?: number }) {
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <g transform={`translate(${size/2}, ${size/2})`}>
+      <g transform={`translate(${size / 2}, ${size / 2})`}>
         <circle r={radius} fill="transparent" strokeWidth={6} strokeOpacity={0.08} stroke="currentColor" />
-        <circle r={radius} fill="transparent" strokeWidth={6} strokeLinecap="round"
+        <circle
+          r={radius}
+          fill="transparent"
+          strokeWidth={6}
+          strokeLinecap="round"
           stroke="currentColor"
           strokeDasharray={`${circumference} ${circumference}`}
           strokeDashoffset={offset}
-          style={{ transition: 'stroke-dashoffset 300ms ease' }}
+          style={{ transition: "stroke-dashoffset 300ms ease" }}
         />
-        <text x="0" y="4" textAnchor="middle" fontSize={12} fontWeight={700}>{Math.round(value)}%</text>
+        <text x="0" y="4" textAnchor="middle" fontSize={12} fontWeight={700}>
+          {Math.round(value)}%
+        </text>
       </g>
     </svg>
   )
@@ -146,173 +155,187 @@ function StepItem({
   index,
   isDragged,
   isDropTarget,
-  onDragStart,
-  onDragOver,
-  onDragEnd,
-  onKeyUp,
   label,
-  state,
-  dragPosition,
-  isDropAbove,
-  isDropBelow
+  showInitialHint,
 }: {
   step: OrderingQuizStep
   index: number
   isDragged: boolean
   isDropTarget: boolean
-  onDragStart: (i:number)=>void
-  onDragOver: (e: React.DragEvent, i:number)=>void
-  onDragEnd: ()=>void
-  onKeyUp: (e: React.KeyboardEvent, i:number)=>void
   label: string
-  state?: 'default'|'dragging'|'target'|'swapped'
-  dragPosition?: { x: number; y: number } | null
-  isDropAbove?: boolean
-  isDropBelow?: boolean
+  showInitialHint?: boolean
 }) {
   // Generate consistent color based on step ID for visual consistency
   const stepColor = useMemo(() => {
     const colors = [
-      'bg-blue-50 border-blue-200 dark:bg-blue-950/50 dark:border-blue-800',
-      'bg-green-50 border-green-200 dark:bg-green-950/50 dark:border-green-800',
-      'bg-purple-50 border-purple-200 dark:bg-purple-950/50 dark:border-purple-800',
-      'bg-amber-50 border-amber-200 dark:bg-amber-950/50 dark:border-amber-800',
-      'bg-rose-50 border-rose-200 dark:bg-rose-950/50 dark:border-rose-800',
-      'bg-cyan-50 border-cyan-200 dark:bg-cyan-950/50 dark:border-cyan-800',
-    ];
-    const id = typeof step.id === 'string' ? step.id.charCodeAt(0) : step.id;
-    return colors[id % colors.length];
-  }, [step.id]);
+      "bg-blue-50 border-blue-200 dark:bg-blue-950/50 dark:border-blue-800",
+      "bg-green-50 border-green-200 dark:bg-green-950/50 dark:border-green-800",
+      "bg-purple-50 border-purple-200 dark:bg-purple-950/50 dark:border-purple-800",
+      "bg-amber-50 border-amber-200 dark:bg-amber-950/50 dark:border-amber-800",
+      "bg-rose-50 border-rose-200 dark:bg-rose-950/50 dark:border-rose-800",
+      "bg-cyan-50 border-cyan-200 dark:bg-cyan-950/50 dark:border-cyan-800",
+    ]
+    const id = typeof step.id === "string" ? step.id.charCodeAt(0) : step.id
+    return colors[id % colors.length]
+  }, [step.id])
 
   const textColor = useMemo(() => {
     const colors = [
-      'text-blue-800',
-      'text-green-800', 
-      'text-purple-800',
-      'text-amber-800',
-      'text-rose-800',
-      'text-cyan-800',
-    ];
-    const id = typeof step.id === 'string' ? step.id.charCodeAt(0) : step.id;
-    return colors[id % colors.length];
-  }, [step.id]);
+      "text-blue-800",
+      "text-green-800",
+      "text-purple-800",
+      "text-amber-800",
+      "text-rose-800",
+      "text-cyan-800",
+    ]
+    const id = typeof step.id === "string" ? step.id.charCodeAt(0) : step.id
+    return colors[id % colors.length]
+  }, [step.id])
 
   return (
     <div className="relative">
-      {/* Drop Area Above Indicator */}
-      {isDropAbove && (
-        <motion.div 
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 4 }}
-          className="absolute -top-2 left-0 right-0 mx-4 bg-green-500 rounded-full z-20 shadow-lg"
+      {isDropTarget && (
+        <motion.div
+          initial={{ opacity: 0, scaleY: 0 }}
+          animate={{ opacity: 1, scaleY: 1 }}
+          exit={{ opacity: 0, scaleY: 0 }}
+          className="absolute -top-2 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent rounded-full z-50"
         >
-          <div className="absolute -top-1 -left-1 w-3 h-3 bg-green-500 rounded-full"></div>
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></div>
+          <motion.div
+            className="absolute left-1/2 -translate-x-1/2 -top-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg whitespace-nowrap"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+          >
+            Drop Here
+          </motion.div>
+        </motion.div>
+      )}
+
+      {isDragged && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute inset-0 border-2 border-dashed border-blue-300 rounded-xl bg-blue-50/50 dark:bg-blue-900/20 z-0"
+        >
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-blue-500 text-sm font-medium">Dragging...</div>
+          </div>
         </motion.div>
       )}
 
       <motion.div
-        draggable
-        onDragStart={() => onDragStart(index)}
-        onDragOver={(e) => onDragOver(e, index)}
-        onDragEnd={onDragEnd}
-        onKeyUp={(e) => onKeyUp(e, index)}
-        tabIndex={0}
-        role="button"
-        aria-label={`${label}: ${step.description}`}
-        initial={{ opacity: 1, scale: 1, y: 0 }}
+        layout
+        initial={{ opacity: 0, y: 20 }}
         animate={{
-          opacity: isDragged ? 0.8 : 1,
-          scale: isDragged ? 1.05 : isDropTarget ? 1.03 : 1,
-          y: isDragged ? (dragPosition ? -10 : 0) : 0,
+          opacity: isDragged ? 0.4 : 1,
+          y: 0,
+          scale: isDropTarget ? 1.02 : 1,
         }}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 1.05 }}
-        transition={{ 
-          duration: 0.2, 
-          ease: 'easeOut',
-          scale: { duration: 0.15 }
+        exit={{ opacity: 0, y: -20 }}
+        whileHover={{ scale: 1.01, y: -2 }}
+        transition={{
+          layout: { duration: 0.2 },
+          opacity: { duration: 0.15 },
         }}
         className={cn(
-          'group flex items-start gap-4 p-4 rounded-lg border-2 transition-all outline-none cursor-grab active:cursor-grabbing relative z-10',
-          'hover:shadow-lg hover:border-primary/50',
-          state === 'dragging' && 'ring-4 ring-blue-400 z-30 shadow-2xl scale-105',
-          state === 'target' && 'ring-2 ring-green-400 shadow-md border-green-300 bg-green-50 dark:bg-green-900/30',
-          state === 'swapped' && 'ring-2 ring-purple-400 animate-pulse',
-          state === 'default' && 'bg-card border-border',
-          // Apply consistent color based on step ID
+          "group flex items-start gap-3 p-4 rounded-xl border-2 transition-all",
+          "cursor-grab active:cursor-grabbing",
+          "hover:shadow-lg hover:border-primary/50",
           stepColor,
-          // Highlight drop target area
-          isDropTarget && 'bg-green-50 border-green-300 dark:bg-green-900/30'
+          isDragged && "opacity-40 scale-105",
+          isDropTarget && "ring-2 ring-green-400 shadow-xl border-green-400 bg-green-50/80 dark:bg-green-900/40",
         )}
-        style={{
-          transform: isDragged && dragPosition 
-            ? `translate(${dragPosition.x}px, ${dragPosition.y}px) rotate(2deg)`
-            : undefined,
-        }}
       >
-        {/* Drag Handle with Improved Visibility */}
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            "p-2 rounded-md transition-all duration-200 flex items-center gap-1",
-            isDragged 
-              ? "bg-blue-100 text-blue-600 dark:bg-blue-900 shadow-md" 
-              : "bg-primary/10 text-primary group-hover:bg-primary/20 group-hover:shadow-sm"
-          )}>
-            <GripVertical className="h-4 w-4 group-hover:scale-110 transition-transform" />
-            <ArrowDownUp className="h-3 w-3 opacity-70" />
-          </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <motion.div
+            className={cn(
+              "relative p-3 rounded-lg transition-all duration-200 flex flex-col items-center justify-center gap-0.5 border-2 cursor-grab active:cursor-grabbing",
+              isDragged
+                ? "bg-blue-500 text-white border-blue-600 shadow-xl shadow-blue-500/50"
+                : "bg-gradient-to-br from-primary/20 to-primary/10 text-primary border-primary/30 group-hover:from-primary/30 group-hover:to-primary/20 group-hover:border-primary/50 group-hover:shadow-lg",
+            )}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            animate={
+              showInitialHint && !isDragged
+                ? {
+                    scale: [1, 1.15, 1],
+                    rotate: [0, -5, 5, 0],
+                  }
+                : {}
+            }
+            transition={
+              showInitialHint
+                ? {
+                    duration: 2,
+                    repeat: 3,
+                    repeatDelay: 1,
+                  }
+                : {}
+            }
+          >
+            <GripVertical className="h-5 w-5 group-hover:scale-110 transition-transform" strokeWidth={2.5} />
+            <motion.div
+              className="absolute -right-1 -top-1"
+              animate={
+                showInitialHint
+                  ? {
+                      scale: [1, 1.3, 1],
+                      opacity: [0.7, 1, 0.7],
+                    }
+                  : {}
+              }
+              transition={
+                showInitialHint
+                  ? {
+                      duration: 1.5,
+                      repeat: Number.POSITIVE_INFINITY,
+                    }
+                  : {}
+              }
+            >
+              <Hand className="h-3 w-3 text-primary drop-shadow-lg" />
+            </motion.div>
+          </motion.div>
         </div>
 
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-3">
             <div className={cn("font-semibold text-sm", textColor)}>{step.description}</div>
-            <div className={cn(
-              "text-xs font-bold px-2 py-1 rounded-full transition-all duration-200 min-w-16 text-center",
-              isDragged 
-                ? "bg-blue-100 text-blue-700 shadow-sm" 
-                : isDropTarget
-                ? "bg-green-100 text-green-700 shadow-sm"
-                : "bg-white/80 text-gray-700 shadow-sm border"
-            )}>
-              {isDropTarget ? 'Drop Here' : label}
+            <div
+              className={cn(
+                "text-xs font-bold px-3 py-1.5 rounded-full transition-all duration-200 min-w-20 text-center shadow-sm",
+                isDragged
+                  ? "bg-blue-500 text-white shadow-lg shadow-blue-500/50 scale-110"
+                  : isDropTarget
+                    ? "bg-green-500 text-white shadow-lg shadow-green-500/50 scale-105"
+                    : "bg-white/90 text-gray-700 border-2 border-gray-200 group-hover:border-primary/40 group-hover:bg-primary/5",
+              )}
+            >
+              {isDropTarget ? "✓ Drop" : isDragged ? "Moving..." : label}
             </div>
           </div>
           {step.explanation && (
-            <div className="mt-2 text-xs text-muted-foreground">{step.explanation}</div>
+            <div className="mt-2 text-xs text-muted-foreground leading-relaxed">{step.explanation}</div>
           )}
+
+          <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground/70">
+            <ChevronUp className="h-3 w-3" />
+            <ChevronDown className="h-3 w-3" />
+            <span>Use arrow keys to reorder</span>
+          </div>
         </div>
 
-        {/* Visual indicator for drag state */}
-        {isDragged && (
-          <div className="absolute inset-0 border-2 border-dashed border-blue-400 rounded-lg pointer-events-none" />
-        )}
-
-        {/* Drop Zone Indicator */}
         {isDropTarget && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 border-2 border-dashed border-green-400 rounded-lg pointer-events-none"
+          <motion.div
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            className="absolute -top-3 -right-3 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/50"
           >
-            <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-              <Check className="h-3 w-3 text-white" />
-            </div>
+            <Check className="h-5 w-5 text-white" strokeWidth={3} />
           </motion.div>
         )}
       </motion.div>
-
-      {/* Drop Area Below Indicator */}
-      {isDropBelow && (
-        <motion.div 
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 4 }}
-          className="absolute -bottom-2 left-0 right-0 mx-4 bg-green-500 rounded-full z-20 shadow-lg"
-        >
-          <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-green-500 rounded-full"></div>
-          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></div>
-        </motion.div>
-      )}
     </div>
   )
 }
@@ -323,15 +346,15 @@ function OrderingQuizSingleEnhanced({
   questionNumber = 1,
   totalQuestions = 1,
   onAnswer,
-  existingAnswer, // Support for existing answers (e.g., when resuming quiz)
+  existingAnswer,
   enablePersistence = true,
-  className = ''
+  className = "",
 }: {
   question: OrderingQuizQuestion
   questionNumber?: number
   totalQuestions?: number
-  onAnswer?: (orderedIds: (number|string)[])=>void
-  existingAnswer?: number[] // Support existing answer restoration
+  onAnswer?: (orderedIds: (number | string)[]) => void
+  existingAnswer?: number[]
   enablePersistence?: boolean
   className?: string
 }) {
@@ -340,174 +363,169 @@ function OrderingQuizSingleEnhanced({
 
   // initial shuffle deterministic by question id to avoid different order each render
   const initial = useMemo(() => {
-    const seed = typeof question.id === 'number' ? question.id : String(question.id || question.title).split('').reduce((a,c)=>a+c.charCodeAt(0),0)
+    const seed =
+      typeof question.id === "number"
+        ? question.id
+        : String(question.id || question.title)
+            .split("")
+            .reduce((a, c) => a + c.charCodeAt(0), 0)
     return shuffleArray(question.steps, seed)
-  }, [question.id, question.steps])
+  }, [question.id, question.steps, question.title])
 
-  // Key observation: When question changes, we need to reset order state
-  // Use question.id as dependency to force reset when question changes
-  const [order, setOrder] = useState<number[]>(() => {
-    // If existingAnswer is provided, use it; otherwise initialize to original order
+  const [items, setItems] = useState<OrderingQuizStep[]>(() => {
     if (existingAnswer && Array.isArray(existingAnswer) && existingAnswer.length === initial.length) {
-      return existingAnswer
+      return existingAnswer.map((idx) => initial[idx]).filter(Boolean)
     }
-    return initial.map((_, i) => i)
+    return initial
   })
-  
-  // IMPORTANT: Reset order when question changes (question.id changes)
-  useEffect(() => {
-    setOrder(() => {
-      if (existingAnswer && Array.isArray(existingAnswer) && existingAnswer.length === initial.length) {
-        return existingAnswer
-      }
-      return initial.map((_, i) => i)
-    })
-  }, [question.id]) // Reset when question ID changes
-  
-  const [shuffled] = useState<OrderingQuizStep[]>(initial)
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
-  const [justSwapped, setJustSwapped] = useState<number | null>(null)
-  const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null)
-  const [dropIndicator, setDropIndicator] = useState<'above' | 'below' | 'on' | null>(null)
 
-  // restore from persistence (only on mount if no existingAnswer)
+  const [draggedItem, setDraggedItem] = useState<OrderingQuizStep | null>(null)
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null)
+  const [hasInteracted, setHasInteracted] = useState(false)
+  const [showInstructions, setShowInstructions] = useState(true)
+
+  useEffect(() => {
+    if (existingAnswer && Array.isArray(existingAnswer) && existingAnswer.length === initial.length) {
+      setItems(existingAnswer.map((idx) => initial[idx]).filter(Boolean))
+    } else {
+      setItems(initial)
+    }
+  }, [question.id])
+
   useEffect(() => {
     if (!enablePersistence || existingAnswer) return
-    if (shuffled.length === 0) return
-    
+    if (items.length === 0) return
+
     const saved = persistence.load()
-    if (saved && Array.isArray(saved) && saved.length === shuffled.length) {
-      setOrder(saved)
+    if (saved && Array.isArray(saved) && saved.length === items.length) {
+      setItems(saved.map((idx) => initial[idx]).filter(Boolean))
     }
-  }, [question.id]) // Also reset persistence loading when question changes
+  }, [question.id])
 
-  // notify parent
   useEffect(() => {
-    const ids = order.map(i => shuffled[i]?.id ?? i)
+    const ids = items.map((item) => item.id)
     onAnswer?.(ids)
-  }, [order, shuffled, onAnswer])
+  }, [items, onAnswer])
 
-  // save to local storage throttled
   useEffect(() => {
     if (!enablePersistence) return
-    const t = setTimeout(() => persistence.save(order), 250)
+    const indices = items.map((item) => initial.findIndex((s) => s.id === item.id))
+    const t = setTimeout(() => persistence.save(indices), 250)
     return () => clearTimeout(t)
-  }, [order, enablePersistence]) // Remove persistence from deps
+  }, [items, enablePersistence, initial, persistence])
 
-  const handleDragStart = useCallback((i:number) => {
-    setDraggedIndex(i)
-    setDragOverIndex(null)
-    setDragPosition({ x: 0, y: 0 })
-    setDropIndicator(null)
-    sendEvent('ordering.drag_start', { questionId: question.id, index: i })
-  }, [question.id, sendEvent])
+  const handleDragStart = useCallback(
+    (item: OrderingQuizStep) => {
+      setDraggedItem(item)
+      setDropTargetIndex(null)
+      setHasInteracted(true)
+      setShowInstructions(false)
+      sendEvent("ordering.drag_start", { questionId: question.id, itemId: item.id })
+    },
+    [question.id, sendEvent],
+  )
 
-  const handleDragOver = useCallback((e: React.DragEvent, i:number) => {
-    e.preventDefault()
-    if (draggedIndex === null || draggedIndex === i) return
-    
-    // Calculate drop position (above, on, or below the item)
-    const rect = e.currentTarget.getBoundingClientRect()
-    const relativeY = e.clientY - rect.top
-    const third = rect.height / 3
-    
-    let newDropIndicator: 'above' | 'on' | 'below' = 'on'
-    if (relativeY < third) {
-      newDropIndicator = 'above'
-    } else if (relativeY > third * 2) {
-      newDropIndicator = 'below'
-    } else {
-      newDropIndicator = 'on'
-    }
-    
-    setDropIndicator(newDropIndicator)
-    setDragPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top })
-    
-    // Only update order if the target index changes
-    if (dragOverIndex !== i) {
-      setDragOverIndex(i)
+  const handleDragOver = useCallback(
+    (e: React.DragEvent, index: number) => {
+      e.preventDefault()
+      if (!draggedItem) return
 
-      setOrder(prev => {
-        const next = [...prev]
-        const item = next.splice(draggedIndex, 1)[0]
-        
-        // Adjust insertion index based on drop position
-        let insertIndex = i
-        if (newDropIndicator === 'below' && i < next.length - 1) {
-          insertIndex = i + 1
-        } else if (newDropIndicator === 'above' && i > 0) {
-          insertIndex = i - 1
-        }
-        
-        next.splice(insertIndex, 0, item)
-        return next
+      setDropTargetIndex(index)
+    },
+    [draggedItem],
+  )
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent, dropIndex: number) => {
+      e.preventDefault()
+      if (!draggedItem) return
+
+      const dragIndex = items.findIndex((item) => item.id === draggedItem.id)
+      if (dragIndex === -1 || dragIndex === dropIndex) {
+        setDraggedItem(null)
+        setDropTargetIndex(null)
+        return
+      }
+
+      setItems((prev) => {
+        const newItems = [...prev]
+        const [removed] = newItems.splice(dragIndex, 1)
+        newItems.splice(dropIndex, 0, removed)
+        return newItems
       })
-      
-      setJustSwapped(i)
-      setTimeout(() => setJustSwapped(null), 300)
-      sendEvent('ordering.reorder', { questionId: question.id, from: draggedIndex, to: i, position: newDropIndicator })
-    }
-  }, [draggedIndex, dragOverIndex, question.id, sendEvent])
+
+      sendEvent("ordering.reorder", {
+        questionId: question.id,
+        from: dragIndex,
+        to: dropIndex,
+      })
+
+      setDraggedItem(null)
+      setDropTargetIndex(null)
+    },
+    [draggedItem, items, question.id, sendEvent],
+  )
 
   const handleDragEnd = useCallback(() => {
-    setDraggedIndex(null)
-    setDragOverIndex(null)
-    setDragPosition(null)
-    setDropIndicator(null)
-    sendEvent('ordering.drag_end', { questionId: question.id })
+    setDraggedItem(null)
+    setDropTargetIndex(null)
+    sendEvent("ordering.drag_end", { questionId: question.id })
   }, [sendEvent, question.id])
 
-  const handleKey = useCallback((e: React.KeyboardEvent, i:number) => {
-    if (e.key === 'ArrowUp' && i > 0) {
-      setOrder(prev => {
-        const next = [...prev]
-        ;[next[i-1], next[i]] = [next[i], next[i-1]]
-        return next
-      })
-      setJustSwapped(i-1); setTimeout(() => setJustSwapped(null), 300)
-      sendEvent('ordering.keyboard_move', { questionId: question.id, from: i, to: i-1 })
-    } else if (e.key === 'ArrowDown' && i < order.length - 1) {
-      setOrder(prev => {
-        const next = [...prev]
-        ;[next[i+1], next[i]] = [next[i], next[i+1]]
-        return next
-      })
-      setJustSwapped(i+1); setTimeout(() => setJustSwapped(null), 300)
-      sendEvent('ordering.keyboard_move', { questionId: question.id, from: i, to: i+1 })
-    }
-  }, [order.length, question.id, sendEvent])
+  const handleKey = useCallback(
+    (e: React.KeyboardEvent, index: number) => {
+      setHasInteracted(true)
+      setShowInstructions(false)
 
-  const currentSteps = order.map(idx => shuffled[idx]).filter(Boolean)
+      if (e.key === "ArrowUp" && index > 0) {
+        setItems((prev) => {
+          const newItems = [...prev]
+          ;[newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]]
+          return newItems
+        })
+        sendEvent("ordering.keyboard_move", { questionId: question.id, from: index, to: index - 1 })
+      } else if (e.key === "ArrowDown" && index < items.length - 1) {
+        setItems((prev) => {
+          const newItems = [...prev]
+          ;[newItems[index + 1], newItems[index]] = [newItems[index], newItems[index + 1]]
+          return newItems
+        })
+        sendEvent("ordering.keyboard_move", { questionId: question.id, from: index, to: index + 1 })
+      }
+    },
+    [items.length, question.id, sendEvent],
+  )
 
-  const hasChanged = useMemo(() => order.some((v, i) => v !== i), [order])
+  const hasChanged = useMemo(() => {
+    return items.some((item, i) => item.id !== initial[i]?.id)
+  }, [items, initial])
 
-  // Quick heuristic correctness indicator (not authoritative) — used for UX
   const isLikelyCorrect = useMemo(() => {
-    // if ids are numeric and sequential and match original step ids order, mark as likely correct
-    const ids = currentSteps.map(s => s.id)
-    const originalIds = question.steps.map(s => s.id)
+    const ids = items.map((s) => s.id)
+    const originalIds = question.steps.map((s) => s.id)
     if (!originalIds || originalIds.length !== ids.length) return null
     return ids.every((id, i) => id === originalIds[i])
-  }, [currentSteps, question.steps])
+  }, [items, question.steps])
 
   return (
-    <div className={cn('w-full max-w-4xl mx-auto', className)}>
-      <Card className="shadow-lg border">
-        <CardHeader className="flex items-start justify-between gap-4 p-6">
+    <div className={cn("w-full max-w-4xl mx-auto", className)}>
+      <Card className="shadow-xl border-2">
+        <CardHeader className="flex items-start justify-between gap-4 p-6 bg-gradient-to-br from-primary/5 to-transparent">
           <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <Badge className="bg-primary/10 text-primary">Question {questionNumber} / {totalQuestions}</Badge>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Badge className="bg-primary/10 text-primary border border-primary/20">
+                Question {questionNumber} / {totalQuestions}
+              </Badge>
               <DifficultyBadge difficulty={question.difficulty} />
 
               {hasChanged && (
-                <Badge className="ml-2 bg-indigo-100 text-indigo-800">Modified</Badge>
+                <Badge className="ml-2 bg-indigo-100 text-indigo-800 border border-indigo-300">Modified</Badge>
               )}
             </div>
 
-            <CardTitle className="mt-3 text-xl font-semibold">{question.title}</CardTitle>
+            <CardTitle className="mt-3 text-xl font-semibold text-balance">{question.title}</CardTitle>
             {question.description && (
-              <p className="mt-2 text-sm text-muted-foreground">{question.description}</p>
+              <p className="mt-2 text-sm text-muted-foreground text-pretty">{question.description}</p>
             )}
           </div>
 
@@ -515,71 +533,192 @@ function OrderingQuizSingleEnhanced({
             <div className="flex flex-col items-end">
               <div className="text-xs text-muted-foreground">Progress</div>
               <div className="w-16 h-16">
-                <QuizProgress value={(order.filter((v,i)=>v===i).length / order.length) * 100} />
+                <QuizProgress
+                  value={(items.filter((item, i) => item.id === initial[i]?.id).length / items.length) * 100}
+                />
               </div>
             </div>
 
             <div className="text-right">
               <div className="text-xs text-muted-foreground">Quick check</div>
               <div className="flex items-center gap-2">
-                {isLikelyCorrect === true && (<div className="inline-flex items-center gap-1 text-green-700"><Check className="h-4 w-4"/> Looks aligned</div>)}
-                {isLikelyCorrect === false && (<div className="inline-flex items-center gap-1 text-orange-700"><Star className="h-4 w-4"/> Review</div>)}
-                {isLikelyCorrect === null && (<div className="text-muted-foreground text-xs">—</div>)}
+                {isLikelyCorrect === true && (
+                  <div className="inline-flex items-center gap-1 text-green-700 font-medium">
+                    <Check className="h-4 w-4" /> Looks aligned
+                  </div>
+                )}
+                {isLikelyCorrect === false && (
+                  <div className="inline-flex items-center gap-1 text-orange-700 font-medium">
+                    <Star className="h-4 w-4" /> Review
+                  </div>
+                )}
+                {isLikelyCorrect === null && <div className="text-muted-foreground text-xs">—</div>}
               </div>
             </div>
           </div>
         </CardHeader>
 
         <CardContent className="p-6 space-y-6">
-          {/* Drop Zone Instructions */}
-          {draggedIndex !== null && (
-            <motion.div 
+          <AnimatePresence>
+            {showInstructions && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -20, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="relative overflow-hidden"
+              >
+                <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-blue-50 border-2 border-blue-200 rounded-xl p-5 shadow-lg">
+                  <button
+                    onClick={() => setShowInstructions(false)}
+                    className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label="Dismiss instructions"
+                  >
+                    ✕
+                  </button>
+                  <div className="flex items-start gap-4">
+                    <motion.div
+                      animate={{
+                        y: [0, -8, 0],
+                        rotate: [0, -10, 10, 0],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Number.POSITIVE_INFINITY,
+                        repeatDelay: 1,
+                      }}
+                      className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg"
+                    >
+                      <Hand className="h-6 w-6 text-white" />
+                    </motion.div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-blue-900 text-lg mb-2">How to Reorder Steps</h3>
+                      <div className="space-y-2 text-sm text-blue-800">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <span>
+                            <strong>Drag & Drop:</strong> Click and hold the grip handle (
+                            <GripVertical className="inline h-4 w-4" />) to drag items
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                          <span>
+                            <strong>Keyboard:</strong> Use{" "}
+                            <kbd className="px-2 py-0.5 bg-white border border-blue-300 rounded text-xs font-mono">
+                              ↑
+                            </kbd>{" "}
+                            <kbd className="px-2 py-0.5 bg-white border border-blue-300 rounded text-xs font-mono">
+                              ↓
+                            </kbd>{" "}
+                            arrow keys to move items
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span>
+                            <strong>Drop Zones:</strong> Green indicators show where you can drop items
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {draggedItem && (
+            <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center"
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl p-4 shadow-xl"
             >
-              <div className="flex items-center justify-center gap-2 text-blue-700 font-medium">
-                <GripVertical className="h-4 w-4" />
-                <span>Drag to reorder. Green areas show where you can drop.</span>
+              <div className="flex items-center justify-center gap-3 font-semibold">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                >
+                  <ArrowDownUp className="h-5 w-5" />
+                </motion.div>
+                <span>Dragging "{draggedItem.description}"... Drop on a green zone to place</span>
               </div>
             </motion.div>
           )}
 
           <div className="space-y-4" role="region" aria-label={`Ordering steps for ${question.title}`}>
-            <AnimatePresence>
-              {currentSteps.map((step, idx) => (
-                <StepItem
-                  key={`${step.id}-${idx}`}
-                  step={step}
-                  index={idx}
-                  isDragged={draggedIndex === idx}
-                  isDropTarget={dragOverIndex === idx}
-                  onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
+            <AnimatePresence mode="popLayout">
+              {items.map((item, idx) => (
+                <div
+                  key={item.id}
+                  draggable
+                  onDragStart={() => handleDragStart(item)}
+                  onDragOver={(e) => handleDragOver(e, idx)}
+                  onDrop={(e) => handleDrop(e, idx)}
                   onDragEnd={handleDragEnd}
-                  onKeyUp={handleKey}
-                  label={`Step ${idx + 1}`}
-                  state={draggedIndex === idx ? 'dragging' : (dragOverIndex === idx ? 'target' : (justSwapped === idx ? 'swapped' : 'default'))}
-                  dragPosition={draggedIndex === idx ? dragPosition : null}
-                  isDropAbove={dragOverIndex === idx && dropIndicator === 'above'}
-                  isDropBelow={dragOverIndex === idx && dropIndicator === 'below'}
-                />
+                  onKeyUp={(e) => handleKey(e, idx)}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Step ${idx + 1}: ${item.description}. Use arrow keys to reorder or drag with mouse.`}
+                >
+                  <StepItem
+                    step={item}
+                    index={idx}
+                    isDragged={draggedItem?.id === item.id}
+                    isDropTarget={dropTargetIndex === idx && draggedItem?.id !== item.id}
+                    label={`Step ${idx + 1}`}
+                    showInitialHint={!hasInteracted && idx === 0}
+                  />
+                </div>
               ))}
             </AnimatePresence>
           </div>
 
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-4 pt-4 border-t">
             <div className="flex items-center gap-3">
-              <Button size="sm" onClick={() => { setOrder(initial.map((_, i) => i)); persistence.clear(); sendEvent('ordering.reset', { questionId: question.id }) }}>
-                Reset
+              <Button
+                size="lg"
+                variant="neutral"
+                onClick={() => {
+                  setItems(initial)
+                  persistence.clear()
+                  setHasInteracted(false)
+                  setShowInstructions(true)
+                  sendEvent("ordering.reset", { questionId: question.id })
+                }}
+                className="font-semibold"
+              >
+                Reset Order
               </Button>
 
-              <Button size="sm" onClick={() => { persistence.save(order); sendEvent('ordering.save', { questionId: question.id, order }) }}>
-                Save
+              <Button
+                size="lg"
+                variant="default"
+                onClick={() => {
+                  const indices = items.map((item) => initial.findIndex((s) => s.id === item.id))
+                  persistence.save(indices)
+                  sendEvent("ordering.save", { questionId: question.id, order: indices })
+                }}
+                className="font-semibold shadow-lg"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Save Progress
               </Button>
             </div>
 
-            <div className="text-sm text-muted-foreground">{hasChanged ? 'Order modified' : 'Order unchanged'}</div>
+            <div className="flex items-center gap-2">
+              {hasChanged ? (
+                <Badge className="bg-amber-100 text-amber-800 border border-amber-300 px-3 py-1">
+                  <Star className="h-3 w-3 mr-1 inline" />
+                  Order modified
+                </Badge>
+              ) : (
+                <Badge variant="neutral" className="px-3 py-1">
+                  Original order
+                </Badge>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -589,23 +728,4 @@ function OrderingQuizSingleEnhanced({
 
 export default OrderingQuizSingleEnhanced
 
-// Backward compatibility alias
 const OrderingQuizSingle = OrderingQuizSingleEnhanced
-
-/* -------------------- Notes for Integrators ------------------------- */
-
-/*
-Integration suggestions (not included in compiled file):
-
-- Server save: replace persistence.save with an API call to persist to server + DB for paid users.
-- Premium hints: provide contextual hints via a paid tier; track hint usage in analytics.
-- Timed mode & leaderboards: add a timer and submit times to ranked leaderboards for gamification.
-- Batch generation: generate multiple questions via your backend (OpenAI) using the function schema you already built.
-- Accessibility: ensure focus styles visible and test with keyboard-only users & screenreaders.
-
-Monetization ideas:
-- Sell "Pro" course packs: include curated question banks + video breakdowns.
-- Live workshops: allow instructors to run live quizzes and sell seats.
-- Analytics dashboard for educators: paid insights into where students fail most.
-- Certificates and timed challenges: pay-to-unlock certificates, add badges and verification.
-*/

@@ -9,23 +9,8 @@ import ReactMarkdown from "react-markdown"
 import type { Components } from "react-markdown"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-
-interface ChatAction {
-  type: string
-  label: string
-  url: string
-  disabled?: boolean
-  disabledReason?: string
-  metadata?: any
-}
-
-interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: number
-  actions?: ChatAction[]
-}
+import { ActionButtons } from "./ActionButtons"
+import { ChatAction, ChatMessage } from "@/types/chat.types"
 
 interface MessageBubbleProps {
   message: ChatMessage
@@ -50,7 +35,10 @@ const MessageBubble = memo(({ message, index, onCopy, copiedMessageId }: Message
       animate="visible"
       exit="exit"
       variants={messageVariants}
-      className={cn("flex group", message.role === "user" ? "justify-end" : "justify-start")}
+      className={cn(
+        "flex group chat-message-wrapper",
+        message.role === "user" ? "justify-end" : "justify-start"
+      )}
     >
       <div
         className={cn(
@@ -59,7 +47,7 @@ const MessageBubble = memo(({ message, index, onCopy, copiedMessageId }: Message
           message.role === "user" ? "items-end" : "items-start",
         )}
       >
-        <Avatar className="w-7 h-7 shrink-0">
+        <Avatar className="w-7 h-7 shrink-0 mt-1">
           {message.role === "user" ? (
             <AvatarImage src="/user-avatar.png" alt="User" />
           ) : (
@@ -69,18 +57,18 @@ const MessageBubble = memo(({ message, index, onCopy, copiedMessageId }: Message
           )}
           <AvatarFallback>{message.role === "user" ? "U" : "AI"}</AvatarFallback>
         </Avatar>
-        <div className="flex flex-col gap-1 min-w-0">
+        <div className="flex flex-col gap-2 min-w-0">
           <div
             className={cn(
-              "px-3 py-2 rounded-lg text-sm relative",
+              "px-4 py-2.5 rounded-lg text-sm relative shadow-sm",
               message.role === "user"
                 ? "bg-primary text-primary-foreground rounded-br-sm"
-                : "bg-muted text-foreground rounded-bl-sm",
+                : "bg-muted text-foreground rounded-bl-sm border border-border/50",
             )}
           >
             {message.content ? (
               <ReactMarkdown
-                className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 break-words"
                 components={markdownComponents}
               >
                 {message.content}
@@ -93,14 +81,15 @@ const MessageBubble = memo(({ message, index, onCopy, copiedMessageId }: Message
           </div>
           {message.role === "assistant" && message.content && (
             <Button
-              variant="ghost"
+              variant="neutral"
               size="sm"
               onClick={handleCopy}
               className={cn(
-                "h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity self-start ml-1",
-                "hover:bg-muted/80"
+                "h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity self-start ml-1",
+                "hover:bg-muted/80 focus-visible:opacity-100"
               )}
               aria-label="Copy message"
+              tabIndex={0}
             >
               {isCopied ? (
                 <Check className="h-3 w-3 text-success" />
@@ -112,27 +101,13 @@ const MessageBubble = memo(({ message, index, onCopy, copiedMessageId }: Message
           
           {/* Render action buttons */}
           {message.role === "assistant" && message.actions && message.actions.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2 ml-1">
-              {message.actions.map((action, idx) => (
-                <Button
-                  key={idx}
-                  variant={action.type === 'upgrade_plan' ? 'default' : 'outline'}
-                  size="sm"
-                  disabled={action.disabled}
-                  onClick={() => {
-                    if (!action.disabled) {
-                      window.location.href = action.url
-                    }
-                  }}
-                  className={cn(
-                    "h-8 text-xs",
-                    action.disabled && "opacity-60 cursor-not-allowed"
-                  )}
-                  title={action.disabledReason}
-                >
-                  {action.label}
-                </Button>
-              ))}
+            <div className="ml-1">
+              <ActionButtons 
+                actions={message.actions}
+                onActionClick={(action) => {
+                  console.log('[MessageList] Action clicked:', action)
+                }}
+              />
             </div>
           )}
         </div>
@@ -164,11 +139,19 @@ const markdownComponents: Partial<Components> = {
         href={href}
         target={isExternal ? '_blank' : '_self'}
         rel={isExternal ? 'noopener noreferrer' : undefined}
-        className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 font-medium transition-all duration-200 hover:bg-primary/5 px-2 py-1 rounded-md group"
+        className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 font-medium transition-all duration-200 hover:bg-primary/10 px-2 py-1 rounded-md group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:bg-primary/15 active:scale-[0.98]"
+        tabIndex={0}
+        aria-label={`${isExternal ? 'External link to' : 'Navigate to'} ${linkText}`}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            e.currentTarget.click()
+          }
+        }}
         {...props}
       >
         <Icon className="h-3.5 w-3.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
-        <span className="group-hover:underline">{children}</span>
+        <span className="underline decoration-primary/30 group-hover:decoration-primary/80 underline-offset-2 transition-all">{children}</span>
         {isExternal && <ExternalLink className="h-3 w-3 opacity-60" />}
       </a>
     )
@@ -342,7 +325,7 @@ export const MessageList = memo(({
   copiedMessageId
 }: MessageListProps) => {
   return (
-    <div className="space-y-4 pt-4 pb-4">
+    <div className="space-y-4 pt-4 pb-2">
       <AnimatePresence>
         {messages.map((message, index) => (
           <MessageBubble
