@@ -427,22 +427,20 @@ function QuizHeader({
 
   return (
     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-      <Card className={cn("relative overflow-hidden border-2 shadow-xl rounded-2xl", getPerformanceBorder())}>
-        <div className={cn("absolute inset-0 bg-gradient-to-br opacity-50", getPerformanceGradient(quizType))} />
-
-        <CardHeader className="relative z-10 text-center py-8">
+      <Card className={cn("relative overflow-hidden border-4 border-border shadow-[6px_6px_0px_0px_hsl(var(--border))] rounded-none", getPerformanceBorder())}>
+        <CardHeader className="relative z-10 text-center py-8 bg-background">
           <div className="flex items-center justify-center mb-6">
             <motion.div
-              className="p-4 rounded-2xl bg-background/80 backdrop-blur-sm shadow-lg border"
+              className="p-4 rounded-sm bg-main text-main-foreground border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]"
               whileHover={{ scale: 1.05, rotate: 5 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
-              <Trophy className="w-8 h-8 text-primary" />
+              <Trophy className="w-8 h-8" />
             </motion.div>
           </div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <CardTitle className="text-4xl font-bold mb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <CardTitle className="text-4xl font-black mb-4 text-foreground">
               {title}
             </CardTitle>
 
@@ -450,8 +448,8 @@ function QuizHeader({
               <Badge
                 variant="secondary"
                 className={cn(
-                  "text-sm px-3 py-1 font-semibold",
-                  quizType === 'blanks' ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-transparent' : ''
+                  "text-sm px-3 py-1 font-black border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]",
+                  quizType === 'blanks' ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]' : ''
                 )}
               >
                 {quizType === "open-ended" ? "Open-Ended" : "Fill in the Blanks"}
@@ -459,10 +457,9 @@ function QuizHeader({
               <Badge
                 variant="outline"
                 className={cn(
-                  "text-sm px-3 py-1 font-semibold",
+                  "text-sm px-3 py-1 font-black border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]",
                   performance.color,
                   performance.bgColor,
-                  performance.borderColor,
                 )}
               >
                 <motion.span
@@ -477,7 +474,7 @@ function QuizHeader({
             </div>
 
             {completedAt && (
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground font-medium">
                 Completed on {new Date(completedAt).toLocaleDateString()} at{" "}
                 {new Date(completedAt).toLocaleTimeString()}
               </p>
@@ -509,16 +506,16 @@ function ScoreOverview({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.6, delay: 0.1 }}
     >
-          <Card className="shadow-xl border-2">
-        <CardHeader className="pb-4">
+          <Card className="shadow-[6px_6px_0px_0px_hsl(var(--border))] border-4 border-border rounded-none bg-background">
+        <CardHeader className="pb-4 border-b-4 border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <BarChart3 className="w-6 h-6 text-primary" />
+              <div className="p-2 rounded-sm bg-main text-main-foreground border-2 border-border">
+                <BarChart3 className="w-6 h-6" />
               </div>
               <div>
-                <CardTitle className="text-2xl">Performance Overview</CardTitle>
-                <p className="text-muted-foreground">Your quiz performance breakdown</p>
+                <CardTitle className="text-2xl font-black">Performance Overview</CardTitle>
+                <p className="text-muted-foreground font-medium">Your quiz performance breakdown</p>
               </div>
             </div>
 
@@ -528,33 +525,25 @@ function ScoreOverview({
               animate={{ scale: 1 }}
               transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
             >
-              <div className="text-4xl font-bold text-primary">{percentage}%</div>
-              <div className="text-sm text-muted-foreground">Overall Score</div>
+              <div className="text-4xl font-black text-primary">{percentage}%</div>
+              <div className="text-sm text-muted-foreground font-medium">Overall Score</div>
             </motion.div>
           </div>
         </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 pt-6">
           {/* Progress Bar */}
           <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-sm font-bold">
               <span>Progress</span>
-              <span className="font-medium">
+              <span className="font-black">
                 {correctCount}/{totalQuestions} correct
               </span>
             </div>
-            <div className="relative">
-              <Progress value={percentage} className="h-3" />
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
-                animate={{ x: ["-100%", "100%"] }}
-                transition={{
-                  duration: 2,
-                  repeat: Number.POSITIVE_INFINITY,
-                  ease: "linear",
-                  repeatDelay: 1,
-                }}
-                style={{ opacity: percentage > 0 ? 1 : 0 }}
+            <div className="relative border-2 border-border h-6 rounded-sm bg-background shadow-[3px_3px_0px_0px_hsl(var(--border))]">
+              <div
+                className="h-full bg-primary transition-all duration-300"
+                style={{ width: `${percentage}%` }}
               />
             </div>
           </div>
@@ -567,7 +556,7 @@ function ScoreOverview({
 
           {/* Performance Message */}
           <motion.div
-            className={cn("p-4 rounded-xl border-2", performance.bgColor, performance.borderColor)}
+            className={cn("p-4 border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))] rounded-sm bg-background", performance.bgColor)}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
@@ -580,7 +569,7 @@ function ScoreOverview({
               >
                 {performance.emoji}
               </motion.span>
-              <p className={cn("font-semibold", performance.color)}>{performance.message}</p>
+              <p className={cn("font-bold", performance.color)}>{performance.message}</p>
             </div>
           </motion.div>
         </CardContent>
@@ -670,8 +659,8 @@ function SimilarityBreakdown({
         <span className="text-muted-foreground">{label}</span>
       </div>
       <div className="flex items-center gap-2">
-        <span className="font-medium">{count}</span>
-        <Badge variant="secondary" className="text-xs">
+        <span className="font-black">{count}</span>
+        <Badge className="text-xs font-bold border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]">
           {Math.round(percentage)}%
         </Badge>
       </div>
@@ -698,27 +687,27 @@ function QuestionReview({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.4 }}
     >
-      <Card className="shadow-xl border-2">
-        <CardHeader className="border-b bg-muted/30">
+      <Card className="shadow-[6px_6px_0px_0px_hsl(var(--border))] border-4 border-border rounded-none bg-background">
+        <CardHeader className="border-b-4 border-border bg-background">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <BookOpen className="w-6 h-6 text-primary" />
+              <div className="p-2 rounded-sm bg-main text-main-foreground border-2 border-border">
+                <BookOpen className="w-6 h-6" />
               </div>
               <div>
-                <CardTitle className="text-2xl">Answer Review</CardTitle>
-                <p className="text-muted-foreground">Detailed analysis of your {results.length} answers</p>
+                <CardTitle className="text-2xl font-black">Answer Review</CardTitle>
+                <p className="text-muted-foreground font-medium">Detailed analysis of your {results.length} answers</p>
               </div>
             </div>
 
-            <Badge variant="secondary" className="text-sm">
+            <Badge className="text-sm font-black border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]">
               {results.filter((r) => r.isCorrect).length}/{results.length} Correct
             </Badge>
           </div>
         </CardHeader>
 
         <CardContent className="p-0">
-          <div className="divide-y">
+          <div className="divide-y-2 divide-border">
             <AnimatePresence>
               {results.map((question, index) => (
                 <QuestionItem
@@ -773,7 +762,7 @@ function QuestionItem({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.4 }}
-      className="p-6 hover:bg-muted/30 transition-colors"
+      className="p-6 hover:bg-secondary-background/50 transition-colors border-b-2 border-border"
     >
       <div className="space-y-4">
         {/* Question Header */}
@@ -781,45 +770,45 @@ function QuestionItem({
           <div className="flex items-start gap-4 flex-1">
             <div
               className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+                "w-8 h-8 rounded-sm flex items-center justify-center text-sm font-black border-2 shadow-[2px_2px_0px_0px_hsl(var(--border))]",
                 question.isCorrect
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
-                  : "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-300",
+                  ? "bg-green-600 text-white border-border"
+                  : "bg-red-600 text-white border-border",
               )}
             >
               {index + 1}
             </div>
 
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-lg mb-2 leading-relaxed">{question.question}</h3>
+              <h3 className="font-black text-lg mb-2 leading-relaxed text-foreground">{question.question}</h3>
 
               {/* Quick Preview */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   {question.isCorrect ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
                   ) : (
                     <XCircle className="w-4 h-4 text-red-600" />
                   )}
-                  <Badge variant={question.isCorrect ? "default" : "destructive"} className="text-xs">
-                    {question.isCorrect ? "Correct" : "Incorrect"}
+                  <Badge className="text-xs font-black border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]">
+                    {question.isCorrect ? "✓ Correct" : "✗ Incorrect"}
                   </Badge>
 
                   <div className="ml-2">
-                    <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium border border-blue-100">
+                    <span className="inline-flex items-center gap-2 px-2 py-1 rounded-sm bg-primary text-primary-foreground text-xs font-black border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]">
                       {similarityPercentage}% match
                     </span>
                   </div>
                 </div>
 
-                <div className="text-sm text-muted-foreground">
-                  <span className="font-medium">Your answer:</span> {question.userAnswer || "No answer provided"}
+                <div className="text-sm text-muted-foreground font-medium">
+                  <span className="font-black">Your answer:</span> {question.userAnswer || "No answer provided"}
                 </div>
               </div>
             </div>
           </div>
 
-          <Button variant="ghost" size="sm" onClick={onToggleExpansion} className="shrink-0">
+          <Button variant="noShadow" size="sm" onClick={onToggleExpansion} className="shrink-0 border-2 border-border rounded-sm">
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </Button>
         </div>
@@ -840,22 +829,25 @@ function QuestionItem({
               />
 
               {/* Similarity Visualization */}
-              <div className={cn("p-4 rounded-lg border", getSimilarityBg(question.similarity || 0))}>
+              <div className={cn("p-4 rounded-sm border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]", getSimilarityBg(question.similarity || 0))}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="w-4 h-4" />
-                    <span className="font-medium text-sm">Similarity Analysis</span>
+                    <span className="font-black text-sm">Similarity Analysis</span>
                   </div>
-                  <Badge variant="outline" className="font-mono text-xs">
+                  <Badge className="font-mono text-xs font-black border-2 border-border">
                     {similarityPercentage}%
                   </Badge>
                 </div>
 
-                <Progress value={similarityPercentage} className="h-2 mb-2 bg-[hsl(var(--muted))]">
-                  <div className="bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] h-2 rounded" style={{ width: `${similarityPercentage}%` }} />
-                </Progress>
+                <div className="relative h-6 border-2 border-border rounded-sm bg-background shadow-[3px_3px_0px_0px_hsl(var(--border))]">
+                  <div
+                    className="h-full bg-primary transition-all duration-300"
+                    style={{ width: `${similarityPercentage}%` }}
+                  />
+                </div>
 
-                <p className={cn("text-xs", getSimilarityColor(question.similarity || 0))}>
+                <p className={cn("text-xs mt-2 font-medium", getSimilarityColor(question.similarity || 0))}>
                   {getSimilarityFeedback(question.similarity || 0)}
                 </p>
               </div>

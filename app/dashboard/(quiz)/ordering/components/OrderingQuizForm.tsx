@@ -13,19 +13,18 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle, HelpCircle, Sparkles, Timer } from 'lucide-react'
+import { AlertCircle, HelpCircle, Sparkles } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import PlanAwareButton from '@/components/quiz/PlanAwareButton'
-import { SubscriptionSlider } from '@/app/dashboard/subscription/components/SubscriptionSlider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Slider } from '@/components/ui/slider'
 import type { SubscriptionPlanType } from '@/types/subscription-plans'
 import { getPlanConfig } from '@/types/subscription-plans'
 
 interface OrderingQuizFormProps {
   credits: number
   isLoggedIn: boolean
-  maxSteps: number
   quizType: string
   params?: Record<string, string>
 }
@@ -33,7 +32,6 @@ interface OrderingQuizFormProps {
 export default function OrderingQuizForm({
   credits,
   isLoggedIn,
-  maxSteps,
   quizType,
   params,
 }: OrderingQuizFormProps) {
@@ -46,22 +44,15 @@ export default function OrderingQuizForm({
   const [submissionError, setSubmissionError] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
 
-  // Get subscription-based limits
-  const minSteps = useMemo(() => 2, [])
-  const maxStepsAllowed = useMemo(() => {
-    const configMax = typeof planConfig.maxQuestionsPerQuiz === 'number' ? planConfig.maxQuestionsPerQuiz : 20
-    return Math.min(maxSteps || configMax, 20)
-  }, [maxSteps, planConfig.maxQuestionsPerQuiz])
-
   // Create dynamic schema based on subscription limits
   const orderingSchema = useMemo(
     () =>
       z.object({
         topic: z.string().min(3, 'Topic must be at least 3 characters'),
-        numberOfSteps: z.number().min(minSteps).max(maxStepsAllowed),
+        numberOfQuestions: z.number().min(1).max(planConfig.maxQuestionsPerQuiz === 'unlimited' ? 10 : planConfig.maxQuestionsPerQuiz),
         difficulty: z.enum(['easy', 'medium', 'hard']),
       }),
-    [minSteps, maxStepsAllowed]
+    [planConfig.maxQuestionsPerQuiz]
   )
 
   type OrderingFormData = z.infer<typeof orderingSchema>
@@ -77,14 +68,13 @@ export default function OrderingQuizForm({
     resolver: zodResolver(orderingSchema),
     defaultValues: {
       topic: typeof params?.topic === 'string' ? params.topic : '',
-      numberOfSteps: params?.numberOfSteps ? Math.min(Number(params.numberOfSteps), maxStepsAllowed) : Math.floor((minSteps + maxStepsAllowed) / 2),
+      numberOfQuestions: 5,
       difficulty: (params?.difficulty as any) || 'medium',
     },
     mode: 'onChange',
   })
 
   const watchDifficulty = watch('difficulty')
-  const watchNumberOfSteps = watch('numberOfSteps')
 
   const { mutateAsync: generateQuiz, isPending: isGenerating } = useMutation({
     mutationFn: async (data: OrderingFormData) => {
@@ -197,65 +187,59 @@ export default function OrderingQuizForm({
           </div>
         </motion.div>
 
-        {/* Number of Steps */}
+        {/* Number of Questions */}
         <motion.div
           className="space-y-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.25 }}
         >
           <Label className="text-lg font-semibold text-foreground flex items-center gap-2">
-            Number of Steps
+            Number of Questions
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-xs">
-                  <p>Select how many steps you want in your ordering quiz (up to {maxStepsAllowed} based on your {userPlan} plan)</p>
+                  <p>Choose how many ordering questions to generate. Each question will have its own set of steps to arrange.</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </Label>
 
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <Timer className="w-6 h-6 text-muted-foreground" />
-              <motion.span
-                className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums"
-                key={watchNumberOfSteps}
-                initial={{ scale: 1.2 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 10 }}
-              >
-                {watchNumberOfSteps}
-              </motion.span>
+          <div className="space-y-3">
+            <div className="px-3">
+              <Controller
+                name="numberOfQuestions"
+                control={control}
+                render={({ field }) => (
+                  <Slider
+                    value={[field.value]}
+                    onValueChange={(value) => field.onChange(value[0])}
+                    max={planConfig.maxQuestionsPerQuiz === 'unlimited' ? 10 : planConfig.maxQuestionsPerQuiz}
+                    min={1}
+                    step={1}
+                    className="w-full"
+                  />
+                )}
+              />
+            </div>
+            
+            <div className="flex justify-between text-sm text-muted-foreground px-3">
+              <span>1</span>
+              <span className="font-medium text-foreground">
+                {watch('numberOfQuestions')} questions
+              </span>
+              <span>{planConfig.maxQuestionsPerQuiz === 'unlimited' ? 10 : planConfig.maxQuestionsPerQuiz}</span>
             </div>
 
-            <Controller
-              name="numberOfSteps"
-              control={control}
-              render={({ field }) => (
-                <SubscriptionSlider
-                  value={field.value}
-                  onValueChange={(value) => field.onChange(value)}
-                  ariaLabel="Select number of steps"
-                />
-              )}
-            />
-
-            <p className="text-sm text-muted-foreground text-center">
-              Select between {minSteps} and {maxStepsAllowed} steps
-            </p>
+            {errors.numberOfQuestions && (
+              <p className="text-sm text-red-600 dark:text-red-400 px-3">
+                {errors.numberOfQuestions.message}
+              </p>
+            )}
           </div>
-
-          {errors.numberOfSteps && (
-            <p className="text-sm text-red-600 dark:text-red-400">{errors.numberOfSteps.message}</p>
-          )}
-
-          <p className="text-sm text-muted-foreground">
-            {isLoggedIn ? `Maximum ${maxStepsAllowed} steps available for ${userPlan} plan` : `This quiz will use ${watchNumberOfSteps} credit${watchNumberOfSteps > 1 ? 's' : ''}`}
-          </p>
         </motion.div>
 
         {/* Difficulty */}
@@ -263,9 +247,9 @@ export default function OrderingQuizForm({
           className="space-y-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.2 }}
         >
-          <Label className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <Label className="text-lg font-black text-foreground flex items-center gap-2">
             Difficulty Level
             <TooltipProvider>
               <Tooltip>
@@ -280,23 +264,37 @@ export default function OrderingQuizForm({
           </Label>
 
           <div className="grid grid-cols-3 gap-3 md:gap-4">
-            {['easy', 'medium', 'hard'].map((diff) => (
-              <button
-                key={diff}
+            {[
+              { value: 'easy', label: 'Easy', icon: '🟢', color: 'bg-green-600', textColor: 'text-white' },
+              { value: 'medium', label: 'Medium', icon: '🟡', color: 'bg-yellow-600', textColor: 'text-white' },
+              { value: 'hard', label: 'Hard', icon: '🔴', color: 'bg-red-600', textColor: 'text-white' },
+            ].map((diff) => (
+              <motion.button
+                key={diff.value}
                 type="button"
-                onClick={() => setValue('difficulty', diff as any)}
+                onClick={() => setValue('difficulty', diff.value as any)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 className={cn(
-                  'p-3 md:p-4 rounded-lg border-2 font-semibold text-sm md:text-base transition-all duration-200',
-                  watchDifficulty === diff
-                    ? 'border-primary bg-primary/10 text-primary shadow-sm'
-                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                  'p-3 md:p-4 rounded-sm border-3 font-black text-sm md:text-base transition-all duration-200',
+                  'flex flex-col items-center gap-2',
+                  watchDifficulty === diff.value
+                    ? cn(diff.color, diff.textColor, 'border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]')
+                    : 'border-border bg-background hover:border-border hover:shadow-[3px_3px_0px_0px_hsl(var(--border))]'
                 )}
                 disabled={isGenerating}
               >
-                {diff.charAt(0).toUpperCase() + diff.slice(1)}
-              </button>
+                <span className="text-xl">{diff.icon}</span>
+                {diff.label}
+              </motion.button>
             ))}
           </div>
+
+          {errors.difficulty && (
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {errors.difficulty.message}
+            </p>
+          )}
         </motion.div>
 
         {/* Plan Info Alert */}
@@ -305,12 +303,7 @@ export default function OrderingQuizForm({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>{userPlan}</strong> plan: Maximum {maxStepsAllowed} steps per ordering quiz
-            </AlertDescription>
-          </Alert>
+         
         </motion.div>
 
         {/* Error Message */}
