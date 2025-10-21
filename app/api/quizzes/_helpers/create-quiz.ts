@@ -96,7 +96,8 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
     if (normalizedType === "mcq") {
       const service = new McqQuizService()
       const userType = session.user?.userType || 'FREE'
-      const gen = await service.generateQuiz({ amount, title, difficulty, type: "mcq", userId, userType })
+      // Pass sufficient credits since deduction already happened atomically above
+      const gen = await service.generateQuiz({ amount, title, difficulty, type: "mcq", userId, userType, credits: 999 })
       const questions = Array.isArray(gen?.questions) ? gen.questions : gen
 
       const created = await quizRepo.createUserQuiz(userId, title, "mcq", slug)
@@ -119,7 +120,8 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
     if (normalizedType === "openended") {
       const service = new OpenEndedQuizService()
       const userType = session.user?.userType || 'FREE'
-      const quiz = await service.generateQuiz({ title, amount, difficulty, userType, userId })
+      // Pass sufficient credits since deduction already happened atomically above
+      const quiz = await service.generateQuiz({ title, amount, difficulty, userType, userId, credits: 999 })
       const qList: any[] = Array.isArray((quiz as any)?.questions) ? (quiz as any).questions : []
 
       const created = await quizRepo.createUserQuiz(userId, title, "openended", slug)
@@ -171,7 +173,8 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
     if (normalizedType === "blanks") {
       const service = new BlanksQuizService()
       const userType = session.user?.userType || 'FREE'
-      const quiz = await service.generateQuiz({ title, amount, userType, userId })
+      // Pass sufficient credits since deduction already happened atomically above
+      const quiz = await service.generateQuiz({ title, amount, userType, userId, credits: 999 })
       const qList: any[] = Array.isArray((quiz as any)?.questions) ? (quiz as any).questions : []
 
       const created = await quizRepo.createUserQuiz(userId, title, "blanks", slug)
@@ -224,7 +227,7 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       const count = amount
       
       // Use simple AI service
-      const { generateFlashcards } = await import("@/lib/ai/simple-ai-service");
+      const { generateFlashcards } = await import("@/lib/ai/course-ai-service");
       
       const flashcardsQuiz = await generateFlashcards(
         title,

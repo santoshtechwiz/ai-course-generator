@@ -1,5 +1,5 @@
 import { BaseQuizService } from "./base-quiz.service";
-import { generateFillInBlanks } from "@/lib/ai/simple-ai-service";
+import { generateFillInBlanks } from "@/lib/ai/course-ai-service";
 
 export class BlanksQuizService extends BaseQuizService {
   constructor() {
@@ -15,8 +15,9 @@ export class BlanksQuizService extends BaseQuizService {
     userType?: string;
     userId?: string;
     difficulty?: 'easy' | 'medium' | 'hard';
+    credits?: number;
   }) {
-    const { title, amount, userType = "FREE", userId, difficulty = 'medium' } = params;
+    const { title, amount, userType = "FREE", userId, difficulty = 'medium', credits } = params;
 
     try {
       const quiz = await generateFillInBlanks(
@@ -24,7 +25,8 @@ export class BlanksQuizService extends BaseQuizService {
         amount,
         difficulty,
         userId,
-        userType as any
+        userType as any,
+        credits
       );
 
       return quiz;

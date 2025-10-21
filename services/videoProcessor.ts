@@ -109,7 +109,7 @@ export async function getQuestionsFromTranscript(
 
     // Generate questions with the improved transcript using simple AI service
     return await limit(async () => {
-      const { generateMCQ } = await import("@/lib/ai/simple-ai-service");
+      const { generateMCQ } = await import("@/lib/ai/course-ai-service");
       
       const quiz = await generateMCQ(
         `${courseTitle}: ${relevantContent.substring(0, 200)}`,

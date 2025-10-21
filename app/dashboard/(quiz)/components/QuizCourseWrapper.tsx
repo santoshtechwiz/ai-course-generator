@@ -13,11 +13,12 @@ import FlashCardCreate from "@/app/dashboard/(quiz)/flashcard/components/FlashCa
 import FillInTheBlankQuizForm from "@/app/dashboard/(quiz)/blanks/components/BlankQuizForm"
 import CodeQuizForm from "@/app/dashboard/(quiz)/code/components/CodeQuizForm"
 import OpenEndedQuizForm from "@/app/dashboard/(quiz)/openended/components/OpenEndedQuizForm"
+import OrderingQuizForm from "@/app/dashboard/(quiz)/ordering/components/OrderingQuizForm"
 
 import { useAuth } from "@/modules/auth"
 import CreateCourseForm from "../../create/components/CreateCourseForm"
 
-type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course" | "code" | "flashcard"
+type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course" | "code" | "flashcard" | "ordering"
 
 interface QuizCourseWrapperProps {
   type: QuizType
@@ -74,6 +75,8 @@ function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps) {
         return <CodeQuizForm isLoggedIn={false} {...commonProps} />
       case "flashcard":
         return <FlashCardCreate isLoggedIn={false} maxCards={0} {...commonProps} />
+      case "ordering":
+        return <OrderingQuizForm isLoggedIn={false} maxSteps={maxQuestions} credits={credits} quizType="ordering" />
       default:
         return null
     }

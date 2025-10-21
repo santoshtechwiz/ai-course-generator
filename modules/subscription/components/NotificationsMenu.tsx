@@ -1,7 +1,6 @@
 "use client"
 
-
-import { Bell } from "lucide-react"
+import { Bell, Sparkles, AlertTriangle, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -15,7 +14,8 @@ import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/modules/auth"
 import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
+import { cn, getColorClasses } from "@/lib/utils"
 
 interface NotificationsMenuProps {
   refreshCredits?: () => void
@@ -30,6 +30,7 @@ interface CreditInfo {
 
 export default function NotificationsMenu({ refreshCredits }: NotificationsMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [isHovering, setIsHovering] = useState(false)
   const [creditInfo, setCreditInfo] = useState<CreditInfo>({
     hasCredits: false,
     remainingCredits: 0,
@@ -39,6 +40,9 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
   
   const { user } = useAuth()
   const { subscription } = useUnifiedSubscription()
+
+  // Get Neobrutalism utility classes
+  const { buttonIcon, badgeCount } = getColorClasses()
 
   // Use unified subscription as single source of truth - fixes sync issues
   useEffect(() => {
@@ -74,57 +78,268 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
   const isSubscribed = subscription?.isSubscribed || false
   const subscriptionStatus = subscription?.status || "INACTIVE"
 
+  // Memoized credit progress calculation
+  const creditProgress = useMemo(() => {
+    if (creditInfo.totalCredits === 0) return 0
+    return Math.min((creditInfo.usedCredits / creditInfo.totalCredits) * 100, 100)
+  }, [creditInfo.usedCredits, creditInfo.totalCredits])
+
+  // Credit status for visual indicators
+  const creditStatus = useMemo(() => {
+    if (creditInfo.remainingCredits === 0) return "empty"
+    if (creditInfo.remainingCredits < 50) return "low"
+    if (creditInfo.remainingCredits < 100) return "warning"
+    return "good"
+  }, [creditInfo.remainingCredits])
+
+  // Bell animation variants based on credit status
+  const bellVariants = {
+    idle: { rotate: 0 },
+    hover: { rotate: [-2, 2, -2, 2, 0], transition: { duration: 0.5 } },
+    alert: { 
+      rotate: [0, -15, 15, -15, 0], 
+      transition: { duration: 0.6, repeat: creditStatus === "empty" ? Infinity : 0, repeatDelay: 3 } 
+    },
+    low: { 
+      rotate: [0, -8, 8, 0], 
+      transition: { duration: 0.4, repeat: 1, repeatDelay: 5 } 
+    }
+  }
+
   return (
     <DropdownMenu open={isOpen} onOpenChange={handleOpen}>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="neutral"
-          size="icon"
-          className="relative rounded-full hover:bg-accent hover:text-accent-foreground transition-all duration-300"
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
-          <Bell className="h-4 w-4" />          <AnimatePresence>
-            {creditInfo.remainingCredits > 0 && (
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                className="absolute -top-1 -right-1"
-              >
-                <Badge
-                  variant="default"
-                  className="h-5 min-w-5 flex bg-accent items-center justify-center rounded-full px-1 text-[10px] font-medium"
-                >
-                  {creditInfo.remainingCredits}
-                </Badge>
-              </motion.div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "relative rounded-full border-2 border-transparent",
+              buttonIcon,
+              "hover:border-border hover:shadow-[3px_3px_0px_0px_hsl(var(--border))]",
+              "transition-all duration-150"
             )}
-          </AnimatePresence>
-          <span className="sr-only">Notifications</span>
-        </Button>
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+          >
+            <motion.div
+              variants={bellVariants}
+              animate={
+                creditStatus === "empty" ? "alert" : 
+                creditStatus === "low" ? "low" : 
+                isHovering ? "hover" : "idle"
+              }
+            >
+              <Bell className="h-4 w-4" />
+            </motion.div>
+            
+            <AnimatePresence>
+              {creditInfo.remainingCredits > 0 && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  className="absolute -top-1 -right-1"
+                >
+                  <Badge
+                    variant="default"
+                    className={cn(
+                      "h-5 min-w-5 flex items-center justify-center rounded-full px-1 text-[10px] font-black border-2 border-border",
+                      badgeCount,
+                      "shadow-[2px_2px_0px_0px_hsl(var(--border))]",
+                      creditStatus === "low" && "bg-yellow-500 text-yellow-950",
+                      creditStatus === "empty" && "bg-red-500 text-red-950"
+                    )}
+                  >
+                    {creditInfo.remainingCredits > 99 ? "99+" : creditInfo.remainingCredits}
+                  </Badge>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Low credit warning dot */}
+            {creditStatus === "low" && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: [0, 1.2, 1] }}
+                className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-500 rounded-full border border-yellow-700"
+              />
+            )}
+
+            {/* Empty credit warning dot */}
+            {creditStatus === "empty" && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: [0, 1.2, 1] }}
+                transition={{ delay: 0.2 }}
+                className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border border-red-700"
+              />
+            )}
+
+            <span className="sr-only">Notifications</span>
+          </Button>
+        </motion.div>
       </DropdownMenuTrigger>
+      
       <DropdownMenuContent
         align="end"
-        className="w-full max-w-sm sm:max-w-md md:max-w-lg rounded-xl p-3 sm:p-4 shadow-lg border border-border/50 backdrop-blur-sm bg-background/95"
-      >        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium">Credit Usage</p>
-            <p className="text-xs text-muted-foreground">
-              {creditInfo.usedCredits} used of {creditInfo.totalCredits} total credits. {creditInfo.remainingCredits} remaining.
-            </p>
+        className={cn(
+          "w-full max-w-sm sm:max-w-md md:max-w-lg rounded-lg p-0",
+          "border-3 border-border shadow-[6px_6px_0px_0px_hsl(var(--border))]",
+          "bg-background backdrop-blur-sm"
+        )}
+      >
+        {/* Header with enhanced styling */}
+        <DropdownMenuLabel className="font-bold p-4 border-b-3 border-border bg-secondary-background">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Bell className="h-4 w-4" />
+              <span className="text-sm font-black">Credit Usage</span>
+            </div>
+            {creditStatus === "good" && (
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+            )}
+            {creditStatus === "warning" && (
+              <Sparkles className="h-4 w-4 text-yellow-600" />
+            )}
+            {creditStatus === "low" && (
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            )}
+            {creditStatus === "empty" && (
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+            )}
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer flex flex-col items-start p-4 sm:p-3 min-h-[44px] hover:bg-accent rounded-lg transition-colors duration-200 touch-manipulation">
+
+        {/* Credit Progress Bar */}
+        <div className="px-4 pt-3">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs font-bold text-muted-foreground">Usage Progress</span>
+            <span className="text-xs font-black tabular-nums">
+              {creditInfo.usedCredits} / {creditInfo.totalCredits}
+            </span>
+          </div>
+          <div className="w-full bg-secondary-background border-2 border-border rounded-full h-3 overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${creditProgress}%` }}
+              transition={{ duration: 0.8, type: "spring" }}
+              className={cn(
+                "h-full rounded-full transition-all duration-300",
+                creditStatus === "good" && "bg-green-500",
+                creditStatus === "warning" && "bg-yellow-500",
+                creditStatus === "low" && "bg-orange-500",
+                creditStatus === "empty" && "bg-red-500"
+              )}
+            />
+          </div>
+        </div>
+
+        <DropdownMenuSeparator className="bg-border h-[3px]" />
+
+        {/* Credit Summary */}
+        <div className="p-4">
+          <div className="grid grid-cols-2 gap-3">
+            <motion.div 
+              className={cn(
+                "p-3 border-2 border-border rounded-lg text-center",
+                "bg-secondary-background shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+              )}
+              whileHover={{ scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            >
+              <div className="text-2xl font-black text-green-600">
+                {creditInfo.remainingCredits.toLocaleString()}
+              </div>
+              <div className="text-xs font-bold text-muted-foreground mt-1">
+                Available
+              </div>
+            </motion.div>
+
+            <motion.div 
+              className={cn(
+                "p-3 border-2 border-border rounded-lg text-center",
+                "bg-secondary-background shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+              )}
+              whileHover={{ scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            >
+              <div className="text-2xl font-black text-blue-600">
+                {creditInfo.usedCredits.toLocaleString()}
+              </div>
+              <div className="text-xs font-bold text-muted-foreground mt-1">
+                Used
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Subscription Status */}
+        <DropdownMenuItem 
+          className={cn(
+            "cursor-pointer flex flex-col items-start p-4 min-h-[60px]",
+            "border-t-3 border-border bg-background",
+            "hover:bg-secondary-background transition-all duration-150",
+            "focus:bg-secondary-background focus:shadow-[inset_2px_2px_0px_0px_hsl(var(--border))]"
+          )}
+        >
           <div className="flex w-full justify-between items-center">
-            <span className="font-medium">Subscription Status</span>
-            <Badge variant="neutral" className="ml-2">
-              {subscriptionPlan} ({subscriptionStatus})
-            </Badge>          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {isSubscribed ? "Your subscription is active" : "Your subscription is inactive"}
+            <span className="font-black text-sm">Subscription Plan</span>
+            <Badge 
+              variant="secondary" 
+              className={cn(
+                "ml-2 border-2 border-border font-black",
+                "shadow-[2px_2px_0px_0px_hsl(var(--border))]",
+                isSubscribed ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+              )}
+            >
+              {subscriptionPlan}
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 font-bold">
+            {isSubscribed ? "🎉 Active subscription" : "💤 Inactive - upgrade for more credits"}
           </p>
+          
+          {/* Status indicator */}
+          <div className="flex items-center mt-2">
+            <div className={cn(
+              "w-2 h-2 rounded-full mr-2",
+              isSubscribed ? "bg-green-500 animate-pulse" : "bg-gray-400"
+            )} />
+            <span className="text-xs font-bold">
+              Status: {subscriptionStatus}
+            </span>
+          </div>
         </DropdownMenuItem>
+
+        {/* Action Button */}
+        {!isSubscribed && (
+          <div className="p-3 border-t-3 border-border">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Button
+                className={cn(
+                  "w-full font-black border-3 border-border",
+                  "shadow-[3px_3px_0px_0px_hsl(var(--border))]",
+                  "hover:shadow-[4px_4px_0px_0px_hsl(var(--border))]",
+                  "active:shadow-[1px_1px_0px_0px_hsl(var(--border))] active:translate-y-1",
+                  "transition-all duration-150 bg-blue-500 text-white hover:bg-blue-600"
+                )}
+                size="sm"
+                onClick={() => window.open('/pricing', '_blank')}
+              >
+                💎 Upgrade Plan
+              </Button>
+            </motion.div>
+          </div>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

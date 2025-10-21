@@ -108,17 +108,25 @@ export default function OrderingQuizWrapper({ slug }: OrderingQuizWrapperProps) 
 
   // Navigate to next question
   const handleNext = useCallback(() => {
-    if (currentQuestionIndex < totalQuestions - 1) {
-      setCurrentQuestionIndex(prev => prev + 1)
-    }
-  }, [currentQuestionIndex, totalQuestions])
+    // Use functional update to avoid stale closure
+    setCurrentQuestionIndex(prev => {
+      if (prev < totalQuestions - 1) {
+        return prev + 1
+      }
+      return prev
+    })
+  }, [totalQuestions])
 
   // Navigate to previous question
   const handlePrevious = useCallback(() => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1)
-    }
-  }, [currentQuestionIndex])
+    // Use functional update to avoid stale closure
+    setCurrentQuestionIndex(prev => {
+      if (prev > 0) {
+        return prev - 1
+      }
+      return prev
+    })
+  }, [])
 
   // Handle final quiz submission
   const handleSubmit = useCallback(async () => {

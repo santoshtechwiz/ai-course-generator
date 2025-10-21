@@ -1,5 +1,5 @@
 import { AIProvider } from "../interfaces";
-import { getDefaultAIProvider } from "../provider-factory";
+import { getDefaultAIProvider } from "../providers/provider-factory";
 
 /**
  * Represents a course learning objective

@@ -1,7 +1,7 @@
 /**
  * Daily Limit Helpers for Ordering Quiz
  * Manages daily generation limits based on subscription tier
- * Uses UserQuiz table with quizType='ordering'
+ * Uses OrderingQuiz table (dedicated table, not UserQuiz metadata)
  */
 
 import { prisma } from "@/lib/db"
@@ -15,7 +15,7 @@ export interface DailyLimitStatus {
 
 /**
  * Get today's ordering quiz generation count for a user
- * Queries UserQuiz table where quizType='ordering' and createdAt is today
+ * Queries OrderingQuiz table (dedicated table) where createdAt is today
  */
 export async function getTodayOrderingCount(userId: string): Promise<number> {
   try {
@@ -24,10 +24,9 @@ export async function getTodayOrderingCount(userId: string): Promise<number> {
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
-    const count = await prisma.userQuiz.count({
+    const count = await prisma.orderingQuiz.count({
       where: {
-        userId,
-        quizType: "ordering",
+        createdBy: userId,
         createdAt: {
           gte: today,
           lt: tomorrow

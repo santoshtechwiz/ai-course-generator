@@ -141,7 +141,7 @@ const Page = async ({
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                    <Badge variant="neutral" className="bg-primary/10 text-primary border-primary/20">
                       <Sparkles className="h-3 w-3 mr-1" />
                       AI Powered
                     </Badge>

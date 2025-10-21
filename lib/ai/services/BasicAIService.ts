@@ -7,13 +7,12 @@
 
 import type { SubscriptionPlanType } from '@/types/subscription'
 import { AIBaseService, type AIServiceContext, type AIServiceResult } from './AIBaseService'
-import { AI_MODELS } from '@/config/ai.config'
-import { buildMCQPrompt, buildMCQPromptWithSchema } from '@/lib/ai/prompts/mcq.prompt'
+import { buildMCQPromptWithSchema } from '@/lib/ai/prompts/mcq.prompt'
 import { buildFlashcardPrompt, getFlashcardFunctionSchema } from '@/lib/ai/prompts/flashcard.prompt'
-import { buildOrderingPrompt, buildOrderingPromptWithSchema } from '@/lib/ai/prompts/ordering.prompt'
-import { buildBlanksPrompt, buildBlanksPromptWithSchema } from '@/lib/ai/prompts/blanks.prompt'
-import { buildVideoQuizPrompt, getVideoQuizMCQFunctionSchema, buildVideoQuizPromptWithSchema } from '@/lib/ai/prompts/video.prompt'
-import { buildSummaryPrompt, getSummaryFunctionSchema, truncateTranscript, estimateTokenCount, buildSummaryPromptWithSchema } from '@/lib/ai/prompts/summary.prompt'
+import { buildOrderingPromptWithSchema } from '@/lib/ai/prompts/ordering.prompt'
+import { buildBlanksPromptWithSchema } from '@/lib/ai/prompts/blanks.prompt'
+import { buildVideoQuizPromptWithSchema } from '@/lib/ai/prompts/video.prompt'
+import { truncateTranscript, estimateTokenCount, buildSummaryPromptWithSchema } from '@/lib/ai/prompts/summary.prompt'
 
 export class BasicAIService extends AIBaseService {
   constructor(context: AIServiceContext) {
@@ -311,7 +310,6 @@ export class BasicAIService extends AIBaseService {
    */
   async generateOrderingQuiz(params: {
     topic: string
-    numberOfSteps: number
     difficulty?: 'easy' | 'medium' | 'hard'
   }): Promise<AIServiceResult> {
     try {
@@ -321,11 +319,6 @@ export class BasicAIService extends AIBaseService {
       const topicValidation = this.sanitizeTextInput(params.topic, 200)
       if (!topicValidation.isValid) {
         return { success: false, error: topicValidation.error }
-      }
-
-      const stepsValidation = this.validateNumberInput(params.numberOfSteps, 3, 10, 5)
-      if (!stepsValidation.isValid) {
-        return { success: false, error: stepsValidation.error }
       }
 
       const difficultyValidation = this.validateDifficulty(params.difficulty)
@@ -347,7 +340,6 @@ export class BasicAIService extends AIBaseService {
 
       const { messages, functions, functionCall } = buildOrderingPromptWithSchema({
         topic: topicValidation.sanitizedInput!,
-        numberOfSteps: stepsValidation.sanitizedInput!,
         difficulty: difficultyValidation.sanitizedInput!,
       })
 
@@ -372,7 +364,8 @@ export class BasicAIService extends AIBaseService {
       if (result.functionCall?.arguments) {
         try {
           const parsed = JSON.parse(result.functionCall.arguments)
-          responseData = parsed.steps || parsed
+          // Always return the full parsed object, not just steps
+          responseData = parsed
         } catch (e) {
           console.error('Failed to parse function call arguments:', e)
         }

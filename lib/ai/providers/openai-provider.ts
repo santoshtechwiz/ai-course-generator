@@ -6,9 +6,9 @@ import {
   ChatCompletionResult,
   QuizGenerationParams,
   mapToOpenAIMessage
-} from "./interfaces";
+} from "../interfaces";
 import { Quiz } from "@/app/types/types";
-import { getAIProviderConfig } from "./config";
+import { getAIProviderConfig } from "../config/config";
 
 /**
  * OpenAI provider implementation
@@ -305,6 +305,7 @@ Ensure a balanced mix of difficulties based on the requested level (${difficulty
 
     return parsedResult as Quiz;
   }
+
   /**
    * Get the appropriate AI model based on user type
    */

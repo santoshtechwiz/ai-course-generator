@@ -17,11 +17,10 @@ import {
   getFeatureSettings, 
   getPlanLimits,
   getRateLimits,
-  canPlanAccessFeature,
   AI_ERROR_MESSAGES 
 } from '@/config/ai.config'
 import { checkFeatureAccess, type FeatureType } from '@/lib/featureAccess'
-import { getDefaultAIProvider, type AIProvider } from '@/lib/ai'
+import { type AIProvider } from '@/lib/ai'
 
 // ============= Types =============
 

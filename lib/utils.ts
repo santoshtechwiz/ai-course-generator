@@ -1,5 +1,3 @@
-import { nanoid } from 'nanoid';
-import slugify from 'slugify';
 import clsx, { ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { migratedStorage } from '@/lib/storage';
@@ -88,7 +86,7 @@ export const getAIModel = (userType: string): string => {
  */
 export const getAIModelFromConfig = (userType: string): string => {
   // Import this way to avoid circular dependencies
-  const { getAIProviderConfig } = require('./ai/config');
+  const { getAIProviderConfig } = require('./ai/config/config');
   const config = getAIProviderConfig();
 
   // Return the model for the user type, or default to FREE

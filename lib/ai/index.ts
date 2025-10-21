@@ -2,7 +2,7 @@
  * Re-export all AI-related functionality
  */
 export * from './interfaces';
-export * from './openai-provider';
-export * from './google-ai-provider';
-export * from './provider-factory';
+export * from './providers/openai-provider';
+export * from './providers/google-ai-provider';
+export * from './providers/provider-factory';
 export * from './services';

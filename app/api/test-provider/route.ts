@@ -1,4 +1,4 @@
-import { AIProviderFactory } from '@/lib/ai/provider-factory'
+import { AIProviderFactory } from '@/lib/ai/providers/provider-factory'
 import { NextResponse } from 'next/server'
 
 /**

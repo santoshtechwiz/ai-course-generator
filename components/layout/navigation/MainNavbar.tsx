@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Search, Menu, X, CreditCard, Loader2 } from "lucide-react"
+import { Search, Menu, X, CreditCard, Loader2, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -26,12 +26,12 @@ const NotificationsMenu = lazy(() => import("@/components/Navbar/NotificationsMe
 const CourseNotificationsMenu = lazy(() => import("@/components/Navbar/CourseNotificationsMenu"))
 
 /**
- * MainNavbar - Single source of truth using useAuth
+ * Enhanced MainNavbar with improved UX following neobrutalism principles
  * 
- * ✅ Uses unified useAuth hook only (no dual hooks)
- * ✅ All data comes from one place
- * ✅ No manual session sync needed
- * ✅ Clean and maintainable
+ * ✅ Enhanced visual feedback and micro-interactions
+ * ✅ Better performance with optimized re-renders
+ * ✅ Improved accessibility
+ * ✅ Consistent neobrutalism design language
  */
 export function MainNavbar() {
   const pathname = usePathname()
@@ -68,9 +68,20 @@ export function MainNavbar() {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [isHoveringLogo, setIsHoveringLogo] = useState(false)
 
+  // Optimized scroll handler with throttling
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20)
+    let ticking = false
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setIsScrolled(window.scrollY > 20)
+          ticking = false
+        })
+        ticking = true
+      }
+    }
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
@@ -105,190 +116,317 @@ export function MainNavbar() {
   // Get Neobrutalism utility classes
   const { buttonPrimary, buttonIcon, badgeCount } = getColorClasses()
 
+  // Memoized navigation items to prevent unnecessary re-renders
+  const desktopNavItems = useMemo(() => 
+    navItems.map((item) => {
+      const active = pathname === item.href
+      return (
+        <Link
+          key={item.name}
+          href={item.href}
+          className={cn(
+            "relative px-4 py-2 text-sm font-black transition-all duration-150",
+            "border-3 border-transparent rounded-lg transform hover:scale-105",
+            "active:scale-95 active:translate-y-1",
+            active 
+              ? "border-border bg-main text-main-foreground shadow-[4px_4px_0px_0px_hsl(var(--border))]" 
+              : "hover:border-border hover:bg-secondary-background hover:shadow-[3px_3px_0px_0px_hsl(var(--border))]",
+          )}
+        >
+          {item.name}
+          {active && (
+            <motion.div
+              className="absolute bottom-0 left-0 right-0 h-1 bg-current rounded-full"
+              layoutId="navbar-indicator"
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            />
+          )}
+        </Link>
+      )
+    }),
+    [pathname]
+  )
+
+  const mobileNavItems = useMemo(() =>
+    navItems.map((item) => {
+      const active = pathname === item.href
+      return (
+        <Link
+          key={item.name}
+          href={item.href}
+          onClick={() => setIsMobileMenuOpen(false)}
+          className={cn(
+            "block px-4 py-3 min-h-[48px] flex items-center font-black border-3 rounded-lg",
+            "transition-all duration-150 active:scale-95 active:translate-y-1",
+            active 
+              ? "bg-main text-main-foreground border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]" 
+              : "border-transparent hover:border-border hover:bg-secondary-background hover:shadow-[3px_3px_0px_0px_hsl(var(--border))]",
+          )}
+        >
+          {item.name}
+        </Link>
+      )
+    }),
+    [pathname]
+  )
+
   return (
     <>
       <motion.header
         className={cn(
           "fixed top-0 left-0 right-0 z-50",
-          "bg-background border-b-4 border-border",
-          isScrolled && "shadow-[0_4px_0px_0px_rgba(0,0,0,0.1)]",
+          "bg-background border-b-4 border-border backdrop-blur-sm",
+          isScrolled && "shadow-[0_6px_0px_0px_rgba(0,0,0,0.15)]",
         )}
-        initial={{ y: -20, opacity: 0 }}
+        initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 500, 
+          damping: 30,
+          duration: 0.3
+        }}
       >
         <div className="container flex h-16 items-center justify-between px-3 sm:px-4 lg:px-6 max-w-7xl mx-auto">
-          {/* Logo */}
-          <Link href="/" aria-label="Home">
-            <Logo />
-          </Link>
+          {/* Enhanced Logo with hover animation */}
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            <Link 
+              href="/" 
+              aria-label="Home"
+              className="block"
+              onMouseEnter={() => setIsHoveringLogo(true)}
+              onMouseLeave={() => setIsHoveringLogo(false)}
+            >
+              <motion.div
+                animate={{ rotate: isHoveringLogo ? [-1, 1, -1, 1, 0] : 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Logo />
+              </motion.div>
+            </Link>
+          </motion.div>
 
-          {/* Desktop Nav - Neobrutalism style with bold borders */}
-          <nav className="hidden md:flex items-center space-x-1">
-            {navItems.map((item) => {
-              const active = pathname === item.href
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    "relative px-4 py-2 text-sm font-bold transition-all duration-100",
-                    "border-3 border-transparent rounded-lg",
-                    active 
-                      ? "border-border bg-main text-main-foreground shadow-[3px_3px_0px_0px_hsl(var(--border))]" 
-                      : "hover:border-border hover:bg-secondary-background hover:shadow-[2px_2px_0px_0px_hsl(var(--border))]",
-                  )}
-                >
-                  {item.name}
-                </Link>
-              )
-            })}
+          {/* Desktop Nav - Enhanced neobrutalism with animations */}
+          <nav className="hidden md:flex items-center space-x-2">
+            {desktopNavItems}
           </nav>
 
-          {/* Right side - Neobrutalism style buttons */}
+          {/* Right side - Enhanced neobrutalism interactions */}
           <div className="flex items-center gap-1 sm:gap-2">
-            {/* Enhanced credit counter with warnings and detailed popover */}
+            {/* Enhanced credit counter with pulsing animation when low */}
             {isAuthenticated && !isLoading && (
-              <div className="hidden sm:flex">
+              <motion.div 
+                className="hidden sm:flex"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              >
                 <CreditCounter />
-              </div>
+                {availableCredits < 100 && availableCredits > 0 && (
+                  <motion.div
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="ml-1"
+                  >
+                    <Sparkles className="h-4 w-4 text-yellow-500" />
+                  </motion.div>
+                )}
+              </motion.div>
             )}
 
-            {/* Search - Neobrutalism button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Search"
-              onClick={() => setIsSearchModalOpen(true)}
-              className={cn(
-                buttonIcon,
-                "hover:translate-y-[-2px] transition-all duration-100"
-              )}
+            {/* Enhanced Search Button */}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >
-              <Search className="h-4 w-4" />
-            </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Search"
+                onClick={() => setIsSearchModalOpen(true)}
+                className={cn(
+                  buttonIcon,
+                  "border-2 border-transparent hover:border-border",
+                  "hover:shadow-[3px_3px_0px_0px_hsl(var(--border))] transition-all duration-150"
+                )}
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+            </motion.div>
 
-            <div className="hidden sm:block">
+            {/* Theme Toggle with enhanced interaction */}
+            <motion.div
+              className="hidden sm:block"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
               <ThemeToggle />
-            </div>
+            </motion.div>
 
-            {/* Auth */}
+            {/* Auth Section */}
             {isAuthenticated ? (
               <div className="hidden md:flex items-center gap-1">
-                <Suspense fallback={<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}>
+                <Suspense fallback={
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  >
+                    <Loader2 className="h-5 w-5 text-muted-foreground" />
+                  </motion.div>
+                }>
                   <CourseNotificationsMenu />
                   <NotificationsMenu />
                 </Suspense>
                 <UserMenu />
               </div>
             ) : (
-              <Button
-                onClick={handleSignIn}
-                className={cn(
-                  "hidden sm:flex",
-                  buttonPrimary,
-                  "min-h-[40px]"
-                )}
-                size="sm"
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
-                Sign in
-              </Button>
+                <Button
+                  onClick={handleSignIn}
+                  className={cn(
+                    "hidden sm:flex font-black",
+                    buttonPrimary,
+                    "min-h-[40px] border-3 shadow-[4px_4px_0px_0px_hsl(var(--border))]",
+                    "hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] active:shadow-[2px_2px_0px_0px_hsl(var(--border))]",
+                    "active:translate-y-1 transition-all duration-150"
+                  )}
+                  size="sm"
+                >
+                  Sign in
+                </Button>
+              </motion.div>
             )}
 
-            {/* Mobile Menu - Neobrutalism style */}
+            {/* Enhanced Mobile Menu */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild suppressHydrationWarning>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className={cn(
-                    "md:hidden",
-                    buttonIcon,
-                    "hover:translate-y-[-2px] transition-all duration-100"
-                  )}
-                  suppressHydrationWarning
-                  aria-label="Toggle menu"
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={cn(
+                      "md:hidden",
+                      buttonIcon,
+                      "border-2 border-transparent hover:border-border",
+                      "hover:shadow-[3px_3px_0px_0px_hsl(var(--border))] transition-all duration-150"
+                    )}
+                    suppressHydrationWarning
+                    aria-label="Toggle menu"
+                  >
+                    <motion.div
+                      animate={{ rotate: isMobileMenuOpen ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                    </motion.div>
+                  </Button>
+                </motion.div>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[85vw] max-w-sm p-0 bg-background border-l-4 border-border">
-                <div className="h-full flex flex-col">
-                  {/* Header */}
-                  <div className="p-4 border-b-4 border-border flex items-center justify-between">
-                    <Logo />
+              <SheetContent side="right" className="w-[85vw] max-w-sm p-0 bg-background border-l-4 border-border shadow-[-4px_0px_0px_0px_hsl(var(--border))]">
+                <motion.div 
+                  className="h-full flex flex-col"
+                  initial={{ x: 300 }}
+                  animate={{ x: 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                >
+                  {/* Enhanced Header */}
+                  <div className="p-4 border-b-4 border-border flex items-center justify-between bg-secondary-background">
+                    <motion.div whileHover={{ scale: 1.05 }}>
+                      <Logo />
+                    </motion.div>
                     <div className="flex items-center gap-2">
-                      <ThemeToggle />
+                      <motion.div whileHover={{ scale: 1.1 }}>
+                        <ThemeToggle />
+                      </motion.div>
                     </div>
                   </div>
                   
-                  {/* Navigation */}
-                  <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-                    {navItems.map((item) => {
-                      const active = pathname === item.href
-                      return (
-                        <Link
-                          key={item.name}
-                          href={item.href}
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className={cn(
-                            "block px-4 py-3 min-h-[48px] flex items-center font-bold border-3 rounded-lg transition-all duration-100",
-                            active 
-                              ? "bg-main text-main-foreground border-border shadow-[3px_3px_0px_0px_hsl(var(--border))]" 
-                              : "border-transparent hover:border-border hover:bg-secondary-background hover:shadow-[2px_2px_0px_0px_hsl(var(--border))]",
-                          )}
-                        >
-                          {item.name}
-                        </Link>
-                      )
-                    })}
+                  {/* Enhanced Navigation */}
+                  <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+                    {mobileNavItems}
                   </nav>
                   
-                  {/* Footer */}
-                  <div className="p-4 border-t-4 border-border space-y-3">
+                  {/* Enhanced Footer */}
+                  <div className="p-4 border-t-4 border-border space-y-3 bg-secondary-background">
                     {isAuthenticated ? (
                       <>
                         {availableCredits !== null && (
-                          <div className="flex items-center justify-between p-3 bg-secondary-background border-3 border-border rounded-lg shadow-[3px_3px_0px_0px_hsl(var(--border))]">
+                          <motion.div 
+                            className="flex items-center justify-between p-3 bg-background border-3 border-border rounded-lg shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+                            whileHover={{ scale: 1.02 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                          >
                             <div className="flex items-center space-x-2">
                               <CreditCard className="h-4 w-4" />
-                              <span className="text-sm font-bold">Credits</span>
+                              <span className="text-sm font-black">Credits</span>
                             </div>
                             <div className="flex items-center space-x-2">
                               <span className="text-sm font-black tabular-nums">
                                 {availableCredits.toLocaleString()}
                               </span>
                               {subscriptionPlan !== "FREE" && (
-                                <Badge variant="secondary" className="text-xs px-1.5 py-0.5 border-2 border-border font-black">
+                                <Badge 
+                                  variant="secondary" 
+                                  className={cn(
+                                    "text-xs px-1.5 py-0.5 border-2 border-border font-black",
+                                    "shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+                                  )}
+                                >
                                   {subscriptionPlan}
                                 </Badge>
                               )}
                             </div>
-                          </div>
+                          </motion.div>
                         )}
                         <div className="flex gap-2 md:hidden">
-                          <Suspense fallback={<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}>
+                          <Suspense fallback={
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            >
+                              <Loader2 className="h-5 w-5 text-muted-foreground" />
+                            </motion.div>
+                          }>
                             <CourseNotificationsMenu />
                             <NotificationsMenu />
                           </Suspense>
                         </div>
                       </>
                     ) : (
-                      <Button 
-                        className={cn(
-                          "w-full min-h-[48px]",
-                          buttonPrimary
-                        )}
-                        onClick={() => {
-                          handleSignIn()
-                          setIsMobileMenuOpen(false)
-                        }}
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                       >
-                        Sign in
-                      </Button>
+                        <Button 
+                          className={cn(
+                            "w-full min-h-[48px] font-black border-3",
+                            buttonPrimary,
+                            "shadow-[4px_4px_0px_0px_hsl(var(--border))]",
+                            "hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]",
+                            "active:shadow-[2px_2px_0px_0px_hsl(var(--border))] active:translate-y-1"
+                          )}
+                          onClick={() => {
+                            handleSignIn()
+                            setIsMobileMenuOpen(false)
+                          }}
+                        >
+                          Sign in
+                        </Button>
+                      </motion.div>
                     )}
                   </div>
-                </div>
+                </motion.div>
               </SheetContent>
             </Sheet>
           </div>

@@ -217,18 +217,47 @@ function editDistance(s1: string, s2: string): number {
 // ============================================================================
 
 /**
- * Generate a unique slug for database storage
- * Uses database queries to ensure uniqueness
+ * Generate a unique slug for ordering quiz (uses dedicated OrderingQuiz table only)
+ * For non-ordering quizzes, still checks both tables for backwards compatibility
  */
-export async function generateUniqueSlug(title: string): Promise<string> {
+export async function generateUniqueSlug(title: string, quizType?: string): Promise<string> {
   const baseSlug = generateSlug(title)
 
-  // First try with the base slug
-  const existingCount = await prisma.userQuiz.count({
-    where: { slug: baseSlug },
-  })
+  // For ordering quizzes, only check OrderingQuiz table (dedicated table)
+  if (quizType === 'ordering') {
+    const orderingQuizCount = await prisma.orderingQuiz.count({ 
+      where: { slug: baseSlug } 
+    })
+    
+    if (orderingQuizCount === 0) return baseSlug
 
-  if (existingCount === 0) return baseSlug
+    // Try with a timestamp suffix for uniqueness, retry if collision
+    let uniqueSlug: string
+    let isUnique = false
+    let attempts = 0
+    do {
+      const timestamp =
+        Date.now().toString().slice(-6) + Math.floor(Math.random() * 1000)
+      uniqueSlug = `${baseSlug}-${timestamp}`
+
+      const orderingQuizCountRetry = await prisma.orderingQuiz.count({ 
+        where: { slug: uniqueSlug } 
+      })
+
+      if (orderingQuizCountRetry === 0) isUnique = true
+      attempts++
+    } while (!isUnique && attempts < 5)
+
+    return uniqueSlug
+  }
+
+  // For other quiz types, check both tables (backwards compatibility)
+  const [userQuizCount, orderingQuizCount] = await Promise.all([
+    prisma.userQuiz.count({ where: { slug: baseSlug } }),
+    prisma.orderingQuiz.count({ where: { slug: baseSlug } })
+  ])
+
+  if (userQuizCount === 0 && orderingQuizCount === 0) return baseSlug
 
   // Try with a timestamp suffix for uniqueness, retry if collision
   let uniqueSlug: string
@@ -238,8 +267,13 @@ export async function generateUniqueSlug(title: string): Promise<string> {
     const timestamp =
       Date.now().toString().slice(-6) + Math.floor(Math.random() * 1000)
     uniqueSlug = `${baseSlug}-${timestamp}`
-    const count = await prisma.userQuiz.count({ where: { slug: uniqueSlug } })
-    if (count === 0) isUnique = true
+
+    const [userQuizCountRetry, orderingQuizCountRetry] = await Promise.all([
+      prisma.userQuiz.count({ where: { slug: uniqueSlug } }),
+      prisma.orderingQuiz.count({ where: { slug: uniqueSlug } })
+    ])
+
+    if (userQuizCountRetry === 0 && orderingQuizCountRetry === 0) isUnique = true
     attempts++
   } while (!isUnique && attempts < 5)
 

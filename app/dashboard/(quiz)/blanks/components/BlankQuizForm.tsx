@@ -168,12 +168,12 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
 
     try {
       const formValues = watch()
-  const response = await createBlankQuizMutation({
+      const response = await createBlankQuizMutation({
         title: formValues.title,
         amount: formValues.amount,
         difficulty: formValues.difficulty,
         type: "blanks",
-  })
+      })
       const userQuizId = response?.quizId || response?.userQuizId
 
       if (!userQuizId) throw new Error("Blanks Quiz ID not found")
@@ -220,6 +220,8 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
     return Math.min((credits / maxCreditDisplay) * 100, 100)
   }, [credits])
 
+  // Render loading state conditionally at JSX level, NOT with early return
+  // Early returns cause "Rendered fewer hooks than expected" errors
   if (isLoading) {
     return (
       <div className="space-y-3">

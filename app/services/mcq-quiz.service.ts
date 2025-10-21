@@ -1,6 +1,6 @@
 import { BaseQuizService } from "./base-quiz.service";
 import { generateSlug } from "@/lib/utils";
-import { generateMCQ } from "@/lib/ai/simple-ai-service";
+import { generateMCQ } from "@/lib/ai/course-ai-service";
 
 export class McqQuizService extends BaseQuizService {
     constructor() {
@@ -10,8 +10,8 @@ export class McqQuizService extends BaseQuizService {
     /**
      * Generate MCQ quiz using the simple AI service
      */
-    public async generateQuiz(params: { amount: number; title: string; type?: string; difficulty?: string; userId?: string; userType?: string }) {
-        const { amount, title, difficulty = "medium", userId, userType = "FREE" } = params;
+    public async generateQuiz(params: { amount: number; title: string; type?: string; difficulty?: string; userId?: string; userType?: string; credits?: number }) {
+        const { amount, title, difficulty = "medium", userId, userType = "FREE", credits } = params;
         
         try {
             const questions = await generateMCQ(
@@ -19,7 +19,8 @@ export class McqQuizService extends BaseQuizService {
                 amount,
                 difficulty as 'easy' | 'medium' | 'hard',
                 userId,
-                userType as any
+                userType as any,
+                credits
             );
             
             return questions;

@@ -40,8 +40,11 @@ export const metadata: Metadata = generateSEOMetadata({
  * - Error boundaries
  * 
  * This layout only adds quiz-specific error boundary for graceful failure recovery.
+ * 
+ * NOTE: Must NOT be async since it wraps a Client Component (QuizErrorBoundary).
+ * Server/Client component mismatch causes "Rendered fewer hooks than expected" errors.
  */
-export default async function QuizLayout({
+export default function QuizLayout({
   children,
 }: {
   children: React.ReactNode

@@ -268,7 +268,7 @@ export class CourseService {
     const slug = await courseRepository.generateUniqueSlug(title);
 
     // Generate course content using simple AI service
-    const { generateCourse } = await import("@/lib/ai/simple-ai-service");
+    const { generateCourse } = await import("@/lib/ai/course-ai-service");
     
     const generatedCourse = await generateCourse(
       title,

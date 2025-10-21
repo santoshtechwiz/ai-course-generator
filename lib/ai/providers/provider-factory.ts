@@ -1,7 +1,8 @@
-import { AIProvider } from "./interfaces";
-import { OpenAIProvider } from "./providers/openai-provider";
-import { GoogleAIProvider } from "./providers/google-ai-provider";
-import { AnthropicProvider } from "./providers/anthropic-provider";
+
+import { OpenAIProvider } from "./openai-provider";
+import { GoogleAIProvider } from "./google-ai-provider";
+import { AnthropicProvider } from "./anthropic-provider";
+import { AIProvider } from "../interfaces";
 
 /**
  * Available AI providers

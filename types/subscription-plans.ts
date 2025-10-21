@@ -22,6 +22,7 @@ export interface PlanConfig {
   
   // Quiz Features
   maxQuestionsPerQuiz: number | 'unlimited'
+  maxStepsPerOrderingQuiz: number
   
   // Core Features
   courseCreation: boolean
@@ -51,6 +52,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, PlanConfig> = {
     price: PRICING.FREE,
     popular: false,
     maxQuestionsPerQuiz: 3,
+    maxStepsPerOrderingQuiz: 5,
     courseCreation: true,
     pdfDownloads: false,
     contentCreation: true,
@@ -70,6 +72,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, PlanConfig> = {
     price: PRICING.BASIC,
     popular: false,
     maxQuestionsPerQuiz: 5,
+    maxStepsPerOrderingQuiz: 8,
     courseCreation: true,
     pdfDownloads: true,
     contentCreation: true,
@@ -89,6 +92,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, PlanConfig> = {
     price: PRICING.PREMIUM,
     popular: true,
     maxQuestionsPerQuiz: 15,
+    maxStepsPerOrderingQuiz: 12,
     courseCreation: true,
     pdfDownloads: true,
     contentCreation: true,
@@ -108,6 +112,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, PlanConfig> = {
     price: PRICING.ENTERPRISE,
     popular: false,
     maxQuestionsPerQuiz: 20,
+    maxStepsPerOrderingQuiz: 20,
     courseCreation: true,
     pdfDownloads: true,
     contentCreation: true,

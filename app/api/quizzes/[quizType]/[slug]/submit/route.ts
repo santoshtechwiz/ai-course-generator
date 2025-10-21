@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 import { QuizType } from "@/app/types/quiz-types"
 import { validateSubscriptionServer } from "@/lib/subscription-validation"
 import { unifiedQuizService } from "@/services/unified-quiz.service"
+import { orderingQuizService } from "@/services/ordering-quiz.service"
 
 // Simple in-memory cache for quiz data and course associations
 // In production, consider using Redis for distributed caching
@@ -615,83 +616,8 @@ async function processOrderingQuizSubmission(
   percentageScore: number,
   accuracyScore: number
 ): Promise<QuizSubmissionResult> {
-  try {
-    // Find the ordering quiz
-    const orderingQuiz = await prisma.orderingQuiz.findUnique({
-      where: { slug },
-      include: { questions: true },
-    });
-
-    if (!orderingQuiz) {
-      throw new Error(`Ordering quiz not found with slug: ${slug}`);
-    }
-
-    // Create the attempt record
-    const attempt = await prisma.orderingQuizAttempt.create({
-      data: {
-        userId,
-        orderingQuizId: orderingQuiz.id,
-        score: Math.round(percentageScore),
-        correctAnswers: submission.answers.filter((a: any) => a.isCorrect).length,
-        totalQuestions: submission.answers.length,
-        timeSpent: Math.round(submission.totalTime),
-      },
-    });
-
-    // Save individual question answers
-    const questionAnswers = submission.answers.map((answer: any) => {
-      // Find the matching question
-      const question = orderingQuiz.questions.find(
-        (q) => String(q.id) === String(answer.questionId)
-      );
-
-      if (!question) {
-        console.warn(`Question not found for ID: ${answer.questionId}`);
-        return null;
-      }
-
-      // Ensure userAnswer is an array
-      let userAnswerArray = answer.userAnswer || answer.answer;
-      if (!Array.isArray(userAnswerArray)) {
-        // If it's a string like "20431", convert to array [2,0,4,3,1]
-        userAnswerArray = String(userAnswerArray).split('').map(Number);
-      }
-
-      // Compare with correct order
-      const correctOrder = Array.isArray(question.correctOrder) 
-        ? question.correctOrder 
-        : [];
-      const isCorrect = JSON.stringify(userAnswerArray) === JSON.stringify(correctOrder);
-
-      return {
-        attemptId: attempt.id,
-        questionId: question.id,
-        userAnswer: userAnswerArray, // Save as JSON array
-        isCorrect,
-        timeSpent: Math.round(answer.timeSpent || 0),
-      };
-    }).filter(Boolean);
-
-    // Batch insert question answers
-    if (questionAnswers.length > 0) {
-      await prisma.orderingQuizAttemptQuestion.createMany({
-        data: questionAnswers as any[],
-        skipDuplicates: true,
-      });
-    }
-
-    logDebug(`Saved ordering quiz attempt ${attempt.id} with ${questionAnswers.length} questions`);
-
-    return {
-      updatedUserQuiz: null, // Ordering quizzes don't use UserQuiz
-      quizAttempt: attempt,
-      percentageScore,
-      totalQuestions: orderingQuiz.questions.length,
-    };
-  } catch (error) {
-    console.error("Error processing ordering quiz submission:", error);
-    throw error;
-  }
+  // This function has been replaced by orderingQuizService.submitQuiz
+  throw new Error("processOrderingQuizSubmission is deprecated. Use orderingQuizService.submitQuiz instead.");
 }
 
 async function processQuizSubmission(
@@ -1158,9 +1084,14 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
       
       // Use dedicated ordering quiz handler for ordering type
       if (submission.type === 'ordering') {
-        result = await retryTransaction(() => 
-          processOrderingQuizSubmission(userId, submission, submission.quizId, percentageScore, accuracyScore)
-        );
+        // Convert submission answers to the format expected by the service
+        const answers = submission.answers.map((answer, index) => ({
+          questionId: index + 1, // Assuming questions are 1-indexed
+          userAnswer: Array.isArray(answer.userAnswer) ? answer.userAnswer : answer.answer || [],
+          timeSpent: answer.timeSpent || 0,
+        }));
+
+        result = await orderingQuizService.submitQuiz(userId, submission.quizId, answers);
         
         // Fetch full quiz data for response
         const orderingQuiz = await prisma.orderingQuiz.findUnique({

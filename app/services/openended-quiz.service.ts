@@ -1,7 +1,7 @@
 import { QuizType } from "@/app/types/quiz-types";
 import { BaseQuizService } from "./base-quiz.service";
 import { generateHints } from "@/lib/utils/hint-system-unified";
-import { generateOpenEnded } from "@/lib/ai/simple-ai-service";
+import { generateOpenEnded } from "@/lib/ai/course-ai-service";
 
 export class OpenEndedQuizService extends BaseQuizService {
   constructor() {
@@ -11,8 +11,8 @@ export class OpenEndedQuizService extends BaseQuizService {
   /**
    * Generate OpenEnded quiz using simple AI service
    */
-  async generateQuiz(params: { title: string; amount: number; difficulty?: string; userType?: string; userId?: string }) {
-    const { title, amount, difficulty = "medium", userType = "FREE", userId } = params;
+  async generateQuiz(params: { title: string; amount: number; difficulty?: string; userType?: string; userId?: string; credits?: number }) {
+    const { title, amount, difficulty = "medium", userType = "FREE", userId, credits } = params;
 
     try {
       const quiz = await generateOpenEnded(
@@ -20,7 +20,8 @@ export class OpenEndedQuizService extends BaseQuizService {
         amount,
         difficulty as 'easy' | 'medium' | 'hard',
         userId,
-        userType as any
+        userType as any,
+        credits
       );
 
       return quiz;

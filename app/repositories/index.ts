@@ -9,3 +9,4 @@ export * from './course.repository';
 export * from './video.repository';
 export * from './course-quiz.repository';
 export * from './flashcard.repository';
+export * from './ordering-quiz.repository';
