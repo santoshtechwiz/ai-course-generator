@@ -1,4 +1,4 @@
-import { Code, PenTool, Flashlight, BookOpen, Target } from "lucide-react"
+import { Code, PenTool, Flashlight, BookOpen, Target, ArrowUpDown } from "lucide-react"
 
 export const QUIZ_TYPE_CONFIG = {
   mcq: {
@@ -50,5 +50,15 @@ export const QUIZ_TYPE_CONFIG = {
     pill: "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800",
     gradient: "from-orange-500/10 to-orange-600/5",
     accent: "bg-orange-500",
+  },
+  ordering: {
+    label: "Ordering",
+    icon: ArrowUpDown,
+    color: "text-purple-600 dark:text-purple-400",
+    bg: "bg-purple-50 dark:bg-purple-950/30",
+    border: "border-purple-200 dark:border-purple-800",
+    pill: "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800",
+    gradient: "from-purple-500/10 to-purple-600/5",
+    accent: "bg-purple-500",
   },
 } as const

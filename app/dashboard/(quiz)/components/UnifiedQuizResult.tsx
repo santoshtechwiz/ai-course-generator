@@ -26,6 +26,7 @@ import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
 import { UnifiedLoader } from "@/components/loaders"
 import BlankQuizResults from "../blanks/components/BlankQuizResults"
 import OpenEndedQuizResults from "../openended/components/QuizResultsOpenEnded"
+import OrderingQuizResults from "../ordering/components/OrderingQuizResults"
 
 // ...existing code...
 
@@ -132,14 +133,13 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
     )
   }
 
-  // Delegate to specialized text-result components for blanks / open-ended quizzes
+  // Delegate to specialized text-result components for blanks / open-ended / ordering quizzes
   // This reuses the existing BaseTextQuizResult logic (similarity scoring, insights, etc.)
   if (quizType === 'blanks') {
     return (
       <BlankQuizResults
         result={result}
         onRetake={() => (onRetake ? onRetake() : handleRetake())}
-        isAuthenticated={isAuthenticated}
         slug={slug}
       />
     )
@@ -148,6 +148,16 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
   if (quizType === 'openended' || quizType === 'open-ended') {
     return (
       <OpenEndedQuizResults
+        result={result}
+        onRetake={() => (onRetake ? onRetake() : handleRetake())}
+        slug={slug}
+      />
+    )
+  }
+
+  if (quizType === 'ordering') {
+    return (
+      <OrderingQuizResults
         result={result}
         onRetake={() => (onRetake ? onRetake() : handleRetake())}
         isAuthenticated={isAuthenticated}

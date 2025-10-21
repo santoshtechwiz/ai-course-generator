@@ -4,6 +4,7 @@ import { OpenEndedQuizService } from "@/app/services/openended-quiz.service";
 import { BlanksQuizService } from "./blanks-quiz.service";
 import { McqQuizService } from "./mcq-quiz.service";
 import { FlashcardService } from "./flashcard.service";
+import { OrderingQuizService } from "@/services/ordering-quiz.service";
 
 /**
  * Factory for creating quiz services based on quiz type
@@ -24,6 +25,8 @@ export class QuizServiceFactory {
         return new OpenEndedQuizService();
       case "flashcard":
         return new FlashcardService();
+      case "ordering":
+        return new OrderingQuizService();
       // Add other quiz type services as they are implemented
       default:
         return new CodeQuizService(); // Default to code quiz for now

@@ -1,12 +1,12 @@
-"use client"
+'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { cn } from "@/lib/utils"
-import { GripVertical, ChevronUp, ChevronDown, Check, Star } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { cn } from '@/lib/utils'
+import { GripVertical, ChevronUp, ChevronDown, Check, Star, ArrowDownUp } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 /**
  * OrderingQuizEnterprise.tsx
@@ -151,7 +151,10 @@ function StepItem({
   onDragEnd,
   onKeyUp,
   label,
-  state
+  state,
+  dragPosition,
+  isDropAbove,
+  isDropBelow
 }: {
   step: OrderingQuizStep
   index: number
@@ -163,41 +166,154 @@ function StepItem({
   onKeyUp: (e: React.KeyboardEvent, i:number)=>void
   label: string
   state?: 'default'|'dragging'|'target'|'swapped'
+  dragPosition?: { x: number; y: number } | null
+  isDropAbove?: boolean
+  isDropBelow?: boolean
 }) {
-  return (
-    <motion.div
-      draggable
-      onDragStart={() => onDragStart(index)}
-      onDragOver={(e) => onDragOver(e, index)}
-      onDragEnd={onDragEnd}
-      onKeyUp={(e) => onKeyUp(e, index)}
-      tabIndex={0}
-      role="button"
-      aria-label={`${label}: ${step.description}`}
-      className={cn(
-        'group flex items-start gap-4 p-4 rounded-lg border transition-all outline-none',
-        state === 'dragging' && 'ring-4 ring-blue-300 z-30 shadow-xl scale-102',
-        state === 'target' && 'ring-2 ring-green-300 shadow-md',
-        state === 'swapped' && 'ring-2 ring-purple-300',
-        state === 'default' && 'bg-card border-border'
-      )}
-    >
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-md bg-primary/10 text-primary">
-          <GripVertical className="h-5 w-5" />
-        </div>
-      </div>
+  // Generate consistent color based on step ID for visual consistency
+  const stepColor = useMemo(() => {
+    const colors = [
+      'bg-blue-50 border-blue-200 dark:bg-blue-950/50 dark:border-blue-800',
+      'bg-green-50 border-green-200 dark:bg-green-950/50 dark:border-green-800',
+      'bg-purple-50 border-purple-200 dark:bg-purple-950/50 dark:border-purple-800',
+      'bg-amber-50 border-amber-200 dark:bg-amber-950/50 dark:border-amber-800',
+      'bg-rose-50 border-rose-200 dark:bg-rose-950/50 dark:border-rose-800',
+      'bg-cyan-50 border-cyan-200 dark:bg-cyan-950/50 dark:border-cyan-800',
+    ];
+    const id = typeof step.id === 'string' ? step.id.charCodeAt(0) : step.id;
+    return colors[id % colors.length];
+  }, [step.id]);
 
-      <div className="flex-1">
-        <div className="flex items-center justify-between gap-3">
-          <div className="font-semibold text-sm">{step.description}</div>
-          <div className="text-xs text-muted-foreground">{label}</div>
-        </div>
-        {step.explanation && (
-          <div className="mt-2 text-xs text-muted-foreground">{step.explanation}</div>
+  const textColor = useMemo(() => {
+    const colors = [
+      'text-blue-800',
+      'text-green-800', 
+      'text-purple-800',
+      'text-amber-800',
+      'text-rose-800',
+      'text-cyan-800',
+    ];
+    const id = typeof step.id === 'string' ? step.id.charCodeAt(0) : step.id;
+    return colors[id % colors.length];
+  }, [step.id]);
+
+  return (
+    <div className="relative">
+      {/* Drop Area Above Indicator */}
+      {isDropAbove && (
+        <motion.div 
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 4 }}
+          className="absolute -top-2 left-0 right-0 mx-4 bg-green-500 rounded-full z-20 shadow-lg"
+        >
+          <div className="absolute -top-1 -left-1 w-3 h-3 bg-green-500 rounded-full"></div>
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></div>
+        </motion.div>
+      )}
+
+      <motion.div
+        draggable
+        onDragStart={() => onDragStart(index)}
+        onDragOver={(e) => onDragOver(e, index)}
+        onDragEnd={onDragEnd}
+        onKeyUp={(e) => onKeyUp(e, index)}
+        tabIndex={0}
+        role="button"
+        aria-label={`${label}: ${step.description}`}
+        initial={{ opacity: 1, scale: 1, y: 0 }}
+        animate={{
+          opacity: isDragged ? 0.8 : 1,
+          scale: isDragged ? 1.05 : isDropTarget ? 1.03 : 1,
+          y: isDragged ? (dragPosition ? -10 : 0) : 0,
+        }}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 1.05 }}
+        transition={{ 
+          duration: 0.2, 
+          ease: 'easeOut',
+          scale: { duration: 0.15 }
+        }}
+        className={cn(
+          'group flex items-start gap-4 p-4 rounded-lg border-2 transition-all outline-none cursor-grab active:cursor-grabbing relative z-10',
+          'hover:shadow-lg hover:border-primary/50',
+          state === 'dragging' && 'ring-4 ring-blue-400 z-30 shadow-2xl scale-105',
+          state === 'target' && 'ring-2 ring-green-400 shadow-md border-green-300 bg-green-50 dark:bg-green-900/30',
+          state === 'swapped' && 'ring-2 ring-purple-400 animate-pulse',
+          state === 'default' && 'bg-card border-border',
+          // Apply consistent color based on step ID
+          stepColor,
+          // Highlight drop target area
+          isDropTarget && 'bg-green-50 border-green-300 dark:bg-green-900/30'
         )}
-      </div>
-    </motion.div>
+        style={{
+          transform: isDragged && dragPosition 
+            ? `translate(${dragPosition.x}px, ${dragPosition.y}px) rotate(2deg)`
+            : undefined,
+        }}
+      >
+        {/* Drag Handle with Improved Visibility */}
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            "p-2 rounded-md transition-all duration-200 flex items-center gap-1",
+            isDragged 
+              ? "bg-blue-100 text-blue-600 dark:bg-blue-900 shadow-md" 
+              : "bg-primary/10 text-primary group-hover:bg-primary/20 group-hover:shadow-sm"
+          )}>
+            <GripVertical className="h-4 w-4 group-hover:scale-110 transition-transform" />
+            <ArrowDownUp className="h-3 w-3 opacity-70" />
+          </div>
+        </div>
+
+        <div className="flex-1">
+          <div className="flex items-center justify-between gap-3">
+            <div className={cn("font-semibold text-sm", textColor)}>{step.description}</div>
+            <div className={cn(
+              "text-xs font-bold px-2 py-1 rounded-full transition-all duration-200 min-w-16 text-center",
+              isDragged 
+                ? "bg-blue-100 text-blue-700 shadow-sm" 
+                : isDropTarget
+                ? "bg-green-100 text-green-700 shadow-sm"
+                : "bg-white/80 text-gray-700 shadow-sm border"
+            )}>
+              {isDropTarget ? 'Drop Here' : label}
+            </div>
+          </div>
+          {step.explanation && (
+            <div className="mt-2 text-xs text-muted-foreground">{step.explanation}</div>
+          )}
+        </div>
+
+        {/* Visual indicator for drag state */}
+        {isDragged && (
+          <div className="absolute inset-0 border-2 border-dashed border-blue-400 rounded-lg pointer-events-none" />
+        )}
+
+        {/* Drop Zone Indicator */}
+        {isDropTarget && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 border-2 border-dashed border-green-400 rounded-lg pointer-events-none"
+          >
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+              <Check className="h-3 w-3 text-white" />
+            </div>
+          </motion.div>
+        )}
+      </motion.div>
+
+      {/* Drop Area Below Indicator */}
+      {isDropBelow && (
+        <motion.div 
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 4 }}
+          className="absolute -bottom-2 left-0 right-0 mx-4 bg-green-500 rounded-full z-20 shadow-lg"
+        >
+          <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-green-500 rounded-full"></div>
+          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></div>
+        </motion.div>
+      )}
+    </div>
   )
 }
 
@@ -226,8 +342,10 @@ function OrderingQuizSingleEnhanced({
   const initial = useMemo(() => {
     const seed = typeof question.id === 'number' ? question.id : String(question.id || question.title).split('').reduce((a,c)=>a+c.charCodeAt(0),0)
     return shuffleArray(question.steps, seed)
-  }, [question.id])
+  }, [question.id, question.steps])
 
+  // Key observation: When question changes, we need to reset order state
+  // Use question.id as dependency to force reset when question changes
   const [order, setOrder] = useState<number[]>(() => {
     // If existingAnswer is provided, use it; otherwise initialize to original order
     if (existingAnswer && Array.isArray(existingAnswer) && existingAnswer.length === initial.length) {
@@ -235,10 +353,23 @@ function OrderingQuizSingleEnhanced({
     }
     return initial.map((_, i) => i)
   })
+  
+  // IMPORTANT: Reset order when question changes (question.id changes)
+  useEffect(() => {
+    setOrder(() => {
+      if (existingAnswer && Array.isArray(existingAnswer) && existingAnswer.length === initial.length) {
+        return existingAnswer
+      }
+      return initial.map((_, i) => i)
+    })
+  }, [question.id]) // Reset when question ID changes
+  
   const [shuffled] = useState<OrderingQuizStep[]>(initial)
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const [justSwapped, setJustSwapped] = useState<number | null>(null)
+  const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null)
+  const [dropIndicator, setDropIndicator] = useState<'above' | 'below' | 'on' | null>(null)
 
   // restore from persistence (only on mount if no existingAnswer)
   useEffect(() => {
@@ -249,7 +380,7 @@ function OrderingQuizSingleEnhanced({
     if (saved && Array.isArray(saved) && saved.length === shuffled.length) {
       setOrder(saved)
     }
-  }, []) // Only run on mount
+  }, [question.id]) // Also reset persistence loading when question changes
 
   // notify parent
   useEffect(() => {
@@ -267,29 +398,63 @@ function OrderingQuizSingleEnhanced({
   const handleDragStart = useCallback((i:number) => {
     setDraggedIndex(i)
     setDragOverIndex(null)
+    setDragPosition({ x: 0, y: 0 })
+    setDropIndicator(null)
     sendEvent('ordering.drag_start', { questionId: question.id, index: i })
   }, [question.id, sendEvent])
 
   const handleDragOver = useCallback((e: React.DragEvent, i:number) => {
     e.preventDefault()
     if (draggedIndex === null || draggedIndex === i) return
-    setDragOverIndex(i)
+    
+    // Calculate drop position (above, on, or below the item)
+    const rect = e.currentTarget.getBoundingClientRect()
+    const relativeY = e.clientY - rect.top
+    const third = rect.height / 3
+    
+    let newDropIndicator: 'above' | 'on' | 'below' = 'on'
+    if (relativeY < third) {
+      newDropIndicator = 'above'
+    } else if (relativeY > third * 2) {
+      newDropIndicator = 'below'
+    } else {
+      newDropIndicator = 'on'
+    }
+    
+    setDropIndicator(newDropIndicator)
+    setDragPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+    
+    // Only update order if the target index changes
+    if (dragOverIndex !== i) {
+      setDragOverIndex(i)
 
-    setOrder(prev => {
-      const next = [...prev]
-      const item = next.splice(draggedIndex, 1)[0]
-      next.splice(i, 0, item)
-      return next
-    })
-    setDraggedIndex(i)
-    setJustSwapped(i)
-    setTimeout(() => setJustSwapped(null), 300)
-    sendEvent('ordering.reorder', { questionId: question.id, from: draggedIndex, to: i })
-  }, [draggedIndex, question.id, sendEvent])
+      setOrder(prev => {
+        const next = [...prev]
+        const item = next.splice(draggedIndex, 1)[0]
+        
+        // Adjust insertion index based on drop position
+        let insertIndex = i
+        if (newDropIndicator === 'below' && i < next.length - 1) {
+          insertIndex = i + 1
+        } else if (newDropIndicator === 'above' && i > 0) {
+          insertIndex = i - 1
+        }
+        
+        next.splice(insertIndex, 0, item)
+        return next
+      })
+      
+      setJustSwapped(i)
+      setTimeout(() => setJustSwapped(null), 300)
+      sendEvent('ordering.reorder', { questionId: question.id, from: draggedIndex, to: i, position: newDropIndicator })
+    }
+  }, [draggedIndex, dragOverIndex, question.id, sendEvent])
 
   const handleDragEnd = useCallback(() => {
     setDraggedIndex(null)
     setDragOverIndex(null)
+    setDragPosition(null)
+    setDropIndicator(null)
     sendEvent('ordering.drag_end', { questionId: question.id })
   }, [sendEvent, question.id])
 
@@ -301,6 +466,7 @@ function OrderingQuizSingleEnhanced({
         return next
       })
       setJustSwapped(i-1); setTimeout(() => setJustSwapped(null), 300)
+      sendEvent('ordering.keyboard_move', { questionId: question.id, from: i, to: i-1 })
     } else if (e.key === 'ArrowDown' && i < order.length - 1) {
       setOrder(prev => {
         const next = [...prev]
@@ -308,8 +474,9 @@ function OrderingQuizSingleEnhanced({
         return next
       })
       setJustSwapped(i+1); setTimeout(() => setJustSwapped(null), 300)
+      sendEvent('ordering.keyboard_move', { questionId: question.id, from: i, to: i+1 })
     }
-  }, [order.length])
+  }, [order.length, question.id, sendEvent])
 
   const currentSteps = order.map(idx => shuffled[idx]).filter(Boolean)
 
@@ -364,7 +531,21 @@ function OrderingQuizSingleEnhanced({
         </CardHeader>
 
         <CardContent className="p-6 space-y-6">
-          <div className="space-y-3" role="region" aria-label={`Ordering steps for ${question.title}`}>
+          {/* Drop Zone Instructions */}
+          {draggedIndex !== null && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center"
+            >
+              <div className="flex items-center justify-center gap-2 text-blue-700 font-medium">
+                <GripVertical className="h-4 w-4" />
+                <span>Drag to reorder. Green areas show where you can drop.</span>
+              </div>
+            </motion.div>
+          )}
+
+          <div className="space-y-4" role="region" aria-label={`Ordering steps for ${question.title}`}>
             <AnimatePresence>
               {currentSteps.map((step, idx) => (
                 <StepItem
@@ -379,6 +560,9 @@ function OrderingQuizSingleEnhanced({
                   onKeyUp={handleKey}
                   label={`Step ${idx + 1}`}
                   state={draggedIndex === idx ? 'dragging' : (dragOverIndex === idx ? 'target' : (justSwapped === idx ? 'swapped' : 'default'))}
+                  dragPosition={draggedIndex === idx ? dragPosition : null}
+                  isDropAbove={dragOverIndex === idx && dropIndicator === 'above'}
+                  isDropBelow={dragOverIndex === idx && dropIndicator === 'below'}
                 />
               ))}
             </AnimatePresence>

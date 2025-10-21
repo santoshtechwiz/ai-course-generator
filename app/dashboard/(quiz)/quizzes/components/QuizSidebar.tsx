@@ -56,6 +56,14 @@ const quizTypes = [
     bg: QUIZ_TYPE_CONFIG.flashcard.bg,
     border: QUIZ_TYPE_CONFIG.flashcard.border,
   },
+  {
+    id: "ordering" as const,
+    label: QUIZ_TYPE_CONFIG.ordering.label,
+    icon: QUIZ_TYPE_CONFIG.ordering.icon,
+    color: QUIZ_TYPE_CONFIG.ordering.color,
+    bg: QUIZ_TYPE_CONFIG.ordering.bg,
+    border: QUIZ_TYPE_CONFIG.ordering.border,
+  },
 ]
 
 interface QuizSidebarProps {

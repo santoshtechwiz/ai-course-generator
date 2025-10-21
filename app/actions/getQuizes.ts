@@ -89,88 +89,111 @@ export async function getQuizzes({
     if (cachedResult) {
       return cachedResult
     }
-    // Build the where clause
-    const where: Record<string, unknown> = {}
+
+    // Determine if we should include ordering quizzes
+    const includeOrdering = !quizTypes || quizTypes.includes('ordering') || tab === 'all' || tab === 'ordering'
+    const includeUserQuizzes = !quizTypes || !quizTypes.includes('ordering') || quizTypes.length > 1 || tab === 'all'
+
+    // Build the where clause for UserQuiz
+    const userQuizWhere: Record<string, unknown> = {}
 
     // Filter by user ID or public quizzes
     if (userId) {
       if (publicOnly) {
-        // If both userId and publicOnly are provided, only show public quizzes
-        where.isPublic = true
+        userQuizWhere.isPublic = true
       } else {
-        // Otherwise show both user's quizzes and public quizzes
-        where.OR = [{ userId }, { isPublic: true }]
+        userQuizWhere.OR = [{ userId }, { isPublic: true }]
       }
-    } else if (publicOnly) {
-      // If only publicOnly is provided, only show public quizzes
-      where.isPublic = true
+    } else {
+      // No userId - show only public quizzes
+      userQuizWhere.isPublic = true
     }
 
     // Filter by search term
     if (searchTerm) {
-      where.title = {
+      userQuizWhere.title = {
         contains: searchTerm,
         mode: "insensitive",
       }
     }
 
-    // Filter by quiz type
-    if (quizTypes && quizTypes.length > 0) {
-      where.quizType = {
-        in: quizTypes,
+    // Filter by quiz type (exclude 'ordering' from UserQuiz query)
+    if (quizTypes && quizTypes.length > 0 && quizTypes.includes('ordering')) {
+      const nonOrderingTypes = quizTypes.filter(t => t !== 'ordering')
+      if (nonOrderingTypes.length > 0) {
+        userQuizWhere.quizType = { in: nonOrderingTypes }
+      } else {
+        userQuizWhere.quizType = 'NONE' // This won't match anything
       }
-    } else if (tab && tab !== "all") {
-      where.quizType = tab
+    } else if (quizTypes && quizTypes.length > 0) {
+      userQuizWhere.quizType = { in: quizTypes }
+    } else if (tab && tab !== "all" && tab !== 'ordering') {
+      userQuizWhere.quizType = tab
     }
 
-    // Filter by categories
-    if (categories && categories.length > 0) {
-      where.OR = [
-        ...(where.OR as any[] || []),
-        {
-          title: {
-            in: categories.map((cat) => ({ contains: cat, mode: "insensitive" })),
+    // Build the where clause for OrderingQuiz
+    const orderingQuizWhere: Record<string, unknown> = {}
+    
+    if (userId) {
+      if (publicOnly) {
+        orderingQuizWhere.isPublic = true
+      } else {
+        orderingQuizWhere.OR = [{ createdBy: userId }, { isPublic: true }]
+      }
+    } else {
+      // No userId - show only public quizzes
+      orderingQuizWhere.isPublic = true
+    }
+
+    if (searchTerm) {
+      orderingQuizWhere.title = {
+        contains: searchTerm,
+        mode: "insensitive",
+      }
+    }
+
+    // Fetch both UserQuizzes and OrderingQuizzes
+    const [userQuizzes, orderingQuizzes, totalUserQuizCount, totalOrderingQuizCount] = await Promise.all([
+      includeUserQuizzes ? prisma.userQuiz.findMany({
+        where: userQuizWhere,
+        select: {
+          id: true,
+          title: true,
+          quizType: true,
+          isPublic: true,
+          isFavorite: true,
+          timeStarted: true,
+          slug: true,
+          bestScore: true,
+          userId: true,
+          _count: {
+            select: { questions: true },
           },
         },
-      ]
-    }
-
-    // Use Prisma's _count for question count filtering (if supported)
-    // Otherwise, fallback to in-memory filtering
-    let useInMemoryQuestionCountFilter = false
-    let having: Record<string, unknown> | undefined = undefined
-    if (minQuestions > 0 || maxQuestions < 50) {
-      // Prisma does not support having on findMany, so we filter in-memory
-      useInMemoryQuestionCountFilter = true
-    }
-
-    // Get total count for pagination (without question count filter if in-memory)
-    const totalCount = await prisma.userQuiz.count({ where })
-
-    // Fetch quizzes with pagination
-    const quizzes = await prisma.userQuiz.findMany({
-      where,
-      select: {
-        id: true,
-        title: true,
-        quizType: true,
-        isPublic: true,
-        isFavorite: true,
-        timeStarted: true,
-        slug: true,
-        bestScore: true,
-        userId: true,
-        _count: {
-          select: { questions: true },
+        orderBy: { timeStarted: "desc" },
+      }) : Promise.resolve([]),
+      includeOrdering ? prisma.orderingQuiz.findMany({
+        where: orderingQuizWhere,
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          isPublic: true,
+          createdBy: true,
+          createdAt: true,
+          difficulty: true,
+          _count: {
+            select: { questions: true },
+          },
         },
-      },
-      orderBy: { timeStarted: "desc" },
-      skip: (page - 1) * limit,
-      take: limit,
-    })
+        orderBy: { createdAt: "desc" },
+      }) : Promise.resolve([]),
+      includeUserQuizzes ? prisma.userQuiz.count({ where: userQuizWhere }) : Promise.resolve(0),
+      includeOrdering ? prisma.orderingQuiz.count({ where: orderingQuizWhere }) : Promise.resolve(0),
+    ])
 
-    // Transform the data
-    let transformedQuizzes: QuizListItem[] = quizzes.map((quiz) => ({
+    // Transform UserQuizzes
+    let transformedUserQuizzes: QuizListItem[] = userQuizzes.map((quiz: any) => ({
       id: quiz.id.toString(),
       title: quiz.title,
       quizType: quiz.quizType as QuizType,
@@ -183,18 +206,40 @@ export async function getQuizzes({
       userId: quiz.userId,
     }))
 
-    // Apply question count filter in memory if needed
-    if (useInMemoryQuestionCountFilter) {
-      transformedQuizzes = transformedQuizzes.filter(
+    // Transform OrderingQuizzes
+    let transformedOrderingQuizzes: QuizListItem[] = orderingQuizzes.map((quiz: any) => ({
+      id: `ordering_${quiz.id}`,
+      title: quiz.title,
+      quizType: 'ordering' as QuizType,
+      isPublic: quiz.isPublic ?? false,
+      isFavorite: false,
+      timeStarted: quiz.createdAt.toISOString(),
+      slug: quiz.slug,
+      questionCount: quiz._count.questions,
+      bestScore: null,
+      userId: quiz.createdBy || '',
+    }))
+
+    // Combine and sort all quizzes
+    let allQuizzes = [...transformedUserQuizzes, ...transformedOrderingQuizzes]
+
+    // Apply question count filter if needed
+    if (minQuestions > 0 || maxQuestions < 50) {
+      allQuizzes = allQuizzes.filter(
         (quiz) => quiz.questionCount >= minQuestions && quiz.questionCount <= maxQuestions,
       )
     }
 
-    // Calculate next cursor for infinite loading
+    // Sort by timeStarted descending
+    allQuizzes.sort((a, b) => new Date(b.timeStarted).getTime() - new Date(a.timeStarted).getTime())
+
+    // Apply pagination
+    const totalCount = totalUserQuizCount + totalOrderingQuizCount
+    const paginatedQuizzes = allQuizzes.slice((page - 1) * limit, page * limit)
     const nextCursor = page < Math.ceil(totalCount / limit) ? page + 1 : null
 
     const result: GetQuizzesResult = {
-      quizzes: transformedQuizzes,
+      quizzes: paginatedQuizzes,
       totalCount,
       nextCursor,
     }
@@ -230,7 +275,7 @@ const invalidateQuizCache = async (slug?: string) => {
   })
 }
 
-async function fetchQuizWithCache(quizId: string): Promise<Quiz | null> {
+async function fetchQuizWithCache(quizId: string | number): Promise<Quiz | null> {
   const cacheKey = `quiz_${quizId}`
 
   // Check cache first
@@ -241,9 +286,16 @@ async function fetchQuizWithCache(quizId: string): Promise<Quiz | null> {
     return cachedQuiz
   }
 
+  // Coerce the incoming id to a number because Prisma expects a numeric id
+  const idNumber = typeof quizId === "string" ? parseInt(quizId, 10) : quizId
+  if (!Number.isInteger(idNumber) || idNumber <= 0) {
+    console.warn(`fetchQuizWithCache: invalid quizId provided: ${quizId}`)
+    return null
+  }
+
   // Fetch quiz from API or database
   const quiz = await prisma.userQuiz.findUnique({
-    where: { id: quizId },
+    where: { id: idNumber },
   })
 
   if (quiz) {
@@ -287,6 +339,7 @@ export async function getQuizCountsByType(userId?: string): Promise<Record<strin
       flashcard: 0,
       openended: 0,
       blanks: 0,
+      ordering: 0,
     }
 
     counts.forEach((count) => {
@@ -301,6 +354,8 @@ export async function getQuizCountsByType(userId?: string): Promise<Record<strin
         result.openended = count._count.quizType
       } else if (quizType === 'blanks' || quizType === 'fill-blanks') {
         result.blanks = count._count.quizType
+      } else if (quizType === 'ordering') {
+        result.ordering = count._count.quizType
       }
     })
 
@@ -314,6 +369,7 @@ export async function getQuizCountsByType(userId?: string): Promise<Record<strin
       flashcard: 0,
       openended: 0,
       blanks: 0,
+      ordering: 0,
     }
   }
 }

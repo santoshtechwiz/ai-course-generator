@@ -8,15 +8,16 @@ import type { AIMessage } from '@/lib/ai/interfaces'
 
 interface OrderingPromptOptions {
   topic: string
-  numberOfSteps: number
   difficulty: 'easy' | 'medium' | 'hard'
+  numberOfSteps?: number
+  numberOfQuestions?: number
 }
 
 /**
  * Build ordering quiz generation prompt
  */
 export function buildOrderingPrompt(options: OrderingPromptOptions): AIMessage[] {
-  const { topic, numberOfSteps, difficulty } = options
+  const { topic, difficulty, numberOfSteps = 5, numberOfQuestions = 3 } = options
   
   return [
     {
@@ -25,14 +26,21 @@ export function buildOrderingPrompt(options: OrderingPromptOptions): AIMessage[]
     },
     {
       role: 'user',
-      content: `Generate an ordering quiz about "${topic}" with ${numberOfSteps} steps at ${difficulty} difficulty. Users must arrange the steps in correct order.
+      content: `Generate an ordering quiz about "${topic}" with ${numberOfQuestions} separate questions at ${difficulty} difficulty level. Each question should have ${numberOfSteps} steps.
 
-**Requirements:**
-- Create exactly ${numberOfSteps} sequential steps
+**Requirements for the quiz:**
+- Generate exactly ${numberOfQuestions} different ordering questions
+- Each question must have exactly ${numberOfSteps} sequential steps
 - Each step must be a clear action or stage in the process
 - Steps must be ordered correctly from first to last
 - Provide a short, meaningful explanation for each step
 - Ensure the steps form a coherent and complete workflow
+- Each question should test different aspects of the topic
+
+**Format each question as:**
+- title: Brief title for the question
+- description: What the user needs to arrange
+- steps: Array of step objects with description and explanation
 
 **Example topics:** Git Workflow, Docker Container Deployment, Database Backup Process, API Request Lifecycle, CI/CD Pipeline, etc.`,
     },
@@ -45,36 +53,43 @@ export function buildOrderingPrompt(options: OrderingPromptOptions): AIMessage[]
 export function getOrderingFunctionSchema() {
   return {
     name: 'generate_ordering_quiz',
-    description: 'Generates a well-structured technical ordering quiz with complete steps and explanations',
+    description: 'Generates multiple well-structured technical ordering quiz questions with complete steps and explanations',
     parameters: {
       type: 'object',
       properties: {
-        title: {
-          type: 'string',
-          description: 'Quiz title, e.g., "Docker Deployment Pipeline"',
-        },
-        description: {
-          type: 'string',
-          description: 'Short description of what the quiz tests',
-        },
-        steps: {
+        questions: {
           type: 'array',
+          description: 'Array of ordering quiz questions',
           items: {
             type: 'object',
             properties: {
-              id: { type: 'number' },
-              description: { type: 'string', description: 'Step description' },
-              explanation: { type: 'string', description: 'Why this step is important' },
+              title: {
+                type: 'string',
+                description: 'Question title, e.g., "Docker Deployment Pipeline"',
+              },
+              description: {
+                type: 'string',
+                description: 'Short description of what needs to be ordered',
+              },
+              steps: {
+                type: 'array',
+                description: 'Array of steps to be ordered',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'number', description: 'Step ID (0-indexed)' },
+                    description: { type: 'string', description: 'Step description' },
+                    explanation: { type: 'string', description: 'Why this step is important' },
+                  },
+                  required: ['description'],
+                },
+              },
             },
-            required: ['description'],
+            required: ['title', 'description', 'steps'],
           },
         },
-        difficulty: {
-          type: 'string',
-          enum: ['easy', 'medium', 'hard'],
-        },
       },
-      required: ['title', 'description', 'steps', 'difficulty'],
+      required: ['questions'],
     },
   }
 }

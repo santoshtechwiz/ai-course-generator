@@ -3,6 +3,7 @@ import { generateOrderingQuiz } from "@/lib/ai/course-ai-service";
 import { generateUniqueSlug } from "@/lib/utils/string";
 import { creditService, CreditOperationType } from "@/services/credit-service";
 import { getAuthSession } from "@/lib/auth";
+import type { SubscriptionPlanType } from "@/types/subscription";
 
 interface OrderingQuizData {
   title: string;
@@ -39,7 +40,7 @@ class OrderingQuizService {
    * Create a new ordering quiz
    */
   async createQuiz(params: CreateOrderingQuizParams) {
-    const { topic, difficulty, userId, userType = 'FREE', credits = 0, numberOfQuestions = 5 } = params;
+    const { topic, difficulty, userId, userType = 'FREE', credits = 0, numberOfQuestions = 3 } = params;
 
     // Generate quiz content using AI
     const quizData = await generateOrderingQuiz(
@@ -54,20 +55,35 @@ class OrderingQuizService {
     // Generate unique slug (only checks OrderingQuiz table)
     const slug = await generateUniqueSlug(topic, 'ordering');
 
-    // Prepare questions data - now quizData.questions contains multiple ordering questions
+    // Prepare questions data - quizData.questions should now contain multiple ordering questions
     const questions = quizData.questions.map((question: any, index: number) => ({
-      title: question.title,
-      description: question.description,
-      steps: question.steps,
-      correctOrder: question.steps.map((_: any, stepIndex: number) => stepIndex), // Default correct order
+      title: question.title || `Question ${index + 1}`,
+      description: question.description || '',
+      // Store steps as JSON array with id, description, explanation
+      steps: Array.isArray(question.steps) 
+        ? question.steps.map((step: any, stepIndex: number) => ({
+            id: step.id ?? stepIndex,
+            description: step.description || '',
+            explanation: step.explanation || '',
+          }))
+        : [],
+      // Create correct order array: [0, 1, 2, 3, ...] for initial shuffle
+      correctOrder: Array.isArray(question.steps)
+        ? question.steps.map((_: any, stepIndex: number) => stepIndex)
+        : [],
       orderIndex: index + 1,
     }));
+
+    // Validate we have questions
+    if (questions.length === 0) {
+      throw new Error('Failed to generate valid ordering quiz questions');
+    }
 
     // Create quiz in database
     const createdQuiz = await this.repository.createOrderingQuiz(
       userId,
       `${topic} - Ordering Quiz`, // Overall quiz title
-      `Multiple ordering questions about ${topic}`, // Overall quiz description
+      `${numberOfQuestions} ordering questions about ${topic}`, // Overall quiz description
       topic,
       difficulty,
       slug,
@@ -235,12 +251,30 @@ class OrderingQuizService {
   }
 
   /**
-   * Delete a quiz
+   * Delete a quiz by slug (compatible with quiz service factory interface)
+   */
+  async delete(slug: string, userId: string) {
+    const quiz = await this.repository.findBySlug(slug);
+    
+    if (!quiz) {
+      throw new Error("Quiz not found");
+    }
+    
+    if (quiz.createdBy !== userId) {
+      throw new Error("Unauthorized");
+    }
+    
+    return this.repository.deleteQuiz(quiz.id);
+  }
+
+  /**
+   * Delete a quiz by id (legacy method)
    */
   async deleteQuiz(id: number) {
     return this.repository.deleteQuiz(id);
   }
 }
 
-// Export singleton instance
+// Export both the class and singleton instance
+export { OrderingQuizService };
 export const orderingQuizService = new OrderingQuizService();

@@ -4,7 +4,7 @@ import { migratedStorage } from '@/lib/storage';
 import { fetchWithTimeout } from '@/lib/http';
 
 // Exporting QuizType so it can be imported in other files
-export type QuizType = 'blanks' | 'openended' | 'mcq' | 'code' | 'flashcard';
+export type QuizType = 'blanks' | 'openended' | 'mcq' | 'code' | 'flashcard' | 'ordering';
 
 function copyToClipboard(text: string): Promise<void> {
   return navigator.clipboard.writeText(text);

@@ -96,13 +96,13 @@ export default function OrderingQuizWrapper({ slug }: OrderingQuizWrapperProps) 
   // Note: Don't include 'question' in deps to avoid infinite loop
 
   // Handle answer submission for current question
-  const handleAnswer = useCallback((answer: number[]) => {
+  const handleAnswer = useCallback((answer: (string | number)[]) => {
     if (!question) return
 
-    // Save answer to Redux
+    // Save answer to Redux (convert to numbers if needed)
     dispatch(saveAnswer({
       questionId: question.id,
-      answer,
+      answer: answer.map(a => typeof a === 'string' ? parseInt(a, 10) : a),
     }))
   }, [question, dispatch])
 
@@ -171,11 +171,16 @@ export default function OrderingQuizWrapper({ slug }: OrderingQuizWrapperProps) 
         score,
         percentage: score,
         maxScore: 100,
-        totalQuestions: questions.length,
-        correctAnswers: correctCount,
+        answers: [],
         results: resultAction.payload.results || answers.map((a: any, i: number) => ({
           questionId: a.questionId,
-          question: questions[i]?.title || `Question ${i + 1}`,
+          question: {
+            id: questions[i]?.id,
+            title: questions[i]?.title || `Question ${i + 1}`,
+            description: questions[i]?.description || '',
+            steps: questions[i]?.steps || [],
+            correctOrder: questions[i]?.correctOrder || [],
+          },
           userAnswer: a.userAnswer,
           correctAnswer: questions[i]?.correctOrder || [],
           isCorrect: a.isCorrect,
@@ -287,6 +292,7 @@ export default function OrderingQuizWrapper({ slug }: OrderingQuizWrapperProps) 
 
             {/* Question Component */}
             <OrderingQuizSingle
+              key={question.id}
               question={question}
               questionNumber={currentQuestionIndex + 1}
               totalQuestions={totalQuestions}

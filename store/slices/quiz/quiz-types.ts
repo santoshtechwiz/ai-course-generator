@@ -1,5 +1,5 @@
 // Local QuizType so the slice is self-contained and doesn't depend on app/type
-export type QuizType = 'blanks' | 'openended' | 'mcq' | 'code' | 'flashcard'
+export type QuizType = 'blanks' | 'openended' | 'mcq' | 'code' | 'flashcard' | 'ordering'
 
 // Unified quiz types used by the store and components. This file consolidates
 // quiz-related interfaces previously split across multiple files.

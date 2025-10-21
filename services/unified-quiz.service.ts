@@ -2,7 +2,7 @@
  * Unified Quiz Service
  * 
  * Centralizes logic for quiz completion across all types:
- * - MCQ, Fill-in-Blanks, Open-ended, Coding, Flashcards
+ * - MCQ, Fill-in-Blanks, Open-ended, Coding, Flashcards, Ordering
  * 
  * COMMIT: Ensures consistent streak tracking, badge unlocks, and progress sync
  * 
@@ -13,7 +13,7 @@ import { badgeService } from './badge.service'
 import { usageLimitService } from './usage-limit.service'
 import prisma from '@/lib/db'
 
-type QuizType = 'mcq' | 'blanks' | 'openended' | 'code' | 'flashcard'
+type QuizType = 'mcq' | 'blanks' | 'openended' | 'code' | 'flashcard' | 'ordering'
 
 interface QuizCompletionData {
   userId: string

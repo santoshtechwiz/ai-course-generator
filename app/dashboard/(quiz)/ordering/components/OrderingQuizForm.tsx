@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
 import { useMutation } from '@tanstack/react-query'
@@ -8,17 +8,18 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { useToast } from '@/hooks'
+import { useContextualAuth } from '@/components/auth/ContextualAuthPrompt'
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle, HelpCircle, Sparkles } from 'lucide-react'
+import { AlertCircle, HelpCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import PlanAwareButton from '@/components/quiz/PlanAwareButton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Slider } from '@/components/ui/slider'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { SubscriptionSlider } from '../../../subscription/components/SubscriptionSlider'
 import type { SubscriptionPlanType } from '@/types/subscription-plans'
 import { getPlanConfig } from '@/types/subscription-plans'
 
@@ -40,19 +41,24 @@ export default function OrderingQuizForm({
   const { subscription, plan } = useUnifiedSubscription()
   const userPlan = (plan || 'FREE') as SubscriptionPlanType
   const planConfig = getPlanConfig(userPlan)
+  const { requireAuth } = useContextualAuth()
 
   const [submissionError, setSubmissionError] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
+
+  // Hard limit of 5 questions for ordering quizzes
+  const maxQuestions = Math.min(5, planConfig.maxQuestionsPerQuiz === 'unlimited' ? 5 : planConfig.maxQuestionsPerQuiz)
 
   // Create dynamic schema based on subscription limits
   const orderingSchema = useMemo(
     () =>
       z.object({
         topic: z.string().min(3, 'Topic must be at least 3 characters'),
-        numberOfQuestions: z.number().min(1).max(planConfig.maxQuestionsPerQuiz === 'unlimited' ? 10 : planConfig.maxQuestionsPerQuiz),
+        numberOfQuestions: z.number().min(1).max(maxQuestions),
         difficulty: z.enum(['easy', 'medium', 'hard']),
       }),
-    [planConfig.maxQuestionsPerQuiz]
+    [maxQuestions]
   )
 
   type OrderingFormData = z.infer<typeof orderingSchema>
@@ -121,17 +127,56 @@ export default function OrderingQuizForm({
     },
   })
 
+  // Validation function
+  const validateQuizData = (data: OrderingFormData): string | null => {
+    if (!data.topic || data.topic.length < 3) {
+      return 'Topic must be at least 3 characters long'
+    }
+    if (!data.numberOfQuestions || data.numberOfQuestions < 1 || data.numberOfQuestions > maxQuestions) {
+      return `Number of questions must be between 1 and ${maxQuestions}`
+    }
+    if (!['easy', 'medium', 'hard'].includes(data.difficulty)) {
+      return 'Please select a valid difficulty level'
+    }
+    return null
+  }
+
   const onSubmit = useCallback(
-    async (data: OrderingFormData) => {
-      setSubmissionError(null)
-      try {
-        await generateQuiz(data)
-      } catch (error) {
-        console.error('Error:', error)
+    (data: OrderingFormData) => {
+      const error = validateQuizData(data)
+      if (error) {
+        toast({
+          title: 'Validation Error',
+          description: error,
+          variant: 'destructive',
+        })
+        return
       }
+
+      if (!isLoggedIn) {
+        requireAuth('create_quiz', `${data.numberOfQuestions} ordering questions on "${data.topic}"`)
+        return
+      }
+
+      setIsConfirmDialogOpen(true)
     },
-    [generateQuiz]
+    [isLoggedIn, requireAuth, toast, maxQuestions]
   )
+
+  const handleConfirm = useCallback(async () => {
+    setSubmissionError(null)
+    try {
+      const data = await generateQuiz(watch())
+      setIsSuccess(true)
+      if (data.slug) {
+        router.push(`/dashboard/ordering/${data.slug}`)
+      }
+    } catch (error: any) {
+      setSubmissionError(error.message || 'Failed to generate quiz')
+    } finally {
+      setIsConfirmDialogOpen(false)
+    }
+  }, [generateQuiz, watch, router])
 
   const isFormValid = isValid && !!watch('topic')
   const isDisabled = credits < 1 || !isFormValid || isGenerating || !isLoggedIn
@@ -209,30 +254,17 @@ export default function OrderingQuizForm({
           </Label>
 
           <div className="space-y-3">
-            <div className="px-3">
-              <Controller
-                name="numberOfQuestions"
-                control={control}
-                render={({ field }) => (
-                  <Slider
-                    value={[field.value]}
-                    onValueChange={(value) => field.onChange(value[0])}
-                    max={planConfig.maxQuestionsPerQuiz === 'unlimited' ? 10 : planConfig.maxQuestionsPerQuiz}
-                    min={1}
-                    step={1}
-                    className="w-full"
-                  />
-                )}
-              />
-            </div>
-            
-            <div className="flex justify-between text-sm text-muted-foreground px-3">
-              <span>1</span>
-              <span className="font-medium text-foreground">
-                {watch('numberOfQuestions')} questions
-              </span>
-              <span>{planConfig.maxQuestionsPerQuiz === 'unlimited' ? 10 : planConfig.maxQuestionsPerQuiz}</span>
-            </div>
+            <Controller
+              name="numberOfQuestions"
+              control={control}
+              render={({ field }) => (
+                <SubscriptionSlider
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  ariaLabel="Number of ordering questions"
+                />
+              )}
+            />
 
             {errors.numberOfQuestions && (
               <p className="text-sm text-red-600 dark:text-red-400 px-3">
@@ -354,6 +386,26 @@ export default function OrderingQuizForm({
           />
         </motion.div>
       </form>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={isConfirmDialogOpen}
+        onConfirm={handleConfirm}
+        onCancel={() => setIsConfirmDialogOpen(false)}
+        title="Generate Ordering Quiz?"
+        description={`Generate ${watch('numberOfQuestions')} ordering questions on "${watch('topic')}"?`}
+        confirmText={isGenerating ? 'Generating...' : 'Generate Quiz'}
+        cancelText="Cancel"
+        quizInfo={{
+          type: 'Ordering',
+          topic: watch('topic'),
+          count: watch('numberOfQuestions'),
+          difficulty: watch('difficulty'),
+          estimatedCredits: 1,
+        }}
+        status={isGenerating ? 'loading' : isSuccess ? 'success' : submissionError ? 'error' : undefined}
+        errorMessage={submissionError || undefined}
+      />
     </div>
   )
 }

@@ -311,6 +311,8 @@ export class BasicAIService extends AIBaseService {
   async generateOrderingQuiz(params: {
     topic: string
     difficulty?: 'easy' | 'medium' | 'hard'
+    numberOfSteps?: number
+    numberOfQuestions?: number
   }): Promise<AIServiceResult> {
     try {
       const accessCheck = await this.checkFeatureAccess('quiz-ordering')
@@ -324,6 +326,16 @@ export class BasicAIService extends AIBaseService {
       const difficultyValidation = this.validateDifficulty(params.difficulty)
       if (!difficultyValidation.isValid) {
         return { success: false, error: difficultyValidation.error }
+      }
+
+      const stepsValidation = this.validateNumberInput(params.numberOfSteps || 5, 3, 8, 5)
+      if (!stepsValidation.isValid) {
+        return { success: false, error: stepsValidation.error }
+      }
+
+      const questionsValidation = this.validateNumberInput(params.numberOfQuestions || 3, 1, 10, 3)
+      if (!questionsValidation.isValid) {
+        return { success: false, error: questionsValidation.error }
       }
 
       // Check credits for ordering quiz
@@ -341,6 +353,8 @@ export class BasicAIService extends AIBaseService {
       const { messages, functions, functionCall } = buildOrderingPromptWithSchema({
         topic: topicValidation.sanitizedInput!,
         difficulty: difficultyValidation.sanitizedInput!,
+        numberOfSteps: stepsValidation.sanitizedInput!,
+        numberOfQuestions: questionsValidation.sanitizedInput!,
       })
 
       const result = await this.provider.generateChatCompletion({

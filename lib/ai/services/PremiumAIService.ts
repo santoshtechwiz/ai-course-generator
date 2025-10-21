@@ -466,8 +466,9 @@ export class PremiumAIService extends AIBaseService {
    */
   async generateOrderingQuiz(params: {
     topic: string
-    numberOfSteps: number
+    numberOfSteps?: number
     difficulty?: 'easy' | 'medium' | 'hard'
+    numberOfQuestions?: number
   }): Promise<AIServiceResult> {
     try {
       const accessCheck = await this.checkFeatureAccess('quiz-ordering')
@@ -478,9 +479,14 @@ export class PremiumAIService extends AIBaseService {
         return { success: false, error: topicValidation.error }
       }
 
-      const stepsValidation = this.validateNumberInput(params.numberOfSteps, 3, 10, 5)
+      const stepsValidation = this.validateNumberInput(params.numberOfSteps || 5, 3, 10, 5)
       if (!stepsValidation.isValid) {
         return { success: false, error: stepsValidation.error }
+      }
+
+      const questionsValidation = this.validateNumberInput(params.numberOfQuestions || 5, 1, 15, 5)
+      if (!questionsValidation.isValid) {
+        return { success: false, error: questionsValidation.error }
       }
 
       const difficultyValidation = this.validateDifficulty(params.difficulty)
@@ -504,6 +510,7 @@ export class PremiumAIService extends AIBaseService {
         topic: topicValidation.sanitizedInput!,
         numberOfSteps: stepsValidation.sanitizedInput!,
         difficulty: difficultyValidation.sanitizedInput!,
+        numberOfQuestions: questionsValidation.sanitizedInput!,
       })
 
       const result = await this.provider.generateChatCompletion({

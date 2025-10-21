@@ -143,7 +143,7 @@ export async function generateOrderingQuiz(
   userId?: string,
   subscriptionPlan: SubscriptionPlanType = 'FREE',
   credits?: number,
-  numberOfQuestions: number = 5
+  numberOfQuestions: number = 3
 ) {
   const validPlans: SubscriptionPlanType[] = ['FREE', 'BASIC', 'PREMIUM', 'ENTERPRISE']
   const context: SimpleAIContext = {
@@ -156,6 +156,7 @@ export async function generateOrderingQuiz(
   const result = await executeAIService(context, 'generateOrderingQuiz', {
     topic,
     difficulty,
+    numberOfSteps: 5, // Default 5 steps per question
     numberOfQuestions,
   })
   
@@ -163,7 +164,38 @@ export async function generateOrderingQuiz(
     throw new Error(result.error || 'Failed to generate ordering quiz')
   }
   
-  return typeof result.data === 'string' ? JSON.parse(result.data) : result.data
+  const quizData = typeof result.data === 'string' ? JSON.parse(result.data) : result.data
+  
+  // Extract questions array - handle different response formats
+  let questions = []
+  
+  // If AI returned { questions: [...] }, use the questions array
+  if (quizData.questions && Array.isArray(quizData.questions)) {
+    questions = quizData.questions
+  }
+  // If AI returned an array directly
+  else if (Array.isArray(quizData)) {
+    questions = quizData
+  }
+  // If AI returned a single question object (backward compatibility)
+  else if (quizData.title && quizData.steps && Array.isArray(quizData.steps)) {
+    questions = [quizData]
+  }
+  
+  // Ensure all questions have required fields
+  const validQuestions = questions.filter(
+    (q: any) => q.title && q.description && Array.isArray(q.steps) && q.steps.length > 0
+  )
+  
+  if (validQuestions.length === 0) {
+    throw new Error('No valid ordering quiz questions generated')
+  }
+  
+  return {
+    id: Date.now().toString(),
+    title: `${topic} - Ordering Quiz`,
+    questions: validQuestions,
+  }
 }
 
 /**
