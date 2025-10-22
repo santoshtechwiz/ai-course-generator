@@ -6,7 +6,7 @@
     "deepcheck": "deepcheck . --ignore .next,node_modules",
     "generate-embeddings": "tsx scripts/generate-embeddings.ts",
     "validate-styles": "node scripts/validate-styles.js",
-    "dev": "next dev --turbo",
+    "dev": "next dev",
     "build": "next build",
     "test": "vitest",
     "test:watch": "vitest --watch",
