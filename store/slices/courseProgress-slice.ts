@@ -14,6 +14,7 @@ interface VideoProgress {
   lastAccessedAt: string
   completedChapters: string[] // Changed to string[] for consistent ID handling
   bookmarks: string[]
+  lastPositions?: Record<string, number> // Add lastPositions for saved chapter progress
 }
 
 interface CourseProgressData {
@@ -109,6 +110,7 @@ const courseProgressSlice = createSlice({
         timeSpent?: number
         completed?: boolean
         userId: string
+        lastPositions?: Record<string, number>
       }>
     ) {
       const courseKey = String(action.payload.courseId)
@@ -125,6 +127,7 @@ const courseProgressSlice = createSlice({
         lastAccessedAt: new Date().toISOString(),
         completedChapters: [],
         bookmarks: [],
+        lastPositions: {},
       }
 
       // Update video progress
@@ -139,6 +142,11 @@ const courseProgressSlice = createSlice({
         completedChapters: action.payload.completed && !currentProgress.completedChapters.includes(String(action.payload.chapterId))
           ? [...currentProgress.completedChapters, String(action.payload.chapterId)] // Convert to string
           : currentProgress.completedChapters,
+        // Merge lastPositions with existing ones to avoid losing saved progress
+        lastPositions: {
+          ...(currentProgress.lastPositions || {}),
+          ...(action.payload.lastPositions || {})
+        },
       }
 
       state.byCourseId[courseKey] = {
@@ -158,32 +166,50 @@ const courseProgressSlice = createSlice({
       action: PayloadAction<{ courseId: string | number; chapterId: string | number; userId: string }>
     ) {
       const courseKey = String(action.payload.courseId)
-      const existing = state.byCourseId[courseKey]
-      
-      if (existing) {
-        const completedChapters = existing.videoProgress.completedChapters
-        const chapterId = String(action.payload.chapterId)
+      let existing = state.byCourseId[courseKey]
+      const chapterId = String(action.payload.chapterId)
 
-        // Only add if not already completed
-        if (!completedChapters.includes(chapterId)) {
-          // Ensure all IDs in completedChapters are strings for consistency
-          const updatedCompletedChapters = [
-            ...completedChapters.map(String),
-            chapterId
-          ]
-
-          existing.videoProgress = {
-            ...existing.videoProgress,
-            completedChapters: updatedCompletedChapters,
+      // If no progress exists for this course yet, initialize it so completions show in UI
+      if (!existing) {
+        const now = Date.now()
+        state.byCourseId[courseKey] = {
+          courseId: courseKey,
+          userId: action.payload.userId,
+          videoProgress: {
+            currentChapterId: chapterId,
+            currentUnitId: null,
+            progress: 100,
+            timeSpent: 0,
+            playedSeconds: 0,
             isCompleted: true,
             lastAccessedAt: new Date().toISOString(),
-          }
-          existing.lastUpdatedAt = Date.now()
+            completedChapters: [chapterId],
+            bookmarks: [],
+            lastPositions: {},
+          },
+          lastUpdatedAt: now,
+        }
+        return
+      }
 
-          // Also update the chapter ID format for consistency
-          if (existing.videoProgress.currentChapterId) {
-            existing.videoProgress.currentChapterId = String(existing.videoProgress.currentChapterId)
-          }
+      const completedChapters = existing.videoProgress.completedChapters
+
+      // Only add if not already completed
+      if (!completedChapters.includes(chapterId)) {
+        // Ensure all IDs in completedChapters are strings for consistency
+        const updatedCompletedChapters = [...completedChapters.map(String), chapterId]
+
+        existing.videoProgress = {
+          ...existing.videoProgress,
+          completedChapters: updatedCompletedChapters,
+          isCompleted: true,
+          lastAccessedAt: new Date().toISOString(),
+        }
+        existing.lastUpdatedAt = Date.now()
+
+        // Also update the chapter ID format for consistency
+        if (existing.videoProgress.currentChapterId) {
+          existing.videoProgress.currentChapterId = String(existing.videoProgress.currentChapterId)
         }
       }
     },
@@ -277,14 +303,20 @@ const selectAllCourseProgress = (state: RootState) => state.courseProgress.byCou
 const selectIncompleteCourses = createSelector(
   [selectAllCourseProgress],
   (courseProgress) => {
-    return Object.entries(courseProgress).filter(([_, progress]) => !progress.videoProgress.isCompleted)
+    return Object.entries(courseProgress).filter(([_, progress]) => {
+      const p = progress as CourseProgressData
+      return !p.videoProgress.isCompleted
+    })
   }
 )
 
 const selectCompletedCourses = createSelector(
   [selectAllCourseProgress],
   (courseProgress) => {
-    return Object.entries(courseProgress).filter(([_, progress]) => progress.videoProgress.isCompleted)
+    return Object.entries(courseProgress).filter(([_, progress]) => {
+      const p = progress as CourseProgressData
+      return p.videoProgress.isCompleted
+    })
   }
 )
 

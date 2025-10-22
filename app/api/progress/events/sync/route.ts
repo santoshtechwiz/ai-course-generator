@@ -180,6 +180,34 @@ export async function POST(req: NextRequest) {
         lastPositions: existingQuizProgress.lastPositions || {}
       };
 
+      // Calculate overall course progress based on completed chapters
+      const totalChapters = await prisma.chapter.count({
+        where: {
+          unit: {
+            courseId: Number(courseId)
+          }
+        }
+      });
+      
+      const completedCount = updatedCompletedChapters.length;
+      const calculatedProgress = totalChapters > 0 ? (completedCount / totalChapters) * 100 : 0;
+
+      // Use the higher of existing progress or calculated progress
+      const finalProgress = Math.max(progressData.progress || 0, calculatedProgress);
+
+      // Debug: log what we will persist for this course so we can trace completedChapters/lastPositions
+      try {
+        console.log('[events/sync] Persisting courseProgress:', {
+          userId,
+          courseId: Number(courseId),
+          updatedChapterProgress,
+          finalProgress,
+          progressData
+        })
+      } catch (e) {
+        console.warn('[events/sync] Failed to stringify persist debug payload', e)
+      }
+
       const updatedProgress = await prisma.courseProgress.upsert({
         where: {
           unique_user_course_progress: {
@@ -190,9 +218,9 @@ export async function POST(req: NextRequest) {
         update: {
           currentChapterId: progressData.currentChapterId,
           chapterProgress: updatedChapterProgress,
-          progress: progressData.progress,
+          progress: finalProgress,
           lastAccessedAt: new Date(),
-          isCompleted: progressData.progress >= 99,
+          isCompleted: finalProgress >= 99,
           timeSpent: progressData.timeSpent,
           quizProgress: existingQuizProgress,
         },
@@ -201,8 +229,8 @@ export async function POST(req: NextRequest) {
           courseId: Number(courseId),
           currentChapterId: progressData.currentChapterId,
           chapterProgress: updatedChapterProgress,
-          progress: progressData.progress,
-          isCompleted: progressData.progress >= 99,
+          progress: finalProgress,
+          isCompleted: finalProgress >= 99,
           timeSpent: progressData.timeSpent,
           quizProgress: existingQuizProgress,
         },

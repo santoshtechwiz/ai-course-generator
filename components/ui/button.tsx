@@ -12,6 +12,10 @@ const buttonVariants = cva(
       variant: {
         default:
           "text-main-foreground bg-main border-2 border-border shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none",
+        outline:
+          "bg-transparent text-main-foreground border-2 border-border hover:bg-main/5",
+        ghost:
+          "bg-transparent text-foreground border-0 hover:bg-secondary-background/50",
         noShadow: "text-main-foreground bg-main border-2 border-border",
         neutral:
           "bg-secondary-background text-foreground border-2 border-border shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none",

@@ -203,6 +203,68 @@ async function handleChapterProgress(event: ProgressEvent, courseId: number, cha
       isCompleted: event.eventType === 'chapter_complete'
     }
   })
+  
+  // Also persist last played position into CourseProgress.quizProgress.lastPositions
+  try {
+    // Determine seconds to save: prefer metadata.playedSeconds or metadata.watchedSeconds, fallback to timeSpent
+    const meta = (event as any).metadata || {}
+    const playedSeconds = typeof meta.playedSeconds === 'number'
+      ? meta.playedSeconds
+      : (typeof meta.watchedSeconds === 'number' ? meta.watchedSeconds : (typeof event.timeSpent === 'number' ? event.timeSpent : undefined))
+
+    if (typeof playedSeconds === 'number') {
+      // Load existing course progress record
+      const existing = await prisma.courseProgress.findUnique({
+        where: {
+          unique_user_course_progress: {
+            userId: event.userId,
+            courseId: courseId
+          }
+        }
+      })
+
+      // Safely parse existing quizProgress
+      let existingQuizProgress: any = {}
+      try {
+        existingQuizProgress = existing?.quizProgress && typeof existing.quizProgress === 'string'
+          ? JSON.parse(existing.quizProgress as string)
+          : existing?.quizProgress || {}
+      } catch (e) {
+        existingQuizProgress = existing?.quizProgress || {}
+      }
+
+      if (!existingQuizProgress.lastPositions || typeof existingQuizProgress.lastPositions !== 'object') {
+        existingQuizProgress.lastPositions = {}
+      }
+
+      // Merge and persist
+      existingQuizProgress.lastPositions[String(chapterId)] = Math.max(existingQuizProgress.lastPositions[String(chapterId)] || 0, playedSeconds)
+
+      await prisma.courseProgress.upsert({
+        where: {
+          unique_user_course_progress: {
+            userId: event.userId,
+            courseId: courseId
+          }
+        },
+        update: {
+          quizProgress: existingQuizProgress,
+          lastAccessedAt: new Date()
+        },
+        create: {
+          userId: event.userId,
+          courseId: courseId,
+          currentChapterId: chapterId,
+          progress: 0,
+          timeSpent: event.timeSpent || 0,
+          quizProgress: existingQuizProgress,
+          lastAccessedAt: new Date()
+        }
+      })
+    }
+  } catch (err) {
+    console.error('Failed to persist lastPositions for chapter progress:', err)
+  }
 }
 
 async function handleChapterCompletion(event: ProgressEvent, courseId: number, chapterId: number) {

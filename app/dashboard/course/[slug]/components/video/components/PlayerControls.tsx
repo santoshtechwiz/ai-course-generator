@@ -332,7 +332,27 @@ const PlayerControls = (props) => {
 
         {/* Right controls group */}
         <div className="flex items-center gap-1 sm:gap-2">
-          {/* Playback speed */}
+          {/* Quick speed presets - visible on larger screens */}
+          <div className="hidden xl:flex items-center gap-1">
+            {[1, 1.25, 1.5, 2].map((speed) => (
+              <Button
+                key={speed}
+                variant="ghost"
+                size="sm"
+                onClick={() => onPlaybackRateChange(speed)}
+                className={cn(
+                  "h-7 px-2 rounded text-xs font-bold border transition-all",
+                  playbackRate === speed
+                    ? "bg-purple-500 text-white border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                    : "bg-white text-black border-black hover:bg-purple-100 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
+                )}
+              >
+                {speed === 1 ? "1x" : `${speed}x`}
+              </Button>
+            ))}
+          </div>
+
+          {/* Playback speed dropdown */}
           <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <DropdownMenuTrigger asChild>
               <Button 

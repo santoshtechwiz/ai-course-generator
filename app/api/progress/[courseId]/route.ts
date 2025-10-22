@@ -87,17 +87,30 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
 
       const completedChapters = completedChapterRecords.map(record => record.chapterId)
 
-      // Add completedChapters to the progress object
+      // Extract lastPositions from quizProgress JSON
+      const quizProgress = safeParse<any>(progress?.quizProgress, {})
+      const lastPositions = quizProgress?.lastPositions || {}
+
+      console.log('[API] Progress data:', {
+        courseId,
+        userId,
+        hasProgress: !!progress,
+        currentChapterId: progress?.currentChapterId,
+        completedChapters: completedChapters,
+        lastPositions: lastPositions,
+        quizProgress: quizProgress
+      })
+
+      // Add completedChapters and lastPositions to the progress object
       if (progress) {
-        (progress as any).completedChapters = completedChapters
-        // Expose last played seconds for current chapter (synthetic field) via quizProgress JSON
-        const qp = safeParse<any>(progress.quizProgress, {})
-        const lastPositions = qp?.lastPositions || {}
-        const currentChapterId = (progress as any).currentChapterId
-        const playedSeconds = lastPositions?.[currentChapterId]
-        if (typeof playedSeconds === "number") {
-          ;(progress as any).playedSeconds = playedSeconds
-        }
+        ;(progress as any).completedChapters = completedChapters
+        ;(progress as any).lastPositions = lastPositions
+              // Expose last played seconds for current chapter (synthetic field) via quizProgress JSON
+              const currentChapterId = (progress as any).currentChapterId
+              const playedSeconds = lastPositions?.[currentChapterId]
+              if (typeof playedSeconds === "number") {
+                ;(progress as any).playedSeconds = playedSeconds
+              }
       } else {
         // If no CourseProgress record exists, create one with completed chapters
         progress = {
@@ -121,6 +134,22 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
           lastAccessedAt: new Date(),
           completedChapters: completedChapters,
         } as any
+      }
+
+      // Debug: log final progress object being returned
+      try {
+        console.log('[API GET /api/progress/:courseId] Returning progress object for user:', userId, {
+          courseId: Number.parseInt(courseId),
+          progressShape: {
+            currentChapterId: (progress as any).currentChapterId,
+            completedChapters: (progress as any).completedChapters,
+            lastPositions: (progress as any).lastPositions,
+            playedSeconds: (progress as any).playedSeconds,
+            progress: (progress as any).progress,
+          }
+        })
+      } catch (e) {
+        console.warn('[API GET] Failed to stringify progress debug payload', e)
       }
 
       return NextResponse.json({ progress })
@@ -239,6 +268,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
         })
       }
 
+      // Read existing progress so we can merge quizProgress.lastPositions safely
+      const existingProgress = await prisma.courseProgress.findUnique({
+        where: {
+          unique_user_course_progress: {
+            userId: userId,
+            courseId: Number.parseInt(courseId),
+          },
+        },
+      })
+
+      const existingQuizProgress = safeParse<any>(existingProgress?.quizProgress, {})
+
       // Update or create the progress record
       const updatedProgress = await prisma.courseProgress.upsert({
         where: {
@@ -256,8 +297,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
           quizProgress: {
             lastPositions: {
               ...(existingQuizProgress.lastPositions || {}),
-              [currentChapterId]: playedSeconds
-            }
+              [currentChapterId]: playedSeconds,
+            },
           },
         },
         create: {

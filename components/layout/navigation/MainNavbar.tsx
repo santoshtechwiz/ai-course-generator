@@ -23,7 +23,7 @@ import { CreditCounter } from "@/components/shared/CreditCounter"
 // ⚡ PERFORMANCE: Lazy load heavy components to reduce initial bundle
 const SearchModal = lazy(() => import("@/components/layout/navigation/SearchModal"))
 const NotificationsMenu = lazy(() => import("@/components/Navbar/NotificationsMenu"))
-const CourseNotificationsMenu = lazy(() => import("@/components/Navbar/CourseNotificationsMenu"))
+// const CourseNotificationsMenu = lazy(() => import("@/components/Navbar/CourseNotificationsMenu")) // DISABLED: Causing UI freeze
 
 /**
  * Enhanced MainNavbar with improved UX following neobrutalism principles
@@ -278,7 +278,7 @@ export function MainNavbar() {
                     <Loader2 className="h-5 w-5 text-muted-foreground" />
                   </motion.div>
                 }>
-                  <CourseNotificationsMenu />
+                  {/* <CourseNotificationsMenu /> */}
                   <NotificationsMenu />
                 </Suspense>
                 <UserMenu />
@@ -398,7 +398,7 @@ export function MainNavbar() {
                               <Loader2 className="h-5 w-5 text-muted-foreground" />
                             </motion.div>
                           }>
-                            <CourseNotificationsMenu />
+                            {/* <CourseNotificationsMenu /> */}
                             <NotificationsMenu />
                           </Suspense>
                         </div>
