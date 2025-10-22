@@ -1,0 +1,45 @@
+# Render deployment configuration
+# https://render.com/docs/deploy-config
+
+services:
+  - type: web
+    name: ai-learning-platform
+    runtime: node
+    buildCommand: "npm install --prefer-offline --no-audit && npm run build"
+    startCommand: "npm start"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_TELEMETRY_DISABLED
+        value: 1
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=4096"
+    buildFilter:
+      ignoredPaths:
+        - __tests__/**
+        - "*.test.*"
+        - "*.spec.*"
+        - ".github/**"
+        - "archive/**"
+        - "*.md"
+        - "knip*"
+        - ".eslint*"
+        - ".prettier*"
+        - ".stylelint*"
+    healthCheckPath: /api/health
+    disk:
+      name: cache
+      mountPath: /opt/render/cache
+      sizeGB: 10
+
+# Database (if using Render PostgreSQL)
+# databases:
+#   - name: ai-learning-db
+#     databaseName: ai_learning
+#     user: ai_learning_user
+#     plan: starter
+
+# Redis (if using Render Redis)
+# redis:
+#   - name: ai-learning-redis
+#     plan: starter

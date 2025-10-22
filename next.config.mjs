@@ -67,6 +67,20 @@ const nextConfig = {
   generateEtags: false, // Disable etags for better performance
   poweredByHeader: false, // Already set above but ensuring it's applied
 
+  // Render.com deployment optimizations
+  generateBuildId: async () => {
+    // Use commit hash for consistent build IDs on Render
+    return process.env.RENDER_GIT_COMMIT || 'build-' + Date.now()
+  },
+
+  // Cache optimizations for Render deployments
+  onDemandEntries: {
+    // Period (in ms) where the server will keep pages in the buffer
+    maxInactiveAge: 25 * 1000,
+    // Number of pages that should be kept simultaneously without being disposed
+    pagesBufferLength: 2,
+  },
+
   env: {
     DISABLE_STATIC_SLUG: process.env.DISABLE_STATIC_SLUG || "no-static",
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
@@ -82,6 +96,60 @@ const nextConfig = {
     return [
       { source: "/sitemap.xml", destination: "/api/sitemap" },
       { source: "/rss.xml", destination: "/api/rss" },
+    ]
+  },
+
+  // CDN and caching headers for Render deployments
+  async headers() {
+    return [
+      {
+        // Cache static assets aggressively
+        source: '/_next/static/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Cache images and other static files
+        source: '/(images|videos|fonts)/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
+      {
+        // Cache API responses appropriately
+        source: '/api/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=300, stale-while-revalidate=3600',
+          },
+        ],
+      },
+      {
+        // Security headers
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+        ],
+      },
     ]
   },
 
@@ -115,6 +183,10 @@ const nextConfig = {
       "react-syntax-highlighter",
       "marked",
     ],
+    // Enable output file tracing for better caching
+    outputFileTracingRoot: undefined,
+    // Enable build caching optimizations
+    webpackBuildWorker: true,
   },
 
   // Turbopack configuration for faster development builds (Next.js 15.5+)
@@ -151,6 +223,14 @@ const nextConfig = {
 
   // Webpack customizations for production builds (Turbopack is dev-only)
   webpack: (config, { dev, isServer }) => {
+    // Add build cache configuration for Render deployments
+    config.cache = {
+      type: 'filesystem',
+      buildDependencies: {
+        config: [__filename],
+      },
+    }
+
     // In dev mode with --turbo flag, Turbopack handles everything
     // This webpack config only applies to production builds or dev without --turbo
     if (dev) {
