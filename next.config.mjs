@@ -183,8 +183,6 @@ const nextConfig = {
       "react-syntax-highlighter",
       "marked",
     ],
-    // Enable output file tracing for better caching
-    outputFileTracingRoot: undefined,
     // Enable build caching optimizations
     webpackBuildWorker: true,
   },
@@ -227,7 +225,7 @@ const nextConfig = {
     config.cache = {
       type: 'filesystem',
       buildDependencies: {
-        config: [__filename],
+        config: [fileURLToPath(import.meta.url)],
       },
     }
 
