@@ -59,6 +59,25 @@ import GlassDoorLock from '@/components/shared/GlassDoorLock'
 import { useFeatureAccess } from "@/hooks/useFeatureAccess"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 
+// ✨ Skeleton loader component for smooth tab transitions
+const TabSkeleton = () => (
+  <div className="space-y-6 p-4 animate-pulse">
+    <div className="space-y-3">
+      <div className="h-6 bg-muted rounded-lg w-1/3"></div>
+      <div className="h-4 bg-muted rounded w-2/3"></div>
+    </div>
+    <div className="space-y-3">
+      <div className="h-32 bg-muted rounded-lg"></div>
+      <div className="h-24 bg-muted rounded-lg"></div>
+    </div>
+    <div className="space-y-2">
+      <div className="h-4 bg-muted rounded w-full"></div>
+      <div className="h-4 bg-muted rounded w-5/6"></div>
+      <div className="h-4 bg-muted rounded w-4/6"></div>
+    </div>
+  </div>
+)
+
 interface CourseDetailsTabsProps {
   course: FullCourseType
   currentChapter?: FullChapterType
@@ -76,8 +95,18 @@ export default function CourseDetailsTabs({
 }: CourseDetailsTabsProps) {
   const dispatch = useAppDispatch()
   const [activeTab, setActiveTab] = useState("summary")
+  const [isTabLoading, setIsTabLoading] = useState(false) // ✨ Loading state for smooth transitions
   const [notesSearchQuery, setNotesSearchQuery] = useState("")
   const [notesFilter, setNotesFilter] = useState<"all" | "recent" | "chapter">("all")
+
+  // ✨ Handle tab change with loading transition
+  const handleTabChange = (value: string) => {
+    if (value === activeTab) return // Don't reload same tab
+    setIsTabLoading(true)
+    setActiveTab(value)
+    // Short delay for smooth skeleton transition
+    setTimeout(() => setIsTabLoading(false), 200)
+  }
 
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const { user } = useAuth()
@@ -572,7 +601,7 @@ export default function CourseDetailsTabs({
           className="text-center"
         >
           <Badge
-            variant="secondary"
+            variant="default"
             className={cn(
               "px-8 py-4 text-lg font-black uppercase tracking-wide hover:shadow-[6px_6px_0px_0px] transition-all duration-100 hover:scale-105 cursor-pointer group",
               skillStyling.badge
@@ -637,7 +666,7 @@ export default function CourseDetailsTabs({
 
   return (
     <div className="h-full w-full flex flex-col">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full flex flex-col">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full w-full flex flex-col">
         {/* Enhanced tab navigation with sticky positioning */}
         <TabsList className="sticky top-0 z-10 grid w-full grid-cols-4 h-auto bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/30 p-2 md:p-3 gap-1 md:gap-3 shadow-sm">
           <TabsTrigger
@@ -671,45 +700,67 @@ export default function CourseDetailsTabs({
           </TabsTrigger>
         </TabsList>
 
-        {/* Enhanced tabs content with better spacing */}
+        {/* Enhanced tabs content with better spacing and smooth transitions */}
         <TabsContent value="summary" className="flex-1 overflow-auto w-full p-0">
-          {/* GlassDoorLock handles authentication and subscription visually */}
-          {currentChapter ? (
-            <GlassDoorLock
-              isLocked={!canAccessSummary}
-               previewRatio={0.2} // show top 20%
-              reason={!user ? 'Sign in to continue learning' : 'Upgrade your plan to unlock this content'}
-              className="p-0"
-              blurIntensity={canAccessSummary ? 'light' : 'medium'}
-            >
-              <div className="p-4">
-                <CourseAISummary
-                  chapterId={currentChapter.id}
-                  name={currentChapter.title || currentChapter.name || "Chapter Summary"}
-                  existingSummary={currentChapter.summary || null}
-                  isAdmin={isAdmin}
-                />
-              </div>
-            </GlassDoorLock>
-          ) : (
-            <div className="h-full flex items-center justify-center text-muted-foreground">
+          <AnimatePresence mode="wait">
+            {isTabLoading ? (
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center space-y-4"
+                key="summary-loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
               >
-                <div className="w-20 h-20 bg-muted/30 rounded-full flex items-center justify-center mx-auto">
-                  <FileText className="h-10 w-10 opacity-50" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">No Chapter Selected</h3>
-                  <p className="text-base text-muted-foreground">
-                    Select a chapter from the playlist to view AI-generated summary and insights
-                  </p>
-                </div>
+                <TabSkeleton />
               </motion.div>
-            </div>
-          )}
+            ) : (
+              <motion.div
+                key="summary-content"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {/* GlassDoorLock handles authentication and subscription visually */}
+                {currentChapter ? (
+                  <GlassDoorLock
+                    isLocked={!canAccessSummary}
+                    previewRatio={0.2} // show top 20%
+                    reason={!user ? 'Sign in to continue learning' : 'Upgrade your plan to unlock this content'}
+                    className="p-0"
+                    blurIntensity={canAccessSummary ? 'light' : 'medium'}
+                  >
+                    <div className="p-4 sm:p-6">
+                      <CourseAISummary
+                        chapterId={currentChapter.id}
+                        name={currentChapter.title || currentChapter.name || "Chapter Summary"}
+                        existingSummary={currentChapter.summary || null}
+                        isAdmin={isAdmin}
+                      />
+                    </div>
+                  </GlassDoorLock>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-muted-foreground p-8">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="text-center space-y-4"
+                    >
+                      <div className="w-20 h-20 bg-muted/30 rounded-full flex items-center justify-center mx-auto">
+                        <FileText className="h-10 w-10 opacity-50" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-semibold mb-2">No Chapter Selected</h3>
+                        <p className="text-base text-muted-foreground">
+                          Select a chapter from the playlist to view AI-generated summary and insights
+                        </p>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </TabsContent>
 
         <TabsContent value="quiz" className="flex-1 overflow-auto w-full p-0">
@@ -789,7 +840,7 @@ export default function CourseDetailsTabs({
                         <div>
                           <div className="flex items-center gap-3 mb-2">
                             <Badge
-                              variant="secondary"
+                              variant="default"
                               className="bg-primary/10 text-primary border-primary/20 text-sm px-3 py-1"
                             >
                               {formatTime(bookmark.time)}
@@ -829,7 +880,7 @@ export default function CourseDetailsTabs({
                     While watching videos, press 'B' or click the bookmark button to save important moments
                   </p>
                   <Badge
-                    variant="outline"
+                    variant="default"
                     className="bg-primary/5 text-primary border-primary/20 text-base px-4 py-2"
                   >
                     Press B to bookmark

@@ -17,7 +17,7 @@ import { motion, AnimatePresence } from "framer-motion"
 // Memoized slider to prevent unnecessary re-renders
 const MemoizedSlider = React.memo(Slider);
 
-const PlayerControls = (props) => {
+const PlayerControls = (props: any) => {
   const {
     playing, muted, volume, playbackRate, played, loaded, duration,
     isFullscreen, isBuffering, bufferHealth, onPlayPause, onMute,
@@ -223,120 +223,142 @@ const PlayerControls = (props) => {
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Improved gradient overlays with better visibility */}
-      <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
+      {/* Enhanced gradient overlays for Nero theme */}
+      <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#0e0e10]/80 to-transparent pointer-events-none" />
       
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0e0e10]/95 via-[#0e0e10]/60 to-transparent pointer-events-none" />
 
-      {/* Improved progress bar with better visibility */}
+      {/* ✨ ENHANCED PROGRESS/SEEK BAR - Nero Theme with Clear Draggable Thumb */}
       <div
         ref={progressBarRef}
-        className="relative h-3 bg-gray-700/80 rounded-full cursor-pointer mx-4 mb-4 group border-0 hover:h-4 transition-all duration-200"
+        className="relative h-2 bg-neutral-800/90 cursor-pointer mx-4 mb-3 group hover:h-[10px] transition-all duration-200 rounded-sm"
         onClick={handleSeek}
         onMouseMove={handleProgressHover}
         onMouseDown={handleMouseDown}
         onMouseLeave={() => { setHoverPosition(null); setHoveredTime(null) }}
+        role="slider"
+        aria-label="Video progress"
+        aria-valuemin={0}
+        aria-valuemax={duration}
+        aria-valuenow={duration * played}
+        tabIndex={0}
       >
-        {/* Buffer health */}
-        <div className="absolute left-0 top-0 h-full bg-gray-500/60 rounded-full transition-all" style={{ width: `${loaded * 100}%` }} />
+        {/* Buffer health - subtle background */}
+        <div 
+          className="absolute left-0 top-0 h-full bg-neutral-700/50 transition-all duration-300 rounded-sm" 
+          style={{ width: `${loaded * 100}%` }} 
+        />
         
-        {/* Played progress */}
-        <div className="absolute left-0 top-0 h-full bg-blue-500 rounded-full transition-all" 
-          style={{ width: `${played * 100}%` }} />
+        {/* ✨ Played progress - Nero accent color with glow */}
+        <div 
+          className="absolute left-0 top-0 h-full bg-[#00e0ff] transition-all duration-100 rounded-sm shadow-[0_0_8px_rgba(0,224,255,0.6)]" 
+          style={{ width: `${played * 100}%` }} 
+        />
         
-        {/* Bookmark indicators */}
+        {/* Bookmark indicators - yellow with better visibility */}
         {renderBookmarkIndicators}
         
-        {/* Hover time preview */}
+        {/* ✨ Hover time preview - Nero styled */}
         {hoverPosition !== null && hoveredTime !== null && !isDragging && (
           <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.8 }}
+            initial={{ opacity: 0, y: 8, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.8 }}
-            transition={{ duration: 0.15 }}
-            className="absolute bottom-full mb-2 bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-medium pointer-events-none -translate-x-1/2 border border-gray-600 shadow-lg backdrop-blur-sm"
+            exit={{ opacity: 0, y: 8, scale: 0.9 }}
+            transition={{ duration: 0.12 }}
+            className="absolute bottom-full mb-3 bg-[#0e0e10] text-[#00e0ff] px-3 py-1.5 rounded text-xs font-bold pointer-events-none -translate-x-1/2 border border-[#00e0ff]/30 shadow-lg shadow-[#00e0ff]/20"
             style={{ left: `${hoverPosition * 100}%` }}
           >
             {formatTime(hoveredTime)}
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-[5px] border-transparent border-t-[#0e0e10]" />
           </motion.div>
         )}
         
-        {/* Current time indicator */}
+        {/* ✨ ENHANCED DRAGGABLE THUMB - Clear, visible, with Nero glow */}
         <div
           className={cn(
-            "absolute top-1/2 w-3 h-3 bg-white border-2 border-blue-500 rounded-full transform -translate-y-1/2 -translate-x-1/2 shadow-lg cursor-pointer z-20 transition-all",
-            isDragging && "w-4 h-4"
+            "absolute top-1/2 w-4 h-4 bg-white rounded-full transform -translate-y-1/2 -translate-x-1/2 cursor-pointer z-20 transition-all duration-150",
+            "border-2 border-[#00e0ff] shadow-[0_0_12px_rgba(0,224,255,0.8)]",
+            "hover:scale-125 hover:shadow-[0_0_16px_rgba(0,224,255,1)]",
+            "focus:scale-125 focus:outline-none focus:ring-2 focus:ring-[#00e0ff] focus:ring-offset-2 focus:ring-offset-[#0e0e10]",
+            isDragging && "scale-150 shadow-[0_0_20px_rgba(0,224,255,1)]"
           )}
           style={{ left: `${played * 100}%` }}
+          tabIndex={0}
+          role="button"
+          aria-label="Seek position"
         />
       </div>
 
-      {/* Improved control bar with better colors and responsiveness */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-3 bg-gray-900/95 backdrop-blur-sm rounded-lg mx-4 mb-4 border border-gray-700 shadow-2xl">
+      {/* ✨ ENHANCED CONTROL BAR - Nero Theme, Single-Row Flex Layout */}
+      <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 bg-[#0e0e10]/98 backdrop-blur-md mx-4 mb-4 border border-neutral-800 shadow-2xl rounded-lg">
         
-        {/* Left controls group - Core controls */}
-        <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
-          {/* Play / Pause */}
+        {/* Left controls group - Core playback controls */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          {/* ✨ Play/Pause - Enhanced with Nero accent */}
           <Button 
             variant="ghost" 
             size="icon"
             onClick={onPlayPause}
-            className="h-9 w-9 sm:h-10 sm:w-10 rounded-full hover:bg-white/20 text-white border border-gray-600 shadow-lg hover:shadow-xl transition-all duration-200"
+            className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg hover:bg-[#00e0ff]/20 text-white hover:text-[#00e0ff] border border-neutral-700 hover:border-[#00e0ff]/50 transition-all duration-200 focus:ring-2 focus:ring-[#00e0ff] focus:ring-offset-2 focus:ring-offset-[#0e0e10]"
+            aria-label={playing ? "Pause" : "Play"}
           >
             {isBuffering ? (
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent rounded-full"
+                className="h-5 w-5 border-2 border-[#00e0ff] border-t-transparent rounded-full"
               />
             ) : playing ? (
-              <Pause className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Pause className="h-5 w-5" />
             ) : (
-              <Play className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Play className="h-5 w-5 ml-0.5" />
             )}
           </Button>
 
-          {/* Rewind */}
+          {/* ✨ Rewind 10s */}
           <Button 
             variant="ghost" 
             size="icon"
             onClick={() => onSeekChange(Math.max(0, duration * played - 10))}
-            className="h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-white/20 text-white border border-gray-600 transition-all duration-200"
+            className="h-8 w-8 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-600 transition-all duration-200"
+            aria-label="Rewind 10 seconds"
           >
-            <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4" />
+            <RotateCcw className="h-4 w-4" />
           </Button>
 
-          {/* Forward */}
+          {/* ✨ Forward 10s */}
           <Button 
             variant="ghost" 
             size="icon"
             onClick={() => onSeekChange(Math.min(duration, duration * played + 10))}
-            className="h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-white/20 text-white border border-gray-600 transition-all duration-200"
+            className="h-8 w-8 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-600 transition-all duration-200"
+            aria-label="Forward 10 seconds"
           >
-            <RotateCw className="h-3 w-3 sm:h-4 sm:w-4" />
+            <RotateCw className="h-4 w-4" />
           </Button>
 
-          {/* Volume control */}
+          {/* ✨ Volume control - Nero themed */}
           <div ref={volumeSliderRef} className="relative flex items-center">
             <Button 
               variant="ghost" 
               size="icon"
               onClick={onMute}
               onMouseEnter={() => setShowVolumeSlider(true)}
-              className="h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-white/20 text-white border border-gray-600 transition-all duration-200"
+              className="h-8 w-8 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-600 transition-all duration-200"
+              aria-label={muted ? "Unmute" : "Mute"}
             >
-              {React.createElement(getVolumeIcon, { className: "h-3 w-3 sm:h-4 sm:w-4" })}
+              {React.createElement(getVolumeIcon, { className: "h-4 w-4" })}
             </Button>
             
-            {/* Volume slider */}
+            {/* Volume slider popup */}
             <AnimatePresence>
               {showVolumeSlider && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute bottom-full mb-2 left-0 bg-gray-800 p-3 rounded-lg border border-gray-600 shadow-xl transition-all duration-200"
+                  exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute bottom-full mb-2 left-0 bg-[#0e0e10] p-3 rounded-lg border border-neutral-700 shadow-xl"
                   onMouseEnter={() => setShowVolumeSlider(true)}
                   onMouseLeave={() => setShowVolumeSlider(false)}
                 >
@@ -346,25 +368,28 @@ const PlayerControls = (props) => {
                     max={100}
                     step={1}
                     className="w-24 h-2"
+                    aria-label="Volume"
                   />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          {/* Time display */}
-          <div className="text-xs sm:text-sm text-white font-medium tabular-nums min-w-[80px] sm:min-w-[100px] text-center px-2 sm:px-3 py-1 bg-gray-700/50 rounded-lg border border-gray-600 ml-1 sm:ml-2">
-            {formatTime(duration * played)} / {formatTime(duration)}
+          {/* ✨ Time display - Nero styled */}
+          <div className="text-xs sm:text-sm text-neutral-300 font-mono font-medium tabular-nums min-w-[90px] sm:min-w-[110px] text-center px-2 sm:px-3 py-1 bg-neutral-900/50 rounded border border-neutral-800">
+            <span className="text-[#00e0ff]">{formatTime(duration * played)}</span>
+            <span className="text-neutral-600 mx-1">/</span>
+            <span>{formatTime(duration)}</span>
           </div>
         </div>
 
-        {/* Center controls group - Responsive hidden on small screens */}
-        <div className="hidden md:flex items-center gap-2 flex-shrink-0">
+        {/* Center controls - Auto-play toggles (hidden on mobile) */}
+        <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
           {/* Auto-play video toggle */}
           {onToggleAutoPlayVideo && (
-            <div className="flex items-center px-3 py-1 rounded-lg bg-blue-500/20 border border-blue-400/50">
-              <Zap className="h-3 w-3 mr-2 text-blue-300" />
-              <span className="text-xs font-medium text-white mr-2">Auto</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#00e0ff]/10 border border-[#00e0ff]/30 hover:bg-[#00e0ff]/20 transition-colors">
+              <Zap className="h-3.5 w-3.5 text-[#00e0ff]" />
+              <span className="text-xs font-medium text-neutral-300">Auto</span>
               <SimpleSwitch
                 checked={autoPlayVideo}
                 onCheckedChange={onToggleAutoPlayVideo}
@@ -373,11 +398,11 @@ const PlayerControls = (props) => {
             </div>
           )}
 
-          {/* Enhanced Autoplay next toggle */}
+          {/* Autoplay next toggle */}
           {hasNextVideo && onToggleAutoPlayNext && (
-            <div className="flex items-center px-3 py-1 rounded-lg bg-purple-500/20 border border-purple-400/50">
-              <SkipForward className="h-3 w-3 mr-2 text-purple-300" />
-              <span className="text-xs font-medium text-white mr-2">Next</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 transition-colors">
+              <SkipForward className="h-3.5 w-3.5 text-purple-400" />
+              <span className="text-xs font-medium text-neutral-300">Next</span>
               <SimpleSwitch
                 checked={autoPlayNext}
                 onCheckedChange={onToggleAutoPlayNext}
@@ -387,67 +412,70 @@ const PlayerControls = (props) => {
           )}
         </div>
 
-        {/* Right controls group */}
-        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          {/* Next video - Show on small screens only when hasNextVideo */}
+        {/* Right controls group - Secondary actions */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          {/* Next video button */}
           {hasNextVideo && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-white/20 text-white border border-gray-600 transition-all duration-200"
+              className="h-8 w-8 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-600 transition-all duration-200"
               onClick={onNextVideo}
               disabled={!canAccessNextVideo}
               title={nextVideoTitle}
+              aria-label="Next video"
             >
-              <SkipForward className="h-3 w-3 sm:h-4 sm:w-4" />
+              <SkipForward className="h-4 w-4" />
             </Button>
           )}
 
-          {/* Playback speed */}
+          {/* ✨ Playback speed - Nero themed dropdown */}
           <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-white/20 text-white border border-gray-600 transition-all duration-200"
+                className="h-8 w-8 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-600 transition-all duration-200 focus:ring-2 focus:ring-[#00e0ff]"
+                aria-label="Playback speed"
               >
-                <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                <Clock className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-32 bg-gray-800 border border-gray-600 shadow-xl backdrop-blur-sm">
-              <div className="px-2 py-1.5 text-xs font-bold text-white border-b border-gray-600">Speed</div>
+            <DropdownMenuContent align="end" className="w-36 bg-[#0e0e10] border border-neutral-700 shadow-2xl">
+              <div className="px-3 py-2 text-xs font-bold text-[#00e0ff] border-b border-neutral-800">Playback Speed</div>
               {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
                 <DropdownMenuItem 
                   key={speed} 
                   onClick={() => onPlaybackRateChange(speed)}
-                  className="text-white hover:bg-gray-700 flex justify-between font-medium"
+                  className="text-neutral-300 hover:bg-neutral-800 hover:text-white flex justify-between items-center font-medium px-3 py-2 cursor-pointer"
                 >
                   <span>{speed === 1 ? "Normal" : `${speed}x`}</span>
                   {playbackRate === speed && (
-                    <Badge variant="default" className="ml-2 bg-blue-500 text-white text-xs">✓</Badge>
+                    <div className="w-2 h-2 rounded-full bg-[#00e0ff] shadow-[0_0_6px_rgba(0,224,255,0.8)]" />
                   )}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Notes */}
+          {/* Notes button */}
           {onToggleNotesPanel && isAuthenticated && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onToggleNotesPanel}
               className={cn(
-                "h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-white/20 text-white border border-gray-600 transition-all duration-200 relative",
-                notesPanelOpen && "bg-green-500/30"
+                "h-8 w-8 rounded-lg hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-600 transition-all duration-200 relative",
+                notesPanelOpen ? "bg-green-500/20 text-green-400 border-green-500/50" : "text-neutral-400 hover:text-white"
               )}
+              aria-label="Notes"
             >
-              <StickyNote className="h-3 w-3 sm:h-4 sm:w-4" />
+              <StickyNote className="h-4 w-4" />
               {notesCount > 0 && (
                 <motion.div 
                   initial={{ scale: 0 }} 
                   animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center border border-white"
+                  className="absolute -top-1 -right-1 w-4 h-4 bg-[#00e0ff] rounded-full text-[10px] text-[#0e0e10] font-bold flex items-center justify-center border border-[#0e0e10] shadow-[0_0_8px_rgba(0,224,255,0.6)]"
                 >
                   {notesCount > 9 ? "9+" : notesCount}
                 </motion.div>
@@ -455,65 +483,69 @@ const PlayerControls = (props) => {
             </Button>
           )}
 
-          {/* Bookmark */}
+          {/* Bookmark button */}
           {onToggleBookmarkPanel && isAuthenticated && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onToggleBookmarkPanel}
               className={cn(
-                "h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-white/20 text-white border border-gray-600 transition-all duration-200",
-                bookmarkPanelOpen && "bg-orange-500/30"
+                "h-8 w-8 rounded-lg hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-600 transition-all duration-200",
+                bookmarkPanelOpen ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/50" : "text-neutral-400 hover:text-white"
               )}
+              aria-label="Bookmarks"
             >
-              <BookmarkIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+              <BookmarkIcon className="h-4 w-4" />
             </Button>
           )}
 
-          {/* PiP */}
+          {/* Picture-in-Picture */}
           {onPictureInPicture && isPiPSupported && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onPictureInPicture}
               className={cn(
-                "h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-white/20 text-white border border-gray-600 transition-all duration-200",
-                isPiPActive && "bg-blue-500/30"
+                "h-8 w-8 rounded-lg hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-600 transition-all duration-200",
+                isPiPActive ? "bg-[#00e0ff]/20 text-[#00e0ff] border-[#00e0ff]/50" : "text-neutral-400 hover:text-white"
               )}
+              aria-label="Picture-in-Picture"
             >
-              <PictureInPicture2 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <PictureInPicture2 className="h-4 w-4" />
             </Button>
           )}
 
-          {/* Theater */}
+          {/* Theater mode */}
           {onToggleTheaterMode && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onToggleTheaterMode}
               className={cn(
-                "h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-white/20 text-white border border-gray-600 transition-all duration-200 hidden sm:flex",
-                isTheaterMode && "bg-purple-500/30"
+                "h-8 w-8 rounded-lg hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-600 transition-all duration-200 hidden sm:flex",
+                isTheaterMode ? "bg-purple-500/20 text-purple-400 border-purple-500/50" : "text-neutral-400 hover:text-white"
               )}
+              aria-label="Theater mode"
             >
-              <Maximize className="h-3 w-3 sm:h-4 sm:w-4" />
+              <Maximize className="h-4 w-4" />
             </Button>
           )}
 
-          {/* Fullscreen */}
+          {/* ✨ Fullscreen - Enhanced Nero styling */}
           <Button
             variant="ghost"
             size="icon"
             onClick={onToggleFullscreen}
             className={cn(
-              "h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-white/20 text-white border border-gray-600 transition-all duration-200",
-              isFullscreen && "bg-red-500/30"
+              "h-8 w-8 rounded-lg hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-600 transition-all duration-200 focus:ring-2 focus:ring-[#00e0ff]",
+              isFullscreen ? "bg-[#00e0ff]/20 text-[#00e0ff] border-[#00e0ff]/50" : "text-neutral-400 hover:text-white"
             )}
+            aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
           >
             {isFullscreen ? (
-              <Minimize className="h-3 w-3 sm:h-4 sm:w-4" />
+              <Minimize className="h-4 w-4" />
             ) : (
-              <Maximize className="h-3 w-3 sm:h-4 sm:w-4" />
+              <Maximize className="h-4 w-4" />
             )}
           </Button>
         </div>
