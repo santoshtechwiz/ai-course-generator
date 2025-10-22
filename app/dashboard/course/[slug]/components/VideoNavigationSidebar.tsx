@@ -487,15 +487,8 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
           className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 scrollbar-hide"
           style={{
             scrollBehavior: 'smooth',
-            msOverflowStyle: 'none' as any,
-            scrollbarWidth: 'none' as any,
           }}
         >
-          <style>{`
-            .scrollbar-hide::-webkit-scrollbar {
-              display: none;
-            }
-          `}</style>
           <motion.div 
             variants={containerVariants}
             initial="hidden"
@@ -650,24 +643,6 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                     data-has-video={hasVideo ? "true" : "false"}
                                   >
                                     {/* Enhanced Thumbnail or Status Icon */}
-                                    {/* Enhanced Completion Status Indicator */}
-                                    {isCompleted && (
-                                      <motion.div 
-                                        initial={{ scale: 0, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        className="absolute right-2 top-2 z-10"
-                                      >
-                                        <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full p-1.5 shadow-lg ring-2 ring-white dark:ring-gray-900">
-                                          <CheckCircle className="h-5 w-5 drop-shadow" />
-                                          <motion.div 
-                                            className="absolute inset-0 rounded-full bg-white/20"
-                                            animate={{ scale: [1, 1.2, 1] }}
-                                            transition={{ duration: 1, repeat: Infinity }}
-                                          />
-                                        </div>
-                                      </motion.div>
-                                    )}
-                                    
                                     {/* Progress Bar - Only show for incomplete chapters */}
                                     {!isCompleted && chapterProgress > 0 && (
                                       <div className="absolute bottom-0 left-0 w-full h-1 bg-muted overflow-hidden">
@@ -720,18 +695,6 @@ const VideoNavigationSidebar: React.FC<VideoNavigationSidebarProps> = ({
                                                 transition={{ duration: 0.8, ease: "easeOut" }}
                                                 className="bg-gradient-to-r from-primary to-primary/80 h-full rounded-r-full"
                                               />
-                                            </div>
-                                          )}
-                                          {/* Completion badge */}
-                                          {isCompleted && (
-                                            <div className="absolute top-2 left-2">
-                                              <motion.div
-                                                initial={{ scale: 0 }}
-                                                animate={{ scale: 1 }}
-                                                transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                                              >
-                                                <CheckCircle className="h-5 w-5 text-green-500 bg-white rounded-full shadow-lg ring-2 ring-white/50" />
-                                              </motion.div>
                                             </div>
                                           )}
                                         </div>

@@ -1169,12 +1169,18 @@ const quizSlice = createSlice({
         state.lastUpdated = Date.now()
       })
       .addCase(fetchQuiz.rejected, (state: QuizState, action) => {
-        console.log('fetchQuiz.rejected - error:', action.payload || action.error.message)
-
         const payload = action.payload as any
         const errorCode = payload?.code || ''
         const errorMessage = payload?.error || action.error.message || 'Failed to load quiz'
         
+        // Enhanced error logging with structured information
+        console.error('fetchQuiz.rejected - error details:', {
+          code: errorCode,
+          message: errorMessage,
+          status: payload?.status,
+          payload
+        });
+
         // Check for specific error types
         if (errorCode === 'PRIVATE_QUIZ' || payload?.status === 403 || errorMessage.toLowerCase().includes('private')) {
           state.status = 'not-found'

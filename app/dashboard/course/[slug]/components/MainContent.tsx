@@ -174,6 +174,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Guest system hooks
   const {
     isGuest,
+    currentCourseProgress,
     markGuestChapterCompleted,
     setGuestCurrentChapter,
     getGuestCompletionStats,
@@ -287,14 +288,14 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       return []
     } else {
       // Guest user - get from guest progress
-      const guestStats = getGuestCompletionStats();
-      if (guestStats?.completedChapters) {
+      const guestProgress = currentCourseProgress;
+      if (guestProgress?.completedChapters && Array.isArray(guestProgress.completedChapters)) {
         // Return array of completed chapter IDs (as strings)
-        return Array.from({ length: guestStats.completedChapters }, (_, i) => String(i + 1))
+        return guestProgress.completedChapters.map(String)
       }
       return []
     }
-  }, [user?.id, reduxProgress, courseProgress, getGuestCompletionStats])
+  }, [user?.id, reduxProgress, courseProgress, currentCourseProgress])
 
   // Initialize mounted state and preferences
   useEffect(() => {

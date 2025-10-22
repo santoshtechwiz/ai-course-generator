@@ -495,24 +495,6 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             </Link>
-            
-            <Link href="/dashboard/my-quizzes" className="group">
-              <Card className="h-full transition-all hover:shadow-lg hover:border-secondary hover:scale-[1.02] duration-200">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="h-14 w-14 bg-secondary/10 rounded-xl flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
-                      <GraduationCap className="h-7 w-7 text-secondary" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1.5 group-hover:text-secondary transition-colors">Quiz History</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {safeUserData.userQuizzes?.length || 0} attempt{(safeUserData.userQuizzes?.length || 0) !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
           </div>
         </div>
       </main>

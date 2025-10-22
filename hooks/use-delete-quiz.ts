@@ -14,7 +14,6 @@ export function useDeleteQuiz(options?: UseDeleteQuizOptions) {
     onSuccess: (data, variables) => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ["quizzes"] });
-      queryClient.invalidateQueries({ queryKey: ["my-quizzes"] });
       queryClient.invalidateQueries({ queryKey: ["user-quizzes"] });
       
       // Remove specific quiz from cache

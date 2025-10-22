@@ -10,7 +10,6 @@ import Footer from "@/components/shared/Footer"
  * Pages without footer (sidebar-enabled):
  * - /dashboard/home
  * - /dashboard/courses  
- * - /dashboard/my-quizzes
  * - /dashboard/explore
  * - /dashboard/account
  * - /dashboard/subscription
@@ -22,7 +21,6 @@ export function ConditionalFooter() {
   const noFooterRoutes = [
     '/dashboard/home',
     '/dashboard/courses',
-    '/dashboard/my-quizzes', 
     '/dashboard/explore',
     '/dashboard/account',
     '/dashboard/subscription',

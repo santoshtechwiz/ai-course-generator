@@ -72,15 +72,6 @@ export function DashboardSidebar({ userData, userStats }: DashboardSidebarProps)
       description: "My enrolled courses"
     },
     {
-      title: "My Quizzes",
-      href: "/dashboard/my-quizzes",
-      icon: ListChecks,
-      badge: metrics?.quizzes.badgeCount ?? userStats?.quizzesCount,
-      badgeVariant: metrics?.quizzes.badgeVariant === 'warning' ? 'default' : metrics?.quizzes.badgeVariant === 'success' ? 'outline' : 'secondary',
-      badgeTooltip: metrics?.quizzes.badgeTooltip,
-      description: "My quiz history"
-    },
-    {
       title: "Explore",
       href: "/dashboard/explore",
       icon: BrainCircuit,
