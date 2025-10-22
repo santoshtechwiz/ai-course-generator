@@ -617,16 +617,17 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       if (!isAlreadyCompleted) {
         console.log(`[Authenticated] Marking current chapter ${currentChapterId} as completed before advancing`);
         
-        // Use enhanced progress system for completion
+        // ✅ Use enhanced progress system for completion with correct event type
         const timeSpent = Math.round(currentVideoProgress * (videoDurations[currentVideoId || ''] || 0))
         const success = enqueueProgress(
           user.id,
           course.id,
           currentChapterId,
-          ProgressEventType.CHAPTER_COMPLETED,
-          100,
+          'chapter_progress', // ✅ Use correct event type
+          100, // ✅ 100% progress triggers auto-completion
           timeSpent,
           {
+            completed: true, // ✅ Explicit completion flag
             courseId: String(course.id),
             chapterId: String(currentChapterId),
             trigger: 'next_click',
@@ -669,12 +670,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       if (user?.id && !course.isShared && nextVideoEntry.chapter?.id) {
         console.log(`[Authenticated] Recording video start event for chapter ${nextVideoEntry.chapter.id}`)
         
-        // Mark video as started in enhanced progress system
+        // ✅ Mark video as started in enhanced progress system
         const success = enqueueProgress(
           user.id,
           course.id,
           nextVideoEntry.chapter.id,
-          ProgressEventType.VIDEO_WATCHED,
+          'chapter_start', // ✅ Use correct event type
           0, // initial progress
           0, // initial time spent
           {
@@ -829,7 +830,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           user.id,
           course.id,
           currentChapter.id,
-          ProgressEventType.VIDEO_WATCHED,
+          'chapter_progress', // ✅ Correct event type for metadata load
           0, // Still at 0% progress
           0, // 0 seconds played
           {
@@ -904,10 +905,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           user.id,
           courseIdNum,
           chapterIdNum,
-          ProgressEventType.CHAPTER_COMPLETED,
+          'chapter_progress', // ✅ Correct event type for chapter completion
           100,
           timeSpent,
           {
+            completed: true, // ✅ Explicit completion flag
             courseId: String(courseIdNum),
             chapterId: String(chapterIdNum),
             trigger: 'playlist_callback',
@@ -1033,7 +1035,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             user.id,
             course.id,
             currentChapter.id,
-            ProgressEventType.VIDEO_WATCHED,
+            'chapter_progress', // ✅ Correct event type for continuous progress
             progressState.played * 100,
             progressState.playedSeconds,
             {
@@ -1061,7 +1063,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
               user.id,
               course.id,
               currentChapter.id,
-              ProgressEventType.VIDEO_WATCHED,
+              'chapter_progress', // ✅ Correct event type for milestone progress
               progressPercent,
               Math.round(progressState.playedSeconds),
               {
@@ -1138,10 +1140,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           user.id,
           courseId,
           chapterId,
-          ProgressEventType.CHAPTER_COMPLETED,
+          'chapter_progress', // ✅ Correct event type for video end completion
           100, // 100% progress
           Math.round(currentVideoProgress * (videoDurations[currentVideoId || ''] || 0)),
           {
+            completed: true, // ✅ Explicit completion flag
             courseId: String(courseId),
             chapterId: String(chapterId),
             videoId: currentVideoId,
@@ -1168,7 +1171,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           currentVideoId || '',
           100,
           Math.round(currentVideoProgress * (videoDurations[currentVideoId || ''] || 0)),
-          videoDurations[currentVideoId] || 0,
+          videoDurations[currentVideoId || ''] || 0, // ✅ Fixed null index error
           course.id
         );
       }
@@ -1383,7 +1386,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   <div className="w-20">
                     <Progress value={state.mounted ? courseStats.progressPercentage : 0} className="h-1.5" />
                   </div>
-                  <Badge variant="secondary" className="font-semibold bg-primary/10 text-primary px-2 py-0.5 text-xs">
+                  <Badge variant="default" className="font-semibold bg-primary/10 text-primary px-2 py-0.5 text-xs">
                     {state.mounted ? courseStats.progressPercentage : 0}%
                   </Badge>
                 </div>
@@ -1426,7 +1429,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                 <CheckCircle className="h-4 w-4 text-emerald-500" />
                 <span>{courseStats.completedCount} of {courseStats.totalChapters} chapters</span>
               </div>
-              <Badge variant="secondary" className="font-medium bg-primary/10 text-primary">
+              <Badge variant="default" className="font-medium bg-primary/10 text-primary">
                 {courseStats.progressPercentage}% Complete
               </Badge>
             </div>

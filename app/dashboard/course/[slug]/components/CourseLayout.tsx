@@ -9,8 +9,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import { JsonLD } from "@/lib/seo"
 import { ErrorBoundary } from "react-error-boundary"
 import { ModuleLoadingSkeleton } from "@/components/shared/ModuleLoadingSkeleton"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
-import { ChevronLeft } from "lucide-react"
 
 // Dynamically import MainContent with suspense
 const MainContent = dynamic(() => import("./MainContent"), {
@@ -64,47 +62,7 @@ const CourseLayout: React.FC<CourseLayoutProps> = ({
       "min-h-screen flex flex-col transition-all duration-300",
       isFullscreen && "bg-black"
     )}>
-      {/* Header - only show when not in fullscreen */}
-        {!isFullscreen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="bg-background/95 backdrop-blur-sm border-b border-border/40 shadow-sm"
-          >
-            <div className="max-w-screen-2xl mx-auto px-1 sm:px-2 py-0.5">
-              <Breadcrumb>
-                <BreadcrumbList className="gap-1">
-                  <BreadcrumbItem>
-                    <BreadcrumbLink
-                      href="/dashboard"
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 flex items-center gap-0.5"
-                    >
-                      <ChevronLeft className="h-3 w-3" />
-                      Dashboard
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="text-muted-foreground/60" />
-                  <BreadcrumbItem>
-                    <BreadcrumbLink
-                      href="/dashboard"
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
-                    >
-                      Courses
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="text-muted-foreground/60" />
-                  <BreadcrumbItem>
-                    <span className="text-sm font-medium text-foreground line-clamp-1 max-w-xs">
-                      {course.title}
-                    </span>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-            </div>
-          </motion.div>
-        )}
+      {/* ✅ Breadcrumbs removed for cleaner course header */}
 
       {/* Main Content Area */}
       <div className={cn(
