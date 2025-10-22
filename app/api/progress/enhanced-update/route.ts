@@ -157,12 +157,44 @@ export async function POST(request: NextRequest) {
     const successCount = results.filter(r => r.success).length
     const errorCount = results.length - successCount
 
+    // ✅ Return updated completedChapters so client can see immediate results
+    // Extract unique user/course combinations from processed events
+    const userCoursePairs = new Set<string>()
+    for (const event of body.events) {
+      if (event.userId && event.courseId) {
+        userCoursePairs.add(`${event.userId}:${event.courseId}`)
+      }
+    }
+
+    // Fetch completed chapters for each user/course pair
+    const completedChaptersMap: Record<string, number[]> = {}
+    for (const pair of userCoursePairs) {
+      const [userId, courseIdStr] = pair.split(':')
+      const courseId = parseInt(courseIdStr)
+      
+      if (!isNaN(courseId)) {
+        const completed = await prisma.chapterProgress.findMany({
+          where: {
+            userId,
+            courseId,
+            isCompleted: true
+          },
+          select: {
+            chapterId: true
+          }
+        })
+        
+        completedChaptersMap[pair] = completed.map(c => c.chapterId)
+      }
+    }
+
     return NextResponse.json({
       success: true,
       processed: results.length,
       successful: successCount,
       errors: errorCount,
-      results
+      results,
+      completedChapters: completedChaptersMap // Include for client sync
     })
 
   } catch (error) {
@@ -178,6 +210,18 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleChapterProgress(event: ProgressEvent, courseId: number, chapterId: number) {
+  const metadata = (event as any).metadata || {}
+  
+  // Determine completion: auto-marked in metadata, progress >= 95, or explicit flag
+  const isCompleted = metadata.completed === true || event.progress >= 95 || event.eventType === 'chapter_complete'
+  
+  console.log('[handleChapterProgress] Processing chapter progress:', {
+    chapterId,
+    progress: event.progress,
+    metadata: { completed: metadata.completed, autoDetected: metadata.autoDetected },
+    isCompleted
+  })
+  
   // Upsert chapter progress
   await prisma.chapterProgress.upsert({
     where: {
@@ -188,29 +232,28 @@ async function handleChapterProgress(event: ProgressEvent, courseId: number, cha
       }
     },
     update: {
-      lastProgress: event.progress,
+      lastProgress: isCompleted ? 100 : event.progress,
       timeSpent: event.timeSpent,
       lastAccessedAt: new Date(event.timestamp),
-      isCompleted: event.eventType === 'chapter_complete'
+      isCompleted: isCompleted
     },
     create: {
       userId: event.userId,
       courseId: courseId,
       chapterId: chapterId,
-      lastProgress: event.progress,
+      lastProgress: isCompleted ? 100 : event.progress,
       timeSpent: event.timeSpent,
       lastAccessedAt: new Date(event.timestamp),
-      isCompleted: event.eventType === 'chapter_complete'
+      isCompleted: isCompleted
     }
   })
   
   // Also persist last played position into CourseProgress.quizProgress.lastPositions
   try {
     // Determine seconds to save: prefer metadata.playedSeconds or metadata.watchedSeconds, fallback to timeSpent
-    const meta = (event as any).metadata || {}
-    const playedSeconds = typeof meta.playedSeconds === 'number'
-      ? meta.playedSeconds
-      : (typeof meta.watchedSeconds === 'number' ? meta.watchedSeconds : (typeof event.timeSpent === 'number' ? event.timeSpent : undefined))
+    const playedSeconds = typeof metadata.playedSeconds === 'number'
+      ? metadata.playedSeconds
+      : (typeof metadata.watchedSeconds === 'number' ? metadata.watchedSeconds : (typeof event.timeSpent === 'number' ? event.timeSpent : undefined))
 
     if (typeof playedSeconds === 'number') {
       // Load existing course progress record

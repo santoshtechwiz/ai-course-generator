@@ -36,7 +36,7 @@ import { cn, getColorClasses } from "@/lib/utils"
 import type { BookmarkData } from "./video/types"
 import { useCourseProgressSync } from "@/hooks/useCourseProgressSync"
 import { useVideoState } from "./video/hooks/useVideoState"
-import { useProgressMutation, useChapterProgress, flushProgress } from "@/services/enhanced-progress/client_progress_queue"
+import { useProgressMutation, flushProgress } from "@/services/enhanced-progress/client_progress_queue"
 import { SignInPrompt, SubscriptionUpgrade } from "@/components/shared"
 import { migratedStorage } from "@/lib/storage"
 import VideoGenerationSection from "./VideoGenerationSection"
@@ -584,22 +584,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Enhanced progress tracking with TanStack Query - only when authenticated
   const { enqueueProgress, flushQueue, isLoading: progressLoading } = useProgressMutation()
-  const { chapterProgress } = useChapterProgress(
-    user?.id, // Only fetch if user is authenticated
-    user?.id ? course.id : undefined, // Skip courseId if not authenticated
-    user?.id && currentChapter?.id ? currentChapter.id : undefined // Skip chapterId if not authenticated
-  )
-
-  // Show a small non-blocking notice if chapter progress fetch failed
-  const [showProgressError, setShowProgressError] = useState(true)
-  // react-query error/refetch available from hook - grab them by calling useChapterProgress directly
-  const chapterProgressQuery = useChapterProgress(
-    user?.id,
-    user?.id ? course.id : undefined,
-    user?.id && currentChapter?.id ? currentChapter.id : undefined
-  )
-  const progressError = chapterProgressQuery.error
-
+  
+  // ✅ Chapter progress is now available through useCourseProgressSync (courseProgress)
+  // which includes completedChapters, lastPositions, and current chapter data
 
   // Navigation handlers
   // Advance to next video (chapters are only marked complete when video ends)
@@ -1447,7 +1434,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           </div>
         </div>
         {/* Progress fetch error notice (non-blocking) */}
-        {progressError && showProgressError && (
+        {false && (
           <div className="mt-3">
             <Card className="border-destructive bg-destructive/5">
               <CardHeader>
@@ -1462,10 +1449,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                     We couldn’t fetch your chapter progress. Some progress indicators may be out of date.
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button size="sm" variant="default" onClick={() => chapterProgressQuery.refetch()}>
+                    <Button size="sm" variant="default" onClick={() => refreshProgressFromServer()}>
                       Retry
                     </Button>
-                    <Button size="sm" variant="noShadow" onClick={() => setShowProgressError(false)}>
+                    <Button size="sm" variant="noShadow" onClick={() => {}}>
                       Dismiss
                     </Button>
                   </div>

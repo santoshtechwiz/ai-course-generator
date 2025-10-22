@@ -25,6 +25,13 @@ class ClientProgressQueue {
       this.queue.shift()
     }
 
+    // ✅ AUTO-DETECT COMPLETION: If progress >= 95, mark as completed
+    if (event.eventType === 'chapter_progress' && event.progress >= 95) {
+      event.metadata = event.metadata || {}
+      event.metadata.completed = true
+      console.log(`[ProgressQueue] ✅ Auto-marked chapter ${event.chapterId} as completed (progress: ${event.progress}%)`)
+    }
+
     // Attempt to merge with an existing queued event for same user/course/chapter/eventType
     const keyOf = (e: ProgressEvent) => `${e.userId}:${e.courseId}:${e.chapterId}:${e.eventType}`
     const incomingKey = keyOf(event)
@@ -33,13 +40,21 @@ class ClientProgressQueue {
     if (existingIndex >= 0) {
       const existing = this.queue[existingIndex]
       if (event.eventType === 'chapter_progress') {
-        // Merge progress: keep highest progress, sum timeSpent, prefer latest timestamp/metadata
+        // Merge progress: keep highest progress, sum timeSpent, prefer latest timestamp
         existing.progress = Math.max(existing.progress || 0, event.progress || 0)
         existing.timeSpent = (existing.timeSpent || 0) + (event.timeSpent || 0)
         existing.timestamp = Math.max(existing.timestamp || 0, event.timestamp || 0)
+        
+        // ✅ PRESERVE COMPLETION FLAG: Once completed, always completed
+        const wasCompleted = existing.metadata?.completed === true
+        const nowCompleted = event.metadata?.completed === true
         existing.metadata = { ...(existing.metadata || {}), ...(event.metadata || {}) }
+        if (wasCompleted || nowCompleted) {
+          existing.metadata.completed = true
+        }
+        
         this.queue[existingIndex] = existing
-        console.log(`Merged progress event in queue for ${event.courseId}:${event.chapterId} -> ${existing.progress}%`) 
+        console.log(`Merged progress event in queue for ${event.courseId}:${event.chapterId} -> ${existing.progress}% (completed: ${existing.metadata.completed})`) 
       } else {
         // For other events, replace with latest
         this.queue[existingIndex] = event
@@ -160,13 +175,20 @@ class ClientProgressQueue {
         const combinedTime = (existing.timeSpent || 0) + (ev.timeSpent || 0)
         const latest = ev.timestamp > existing.timestamp ? ev : existing
 
+        // ✅ PRESERVE COMPLETION FLAG during coalescing: once completed, always completed
+        const wasCompleted = existing.metadata?.completed === true
+        const nowCompleted = ev.metadata?.completed === true
+        const mergedMetadata = { ...(existing.metadata || {}), ...(ev.metadata || {}) }
+        if (wasCompleted || nowCompleted) {
+          mergedMetadata.completed = true
+        }
+
         map.set(key, {
           ...latest,
           progress: higherProgress,
           timeSpent: combinedTime,
-          // keep an id (latest) and merged metadata
           id: latest.id,
-          metadata: { ...(existing.metadata || {}), ...(ev.metadata || {}) },
+          metadata: mergedMetadata,
           timestamp: Math.max(existing.timestamp || 0, ev.timestamp || 0)
         })
       } else {
@@ -282,49 +304,9 @@ export const useProgressMutation = () => {
   }
 }
 
-export const useChapterProgress = (userId?: string, courseId?: string | number, chapterId?: string | number) => {
-  const query = useQuery({
-    queryKey: ['chapterProgress', userId, courseId, chapterId],
-    queryFn: async () => {
-      if (!userId || !courseId || !chapterId) {
-        return null
-      }
-
-      try {
-        const response = await fetch(`/api/progress/chapter?userId=${userId}&courseId=${courseId}&chapterId=${chapterId}`)
-
-        if (!response.ok) {
-          // Try to parse JSON error body if available
-          let errBody = null
-          try {
-            errBody = await response.json()
-          } catch {
-            // ignore parse errors
-          }
-          const message = errBody?.error || response.statusText || `HTTP ${response.status}`
-          // Return a structured error object instead of throwing to avoid uncaught rejection in UI
-          throw Object.assign(new Error(message), { status: response.status, body: errBody })
-        }
-
-        return response.json()
-      } catch (err: any) {
-        // Log and rethrow so react-query sets error state, but keep message consistent
-        console.error('Chapter progress query failed:', err)
-        throw err
-      }
-    },
-    enabled: !!(userId && courseId && chapterId),
-    staleTime: 30000, // 30 seconds
-    refetchOnWindowFocus: false,
-  })
-
-  return {
-    chapterProgress: query.data,
-    isLoading: query.isLoading,
-    error: query.error,
-    refetch: query.refetch
-  }
-}
+// ✅ REMOVED: useChapterProgress - redundant with useCourseProgressSync
+// All chapter progress data is available through GET /api/progress/[courseId]
+// which returns completedChapters, lastPositions, and current chapter data
 
 // Export the main functions
 const enqueueProgress = clientProgressService.enqueueProgress.bind(clientProgressService)

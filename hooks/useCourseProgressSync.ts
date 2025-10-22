@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from "react"
+import { useEffect, useCallback, useRef, useMemo } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   setVideoProgress,
@@ -8,170 +8,214 @@ import {
 import { useProgressEvents } from "@/utils/progress-events"
 import { useAuth } from "@/modules/auth"
 
-// Global request deduplication cache with timestamps
 const progressFetchCache = new Map<string, { data: any; timestamp: number }>()
-const CACHE_DURATION_MS = 60000 // 60 seconds - increased for less frequent calls
-const activeFetchRequests = new Map<string, Promise<any>>() // Track in-flight requests
+const activeFetchRequests = new Map<string, Promise<any>>()
+const CACHE_DURATION_MS = 60000 // 1 minute
 
-// Utility to fetch course progress from API and sync to Redux
 export function useCourseProgressSync(courseId: string | number) {
   const dispatch = useAppDispatch()
-  const courseProgress = useAppSelector((state) => selectCourseProgressById(state, courseId))
-  const { dispatchCourseProgressUpdated, dispatchChapterCompleted } = useProgressEvents()
+  const courseProgress = useAppSelector((state) =>
+    selectCourseProgressById(state, courseId)
+  )
+  const { dispatchCourseProgressUpdated, dispatchChapterCompleted } =
+    useProgressEvents()
   const { user, isAuthenticated } = useAuth()
   const abortControllerRef = useRef<AbortController | null>(null)
-  const fetchingRef = useRef(false)
 
-  // Helper to sync progress data to Redux
-  const syncProgressToRedux = useCallback((progress: any) => {
-    if (!progress) return
+  // Stable userId
+  const userId = user?.id ? String(user.id) : null
 
-    // Sync video progress to Redux
-    dispatch(
-      setVideoProgress({
-        courseId: String(courseId),
-        chapterId: Number(progress.currentChapterId || 0),
-        progress: progress.progress || 0,
-        playedSeconds: progress.playedSeconds || 0,
-        completed: progress.isCompleted || false,
-        userId: progress.userId || '',
-        lastPositions: progress.lastPositions || {}, // Add lastPositions
+  // ✅ Memoize event dispatchers so they don’t change identity each render
+  const stableDispatchCourseProgressUpdated = useMemo(
+    () => dispatchCourseProgressUpdated,
+    []
+  )
+  const stableDispatchChapterCompleted = useMemo(
+    () => dispatchChapterCompleted,
+    []
+  )
+
+  // Sync to Redux with intelligent completion detection
+  const syncProgressToRedux = useCallback(
+    (progress: any) => {
+      if (!progress) return
+
+      console.log('[useCourseProgressSync] Syncing progress to Redux:', {
+        courseId,
+        currentChapterId: progress.currentChapterId,
+        progress: progress.progress,
+        completedChaptersFromAPI: progress.completedChapters,
+        isCompleted: progress.isCompleted,
+        playedSeconds: progress.playedSeconds,
+        lastPositions: progress.lastPositions
       })
-    )
 
-    // Defensive: ensure completedChapters is an array before iterating
-    const completedChaptersSrc = progress.completedChapters
-    const completedChapters = Array.isArray(completedChaptersSrc) ? completedChaptersSrc : []
-    if (!Array.isArray(completedChaptersSrc) && typeof completedChaptersSrc !== 'undefined') {
-      console.warn('[useCourseProgressSync] Unexpected completedChapters type:', typeof completedChaptersSrc, completedChaptersSrc)
-    }
+      // ✅ Extract completed chapters list from API
+      const completedChapters = Array.isArray(progress.completedChapters)
+        ? progress.completedChapters
+        : []
 
-    completedChapters.forEach((chapterId: string | number) => {
-      try {
+      // ✅ Compute current chapter completion intelligently:
+      // 1. Explicitly marked as completed in API response
+      // 2. Progress >= 95%
+      // 3. Already in completedChapters array
+      const currentChapterId = progress.currentChapterId
+      const currentProgress = progress.progress || 0
+      
+      const isCurrentChapterCompleted =
+        progress.isCompleted === true ||
+        currentProgress >= 95 ||
+        (currentChapterId && (
+          completedChapters.includes(Number(currentChapterId)) ||
+          completedChapters.includes(String(currentChapterId))
+        ))
+
+      // ✅ Update current chapter progress in Redux (instant UI update)
+      if (currentChapterId) {
+        dispatch(
+          setVideoProgress({
+            courseId: String(courseId),
+            chapterId: Number(currentChapterId),
+            progress: isCurrentChapterCompleted ? 100 : currentProgress,
+            playedSeconds: progress.playedSeconds || 0,
+            completed: isCurrentChapterCompleted,
+            userId: progress.userId || "",
+            lastPositions: progress.lastPositions || {},
+          })
+        )
+      }
+
+      // ✅ Mark ALL completed chapters in Redux (from API)
+      for (const chapterId of completedChapters) {
+        const chapterIdNum = Number(chapterId)
         dispatch(
           markChapterCompleted({
             courseId: String(courseId),
-            chapterId: Number(chapterId),
-            userId: progress.userId || '',
+            chapterId: chapterIdNum,
+            userId: progress.userId || "",
           })
         )
-
-        // Dispatch chapter completed event
+        
+        // Dispatch custom event for chapter completion
         if (progress.userId) {
-          dispatchChapterCompleted(
+          stableDispatchChapterCompleted(
             progress.userId,
-            String(chapterId),
+            String(chapterIdNum),
             String(courseId),
-            0 // timeSpent - not available from API
+            0
           )
         }
-      } catch (e) {
-        console.error('[useCourseProgressSync] Error processing completed chapter:', e, chapterId)
       }
-    })
 
-    // Dispatch course progress updated event
-    if (progress.userId) {
-      dispatchCourseProgressUpdated(
-        progress.userId,
-        String(courseId),
-        progress.progress || 0,
-        progress.completedChapters || [],
-        progress.currentChapterId ? Number(progress.currentChapterId) : undefined,
-        0 // timeSpent - not available from API
-      )
-    }
-  }, [courseId, dispatch, dispatchChapterCompleted, dispatchCourseProgressUpdated])
-
-  // Function to fetch and sync progress with aggressive deduplication
-  const fetchAndSyncProgress = useCallback(async () => {
-    // Skip fetching progress if user is not authenticated
-    if (!isAuthenticated || !user?.id) {
-      console.log('[useCourseProgressSync] Skipping progress fetch - user not authenticated')
-      return
-    }
-
-    const cacheKey = `progress-${courseId}`
-    const now = Date.now()
-
-    // OPTIMIZATION 1: Check if we have a valid cached result first (most common path)
-    const cached = progressFetchCache.get(cacheKey)
-    if (cached && (now - cached.timestamp) < CACHE_DURATION_MS) {
-      console.log(`[useCourseProgressSync] Using cached progress for course ${courseId} (${now - cached.timestamp}ms old)`)
-      syncProgressToRedux(cached.data.progress)
-      return
-    }
-
-    // OPTIMIZATION 2: If request is already in-flight, wait for it instead of making a duplicate
-    if (activeFetchRequests.has(cacheKey)) {
-      console.log(`[useCourseProgressSync] Request already in-flight for course ${courseId}, waiting...`)
-      try {
-        const inFlightResult = await activeFetchRequests.get(cacheKey)
-        syncProgressToRedux(inFlightResult?.progress)
-      } catch (e) {
-        console.error('[useCourseProgressSync] In-flight request failed:', e)
-      }
-      return
-    }
-
-    try {
-      console.log(`[useCourseProgressSync] Fetching FRESH progress for course ${courseId}`)
-
-      // Create the fetch promise and store it
-      const fetchPromise = fetch(`/api/progress/${courseId}`, {
-        credentials: 'include',
-        cache: 'no-store',
-        signal: abortControllerRef.current?.signal,
-      })
-        .then(async (res) => {
-          if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`)
+      // ✅ If current chapter is completed but NOT in completedChapters array, add it
+      if (isCurrentChapterCompleted && currentChapterId) {
+        const currentChapterIdNum = Number(currentChapterId)
+        const alreadyMarked = completedChapters.some(
+          (id: string | number) => Number(id) === currentChapterIdNum
+        )
+        
+        if (!alreadyMarked) {
+          console.log('[useCourseProgressSync] ✅ Intelligent completion: marking chapter', currentChapterIdNum, 'as completed (progress:', currentProgress, '%)')
+          dispatch(
+            markChapterCompleted({
+              courseId: String(courseId),
+              chapterId: currentChapterIdNum,
+              userId: progress.userId || "",
+            })
+          )
+          
+          if (progress.userId) {
+            stableDispatchChapterCompleted(
+              progress.userId,
+              String(currentChapterIdNum),
+              String(courseId),
+              0
+            )
           }
+        }
+      }
+
+      // ✅ Dispatch course progress updated event (for global listeners)
+      if (progress.userId) {
+        stableDispatchCourseProgressUpdated(
+          progress.userId,
+          String(courseId),
+          currentProgress,
+          completedChapters,
+          currentChapterId ? Number(currentChapterId) : undefined,
+          0
+        )
+      }
+    },
+    [
+      courseId,
+      dispatch,
+      stableDispatchCourseProgressUpdated,
+      stableDispatchChapterCompleted,
+    ]
+  )
+
+  // Fetch & sync
+  const fetchAndSyncProgress = useCallback(async () => {
+      if (!isAuthenticated || !userId) {
+        console.debug("[useCourseProgressSync] Skipping fetch — not authenticated")
+        return
+      }
+
+      const cacheKey = `progress-${courseId}`
+      const now = Date.now()
+      const cached = progressFetchCache.get(cacheKey)
+
+      // Cached result
+      if (cached && now - cached.timestamp < CACHE_DURATION_MS) {
+        console.debug(`[useCourseProgressSync] Using cached progress for ${courseId}`)
+        syncProgressToRedux(cached.data.progress)
+        return
+      }
+
+      // Deduplicate
+      if (activeFetchRequests.has(cacheKey)) {
+        console.debug(`[useCourseProgressSync] Awaiting existing fetch for ${courseId}`)
+        const result = await activeFetchRequests.get(cacheKey)
+        syncProgressToRedux(result?.progress)
+        return
+      }
+
+      try {
+        abortControllerRef.current = new AbortController()
+        const fetchPromise = fetch(`/api/progress/${courseId}`, {
+          credentials: "include",
+          cache: "no-store",
+          signal: abortControllerRef.current.signal,
+        }).then(async (res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
           return res.json()
         })
 
-      activeFetchRequests.set(cacheKey, fetchPromise)
-
-      const responseData = await fetchPromise
-
-      // Cache the successful response
-      progressFetchCache.set(cacheKey, {
-        data: responseData,
-        timestamp: now,
-      })
-
-      console.log(`[useCourseProgressSync] Successfully fetched and cached progress for course ${courseId}`)
-      syncProgressToRedux(responseData.progress)
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        console.log('[useCourseProgressSync] Progress fetch was aborted')
-        return
+        activeFetchRequests.set(cacheKey, fetchPromise)
+        const data = await fetchPromise
+        progressFetchCache.set(cacheKey, { data, timestamp: now })
+        syncProgressToRedux(data.progress)
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") {
+          console.debug("[useCourseProgressSync] Fetch aborted")
+          return
+        }
+        console.error("[useCourseProgressSync] Error fetching progress:", err)
+      } finally {
+        activeFetchRequests.delete(cacheKey)
       }
-      console.error('[useCourseProgressSync] Error fetching progress:', err)
-    } finally {
-      activeFetchRequests.delete(cacheKey)
-    }
-  }, [courseId, isAuthenticated, user?.id, syncProgressToRedux])
+    },
+    [courseId, isAuthenticated, userId, syncProgressToRedux]
+  )
 
-  // Fetch progress from API on mount - ONLY if user is authenticated
+  // Run once per course/user
   useEffect(() => {
-    fetchAndSyncProgress()
-
-    // Cleanup abort controller on unmount
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
+    if (isAuthenticated && userId) {
+      fetchAndSyncProgress()
     }
-  }, [fetchAndSyncProgress])
+    return () => abortControllerRef.current?.abort()
+  }, [fetchAndSyncProgress, isAuthenticated, userId])
 
-  // NOTE: We intentionally do NOT auto-save here when Redux state changes.
-  // Progress updates are handled by the queue-based useProgressTracker hook
-  // which writes progress to `/api/progress` (to avoid duplicate requests).
-
-  // Return current progress and refetch function for convenience
-  return {
-    courseProgress,
-    refetch: fetchAndSyncProgress,
-  }
+  return { courseProgress, refetch: fetchAndSyncProgress }
 }

@@ -12,7 +12,8 @@ import type {
   VideoWatchedEvent,
 } from '@/types/progress-events';
 
-// Make the imports available;
+// Make the imports available
+;
 ;
 
 // ... (keeping all your existing interfaces)
