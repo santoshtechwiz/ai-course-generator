@@ -77,11 +77,11 @@ export function NoResults({
   return (
     <motion.div 
       className={cn(
-        "rounded-lg overflow-hidden",
+        "rounded-md overflow-hidden border-4 border-black",
         isLeftPlacement ? 
           "sm:flex items-center sm:gap-6 gap-4 flex-col sm:flex-row" : 
           "text-center",
-        !minimal && "border bg-card/50 shadow-sm p-4 sm:p-8",
+        !minimal && "bg-[var(--color-card)] shadow-[4px_4px_0_#000] p-4 sm:p-8",
         className
       )}
       initial={{ opacity: 0, y: 10 }}
@@ -99,8 +99,8 @@ export function NoResults({
       >
         <motion.div
           className={cn(
-            "rounded-full flex items-center justify-center",
-            minimal ? "text-muted-foreground" : "bg-muted/50 text-foreground",
+            "rounded-md flex items-center justify-center border-4 border-black",
+            minimal ? "text-[var(--color-text)]/70" : "bg-[var(--color-bg)] text-[var(--color-text)]",
             isLeftPlacement ? 
               "sm:h-16 sm:w-16 h-14 w-14" : 
               "h-16 w-16 sm:h-20 sm:w-20 mx-auto"
@@ -124,7 +124,7 @@ export function NoResults({
           {content.title}
         </h3>
         
-        <p className="text-muted-foreground mb-4 sm:mb-6 text-sm sm:text-base">
+        <p className="text-[var(--color-text)]/70 mb-4 sm:mb-6 text-sm sm:text-base">
           {content.description}
         </p>
         

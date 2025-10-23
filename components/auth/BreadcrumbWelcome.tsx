@@ -56,27 +56,27 @@ export function BreadcrumbWelcome() {
           exit={{ opacity: 0, y: -20 }}
           className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-md w-full mx-4"
         >
-          <div className="bg-gradient-to-r from-success/10 to-success/5 dark:from-success/5 dark:to-success/10 border border-success/20 dark:border-success/20 rounded-lg shadow-lg p-4">
+          <div className="bg-[var(--color-card)] border-4 border-black rounded-md shadow-[4px_4px_0_#000] p-4">
             <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-10 h-10 bg-success/20 dark:bg-success/10 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-success" />
+              <div className="flex-shrink-0 w-10 h-10 bg-[var(--color-primary)] rounded-md flex items-center justify-center border-4 border-black shadow-[2px_2px_0_#000]">
+                <CheckCircle className="w-5 h-5 text-white" />
               </div>
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-semibold text-sm text-success">
+                  <h4 className="font-semibold text-sm text-[var(--color-text)]">
                     Welcome back!
                   </h4>
-                  <Sparkles className="w-4 h-4 text-success" />
+                  <Sparkles className="w-4 h-4 text-[var(--color-primary)]" />
                 </div>
-                <p className="text-sm text-success/80 dark:text-success/90">
+                <p className="text-sm text-[var(--color-text)]/80">
                   Let&apos;s continue {action.description}
                 </p>
               </div>
               
               <button
                 onClick={handleDismiss}
-                className="flex-shrink-0 text-success hover:text-success/80 dark:hover:text-success/70 transition-colors"
+                className="flex-shrink-0 text-[var(--color-text)] hover:text-[var(--color-text)]/80 transition-colors border-4 border-black bg-[var(--color-bg)] shadow-[2px_2px_0_#000] p-1 rounded-md hover:shadow-[4px_4px_0_#000]"
                 aria-label="Dismiss"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

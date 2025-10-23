@@ -345,7 +345,7 @@ export function PricingPage({
       )}
 
       {showPromotion && (
-        <div className="relative bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-xl border">
+        <div className="relative bg-neo-background p-6 rounded-xl border-4 border-neo-border shadow-[4px_4px_0px_0px_var(--neo-border)]">
           <Button
             variant="ghost"
             size="icon"
@@ -355,24 +355,25 @@ export function PricingPage({
             <X className="h-4 w-4" />
           </Button>
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="h-14 w-14 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center shadow-[4px_4px_0px_0px_var(--border)]">
+            <div className="h-14 w-14 rounded-xl bg-black border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
               <Sparkles className="text-white h-7 w-7" />
             </div>
             <div className="flex-1">
-              <h3 className="font-bold text-lg text-foreground">Limited Time Offer</h3>
-              <p className="text-muted-foreground">
-                Use <span className="bg-accent/10 text-accent px-2 py-0.5 rounded font-mono font-bold border border-accent/20">AILAUNCH20</span> for 20% off
+              <h3 className="font-black text-xl text-black">Limited Time Offer</h3>
+              <p className="text-gray-700 font-bold">
+                Use <span className="bg-gray-100 text-black px-2 py-0.5 rounded font-mono font-black border-2 border-black">AILAUNCH20</span> for 20% off
               </p>
               <div className="flex flex-col sm:flex-row gap-2 mt-3">
                 <Input
                   value={promoCode}
                   placeholder="Enter promo code"
                   onChange={(e) => setPromoCode(e.target.value)}
+                  className="border-2 border-black"
                 />
                 <Button
                   onClick={handleApplyPromoCode}
                   disabled={isPromoValid || isApplyingPromo}
-                  className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold shadow-[2px_2px_0px_0px_var(--border)] hover:shadow-[4px_4px_0px_0px_var(--border)]"
+                  className="bg-black hover:bg-gray-800 text-white font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                 >
                   {isApplyingPromo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Gift className="mr-2 h-4 w-4" />}
                   {isPromoValid ? "Applied" : "Apply"}
@@ -385,7 +386,7 @@ export function PricingPage({
 
       <div className="text-center">
         <motion.h2
-          className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-primary via-purple-600 to-accent text-transparent bg-clip-text leading-tight"
+          className="text-4xl sm:text-5xl font-black text-black leading-tight"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -491,7 +492,7 @@ export function PricingPage({
       )}
 
       <motion.div
-        className="mt-12 p-8 bg-gradient-to-r from-card to-accent/5 border-2 border-border rounded-xl shadow-[4px_4px_0px_0px_var(--border)]"
+        className="mt-12 p-8 bg-neo-background border-4 border-neo-border rounded-xl shadow-[4px_4px_0px_0px_var(--neo-border)]"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true, margin: "-100px" }}

@@ -77,26 +77,26 @@ export default function QuizCreationPage({
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6 lg:gap-8">
           <motion.div className="lg:col-span-2 relative group" variants={itemVariants}>
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-background rounded-lg -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2" />
-            <div className="relative bg-background/80 backdrop-blur-sm border border-border/50 shadow-md rounded-lg overflow-hidden h-full">
-              <div className="pb-3 md:pb-4 border-b border-border/10 bg-gradient-to-r from-primary/5 via-primary/10 to-transparent p-4 md:p-6">
+            <div className="absolute inset-0 bg-black border-4 border-black rounded-lg -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
+            <div className="relative bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-lg overflow-hidden h-full">
+              <div className="pb-3 md:pb-4 border-b-4 border-black bg-black p-4 md:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
                   <div className="flex items-center gap-2">
-                    <div className="bg-primary/10 p-2 rounded-lg">
-                      <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                    <div className="bg-white border-2 border-black p-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                      <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-black" />
                     </div>
-                    <h2 className="text-xl md:text-2xl font-semibold text-foreground">Create a New {title}</h2>
+                    <h2 className="text-xl md:text-2xl font-black text-white">Create a New {title}</h2>
                   </div>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <motion.div
-                          className="flex items-center text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 rounded-full self-start sm:self-auto"
+                          className="flex items-center text-sm text-black bg-yellow-300 px-3 py-1.5 rounded-full self-start sm:self-auto border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-bold"
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ delay: 0.6, duration: 0.3 }}
                         >
-                          <Lightbulb className="h-4 w-4 mr-1.5 text-amber-500" />
+                          <Lightbulb className="h-4 w-4 mr-1.5 text-black" />
                           Pro tip: Be specific with your topic
                         </motion.div>
                       </TooltipTrigger>
@@ -119,16 +119,16 @@ export default function QuizCreationPage({
           </motion.div>
 
           <motion.div className="relative group" variants={itemVariants}>
-            <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-secondary/5 to-background rounded-lg -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2" />
-            <div className="relative bg-background/80 backdrop-blur-sm border border-border/50 shadow-md rounded-lg overflow-hidden h-full">
-              <div className="pb-3 border-b border-border/10 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-transparent p-4 md:p-5">
+            <div className="absolute inset-0 bg-black border-4 border-black rounded-lg -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
+            <div className="relative bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-lg overflow-hidden h-full">
+              <div className="pb-3 border-b-4 border-black bg-black p-4 md:p-5">
                 <div className="flex items-center gap-2">
-                  <div className="bg-blue-500/10 p-2 rounded-lg">
-                    <Brain className="h-4 w-4 md:h-5 md:w-5 text-blue-500" />
+                  <div className="bg-white border-2 border-black p-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <Brain className="h-4 w-4 md:h-5 md:w-5 text-black" />
                   </div>
-                  <h3 className="text-base md:text-lg font-medium">Discover Quizzes</h3>
+                  <h3 className="text-base md:text-lg font-black text-white">Discover Quizzes</h3>
                 </div>
-                <p className="mt-1 text-xs md:text-sm text-muted-foreground">
+                <p className="mt-1 text-xs md:text-sm text-gray-300 font-bold">
                   Explore popular quizzes created by others
                 </p>
               </div>

@@ -126,11 +126,11 @@ export function MainNavbar() {
           href={item.href}
           className={cn(
             "relative px-4 py-2 text-sm font-black transition-all duration-150",
-            "border-3 border-transparent rounded-lg transform hover:scale-105",
+            "border-4 border-transparent rounded-md transform hover:scale-105",
             "active:scale-95 active:translate-y-1",
             active 
-              ? "border-border bg-main text-main-foreground shadow-[4px_4px_0px_0px_hsl(var(--border))]" 
-              : "hover:border-border hover:bg-secondary-background hover:shadow-[3px_3px_0px_0px_hsl(var(--border))]",
+              ? "border-black bg-[var(--color-primary)] text-white shadow-[4px_4px_0_#000]" 
+              : "hover:border-black hover:bg-[var(--color-muted)] hover:shadow-[3px_3px_0_#000]",
           )}
         >
           {item.name}
@@ -156,11 +156,11 @@ export function MainNavbar() {
           href={item.href}
           onClick={() => setIsMobileMenuOpen(false)}
           className={cn(
-            "block px-4 py-3 min-h-[48px] flex items-center font-black border-3 rounded-lg",
+            "block px-4 py-3 min-h-[48px] flex items-center font-black border-4 rounded-md",
             "transition-all duration-150 active:scale-95 active:translate-y-1",
             active 
-              ? "bg-main text-main-foreground border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]" 
-              : "border-transparent hover:border-border hover:bg-secondary-background hover:shadow-[3px_3px_0px_0px_hsl(var(--border))]",
+              ? "bg-[var(--color-primary)] text-white border-black shadow-[4px_4px_0_#000]" 
+              : "border-transparent hover:border-black hover:bg-[var(--color-muted)] hover:shadow-[3px_3px_0_#000]",
           )}
         >
           {item.name}
@@ -175,8 +175,8 @@ export function MainNavbar() {
       <motion.header
         className={cn(
           "fixed top-0 left-0 right-0 z-50",
-          "bg-background border-b-4 border-border backdrop-blur-sm",
-          isScrolled && "shadow-[0_6px_0px_0px_rgba(0,0,0,0.15)]",
+          "bg-[var(--color-bg)] border-b-4 border-black backdrop-blur-sm shadow-[4px_4px_0_#000]",
+          isScrolled && "shadow-[0_10px_0_0_#000]",
         )}
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

@@ -37,7 +37,7 @@ const RadioGroupItem = React.forwardRef<
   const stableProps = React.useMemo(
     () => ({
       className: cn(
-        "aspect-square h-5 w-5 rounded-sm border-4 border-primary bg-background shadow-[4px_4px_0px_0px_hsl(var(--primary))] text-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground transition-all duration-200 hover:shadow-[6px_6px_0px_0px_hsl(var(--primary))]",
+        "aspect-square h-5 w-5 rounded-sm border-4 border-black bg-[var(--color-bg)] shadow-[4px_4px_0_#000] text-[var(--color-primary)] ring-offset-background focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-[var(--color-primary)] data-[state=checked]:text-white transition-all duration-200 hover:shadow-[6px_6px_0_#000]",
         className
       ),
       ...props

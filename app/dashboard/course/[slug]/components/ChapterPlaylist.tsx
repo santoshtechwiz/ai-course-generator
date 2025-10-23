@@ -265,7 +265,7 @@ const ChapterPlaylist: React.FC<ChapterPlaylistProps> = ({
                 )}
               </div>
             </div>
-            <div className="h-3 bg-white border-2 border-black relative overflow-hidden">
+            <div className="h-3 bg-neo-background border-2 border-neo-border relative overflow-hidden">
               <div 
                 className={cn(
                   "h-full transition-all duration-300",
@@ -450,7 +450,7 @@ const ChapterPlaylist: React.FC<ChapterPlaylistProps> = ({
                           {/* Progress indicator - Neobrutalism */}
                           {chapterProgress > 0 && !isCompleted && (
                             <div className="flex items-center gap-1.5">
-                              <div className="flex-1 h-2 bg-white border border-black overflow-hidden">
+                              <div className="flex-1 h-2 bg-neo-background border border-neo-border overflow-hidden">
                                 <div 
                                   className="h-full bg-black transition-all duration-300" 
                                   style={{ width: `${Math.min(chapterProgress, 100)}%` }} 

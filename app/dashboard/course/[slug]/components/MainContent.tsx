@@ -1398,7 +1398,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="sticky top-0 z-50 bg-white border-b-4 border-black shadow-[0_4px_0px_0px_rgba(0,0,0,1)]"
+        className="sticky top-0 z-50 bg-neo-background border-b-4 border-neo-border shadow-[0_4px_0px_0px_var(--neo-border)]"
       >
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between gap-4">
@@ -1420,13 +1420,13 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                     : `0/${courseStats.totalChapters}`}
                 </span>
               </div>
-              <div className="w-32 h-2 bg-white border-2 border-black">
+              <div className="w-32 h-2 bg-neo-background border-2 border-neo-border">
                 <div
                   className="h-full bg-black transition-all duration-300"
                   style={{ width: `${state.mounted ? courseStats.progressPercentage : 0}%` }}
                 />
               </div>
-              <div className="bg-white border-2 border-black px-3 py-1 font-black text-sm min-w-[60px] text-center">
+              <div className="bg-neo-background border-2 border-neo-border px-3 py-1 font-black text-sm min-w-[60px] text-center">
                 {state.mounted ? courseStats.progressPercentage : 0}%
               </div>
             </div>
@@ -1470,11 +1470,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                   {courseStats.completedCount} of {courseStats.totalChapters}
                 </span>
               </div>
-              <div className="bg-white border-2 border-black px-3 py-1 font-black text-sm">
+              <div className="bg-neo-background border-2 border-neo-border px-3 py-1 font-black text-sm">
                 {courseStats.progressPercentage}%
               </div>
             </div>
-            <div className="h-3 bg-white border-2 border-black">
+            <div className="h-3 bg-neo-background border-2 border-neo-border">
               <div
                 className="h-full bg-black transition-all duration-300"
                 style={{ width: `${courseStats.progressPercentage}%` }}
@@ -1514,7 +1514,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             <Button
               variant="neutral"
               onClick={() => dispatch2({ type: "SET_MOBILE_PLAYLIST_OPEN", payload: !state.mobilePlaylistOpen })}
-              className="w-full justify-between h-14 bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all font-black"
+              className="w-full justify-between h-14 bg-neo-background border-2 border-neo-border shadow-[4px_4px_0px_0px_var(--neo-border)] hover:shadow-[2px_2px_0px_0px_var(--neo-border)] transition-all font-black"
             >
               <div className="flex items-center gap-3">
                 <BookOpen className="h-5 w-5" />
@@ -1642,7 +1642,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
               {!state.isTheaterMode && (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                  <div className="border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all bg-white">
+                  <div className="border-4 border-neo-border shadow-[8px_8px_0px_0px_var(--neo-border)] hover:shadow-[6px_6px_0px_0px_var(--neo-border)] transition-all bg-neo-background">
                     <div className="p-6">
                       <MemoizedCourseDetailsTabs
                         course={course}
@@ -1657,7 +1657,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
               {!state.isTheaterMode && (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                  <div className="border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all bg-white">
+                  <div className="border-4 border-neo-border shadow-[8px_8px_0px_0px_var(--neo-border)] hover:shadow-[6px_6px_0px_0px_var(--neo-border)] transition-all bg-neo-background">
                     <div className="p-6">
                       <ReviewsSection slug={course.slug} />
                     </div>
@@ -1674,7 +1674,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                   exit={{ opacity: 0, x: 20 }}
                   className="hidden lg:block space-y-3 min-w-0 w-full"
                 >
-                  <div className="border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white h-full">
+                  <div className="border-4 border-neo-border shadow-[8px_8px_0px_0px_var(--neo-border)] bg-neo-background h-full">
                     <div className="p-0">
                       {sidebarCourse.chapters.length === 0 ? (
                         <div className="p-8 text-center">

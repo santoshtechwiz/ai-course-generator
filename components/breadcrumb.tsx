@@ -165,10 +165,10 @@ const BreadcrumbLink = React.forwardRef<HTMLAnchorElement, BreadcrumbLinkProps>(
       <Comp
         ref={ref}
         className={cn(
-          "inline-flex items-center px-2.5 py-1 rounded-md text-sm transition-colors",
-          "hover:bg-accent hover:text-accent-foreground",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          isActive ? "bg-accent/50 font-medium" : "text-muted-foreground",
+          "inline-flex items-center px-2.5 py-1 rounded-md text-sm transition-colors border-4 border-transparent",
+          "hover:bg-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-black",
+          "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-primary)]",
+          isActive ? "bg-[var(--color-primary)] text-white font-medium border-black" : "text-[var(--color-text)]/70",
           className,
         )}
         {...props}
@@ -194,9 +194,9 @@ const BreadcrumbEllipsis = ({ className, items = [], ...props }: BreadcrumbEllip
     <DropdownMenuTrigger asChild>
       <button
         className={cn(
-          "flex h-8 w-8 items-center justify-center rounded-md",
-          "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "flex h-8 w-8 items-center justify-center rounded-md border-4 border-black bg-[var(--color-bg)] shadow-[2px_2px_0_#000]",
+          "text-[var(--color-text)] hover:bg-[var(--color-muted)] hover:text-[var(--color-text)]",
+          "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-primary)]",
           className,
         )}
         {...props}

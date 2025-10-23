@@ -318,20 +318,7 @@ function EnhancedQuizzesClientComponent({ initialQuizzesData, userId }: Enhanced
             }}
           />
 
-          <div ref={ref} className="h-20 flex items-center justify-center">
-            {isFetchingNextPage && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className={cn(
-                  "flex items-center gap-4 text-sm text-muted-foreground bg-card px-6 py-3 rounded-2xl border-3 border-border neo-shadow",
-                )}
-              >
-                <div className="w-5 h-5 border-3 border-primary border-r-transparent rounded-full animate-spin" />
-                <span className="font-black">Loading more amazing quizzes...</span>
-              </motion.div>
-            )}
-          </div>
+          <div ref={ref} className="h-20" />
         </ErrorBoundary>
 
         {/* Quick action FAB for mobile */}

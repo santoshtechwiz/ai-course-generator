@@ -9,26 +9,32 @@ import {
   Plus,
   RefreshCw,
   Sparkles,
-  Brain,
   X,
   SlidersHorizontal,
   ChevronDown,
+  TrendingUp,
   Star,
   BookOpen,
-  TrendingUp,
 } from "lucide-react"
 import { QuizCard } from "./QuizCard"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { cn, getColorClasses } from "@/lib/utils"
+import {
+  cardVariants,
+  staggerContainerVariants,
+  staggerItemVariants,
+  badgeVariants,
+  fadeInUp
+} from "@/utils/animation-utils"
 import type { QuizListItem } from "@/app/actions/getQuizes"
 import type { QuizType } from "@/app/types/quiz-types"
 import { QuizSidebar } from "./QuizSidebar"
 import { Card, CardContent } from "@/components/ui/card"
 import { useDeleteQuiz } from "@/hooks/use-delete-quiz"
 import { ConfirmDeleteDialog } from "@/components/common/ConfirmDeleteDialog"
-import { BaseListLayout } from "@/components/shared/BaseListLayout"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { QuizTypeIcons } from "./quiz-type-icons"
 
 interface QuizListProps {
   quizzes: QuizListItem[]
@@ -60,22 +66,8 @@ interface QuizListProps {
   showPublicOnly?: boolean
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.03 },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.2 },
-  },
-}
+const containerVariants = staggerContainerVariants
+const itemVariants = staggerItemVariants
 
 function QuizListComponent({
   quizzes,
@@ -321,18 +313,13 @@ function QuizListComponent({
   }
 
   return (
-    <>
-      <BaseListLayout
-        title="Browse Quizzes"
-        description="Master any topic with AI-powered interactive quizzes"
-        icon={<Brain className="h-6 w-6 text-primary-foreground" strokeWidth={3} />}
-        searchValue={localSearch}
-        onSearchChange={handleSearchChange}
-        searchPlaceholder="Search quizzes by title, topic, or difficulty..."
-        resultCount={filteredQuizzes.length}
-        onCreateClick={onCreateQuiz}
-        createButtonText="Create Quiz"
-        filterSidebar={
+    <div className="flex gap-6">
+      {/* Sidebar */}
+      <motion.div
+        {...fadeInUp(0.1)}
+        className="w-80 flex-shrink-0"
+      >
+        <div className="sticky top-6">
           <QuizSidebar
             search={localSearch}
             onSearchChange={(e) => handleSearchChange(e.target.value)}
@@ -341,67 +328,145 @@ function QuizListComponent({
             selectedTypes={currentSelectedTypes}
             toggleQuizType={toggleQuizType}
           />
-        }
-        contentGrid={
-          <div className="space-y-10">
-            {/* Sort & Clear - Neobrutalism Design */}
-            <div className="flex items-center gap-4 ml-auto">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="default"
-                    className={cn(buttonSecondary, "gap-2 h-12 px-6 text-sm rounded-xl")}
-                  >
-                    <SlidersHorizontal className="h-5 w-5" strokeWidth={2.5} />
-                    Sort
-                    <ChevronDown className="h-5 w-5 ml-1" strokeWidth={2.5} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 rounded-xl border-3 neo-shadow-lg z-[100]">
-                  <DropdownMenuItem
-                    onClick={() => setSortBy("default")}
-                    className={cn(sortBy === "default" && "bg-primary/10 text-primary", "text-sm font-bold rounded-lg")}
-                  >
-                    <Star className="mr-3 h-5 w-5" strokeWidth={2.5} />
-                    Default Order
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setSortBy("title")}
-                    className={cn(sortBy === "title" && "bg-primary/10 text-primary", "text-sm font-bold rounded-lg")}
-                  >
-                    <BookOpen className="mr-3 h-5 w-5" strokeWidth={2.5} />
-                    Alphabetical (A-Z)
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+        </div>
+      </motion.div>
 
-              {/* Clear Filters */}
-              {(currentSearch || currentSelectedTypes.length > 0 || sortBy !== "default") && (
-                <Button
-                  variant="ghost"
-                  size="default"
-                  onClick={clearFilters}
-                  className={cn(
-                    "gap-2 h-12 px-6 text-sm font-black hover:bg-destructive/10 hover:text-destructive transition-all rounded-xl border-3 border-transparent hover:border-destructive/30 neo-shadow",
-                  )}
-                >
-                  <X className="h-5 w-5" strokeWidth={3} />
-                  Clear All
-                </Button>
-              )}
+      {/* Main Content */}
+      <div className="flex-1 min-w-0 space-y-6">
+        {/* Quick Stats Overview */}
+        <motion.div
+          {...fadeInUp(0.1)}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+        >
+          <div className="bg-[var(--color-card)] border-4 border-black p-6 rounded-lg shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000] transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-[var(--color-text)]/70">Total Quizzes</p>
+                <p className="text-3xl font-black text-[var(--color-text)]">{quizCounts?.all || 0}</p>
+              </div>
+              <QuizTypeIcons.total className="h-8 w-8 text-[var(--color-primary)]" />
             </div>
+          </div>
+          <div className="bg-[var(--color-card)] border-4 border-black p-6 rounded-lg shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000] transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-[var(--color-text)]/70">MCQ Quizzes</p>
+                <p className="text-3xl font-black text-[var(--color-text)]">{quizCounts?.mcq || 0}</p>
+              </div>
+              <QuizTypeIcons.mcq className="h-8 w-8 text-[var(--color-primary)]" />
+            </div>
+          </div>
+          <div className="bg-[var(--color-card)] border-4 border-black p-6 rounded-lg shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000] transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-[var(--color-text)]/70">Coding Challenges</p>
+                <p className="text-3xl font-black text-[var(--color-text)]">{quizCounts?.code || 0}</p>
+              </div>
+              <QuizTypeIcons.code className="h-8 w-8 text-[var(--color-primary)]" />
+            </div>
+          </div>
+        </motion.div>
 
-            {/* Quiz Grid - Enhanced Spacing */}
-            <div
+        {/* Search and Controls (sticky) */}
+        <motion.div
+          {...fadeInUp(0.15)}
+          className={cn(
+            "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between",
+            "sticky top-0 z-20 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80",
+            "py-4"
+          )}
+        >
+          <div className="relative flex-1 max-w-md">
+            <Search
+              className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none z-10"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              placeholder="Search quizzes..."
               className={cn(
-                "grid gap-8 md:gap-10",
-                viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" : "grid-cols-1 max-w-4xl mx-auto",
+                "flex h-11 w-full rounded-md border-4 border-black bg-[var(--color-bg)] px-11 py-3 text-sm font-bold shadow-[4px_4px_0_#000] transition-all placeholder:text-[var(--color-text)]/50 focus:shadow-[6px_6px_0_#000] focus:outline-none",
               )}
-            >
-              {filteredQuizzes.map((quiz) => (
+              value={localSearch}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              aria-label="Search quizzes by title or description"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Sort & Clear */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="default"
+                  className={cn("gap-2 h-11 px-6 text-sm font-bold border-4 border-black shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000]")}
+                >
+                  <SlidersHorizontal className="h-5 w-5" strokeWidth={2.5} />
+                  Sort
+                  <ChevronDown className="h-5 w-5 ml-1" strokeWidth={2.5} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 rounded-xl border-4 border-black shadow-[4px_4px_0_#000] z-[100]">
+                <DropdownMenuItem
+                  onClick={() => setSortBy("default")}
+                  className={cn(sortBy === "default" && "bg-[var(--color-primary)] text-[var(--color-text)]", "text-sm font-bold rounded-lg")}
+                >
+                  <Star className="mr-3 h-5 w-5" strokeWidth={2.5} />
+                  Default Order
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setSortBy("title")}
+                  className={cn(sortBy === "title" && "bg-[var(--color-primary)] text-[var(--color-text)]", "text-sm font-bold rounded-lg")}
+                >
+                  <BookOpen className="mr-3 h-5 w-5" strokeWidth={2.5} />
+                  Alphabetical (A-Z)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Clear Filters */}
+            {(currentSearch || currentSelectedTypes.length > 0 || sortBy !== "default") && (
+              <Button
+                variant="ghost"
+                size="default"
+                onClick={clearFilters}
+                className={cn(
+                  "gap-2 h-11 px-6 text-sm font-black hover:bg-destructive/10 hover:text-destructive transition-all border-4 border-transparent hover:border-destructive/30 shadow-[4px_4px_0_#000]",
+                )}
+              >
+                <X className="h-5 w-5" strokeWidth={3} />
+                Clear All
+              </Button>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Quiz Grid */}
+        <motion.div
+          {...fadeInUp(0.2)}
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div
+            className={cn(
+              "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 max-w-[1800px] mx-auto",
+            )}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            role="grid"
+            aria-label="Grid view of quizzes"
+          >
+            {filteredQuizzes.map((quiz, index) => (
+              <motion.div
+                key={quiz.id}
+                variants={itemVariants}
+                transition={{ delay: index * 0.02 }}
+                role="gridcell"
+              >
                 <QuizCard
-                  key={quiz.id}
                   title={quiz.title}
                   description={quiz.title}
                   questionCount={quiz.questionCount || 0}
@@ -410,7 +475,7 @@ function QuizListComponent({
                   quizType={quiz.quizType as QuizType}
                   estimatedTime={getEstimatedTime(quiz.questionCount || 0)}
                   completionRate={Math.min(Math.max(quiz.bestScore || 0, 0), 100)}
-                  compact={viewMode === "list"}
+                  compact={false}
                   userId={quiz.userId}
                   currentUserId={currentUserId}
                   showActions={showActions}
@@ -419,48 +484,33 @@ function QuizListComponent({
                   selectedTypes={selectedTypes}
                   activeFilter={activeFilter}
                 />
-              ))}
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Loading more */}
+          {isFetchingNextPage && (
+            <div className="flex justify-center py-12">
+              <div className="flex items-center gap-4 px-10 py-5 rounded-xl bg-[var(--color-bg)] border-4 border-black shadow-[4px_4px_0_#000]">
+                <div className="relative">
+                  <div className="w-7 h-7 border-4 border-black border-r-transparent rounded-full animate-spin" aria-hidden="true" />
+                </div>
+                <span className="text-base font-black text-[var(--color-text)]">Loading more quizzes...</span>
+              </div>
             </div>
+          )}
 
-            {/* Loading more - Enhanced */}
-            {isFetchingNextPage && (
-              <div className="flex justify-center py-12">
-                <div
-                  className={cn(
-                    "flex items-center gap-4 px-10 py-5 rounded-2xl bg-primary/10 border-3 border-border neo-shadow-lg",
-                  )}
-                >
-                  <div className="relative">
-                    <div
-                      className="w-7 h-7 border-3 border-primary border-r-transparent rounded-full animate-spin"
-                      aria-hidden="true"
-                    />
-                    <div
-                      className="absolute inset-0 w-7 h-7 border-3 border-primary/20 border-r-transparent rounded-full animate-ping"
-                      aria-hidden="true"
-                    />
-                  </div>
-                  <span className="text-base font-black text-foreground">Loading more quizzes...</span>
-                </div>
+          {/* End message */}
+          {!hasNextPage && quizzes.length > 0 && (
+            <div ref={endMessageRef} className="text-center py-12">
+              <div className="inline-flex items-center gap-3 px-10 py-5 rounded-xl bg-[var(--color-success)] border-4 border-black shadow-[4px_4px_0_#000]">
+                <Sparkles className="h-6 w-6 text-[var(--color-text)] animate-pulse" strokeWidth={3} />
+                <span className="text-lg font-black text-[var(--color-text)]">You've seen them all! 🎉</span>
               </div>
-            )}
-
-            {/* End message - Enhanced */}
-            {!hasNextPage && quizzes.length > 0 && (
-              <div ref={endMessageRef} className="text-center py-12">
-                <div
-                  className={cn(
-                    "inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-emerald-400 dark:bg-emerald-500 border-3 border-border neo-shadow-lg",
-                  )}
-                >
-                  <Sparkles className="h-6 w-6 text-foreground animate-pulse" strokeWidth={3} />
-                  <span className="text-lg font-black text-foreground">You've seen them all! 🎉</span>
-                </div>
-              </div>
-            )}
-          </div>
-        }
-      />
+            </div>
+          )}
+        </motion.div>
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDeleteDialog
@@ -480,7 +530,7 @@ function QuizListComponent({
         confirmLabel="Delete Quiz"
         isLoading={deleteQuizMutation.isPending}
       />
-    </>
+    </div>
   )
 }
 

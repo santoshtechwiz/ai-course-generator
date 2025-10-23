@@ -273,12 +273,12 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
     <div className="w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-10">
       {/* Top header - harmonized with BaseTextQuizResult */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-        <Card className={cn('relative overflow-hidden border-2 shadow-xl rounded-2xl', quizType === 'blanks' ? 'border-pink-200' : '')}>
+        <Card className={cn('relative overflow-hidden bg-[var(--color-card)] border-4 border-black shadow-[4px_4px_0_#000] rounded-xl', quizType === 'blanks' ? 'border-pink-200' : '')}>
           <div className={cn('absolute inset-0 bg-gradient-to-br opacity-50', quizType === 'blanks' ? 'from-pink-50 via-pink-100 to-pink-50' : '')} />
           <CardHeader className="relative z-10 text-center py-8">
             <div className="flex items-center justify-center mb-6">
-              <div className="p-4 rounded-2xl bg-background/80 backdrop-blur-sm shadow-lg border">
-                <Trophy className="w-8 h-8 text-primary" />
+              <div className="p-4 rounded-xl bg-[var(--color-bg)] border-4 border-black shadow-[4px_4px_0_#000]">
+                <Trophy className="w-8 h-8 text-[var(--color-primary)]" />
               </div>
             </div>
 
@@ -290,18 +290,18 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
         </Card>
 
         {/* Metric cards row */}
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Card className="p-3">
-            <div className="text-sm text-muted-foreground">Score</div>
-            <div className="text-2xl font-semibold text-primary mt-1">{Math.round(metrics.percentage)}%</div>
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card className="p-6 bg-[var(--color-card)] border-4 border-black shadow-[4px_4px_0_#000] rounded-xl">
+            <div className="text-sm font-bold text-[var(--color-text)]/70">Score</div>
+            <div className="text-3xl font-black text-[var(--color-primary)] mt-2">{Math.round(metrics.percentage)}%</div>
           </Card>
-          <Card className="p-3">
-            <div className="text-sm text-muted-foreground">Completion Time</div>
-            <div className="text-xl font-semibold mt-1">{metrics.timeSpent ? formatTime(metrics.timeSpent) : (result?.totalTime ? formatTime(result.totalTime) : '-')}</div>
+          <Card className="p-6 bg-[var(--color-card)] border-4 border-black shadow-[4px_4px_0_#000] rounded-xl">
+            <div className="text-sm font-bold text-[var(--color-text)]/70">Completion Time</div>
+            <div className="text-2xl font-black text-[var(--color-text)] mt-2">{metrics.timeSpent ? formatTime(metrics.timeSpent) : (result?.totalTime ? formatTime(result.totalTime) : '-')}</div>
           </Card>
-          <Card className="p-3">
-            <div className="text-sm text-muted-foreground">Status</div>
-            <div className="text-xl font-semibold mt-1 text-green-600">{metrics.percentage >= 60 ? 'Passed' : 'Failed'}</div>
+          <Card className="p-6 bg-[var(--color-card)] border-4 border-black shadow-[4px_4px_0_#000] rounded-xl">
+            <div className="text-sm font-bold text-[var(--color-text)]/70">Status</div>
+            <div className="text-2xl font-black mt-2 text-[var(--color-success)]">{metrics.percentage >= 60 ? 'Passed' : 'Failed'}</div>
           </Card>
         </div>
       </motion.div>
@@ -309,11 +309,11 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Summary + Charts */}
         <div className="space-y-4 lg:col-span-1">
-          <Card className="p-3">
+          <Card className="p-6 bg-[var(--color-card)] border-4 border-black shadow-[4px_4px_0_#000] rounded-xl">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-3xl font-bold">{Math.round(metrics.percentage)}%</div>
-                <div className="text-sm text-muted-foreground mt-1">Overall Score</div>
+                <div className="text-4xl font-black text-[var(--color-text)]">{Math.round(metrics.percentage)}%</div>
+                <div className="text-sm font-bold text-[var(--color-text)]/70 mt-1">Overall Score</div>
               </div>
               <div className="w-36 h-36">
                   <div className="w-28 h-28">
@@ -349,9 +349,9 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
               </div>
           </Card>
 
-          <Card className="p-4">
+          <Card className="p-4 bg-[var(--color-card)] border-4 border-black shadow-[4px_4px_0_#000] rounded-xl">
             <CardHeader className="px-0">
-              <CardTitle className="text-sm font-semibold">Performance by Topic</CardTitle>
+              <CardTitle className="text-sm font-bold text-[var(--color-text)]">Performance by Topic</CardTitle>
             </CardHeader>
             <CardContent className="p-0 mt-2 h-44">
               {chartData.topicPerfData && chartData.topicPerfData.length ? (
@@ -362,7 +362,7 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
                     <RechartsTooltip />
                   </BarChart>
               ) : (
-                <div className="p-4 text-sm text-muted-foreground">No topic breakdown available.</div>
+                <div className="p-4 text-sm text-[var(--color-text)]/70">No topic breakdown available.</div>
               )}
             </CardContent>
           </Card>
@@ -370,10 +370,10 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
 
         {/* Middle & Right: Question Breakdown + Recommendations + CTAs */}
         <div className="lg:col-span-2 space-y-4">
-            <Card>
+            <Card className="bg-[var(--color-card)] border-4 border-black shadow-[4px_4px_0_#000] rounded-xl">
             <CardHeader className="flex items-center justify-between">
-              <CardTitle className="text-lg">Question Breakdown</CardTitle>
-              <div className="text-sm text-muted-foreground">Tap a question to expand</div>
+              <CardTitle className="text-lg font-bold text-[var(--color-text)]">Question Breakdown</CardTitle>
+              <div className="text-sm text-[var(--color-text)]/70">Tap a question to expand</div>
             </CardHeader>
             <CardContent>
               <Accordion type="single" collapsible defaultValue={undefined}>
@@ -451,17 +451,17 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="p-4">
+            <Card className="p-4 bg-[var(--color-card)] border-4 border-black shadow-[4px_4px_0_#000] rounded-xl">
               <CardHeader className="px-0">
-                <CardTitle className="text-sm font-semibold">Key Takeaways</CardTitle>
+                <CardTitle className="text-sm font-bold text-[var(--color-text)]">Key Takeaways</CardTitle>
               </CardHeader>
               <CardContent className="p-0 mt-2">
-                <div className="p-4 bg-muted/20 rounded">{/* subtle background */}
+                <div className="p-4 bg-[var(--color-bg)] rounded-lg border-2 border-black">
                   <ul className="space-y-2">
                     {(result?.takeaways || generateTakeawaysFromResult(result)).map((t: any, i: number) => (
                       <li key={i} className="flex items-start gap-3">
-                        <div className="mt-1 text-primary"><Star className="w-4 h-4" /></div>
-                        <div className="text-sm text-muted-foreground">{t}</div>
+                        <div className="mt-1 text-[var(--color-primary)]"><Star className="w-4 h-4" /></div>
+                        <div className="text-sm text-[var(--color-text)]">{t}</div>
                       </li>
                     ))}
                   </ul>
@@ -469,18 +469,18 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
               </CardContent>
             </Card>
 
-            <Card className="p-4">
+            <Card className="p-4 bg-[var(--color-card)] border-4 border-black shadow-[4px_4px_0_#000] rounded-xl">
               <CardHeader className="px-0">
-                <CardTitle className="text-sm font-semibold">Recommendations</CardTitle>
+                <CardTitle className="text-sm font-bold text-[var(--color-text)]">Recommendations</CardTitle>
               </CardHeader>
               <CardContent className="p-3">
                 <div className="space-y-3">
                   {(result?.recommendations || generateRecommendations(result)).map((rec: any, i: number) => (
-                    <div key={i} className="p-3 bg-sky-50 rounded-lg flex items-start gap-3 border border-sky-100">
-                      <div className="p-2 rounded-md bg-sky-100 text-sky-700"><BookOpen className="w-5 h-5" /></div>
+                    <div key={i} className="p-3 bg-[var(--color-bg)] rounded-lg flex items-start gap-3 border-2 border-black">
+                      <div className="p-2 rounded-md bg-[var(--color-primary)] text-white"><BookOpen className="w-5 h-5" /></div>
                       <div>
-                        <div className="font-medium">{rec.title}</div>
-                        <div className="text-sm text-muted-foreground">{rec.description}</div>
+                        <div className="font-bold text-[var(--color-text)]">{rec.title}</div>
+                        <div className="text-sm text-[var(--color-text)]/70">{rec.description}</div>
                       </div>
                     </div>
                   ))}
@@ -505,10 +505,10 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
                     </div>
                   )}
                 </div>
-            <Button variant="outline" onClick={() => onRetake ? onRetake() : handleRetake()} className="sm:w-40">
+            <Button variant="outline" onClick={() => onRetake ? onRetake() : handleRetake()} className="sm:w-40 bg-[var(--color-bg)] border-4 border-black shadow-[4px_4px_0_#000] rounded-xl font-bold text-[var(--color-text)] hover:shadow-[6px_6px_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
               Retake Quiz
             </Button>
-            <Button variant="ghost" onClick={() => router.push('/dashboard')} className="sm:w-40">
+            <Button variant="ghost" onClick={() => router.push('/dashboard')} className="sm:w-40 bg-[var(--color-primary)] border-4 border-black shadow-[4px_4px_0_#000] rounded-xl font-bold text-white hover:shadow-[6px_6px_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
               Go to Dashboard
             </Button>
           </div>

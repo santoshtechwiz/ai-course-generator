@@ -313,7 +313,7 @@ const PlayerControls = (props: any) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.1 }}
-            className="absolute bottom-full mb-4 bg-white text-black px-3 py-2 text-xs font-black uppercase tracking-wider pointer-events-none -translate-x-1/2 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+            className="absolute bottom-full mb-4 bg-neo-background text-black px-3 py-2 text-xs font-black uppercase tracking-wider pointer-events-none -translate-x-1/2 border-4 border-neo-border shadow-[4px_4px_0px_0px_var(--neo-border)]"
             style={{ left: `${hoverPosition * 100}%` }}
           >
             {formatTime(hoveredTime)}
@@ -336,7 +336,7 @@ const PlayerControls = (props: any) => {
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 bg-white mx-4 mb-4 border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 bg-neo-background mx-4 mb-4 border-4 border-neo-border shadow-[8px_8px_0px_0px_var(--neo-border)]">
         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           <Button
             variant="ghost"
@@ -362,7 +362,7 @@ const PlayerControls = (props: any) => {
             variant="ghost"
             size="icon"
             onClick={() => onSeekChange(Math.max(0, duration * played - 10))}
-            className="h-9 w-9 bg-white hover:bg-neutral-100 text-black border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
+            className="h-9 w-9 bg-neo-background hover:bg-neutral-100 text-black border-3 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:shadow-[1px_1px_0px_0px_var(--neo-border)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
             aria-label="Rewind 10 seconds"
           >
             <RewindIcon className="h-4 w-4" />
@@ -372,7 +372,7 @@ const PlayerControls = (props: any) => {
             variant="ghost"
             size="icon"
             onClick={() => onSeekChange(Math.min(duration, duration * played + 10))}
-            className="h-9 w-9 bg-white hover:bg-neutral-100 text-black border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
+            className="h-9 w-9 bg-neo-background hover:bg-neutral-100 text-black border-3 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:shadow-[1px_1px_0px_0px_var(--neo-border)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
             aria-label="Forward 10 seconds"
           >
             <FastForwardIcon className="h-4 w-4" />
@@ -384,7 +384,7 @@ const PlayerControls = (props: any) => {
               size="icon"
               onClick={onMute}
               onMouseEnter={() => setShowVolumeSlider(true)}
-              className="h-9 w-9 bg-white hover:bg-neutral-100 text-black border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
+              className="h-9 w-9 bg-neo-background hover:bg-neutral-100 text-black border-3 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:shadow-[1px_1px_0px_0px_var(--neo-border)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
               aria-label={muted ? "Unmute" : "Mute"}
             >
               {React.createElement(getVolumeIcon, { className: "h-4 w-4" })}
@@ -397,7 +397,7 @@ const PlayerControls = (props: any) => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 8 }}
                   transition={{ duration: 0.1 }}
-                  className="absolute bottom-full mb-3 left-0 bg-white p-4 border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                  className="absolute bottom-full mb-3 left-0 bg-neo-background p-4 border-4 border-neo-border shadow-[6px_6px_0px_0px_var(--neo-border)]"
                   onMouseEnter={() => setShowVolumeSlider(true)}
                   onMouseLeave={() => setShowVolumeSlider(false)}
                 >
@@ -455,7 +455,7 @@ const PlayerControls = (props: any) => {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 bg-white hover:bg-neutral-100 text-black border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-9 w-9 bg-neo-background hover:bg-neutral-100 text-black border-3 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:shadow-[1px_1px_0px_0px_var(--neo-border)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={onNextVideo}
               disabled={!canAccessNextVideo}
               title={nextVideoTitle}
@@ -470,7 +470,7 @@ const PlayerControls = (props: any) => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 bg-white hover:bg-neutral-100 text-black border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
+                className="h-9 w-9 bg-neo-background hover:bg-neutral-100 text-black border-3 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:shadow-[1px_1px_0px_0px_var(--neo-border)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
                 aria-label="Playback speed"
               >
                 <Settings className="h-4 w-4" />
@@ -478,7 +478,7 @@ const PlayerControls = (props: any) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-40 bg-white border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+              className="w-40 bg-neo-background border-4 border-neo-border shadow-[6px_6px_0px_0px_var(--neo-border)]"
             >
               <div className="px-3 py-2 text-xs font-black uppercase text-black border-b-3 border-black bg-yellow-400">
                 Speed

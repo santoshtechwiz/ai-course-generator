@@ -583,31 +583,31 @@ export default function CourseDetailsTabs({
   return (
     <div className="h-full w-full flex flex-col">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full w-full flex flex-col">
-        <TabsList className="sticky top-0 z-10 grid w-full grid-cols-4 h-auto bg-white border-4 border-black p-2 gap-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <TabsList className="sticky top-0 z-10 grid w-full grid-cols-4 h-auto bg-neo-background border-4 border-neo-border p-2 gap-3 shadow-[4px_4px_0px_0px_var(--neo-border)]">
           <TabsTrigger
             value="summary"
-            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:border-4 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-4 border-transparent hover:border-black px-3 md:px-4"
+            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border-4 data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border-4 border-transparent hover:border-neo-border px-3 md:px-4"
           >
             <FileText className="h-5 w-5 md:h-6 md:w-6" />
             <span className="tracking-tight">Summary</span>
           </TabsTrigger>
           <TabsTrigger
             value="quiz"
-            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:border-4 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-4 border-transparent hover:border-black px-3 md:px-4"
+            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border-4 data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border-4 border-transparent hover:border-neo-border px-3 md:px-4"
           >
             <MessageSquare className="h-5 w-5 md:h-6 md:w-6" />
             <span className="tracking-tight">Quiz</span>
           </TabsTrigger>
           <TabsTrigger
             value="notes"
-            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:border-4 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-4 border-transparent hover:border-black px-3 md:px-4"
+            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border-4 data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border-4 border-transparent hover:border-neo-border px-3 md:px-4"
           >
             <StickyNote className="h-5 w-5 md:h-6 md:w-6" />
             <span className="tracking-tight">Notes</span>
           </TabsTrigger>
           <TabsTrigger
             value="bookmarks"
-            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:border-4 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-4 border-transparent hover:border-black px-3 md:px-4"
+            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border-4 data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border-4 border-transparent hover:border-neo-border px-3 md:px-4"
           >
             <BookmarkIcon className="h-5 w-5 md:h-6 md:w-6" />
             <span className="tracking-tight">Bookmarks</span>
@@ -642,7 +642,7 @@ export default function CourseDetailsTabs({
                     className="p-0"
                     blurIntensity={canAccessSummary ? "light" : "medium"}
                   >
-                    <div className="p-6 border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="p-6 border-4 border-neo-border bg-neo-background shadow-[4px_4px_0px_0px_var(--neo-border)]">
                       <CourseAISummary
                         chapterId={currentChapter.id}
                         name={currentChapter.title || currentChapter.name || "Chapter Summary"}
@@ -658,7 +658,7 @@ export default function CourseDetailsTabs({
                       animate={{ opacity: 1, scale: 1 }}
                       className="text-center space-y-4"
                     >
-                      <div className="w-24 h-24 bg-muted border-4 border-black flex items-center justify-center mx-auto">
+                      <div className="w-24 h-24 bg-muted border-4 border-neo-border flex items-center justify-center mx-auto">
                         <FileText className="h-12 w-12 opacity-50" />
                       </div>
                       <div>
@@ -683,7 +683,7 @@ export default function CourseDetailsTabs({
               className="p-0"
               blurIntensity={canAccessQuiz ? "light" : "medium"}
             >
-              <div className="p-6 border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="p-6 border-4 border-neo-border bg-neo-background shadow-[4px_4px_0px_0px_var(--neo-border)]">
                 <CourseDetailsQuiz
                   key={currentChapter.id}
                   course={course}
@@ -705,7 +705,7 @@ export default function CourseDetailsTabs({
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center space-y-4"
               >
-                <div className="w-24 h-24 bg-muted border-4 border-black flex items-center justify-center mx-auto">
+                <div className="w-24 h-24 bg-muted border-4 border-neo-border flex items-center justify-center mx-auto">
                   <MessageSquare className="h-12 w-12 opacity-50" />
                 </div>
                 <div>
@@ -720,8 +720,8 @@ export default function CourseDetailsTabs({
         </TabsContent>
 
         <TabsContent value="bookmarks" className="flex-1 overflow-auto w-full p-0 mt-6">
-          <Card className="border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white">
-            <CardHeader className="pb-4 px-6 py-6 border-b-4 border-black">
+          <Card className="border-4 border-neo-border shadow-[6px_6px_0px_0px_var(--neo-border)] bg-neo-background">
+            <CardHeader className="pb-4 px-6 py-6 border-b-4 border-neo-border">
               <CardTitle className="flex items-center gap-3 text-2xl font-black uppercase tracking-tight">
                 <BookmarkIcon className="h-7 w-7 text-foreground" />
                 Video Bookmarks
@@ -742,17 +742,17 @@ export default function CourseDetailsTabs({
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
                       onClick={() => handleSeekToBookmark(bookmark.time)}
-                      className="group flex items-center justify-between p-5 bg-white border-4 border-black cursor-pointer hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow"
+                      className="group flex items-center justify-between p-5 bg-neo-background border-4 border-neo-border cursor-pointer hover:shadow-[6px_6px_0px_0px_var(--neo-border)] transition-shadow"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-black flex items-center justify-center text-white font-black text-xl border-4 border-black">
+                        <div className="w-14 h-14 bg-neo-border flex items-center justify-center text-neo-background font-black text-xl border-4 border-neo-border">
                           {index + 1}
                         </div>
                         <div>
                           <div className="flex items-center gap-3 mb-2">
                             <Badge
                               variant="default"
-                              className="bg-yellow-300 text-black border-4 border-black text-base px-3 py-1 font-black uppercase"
+                              className="bg-yellow-300 text-black border-4 border-neo-border text-base px-3 py-1 font-black uppercase"
                             >
                               {formatTime(bookmark.time)}
                             </Badge>
@@ -769,7 +769,7 @@ export default function CourseDetailsTabs({
                           e.stopPropagation()
                           handleRemoveBookmark(bookmark.id)
                         }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity border-4 border-black hover:bg-red-500 hover:text-white font-black uppercase"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity border-4 border-neo-border hover:bg-red-500 hover:text-white font-black uppercase"
                       >
                         Remove
                       </Button>
@@ -782,7 +782,7 @@ export default function CourseDetailsTabs({
                   animate={{ opacity: 1, scale: 1 }}
                   className="text-center py-16"
                 >
-                  <div className="w-28 h-28 bg-muted border-4 border-black flex items-center justify-center mx-auto mb-8">
+                  <div className="w-28 h-28 bg-muted border-4 border-neo-border flex items-center justify-center mx-auto mb-8">
                     <BookmarkIcon className="h-14 w-14 text-foreground" />
                   </div>
                   <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">No bookmarks yet</h3>
@@ -791,7 +791,7 @@ export default function CourseDetailsTabs({
                   </p>
                   <Badge
                     variant="default"
-                    className="bg-black text-white border-4 border-black text-lg px-6 py-3 font-black uppercase"
+                    className="bg-neo-border text-neo-background border-4 border-neo-border text-lg px-6 py-3 font-black uppercase"
                   >
                     Press B
                   </Badge>
@@ -802,13 +802,13 @@ export default function CourseDetailsTabs({
                   animate={{ opacity: 1, scale: 1 }}
                   className="text-center py-16"
                 >
-                  <div className="w-28 h-28 bg-muted border-4 border-black flex items-center justify-center mx-auto mb-8">
+                  <div className="w-28 h-28 bg-muted border-4 border-neo-border flex items-center justify-center mx-auto mb-8">
                     <Lock className="h-14 w-14 text-foreground" />
                   </div>
                   <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">Sign in required</h3>
                   <p className="text-muted-foreground mb-8 text-base font-bold">Create an account to save bookmarks</p>
                   <Button
-                    className="bg-black text-white border-4 border-black hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] font-black uppercase text-lg px-8 py-6"
+                    className="bg-neo-border text-neo-background border-4 border-neo-border hover:shadow-[6px_6px_0px_0px_var(--neo-border)] font-black uppercase text-lg px-8 py-6"
                     size="lg"
                   >
                     Sign In
@@ -820,8 +820,8 @@ export default function CourseDetailsTabs({
         </TabsContent>
 
         <TabsContent value="notes" className="flex-1 overflow-auto w-full p-0 mt-6">
-          <Card className="border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white">
-            <CardHeader className="pb-4 px-6 py-6 border-b-4 border-black">
+          <Card className="border-4 border-neo-border shadow-[6px_6px_0px_0px_var(--neo-border)] bg-neo-background">
+            <CardHeader className="pb-4 px-6 py-6 border-b-4 border-neo-border">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-3 text-2xl font-black uppercase tracking-tight">
@@ -841,7 +841,7 @@ export default function CourseDetailsTabs({
                     trigger={
                       <Button
                         size="lg"
-                        className="bg-black text-white border-4 border-black hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] font-black uppercase px-6"
+                        className="bg-neo-border text-neo-background border-4 border-neo-border hover:shadow-[6px_6px_0px_0px_var(--neo-border)] font-black uppercase px-6"
                       >
                         <Plus className="h-5 w-5 mr-2" />
                         Add Note
@@ -859,7 +859,7 @@ export default function CourseDetailsTabs({
                       placeholder="Search notes..."
                       value={notesSearchQuery}
                       onChange={(e) => setNotesSearchQuery(e.target.value)}
-                      className="pl-12 border-4 border-black font-bold h-12 text-base"
+                      className="pl-12 border-4 border-neo-border font-bold h-12 text-base"
                     />
                   </div>
                   <div className="flex items-center gap-2">
@@ -867,7 +867,7 @@ export default function CourseDetailsTabs({
                       variant={notesFilter === "all" ? "default" : "outline"}
                       size="lg"
                       onClick={() => setNotesFilter("all")}
-                      className="text-sm font-black uppercase border-4 border-black"
+                      className="text-sm font-black uppercase border-4 border-neo-border"
                     >
                       All
                     </Button>
@@ -875,7 +875,7 @@ export default function CourseDetailsTabs({
                       variant={notesFilter === "recent" ? "default" : "outline"}
                       size="lg"
                       onClick={() => setNotesFilter("recent")}
-                      className="text-sm font-black uppercase border-4 border-black"
+                      className="text-sm font-black uppercase border-4 border-neo-border"
                     >
                       Recent
                     </Button>
@@ -883,7 +883,7 @@ export default function CourseDetailsTabs({
                       variant={notesFilter === "chapter" ? "default" : "outline"}
                       size="lg"
                       onClick={() => setNotesFilter("chapter")}
-                      className="text-sm font-black uppercase border-4 border-black"
+                      className="text-sm font-black uppercase border-4 border-neo-border"
                     >
                       Chapter
                     </Button>
@@ -908,12 +908,12 @@ export default function CourseDetailsTabs({
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.05 }}
-                          className="group p-5 bg-white border-4 border-black hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow"
+                          className="group p-5 bg-neo-background border-4 border-neo-border hover:shadow-[6px_6px_0px_0px_var(--neo-border)] transition-shadow"
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 bg-green-300 border-4 border-black flex items-center justify-center">
+                                <div className="w-12 h-12 bg-green-300 border-4 border-neo-border flex items-center justify-center">
                                   <StickyNote className="h-6 w-6 text-foreground" />
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -922,14 +922,14 @@ export default function CourseDetailsTabs({
                                     <span className="uppercase">{new Date(note.createdAt).toLocaleDateString()}</span>
                                     {note.chapter && (
                                       <>
-                                        <Separator orientation="vertical" className="h-4 bg-black" />
+                                        <Separator orientation="vertical" className="h-4 bg-neo-border" />
                                         <span className="truncate uppercase">{note.chapter.title}</span>
                                       </>
                                     )}
                                   </div>
                                 </div>
                               </div>
-                              <div className="bg-yellow-100 border-4 border-black p-4">
+                              <div className="bg-yellow-100 border-4 border-neo-border p-4">
                                 <p className="text-foreground whitespace-pre-wrap text-base font-bold">{note.note}</p>
                               </div>
                             </div>
@@ -942,7 +942,7 @@ export default function CourseDetailsTabs({
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-10 w-10 p-0 border-4 border-black hover:bg-blue-300 font-black"
+                                    className="h-10 w-10 p-0 border-4 border-neo-border hover:bg-blue-300 font-black"
                                   >
                                     <Edit3 className="h-5 w-5" />
                                   </Button>
@@ -966,7 +966,7 @@ export default function CourseDetailsTabs({
                   animate={{ opacity: 1, scale: 1 }}
                   className="text-center py-16"
                 >
-                  <div className="w-28 h-28 bg-muted border-4 border-black flex items-center justify-center mx-auto mb-8">
+                  <div className="w-28 h-28 bg-muted border-4 border-neo-border flex items-center justify-center mx-auto mb-8">
                     <StickyNote className="h-14 w-14 text-foreground" />
                   </div>
                   <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">
@@ -983,7 +983,7 @@ export default function CourseDetailsTabs({
                       chapterId={currentChapter?.id}
                       trigger={
                         <Button
-                          className="bg-black text-white border-4 border-black hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] font-black uppercase text-lg px-8 py-6"
+                          className="bg-neo-border text-neo-background border-4 border-neo-border hover:shadow-[6px_6px_0px_0px_var(--neo-border)] font-black uppercase text-lg px-8 py-6"
                           size="lg"
                         >
                           <StickyNote className="h-6 w-6 mr-3" />
@@ -999,13 +999,13 @@ export default function CourseDetailsTabs({
                   animate={{ opacity: 1, scale: 1 }}
                   className="text-center py-16"
                 >
-                  <div className="w-28 h-28 bg-muted border-4 border-black flex items-center justify-center mx-auto mb-8">
+                  <div className="w-28 h-28 bg-muted border-4 border-neo-border flex items-center justify-center mx-auto mb-8">
                     <Lock className="h-14 w-14 text-foreground" />
                   </div>
                   <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">Sign in required</h3>
                   <p className="text-muted-foreground mb-8 text-base font-bold">Create an account to save notes</p>
                   <Button
-                    className="bg-black text-white border-4 border-black hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] font-black uppercase text-lg px-8 py-6"
+                    className="bg-neo-border text-neo-background border-4 border-neo-border hover:shadow-[6px_6px_0px_0px_var(--neo-border)] font-black uppercase text-lg px-8 py-6"
                     size="lg"
                   >
                     Sign In

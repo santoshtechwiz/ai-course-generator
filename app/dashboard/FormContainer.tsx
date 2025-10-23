@@ -23,8 +23,8 @@ export default function FormContainer({
     <div
       className={`w-full max-w-2xl mx-auto ${spacingMap[spacing]} ${
         variant === "glass"
-          ? "bg-card/80 backdrop-blur-md rounded-xl shadow-lg border border-border"
-          : "bg-background rounded-xl shadow-md"
+          ? "bg-neo-background border-4 border-neo-border rounded-xl shadow-[4px_4px_0px_0px_var(--neo-border)]"
+          : "bg-neo-background rounded-xl shadow-[4px_4px_0px_0px_var(--neo-border)]"
       } ${className} flex flex-col gap-6 sm:gap-8`}
     >
       {children}

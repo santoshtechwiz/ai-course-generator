@@ -109,9 +109,9 @@ export function FeedbackButton({
   const getButtonStyles = () => {
     switch (feedbackState) {
       case "success":
-        return "bg-success hover:bg-success/90 text-white border-success"
+        return "bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-[var(--color-text)] border-4 border-black"
       case "error":
-        return "bg-destructive hover:bg-destructive/90 text-white border-destructive"
+        return "bg-[var(--color-destructive)] hover:bg-[var(--color-destructive)]/90 text-[var(--color-text)] border-4 border-black"
       default:
         return ""
     }
