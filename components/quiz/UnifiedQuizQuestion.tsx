@@ -145,16 +145,12 @@ const MCQOption = memo(({
         htmlFor={`option-${option.id}`}
         className={cn(
           "relative flex items-center gap-4 p-4 w-full cursor-pointer transition-all duration-100 overflow-hidden",
-          "bg-background dark:bg-card border-3 border-border rounded-lg",
+          "bg-[var(--color-card)] border-4 border-[var(--color-border)] rounded-[var(--radius)]",
           isSelected
-            ? `shadow-[6px_6px_0px_0px_${colors.base}]`
-            : "shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] hover:bg-accent/50 dark:hover:bg-accent/30",
+            ? "bg-[var(--color-accent)] text-[var(--color-text)] shadow-[var(--shadow-neo)]"
+            : "bg-[var(--color-card)] text-[var(--color-text)] shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000] hover:bg-[var(--color-muted)]",
           isDisabled && "opacity-60 cursor-not-allowed"
         )}
-        style={isSelected ? { 
-          boxShadow: `6px 6px 0px 0px ${colors.base}`,
-          borderColor: colors.base
-        } : undefined}
         onClick={() => !isDisabled && onSelect(option.id)}
         whileHover={!isDisabled ? { y: -2 } : undefined}
         whileTap={!isDisabled ? { scale: 0.98 } : undefined}
@@ -163,9 +159,9 @@ const MCQOption = memo(({
         <AnimatePresence>
           {isSelected && (
             <motion.div
-              className={cn("absolute inset-0 rounded-lg", colors.light)}
+              className="absolute inset-0 rounded-[var(--radius)] bg-[var(--color-accent)] opacity-20"
               initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
+              animate={{ scale: 1, opacity: 0.2 }}
               exit={{ scale: 0, opacity: 0 }}
               transition={{ duration: 0.15 }}
             />
@@ -183,13 +179,12 @@ const MCQOption = memo(({
           className="sr-only"
         />
 
-        {/* Letter indicator with Neobrutalism styling */}
         <motion.div
           className={cn(
-            "flex items-center justify-center w-10 h-10 rounded-md font-black text-base transition-all duration-100 border-2 border-border relative z-10 uppercase",
+            "flex items-center justify-center w-10 h-10 rounded-md font-black text-base transition-all duration-100 border-2 border-[var(--color-border)] relative z-10 uppercase",
             isSelected
-              ? `${colors.bg} text-white shadow-[2px_2px_0px_0px_hsl(var(--border))]`
-              : `bg-secondary text-foreground hover:bg-accent`
+              ? "bg-[var(--color-text)] text-[var(--color-bg)] shadow-[2px_2px_0_#000]"
+              : "bg-[var(--color-muted)] text-[var(--color-text)] hover:bg-[var(--color-accent)] hover:text-[var(--color-text)]"
           )}
           animate={isSelected ? { scale: [1, 1.1, 1] } : undefined}
           transition={{ duration: 0.2 }}
@@ -197,12 +192,64 @@ const MCQOption = memo(({
           {option.letter}
         </motion.div>
 
-        {/* Option text with enhanced typography */}
+        {/* Option text with enhanced typography and code formatting */}
         <div className={cn(
           "flex-1 text-base font-medium leading-relaxed transition-colors relative z-10",
           isSelected ? `${colors.text} font-bold` : "text-foreground"
         )}>
-          {option.text}
+          {/* Render option text with code formatting support */}
+          {(() => {
+            const text = option.text;
+            
+            // Check if option contains code-like elements (backticks, brackets, operators)
+            const hasCodeElements = /`.*?`|[\[\]{}()]|===|!==|&&|\|\||->|=>/.test(text);
+            
+            if (hasCodeElements) {
+              // Split by backticks to handle inline code
+              const parts = text.split(/(`[^`]+`)/g);
+              
+              return (
+                <span className="flex flex-wrap items-center gap-1">
+                  {parts.map((part, idx) => {
+                    if (part.startsWith('`') && part.endsWith('`')) {
+                      // Render code with monospace styling
+                      const code = part.slice(1, -1);
+                      return (
+                        <code 
+                          key={idx}
+                          className={cn(
+                            "px-2 py-1 rounded text-sm font-mono font-semibold border-2 border-border",
+                            "bg-muted dark:bg-muted/50",
+                            isSelected ? colors.text : "text-foreground"
+                          )}
+                        >
+                          {code}
+                        </code>
+                      );
+                    }
+                    // Check if entire text looks like code (no backticks but has code patterns)
+                    if (idx === 0 && parts.length === 1 && /^[\w\.\[\]()]+$/.test(part)) {
+                      return (
+                        <code 
+                          key={idx}
+                          className={cn(
+                            "font-mono font-semibold",
+                            isSelected ? colors.text : "text-foreground"
+                          )}
+                        >
+                          {part}
+                        </code>
+                      );
+                    }
+                    return <span key={idx}>{part}</span>;
+                  })}
+                </span>
+              );
+            }
+            
+            // Regular text without code elements
+            return text;
+          })()}
         </div>
 
         {/* Enhanced selection indicator */}

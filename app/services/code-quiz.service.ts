@@ -2,7 +2,7 @@ import { QuizType } from "../types/quiz-types";
 import { titleSubTopicToSlug } from "@/lib/slug";
 
 import { BaseQuizService } from "./base-quiz.service";
-import { generateCodingMCQs } from "./generator";
+import { generateCodingMCQs } from "@/lib/ai/providers/openai-provider";
 
 /**
  * Service for handling code quiz operations

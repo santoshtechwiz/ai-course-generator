@@ -20,8 +20,8 @@ const ratingButtons = [
     label: "I knew it!",
     shortLabel: "Known",
     icon: ThumbsUp,
-    bg: "bg-emerald-500",
-    hover: "hover:bg-emerald-600",
+    bg: "bg-[var(--color-success)]",
+    hover: "hover:bg-[var(--color-success)]",
     emoji: "🎉",
   },
   {
@@ -29,8 +29,8 @@ const ratingButtons = [
     label: "Still learning",
     shortLabel: "Learning",
     icon: BookOpen,
-    bg: "bg-[hsl(var(--primary))]",
-    hover: "hover:bg-[hsl(var(--primary))]/90",
+    bg: "bg-[var(--color-accent)]",
+    hover: "hover:bg-[var(--color-accent)]",
     emoji: "📚",
   },
   {
@@ -38,8 +38,8 @@ const ratingButtons = [
     label: "Need to study",
     shortLabel: "Study",
     icon: ThumbsDown,
-    bg: "bg-red-500",
-    hover: "hover:bg-red-600",
+    bg: "bg-[var(--color-error)]",
+    hover: "hover:bg-[var(--color-error)]",
     emoji: "🤔",
   },
 ]
@@ -62,7 +62,7 @@ export function FlashcardBack({
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div
-        className="w-full bg-card border-3 border-border rounded-2xl shadow-[4px_4px_0px_0px_hsl(var(--border))] min-h-[500px] p-4 sm:p-6 flex flex-col relative cursor-pointer hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] transition-all duration-200"
+        className="w-full bg-[var(--color-card)] border-4 border-[var(--color-border)] rounded-[var(--radius)] shadow-[var(--shadow-neo)] min-h-[500px] p-4 sm:p-6 flex flex-col relative cursor-pointer hover:shadow-[6px_6px_0_#000] transition-all duration-200"
         onClick={onFlip}
         role="button"
         aria-label="Flip card to see question"
@@ -74,34 +74,31 @@ export function FlashcardBack({
           }
         }}
       >
-        {/* Save button */}
-        {onSaveCard && (
           <motion.button
             className={cn(
-              "absolute top-6 right-6 z-10 w-12 h-12 border-3 border-border transition-all duration-150 rounded-xl",
+              "absolute top-6 right-6 z-10 w-12 h-12 border-4 border-[var(--color-border)] transition-all duration-150 rounded-[var(--radius)]",
               isSaved
-                ? "bg-red-300 shadow-[3px_3px_0px_0px_hsl(var(--border))] translate-x-[3px] translate-y-[3px]"
-                : "bg-background shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[2px_2px_0px_0px_hsl(var(--border))] hover:translate-x-[2px] hover:translate-y-[2px]"
+                ? "bg-[var(--color-error)] shadow-[3px_3px_0_#000] translate-x-[3px] translate-y-[3px]"
+                : "bg-[var(--color-card)] shadow-[var(--shadow-neo)] hover:shadow-[2px_2px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px]"
             )}
             onClick={(e) => {
               e.stopPropagation()
-              onSaveCard()
+              onSaveCard?.()
             }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
             {isSaved ? (
-              <Heart className="w-5 h-5 mx-auto fill-current text-red-600" />
+              <Heart className="w-5 h-5 mx-auto fill-current text-[var(--color-text)]" />
             ) : (
-              <Heart className="w-5 h-5 mx-auto text-foreground" />
+              <Heart className="w-5 h-5 mx-auto text-[var(--color-text)]" />
             )}
           </motion.button>
-        )}
 
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary border-3 border-primary/30 rounded-xl shadow-[3px_3px_0px_0px_hsl(var(--primary)/0.3)]">
-            <span className="text-sm font-black tracking-wide">ANSWER</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] text-[var(--color-text)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] font-black">
+            <span className="text-sm tracking-wide">ANSWER</span>
           </div>
         </div>
 
@@ -120,22 +117,22 @@ export function FlashcardBack({
 
           {/* Explanation */}
           {explanation && (
-            <div className="bg-muted/50 border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))] p-6 mx-4 rounded-xl">
+            <div className="bg-[var(--color-muted)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] p-6 mx-4 rounded-[var(--radius)]">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-primary border-3 border-border flex items-center justify-center shadow-[2px_2px_0px_0px_hsl(var(--border))]">
-                  <Sparkles className="w-4 h-4 text-primary-foreground" />
+                <div className="w-8 h-8 bg-[var(--color-primary)] border-2 border-[var(--color-border)] flex items-center justify-center shadow-[2px_2px_0_#000]">
+                  <Sparkles className="w-4 h-4 text-[var(--color-text)]" />
                 </div>
-                <h4 className="text-sm font-bold text-foreground">Explanation</h4>
+                <h4 className="text-sm font-bold text-[var(--color-text)]">Explanation</h4>
               </div>
-              <p className="text-base text-foreground leading-relaxed">{explanation}</p>
+              <p className="text-base text-[var(--color-text)] leading-relaxed">{explanation}</p>
             </div>
           )}
         </div>
 
         {/* Rating Section */}
-        <div className="space-y-6 pt-6 border-t-3 border-border">
+        <div className="space-y-6 pt-6 border-t-4 border-[var(--color-border)]">
           <div className="text-center">
-            <span className="inline-block px-6 py-2 bg-primary/10 text-primary border-3 border-primary/30 rounded-xl shadow-[3px_3px_0px_0px_hsl(var(--primary)/0.3)] text-sm font-black">
+            <span className="inline-block px-6 py-2 bg-[var(--color-accent)] text-[var(--color-text)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] text-sm font-black">
               How well did you know this?
             </span>
           </div>
@@ -151,10 +148,10 @@ export function FlashcardBack({
                     onSelfRating(button.id as "correct" | "incorrect" | "still_learning")
                   }}
                   className={cn(
-                    "w-full h-16 border-3 border-border font-black text-white shadow-[4px_4px_0px_0px_hsl(var(--border))] transition-all duration-200 rounded-xl",
+                    "w-full h-16 border-4 border-[var(--color-border)] font-black text-[var(--color-text)] shadow-[var(--shadow-neo)] transition-all duration-200 rounded-[var(--radius)]",
                     button.bg,
                     button.hover,
-                    "hover:shadow-[2px_2px_0px_0px_hsl(var(--border))] hover:translate-x-[2px] hover:translate-y-[2px]"
+                    "hover:shadow-[2px_2px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px]"
                   )}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -171,14 +168,14 @@ export function FlashcardBack({
 
           {/* Keyboard shortcuts */}
           <div className="text-center">
-            <div className="inline-flex items-center gap-4 px-6 py-3 bg-muted/50 border-3 border-border rounded-xl shadow-[2px_2px_0px_0px_hsl(var(--border))]">
+            <div className="inline-flex items-center gap-4 px-6 py-3 bg-[var(--color-muted)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] rounded-[var(--radius)]">
               {[
                 { key: "1", label: "Known", emoji: "🎉" },
                 { key: "2", label: "Learning", emoji: "📚" },
                 { key: "3", label: "Study", emoji: "🤔" },
               ].map((shortcut) => (
-                <span key={shortcut.key} className="flex items-center gap-2 text-xs font-black text-foreground">
-                  <kbd className="px-2 py-1 bg-background border-2 border-border text-xs font-black rounded-md shadow-[1px_1px_0px_0px_hsl(var(--border))]">
+                <span key={shortcut.key} className="flex items-center gap-2 text-xs font-black text-[var(--color-text)]">
+                  <kbd className="px-2 py-1 bg-[var(--color-card)] border-2 border-[var(--color-border)] text-xs font-black rounded-md shadow-[1px_1px_0_#000]">
                     {shortcut.key}
                   </kbd>
                   <span className="hidden sm:inline">{shortcut.label}</span>

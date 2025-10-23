@@ -25,9 +25,9 @@ function Loading({
       "flex items-center justify-center gap-2",
       className
     )}>
-      <Loader2 className={cn("animate-spin", sizeClasses[size])} />
+      <Loader2 className={cn("animate-spin text-[var(--color-text)]", sizeClasses[size])} />
       {text && (
-        <span className="text-sm text-muted-foreground">{text}</span>
+        <span className="text-sm text-[var(--color-text)]/70">{text}</span>
       )}
     </div>
   );

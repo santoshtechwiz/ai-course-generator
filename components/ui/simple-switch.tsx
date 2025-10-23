@@ -36,16 +36,16 @@ export const SimpleSwitch = React.forwardRef<HTMLButtonElement, SimpleSwitchProp
         onMouseLeave={() => setIsPressed(false)}
         ref={ref}
         className={cn(
-          "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
-          checked ? "bg-primary" : "bg-input",
-          isPressed && "opacity-90",
+          "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-4 border-black transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 shadow-[2px_2px_0_#000]",
+          checked ? "bg-[var(--color-primary)]" : "bg-[var(--color-bg)]",
+          isPressed && "shadow-[1px_1px_0_#000] translate-x-[1px] translate-y-[1px]",
           className
         )}
         {...props}
       >
         <span 
           className={cn(
-            "pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform",
+            "pointer-events-none block h-5 w-5 rounded-full bg-[var(--color-text)] border-2 border-black shadow-[2px_2px_0_#000] transition-transform",
             checked ? "translate-x-5" : "translate-x-0"
           )}
         />

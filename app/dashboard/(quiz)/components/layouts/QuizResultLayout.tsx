@@ -47,10 +47,10 @@ const quizTypeIcons: Record<string, React.ComponentType<any>> = {
 
 const getDifficultyColor = (difficulty: string) => {
   switch (difficulty?.toLowerCase()) {
-    case 'easy': return 'bg-green-600 text-white'
-    case 'medium': return 'bg-yellow-600 text-white'
-    case 'hard': return 'bg-red-600 text-white'
-    default: return 'bg-primary text-primary-foreground'
+    case 'easy': return 'bg-[var(--color-success)] text-white'
+    case 'medium': return 'bg-[var(--color-warning)] text-white'
+    case 'hard': return 'bg-[var(--color-error)] text-white'
+    default: return 'bg-[var(--color-primary)] text-white'
   }
 }
 
@@ -64,9 +64,9 @@ export default function QuizResultLayout({
   const QuizIcon = quizTypeIcons[quizType] || Award
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen bg-[var(--color-bg)]">
       <motion.header 
-        className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-sm"
+        className="sticky top-0 z-30 bg-[var(--color-card)] border-b-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
@@ -79,24 +79,24 @@ export default function QuizResultLayout({
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <div className="p-3 rounded-2xl bg-main border-2 border-border shadow-shadow text-main-foreground">
-                <QuizIcon className="w-6 h-6" />
+              <div className="p-3 rounded-[var(--radius)] bg-[var(--color-card)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]">
+                <QuizIcon className="w-6 h-6 text-[var(--color-text)]" />
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+                <h1 className="text-xl sm:text-2xl font-black text-[var(--color-text)]">
                   {title}
                 </h1>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
                   <Badge 
                     variant="neutral" 
-                    className="bg-secondary-background text-foreground border-2 border-border shadow-shadow"
+                    className="bg-[var(--color-muted)] text-[var(--color-text)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] font-bold"
                   >
                     {quizTypeLabels[quizType] || "Quiz"}
                   </Badge>
                   {difficulty && (
                     <Badge 
                       className={cn(
-                        "text-white border-2 border-border shadow-shadow font-bold",
+                        "border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] font-black",
                         getDifficultyColor(difficulty)
                       )}
                     >
@@ -104,7 +104,7 @@ export default function QuizResultLayout({
                     </Badge>
                   )}
                   {slug && (
-                    <span className="text-sm text-muted-foreground truncate max-w-[200px] sm:max-w-none">
+                    <span className="text-sm text-[var(--color-text)] opacity-75 truncate max-w-[200px] sm:max-w-none font-semibold">
                       {slug}
                     </span>
                   )}
@@ -121,7 +121,7 @@ export default function QuizResultLayout({
               <Button 
                 onClick={() => window.history.back()}
                 variant="neutral"
-                className="flex items-center gap-2 hover:scale-105 transition-transform w-full sm:w-auto justify-center"
+                className="flex items-center gap-2 hover:scale-105 transition-transform w-full sm:w-auto justify-center bg-[var(--color-primary)] text-[var(--color-text)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none font-bold"
               >
                 <ArrowLeft className="w-5 h-5" />
                 Back to Quizzes
@@ -134,7 +134,7 @@ export default function QuizResultLayout({
       <main className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Detailed Results - Direct display without duplicate hero banner */}
         <motion.div
-          className="rounded-3xl border-2 border-border bg-card shadow-shadow p-4 sm:p-6 lg:p-8"
+          className="rounded-[var(--radius)] border-4 border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-neo)] p-4 sm:p-6 lg:p-8"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}

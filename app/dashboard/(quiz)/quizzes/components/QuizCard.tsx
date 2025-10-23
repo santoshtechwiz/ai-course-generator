@@ -1,14 +1,14 @@
 "use client"
 
+import { useMemo } from "react"
+
 import type React from "react"
-import { useState, memo, useCallback, useMemo, useEffect, useRef } from "react"
+import { useState, memo, useCallback, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import QuizBadge from "./QuizBadge"
-import { Clock, Star, BookOpen, Loader2, Play, Bookmark, Users, TrendingUp, Zap, Target, Award } from "lucide-react"
+import { Clock, Star, BookOpen, Loader2, Play, Bookmark, Users, TrendingUp, Target } from "lucide-react"
 import Link from "next/link"
-import { cn } from "@/lib/utils"
+import { cn, getColorClasses } from "@/lib/utils"
 import { QUIZ_TYPE_CONFIG } from "./quiz-type-config"
 import type { QuizType } from "@/app/types/quiz-types"
 
@@ -37,16 +37,16 @@ const getDifficulty = (questionCount: number) => {
   if (questionCount <= 5)
     return {
       label: "BEGINNER",
-      color: "bg-green-500 border-border text-primary-foreground font-bold",
+      color: "bg-[var(--color-success)] text-white border-4 border-black font-black shadow-[3px_3px_0_#000]",
     }
   if (questionCount <= 15)
-    return { 
-      label: "INTERMEDIATE", 
-      color: "bg-yellow-500 border-border text-primary-foreground font-bold" 
+    return {
+      label: "INTERMEDIATE",
+      color: "bg-[var(--color-warning)] text-white border-4 border-black font-black shadow-[3px_3px_0_#000]",
     }
-  return { 
-    label: "ADVANCED", 
-    color: "bg-red-500 border-border text-primary-foreground font-bold" 
+  return {
+    label: "ADVANCED",
+    color: "bg-[var(--color-destructive)] text-white border-4 border-black font-black shadow-[3px_3px_0_#000]",
   }
 }
 
@@ -70,6 +70,7 @@ function QuizCardComponent({
   isNavigating = false,
   onNavigationChange,
 }: QuizCardProps) {
+  const { buttonPrimary, cardPrimary } = getColorClasses()
   const [isHovered, setIsHovered] = useState(false)
   const [localLoading, setLocalLoading] = useState(false)
   const [isBookmarked, setIsBookmarked] = useState(false)
@@ -135,7 +136,7 @@ function QuizCardComponent({
   return (
     <Link
       href={`/dashboard/${quizType}/${slug}`}
-      className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg h-full"
+      className="block focus:outline-none focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl h-full group"
       tabIndex={0}
       aria-label={`Open quiz: ${title}`}
       onClick={handleQuizClick}
@@ -143,13 +144,14 @@ function QuizCardComponent({
       <div
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="h-full transition-all duration-200 hover:-translate-y-1"
+        className="h-full transition-all duration-200 neo-hover"
       >
         <Card
           className={cn(
-            "group relative h-full flex flex-col overflow-hidden border-2 transition-all duration-200 rounded-lg",
-            "bg-card text-card-foreground border-border shadow-sm",
-            "hover:shadow-md hover:border-primary/50",
+            "group relative h-full flex flex-col overflow-hidden bg-[var(--color-card)] cursor-pointer border-4 border-black transition-all duration-200",
+            "hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[6px_6px_0_#000]",
+            "active:translate-x-[0px] active:translate-y-[0px] active:shadow-none",
+            "h-full flex items-center justify-center overflow-hidden",
             loading && "opacity-70 cursor-progress",
           )}
           aria-busy={loading}
@@ -157,187 +159,77 @@ function QuizCardComponent({
           aria-labelledby={`quiz-title-${slug}`}
           aria-live="polite"
         >
-          {/* Header Strip */}
-          <div className={cn("h-2 border-b border-border", config.bg)} />
+          {/* Header Strip with bold color */}
+          <div className={cn("h-3 border-b-4 border-black", config.bg)} />
 
           {loading && (
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-20 rounded-lg">
-              <div className="flex flex-col items-center gap-2">
+            <div className="absolute inset-0 bg-[var(--color-bg)]/90 backdrop-blur-sm flex items-center justify-center z-20 rounded-xl">
+              <div className="flex flex-col items-center gap-3">
                 <div className="relative">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <Loader2 className="h-8 w-8 animate-spin text-[var(--color-primary)]" strokeWidth={3} />
                 </div>
-                <span className="text-sm font-medium text-foreground">Starting quiz...</span>
+                <span className="text-base font-black text-[var(--color-text)]">Starting quiz...</span>
               </div>
             </div>
           )}
 
-          {/* Header Section */}
-          <div className={cn("relative px-4 pt-4 pb-3 border-b border-border", config.bg)}>
-            <div className="flex items-start justify-between gap-3 mb-3">
-              {/* Icon and Badges */}
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div
-                  className={cn(
-                    "p-2 rounded-md border border-border bg-background shadow-sm relative overflow-hidden shrink-0",
-                  )}
-                >
-                  <QuizTypeIcon className={cn("h-4 w-4 relative z-10", config.color)} aria-hidden />
-                </div>
-
-                <div className="flex flex-col gap-1 min-w-0">
-                  <div className={cn("px-2 py-1 text-xs font-semibold rounded-md border border-border", difficulty.color)}>
-                    {difficulty.label}
-                  </div>
-
-                  {isPopular && (
-                    <div className="px-2 py-1 text-xs font-semibold rounded-md border border-border bg-primary/10 text-primary flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" />
-                      TRENDING
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Bookmark Button */}
-              <button
-                onClick={handleBookmarkClick}
-                className={cn(
-                  "p-2 rounded-md border border-border transition-all duration-200 shrink-0 bg-background",
-                  "hover:bg-accent hover:text-accent-foreground",
-                  isBookmarked ? "bg-primary text-primary-foreground" : "bg-background text-foreground",
-                )}
-                aria-label={isBookmarked ? "Remove bookmark" : "Bookmark quiz"}
-              >
-                <Bookmark className={cn("h-4 w-4", isBookmarked && "fill-current")} aria-hidden />
-              </button>
-            </div>
-
-            {/* Quiz Type Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                e.preventDefault()
-                onTypeClick?.(quizType)
-              }}
-              className={cn(
-                "inline-flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-all border border-border",
-                "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-                isTypeActive && "ring-2 ring-ring",
-              )}
-              aria-label={`Filter by ${config.label}`}
-            >
-              {config.label}
-            </button>
-          </div>
-
           {/* Content Section */}
-          <CardContent className="p-4 relative z-10 flex-1 flex flex-col min-h-0 bg-background">
+          <CardContent className="p-6 flex flex-col gap-4 text-center relative h-full">
             {/* Title & Description */}
-            <div className="space-y-2 min-h-[4rem] flex flex-col mb-4">
-              <h3 className="font-semibold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+            <div className="relative space-y-2 flex-1 flex flex-col justify-center min-h-[4rem]">
+              <h3 className="font-black text-xl leading-tight text-[var(--color-text)] line-clamp-2 group-hover:text-[var(--color-primary)] transition-colors">
                 {title}
               </h3>
-              <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed flex-1">
+              <p className="text-sm text-[var(--color-text)]/70 font-medium line-clamp-2 leading-relaxed">
                 {description || `Test your ${config.label.toLowerCase()} skills`}
               </p>
             </div>
 
+            {/* Difficulty Badge */}
+            <div className="flex justify-center">
+              <div className={cn("px-4 py-2 text-sm font-black rounded-lg border-4 border-black shadow-[4px_4px_0_#000]", difficulty.color)}>
+                {difficulty.label}
+              </div>
+            </div>
+
             {/* Stats Grid */}
-            <div className="grid grid-cols-3 gap-2 py-3 mb-4">
-              <div className="flex flex-col items-center justify-center gap-1 p-2 rounded-md bg-muted/50 border border-border">
-                <Clock className="w-4 h-4 text-muted-foreground" aria-hidden />
-                <span className="text-sm font-medium text-foreground">{estimatedTime}</span>
+            <div className="grid grid-cols-3 gap-4 py-4">
+              <div className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-[var(--color-bg)] border-4 border-black shadow-[4px_4px_0_#000]">
+                <Clock className="w-6 h-6 text-[var(--color-text)]" strokeWidth={2.5} aria-hidden />
+                <span className="text-sm font-black text-[var(--color-text)]">{estimatedTime}</span>
               </div>
-              <div className="flex flex-col items-center justify-center gap-1 p-2 rounded-md bg-muted/50 border border-border">
-                <BookOpen className="w-4 h-4 text-muted-foreground" aria-hidden />
-                <span className="text-sm font-medium text-foreground">{questionCount}</span>
+              <div className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-[var(--color-bg)] border-4 border-black shadow-[4px_4px_0_#000]">
+                <BookOpen className="w-6 h-6 text-[var(--color-text)]" strokeWidth={2.5} aria-hidden />
+                <span className="text-sm font-black text-[var(--color-text)]">{questionCount}</span>
               </div>
-              <div className="flex flex-col items-center justify-center gap-1 p-2 rounded-md bg-muted/50 border border-border">
-                <Users className="w-4 h-4 text-muted-foreground" aria-hidden />
-                <span className="text-sm font-medium text-foreground">{attemptCount}</span>
+              <div className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-[var(--color-bg)] border-4 border-black shadow-[4px_4px_0_#000]">
+                <Users className="w-6 h-6 text-[var(--color-text)]" strokeWidth={2.5} aria-hidden />
+                <span className="text-sm font-black text-[var(--color-text)]">{attemptCount}</span>
               </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="flex-1 flex items-center min-h-[3rem] mb-4">
-              {completionRate > 0 ? (
-                <div className="space-y-2 w-full">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground font-medium">Your progress</span>
-                    <span className="font-semibold text-foreground">
-                      {Math.round(completionRate)}%
-                    </span>
-                  </div>
-                  <div
-                    className="w-full bg-muted rounded-full h-2 overflow-hidden"
-                    role="progressbar"
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={Math.round(completionRate)}
-                    aria-label="Quiz completion progress"
-                  >
-                    <div
-                      style={{ width: `${completionRate}%` }}
-                      className={cn(
-                        "h-full rounded-full transition-all duration-500 bg-primary",
-                      )}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="w-full flex items-center justify-center p-2 bg-muted/50 rounded-md border border-border">
-                  <Target className="w-4 h-4 mr-2 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">New Challenge!</span>
-                </div>
+            {/* Start Button */}
+            <Button
+              variant="default"
+              size="lg"
+              className={cn(
+                "w-full gap-3 text-lg font-black bg-black text-white border-4 border-black shadow-[4px_4px_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_#000] transition-all",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
               )}
-            </div>
-
-            {/* Footer */}
-            <div className="flex flex-col gap-3 pt-3 mt-auto border-t border-border">
-              {/* Rating & Badge Row */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1">
-                  <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-md border border-border">
-                    <Star className="w-3 h-3 text-foreground fill-current" aria-hidden />
-                    <span className="text-sm font-medium text-foreground">4.5</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">(128)</span>
-                </div>
-
-                <div className={cn(
-                  "px-2 py-1 text-xs font-medium rounded-md border border-border",
-                  isPublic 
-                    ? "bg-green-500/10 text-green-700 border-green-200" 
-                    : "bg-muted text-muted-foreground border-border"
-                )}>
-                  {isPublic ? "PUBLIC" : "PRIVATE"}
-                </div>
-              </div>
-
-              {/* Start Button */}
-              <Button
-                variant="default"
-                size="sm"
-                className={cn(
-                  "w-full gap-2 text-sm font-medium rounded-md transition-all",
-                  "hover:shadow-sm",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                )}
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Loading...</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4" aria-hidden />
-                    <span>Start Quiz</span>
-                  </>
-                )}
-              </Button>
-            </div>
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-6 h-6 animate-spin" strokeWidth={3} />
+                  <span>Loading...</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-6 h-6" strokeWidth={2.5} aria-hidden />
+                  <span>Start Quiz</span>
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
       </div>

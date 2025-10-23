@@ -7,7 +7,7 @@ import {
   QuizGenerationParams,
   mapToOpenAIMessage
 } from "../interfaces";
-import { Quiz } from "@/app/types/types";
+import { Quiz, CodeChallenge } from "@/app/types/types";
 import { getAIProviderConfig } from "../config/config";
 
 /**
@@ -24,7 +24,7 @@ export class OpenAIProvider implements AIProvider {
     this.client = new OpenAI({
       apiKey: apiKey,
       httpAgent: agent,
-      // dangerouslyAllowBrowser: true, // Removed for server-side use
+      dangerouslyAllowBrowser: true, // Removed for server-side use
     });
   }
 
@@ -307,6 +307,226 @@ Ensure a balanced mix of difficulties based on the requested level (${difficulty
   }
 
   /**
+   * Generate coding MCQ questions using OpenAI
+   * Supports standard code interpretation, fill-in-the-blank syntax, and concept-based questions
+   */
+  async generateCodingMCQs(
+    language: string,
+    title: string,
+    difficulty: string,
+    amount: number,
+    userType: string = "FREE"
+  ): Promise<CodeChallenge[]> {
+    try {
+      const model = this.getAIModel(userType);
+      
+      // Define difficulty-specific guidance
+      const difficultyGuidance = {
+        easy: {
+          description: "Basic syntax and fundamental concepts",
+          examples: "simple loops, conditionals, basic data structures, common methods",
+          codeComplexity: "5-10 lines of straightforward code",
+        },
+        medium: {
+          description: "Intermediate concepts requiring understanding of multiple features",
+          examples: "array/object manipulation, closures, promises, async/await, error handling",
+          codeComplexity: "10-20 lines with moderate complexity",
+        },
+        hard: {
+          description: "Advanced topics requiring deep understanding",
+          examples: "complex algorithms, design patterns, performance optimization, edge cases, advanced language features",
+          codeComplexity: "15-30 lines with sophisticated logic",
+        },
+      };
+
+      const guidance = difficultyGuidance[difficulty.toLowerCase() as keyof typeof difficultyGuidance] || difficultyGuidance.medium;
+
+      const response = await this.client.chat.completions.create({
+        model: model,
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert ${language} programming instructor who creates high-quality coding quiz questions. You understand how to assess programming knowledge at different difficulty levels and create realistic, practical coding scenarios that test actual programming skills. Your questions should be clear, unambiguous, and based on real-world coding patterns.`,
+          },
+          {
+            role: "user",
+            content: `Generate ${amount} ${difficulty}-level multiple-choice coding questions for ${language} on the topic: "${title}".
+
+DIFFICULTY LEVEL: ${difficulty.toUpperCase()}
+- Focus: ${guidance.description}
+- Topics: ${guidance.examples}
+- Code Complexity: ${guidance.codeComplexity}
+
+QUESTION DISTRIBUTION:
+- 70% standard code interpretation questions (predict output, identify behavior, find bugs)
+- 20% fill-in-the-blank syntax questions (missing keywords, operators, expressions)
+- 10% concept-based questions (no code snippet needed)
+
+QUALITY REQUIREMENTS FOR ${difficulty.toUpperCase()} LEVEL:
+
+${difficulty.toLowerCase() === 'easy' ? `
+EASY Questions should:
+- Use simple, clear syntax without tricks
+- Test basic understanding of language features
+- Have obvious incorrect options
+- Focus on fundamental concepts (variables, loops, conditionals, basic functions)
+- Use short, readable code snippets (5-10 lines max)
+- Avoid edge cases or tricky scenarios
+Example: "What will this simple loop print?" with straightforward iteration
+` : ''}
+
+${difficulty.toLowerCase() === 'medium' ? `
+MEDIUM Questions should:
+- Combine multiple concepts in one question
+- Test understanding of common patterns and best practices
+- Require careful code reading and logic tracing
+- Include realistic scenarios developers encounter
+- Use moderate code complexity (10-20 lines)
+- Have plausible distractors that test common misconceptions
+Example: "What happens when this async function encounters an error?" or "How does closure capture work here?"
+` : ''}
+
+${difficulty.toLowerCase() === 'hard' ? `
+HARD Questions should:
+- Test deep understanding of language mechanics
+- Include edge cases, performance implications, or subtle behaviors
+- Require analysis of complex interactions between features
+- Challenge experienced developers
+- Use sophisticated code patterns (15-30 lines)
+- Have subtle differences between options that require expertise
+Example: "What is the memory behavior of this recursive implementation?" or "How does the event loop handle these nested promises?"
+` : ''}
+
+FORMAT SPECIFICATIONS:
+
+For STANDARD questions (70%):
+- question: Clear, specific question about the code (e.g., "What will be logged?", "What is the output?", "What happens when...?")
+- codeSnippet: Well-formatted, runnable ${language} code
+- options: Four distinct, realistic options
+  * For output questions: Exact string/number values (e.g., "42", "undefined", "Hello World")
+  * For behavior questions: Clear text descriptions (e.g., "Throws an error", "Returns null")
+  * Keep options SHORT and readable - NO multi-line code blocks in options
+  * Use inline code format for short expressions: \`variable\`, \`true\`, \`null\`
+- correctAnswer: The precise correct option (must match exactly)
+- questionType: "standard"
+
+For FILL-IN-THE-BLANK questions (20%):
+- question: "What keyword/expression completes this code to achieve [specific goal]?"
+- codeSnippet: Code with blank marked as '____' or '/* blank */'
+- options: Four SHORT, syntactically valid options
+  * Single keywords: \`const\`, \`await\`, \`return\`, \`async\`
+  * Short operators: \`===\`, \`!==\`, \`&&\`, \`||\`
+  * Brief expressions: \`i++\`, \`arr.length\`, \`obj.key\`
+  * NO full statements or multi-line code - keep to 1-3 tokens max
+- correctAnswer: The only option that makes the code work correctly
+- questionType: "fill-in-the-blank"
+
+For CONCEPT questions (10%):
+- question: Clear conceptual question about ${language} on topic "${title}"
+- codeSnippet: null
+- options: Four distinct theoretical text answers (plain English descriptions)
+- correctAnswer: The technically correct option
+- questionType: "standard"
+
+CRITICAL RULES:
+1. correctAnswer MUST exactly match one option (character-for-character)
+2. All options must be distinct and realistic for the difficulty level
+3. Code must be syntactically valid ${language}
+4. Focus on practical, real-world coding scenarios
+5. Distractors should test common mistakes at this difficulty level
+6. Questions should be unambiguous with one clear correct answer
+7. **OPTIONS FORMATTING RULES**:
+   - Keep ALL options SHORT (max 50 characters preferred, 100 absolute max)
+   - For code elements in options, use inline format: backticks or simple text
+   - NEVER put multi-line code in options - that goes in codeSnippet only
+   - For fill-in-blank: options should be 1-3 tokens (keywords, operators, short expressions)
+   - For output questions: exact literal values like "42", "[1,2,3]", "undefined"
+   - For behavior questions: concise descriptions like "Throws TypeError", "Returns undefined"
+   - Each option must be a SINGLE line of text that displays cleanly
+
+Return format: Array named "quizzes" with ${amount} questions.`,
+          },
+        ],
+        functions: [
+          {
+            name: "create_coding_mcqs",
+            description: `Generate ${difficulty}-level ${language} coding MCQ questions`,
+            parameters: {
+              type: "object",
+              properties: {
+                quizzes: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      question: { 
+                        type: "string",
+                        description: "Clear question without code (code goes in codeSnippet)"
+                      },
+                      codeSnippet: { 
+                        type: ["string", "null"],
+                        description: "Valid code snippet or null for concept questions"
+                      },
+                      options: {
+                        type: "array",
+                        items: { type: "string" },
+                        minItems: 4,
+                        maxItems: 4,
+                        description: "Four distinct options, one correct"
+                      },
+                      correctAnswer: { 
+                        type: "string",
+                        description: "Must exactly match one of the options"
+                      },
+                      questionType: {
+                        type: "string",
+                        enum: ["standard", "fill-in-the-blank"],
+                        description: "Type of question"
+                      },
+                    },
+                    required: [
+                      "question",
+                      "codeSnippet",
+                      "options",
+                      "correctAnswer",
+                      "questionType",
+                    ],
+                  },
+                  minItems: amount,
+                  maxItems: amount,
+                },
+              },
+              required: ["quizzes"],
+            },
+          },
+        ],
+        function_call: { name: "create_coding_mcqs" },
+      });
+
+      const functionCall = response.choices[0].message.function_call;
+      if (!functionCall || !functionCall.arguments) {
+        throw new Error("Function call failed or arguments missing.");
+      }
+
+      const parsed = JSON.parse(functionCall.arguments) as {
+        quizzes: CodeChallenge[];
+      };
+
+      return parsed.quizzes.map((q) => ({
+        question: q.question,
+        codeSnippet: q.codeSnippet,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        language: language,
+        questionType: q.questionType,
+      }));
+    } catch (error) {
+      console.error("Coding MCQ generation failed:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Get the appropriate AI model based on user type
    */
   private getAIModel(userType: string): string {
@@ -346,4 +566,19 @@ export async function generateOpenEndedQuiz(params: QuizGenerationParams): Promi
 export async function generateFillInTheBlanksQuiz(params: QuizGenerationParams): Promise<Quiz> {
   const provider = new OpenAIProvider();
   return provider.generateFillInTheBlanksQuiz(params);
+}
+
+/**
+ * Standalone function to generate coding MCQs
+ * Creates an OpenAI provider instance and calls the method
+ */
+export async function generateCodingMCQs(
+  language: string,
+  title: string,
+  difficulty: string,
+  amount: number,
+  userType: string = "FREE"
+): Promise<CodeChallenge[]> {
+  const provider = new OpenAIProvider();
+  return provider.generateCodingMCQs(language, title, difficulty, amount, userType);
 }

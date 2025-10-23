@@ -1,143 +1,101 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:is(.dark *));
-
+/* === Neobrutalism Design System — Premium Edition === */
 :root {
-  /* OKLch color definitions for custom theme colors */
-  --background: oklch(94.27% 0.0268 242.57);
-  --secondary-background: oklch(100% 0 0);
-  --foreground: oklch(0% 0 0);
-  --main-foreground: oklch(0% 0 0);
-  --main: oklch(66.9% 0.18368 248.8066);
-  --border: oklch(0% 0 0);
-  --ring: oklch(0% 0 0);
-  --overlay: oklch(0% 0 0 / 0.8);
+  /* Core brand colors */
+  --color-bg: #fffdf5;
+  --color-text: #0a0a0a;
+  --color-primary: #ff007f;
+  --color-accent: #00f5d4;
+  --color-card: #ffffff;
+  --color-muted: #f2f2f2;
 
-  /* HSL color tokens for shadcn/ui compatibility - REDUCED BLUE USAGE */
-  --primary: 262 83% 58%; /* Purple instead of blue */
-  --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 96%;
-  --secondary-foreground: 0 0% 0%;
-  --muted: 0 0% 96%;
-  --muted-foreground: 0 0% 45%;
-  --accent: 142 76% 36%; /* Green accent for high contrast */
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 100%;
-  --success: 142 76% 36%;
-  --success-foreground: 0 0% 100%;
-  --warning: 48 96% 53%;
-  --warning-foreground: 0 0% 0%;
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 0%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 0%;
-  --input: 0 0% 0%;
+  /* Depth & Shadows */
+  --color-border: #000000;
+  --shadow-offset-x: 6px;
+  --shadow-offset-y: 6px;
+  --shadow-color: #000000;
+  --shadow-neo: var(--shadow-offset-x) var(--shadow-offset-y) 0 var(--shadow-color);
 
-  /* Neobrutalism design tokens */
-  --shadow: 4px 4px 0px 0px var(--border);
-  --radius: 0px;
+  /* Radii & Typography */
+  --radius: 0.75rem;
+  --font-base: 500;
+  --font-heading: 700;
 
-  /* Category color tokens */
-  --category-programming: 220 70% 60%;
-  --category-web-development: 180 70% 50%;
-  --category-data-science: 45 70% 60%;
-  --category-devops: 0 0% 50%;
-  --category-cloud-computing: 240 70% 60%;
-  --category-mobile-development: 120 70% 50%;
-  --category-ui-ux-design: 320 70% 60%;
-  --category-digital-marketing: 30 70% 60%;
-  --category-business: 270 70% 60%;
-  --category-health-fitness: 160 70% 50%;
-  --category-music: 280 70% 60%;
-  --category-photography: 170 70% 50%;
-  --category-version-control: 210 20% 50%;
-  --category-algorithms: 140 70% 50%;
+  /* Accent utilities */
+  --color-success: #00b341;
+  --color-warning: #ffb300;
+  --color-error: #ff3b3b;
 }
 
+/* === Dark Mode === */
 .dark {
-  /* OKLch color definitions for custom theme colors */
-  --background: oklch(27.08% 0.0336 240.69);
-  --secondary-background: oklch(23.93% 0 0);
-  --foreground: oklch(92.49% 0 0);
-  --main-foreground: oklch(0% 0 0);
-  --main: oklch(61.9% 0.16907 248.5982);
-  --border: oklch(0% 0 0);
-  --ring: oklch(100% 0 0);
-
-  /* HSL color tokens for shadcn/ui compatibility - REDUCED BLUE USAGE */
-  --primary: 262 83% 55%; /* Purple instead of blue */
-  --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 15%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 0 0% 20%;
-  --muted-foreground: 0 0% 65%;
-  --accent: 142 70% 40%; /* Green accent for high contrast */
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 72% 55%;
-  --destructive-foreground: 0 0% 100%;
-  --success: 142 70% 40%;
-  --success-foreground: 0 0% 100%;
-  --warning: 48 90% 50%;
-  --warning-foreground: 0 0% 0%;
-  --card: 0 0% 15%;
-  --card-foreground: 0 0% 100%;
-  --popover: 0 0% 15%;
-  --popover-foreground: 0 0% 100%;
-  --input: 0 0% 100%;
-
-  /* Neobrutalism design tokens */
-  --shadow: 4px 4px 0px 0px var(--border);
-  --radius: 0px;
-
-  /* Category color tokens */
-  --category-programming: 220 70% 55%;
-  --category-web-development: 180 70% 45%;
-  --category-data-science: 45 70% 55%;
-  --category-devops: 0 0% 45%;
-  --category-cloud-computing: 240 70% 55%;
-  --category-mobile-development: 120 70% 45%;
-  --category-ui-ux-design: 320 70% 55%;
-  --category-digital-marketing: 30 70% 55%;
-  --category-business: 270 70% 55%;
-  --category-health-fitness: 160 70% 45%;
-  --category-music: 280 70% 55%;
-  --category-photography: 170 70% 45%;
-  --category-version-control: 210 20% 45%;
-  --category-algorithms: 140 70% 45%;
+  --color-bg: #1a1a1a;
+  --color-text: #fafafa;
+  --color-primary: #ff4bd1;
+  --color-accent: #00f0a0;
+  --color-card: #2b2b2b;
+  --color-muted: #333333;
+  --color-border: #fafafa;
+  --shadow-color: #fafafa;
 }
 
-@theme inline {
-  --color-main: var(--main);
-  --color-background: var(--background);
-  --color-secondary-background: var(--secondary-background);
-  --color-foreground: var(--foreground);
-  --color-main-foreground: var(--main-foreground);
-  --color-border: var(--border);
-  --color-overlay: var(--overlay);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-
-  --spacing-boxShadowX: 4px;
-  --spacing-boxShadowY: 4px;
-  --spacing-reverseBoxShadowX: -4px;
-  --spacing-reverseBoxShadowY: -4px;
-  --radius-base: 5px;
-  --shadow-shadow: var(--shadow);
-  --font-weight-base: 500;
-  --font-weight-heading: 700;
-}
-  
+/* === Base Layer === */
 @layer base {
-  body {
-    @apply text-foreground font-base bg-background;
+  * {
+    @apply transition-all duration-200 ease-in-out;
   }
 
-  h1, h2, h3, h4, h5, h6{
-    @apply font-heading;
+  body {
+    @apply bg-[var(--color-bg)] text-[var(--color-text)] font-sans tracking-tight;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold text-[var(--color-text)] leading-tight;
+  }
+}
+
+/* === Component Utilities === */
+@layer components {
+  .neuro-card {
+    @apply bg-[var(--color-card)] border-4 border-[var(--color-border)]
+           shadow-[var(--shadow-neo)] rounded-[var(--radius)] p-5
+           transition-transform hover:-translate-x-1 hover:-translate-y-1
+           hover:shadow-none sm:p-6 lg:p-8;
+  }
+
+  .neuro-button {
+    @apply inline-flex items-center justify-center gap-2
+           bg-[var(--color-primary)] text-[var(--color-text)]
+           border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]
+           font-semibold px-5 py-3 rounded-[var(--radius)]
+           transition-transform duration-150 ease-in-out
+           hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none
+           active:translate-x-[4px] active:translate-y-[4px] active:shadow-none
+           sm:px-6 sm:py-3.5 md:px-8 md:py-4;
+  }
+
+  .neuro-input {
+    @apply bg-[var(--color-card)] border-4 border-[var(--color-border)] px-3 py-2
+           rounded-none focus:ring-4 focus:ring-[var(--color-accent)]
+           focus:border-[var(--color-accent)] placeholder:text-gray-500
+           sm:py-3 sm:px-4;
+  }
+
+  .neuro-badge {
+    @apply inline-block px-3 py-1 border-4 border-[var(--color-border)]
+           bg-[var(--color-accent)] text-[var(--color-text)]
+           shadow-[var(--shadow-neo)] text-sm sm:text-base;
+  }
+
+  .neuro-option {
+    @apply cursor-pointer border-4 border-[var(--color-border)] p-3 rounded-[var(--radius)]
+           shadow-[var(--shadow-neo)] transition-all duration-150 ease-in-out
+           hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none;
+  }
+
+  .neuro-option-selected {
+    @apply bg-[var(--color-primary)] text-[var(--color-bg)]
+           border-[var(--color-border)] shadow-[var(--shadow-neo)];
   }
 }

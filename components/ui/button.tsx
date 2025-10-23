@@ -6,21 +6,21 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-base text-sm font-base ring-offset-white transition-all gap-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-base ring-offset-white transition-all gap-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border-4 border-black shadow-[4px_4px_0_#000]",
   {
     variants: {
       variant: {
         default:
-          "text-main-foreground bg-main border-2 border-border shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none",
+          "bg-[var(--color-primary)] text-white hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#000]",
         outline:
-          "bg-transparent text-main-foreground border-2 border-border hover:bg-main/5",
+          "bg-[var(--color-bg)] text-[var(--color-text)] border-4 border-black hover:bg-[var(--color-muted)]",
         ghost:
-          "bg-transparent text-foreground border-0 hover:bg-secondary-background/50",
-        noShadow: "text-main-foreground bg-main border-2 border-border",
+          "bg-transparent text-[var(--color-text)] border-0 hover:bg-[var(--color-muted)] shadow-none",
+        noShadow: "bg-[var(--color-primary)] text-white border-4 border-black shadow-none",
         neutral:
-          "bg-secondary-background text-foreground border-2 border-border shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none",
+          "bg-[var(--color-muted)] text-[var(--color-text)] border-4 border-black hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#000]",
         reverse:
-          "text-main-foreground bg-main border-2 border-border hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow",
+          "bg-[var(--color-accent)] text-white border-4 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_#000]",
       },
       size: {
         default: "h-10 px-4 py-2",

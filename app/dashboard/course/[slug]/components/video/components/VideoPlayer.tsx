@@ -15,12 +15,10 @@ import { NotesPanel } from "./NotesPanel"
 import KeyboardShortcutsModal from "@/app/dashboard/course/[slug]/components/KeyboardShortcutsModal"
 import { Button } from "@/components/ui/button"
 import { getYouTubeThumbnailUrl } from "@/utils/youtube-thumbnails"
-import { Card, CardContent } from "@/components/ui/card"
-import { Play, Lock, User, Maximize, HelpCircle } from "lucide-react"
+import { Play, Maximize } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "@/components/ui/use-toast"
 import type { VideoPlayerProps } from "../types"
-import { addBookmark } from "@/store/slices/course-slice"
 import ChapterStartOverlay from "./ChapterStartOverlay"
 import ChapterEndOverlay from "./ChapterEndOverlay"
 import AutoPlayNotification from "./AutoPlayNotification"
@@ -33,12 +31,12 @@ import { useNotes } from "@/hooks/use-notes"
 const PlayButton = React.memo(({ onClick }: { onClick: () => void }) => (
   <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
     <button
-      className="rounded-full p-3 sm:p-4 cursor-pointer pointer-events-auto transition-all duration-200 hover:scale-110 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-black/50 bg-primary text-primary-foreground shadow-lg"
+      className="rounded-none p-4 sm:p-6 cursor-pointer pointer-events-auto transition-all duration-100 hover:translate-x-1 hover:translate-y-1 focus:outline-none bg-yellow-400 text-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-4 border-black"
       onClick={onClick}
       aria-label="Play video"
       type="button"
     >
-      <Play className="h-8 w-8 sm:h-12 sm:w-12 ml-1" />
+      <Play className="h-10 w-10 sm:h-16 sm:w-16 ml-1 fill-black" />
     </button>
   </div>
 ))
@@ -46,79 +44,80 @@ const PlayButton = React.memo(({ onClick }: { onClick: () => void }) => (
 PlayButton.displayName = "PlayButton"
 
 // Theater Mode Toggle Button
-const TheaterModeButton = React.memo(({
-  isTheater,
-  onToggle
-}: {
-  isTheater: boolean
-  onToggle: () => void
-}) => (
-  <button
-    className={cn(
-      "absolute z-30 backdrop-blur-sm rounded-lg p-2 text-white/90 hover:text-white transition-all duration-300 transform hover:scale-105",
-      "shadow-lg border border-white/10 hover:border-white/20",
-      isTheater
-        ? "top-4 right-4 bg-red-500/80 hover:bg-red-600/90"
-        : "top-4 left-4 bg-black/60 hover:bg-black/80"
-    )}
-    onClick={onToggle}
-    aria-label={isTheater ? "Exit theater mode" : "Enter theater mode"}
-    title={isTheater ? "Exit theater mode (ESC or T)" : "Enter theater mode (T)"}
-  >
-    <Maximize className="h-4 w-4" />
-  </button>
-))
+const TheaterModeButton = React.memo(
+  ({
+    isTheater,
+    onToggle,
+  }: {
+    isTheater: boolean
+    onToggle: () => void
+  }) => (
+    <button
+      className={cn(
+        "absolute z-30 rounded-none p-3 transition-all duration-100 border-4 border-black font-bold uppercase text-sm tracking-wider",
+        "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+        isTheater ? "top-4 right-4 bg-red-500 text-white" : "top-4 left-4 bg-cyan-400 text-black",
+      )}
+      onClick={onToggle}
+      aria-label={isTheater ? "Exit theater mode" : "Enter theater mode"}
+      title={isTheater ? "Exit theater mode (ESC or T)" : "Enter theater mode (T)"}
+    >
+      <Maximize className="h-5 w-5" />
+    </button>
+  ),
+)
 
 TheaterModeButton.displayName = "TheaterModeButton"
 
 // Certificate download states
 type CertificateState = "idle" | "downloading" | "success" | "error"
 
-const VideoPlayer = React.memo<VideoPlayerProps>(({
-  youtubeVideoId,
-  chapterId,
-  onEnded,
-  onProgress,
-  onTimeUpdate,
-  rememberPlaybackPosition = true,
-  rememberPlaybackSettings = true,
-  onBookmark,
-  autoPlay = false,
-  onToggleAutoPlay,
-  forcePlay,
-  onVideoLoad,
-  onCertificateClick,
-  onPlayerReady,
-  onNextVideo,
-  nextVideoId,
-  nextVideoTitle,
-  onPrevVideo,
-  prevVideoTitle,
-  hasNextVideo,
-  isFullscreen = false,
-  onPictureInPictureToggle,
-  isPiPActive = false,
-  isCustomPiPActive = false,
-  className,
-  bookmarks = [],
-  isAuthenticated = false,
-  showControls = true,
-  courseId,
-  courseName,
-  chapterTitle,
-  initialSeekSeconds,
-  relatedCourses = [],
-  progressStats,
-  quizSuggestions = [],
-  personalizedRecommendations = [],
-  isKeyChapter = false,
-  onTheaterModeToggle,
-  isTheaterMode = false,
-  isLoading = false,
-}) => {
-    const { isAuthenticated:effectiveIsAuthenticated } = useAuth()
+const VideoPlayer = React.memo<VideoPlayerProps>(
+  ({
+    youtubeVideoId,
+    chapterId,
+    onEnded,
+    onProgress,
+    onTimeUpdate,
+    rememberPlaybackPosition = true,
+    rememberPlaybackSettings = true,
+    onBookmark,
+    autoPlay = false,
+    onToggleAutoPlay,
+    forcePlay,
+    onVideoLoad,
+    onCertificateClick,
+    onPlayerReady,
+    onNextVideo,
+    nextVideoId,
+    nextVideoTitle,
+    onPrevVideo,
+    prevVideoTitle,
+    hasNextVideo,
+    isFullscreen = false,
+    onPictureInPictureToggle,
+    isPiPActive = false,
+    isCustomPiPActive = false,
+    className,
+    bookmarks = [],
+    isAuthenticated = false,
+    showControls = true,
+    courseId,
+    courseName,
+    chapterTitle,
+    initialSeekSeconds,
+    relatedCourses = [],
+    progressStats,
+    quizSuggestions = [],
+    personalizedRecommendations = [],
+    isKeyChapter = false,
+    onTheaterModeToggle,
+    isTheaterMode = false,
+    isLoading = false,
+  }) => {
+    const { isAuthenticated: effectiveIsAuthenticated } = useAuth()
     // Derive effective authentication (prop can override but auth state acts as fallback)
-     const youtubeVideoIdRef = useRef(youtubeVideoId)
+    const youtubeVideoIdRef = useRef(youtubeVideoId)
 
     // Initialize throttled toast for bookmark notifications (1.5 second throttle)
     const { showThrottledToast, cleanup: cleanupThrottle } = useToastThrottle(1500)
@@ -163,7 +162,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
     const [miniPlayerState, setMiniPlayerState] = useState({
       position: { x: 100, y: 100 },
       isDragging: false,
-      dragOffset: { dx: 0, dy: 0 }
+      dragOffset: { dx: 0, dy: 0 },
     })
 
     // Refs for cleanup and performance
@@ -179,8 +178,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
     const lastForcedVideoRef = useRef<string | null>(null)
 
     // Helper functions using video service
-    const clamp = useCallback((val: number, min: number, max: number) =>
-      videoService.clamp(val, min, max), [])
+    const clamp = useCallback((val: number, min: number, max: number) => videoService.clamp(val, min, max), [])
 
     // Determine if video should autoplay using video service
     const shouldAutoPlay = useCallback((): boolean => {
@@ -190,9 +188,16 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         autoPlay,
         playerState.autoPlayVideo,
         playerState.isMiniPlayerActive,
-        playerState.isNativePiPActive
+        playerState.isNativePiPActive,
       )
-    }, [playerState.canPlayVideo, playerState.playerReady, autoPlay, playerState.autoPlayVideo, playerState.isMiniPlayerActive, playerState.isNativePiPActive])
+    }, [
+      playerState.canPlayVideo,
+      playerState.playerReady,
+      autoPlay,
+      playerState.autoPlayVideo,
+      playerState.isMiniPlayerActive,
+      playerState.isNativePiPActive,
+    ])
 
     // Video end handler using video service
     const handleVideoEnd = useCallback(() => {
@@ -205,54 +210,70 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         playerState.autoPlayVideo,
         setOverlayState,
         setCountdowns,
-        intervalRefs
+        intervalRefs,
       )
-    }, [onEnded, isAuthenticated, playerState.hasPlayedFreeVideo, progressStats?.progressPercentage, onNextVideo, playerState.autoPlayVideo])
+    }, [
+      onEnded,
+      isAuthenticated,
+      playerState.hasPlayedFreeVideo,
+      progressStats?.progressPercentage,
+      onNextVideo,
+      playerState.autoPlayVideo,
+    ])
 
     // Initialize video player hook
-    const { state, playerRef, containerRef, bufferHealth, youtubeUrl, handleProgress, handlers } =
-      useVideoPlayer({
-        youtubeVideoId,
-        courseId: String(courseId || ''),
-        chapterId: String(chapterId || ''),
-        onEnded: handleVideoEnd,
-        onProgress: (progressState) => {
-          // Forward progress to parent - persistence is handled by parent hook
-          onProgress?.(progressState)
-        },
-        onTimeUpdate,
-        rememberPlaybackPosition,
-        rememberPlaybackSettings,
-        onBookmark,
-        autoPlay: shouldAutoPlay(),
-        onVideoLoad,
-        onCertificateClick,
-      })
+    const { state, playerRef, containerRef, bufferHealth, youtubeUrl, handleProgress, handlers } = useVideoPlayer({
+      youtubeVideoId,
+      courseId: String(courseId || ""),
+      chapterId: String(chapterId || ""),
+      onEnded: handleVideoEnd,
+      onProgress: (progressState) => {
+        // Forward progress to parent - persistence is handled by parent hook
+        onProgress?.(progressState)
+      },
+      onTimeUpdate,
+      rememberPlaybackPosition,
+      rememberPlaybackSettings,
+      onBookmark,
+      autoPlay: shouldAutoPlay(),
+      onVideoLoad,
+      onCertificateClick,
+    })
 
     // Safe deferred call to onNextVideo to avoid updating parent while rendering this component
     // CRITICAL: Pause video before transitioning to prevent video playing while loading overlay shows
     const safeOnNextVideo = useCallback(() => {
       if (!onNextVideo) return
-      
+
       // Pause video immediately when user clicks next
       if (playerRef.current && state.playing) {
         handlers.onPause()
       }
-      
+
       setTimeout(() => {
         try {
           onNextVideo()
         } catch (e) {
-          console.warn('safeOnNextVideo failed', e)
+          console.warn("safeOnNextVideo failed", e)
         }
       }, 0)
     }, [onNextVideo, state.playing, handlers, playerRef])
 
     // Initialize notes hook for chapter-specific notes
-    const { notes: chapterNotes, createNote, loading: notesLoading } = useNotes({
-  courseId: typeof courseId === 'string' ? parseInt(courseId) : typeof courseId === 'number' ? courseId : undefined,
-  chapterId: typeof chapterId === 'string' ? parseInt(chapterId) : typeof chapterId === 'number' ? chapterId : undefined,
-      limit: 50
+    const {
+      notes: chapterNotes,
+      createNote,
+      loading: notesLoading,
+    } = useNotes({
+      courseId:
+        typeof courseId === "string" ? Number.parseInt(courseId) : typeof courseId === "number" ? courseId : undefined,
+      chapterId:
+        typeof chapterId === "string"
+          ? Number.parseInt(chapterId)
+          : typeof chapterId === "number"
+            ? chapterId
+            : undefined,
+      limit: 50,
     })
 
     // Enhanced authentication and video access check using video service
@@ -262,7 +283,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
 
     // Initialize mini player position using video service
     useEffect(() => {
-      if (typeof window === 'undefined') return
+      if (typeof window === "undefined") return
 
       const width = 320
       const height = Math.round((9 / 16) * width)
@@ -270,25 +291,25 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
       try {
         const videoSettings = videoService.getVideoSettings()
         const initial = videoService.calculateMiniPlayerPosition(videoSettings.miniPlayerPos, width, height)
-        setMiniPlayerState(prev => ({ ...prev, position: initial }))
+        setMiniPlayerState((prev) => ({ ...prev, position: initial }))
       } catch (error) {
-        console.warn('Failed to load mini player position:', error)
+        console.warn("Failed to load mini player position:", error)
       }
 
       const onResize = () => {
         const nw = window.innerWidth
         const nh = window.innerHeight
-        setMiniPlayerState(prev => ({
+        setMiniPlayerState((prev) => ({
           ...prev,
           position: {
             x: videoService.clamp(prev.position.x, 8, Math.max(8, nw - width - 8)),
             y: videoService.clamp(prev.position.y, 8, Math.max(8, nh - height - 8)),
-          }
+          },
         }))
       }
 
-      window.addEventListener('resize', onResize)
-      return () => window.removeEventListener('resize', onResize)
+      window.addEventListener("resize", onResize)
+      return () => window.removeEventListener("resize", onResize)
     }, [])
 
     // Cleanup throttle hook on unmount
@@ -298,20 +319,20 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
 
     // Initialize component state
     useEffect(() => {
-      setPlayerState(prev => ({
+      setPlayerState((prev) => ({
         ...prev,
         isMounted: true,
-        ...authenticationState
+        ...authenticationState,
       }))
 
       // Load autoplay preference
       try {
         const videoSettings = storageManager.getVideoSettings()
-        if (typeof videoSettings.autoplay === 'boolean') {
-          setPlayerState(prev => ({ ...prev, autoPlayVideo: videoSettings.autoplay }))
+        if (typeof videoSettings.autoplay === "boolean") {
+          setPlayerState((prev) => ({ ...prev, autoPlayVideo: videoSettings.autoplay }))
         }
       } catch (error) {
-        console.warn('Failed to load auto-play video preference:', error)
+        console.warn("Failed to load auto-play video preference:", error)
       }
 
       // Initialize completed chapters
@@ -321,9 +342,9 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
       // }
 
       return () => {
-        setPlayerState(prev => ({ ...prev, isMounted: false }))
+        setPlayerState((prev) => ({ ...prev, isMounted: false }))
         // Cleanup intervals
-        Object.values(intervalRefs.current).forEach(interval => {
+        Object.values(intervalRefs.current).forEach((interval) => {
           if (interval) clearInterval(interval)
         })
       }
@@ -332,37 +353,37 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
     // Enhanced PiP detection and state management
     useEffect(() => {
       const handleEnterPiP = () => {
-        setPlayerState(prev => ({
+        setPlayerState((prev) => ({
           ...prev,
           isNativePiPActive: true,
-          isMiniPlayerActive: false
+          isMiniPlayerActive: false,
         }))
         onPictureInPictureToggle?.(true)
       }
 
       const handleLeavePiP = () => {
-        setPlayerState(prev => ({ ...prev, isNativePiPActive: false }))
+        setPlayerState((prev) => ({ ...prev, isNativePiPActive: false }))
         onPictureInPictureToggle?.(false)
       }
 
       // Check initial state
       const pipElement = (document as any).pictureInPictureElement
-      setPlayerState(prev => ({ ...prev, isNativePiPActive: !!pipElement }))
+      setPlayerState((prev) => ({ ...prev, isNativePiPActive: !!pipElement }))
 
       if (typeof document !== "undefined") {
-        document.addEventListener('enterpictureinpicture', handleEnterPiP)
-        document.addEventListener('leavepictureinpicture', handleLeavePiP)
+        document.addEventListener("enterpictureinpicture", handleEnterPiP)
+        document.addEventListener("leavepictureinpicture", handleLeavePiP)
 
         return () => {
-          document.removeEventListener('enterpictureinpicture', handleEnterPiP)
-          document.removeEventListener('leavepictureinpicture', handleLeavePiP)
+          document.removeEventListener("enterpictureinpicture", handleEnterPiP)
+          document.removeEventListener("leavepictureinpicture", handleLeavePiP)
         }
       }
     }, [onPictureInPictureToggle])
 
     // Sync mini player state with hook
     useEffect(() => {
-      setPlayerState(prev => ({ ...prev, isMiniPlayerActive: state.isMiniPlayer }))
+      setPlayerState((prev) => ({ ...prev, isMiniPlayerActive: state.isMiniPlayer }))
     }, [state.isMiniPlayer])
 
     // Update refs when props change
@@ -389,17 +410,17 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
 
     // Enhanced player ready handler with proper autoplay
     const handlePlayerReady = useCallback(() => {
-      setPlayerState(prev => ({
+      setPlayerState((prev) => ({
         ...prev,
         playerReady: true,
-        isLoadingDuration: false
-      }));
+        isLoadingDuration: false,
+      }))
 
       if (playerRef.current) {
         try {
           const duration = playerRef.current.getDuration()
           if (duration && duration > 0) {
-            setPlayerState(prev => ({ ...prev, videoDuration: duration }))
+            setPlayerState((prev) => ({ ...prev, videoDuration: duration }))
             onVideoLoad?.({
               title: courseName || chapterTitleRef.current || "Video",
               duration,
@@ -413,7 +434,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         }
 
         // Handle initial seek
-        if (typeof initialSeekSeconds === 'number' && initialSeekSeconds > 0) {
+        if (typeof initialSeekSeconds === "number" && initialSeekSeconds > 0) {
           try {
             const dur = playerRef.current.getDuration() || playerState.videoDuration || state.duration || 0
             if (dur > 0 && initialSeekSeconds < dur - 1) {
@@ -427,7 +448,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         // Initialize volume
         try {
           const videoSettings = storageManager.getVideoSettings()
-          if (typeof videoSettings.volume === 'number') {
+          if (typeof videoSettings.volume === "number") {
             handlers.onVolumeChange(videoSettings.volume)
           } else {
             handlers.onVolumeChange(0.5)
@@ -455,7 +476,18 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
           }
         }, 200)
       }
-    }, [handlers, onVideoLoad, courseName, youtubeVideoId, onPlayerReady, playerState.videoDuration, state.duration, state.muted, initialSeekSeconds, shouldAutoPlay])
+    }, [
+      handlers,
+      onVideoLoad,
+      courseName,
+      youtubeVideoId,
+      onPlayerReady,
+      playerState.videoDuration,
+      state.duration,
+      state.muted,
+      initialSeekSeconds,
+      shouldAutoPlay,
+    ])
 
     // Enhanced play handler using video service
     const handlePlayClick = useCallback(() => {
@@ -464,9 +496,15 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         isAuthenticated,
         playerState.hasPlayedFreeVideo,
         playerState.playerReady,
-        handlers.onPlayPause
+        handlers.onPlayPause,
       )
-    }, [playerState.canPlayVideo, isAuthenticated, playerState.hasPlayedFreeVideo, playerState.playerReady, handlers.onPlayPause])
+    }, [
+      playerState.canPlayVideo,
+      isAuthenticated,
+      playerState.hasPlayedFreeVideo,
+      playerState.playerReady,
+      handlers.onPlayPause,
+    ])
 
     // Theater mode handler using video service
     const handleTheaterModeToggle = useCallback(() => {
@@ -476,19 +514,21 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
     // Auto-hide controls with improved logic
     useEffect(() => {
       const handleMouseMove = () => {
-        setPlayerState(prev => ({ ...prev, showControlsState: true }))
+        setPlayerState((prev) => ({ ...prev, showControlsState: true }))
 
         if (controlsTimeoutRef.current) {
           clearTimeout(controlsTimeoutRef.current)
         }
 
-        if (state.playing &&
+        if (
+          state.playing &&
           !overlayState.showChapterStart &&
           !overlayState.showChapterEnd &&
-          !playerState.isMiniPlayerActive) {
+          !playerState.isMiniPlayerActive
+        ) {
           controlsTimeoutRef.current = setTimeout(() => {
             if (!playerState.isHovering) {
-              setPlayerState(prev => ({ ...prev, showControlsState: false }))
+              setPlayerState((prev) => ({ ...prev, showControlsState: false }))
             }
           }, 8000) // Increased from 3000 to 8000 milliseconds
         }
@@ -507,7 +547,15 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
           clearTimeout(controlsTimeoutRef.current)
         }
       }
-    }, [containerRef, state.playing, playerState.isHovering, overlayState.showChapterStart, overlayState.showChapterEnd, playerState.isMounted, playerState.isMiniPlayerActive])
+    }, [
+      containerRef,
+      state.playing,
+      playerState.isHovering,
+      overlayState.showChapterStart,
+      overlayState.showChapterEnd,
+      playerState.isMounted,
+      playerState.isMiniPlayerActive,
+    ])
 
     // Reset overlay states when video changes
     useEffect(() => {
@@ -529,7 +577,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         autoPlay: 5,
         nextChapterAuto: 5,
       })
-      setPlayerState(prev => ({
+      setPlayerState((prev) => ({
         ...prev,
         playerReady: false,
         videoDuration: 0,
@@ -538,7 +586,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
       }))
 
       // Clear all intervals
-      Object.values(intervalRefs.current).forEach(interval => {
+      Object.values(intervalRefs.current).forEach((interval) => {
         if (interval) clearInterval(interval)
       })
       intervalRefs.current = { nextNotif: null, autoPlay: null, chapterTransition: null }
@@ -561,14 +609,18 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
               // Only resume if there's meaningful progress (more than 30 seconds)
               if (savedSeconds > 30) {
                 const shouldResume = window.confirm(
-                  `Resume from ${Math.floor(savedSeconds / 60)}:${Math.floor(savedSeconds % 60).toString().padStart(2, '0')}?`
+                  `Resume from ${Math.floor(savedSeconds / 60)}:${Math.floor(savedSeconds % 60)
+                    .toString()
+                    .padStart(2, "0")}?`,
                 )
 
                 if (shouldResume && playerRef.current) {
                   playerRef.current.seekTo(savedSeconds)
                   toast({
                     title: "Playback resumed",
-                    description: `Resumed from ${Math.floor(savedSeconds / 60)}:${Math.floor(savedSeconds % 60).toString().padStart(2, '0')}`,
+                    description: `Resumed from ${Math.floor(savedSeconds / 60)}:${Math.floor(savedSeconds % 60)
+                      .toString()
+                      .padStart(2, "0")}`,
                   })
                 }
               }
@@ -582,7 +634,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
       if (playerState.playerReady) {
         loadSavedPosition()
       }
-  }, [effectiveIsAuthenticated, rememberPlaybackPosition, courseId, chapterId, playerState.playerReady])
+    }, [effectiveIsAuthenticated, rememberPlaybackPosition, courseId, chapterId, playerState.playerReady])
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -657,7 +709,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
             event.preventDefault()
             if (effectiveIsAuthenticated && bookmarks.length > 0) {
               const currentTime = state.lastPlayedTime
-              const prevBookmarks = bookmarks.filter(b => b.time < currentTime).sort((a, b) => b.time - a.time)
+              const prevBookmarks = bookmarks.filter((b) => b.time < currentTime).sort((a, b) => b.time - a.time)
               if (prevBookmarks.length > 0) {
                 handlers.onSeek(prevBookmarks[0].time)
                 // Removed toast notification to reduce UI noise
@@ -669,7 +721,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
             event.preventDefault()
             if (effectiveIsAuthenticated && bookmarks.length > 0) {
               const currentTime = state.lastPlayedTime
-              const nextBookmarks = bookmarks.filter(b => b.time > currentTime).sort((a, b) => a.time - b.time)
+              const nextBookmarks = bookmarks.filter((b) => b.time > currentTime).sort((a, b) => a.time - b.time)
               if (nextBookmarks.length > 0) {
                 handlers.onSeek(nextBookmarks[0].time)
                 // Removed toast notification to reduce UI noise
@@ -719,7 +771,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
 
     // Handler functions for overlays
     const handleAutoPlayContinue = useCallback(() => {
-      setOverlayState(prev => ({ ...prev, showAutoPlayNotification: false }))
+      setOverlayState((prev) => ({ ...prev, showAutoPlayNotification: false }))
       if (intervalRefs.current.autoPlay) {
         clearInterval(intervalRefs.current.autoPlay)
         intervalRefs.current.autoPlay = null
@@ -728,8 +780,8 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
     }, [onNextVideo])
 
     const handleAutoPlayCancel = useCallback(() => {
-      setOverlayState(prev => ({ ...prev, showAutoPlayNotification: false }))
-      setCountdowns(prev => ({ ...prev, autoPlay: 5 }))
+      setOverlayState((prev) => ({ ...prev, showAutoPlayNotification: false }))
+      setCountdowns((prev) => ({ ...prev, autoPlay: 5 }))
       if (intervalRefs.current.autoPlay) {
         clearInterval(intervalRefs.current.autoPlay)
         intervalRefs.current.autoPlay = null
@@ -737,12 +789,12 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
     }, [])
 
     const handleNextChapter = useCallback(() => {
-      setOverlayState(prev => ({ ...prev, showChapterEnd: false }))
+      setOverlayState((prev) => ({ ...prev, showChapterEnd: false }))
       safeOnNextVideo()
     }, [onNextVideo])
 
     const handleReplay = useCallback(() => {
-      setOverlayState(prev => ({ ...prev, showChapterEnd: false }))
+      setOverlayState((prev) => ({ ...prev, showChapterEnd: false }))
       if (playerRef.current) {
         playerRef.current.seekTo(0)
         handlers.onPlay()
@@ -751,20 +803,20 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
 
     const handleToggleAutoPlayVideo = useCallback(() => {
       const newValue = !playerState.autoPlayVideo
-      setPlayerState(prev => ({ ...prev, autoPlayVideo: newValue }))
+      setPlayerState((prev) => ({ ...prev, autoPlayVideo: newValue }))
 
       try {
         storageManager.saveVideoSettings({ autoplay: newValue })
       } catch (error) {
-        console.warn('Could not save auto-play preference:', error)
+        console.warn("Could not save auto-play preference:", error)
       }
 
-  onToggleAutoPlay?.(true)
+      onToggleAutoPlay?.(true)
     }, [playerState.autoPlayVideo, onToggleAutoPlay])
 
     const handleChapterStartComplete = useCallback(() => {
       const animationFrame = requestAnimationFrame(() => {
-        setOverlayState(prev => ({ ...prev, showChapterStart: false }))
+        setOverlayState((prev) => ({ ...prev, showChapterStart: false }))
       })
       return () => cancelAnimationFrame(animationFrame)
     }, [])
@@ -786,7 +838,8 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         if (currentBookmarks.length >= 5) {
           toast({
             title: "Bookmark limit reached",
-            description: "You can only have up to 5 bookmarks per video. Please remove some bookmarks before adding new ones.",
+            description:
+              "You can only have up to 5 bookmarks per video. Please remove some bookmarks before adding new ones.",
             variant: "destructive",
           })
           return
@@ -797,21 +850,21 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
           const automaticTitle = title || `${chapterTitle} - ${formatTime(time)}`
 
           // Save bookmark to database via API
-          const response = await fetch('/api/bookmarks', {
-            method: 'POST',
+          const response = await fetch("/api/bookmarks", {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              courseId: parseInt(courseId?.toString() || "0"),
-              chapterId: parseInt(chapterId?.toString() || "0"),
+            body: JSON.JSON.stringify({
+              courseId: Number.parseInt(courseId?.toString() || "0"),
+              chapterId: Number.parseInt(chapterId?.toString() || "0"),
               timestamp: time,
               note: automaticTitle,
-            })
+            }),
           })
 
           if (!response.ok) {
-            throw new Error('Failed to save bookmark')
+            throw new Error("Failed to save bookmark")
           }
 
           // Optionally, you can use the returned bookmark if needed
@@ -825,7 +878,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
             description: `${formatTime(time)}`,
           })
         } catch (error) {
-          console.error('Error adding bookmark:', error)
+          console.error("Error adding bookmark:", error)
           showThrottledToast({
             title: "⚠ Bookmark failed",
             description: "Try again in a moment.",
@@ -876,11 +929,11 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         })
         return
       }
-      setOverlayState(prev => ({ 
-        ...prev, 
+      setOverlayState((prev) => ({
+        ...prev,
         showBookmarkPanel: !prev.showBookmarkPanel,
         // Close notes panel when opening bookmarks to prevent UI overlap
-        showNotesPanel: !prev.showBookmarkPanel ? false : prev.showNotesPanel
+        showNotesPanel: !prev.showBookmarkPanel ? false : prev.showNotesPanel,
       }))
     }, [effectiveIsAuthenticated, toast])
 
@@ -893,11 +946,11 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         })
         return
       }
-      setOverlayState(prev => ({ 
-        ...prev, 
+      setOverlayState((prev) => ({
+        ...prev,
         showNotesPanel: !prev.showNotesPanel,
         // Close bookmarks panel when opening notes to prevent UI overlap
-        showBookmarkPanel: !prev.showNotesPanel ? false : prev.showBookmarkPanel
+        showBookmarkPanel: !prev.showNotesPanel ? false : prev.showBookmarkPanel,
       }))
     }, [effectiveIsAuthenticated, toast])
 
@@ -906,8 +959,10 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
 
       try {
         await createNote({
-          courseId: typeof courseId === 'string' ? parseInt(courseId) : typeof courseId === 'number' ? courseId : 0,
-          chapterId: typeof chapterId === 'string' ? parseInt(chapterId) : typeof chapterId === 'number' ? chapterId : 0,
+          courseId:
+            typeof courseId === "string" ? Number.parseInt(courseId) : typeof courseId === "number" ? courseId : 0,
+          chapterId:
+            typeof chapterId === "string" ? Number.parseInt(chapterId) : typeof chapterId === "number" ? chapterId : 0,
           note: `Note at ${formatTime(state.lastPlayedTime)}`,
         })
         toast({
@@ -927,11 +982,11 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
     const handleCertificateDownload = useCallback(async () => {
       if (playerState.certificateState !== "idle") return
 
-      setPlayerState(prev => ({ ...prev, certificateState: "downloading" }))
+      setPlayerState((prev) => ({ ...prev, certificateState: "downloading" }))
 
       try {
         await onCertificateClick?.()
-        setPlayerState(prev => ({ ...prev, certificateState: "success" }))
+        setPlayerState((prev) => ({ ...prev, certificateState: "success" }))
 
         toast({
           title: "Certificate downloaded",
@@ -939,10 +994,10 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         })
 
         setTimeout(() => {
-          setPlayerState(prev => ({ ...prev, certificateState: "idle" }))
+          setPlayerState((prev) => ({ ...prev, certificateState: "idle" }))
         }, 3000)
       } catch (error) {
-        setPlayerState(prev => ({ ...prev, certificateState: "error" }))
+        setPlayerState((prev) => ({ ...prev, certificateState: "error" }))
         toast({
           title: "Download failed",
           description: "Failed to download certificate. Please try again.",
@@ -950,7 +1005,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         })
 
         setTimeout(() => {
-          setPlayerState(prev => ({ ...prev, certificateState: "idle" }))
+          setPlayerState((prev) => ({ ...prev, certificateState: "idle" }))
         }, 3000)
       }
     }, [playerState.certificateState, onCertificateClick, toast])
@@ -960,46 +1015,49 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
       try {
         storageManager.saveVideoSettings({ miniPlayerPos: pos })
       } catch {
-        console.warn('Failed to save mini player position')
+        console.warn("Failed to save mini player position")
       }
     }, [])
 
     // Duration handler (moved above early return to keep hook order stable)
     const onDurationHandler = useCallback((duration: number) => {
-      setPlayerState(prev => ({
+      setPlayerState((prev) => ({
         ...prev,
         videoDuration: duration,
-        isLoadingDuration: false
+        isLoadingDuration: false,
       }))
     }, [])
 
     // Double-click to bookmark handler
-    const handleDoubleClick = useCallback((e: React.MouseEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
+    const handleDoubleClick = useCallback(
+      (e: React.MouseEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
 
-      if (!effectiveIsAuthenticated) {
-        toast({
-          title: "Sign in required",
-          description: "Please sign in to add bookmarks.",
-          variant: "destructive",
-        })
-        return
-      }
+        if (!effectiveIsAuthenticated) {
+          toast({
+            title: "Sign in required",
+            description: "Please sign in to add bookmarks.",
+            variant: "destructive",
+          })
+          return
+        }
 
-      // Add bookmark at current time
-      handleAddBookmark(state.lastPlayedTime)
+        // Add bookmark at current time
+        handleAddBookmark(state.lastPlayedTime)
 
-      // Visual feedback
-      if (containerRef.current) {
-        containerRef.current.style.transform = 'scale(1.02)'
-        setTimeout(() => {
-          if (containerRef.current) {
-            containerRef.current.style.transform = 'scale(1)'
-          }
-        }, 150)
-      }
-    }, [effectiveIsAuthenticated, handleAddBookmark, state.lastPlayedTime, toast])
+        // Visual feedback
+        if (containerRef.current) {
+          containerRef.current.style.transform = "scale(1.02)"
+          setTimeout(() => {
+            if (containerRef.current) {
+              containerRef.current.style.transform = "scale(1)"
+            }
+          }, 150)
+        }
+      },
+      [effectiveIsAuthenticated, handleAddBookmark, state.lastPlayedTime, toast],
+    )
 
     // Determine if mini player should be shown
     const shouldShowMiniPlayer = state.isMiniPlayer && !playerState.isNativePiPActive && playerState.isMounted
@@ -1029,28 +1087,31 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
             onEnded={handleVideoEnd}
             onReady={handlePlayerReady}
             onDuration={onDurationHandler}
-            config={{
-              youtube: {
-                playerVars: {
-                  autoplay: 0,
-                  modestbranding: 1,
-                  rel: 0,
-                  showinfo: 0,
-                  iv_load_policy: 3,
-                  fs: 0,
-                  controls: 0,
-                  disablekb: 0,
-                  playsinline: 1,
-                  enablejsapi: 1,
-                  origin: typeof window !== "undefined" ? window.location.origin : "",
-                  widget_referrer: typeof window !== "undefined" ? window.location.origin : "",
+            config={
+              {
+                youtube: {
+                  playerVars: {
+                    autoplay: 0,
+                    modestbranding: 1,
+                    rel: 0,
+                    showinfo: 0,
+                    iv_load_policy: 3,
+                    fs: 0,
+                    controls: 0,
+                    disablekb: 0,
+                    playsinline: 1,
+                    enablejsapi: 1,
+                    origin: typeof window !== "undefined" ? window.location.origin : "",
+                    widget_referrer: typeof window !== "undefined" ? window.location.origin : "",
+                  },
                 },
-              },
-              attributes: {
-                allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
-                allowFullScreen: false,
-              },
-            } as any}
+                attributes: {
+                  allow:
+                    "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
+                  allowFullScreen: false,
+                },
+              } as any
+            }
           />
         </div>
       )
@@ -1060,15 +1121,13 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
       <div
         ref={containerRef as any}
         className={cn(
-          "relative object-contain w-full h-full bg-black overflow-hidden group video-player-container",
+          "relative object-contain w-full h-full bg-black overflow-hidden group video-player-container border-4 border-black",
           isTheaterMode && "theater-mode",
           playerState.isNativePiPActive && "pip-active",
           className,
         )}
-        onMouseEnter={() => setPlayerState(prev => ({ ...prev, isHovering: true }))
-        }
-        onMouseLeave={() => setPlayerState(prev => ({ ...prev, isHovering: false }))
-        }
+        onMouseEnter={() => setPlayerState((prev) => ({ ...prev, isHovering: true }))}
+        onMouseLeave={() => setPlayerState((prev) => ({ ...prev, isHovering: false }))}
         onDoubleClick={handleDoubleClick}
         role="application"
         aria-label="Video player - Double-click to bookmark"
@@ -1095,55 +1154,53 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
               onEnded={handleVideoEnd}
               onReady={handlePlayerReady}
               onDuration={onDurationHandler}
-              config={{
-                youtube: {
-                  playerVars: {
-                    autoplay: shouldAutoPlay() ? 1 : 0,
-                    modestbranding: 1,
-                    rel: 0,
-                    showinfo: 0,
-                    iv_load_policy: 3,
-                    fs: 1,
-                    controls: 0,
-                    disablekb: 0,
-                    playsinline: 1,
-                    enablejsapi: 1,
-                    origin: typeof window !== "undefined" ? window.location.origin : "",
-                    widget_referrer: typeof window !== "undefined" ? window.location.origin : "",
+              config={
+                {
+                  youtube: {
+                    playerVars: {
+                      autoplay: shouldAutoPlay() ? 1 : 0,
+                      modestbranding: 1,
+                      rel: 0,
+                      showinfo: 0,
+                      iv_load_policy: 3,
+                      fs: 1,
+                      controls: 0,
+                      disablekb: 0,
+                      playsinline: 1,
+                      enablejsapi: 1,
+                      origin: typeof window !== "undefined" ? window.location.origin : "",
+                      widget_referrer: typeof window !== "undefined" ? window.location.origin : "",
+                    },
                   },
-                },
-                attributes: {
-                  allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
-                  allowFullScreen: true,
-                },
-              } as any}
+                  attributes: {
+                    allow:
+                      "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
+                    allowFullScreen: true,
+                  },
+                } as any
+              }
             />
           </div>
         )}
 
-        {/* Loading Overlay - blocks all interactions during video load/transition */}
         {(isLoading || (!playerState.playerReady && youtubeVideoId)) && !shouldHideMainPlayer && (
-          <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-50 pointer-events-auto">
-            <div className="flex flex-col items-center gap-3 text-white">
-              <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm font-medium">Loading video...</p>
+          <div className="absolute inset-0 bg-yellow-400 flex items-center justify-center z-50 pointer-events-auto border-8 border-black">
+            <div className="flex flex-col items-center gap-4 text-black">
+              <div className="w-16 h-16 border-8 border-black border-t-transparent rounded-none animate-spin bg-white" />
+              <p className="text-xl font-black uppercase tracking-wider">Loading video...</p>
             </div>
           </div>
         )}
 
         {/* Theater Mode Toggle Button */}
-        {!shouldHideMainPlayer && (
-          <TheaterModeButton
-            isTheater={isTheaterMode}
-            onToggle={handleTheaterModeToggle}
-          />
-        )}
+        {!shouldHideMainPlayer && <TheaterModeButton isTheater={isTheaterMode} onToggle={handleTheaterModeToggle} />}
 
-        {/* CourseAI Logo */}
         {!shouldHideMainPlayer && (
-          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-30 opacity-70 hover:opacity-100 transition-opacity">
-            <div className="bg-black/20 backdrop-blur-sm rounded-full p-1 sm:p-1.5 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
-              <span className="text-white font-bold text-xs select-none">CourseAI</span>
+          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-30">
+            <div className="bg-pink-500 border-4 border-black rounded-none p-2 sm:p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-black font-black text-xs sm:text-sm select-none uppercase tracking-wider">
+                CourseAI
+              </span>
             </div>
           </div>
         )}
@@ -1154,7 +1211,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
             visible={true}
             position={miniPlayerState.position}
             onPositionChange={(pos) => {
-              setMiniPlayerState(prev => ({ ...prev, position: pos }))
+              setMiniPlayerState((prev) => ({ ...prev, position: pos }))
               saveMiniPos(pos)
             }}
             onClose={() => {
@@ -1187,37 +1244,34 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
               const time = (playerState.videoDuration || state.duration) * percent
               handlers.onSeek(time)
             }}
-            thumbnail={getYouTubeThumbnailUrl(youtubeVideoId, 'hqdefault')}
+            thumbnail={getYouTubeThumbnailUrl(youtubeVideoId, "hqdefault")}
           />
         )}
 
-        {/* Native PiP Placeholder */}
         {playerState.isNativePiPActive && (
-          <div className="absolute inset-0 z-20 bg-black/95 backdrop-blur-sm flex items-center justify-center">
-            <div className="text-center text-white max-w-md mx-auto p-6">
+          <div className="absolute inset-0 z-20 bg-cyan-400 flex items-center justify-center border-8 border-black">
+            <div className="text-center text-black max-w-md mx-auto p-8 bg-white border-4 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
               <div className="mb-6">
-                <div className="w-20 h-20 mx-auto rounded-full bg-primary/20 flex items-center justify-center mb-6">
-                  <svg className="w-10 h-10 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                <div className="w-24 h-24 mx-auto rounded-none bg-pink-500 flex items-center justify-center mb-6 border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                  <svg className="w-12 h-12 text-black" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553-.894l2-1A1 1 0 0018 9V7a1 1 0 00-1.447-.894l-2 1z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold mb-3">Video Playing in Picture-in-Picture</h3>
-                <p className="text-sm text-white/80 mb-6 leading-relaxed">
+                <h3 className="text-2xl font-black mb-3 uppercase tracking-wider">Video Playing in PiP</h3>
+                <p className="text-base font-bold mb-6 leading-relaxed">
                   Your video is now playing in a separate window. You can continue browsing while watching.
                 </p>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <Button
                   onClick={handlePictureInPicture}
                   variant="default"
                   size="lg"
-                  className="w-full bg-primary hover:bg-primary/90"
+                  className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-black uppercase tracking-wider border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-none"
                 >
                   Return to Main Player
                 </Button>
-                <p className="text-xs text-white/60">
-                  Press 'P' or click the PiP button to toggle
-                </p>
+                <p className="text-sm font-bold">Press 'P' or click the PiP button to toggle</p>
               </div>
             </div>
           </div>
@@ -1243,9 +1297,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
           playerState.canPlayVideo &&
           !overlayState.showChapterStart &&
           !overlayState.showChapterEnd &&
-          !shouldHideMainPlayer && (
-            <PlayButton onClick={handlePlayClick} />
-          )}
+          !shouldHideMainPlayer && <PlayButton onClick={handlePlayClick} />}
 
         {/* Chapter Start Overlay */}
         {!shouldHideMainPlayer && (
@@ -1270,7 +1322,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
               hasNextChapter={!!onNextVideo}
               onNextChapter={handleNextChapter}
               onReplay={handleReplay}
-              onClose={() => setOverlayState(prev => ({ ...prev, showChapterEnd: false }))}
+              onClose={() => setOverlayState((prev) => ({ ...prev, showChapterEnd: false }))}
               autoAdvanceDelay={5}
               autoAdvance={!!onNextVideo}
               onCertificateDownload={handleCertificateDownload}
@@ -1299,9 +1351,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         {/* Player Controls - hidden when in PiP modes */}
         {playerState.canPlayVideo && !shouldHideMainPlayer && (
           <div
-            className={cn(
-              "absolute bottom-0 left-0 right-0 z-40 transition-all duration-200",
-            )}
+            className={cn("absolute bottom-0 left-0 right-0 z-40 transition-all duration-200")}
             style={{
               pointerEvents: "auto",
             }}
@@ -1351,27 +1401,46 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
           </div>
         )}
 
-        {/* Bookmark Panel */}
         {overlayState.showBookmarkPanel && effectiveIsAuthenticated && !shouldHideMainPlayer && (
-          <div className="fixed lg:absolute top-0 right-0 bottom-16 z-30 w-full lg:w-64 xl:w-72 max-w-sm bg-black/80 lg:bg-black/80 backdrop-blur-sm lg:border-l border-white/10 flex flex-col shadow-lg lg:shadow-none">
-            <div className="p-3 border-b border-white/10 flex-shrink-0">
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div><kbd className="px-1 py-0.5 bg-white/10 rounded text-xs">B</kbd> Add bookmark</div>
-                <div><kbd className="px-1 py-0.5 bg-white/10 rounded text-xs">[</kbd> Previous bookmark</div>
-                <div><kbd className="px-1 py-0.5 bg-white/10 rounded text-xs">]</kbd> Next bookmark</div>
-                <div><kbd className="px-1 py-0.5 bg-white/10 rounded text-xs">Double-click</kbd> Quick bookmark</div>
+          <div className="fixed lg:absolute top-0 right-0 bottom-16 z-30 w-full lg:w-64 xl:w-72 max-w-sm bg-yellow-400 border-l-8 border-black flex flex-col shadow-[8px_0px_0px_0px_rgba(0,0,0,1)]">
+            <div className="p-4 border-b-4 border-black flex-shrink-0 bg-pink-500">
+              <div className="text-sm text-black font-bold space-y-2">
+                <div className="flex items-center gap-2">
+                  <kbd className="px-2 py-1 bg-white border-2 border-black rounded-none text-xs font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    B
+                  </kbd>
+                  <span className="uppercase tracking-wide">Add bookmark</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <kbd className="px-2 py-1 bg-white border-2 border-black rounded-none text-xs font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    [
+                  </kbd>
+                  <span className="uppercase tracking-wide">Previous</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <kbd className="px-2 py-1 bg-white border-2 border-black rounded-none text-xs font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    ]
+                  </kbd>
+                  <span className="uppercase tracking-wide">Next</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <kbd className="px-2 py-1 bg-white border-2 border-black rounded-none text-xs font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    2x Click
+                  </kbd>
+                  <span className="uppercase tracking-wide">Quick</span>
+                </div>
               </div>
             </div>
             <div className="flex-1 overflow-hidden">
               <BookmarkManager
                 videoId={youtubeVideoId}
-                bookmarks={bookmarks.map(b => ({
+                bookmarks={bookmarks.map((b) => ({
                   id: b.id,
                   videoId: b.videoId,
                   time: b.time,
                   title: b.title || `Bookmark at ${formatTime(b.time)}`,
-                  description: b.description || '',
-                  createdAt: b.createdAt
+                  description: b.description || "",
+                  createdAt: b.createdAt,
                 }))}
                 currentTime={state.lastPlayedTime}
                 duration={playerState.videoDuration || state.duration}
@@ -1387,8 +1456,8 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
         {/* Notes Panel */}
         {overlayState.showNotesPanel && effectiveIsAuthenticated && !shouldHideMainPlayer && (
           <NotesPanel
-            courseId={typeof courseId === 'string' ? parseInt(courseId) : (courseId || 0)}
-            chapterId={typeof chapterId === 'string' ? parseInt(chapterId) : (chapterId || 0)}
+            courseId={typeof courseId === "string" ? Number.parseInt(courseId) : courseId || 0}
+            chapterId={typeof chapterId === "string" ? Number.parseInt(chapterId) : chapterId || 0}
             currentTime={state.lastPlayedTime}
             duration={playerState.videoDuration || state.duration}
             formatTime={formatTime}
@@ -1398,15 +1467,11 @@ const VideoPlayer = React.memo<VideoPlayerProps>(({
 
         {/* Keyboard Shortcuts Modal */}
         {state.showKeyboardShortcuts && (
-          <KeyboardShortcutsModal
-            onClose={handlers.handleHideKeyboardShortcuts}
-            show={state.showKeyboardShortcuts}
-          />
+          <KeyboardShortcutsModal onClose={handlers.handleHideKeyboardShortcuts} show={state.showKeyboardShortcuts} />
         )}
       </div>
     )
-  }
-
+  },
 )
 
 export default VideoPlayer

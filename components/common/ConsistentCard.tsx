@@ -33,7 +33,7 @@ export default function ConsistentCard({
     <Card
       className={cn(
         "overflow-hidden border transition-all duration-200",
-        interactive && "cursor-pointer hover:border-primary/50 hover:shadow-md",
+        interactive && "cursor-pointer hover:border-black hover:shadow-[6px_6px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px]",
         className,
       )}
       onClick={onClick}
@@ -42,13 +42,13 @@ export default function ConsistentCard({
         <CardHeader className={cn("p-5 pb-3", headerClassName)}>
           {title && <CardTitle className="text-xl font-semibold tracking-tight">{title}</CardTitle>}
           {description && (
-            <CardDescription className="mt-1.5 text-sm text-muted-foreground">{description}</CardDescription>
+            <CardDescription className="mt-1.5 text-sm text-[var(--color-text)]/70">{description}</CardDescription>
           )}
         </CardHeader>
       )}
       <CardContent className={cn("p-5 pt-3", contentClassName)}>{children}</CardContent>
       {footer && (
-        <CardFooter className={cn("p-5 pt-4 border-t bg-muted/10 flex items-center", footerClassName)}>
+        <CardFooter className={cn("p-5 pt-4 border-t-4 border-black bg-[var(--color-muted)]/10 flex items-center", footerClassName)}>
           {footer}
         </CardFooter>
       )}

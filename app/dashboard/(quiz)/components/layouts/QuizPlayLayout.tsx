@@ -97,8 +97,8 @@ const quizTypeIcons: Record<string, React.ComponentType<any>> = {
 }
 
 const QuizSkeleton = () => (
-  <motion.div 
-    className="w-full p-6 space-y-4 bg-card border-3 border-border rounded-2xl shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+  <motion.div
+    className="w-full p-6 space-y-4 bg-[var(--color-card)] border-4 border-black rounded-xl shadow-[4px_4px_0_#000]"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3 }}
@@ -133,10 +133,10 @@ const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) =
   return (
     <motion.div
       className={cn(
-        "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all duration-100 border-3 shadow-[3px_3px_0px_0px_hsl(var(--border))]",
+        "inline-flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-black transition-all duration-100 border-4 border-black shadow-[4px_4px_0_#000]",
         isPaused
-          ? "bg-muted/40 dark:bg-muted/30 text-muted-foreground border-border hover:bg-muted/60 dark:hover:bg-muted/50"
-          : "bg-[hsl(var(--primary))]/15 dark:bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] dark:text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]/40 dark:border-[hsl(var(--primary))]/30 hover:bg-[hsl(var(--primary))]/25 dark:hover:bg-[hsl(var(--primary))]/30"
+          ? "bg-[var(--color-bg)] text-[var(--color-text)]/70"
+          : "bg-[var(--color-primary)] text-white"
       )}
       whileHover={{ scale: 1.05, y: -2 }}
       transition={{ duration: 0.1 }}
@@ -153,7 +153,7 @@ const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) =
 
 const ProgressBar = ({ progress, questionNumber, totalQuestions }: { progress: number; questionNumber: number; totalQuestions: number }) => (
   <motion.div
-    className="mb-6 p-5 rounded-xl bg-card border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+    className="mb-6 p-6 rounded-xl bg-[var(--color-card)] border-4 border-black shadow-[4px_4px_0_#000]"
     initial={{ opacity: 0, y: -10 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3 }}
@@ -163,31 +163,29 @@ const ProgressBar = ({ progress, questionNumber, totalQuestions }: { progress: n
     aria-valuemax={100}
     aria-label={`Progress: ${progress}%, Question ${questionNumber} of ${totalQuestions}`}
   >
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-2 px-3 py-2 bg-[hsl(var(--primary))]/15 dark:bg-[hsl(var(--primary))]/20 border-3 border-[hsl(var(--primary))]/40 dark:border-[hsl(var(--primary))]/30 rounded-xl shadow-[2px_2px_0px_0px_hsl(var(--border))]">
-          <Target className="w-4 h-4 text-[hsl(var(--primary))]" aria-hidden="true" />
-          <span className="text-sm font-black text-[hsl(var(--primary))]">
-            Q{questionNumber}/{totalQuestions}
-          </span>
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-primary)] border-4 border-black rounded-xl shadow-[4px_4px_0_#000]">
+            <Target className="w-5 h-5 text-white" aria-hidden="true" />
+            <span className="text-sm font-black text-white">
+              Q{questionNumber}/{totalQuestions}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-success)] border-4 border-black rounded-xl shadow-[4px_4px_0_#000]">
+            <CheckCircle className="w-5 h-5 text-white" aria-hidden="true" />
+            <span className="text-sm font-black text-white">
+              {progress}% Complete
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/15 dark:bg-emerald-500/20 border-3 border-emerald-400/40 dark:border-emerald-500/30 rounded-xl shadow-[2px_2px_0px_0px_hsl(var(--border))]">
-          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-          <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
-            {progress}% Complete
-          </span>
-        </div>
-      </div>
-    </div>
 
     <div className="relative">
-      <div className="flex justify-between text-xs text-muted-foreground mb-2 font-bold">
+      <div className="flex justify-between text-xs text-[var(--color-text)]/70 mb-2 font-bold">
         <span>Progress</span>
         <span className="font-black">{progress}%</span>
       </div>
-      <div className="relative h-4 bg-muted dark:bg-muted/50 border-3 border-border rounded-xl overflow-hidden shadow-[2px_2px_0px_0px_hsl(var(--border))]">
+      <div className="relative h-6 bg-[var(--color-bg)] border-4 border-black rounded-xl overflow-hidden shadow-[4px_4px_0_#000]">
         <motion.div
-          className="h-full bg-[hsl(var(--primary))] rounded-lg"
+          className="h-full bg-[var(--color-primary)] rounded-lg"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.8, ease: "easeOut" }}
@@ -367,7 +365,7 @@ export default function QuizPlayLayout({
     const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
     return (
       <motion.header 
-        className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border shadow-sm"
+        className="sticky top-0 z-40 bg-[var(--color-bg)] border-b-4 border-black shadow-[4px_4px_0_#000]"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
@@ -386,8 +384,8 @@ export default function QuizPlayLayout({
               transition={{ delay: 0.2 }}
             >
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="p-2.5 rounded-xl bg-primary border-3 border-border text-primary-foreground shadow-[3px_3px_0px_0px_hsl(var(--border))] flex-shrink-0">
-                  <QuizTypeIcon className="w-5 h-5" aria-hidden="true" />
+                <div className="p-3 rounded-xl bg-[var(--color-primary)] border-4 border-black text-[var(--color-text)] shadow-[4px_4px_0_#000] flex-shrink-0">
+                  <QuizTypeIcon className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <h1 className="text-lg sm:text-xl font-black text-foreground truncate mb-1" title={title}>
@@ -396,21 +394,21 @@ export default function QuizPlayLayout({
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge 
                       variant="neutral" 
-                      className="bg-[hsl(var(--primary))]/15 dark:bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] dark:text-[hsl(var(--primary-foreground))] border-3 border-[hsl(var(--primary))]/40 dark:border-[hsl(var(--primary))]/30 font-black shadow-[2px_2px_0px_0px_hsl(var(--border))] px-3 py-1.5 text-xs"
+                      className="bg-[var(--color-primary)] text-[var(--color-text)] border-4 border-black font-black shadow-[4px_4px_0_#000] px-4 py-2 text-sm"
                     >
                       {quizTypeLabel[quizType] || "Quiz"}
                     </Badge>
-                    <DifficultyBadge difficulty={difficulty} className="text-xs" />
+                    <DifficultyBadge difficulty={difficulty} />
                   </div>
                 </div>
               </div>
 
-              <div className="hidden sm:flex items-center gap-4 px-4 py-2 bg-muted/50 dark:bg-muted/30 rounded-xl border-3 border-border shadow-[3px_3px_0px_0px_hsl(var(--border))]">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-4 px-6 py-4 bg-[var(--color-card)] border-4 border-black rounded-xl shadow-[4px_4px_0_#000]">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <Badge 
                       variant="neutral" 
-                      className="bg-primary/10 dark:bg-primary/20 text-primary font-black border-3 border-primary/30 px-3 py-1.5 shadow-[2px_2px_0px_0px_hsl(var(--primary)/0.3)] text-xs"
+                      className="bg-[var(--color-primary)] text-[var(--color-text)] border-4 border-black font-black shadow-[4px_4px_0_#000] px-4 py-2"
                     >
                       {progress}% Complete
                     </Badge>
@@ -418,8 +416,8 @@ export default function QuizPlayLayout({
                   <Timer seconds={displaySeconds} isPaused={isPaused} />
                 </div>
                 {isFocusMode && (
-                  <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 dark:bg-primary/20 px-3 py-1.5 rounded-lg border-3 border-primary/30 font-black shadow-[2px_2px_0px_0px_hsl(var(--primary)/0.3)]">
-                    <Target className="h-4 w-4" aria-hidden="true" /> Focus Mode
+                  <div className="flex items-center gap-3 text-sm text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-4 py-2 rounded-xl border-4 border-black font-black shadow-[4px_4px_0_#000]">
+                    <Target className="h-5 w-5" aria-hidden="true" /> Focus Mode
                   </div>
                 )}
               </div>
@@ -436,7 +434,7 @@ export default function QuizPlayLayout({
                   variant="neutral" 
                   size="sm"
                   onClick={togglePause}
-                  className="hover:bg-muted transition-all duration-100 border-2 border-transparent hover:border-border h-10 w-10 p-0"
+                  className="hover:bg-[var(--color-bg)] transition-all duration-100 border-4 border-black shadow-[4px_4px_0_#000] h-12 w-12 p-0"
                   aria-label={isPaused ? "Resume quiz" : "Pause quiz"}
                 >
                   {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
@@ -446,7 +444,7 @@ export default function QuizPlayLayout({
                   variant="neutral" 
                   size="sm" 
                   onClick={resetQuiz}
-                  className="hover:bg-muted transition-all duration-100 border-2 border-transparent hover:border-border h-10 w-10 p-0"
+                  className="hover:bg-[var(--color-bg)] transition-all duration-100 border-4 border-black shadow-[4px_4px_0_#000] h-12 w-12 p-0"
                   aria-label="Reset quiz"
                 >
                   <RotateCcw className="h-4 w-4" />
@@ -458,7 +456,7 @@ export default function QuizPlayLayout({
                   variant="neutral" 
                   size="sm" 
                   onClick={goHome} 
-                  className="hover:bg-muted transition-all duration-100 h-10 w-10 p-0 border-2 border-transparent hover:border-border"
+                  className="hover:bg-[var(--color-bg)] transition-all duration-100 border-4 border-black shadow-[4px_4px_0_#000] h-12 w-12 p-0"
                   aria-label="Go to dashboard"
                 >
                   <Home className="h-4 w-4" />
@@ -468,7 +466,7 @@ export default function QuizPlayLayout({
                   variant="neutral" 
                   size="sm" 
                   onClick={toggleFullscreen} 
-                  className="hover:bg-muted transition-all duration-100 h-10 w-10 p-0 border-2 border-transparent hover:border-border"
+                  className="hover:bg-[var(--color-bg)] transition-all duration-100 border-4 border-black shadow-[4px_4px_0_#000] h-12 w-12 p-0"
                   aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                 >
                   {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
@@ -479,7 +477,7 @@ export default function QuizPlayLayout({
                   size="sm" 
                   onClick={toggleSidebar}
                   disabled={isSidebarTransitioning}
-                  className="hover:bg-muted transition-all duration-100 border-2 border-transparent hover:border-border h-10 w-10 p-0"
+                  className="hover:bg-[var(--color-bg)] transition-all duration-100 border-4 border-black shadow-[4px_4px_0_#000] h-12 w-12 p-0"
                   aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
                   aria-expanded={sidebarOpen}
                 >
@@ -496,11 +494,11 @@ export default function QuizPlayLayout({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
                   <Badge 
                     variant="neutral" 
-                    className="bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-black border-3 border-emerald-400/40 dark:border-emerald-500/30 px-3 py-1.5 shadow-[2px_2px_0px_0px_hsl(var(--border))] text-xs"
+                    className="bg-[var(--color-success)] text-[var(--color-text)] border-4 border-black font-black shadow-[4px_4px_0_#000] px-4 py-2 text-sm"
                   >
                     {progress}%
                   </Badge>
@@ -508,13 +506,13 @@ export default function QuizPlayLayout({
                 <Timer seconds={displaySeconds} isPaused={isPaused} />
               </div>
               
-              <div className="flex items-center justify-between py-2 px-3 bg-muted/50 dark:bg-muted/30 rounded-lg border-2 border-border">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between py-3 px-4 bg-[var(--color-card)] border-4 border-black rounded-xl shadow-[4px_4px_0_#000]">
+                <div className="flex items-center gap-3">
                   <Button 
                     variant="neutral" 
                     size="sm" 
                     onClick={togglePause} 
-                    className="h-10 w-10 p-0 hover:bg-background/50 border-2 hover:border-primary/30 transition-all duration-100"
+                    className="h-12 w-12 p-0 hover:bg-[var(--color-bg)] border-4 border-black shadow-[4px_4px_0_#000] transition-all duration-100"
                     aria-label={isPaused ? "Resume quiz" : "Pause quiz"}
                   >
                     {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
@@ -523,15 +521,15 @@ export default function QuizPlayLayout({
                     variant="neutral" 
                     size="sm" 
                     onClick={resetQuiz} 
-                    className="h-10 w-10 p-0 hover:bg-background/50 border-2 hover:border-primary/30 transition-all duration-100"
+                    className="h-12 w-12 p-0 hover:bg-[var(--color-bg)] border-4 border-black shadow-[4px_4px_0_#000] transition-all duration-100"
                     aria-label="Reset quiz"
                   >
                     <RotateCcw className="h-4 w-4" />
                   </Button>
                 </div>
                 {isFocusMode && (
-                  <div className="flex items-center gap-1.5 text-sm text-primary bg-primary/10 dark:bg-primary/20 px-3 py-1.5 rounded-lg border-2 border-primary/30 font-black">
-                    <Target className="h-4 w-4" aria-hidden="true" /> Focus
+                  <div className="flex items-center gap-2 text-sm text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-4 py-2 rounded-xl border-4 border-black font-black shadow-[4px_4px_0_#000]">
+                    <Target className="h-5 w-5" aria-hidden="true" /> Focus
                   </div>
                 )}
               </div>
@@ -583,7 +581,7 @@ export default function QuizPlayLayout({
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <motion.div
-          className="text-center p-8 bg-card rounded-2xl shadow-xl border border-border max-w-md w-full"
+          className="text-center p-8 bg-[var(--color-card)] rounded-xl shadow-[4px_4px_0_#000] border-4 border-black max-w-md w-full"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -678,7 +676,7 @@ export default function QuizPlayLayout({
         <div className={cn(
           "transition-all duration-300",
           sidebarOpen && !isFocusMode && !isFullscreen
-            ? "grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_380px] gap-4 sm:gap-5 md:gap-6"
+            ? "grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_380px] gap-6 sm:gap-8 md:gap-10 lg:gap-12"
             : "flex"
         )}>
           {/* Main Content */}
@@ -829,10 +827,10 @@ export default function QuizPlayLayout({
                         </div>
                         
                         <div className="flex items-center justify-between pt-3 border-t border-border/30">
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-black group-hover:text-emerald-500 transition-colors">
+                          <span className="text-xs text-[hsl(var(--success))] dark:text-[hsl(var(--success-foreground))] font-black group-hover:text-[hsl(var(--success))]/80 transition-colors">
                             Continue →
                           </span>
-                          <Play className="w-3 h-3 text-emerald-600 dark:text-emerald-400 group-hover:scale-125 transition-transform" aria-hidden="true" />
+                          <Play className="w-3 h-3 text-[hsl(var(--success))] dark:text-[hsl(var(--success-foreground))] group-hover:scale-125 transition-transform" aria-hidden="true" />
                         </div>
                       </motion.a>
                     )

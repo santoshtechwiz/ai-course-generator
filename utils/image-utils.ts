@@ -35,9 +35,8 @@ function normalizeImageUrl(imageUrl: string | null | undefined): string {
 export function getImageWithFallback(
   primaryImage: string | null | undefined,
   fallbackImage: string = '/course-card.svg'
-): string {
-  const normalized = normalizeImageUrl(primaryImage)
-  return normalized || fallbackImage
+): string |undefined{
+  return undefined;
 }
 
 function isValidImageUrl(url: string | null | undefined): boolean {

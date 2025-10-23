@@ -22,26 +22,26 @@ export const Loader = React.memo(function Loader({
   }
 
   return (
-    <div className={cn("flex flex-col items-center justify-center space-y-4 p-6", className)}>
+    <div className={cn("flex flex-col items-center justify-center space-y-4 p-6 bg-[var(--color-card)] border-4 border-black rounded-md shadow-[4px_4px_0_#000]", className)}>
       <div className="relative">
-        <Loader2 className={cn("animate-spin text-primary", sizeClasses[size])} />
+        <Loader2 className={cn("animate-spin text-[var(--color-primary)]", sizeClasses[size])} />
         {/* Add a subtle pulse effect behind the spinner */}
         <div className={cn(
           "absolute inset-0 rounded-full animate-ping opacity-20",
           sizeClasses[size],
-          "bg-primary"
+          "bg-[var(--color-primary)]"
         )} />
       </div>
       {message && (
         <div className="text-center space-y-1">
-          <p className="text-sm font-medium text-muted-foreground">
+          <p className="text-sm font-medium text-[var(--color-text)]">
             {message}
           </p>
           {/* Add a subtle loading dots animation */}
           <div className="flex justify-center space-x-1">
-            <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            <div className="w-1 h-1 bg-[var(--color-primary)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="w-1 h-1 bg-[var(--color-primary)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <div className="w-1 h-1 bg-[var(--color-primary)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
           </div>
         </div>
       )}

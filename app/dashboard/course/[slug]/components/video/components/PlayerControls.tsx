@@ -2,33 +2,78 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import {
-  Play, Pause, Volume2, VolumeX, Volume1, Maximize, Minimize2 as Minimize,
-  RewindIcon, FastForwardIcon, Settings, PictureInPicture2, BookmarkIcon, 
-  StickyNote, SkipForward, RotateCcw, RotateCw, Clock, Zap
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Volume1,
+  Maximize,
+  Minimize,
+  PictureInPicture2,
+  BookmarkIcon,
+  StickyNote,
+  SkipForward,
+  Zap,
+  RewindIcon,
+  FastForwardIcon,
+  Settings,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { cn } from "@/lib/utils"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
-import { SimpleSwitch } from "@/components/ui/simple-switch"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Switch } from "@/components/ui/switch"
 import { motion, AnimatePresence } from "framer-motion"
 
 // Memoized slider to prevent unnecessary re-renders
-const MemoizedSlider = React.memo(Slider);
+const MemoizedSlider = React.memo(Slider)
 
 const PlayerControls = (props: any) => {
   const {
-    playing, muted, volume, playbackRate, played, loaded, duration,
-    isFullscreen, isBuffering, bufferHealth, onPlayPause, onMute,
-    onVolumeChange, onSeekChange, onPlaybackRateChange, onToggleFullscreen,
-    formatTime, bookmarks = [], onSeekToBookmark, isAuthenticated, show = true,
-    onCertificateClick, onShowKeyboardShortcuts, onNextVideo, onToggleBookmarkPanel,
-    bookmarkPanelOpen, autoPlayNext = true, onToggleAutoPlayNext, autoPlayVideo = false,
-    onToggleAutoPlayVideo, hasNextVideo = false, nextVideoTitle = "", canAccessNextVideo = true,
-    onIsDragging, onPictureInPicture, isPiPSupported = false, isPiPActive = false,
-    isTheaterMode = false, onToggleTheaterMode, notesCount = 0, onToggleNotesPanel,
-    notesPanelOpen = false, onCreateNote, notes = []
+    playing,
+    muted,
+    volume,
+    playbackRate,
+    played,
+    loaded,
+    duration,
+    isFullscreen,
+    isBuffering,
+    bufferHealth,
+    onPlayPause,
+    onMute,
+    onVolumeChange,
+    onSeekChange,
+    onPlaybackRateChange,
+    onToggleFullscreen,
+    formatTime,
+    bookmarks = [],
+    onSeekToBookmark,
+    isAuthenticated,
+    show = true,
+    onCertificateClick,
+    onShowKeyboardShortcuts,
+    onNextVideo,
+    onToggleBookmarkPanel,
+    bookmarkPanelOpen,
+    autoPlayNext = true,
+    onToggleAutoPlayNext,
+    autoPlayVideo = false,
+    onToggleAutoPlayVideo,
+    hasNextVideo = false,
+    nextVideoTitle = "",
+    canAccessNextVideo = true,
+    onIsDragging,
+    onPictureInPicture,
+    isPiPSupported = false,
+    isPiPActive = false,
+    isTheaterMode = false,
+    onToggleTheaterMode,
+    notesCount = 0,
+    onToggleNotesPanel,
+    notesPanelOpen = false,
+    onCreateNote,
+    notes = [],
   } = props
 
   // State management
@@ -41,7 +86,7 @@ const PlayerControls = (props: any) => {
   const [localBookmarks, setLocalBookmarks] = useState<number[]>(bookmarks || [])
   const [showControls, setShowControls] = useState(true)
   const [localVolume, setLocalVolume] = useState(muted ? 0 : volume * 100)
-  
+
   const progressBarRef = useRef<HTMLDivElement>(null)
   const progressRafRef = useRef<number | null>(null)
   const volumeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -58,7 +103,7 @@ const PlayerControls = (props: any) => {
   // Fixed auto-hide controls with proper cleanup
   useEffect(() => {
     if (!show) return
-    
+
     const hideControls = () => {
       if (playing) {
         controlsTimeoutRef.current = setTimeout(() => {
@@ -88,11 +133,11 @@ const PlayerControls = (props: any) => {
     }
 
     if (showVolumeSlider) {
-      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener("mousedown", handleClickOutside)
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [showVolumeSlider])
 
@@ -121,7 +166,7 @@ const PlayerControls = (props: any) => {
       const seekPosition = Math.max(0, Math.min(1, x / rect.width))
       onSeekChange(duration * seekPosition)
     },
-    [duration, onSeekChange, isDragging]
+    [duration, onSeekChange, isDragging],
   )
 
   const handleProgressHover = useCallback(
@@ -130,22 +175,24 @@ const PlayerControls = (props: any) => {
       const rect = progressBarRef.current.getBoundingClientRect()
       const x = e.clientX - rect.left
       const position = Math.max(0, Math.min(1, x / rect.width))
-      
+
       if (progressRafRef.current) cancelAnimationFrame(progressRafRef.current)
       progressRafRef.current = requestAnimationFrame(() => {
         setHoverPosition(position)
         setHoveredTime(duration * position)
       })
     },
-    [duration]
+    [duration],
   )
 
   // Fixed drag handler with proper cleanup
   const handleMouseDown = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      e.stopPropagation()
       setIsDragging(true)
       if (onIsDragging) onIsDragging(true)
-      
+
       const handleMouseMove = (e: MouseEvent) => {
         if (!progressBarRef.current || !duration) return
         const rect = progressBarRef.current.getBoundingClientRect()
@@ -165,32 +212,38 @@ const PlayerControls = (props: any) => {
       document.addEventListener("mouseup", handleMouseUp)
       handleSeek(e)
     },
-    [duration, onSeekChange, handleSeek, onIsDragging]
+    [duration, onSeekChange, handleSeek, onIsDragging],
   )
 
   // Stable volume change handler
-  const handleVolumeSliderChange = useCallback((value: number[]) => {
-    const newVolume = value[0] / 100
-    onVolumeChange(newVolume)
-  }, [onVolumeChange])
+  const handleVolumeSliderChange = useCallback(
+    (value: number[]) => {
+      const newVolume = value[0] / 100
+      onVolumeChange(newVolume)
+    },
+    [onVolumeChange],
+  )
 
   // Toggle volume slider with stable reference
   const toggleVolumeSlider = useCallback(() => {
-    setShowVolumeSlider(prev => !prev)
+    setShowVolumeSlider((prev) => !prev)
   }, [])
 
   // Bookmark indicators in progress bar
   const renderBookmarkIndicators = useMemo(() => {
     if (!localBookmarks.length || !duration) return null
-    
+
     return localBookmarks.map((bookmarkTime, index) => {
       const position = (bookmarkTime / duration) * 100
       return (
         <div
           key={index}
-          className="absolute top-0 w-1 h-full bg-yellow-400 transform -translate-x-1/2 cursor-pointer z-10 hover:w-2 transition-all duration-150"
+          className="absolute top-0 w-2 h-full bg-pink-500 transform -translate-x-1/2 cursor-pointer z-10 hover:w-3 transition-all duration-150 border-l-2 border-r-2 border-black"
           style={{ left: `${position}%` }}
-          onClick={() => onSeekToBookmark && onSeekToBookmark(bookmarkTime)}
+          onClick={(e) => {
+            e.stopPropagation()
+            onSeekToBookmark && onSeekToBookmark(bookmarkTime)
+          }}
           title={`Bookmark at ${formatTime(bookmarkTime)}`}
         />
       )
@@ -211,7 +264,7 @@ const PlayerControls = (props: any) => {
       className={cn(
         "absolute inset-0 z-50 transition-all duration-300 flex flex-col justify-end",
         !show && "opacity-0 pointer-events-none",
-        !showControls && "opacity-0"
+        !showControls && "opacity-0",
       )}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => {
@@ -223,19 +276,18 @@ const PlayerControls = (props: any) => {
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Enhanced gradient overlays for Nero theme */}
-      <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#0e0e10]/80 to-transparent pointer-events-none" />
-      
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0e0e10]/95 via-[#0e0e10]/60 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-black/40 pointer-events-none" />
 
-      {/* ✨ ENHANCED PROGRESS/SEEK BAR - Nero Theme with Clear Draggable Thumb */}
       <div
         ref={progressBarRef}
-        className="relative h-2 bg-neutral-800/90 cursor-pointer mx-4 mb-3 group hover:h-[10px] transition-all duration-200 rounded-sm"
+        className="relative h-3 bg-black cursor-pointer mx-4 mb-4 group hover:h-4 transition-all duration-150 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
         onClick={handleSeek}
         onMouseMove={handleProgressHover}
         onMouseDown={handleMouseDown}
-        onMouseLeave={() => { setHoverPosition(null); setHoveredTime(null) }}
+        onMouseLeave={() => {
+          setHoverPosition(null)
+          setHoveredTime(null)
+        }}
         role="slider"
         aria-label="Video progress"
         aria-valuemin={0}
@@ -243,122 +295,109 @@ const PlayerControls = (props: any) => {
         aria-valuenow={duration * played}
         tabIndex={0}
       >
-        {/* Buffer health - subtle background */}
-        <div 
-          className="absolute left-0 top-0 h-full bg-neutral-700/50 transition-all duration-300 rounded-sm" 
-          style={{ width: `${loaded * 100}%` }} 
+        <div
+          className="absolute left-0 top-0 h-full bg-neutral-600 transition-all duration-300"
+          style={{ width: `${loaded * 100}%` }}
         />
-        
-        {/* ✨ Played progress - Nero accent color with glow */}
-        <div 
-          className="absolute left-0 top-0 h-full bg-[#00e0ff] transition-all duration-100 rounded-sm shadow-[0_0_8px_rgba(0,224,255,0.6)]" 
-          style={{ width: `${played * 100}%` }} 
+
+        <div
+          className="absolute left-0 top-0 h-full bg-yellow-400 transition-all duration-100"
+          style={{ width: `${played * 100}%` }}
         />
-        
-        {/* Bookmark indicators - yellow with better visibility */}
+
         {renderBookmarkIndicators}
-        
-        {/* ✨ Hover time preview - Nero styled */}
+
         {hoverPosition !== null && hoveredTime !== null && !isDragging && (
           <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.9 }}
-            transition={{ duration: 0.12 }}
-            className="absolute bottom-full mb-3 bg-[#0e0e10] text-[#00e0ff] px-3 py-1.5 rounded text-xs font-bold pointer-events-none -translate-x-1/2 border border-[#00e0ff]/30 shadow-lg shadow-[#00e0ff]/20"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.1 }}
+            className="absolute bottom-full mb-4 bg-neo-background text-black px-3 py-2 text-xs font-black uppercase tracking-wider pointer-events-none -translate-x-1/2 border-4 border-neo-border shadow-[4px_4px_0px_0px_var(--neo-border)]"
             style={{ left: `${hoverPosition * 100}%` }}
           >
             {formatTime(hoveredTime)}
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-[5px] border-transparent border-t-[#0e0e10]" />
           </motion.div>
         )}
-        
-        {/* ✨ ENHANCED DRAGGABLE THUMB - Clear, visible, with Nero glow */}
+
         <div
           className={cn(
-            "absolute top-1/2 w-4 h-4 bg-white rounded-full transform -translate-y-1/2 -translate-x-1/2 cursor-pointer z-20 transition-all duration-150",
-            "border-2 border-[#00e0ff] shadow-[0_0_12px_rgba(0,224,255,0.8)]",
-            "hover:scale-125 hover:shadow-[0_0_16px_rgba(0,224,255,1)]",
-            "focus:scale-125 focus:outline-none focus:ring-2 focus:ring-[#00e0ff] focus:ring-offset-2 focus:ring-offset-[#0e0e10]",
-            isDragging && "scale-150 shadow-[0_0_20px_rgba(0,224,255,1)]"
+            "absolute top-1/2 w-6 h-6 bg-white transform -translate-y-1/2 -translate-x-1/2 cursor-grab z-20 transition-all duration-100",
+            "border-4 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]",
+            "hover:scale-110 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
+            "focus:scale-110 focus:outline-none focus:ring-4 focus:ring-yellow-400 focus:ring-offset-0",
+            isDragging && "scale-125 cursor-grabbing shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] bg-yellow-400",
           )}
-          style={{ left: `${played * 100}%` }}
+          style={{ left: `${played * 100}%`, pointerEvents: "auto" }}
+          onMouseDown={handleMouseDown}
           tabIndex={0}
           role="button"
           aria-label="Seek position"
         />
       </div>
 
-      {/* ✨ ENHANCED CONTROL BAR - Nero Theme, Single-Row Flex Layout */}
-      <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 bg-[#0e0e10]/98 backdrop-blur-md mx-4 mb-4 border border-neutral-800 shadow-2xl rounded-lg">
-        
-        {/* Left controls group - Core playback controls */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          {/* ✨ Play/Pause - Enhanced with Nero accent */}
-          <Button 
-            variant="ghost" 
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 bg-neo-background mx-4 mb-4 border-4 border-neo-border shadow-[8px_8px_0px_0px_var(--neo-border)]">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          <Button
+            variant="ghost"
             size="icon"
             onClick={onPlayPause}
-            className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg hover:bg-[#00e0ff]/20 text-white hover:text-[#00e0ff] border border-neutral-700 hover:border-[#00e0ff]/50 transition-all duration-200 focus:ring-2 focus:ring-[#00e0ff] focus:ring-offset-2 focus:ring-offset-[#0e0e10]"
+            className="h-10 w-10 sm:h-11 sm:w-11 bg-yellow-400 hover:bg-yellow-300 text-black border-4 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100 active:shadow-none active:translate-x-[3px] active:translate-y-[3px]"
             aria-label={playing ? "Pause" : "Play"}
           >
             {isBuffering ? (
               <motion.div
                 animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="h-5 w-5 border-2 border-[#00e0ff] border-t-transparent rounded-full"
+                transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                className="h-5 w-5 border-3 border-black border-t-transparent rounded-full"
               />
             ) : playing ? (
-              <Pause className="h-5 w-5" />
+              <Pause className="h-5 w-5 fill-black" />
             ) : (
-              <Play className="h-5 w-5 ml-0.5" />
+              <Play className="h-5 w-5 ml-0.5 fill-black" />
             )}
           </Button>
 
-          {/* ✨ Rewind 10s */}
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             onClick={() => onSeekChange(Math.max(0, duration * played - 10))}
-            className="h-8 w-8 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-600 transition-all duration-200"
+            className="h-9 w-9 bg-neo-background hover:bg-neutral-100 text-black border-3 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:shadow-[1px_1px_0px_0px_var(--neo-border)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
             aria-label="Rewind 10 seconds"
           >
-            <RotateCcw className="h-4 w-4" />
+            <RewindIcon className="h-4 w-4" />
           </Button>
 
-          {/* ✨ Forward 10s */}
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             onClick={() => onSeekChange(Math.min(duration, duration * played + 10))}
-            className="h-8 w-8 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-600 transition-all duration-200"
+            className="h-9 w-9 bg-neo-background hover:bg-neutral-100 text-black border-3 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:shadow-[1px_1px_0px_0px_var(--neo-border)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
             aria-label="Forward 10 seconds"
           >
-            <RotateCw className="h-4 w-4" />
+            <FastForwardIcon className="h-4 w-4" />
           </Button>
 
-          {/* ✨ Volume control - Nero themed */}
           <div ref={volumeSliderRef} className="relative flex items-center">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="icon"
               onClick={onMute}
               onMouseEnter={() => setShowVolumeSlider(true)}
-              className="h-8 w-8 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-600 transition-all duration-200"
+              className="h-9 w-9 bg-neo-background hover:bg-neutral-100 text-black border-3 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:shadow-[1px_1px_0px_0px_var(--neo-border)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
               aria-label={muted ? "Unmute" : "Mute"}
             >
               {React.createElement(getVolumeIcon, { className: "h-4 w-4" })}
             </Button>
-            
-            {/* Volume slider popup */}
+
             <AnimatePresence>
               {showVolumeSlider && (
                 <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute bottom-full mb-2 left-0 bg-[#0e0e10] p-3 rounded-lg border border-neutral-700 shadow-xl"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.1 }}
+                  className="absolute bottom-full mb-3 left-0 bg-neo-background p-4 border-4 border-neo-border shadow-[6px_6px_0px_0px_var(--neo-border)]"
                   onMouseEnter={() => setShowVolumeSlider(true)}
                   onMouseLeave={() => setShowVolumeSlider(false)}
                 >
@@ -375,22 +414,20 @@ const PlayerControls = (props: any) => {
             </AnimatePresence>
           </div>
 
-          {/* ✨ Time display - Nero styled */}
-          <div className="text-xs sm:text-sm text-neutral-300 font-mono font-medium tabular-nums min-w-[90px] sm:min-w-[110px] text-center px-2 sm:px-3 py-1 bg-neutral-900/50 rounded border border-neutral-800">
-            <span className="text-[#00e0ff]">{formatTime(duration * played)}</span>
-            <span className="text-neutral-600 mx-1">/</span>
+          <div className="text-xs sm:text-sm text-black font-black uppercase tracking-wider tabular-nums px-3 py-2 bg-cyan-400 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <span>{formatTime(duration * played)}</span>
+            <span className="mx-1">/</span>
             <span>{formatTime(duration)}</span>
           </div>
         </div>
 
-        {/* Center controls - Auto-play toggles (hidden on mobile) */}
-        <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-wrap justify-center">
           {/* Auto-play video toggle */}
           {onToggleAutoPlayVideo && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#00e0ff]/10 border border-[#00e0ff]/30 hover:bg-[#00e0ff]/20 transition-colors">
-              <Zap className="h-3.5 w-3.5 text-[#00e0ff]" />
-              <span className="text-xs font-medium text-neutral-300">Auto</span>
-              <SimpleSwitch
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-400 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <Zap className="h-3.5 w-3.5 text-black" />
+              <span className="text-xs font-black uppercase text-black">AUTO</span>
+              <Switch
                 checked={autoPlayVideo}
                 onCheckedChange={onToggleAutoPlayVideo}
                 aria-label="Toggle auto-play video on page load"
@@ -400,10 +437,10 @@ const PlayerControls = (props: any) => {
 
           {/* Autoplay next toggle */}
           {hasNextVideo && onToggleAutoPlayNext && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 transition-colors">
-              <SkipForward className="h-3.5 w-3.5 text-purple-400" />
-              <span className="text-xs font-medium text-neutral-300">Next</span>
-              <SimpleSwitch
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-pink-400 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <SkipForward className="h-3.5 w-3.5 text-black" />
+              <span className="text-xs font-black uppercase text-black">NEXT</span>
+              <Switch
                 checked={autoPlayNext}
                 onCheckedChange={onToggleAutoPlayNext}
                 aria-label="Toggle autoplay next video"
@@ -412,14 +449,13 @@ const PlayerControls = (props: any) => {
           )}
         </div>
 
-        {/* Right controls group - Secondary actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
           {/* Next video button */}
           {hasNextVideo && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-600 transition-all duration-200"
+              className="h-9 w-9 bg-neo-background hover:bg-neutral-100 text-black border-3 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:shadow-[1px_1px_0px_0px_var(--neo-border)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={onNextVideo}
               disabled={!canAccessNextVideo}
               title={nextVideoTitle}
@@ -429,53 +465,54 @@ const PlayerControls = (props: any) => {
             </Button>
           )}
 
-          {/* ✨ Playback speed - Nero themed dropdown */}
           <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-600 transition-all duration-200 focus:ring-2 focus:ring-[#00e0ff]"
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 bg-neo-background hover:bg-neutral-100 text-black border-3 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:shadow-[1px_1px_0px_0px_var(--neo-border)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
                 aria-label="Playback speed"
               >
-                <Clock className="h-4 w-4" />
+                <Settings className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-36 bg-[#0e0e10] border border-neutral-700 shadow-2xl">
-              <div className="px-3 py-2 text-xs font-bold text-[#00e0ff] border-b border-neutral-800">Playback Speed</div>
+            <DropdownMenuContent
+              align="end"
+              className="w-40 bg-neo-background border-4 border-neo-border shadow-[6px_6px_0px_0px_var(--neo-border)]"
+            >
+              <div className="px-3 py-2 text-xs font-black uppercase text-black border-b-3 border-black bg-yellow-400">
+                Speed
+              </div>
               {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
-                <DropdownMenuItem 
-                  key={speed} 
+                <DropdownMenuItem
+                  key={speed}
                   onClick={() => onPlaybackRateChange(speed)}
-                  className="text-neutral-300 hover:bg-neutral-800 hover:text-white flex justify-between items-center font-medium px-3 py-2 cursor-pointer"
+                  className="text-black hover:bg-yellow-400 flex justify-between items-center font-bold px-3 py-2 cursor-pointer border-b border-neutral-200 last:border-b-0"
                 >
                   <span>{speed === 1 ? "Normal" : `${speed}x`}</span>
-                  {playbackRate === speed && (
-                    <div className="w-2 h-2 rounded-full bg-[#00e0ff] shadow-[0_0_6px_rgba(0,224,255,0.8)]" />
-                  )}
+                  {playbackRate === speed && <div className="w-3 h-3 bg-black border-2 border-black" />}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Notes button */}
           {onToggleNotesPanel && isAuthenticated && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onToggleNotesPanel}
               className={cn(
-                "h-8 w-8 rounded-lg hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-600 transition-all duration-200 relative",
-                notesPanelOpen ? "bg-green-500/20 text-green-400 border-green-500/50" : "text-neutral-400 hover:text-white"
+                "h-9 w-9 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100 relative",
+                notesPanelOpen ? "bg-green-400 text-black" : "bg-white hover:bg-neutral-100 text-black",
               )}
               aria-label="Notes"
             >
               <StickyNote className="h-4 w-4" />
               {notesCount > 0 && (
-                <motion.div 
-                  initial={{ scale: 0 }} 
+                <motion.div
+                  initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 w-4 h-4 bg-[#00e0ff] rounded-full text-[10px] text-[#0e0e10] font-bold flex items-center justify-center border border-[#0e0e10] shadow-[0_0_8px_rgba(0,224,255,0.6)]"
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 text-[10px] text-white font-black flex items-center justify-center border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                 >
                   {notesCount > 9 ? "9+" : notesCount}
                 </motion.div>
@@ -483,15 +520,14 @@ const PlayerControls = (props: any) => {
             </Button>
           )}
 
-          {/* Bookmark button */}
           {onToggleBookmarkPanel && isAuthenticated && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onToggleBookmarkPanel}
               className={cn(
-                "h-8 w-8 rounded-lg hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-600 transition-all duration-200",
-                bookmarkPanelOpen ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/50" : "text-neutral-400 hover:text-white"
+                "h-9 w-9 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100 hidden sm:flex",
+                bookmarkPanelOpen ? "bg-yellow-400 text-black" : "bg-white hover:bg-neutral-100 text-black",
               )}
               aria-label="Bookmarks"
             >
@@ -499,15 +535,14 @@ const PlayerControls = (props: any) => {
             </Button>
           )}
 
-          {/* Picture-in-Picture */}
           {onPictureInPicture && isPiPSupported && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onPictureInPicture}
               className={cn(
-                "h-8 w-8 rounded-lg hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-600 transition-all duration-200",
-                isPiPActive ? "bg-[#00e0ff]/20 text-[#00e0ff] border-[#00e0ff]/50" : "text-neutral-400 hover:text-white"
+                "h-9 w-9 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100",
+                isPiPActive ? "bg-cyan-400 text-black" : "bg-white hover:bg-neutral-100 text-black",
               )}
               aria-label="Picture-in-Picture"
             >
@@ -515,15 +550,14 @@ const PlayerControls = (props: any) => {
             </Button>
           )}
 
-          {/* Theater mode */}
           {onToggleTheaterMode && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onToggleTheaterMode}
               className={cn(
-                "h-8 w-8 rounded-lg hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-600 transition-all duration-200 hidden sm:flex",
-                isTheaterMode ? "bg-purple-500/20 text-purple-400 border-purple-500/50" : "text-neutral-400 hover:text-white"
+                "h-9 w-9 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100 hidden sm:flex",
+                isTheaterMode ? "bg-purple-400 text-black" : "bg-white hover:bg-neutral-100 text-black",
               )}
               aria-label="Theater mode"
             >
@@ -531,22 +565,17 @@ const PlayerControls = (props: any) => {
             </Button>
           )}
 
-          {/* ✨ Fullscreen - Enhanced Nero styling */}
           <Button
             variant="ghost"
             size="icon"
             onClick={onToggleFullscreen}
             className={cn(
-              "h-8 w-8 rounded-lg hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-600 transition-all duration-200 focus:ring-2 focus:ring-[#00e0ff]",
-              isFullscreen ? "bg-[#00e0ff]/20 text-[#00e0ff] border-[#00e0ff]/50" : "text-neutral-400 hover:text-white"
+              "h-9 w-9 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100",
+              isFullscreen ? "bg-yellow-400 text-black" : "bg-white hover:bg-neutral-100 text-black",
             )}
             aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
           >
-            {isFullscreen ? (
-              <Minimize className="h-4 w-4" />
-            ) : (
-              <Maximize className="h-4 w-4" />
-            )}
+            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
           </Button>
         </div>
       </div>

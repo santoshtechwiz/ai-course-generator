@@ -360,10 +360,10 @@ export default function CreateQuizForm({
             <div className="flex items-center justify-between">
               <Timer className="w-6 h-6 text-muted-foreground" />
               <motion.span
-                className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums"
+                className="text-3xl font-black text-black tabular-nums"
                 key={amount}
-                initial={{ scale: 1.2, color: "#00ff00" }}
-                animate={{ scale: 1, color: "rgb(99 102 241)" }}
+                initial={{ scale: 1.2 }}
+                animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 300, damping: 10 }}
               >
                 {amount}
@@ -423,14 +423,14 @@ export default function CreateQuizForm({
                 type="button"
                 variant={difficulty === level ? "default" : "outline"}
                 className={cn(
-                  "capitalize w-full h-14 font-semibold transition-all duration-200 text-base",
+                  "capitalize w-full h-14 font-black transition-all duration-200 text-base border-4",
                   difficulty === level
                     ? level === "easy"
-                      ? "bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg shadow-emerald-500/25 border-0 hover:scale-105"
+                      ? "bg-green-300 text-black border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
                       : level === "medium"
-                        ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25 border-0 hover:scale-105"
-                        : "bg-gradient-to-r from-rose-500 to-red-500 text-white shadow-lg shadow-rose-500/25 border-0 hover:scale-105"
-                    : "bg-card border-border hover:bg-muted hover:border-border/80",
+                        ? "bg-yellow-300 text-black border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                        : "bg-red-300 text-black border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                    : "bg-white text-black border-black hover:bg-gray-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
                 )}
                 onClick={() => setValue("difficulty", level as "easy" | "medium" | "hard")}
                 aria-pressed={difficulty === level}
@@ -444,18 +444,18 @@ export default function CreateQuizForm({
 
         {/* Available Credits */}
         <motion.div
-          className="bg-gradient-to-r from-[hsl(var(--muted))] to-[hsl(var(--muted))] dark:from-[hsl(var(--muted))]/50 dark:to-[hsl(var(--muted))]/50 rounded-xl p-6 space-y-4"
+          className="bg-gray-50 border-4 border-black rounded-xl p-6 space-y-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2 text-foreground">
-            <Sparkles className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+          <h3 className="text-lg font-black mb-2 flex items-center gap-2 text-black">
+            <Sparkles className="h-5 w-5 text-black" />
             Available Credits
           </h3>
-          <Progress value={creditInfo.totalCredits > 0 ? (creditInfo.remainingCredits / creditInfo.totalCredits) * 100 : 0} className="h-3" />
-          <p className="text-sm text-muted-foreground">
-            {creditInfo.usedCredits} used of {creditInfo.totalCredits} total credits. <span className="font-bold text-indigo-600 dark:text-indigo-400">{creditInfo.remainingCredits} remaining</span>.
+          <Progress value={creditInfo.totalCredits > 0 ? (creditInfo.remainingCredits / creditInfo.totalCredits) * 100 : 0} className="h-3 border-2 border-black bg-white" />
+          <p className="text-sm text-gray-700 font-bold">
+            {creditInfo.usedCredits} used of {creditInfo.totalCredits} total credits. <span className="font-black text-black">{creditInfo.remainingCredits} remaining</span>.
           </p>
         </motion.div>
 
@@ -484,7 +484,7 @@ export default function CreateQuizForm({
             isEnabled={!isDisabled}
             isLoading={isLoading}
             loadingLabel="Generating Quiz..."
-            className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] hover:opacity-90 text-primary-foreground border-0 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-14 text-lg font-black transition-all duration-300 bg-black text-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
             customStates={{
               default: {
                 tooltip: "Click to generate your quiz",

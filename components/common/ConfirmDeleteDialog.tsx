@@ -42,7 +42,7 @@ export function ConfirmDeleteDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <AlertTriangle className="h-5 w-5 text-red-600" />
             {title}
           </AlertDialogTitle>
           <AlertDialogDescription className="text-left">
@@ -56,11 +56,11 @@ export function ConfirmDeleteDialog({
           <AlertDialogAction
             onClick={onConfirm}
             disabled={isLoading}
-            className={destructive ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            className={destructive ? "bg-red-600 text-white hover:bg-red-700 border-4 border-black shadow-[4px_4px_0_#000]" : ""}
           >
             {isLoading ? (
               <>
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-4 border-white border-t-transparent" />
                 Deleting...
               </>
             ) : (

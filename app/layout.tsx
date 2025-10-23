@@ -86,7 +86,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
 
-      <body className={`font-sans antialiased min-h-screen bg-background text-foreground`}>
+      <body className={`font-sans antialiased min-h-screen `}>
         <BProgressProvider>
           <Providers session={session}>
             {/* Skip Navigation for accessibility */}

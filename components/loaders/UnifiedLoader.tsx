@@ -28,13 +28,9 @@ interface UnifiedLoaderProps {
   minHeight?: string
 }
 
-/**
- * Enhanced UnifiedLoader - Redesigned to prevent layout shifts and improve visibility
- * - Consistent sizing and spacing
- * - Better full-page coverage options
- * - Reduced motion support
- * - Accessibility improvements
- */
+/* ===========================
+   🧠 UnifiedLoader (Neurobrutal Edition)
+   =========================== */
 export function UnifiedLoader({
   state = "loading",
   variant = "spinner",
@@ -55,12 +51,10 @@ export function UnifiedLoader({
   const [visible, setVisible] = useState(true)
   const [isReducedMotion, setIsReducedMotion] = useState(false)
 
-  // Detect reduced motion preference safely
   useEffect(() => {
     if (typeof window !== "undefined" && window.matchMedia) {
       const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
       setIsReducedMotion(mediaQuery.matches)
-      
       const handler = (e: MediaQueryListEvent) => setIsReducedMotion(e.matches)
       mediaQuery.addEventListener("change", handler)
       return () => mediaQuery.removeEventListener("change", handler)
@@ -72,45 +66,38 @@ export function UnifiedLoader({
       const t = setTimeout(() => setVisible(false), autoHideDelay)
       return () => clearTimeout(t)
     }
-
     if (state === "loading") setVisible(true)
   }, [autoHide, autoHideDelay, state])
 
-  // Integrate with progress bar for better UX
   useEffect(() => {
     if (state === "loading" && !inline) {
       progressApi.start()
     } else if (state === "success" || state === "error" || state === "idle") {
       progressApi.done()
     }
-
-    // Cleanup on unmount
     return () => {
-      if (progressApi.isStarted()) {
-        progressApi.done()
-      }
+      if (progressApi.isStarted()) progressApi.done()
     }
   }, [state, inline])
 
-  // Consistent size mapping with predictable dimensions
   const sizeMap: Record<LoaderSize, { container: string; icon: string; text: string }> = {
     xs: { container: "h-4 w-4", icon: "h-3 w-3", text: "text-xs" },
     sm: { container: "h-5 w-5", icon: "h-4 w-4", text: "text-sm" },
-    md: { container: "h-7 w-7", icon: "h-5 w-5", text: "text-sm" },
-    lg: { container: "h-10 w-10", icon: "h-6 w-6", text: "text-base" },
-    xl: { container: "h-14 w-14", icon: "h-8 w-8", text: "text-lg" },
+    md: { container: "h-7 w-7", icon: "h-5 w-5", text: "text-base" },
+    lg: { container: "h-10 w-10", icon: "h-6 w-6", text: "text-lg" },
+    xl: { container: "h-14 w-14", icon: "h-8 w-8", text: "text-xl" },
   }
 
-  const containerBase = inline 
-    ? "inline-flex items-center gap-3 min-h-[1.5em]" 
+  const containerBase = inline
+    ? "inline-flex items-center gap-3 min-h-[1.5em]"
     : "flex flex-col items-center justify-center gap-4 p-6"
 
-  // Main loader renderers with consistent dimensions
+  /* 🎨 Spinner (Neurobrutal Style) */
   const Spinner = () => (
     <motion.div
       aria-hidden="true"
       className={cn(
-        "relative flex items-center justify-center",
+        "relative flex items-center justify-center border-4 border-black rounded-lg bg-yellow-200 shadow-[4px_4px_0_0_#000]",
         sizeMap[size].container
       )}
     >
@@ -120,31 +107,23 @@ export function UnifiedLoader({
           transition={isReducedMotion ? {} : { duration: 1.5, repeat: Infinity, ease: "linear" }}
           className="absolute inset-0"
         >
-          <Loader className={cn("h-full w-full text-primary/60", isReducedMotion && "animate-pulse")} />
+          <Loader className="h-full w-full text-black" />
         </motion.div>
       )}
     </motion.div>
   )
 
+  /* 🎨 Dots Loader */
   const Dots = () => (
     <div className={cn("flex items-center justify-center gap-1", sizeMap[size].container)}>
       {[0, 1, 2].map((i) => (
         <motion.span
           key={i}
-          role="presentation"
           initial={isReducedMotion ? {} : { scale: 0.8, opacity: 0.6 }}
-          animate={isReducedMotion ? {} : { 
-            scale: [0.8, 1.2, 0.8],
-            opacity: [0.6, 1, 0.6]
-          }}
-          transition={{ 
-            duration: 1.2, 
-            repeat: Infinity, 
-            delay: i * 0.2,
-            ease: "easeInOut"
-          }}
+          animate={isReducedMotion ? {} : { scale: [0.8, 1.2, 0.8], opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
           className={cn(
-            "block rounded-full bg-current",
+            "block rounded-full bg-black",
             size === "xs" && "h-1 w-1",
             size === "sm" && "h-1.5 w-1.5",
             size === "md" && "h-2 w-2",
@@ -156,11 +135,12 @@ export function UnifiedLoader({
     </div>
   )
 
+  /* 🎨 Progress Loader */
   const Progress = () => (
     <div className={cn("space-y-3", fullWidth ? "w-full" : "w-48")}>
-      <div className="h-2 bg-muted rounded-full overflow-hidden">
+      <div className="h-3 bg-yellow-100 border-2 border-black rounded-md overflow-hidden shadow-[3px_3px_0_0_#000]">
         <motion.div
-          className="h-full bg-primary"
+          className="h-full bg-pink-500 border-r-2 border-black"
           initial={{ width: 0 }}
           animate={{ width: `${Math.max(0, Math.min(100, progress ?? 0))}%` }}
           transition={{ duration: 0.3, ease: "easeOut" }}
@@ -168,10 +148,10 @@ export function UnifiedLoader({
       </div>
       {progress !== undefined && (
         <div className="flex justify-between items-center">
-          <span className={cn("text-muted-foreground", sizeMap[size].text)}>
+          <span className={cn("text-black font-bold", sizeMap[size].text)}>
             {message || "Loading..."}
           </span>
-          <span className={cn("text-muted-foreground font-medium", sizeMap[size].text)}>
+          <span className={cn("text-black font-bold", sizeMap[size].text)}>
             {Math.round(progress)}%
           </span>
         </div>
@@ -179,56 +159,46 @@ export function UnifiedLoader({
     </div>
   )
 
+  /* 🎨 Skeleton Loader */
   const Skeleton = () => (
     <div className={cn("space-y-3", fullWidth ? "w-full" : "w-64")}>
-      <div className="h-4 bg-muted rounded-full animate-pulse" />
-      <div className="h-4 bg-muted rounded-full animate-pulse w-3/4" />
-      <div className="h-3 bg-muted rounded-full animate-pulse w-1/2" />
+      <div className="h-4 bg-yellow-200 border-2 border-black rounded-md animate-pulse shadow-[3px_3px_0_0_#000]" />
+      <div className="h-4 bg-yellow-200 border-2 border-black rounded-md animate-pulse w-3/4 shadow-[3px_3px_0_0_#000]" />
+      <div className="h-3 bg-yellow-200 border-2 border-black rounded-md animate-pulse w-1/2 shadow-[3px_3px_0_0_#000]" />
     </div>
   )
 
+  /* 🎨 Pulse Loader */
   const Pulse = () => (
     <motion.div
-      animate={isReducedMotion ? {} : { 
-        scale: [1, 1.05, 1],
-        opacity: [0.7, 1, 0.7]
-      }}
-      transition={{ 
-        duration: 2, 
-        repeat: Infinity,
-        ease: "easeInOut"
-      }}
+      animate={isReducedMotion ? {} : { scale: [1, 1.05, 1], opacity: [0.7, 1, 0.7] }}
+      transition={{ duration: 2, repeat: Infinity }}
       className={cn(
-        "rounded-full bg-primary/20 flex items-center justify-center",
+        "rounded-full bg-pink-300 border-2 border-black flex items-center justify-center shadow-[4px_4px_0_0_#000]",
         sizeMap[size].container
       )}
     >
-      <div className={cn(
-        "rounded-full bg-primary/40",
-        sizeMap[size].icon
-      )} />
+      <div className={cn("rounded-full bg-pink-500", sizeMap[size].icon)} />
     </motion.div>
   )
 
   const stateIcon = () => {
     if (!showStates || state === "loading" || state === "idle" || !visible) return null
-
-    const iconClass = cn(
-      sizeMap[size].container,
-      state === "success" ? "text-green-500" : "text-red-500"
-    )
-
+    const color = state === "success" ? "bg-green-400" : "bg-red-400"
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className={iconClass}
+        className={cn(
+          "flex items-center justify-center border-4 border-black rounded-lg shadow-[4px_4px_0_0_#000]",
+          color,
+          sizeMap[size].container
+        )}
       >
-        {state === "success" 
-          ? (successIcon || <CheckCircle className="w-full h-full" />)
-          : (errorIcon || <AlertCircle className="w-full h-full" />)
-        }
+        {state === "success"
+          ? (successIcon || <CheckCircle className="text-black w-full h-full" />)
+          : (errorIcon || <AlertCircle className="text-black w-full h-full" />)}
       </motion.div>
     )
   }
@@ -261,30 +231,19 @@ export function UnifiedLoader({
         transition={{ duration: 0.2, ease: "easeOut" }}
         className={cn(
           containerBase,
-          fullWidth && "w-full",
-          "transition-all duration-200",
-          className
+          "border-4 border-black bg-white text-black rounded-xl shadow-[6px_6px_0_0_#000] transition-all duration-200",
+          className,
+          fullWidth && "w-full"
         )}
         style={{ minHeight: inline ? undefined : minHeight }}
       >
-        <div className={cn(
-          "flex items-center justify-center",
-          variant === "progress" && "w-full",
-          variant === "skeleton" && "w-full"
-        )}>
-          {getLoaderContent()}
-        </div>
-
+        {getLoaderContent()}
         {message && variant !== "progress" && (
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className={cn(
-              "text-muted-foreground text-center leading-relaxed",
-              sizeMap[size].text,
-              fullWidth && "w-full"
-            )}
+            className={cn("font-bold text-center text-black mt-2", sizeMap[size].text)}
           >
             {message}
           </motion.p>
@@ -294,9 +253,7 @@ export function UnifiedLoader({
   )
 }
 
-/**
- * Enhanced PageLoader with proper full-page coverage
- */
+/* 🧠 PageLoader (Neurobrutal Overlay) */
 export function PageLoader({
   message = "Loading...",
   variant = "spinner",
@@ -305,7 +262,7 @@ export function PageLoader({
   blocking = true,
   showBackdrop = true,
   ...props
-}: Omit<UnifiedLoaderProps, "inline"> & { 
+}: Omit<UnifiedLoaderProps, "inline"> & {
   className?: string
   blocking?: boolean
   showBackdrop?: boolean
@@ -320,27 +277,31 @@ export function PageLoader({
   }, [blocking])
 
   return (
-    <div className={cn(
-      "fixed inset-0 z-50 flex items-center justify-center",
-      showBackdrop && "bg-background/80 backdrop-blur-sm"
-    )}>
+    <div
+      className={cn(
+        "fixed inset-0 z-50 flex items-center justify-center",
+        showBackdrop && "bg-yellow-100/90 backdrop-blur-[2px] border-t-4 border-b-4 border-black"
+      )}
+    >
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="w-full max-w-sm mx-4"
       >
-        <div className={cn(
-          "rounded-xl border bg-card/95 backdrop-blur-md p-6 shadow-lg",
-          className
-        )}>
-          <UnifiedLoader 
-            message={message} 
-            variant={variant} 
-            size={size} 
+        <div
+          className={cn(
+            "rounded-xl border-4 border-black bg-white shadow-[8px_8px_0_0_#000] p-6",
+            className
+          )}
+        >
+          <UnifiedLoader
+            message={message}
+            variant={variant}
+            size={size}
             fullWidth
             minHeight="120px"
-            {...props} 
+            {...props}
           />
         </div>
       </motion.div>
@@ -348,38 +309,34 @@ export function PageLoader({
   )
 }
 
-/**
- * InlineLoader with predictable dimensions
- */
-export function InlineLoader({ 
-  message, 
-  variant = "spinner", 
-  size = "sm", 
-  className, 
-  ...props 
+/* 🧠 InlineLoader */
+export function InlineLoader({
+  message,
+  variant = "spinner",
+  size = "sm",
+  className,
+  ...props
 }: Omit<UnifiedLoaderProps, "inline">) {
   return (
-    <UnifiedLoader 
-      message={message} 
-      variant={variant} 
-      size={size} 
-      inline 
-      className={className} 
-      {...props} 
+    <UnifiedLoader
+      message={message}
+      variant={variant}
+      size={size}
+      inline
+      className={className}
+      {...props}
     />
   )
 }
 
-/**
- * ButtonLoader with better layout stability
- */
-function ButtonLoader({ 
-  loading = false, 
-  children, 
+/* 🧠 ButtonLoader */
+function ButtonLoader({
+  loading = false,
+  children,
   className,
   size = "sm",
-  ...props 
-}: { 
+  ...props
+}: {
   loading?: boolean
   children: React.ReactNode
   className?: string
@@ -389,38 +346,34 @@ function ButtonLoader({
     <div className={cn("relative inline-flex items-center justify-center", className)}>
       <AnimatePresence>
         {loading && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 flex items-center justify-center bg-background/90 rounded-md"
+            className="absolute inset-0 flex items-center justify-center bg-yellow-100/80 border-2 border-black rounded-md"
           >
-            <UnifiedLoader 
-              state="loading" 
-              variant="spinner" 
+            <UnifiedLoader
+              state="loading"
+              variant="spinner"
               size={size}
-              inline 
-              showStates={false} 
-              {...props} 
+              inline
+              showStates={false}
+              {...props}
             />
           </motion.div>
         )}
       </AnimatePresence>
-      <div className={loading ? "invisible" : "visible"}>
-        {children}
-      </div>
+      <div className={loading ? "invisible" : "visible"}>{children}</div>
     </div>
   )
 }
 
-/**
- * Enhanced SkeletonLoader with better spacing
- */
-function SkeletonLoader({ 
-  lines = 3, 
+/* 🧠 SkeletonLoader */
+function SkeletonLoader({
+  lines = 3,
   className,
-  spacing = "md"
-}: { 
+  spacing = "md",
+}: {
   lines?: number
   className?: string
   spacing?: "sm" | "md" | "lg"
@@ -428,22 +381,21 @@ function SkeletonLoader({
   const spacingMap = {
     sm: "space-y-2",
     md: "space-y-3",
-    lg: "space-y-4"
+    lg: "space-y-4",
   }
 
   return (
     <div className={cn(spacingMap[spacing], className)}>
       {Array.from({ length: lines }).map((_, i) => (
-        <div 
+        <div
           key={i}
           className={cn(
-            "h-4 bg-muted rounded-full animate-pulse",
+            "h-4 bg-yellow-200 border-2 border-black rounded-md animate-pulse shadow-[3px_3px_0_0_#000]",
             i === lines - 1 && lines > 1 && "w-3/4",
             i === lines - 2 && lines > 2 && "w-5/6"
-          )} 
+          )}
         />
       ))}
     </div>
   )
 }
-

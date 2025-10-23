@@ -78,3 +78,6 @@ docker-compose.local.yml
 
 # Prisma data files
 prisma/all-data.json
+demo/key.json
+demo/you.js
+demo/get-youtube-transcript.js

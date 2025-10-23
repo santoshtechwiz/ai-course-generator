@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { X } from "lucide-react"
 import { Drawer as DrawerPrimitive } from "vaul"
 
 import { cn } from "@/lib/utils"
@@ -20,7 +21,23 @@ const DrawerTrigger = DrawerPrimitive.Trigger
 
 const DrawerPortal = DrawerPrimitive.Portal
 
-const DrawerClose = DrawerPrimitive.Close
+const DrawerClose = React.forwardRef<
+  React.ElementRef<typeof DrawerPrimitive.Close>,
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Close>
+>(({ className, ...props }, ref) => (
+  <DrawerPrimitive.Close
+    ref={ref}
+    className={cn(
+      "absolute right-4 top-4 rounded-md border-4 border-black bg-[var(--color-bg)] p-2 shadow-[4px_4px_0_#000] transition-colors hover:bg-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+      className
+    )}
+    {...props}
+  >
+    <X className="h-4 w-4 text-[var(--color-text)]" />
+    <span className="sr-only">Close</span>
+  </DrawerPrimitive.Close>
+))
+DrawerClose.displayName = DrawerPrimitive.Close.displayName
 
 const DrawerOverlay = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Overlay>,
@@ -43,12 +60,12 @@ const DrawerContent = React.forwardRef<
     <DrawerPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
+        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-md border-4 border-black bg-[var(--color-card)] shadow-[4px_4px_0_#000]",
         className
       )}
       {...props}
     >
-      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
+      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-black" />
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>
@@ -60,7 +77,10 @@ const DrawerHeader = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn("grid gap-1.5 p-4 text-center sm:text-left", className)}
+    className={cn(
+      "grid gap-1.5 p-4 text-center sm:text-left bg-[var(--color-bg)] border-b-4 border-black",
+      className
+    )}
     {...props}
   />
 )
@@ -71,7 +91,10 @@ const DrawerFooter = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn("mt-auto flex flex-col gap-2 p-4", className)}
+    className={cn(
+      "mt-auto flex flex-col gap-2 p-4 bg-[var(--color-bg)] border-t-4 border-black",
+      className
+    )}
     {...props}
   />
 )
@@ -84,7 +107,7 @@ const DrawerTitle = React.forwardRef<
   <DrawerPrimitive.Title
     ref={ref}
     className={cn(
-      "text-lg font-semibold leading-none tracking-tight",
+      "text-lg font-semibold leading-none tracking-tight text-[var(--color-text)]",
       className
     )}
     {...props}
@@ -98,7 +121,7 @@ const DrawerDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DrawerPrimitive.Description
     ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
+    className={cn("text-sm text-[var(--color-text)]/70", className)}
     {...props}
   />
 ))

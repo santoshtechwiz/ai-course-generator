@@ -100,7 +100,7 @@ export function BaseListLayout({
                   )}
                   {resultCount !== undefined && (
                     <Badge
-                      variant="secondary"
+                      variant="default"
                       className="px-3 py-1 text-sm font-bold bg-[hsl(var(--secondary))] border-2 border-[hsl(var(--border))] shadow-[2px_2px_0_0_rgba(0,0,0,0.9)]"
                     >
                       {resultCount}
@@ -115,7 +115,7 @@ export function BaseListLayout({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6 md:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[256px_1fr] gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 lg:gap-8 xl:gap-10">
           {/* Filter Sidebar */}
           <div className={cn(
             showFiltersOnMobile ? "block" : "hidden lg:block"

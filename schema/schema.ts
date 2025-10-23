@@ -23,7 +23,6 @@ const codeQuizSchema = z.object({
     ),
   amount: z.number().min(1, "At least 1 question is required").max(15, "Maximum 20 questions allowed"),
   difficulty: z.enum(["easy", "medium", "hard"]),
-  language: z.string().default("javascript"),
 })
 const createCourseSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(100, "Title must be less than 100 characters"),

@@ -30,10 +30,10 @@ export default function OrderingQuizResults({
 
   // Performance level
   const getPerformanceLevel = (pct: number) => {
-    if (pct >= 90) return { level: 'excellent', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' }
-    if (pct >= 75) return { level: 'good', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' }
-    if (pct >= 60) return { level: 'average', color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' }
-    return { level: 'needs-improvement', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' }
+    if (pct >= 90) return { level: 'excellent', color: 'text-[var(--color-success)]', bg: 'bg-[var(--color-success)]', border: 'border-[var(--color-success)]' }
+    if (pct >= 75) return { level: 'good', color: 'text-[var(--color-primary)]', bg: 'bg-[var(--color-primary)]', border: 'border-[var(--color-primary)]' }
+    if (pct >= 60) return { level: 'average', color: 'text-[var(--color-warning)]', bg: 'bg-[var(--color-warning)]', border: 'border-[var(--color-warning)]' }
+    return { level: 'needs-improvement', color: 'text-[var(--color-error)]', bg: 'bg-[var(--color-error)]', border: 'border-[var(--color-error)]' }
   }
 
   const performance = getPerformanceLevel(percentage)

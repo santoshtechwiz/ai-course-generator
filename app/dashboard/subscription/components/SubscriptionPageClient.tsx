@@ -208,10 +208,10 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         )}
 
   {pendingSubscriptionData && (
-          <Alert className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 animate-in fade-in slide-in-from-top-5 duration-300">
-            <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            <AlertTitle>Pending Subscription</AlertTitle>
-            <AlertDescription>
+          <Alert className="mb-6 bg-gray-50 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-in fade-in slide-in-from-top-5 duration-300">
+            <Info className="h-5 w-5 text-black" />
+            <AlertTitle className="font-black text-black">Pending Subscription</AlertTitle>
+            <AlertDescription className="text-gray-700 font-bold">
               You have a pending subscription to the {pendingSubscriptionData.planName} plan. It will be processed
               automatically.
             </AlertDescription>
@@ -219,16 +219,16 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         )}
 
   {isAuthenticated && (
-          <Alert className="mb-6 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 animate-in fade-in slide-in-from-top-5 duration-300">
-            <Info className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            <AlertTitle>Manage Your Subscription</AlertTitle>
+          <Alert className="mb-6 bg-gray-50 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-in fade-in slide-in-from-top-5 duration-300">
+            <Info className="h-5 w-5 text-black" />
+            <AlertTitle className="font-black text-black">Manage Your Subscription</AlertTitle>
             <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <p>You can view and manage your current subscription details in your account page.</p>
+              <p className="text-gray-700 font-bold">You can view and manage your current subscription details in your account page.</p>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => router.push("/dashboard/account")}
-                className="sm:ml-auto"
+                className="border-2 border-black font-bold hover:bg-black hover:text-white"
               >
                 Go to Account <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

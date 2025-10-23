@@ -187,10 +187,10 @@ export default function PlanCards({
             custom={index}
           >
             <Card
-              className={`flex flex-col h-full transition-all duration-500 border-4 hover:shadow-2xl hover:shadow-black/20 relative overflow-hidden group rounded-xl ${
+              className={`flex flex-col h-full transition-all duration-500 border-4 border-neo-border bg-neo-background hover:shadow-2xl hover:shadow-black/20 relative overflow-hidden group rounded-xl ${
                 cardHighlightClass
               } ${isPlanDisabled ? "opacity-75" : ""} ${
-                isBestValue ? "shadow-[6px_6px_0px_0px_var(--border)] hover:shadow-[8px_8px_0px_0px_var(--border)]" : "shadow-[4px_4px_0px_0px_var(--border)] hover:shadow-[6px_6px_0px_0px_var(--border)]"
+                isBestValue ? "shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]" : "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
               }`}
             >
               {statusConfig.bannerText && (
@@ -218,19 +218,19 @@ export default function PlanCards({
                   <div className="flex items-baseline justify-center sm:justify-start">
                     {priceDisplay.hasDiscount ? (
                       <>
-                        <span className="text-2xl font-bold line-through text-muted-foreground">
+                        <span className="text-2xl font-bold line-through text-gray-500">
                           {priceDisplay.originalPrice}
                         </span>
-                        <span className="text-3xl font-bold ml-2 text-green-600 dark:text-green-400">
+                        <span className="text-3xl font-bold ml-2 text-black">
                           {priceDisplay.displayPrice}
                         </span>
                       </>
                     ) : (
-                      <span className="text-3xl font-bold">{priceDisplay.displayPrice}</span>
+                      <span className="text-3xl font-bold text-black">{priceDisplay.displayPrice}</span>
                     )}
                     <span className="text-sm ml-1 text-muted-foreground">/{duration === 1 ? "month" : "6 months"}</span>
                   </div>
-                  <div className="my-2 h-px bg-slate-200 dark:bg-slate-700" />
+                  <div className="my-2 h-px bg-black" />
                   <p className="text-sm text-muted-foreground">{plan.tokens} tokens included</p>
                 </div>
               </CardHeader>
@@ -238,16 +238,16 @@ export default function PlanCards({
               <CardContent className="flex-grow">
                 <div className="mb-4">
                   <p className="text-lg font-semibold text-center sm:text-left">{plan.tokens} tokens</p>
-                  <div className="relative h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-2">
+                  <div className="relative h-2 w-full bg-gray-200 border-2 border-black rounded-full overflow-hidden mt-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                     <motion.div
                       className={`absolute top-0 left-0 h-full rounded-full ${
                         plan.id === "FREE"
-                          ? "bg-muted"
+                          ? "bg-gray-400"
                           : plan.id === "BASIC"
-                            ? "bg-primary"
+                            ? "bg-black"
                             : plan.id === "PREMIUM"
-                              ? "bg-gradient-to-r from-primary to-purple-600"
-                              : "bg-accent"
+                              ? "bg-black"
+                              : "bg-black"
                       }`}
                       initial={{ width: 0 }}
                       animate={{ width: `${(plan.tokens / 600) * 100}%` }}
@@ -255,7 +255,7 @@ export default function PlanCards({
                     />
                   </div>
                   <div className="mt-2 text-center sm:text-left">
-                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    <span className="text-sm font-black text-black">
                       Up to {(() => {
                         const planConfig = getPlanConfig(plan.id as SubscriptionPlanType)
                         const maxQuestions = planConfig.maxQuestionsPerQuiz
@@ -281,14 +281,14 @@ export default function PlanCards({
                             className={`w-full text-primary-foreground font-bold transition-all duration-300 ${
                               plan.id === "FREE"
                                 ? isCurrentActivePlan
-                                  ? "bg-muted text-muted-foreground border-2 border-border shadow-[2px_2px_0px_0px_var(--border)] cursor-not-allowed"
-                                  : "bg-muted hover:bg-muted/80 text-foreground shadow-[4px_4px_0px_0px_var(--border)] hover:shadow-[6px_6px_0px_0px_var(--border)]"
+                                  ? "bg-gray-200 text-gray-600 border-4 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] cursor-not-allowed"
+                                  : "bg-gray-100 hover:bg-gray-200 text-black border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
                                 : plan.id === "BASIC"
-                                  ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-[4px_4px_0px_0px_var(--border)] hover:shadow-[6px_6px_0px_0px_var(--border)]"
+                                  ? "bg-black hover:bg-gray-800 text-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
                                   : plan.id === "PREMIUM"
-                                    ? "bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-primary-foreground shadow-[4px_4px_0px_0px_var(--border)] hover:shadow-[6px_6px_0px_0px_var(--border)]"
-                                    : "bg-accent hover:bg-accent/90 text-accent-foreground shadow-[4px_4px_0px_0px_var(--border)] hover:shadow-[6px_6px_0px_0px_var(--border)]"
-                            } ${isCurrentActivePlan ? "!bg-transparent !text-foreground border-2 border-border" : ""} ${
+                                    ? "bg-black hover:bg-gray-800 text-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                                    : "bg-black hover:bg-gray-800 text-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                            } ${isCurrentActivePlan ? "!bg-neo-background !text-black border-4 border-neo-border" : ""} ${
                               isPlanDisabled && !isCurrentActivePlan ? "opacity-50 cursor-not-allowed" : ""
                             }`}
                           >
