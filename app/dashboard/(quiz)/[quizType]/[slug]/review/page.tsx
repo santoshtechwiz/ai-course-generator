@@ -67,7 +67,7 @@ export default function ReviewPage({ params }: Props) {
                       <AccordionItem key={idx} value={`q-${idx}`}>
                         <AccordionTrigger className="flex items-center justify-between px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${q.isCorrect ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] ${q.isCorrect ? 'bg-[var(--color-success)] text-[var(--color-text)]' : 'bg-[var(--color-error)] text-[var(--color-text)]'}`}>
                               {q.isCorrect ? '✓' : '✕'}
                             </div>
                             <div className="text-sm font-medium">{`Q${idx + 1}: ${q.question || q.title || 'Question'}`}</div>

@@ -1,29 +1,29 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* === Neobrutalism Design System === */
+/* === Neobrutalism Design System — Premium Edition === */
 :root {
   /* Core brand colors */
-  --color-bg: #fffbe6;
-  --color-text: #000000;
+  --color-bg: #fffdf5;
+  --color-text: #0a0a0a;
   --color-primary: #ff007f;
   --color-accent: #00f5d4;
   --color-card: #ffffff;
-  --color-muted: #f5f5f5;
+  --color-muted: #f2f2f2;
 
-  /* Borders & Shadows */
+  /* Depth & Shadows */
   --color-border: #000000;
-  --shadow-offset-x: 4px;
-  --shadow-offset-y: 4px;
+  --shadow-offset-x: 6px;
+  --shadow-offset-y: 6px;
   --shadow-color: #000000;
   --shadow-neo: var(--shadow-offset-x) var(--shadow-offset-y) 0 var(--shadow-color);
 
   /* Radii & Typography */
-  --radius: 0.5rem;
+  --radius: 0.75rem;
   --font-base: 500;
   --font-heading: 700;
 
-  /* Optional utility tokens */
+  /* Accent utilities */
   --color-success: #00b341;
   --color-warning: #ffb300;
   --color-error: #ff3b3b;
@@ -31,53 +31,72 @@
 
 /* === Dark Mode === */
 .dark {
-  --color-bg: #1e1e1e;
-  --color-text: #ffffff;
+  --color-bg: #1a1a1a;
+  --color-text: #fafafa;
   --color-primary: #ff4bd1;
   --color-accent: #00f0a0;
-  --color-card: #2a2a2a;
+  --color-card: #2b2b2b;
   --color-muted: #333333;
-
-  --color-border: #ffffff;
-  --shadow-color: #ffffff;
+  --color-border: #fafafa;
+  --shadow-color: #fafafa;
 }
 
-/* === Tailwind Base Layer Overrides === */
+/* === Base Layer === */
 @layer base {
   * {
-    @apply border-[var(--color-border)] outline-none;
+    @apply transition-all duration-200 ease-in-out;
   }
 
   body {
-    @apply bg-[var(--color-bg)] text-[var(--color-text)] font-sans;
+    @apply bg-[var(--color-bg)] text-[var(--color-text)] font-sans tracking-tight;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold text-[var(--color-text)];
+    @apply font-bold text-[var(--color-text)] leading-tight;
   }
 }
 
-/* === Neobrutalism Component Utilities === */
+/* === Component Utilities === */
 @layer components {
   .neuro-card {
     @apply bg-[var(--color-card)] border-4 border-[var(--color-border)]
-           shadow-[var(--shadow-neo)] rounded-[var(--radius)] p-4;
+           shadow-[var(--shadow-neo)] rounded-[var(--radius)] p-5
+           transition-transform hover:-translate-x-1 hover:-translate-y-1
+           hover:shadow-none sm:p-6 lg:p-8;
   }
 
   .neuro-button {
-    @apply bg-[var(--color-primary)] text-[var(--color-text)]
+    @apply inline-flex items-center justify-center gap-2
+           bg-[var(--color-primary)] text-[var(--color-text)]
            border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]
-           font-medium transition-transform hover:-translate-x-1 hover:-translate-y-1
-           hover:shadow-none;
+           font-semibold px-5 py-3 rounded-[var(--radius)]
+           transition-transform duration-150 ease-in-out
+           hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none
+           active:translate-x-[4px] active:translate-y-[4px] active:shadow-none
+           sm:px-6 sm:py-3.5 md:px-8 md:py-4;
   }
 
   .neuro-input {
-    @apply bg-white border-4 border-[var(--color-border)] p-2 rounded-none
-           focus:outline-none focus:ring-4 focus:ring-[var(--color-accent)];
+    @apply bg-[var(--color-card)] border-4 border-[var(--color-border)] px-3 py-2
+           rounded-none focus:ring-4 focus:ring-[var(--color-accent)]
+           focus:border-[var(--color-accent)] placeholder:text-gray-500
+           sm:py-3 sm:px-4;
   }
 
   .neuro-badge {
     @apply inline-block px-3 py-1 border-4 border-[var(--color-border)]
-           bg-[var(--color-accent)] text-[var(--color-text)] shadow-[var(--shadow-neo)];
+           bg-[var(--color-accent)] text-[var(--color-text)]
+           shadow-[var(--shadow-neo)] text-sm sm:text-base;
+  }
+
+  .neuro-option {
+    @apply cursor-pointer border-4 border-[var(--color-border)] p-3 rounded-[var(--radius)]
+           shadow-[var(--shadow-neo)] transition-all duration-150 ease-in-out
+           hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none;
+  }
+
+  .neuro-option-selected {
+    @apply bg-[var(--color-primary)] text-[var(--color-bg)]
+           border-[var(--color-border)] shadow-[var(--shadow-neo)];
   }
 }

@@ -6,7 +6,7 @@ import { useAnimation as useAnimationContext } from "@/providers/animation-provi
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { submitFlashCardAnswer, nextFlashCard, setCurrentFlashCard } from "@/store/slices/flashcard-slice"
+import { submitFlashCardAnswer, setCurrentFlashCard } from "@/store/slices/flashcard-slice"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 
 // Import the simplified components
@@ -15,7 +15,7 @@ import { FlashcardBack } from "./FlashcardBack"
 import { FlashcardController } from "./FlashcardController"
 
 import { Button } from "@/components/ui/button"
-import { ArrowRight, RotateCcw, Heart, Brain, Target, CheckCircle2 } from "lucide-react"
+import { RotateCcw, Heart, Brain } from "lucide-react"
 import { UnifiedLoader } from "@/components/loaders"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
 

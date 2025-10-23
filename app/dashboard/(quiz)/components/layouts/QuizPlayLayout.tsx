@@ -136,7 +136,7 @@ const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) =
         "inline-flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-black transition-all duration-100 border-4 border-black shadow-[4px_4px_0_#000]",
         isPaused
           ? "bg-[var(--color-bg)] text-[var(--color-text)]/70"
-          : "bg-[var(--color-primary)] text-[var(--color-text)]"
+          : "bg-[var(--color-primary)] text-white"
       )}
       whileHover={{ scale: 1.05, y: -2 }}
       transition={{ duration: 0.1 }}
@@ -165,21 +165,21 @@ const ProgressBar = ({ progress, questionNumber, totalQuestions }: { progress: n
   >
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-primary)] border-4 border-black rounded-xl shadow-[4px_4px_0_#000]">
-            <Target className="w-5 h-5 text-[var(--color-text)]" aria-hidden="true" />
-            <span className="text-sm font-black text-[var(--color-text)]">
+            <Target className="w-5 h-5 text-white" aria-hidden="true" />
+            <span className="text-sm font-black text-white">
               Q{questionNumber}/{totalQuestions}
             </span>
           </div>
           <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-success)] border-4 border-black rounded-xl shadow-[4px_4px_0_#000]">
-            <CheckCircle className="w-5 h-5 text-[var(--color-text)]" aria-hidden="true" />
-            <span className="text-sm font-black text-[var(--color-text)]">
+            <CheckCircle className="w-5 h-5 text-white" aria-hidden="true" />
+            <span className="text-sm font-black text-white">
               {progress}% Complete
             </span>
           </div>
         </div>
 
     <div className="relative">
-      <div className="flex justify-between text-xs text-muted-foreground mb-2 font-bold">
+      <div className="flex justify-between text-xs text-[var(--color-text)]/70 mb-2 font-bold">
         <span>Progress</span>
         <span className="font-black">{progress}%</span>
       </div>

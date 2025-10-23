@@ -1,81 +1,93 @@
-/** @type {import('tailwindcss').Config} */
 const plugin = require("tailwindcss/plugin");
 
 module.exports = {
+  darkMode: "class",
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}",
+    "./app/**/*.{ts,tsx,js,jsx}",
+    "./components/**/*.{ts,tsx,js,jsx}",
+    "./pages/**/*.{ts,tsx,js,jsx}",
   ],
   theme: {
     extend: {
       colors: {
-        main: "#88aaee",
-        mainAccent: "#4d80e6",
-        overlay: "rgba(0,0,0,0.8)",
+        // Neobrutal base palette
+        background: "#f5f5f5",
+        foreground: "#111",
+        accent: "#2563eb", // royal blue pop
+        accentHover: "#1e40af",
+        card: "#ffffff",
+        border: "#111",
+        muted: "#888",
+        success: "#16a34a",
+        danger: "#dc2626",
 
-        // Mode clair
-        bg: "#dfe5f2",
-        text: "#000",
-        border: "#000",
-
-        // Mode sombre
-        darkBg: "#272933",
-        darkText: "#eeefe9",
-        darkBorder: "#000",
-        secondaryBlack: "#1b1b1b", // Contraire du blanc pur, pas utilisé noir absolu car les bordures et les ombres de boîtes sont de cette couleur
-
-        // Couleurs basées sur HSL
-        background: "hsl(var(--background))",
-        primary: "hsl(var(--primary))",
-        secondary: "hsl(var(--secondary))",
-        accent: "hsl(var(--accent))",
-        destructive: "hsl(var(--destructive))",
-        "primary-foreground": "hsl(var(--primary-foreground))",
-        "secondary-foreground": "hsl(var(--secondary-foreground))",
-        "accent-foreground": "hsl(var(--accent-foreground))",
-        "destructive-foreground": "hsl(var(--destructive-foreground))",
-        ring: "hsl(var(--ring))",
-        foreground: "hsl(var(--foreground))",
-        muted: "hsl(var(--muted))",
-        "muted-foreground": "hsl(var(--muted-foreground))",
-        popover: "hsl(var(--popover))",
-        "popover-foreground": "hsl(var(--popover-foreground))",
-        card: "hsl(var(--card))",
-        "card-foreground": "hsl(var(--card-foreground))",
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
+        // Dark mode
+        darkBackground: "#0e0e0e",
+        darkForeground: "#f5f5f5",
+        darkCard: "#1a1a1a",
+        darkBorder: "#fff",
       },
-      borderRadius: {
-        base: "5px",
-      },
+
       boxShadow: {
-        light: "4px 4px 0px 0px #000",
-        dark: "4px 4px 0px 0px #000",
+        neo: "6px 6px 0px #111",
+        neoDark: "6px 6px 0px #fff",
       },
 
-      translate: {
-        boxShadowX: "4px",
-        boxShadowY: "4px",
-        reverseBoxShadowX: "-4px",
-        reverseBoxShadowY: "-4px",
+      borderRadius: {
+        lg: "16px",
+        md: "10px",
+        sm: "6px",
       },
-      fontWeight: {
-        base: "500",
-        heading: "700",
+
+      fontFamily: {
+        display: ["Poppins", "sans-serif"],
+        body: ["Inter", "sans-serif"],
+      },
+
+      transitionTimingFunction: {
+        smooth: "cubic-bezier(0.16, 1, 0.3, 1)",
+      },
+
+      screens: {
+        xs: "480px",
+        sm: "640px",
+        md: "768px",
+        lg: "1024px",
+        xl: "1280px",
+        "2xl": "1536px",
       },
     },
   },
-  plugins: [
-    plugin(function ({ addUtilities }) {
-      const newUtilities = {
-        ".cardhover:hover": {
-          transform: "translateX(4px) translateY(4px)",
-          boxShadow: "none",
-          cursor: "pointer",
-        },
-      };
 
-      addUtilities(newUtilities, ["responsive", "hover"]);
+  plugins: [
+    plugin(function ({ addComponents }) {
+      addComponents({
+        ".card": {
+          "@apply bg-card border-4 border-border shadow-neo p-5 rounded-lg transition-transform duration-200": {},
+          "&:hover": {
+            transform: "translateY(-6px)",
+          },
+        },
+        ".btn": {
+          "@apply px-5 py-3 font-semibold border-4 border-border rounded-md transition-transform duration-200": {},
+          "&:active": {
+            transform: "translate(4px,4px)",
+            boxShadow: "none",
+          },
+        },
+        ".btn-accent": {
+          "@apply bg-accent text-white shadow-neo": {},
+          "&:hover": {
+            "@apply bg-accentHover": {},
+          },
+        },
+        ".btn-outline": {
+          "@apply bg-transparent text-foreground border-4 border-border shadow-neo": {},
+          "&:hover": {
+            "@apply bg-foreground text-background": {},
+          },
+        },
+      });
     }),
   ],
 };

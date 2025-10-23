@@ -378,14 +378,14 @@ function QuizListComponent({
         >
           <div className="relative flex-1 max-w-md">
             <Search
-              className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none z-10"
+              className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text)]/50 pointer-events-none z-10"
               aria-hidden="true"
             />
             <input
               type="search"
               placeholder="Search quizzes..."
               className={cn(
-                "flex h-11 w-full rounded-md border-4 border-black bg-[var(--color-bg)] px-11 py-3 text-sm font-bold shadow-[4px_4px_0_#000] transition-all placeholder:text-[var(--color-text)]/50 focus:shadow-[6px_6px_0_#000] focus:outline-none",
+                "flex h-11 w-full rounded-lg border-4 border-black bg-[var(--color-bg)] px-11 py-3 text-sm font-bold shadow-[4px_4px_0_#000] transition-all placeholder:text-[var(--color-text)]/50 focus:shadow-[6px_6px_0_#000] focus:outline-none",
               )}
               value={localSearch}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -400,24 +400,24 @@ function QuizListComponent({
                 <Button
                   variant="outline"
                   size="default"
-                  className={cn("gap-2 h-11 px-6 text-sm font-bold border-4 border-black shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000]")}
+                  className={cn("gap-2 h-11 px-6 text-sm font-bold border-4 border-black shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000] bg-[var(--color-bg)] text-[var(--color-text)]")}
                 >
                   <SlidersHorizontal className="h-5 w-5" strokeWidth={2.5} />
                   Sort
                   <ChevronDown className="h-5 w-5 ml-1" strokeWidth={2.5} />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 rounded-xl border-4 border-black shadow-[4px_4px_0_#000] z-[100]">
+              <DropdownMenuContent align="end" className="w-56 rounded-xl border-4 border-black shadow-[4px_4px_0_#000] z-[100] bg-[var(--color-card)]">
                 <DropdownMenuItem
                   onClick={() => setSortBy("default")}
-                  className={cn(sortBy === "default" && "bg-[var(--color-primary)] text-[var(--color-text)]", "text-sm font-bold rounded-lg")}
+                  className={cn(sortBy === "default" && "bg-[var(--color-accent)] text-white border-black font-black", "text-sm font-bold rounded-lg")}
                 >
                   <Star className="mr-3 h-5 w-5" strokeWidth={2.5} />
                   Default Order
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setSortBy("title")}
-                  className={cn(sortBy === "title" && "bg-[var(--color-primary)] text-[var(--color-text)]", "text-sm font-bold rounded-lg")}
+                  className={cn(sortBy === "title" && "bg-[var(--color-accent)] text-white border-black font-black", "text-sm font-bold rounded-lg")}
                 >
                   <BookOpen className="mr-3 h-5 w-5" strokeWidth={2.5} />
                   Alphabetical (A-Z)
@@ -432,7 +432,7 @@ function QuizListComponent({
                 size="default"
                 onClick={clearFilters}
                 className={cn(
-                  "gap-2 h-11 px-6 text-sm font-black hover:bg-destructive/10 hover:text-destructive transition-all border-4 border-transparent hover:border-destructive/30 shadow-[4px_4px_0_#000]",
+                  "gap-2 h-11 px-6 text-sm font-black hover:bg-[var(--color-destructive)] hover:text-white transition-all border-4 border-transparent hover:border-[var(--color-destructive)] shadow-[4px_4px_0_#000] bg-[var(--color-bg)] text-[var(--color-text)]",
                 )}
               >
                 <X className="h-5 w-5" strokeWidth={3} />
@@ -504,8 +504,8 @@ function QuizListComponent({
           {!hasNextPage && quizzes.length > 0 && (
             <div ref={endMessageRef} className="text-center py-12">
               <div className="inline-flex items-center gap-3 px-10 py-5 rounded-xl bg-[var(--color-success)] border-4 border-black shadow-[4px_4px_0_#000]">
-                <Sparkles className="h-6 w-6 text-[var(--color-text)] animate-pulse" strokeWidth={3} />
-                <span className="text-lg font-black text-[var(--color-text)]">You've seen them all! 🎉</span>
+                <Sparkles className="h-6 w-6 text-white animate-pulse" strokeWidth={3} />
+                <span className="text-lg font-black text-white">You've seen them all! 🎉</span>
               </div>
             </div>
           )}

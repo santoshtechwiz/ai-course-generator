@@ -37,16 +37,16 @@ const getDifficulty = (questionCount: number) => {
   if (questionCount <= 5)
     return {
       label: "BEGINNER",
-      color: "bg-[var(--color-success)] text-[var(--color-text)] border-4 border-black font-black shadow-[3px_3px_0_#000]",
+      color: "bg-[var(--color-success)] text-white border-4 border-black font-black shadow-[3px_3px_0_#000]",
     }
   if (questionCount <= 15)
     return {
       label: "INTERMEDIATE",
-      color: "bg-[var(--color-warning)] text-[var(--color-text)] border-4 border-black font-black shadow-[3px_3px_0_#000]",
+      color: "bg-[var(--color-warning)] text-white border-4 border-black font-black shadow-[3px_3px_0_#000]",
     }
   return {
     label: "ADVANCED",
-    color: "bg-[var(--color-error)] text-[var(--color-text)] border-4 border-black font-black shadow-[3px_3px_0_#000]",
+    color: "bg-[var(--color-destructive)] text-white border-4 border-black font-black shadow-[3px_3px_0_#000]",
   }
 }
 
