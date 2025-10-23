@@ -10,12 +10,9 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { Progress } from "@/components/ui/progress"
 import {
   FileText,
   MessageSquare,
-  BookOpen,
-  BarChart3,
   Award,
   TrendingUp,
   BookmarkIcon,
@@ -30,10 +27,8 @@ import {
   Flame,
   StickyNote,
   Edit3,
-  Trash2,
   Plus,
   Lock,
-  Tag,
   Search,
 } from "lucide-react"
 
@@ -55,7 +50,7 @@ import { DeleteNoteDialog } from "./modals/DeleteNoteDialog"
 import { useNotes } from "@/hooks/use-notes"
 import { useBookmarks } from "@/hooks/use-bookmarks"
 import type { Bookmark } from "@prisma/client"
-import GlassDoorLock from '@/components/shared/GlassDoorLock'
+import GlassDoorLock from "@/components/shared/GlassDoorLock"
 import { useFeatureAccess } from "@/hooks/useFeatureAccess"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 
@@ -114,18 +109,18 @@ export default function CourseDetailsTabs({
   const isOwner = Boolean(user?.id && user.id === course.userId)
   const isAdmin = Boolean(user?.isAdmin)
   const isAuthenticated = Boolean(user)
-  
+
   // Feature access for Summary and Quiz tabs
-  const summaryAccess = useFeatureAccess('course-videos')
-  const quizAccess = useFeatureAccess('quiz-access')
+  const summaryAccess = useFeatureAccess("course-videos")
+  const quizAccess = useFeatureAccess("quiz-access")
 
   // Determine if user can access tabs (owners and admins bypass restrictions)
   const canAccessSummary = isOwner || isAdmin || summaryAccess.canAccess
   const canAccessQuiz = isOwner || isAdmin || quizAccess.canAccess
-  
+
   // Debug logging
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[CourseDetailsTabs] Feature Access:', {
+  if (process.env.NODE_ENV === "development") {
+    console.log("[CourseDetailsTabs] Feature Access:", {
       plan,
       isOwner,
       isAdmin,
@@ -133,7 +128,7 @@ export default function CourseDetailsTabs({
       summaryAccess: { canAccess: summaryAccess.canAccess, reason: summaryAccess.reason },
       quizAccess: { canAccess: quizAccess.canAccess, reason: quizAccess.reason },
       canAccessSummary,
-      canAccessQuiz
+      canAccessQuiz,
     })
   }
 
@@ -158,7 +153,7 @@ export default function CourseDetailsTabs({
   const selectCourseProgress = useMemo(
     () =>
       createSelector(
-        [(state: RootState) => state.course.userProgress, () => course.id, () => user?.id || 'guest'],
+        [(state: RootState) => state.course.userProgress, () => course.id, () => user?.id || "guest"],
         (
           userProgressMap: Record<string, Record<string | number, CourseProgress>>,
           courseId: string | number,
@@ -173,13 +168,10 @@ export default function CourseDetailsTabs({
   const courseProgress = useAppSelector(selectCourseProgress)
 
   // Notes and bookmarks hooks
-  const {
-    notes,
-    deleteNote
-  } = useNotes({
+  const { notes, deleteNote } = useNotes({
     courseId: course.id,
     chapterId: currentChapter?.id,
-    limit: 5 // Limit to 5 notes
+    limit: 5, // Limit to 5 notes
   })
 
   // Filtered and searched notes
@@ -189,9 +181,8 @@ export default function CourseDetailsTabs({
     // Apply search filter
     if (notesSearchQuery.trim()) {
       const query = notesSearchQuery.toLowerCase()
-      filtered = filtered.filter((note: any) =>
-        note.note?.toLowerCase().includes(query) ||
-        note.chapter?.title?.toLowerCase().includes(query)
+      filtered = filtered.filter(
+        (note: any) => note.note?.toLowerCase().includes(query) || note.chapter?.title?.toLowerCase().includes(query),
       )
     }
 
@@ -216,42 +207,47 @@ export default function CourseDetailsTabs({
     return filtered.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }, [notes, notesSearchQuery, notesFilter, currentChapter?.id])
 
-  const {
-    bookmarks: courseBookmarks,
-  } = useBookmarks({
+  const { bookmarks: courseBookmarks } = useBookmarks({
     courseId: course.id,
-    chapterId: currentChapter?.id
+    chapterId: currentChapter?.id,
   })
 
   // Enhanced course statistics calculation - use external data if available
   const courseStats = useMemo(() => {
     const totalChapters = course.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0) || 0
     // Use external completed chapters data if available, otherwise fall back to redux
-    const completedCount = completedChapters.length > 0
-      ? completedChapters.length
-      : (courseProgress?.completedChapters?.length || 0)
+    const completedCount =
+      completedChapters.length > 0 ? completedChapters.length : courseProgress?.completedChapters?.length || 0
     const progressPercentage = totalChapters > 0 ? Math.round((completedCount / totalChapters) * 100) : 0
 
     // Calculate actual total duration from chapter data
-    const totalDuration = course.courseUnits?.reduce((acc, unit) => {
-      return acc + unit.chapters.reduce((chapterAcc, chapter) => {
-        // Use duration if available, otherwise fallback to default of 15 minutes
-        const chapterDuration = (typeof chapter.duration === 'number' ? chapter.duration : 15)
-        return chapterAcc + chapterDuration
-      }, 0)
-    }, 0) || totalChapters * 15
+    const totalDuration =
+      course.courseUnits?.reduce((acc, unit) => {
+        return (
+          acc +
+          unit.chapters.reduce((chapterAcc, chapter) => {
+            // Use duration if available, otherwise fallback to default of 15 minutes
+            const chapterDuration = typeof chapter.duration === "number" ? chapter.duration : 15
+            return chapterAcc + chapterDuration
+          }, 0)
+        )
+      }, 0) || totalChapters * 15
 
     // Calculate completed duration based on actual completed chapters
-    const completedDuration = course.courseUnits?.reduce((acc, unit) => {
-      return acc + unit.chapters.reduce((chapterAcc, chapter) => {
-        const chapterId = String(chapter.id)
-        if (completedChapters.includes(chapterId)) {
-          const chapterDuration = (typeof chapter.duration === 'number' ? chapter.duration : 15)
-          return chapterAcc + chapterDuration
-        }
-        return chapterAcc
-      }, 0)
-    }, 0) || 0
+    const completedDuration =
+      course.courseUnits?.reduce((acc, unit) => {
+        return (
+          acc +
+          unit.chapters.reduce((chapterAcc, chapter) => {
+            const chapterId = String(chapter.id)
+            if (completedChapters.includes(chapterId)) {
+              const chapterDuration = typeof chapter.duration === "number" ? chapter.duration : 15
+              return chapterAcc + chapterDuration
+            }
+            return chapterAcc
+          }, 0)
+        )
+      }, 0) || 0
 
     const remainingChapters = totalChapters - completedCount
     // Estimate remaining time based on average chapter duration
@@ -322,32 +318,31 @@ export default function CourseDetailsTabs({
     [onSeekToBookmark],
   )
 
-  // Get skill level styling with theme-aware Neobrutalism colors
   const getSkillLevelStyling = (level: string) => {
     switch (level) {
       case "Expert":
         return {
-          badge: "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-2 border-purple-600 dark:border-purple-400 shadow-[3px_3px_0px_0px] shadow-purple-600/50 dark:shadow-purple-400/50",
+          badge: "bg-accent text-foreground border-4 border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
           icon: Star,
         }
       case "Advanced":
         return {
-          badge: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-2 border-emerald-600 dark:border-emerald-400 shadow-[3px_3px_0px_0px] shadow-emerald-600/50 dark:shadow-emerald-400/50",
+          badge: "bg-chart-1 text-foreground border-4 border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
           icon: Trophy,
         }
       case "Intermediate":
         return {
-          badge: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-2 border-blue-600 dark:border-blue-400 shadow-[3px_3px_0px_0px] shadow-blue-600/50 dark:shadow-blue-400/50",
+          badge: "bg-chart-3 text-foreground border-4 border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
           icon: Target,
         }
       case "Novice":
         return {
-          badge: "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-2 border-amber-600 dark:border-amber-400 shadow-[3px_3px_0px_0px] shadow-amber-600/50 dark:shadow-amber-400/50",
+          badge: "bg-chart-2 text-foreground border-4 border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
           icon: Zap,
         }
       default:
         return {
-          badge: "bg-gray-100 dark:bg-gray-800/30 text-gray-800 dark:text-gray-300 border-2 border-gray-600 dark:border-gray-400 shadow-[3px_3px_0px_0px] shadow-gray-600/50 dark:shadow-gray-400/50",
+          badge: "bg-muted text-foreground border-4 border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
           icon: PlayCircle,
         }
     }
@@ -393,90 +388,53 @@ export default function CourseDetailsTabs({
     const SkillIcon = skillStyling.icon
 
     return (
-      <div className="space-y-8">
-        {/* Main Progress Ring with enhanced interactivity */}
+      <div className="space-y-6">
         <div className="flex items-center justify-center">
-          <div className="relative w-40 h-40 group cursor-pointer">
-            <svg className="w-40 h-40 transform -rotate-90 group-hover:scale-105 transition-transform duration-300" viewBox="0 0 120 120">
-              {/* Background circle */}
-              <circle
-                cx="60"
-                cy="60"
-                r="50"
-                stroke="currentColor"
-                strokeWidth="4"
-                fill="none"
-                className="text-muted/20"
-              />
-              {/* Progress circle with gradient */}
-              <defs>
-                <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
-                </linearGradient>
-              </defs>
+          <div className="relative w-48 h-48 border-4 border-foreground bg-background shadow-[8px_8px_0px_0px] shadow-foreground">
+            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="50" stroke="currentColor" strokeWidth="8" fill="none" className="text-muted" />
               <motion.circle
                 cx="60"
                 cy="60"
                 r="50"
-                stroke="url(#progressGradient)"
-                strokeWidth="6"
+                stroke="currentColor"
+                strokeWidth="8"
                 fill="none"
-                strokeLinecap="round"
+                strokeLinecap="butt"
                 strokeDasharray={`${2 * Math.PI * 50}`}
                 initial={{ strokeDashoffset: 2 * Math.PI * 50 }}
                 animate={{
                   strokeDashoffset: 2 * Math.PI * 50 * (1 - courseStats.progressPercentage / 100),
                 }}
-                transition={{ duration: 1.5, ease: "easeOut" }}
-                className="drop-shadow-sm"
+                transition={{ duration: 1, ease: "linear" }}
+                className="text-foreground"
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center group-hover:scale-105 transition-transform duration-300">
-                <div className="text-4xl font-bold text-foreground mb-1">{courseStats.progressPercentage}%</div>
-                <div className="text-sm text-muted-foreground font-medium">Complete</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {courseStats.completedChapters}/{courseStats.totalChapters} chapters
+              <div className="text-center">
+                <div className="text-5xl font-black text-foreground">{courseStats.progressPercentage}%</div>
+                <div className="text-sm font-bold text-foreground uppercase mt-1">Complete</div>
+                <div className="text-xs font-bold text-muted-foreground mt-1">
+                  {courseStats.completedChapters}/{courseStats.totalChapters}
                 </div>
               </div>
             </div>
-            {/* Animated pulse ring */}
-            <motion.div
-              className="absolute inset-0 rounded-full border-2 border-primary/20"
-              animate={{
-                scale: [1, 1.1, 1],
-                opacity: [0.5, 0.8, 0.5]
-              }}
-              transition={{
-                duration: 3,
-                repeat: Number.POSITIVE_INFINITY,
-                ease: "easeInOut"
-              }}
-            />
           </div>
         </div>
 
-        {/* Enhanced Progress Statistics Grid - Neobrutalism style */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-card border-3 border-border rounded-xl p-6 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] transition-all duration-100 hover:border-green-600 group cursor-pointer"
-            whileHover={{ y: -2 }}
+            className="bg-chart-1 border-4 border-foreground p-4 shadow-[4px_4px_0px_0px] shadow-foreground hover:shadow-[6px_6px_0px_0px] hover:shadow-foreground transition-shadow"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 border-2 border-green-600 dark:border-green-400 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-100">
-                <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+            <div className="flex flex-col gap-2">
+              <div className="w-12 h-12 bg-background border-4 border-foreground flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-foreground" />
               </div>
-              <div>
-                <div className="text-2xl font-black text-foreground group-hover:text-green-600 transition-colors duration-100">
-                  {courseStats.completedChapters}
-                </div>
-                <div className="text-sm text-muted-foreground font-bold">Completed</div>
-                <div className="text-xs text-muted-foreground mt-1 font-medium">Chapters done</div>
-              </div>
+              <div className="text-3xl font-black text-foreground">{courseStats.completedChapters}</div>
+              <div className="text-xs font-black text-foreground uppercase">Completed</div>
             </div>
           </motion.div>
 
@@ -484,20 +442,14 @@ export default function CourseDetailsTabs({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-card border-3 border-border rounded-xl p-6 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] transition-all duration-100 hover:border-blue-600 group cursor-pointer"
-            whileHover={{ y: -2 }}
+            className="bg-chart-3 border-4 border-foreground p-4 shadow-[4px_4px_0px_0px] shadow-foreground hover:shadow-[6px_6px_0px_0px] hover:shadow-foreground transition-shadow"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-600 dark:border-blue-400 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-100">
-                <Clock className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <div className="flex flex-col gap-2">
+              <div className="w-12 h-12 bg-background border-4 border-foreground flex items-center justify-center">
+                <Clock className="h-6 w-6 text-foreground" />
               </div>
-              <div>
-                <div className="text-2xl font-black text-foreground group-hover:text-blue-600 transition-colors duration-100">
-                  {formatDuration(courseStats.estimatedTimeLeft)}
-                </div>
-                <div className="text-sm text-muted-foreground font-bold">Remaining</div>
-                <div className="text-xs text-muted-foreground mt-1 font-medium">Time to finish</div>
-              </div>
+              <div className="text-3xl font-black text-foreground">{formatDuration(courseStats.estimatedTimeLeft)}</div>
+              <div className="text-xs font-black text-foreground uppercase">Remaining</div>
             </div>
           </motion.div>
 
@@ -505,20 +457,14 @@ export default function CourseDetailsTabs({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-card border-3 border-border rounded-xl p-6 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] transition-all duration-100 hover:border-orange-600 group cursor-pointer"
-            whileHover={{ y: -2 }}
+            className="bg-chart-2 border-4 border-foreground p-4 shadow-[4px_4px_0px_0px] shadow-foreground hover:shadow-[6px_6px_0px_0px] hover:shadow-foreground transition-shadow"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 border-2 border-orange-600 dark:border-orange-400 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-100">
-                <Flame className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+            <div className="flex flex-col gap-2">
+              <div className="w-12 h-12 bg-background border-4 border-foreground flex items-center justify-center">
+                <Flame className="h-6 w-6 text-foreground" />
               </div>
-              <div>
-                <div className="text-2xl font-black text-foreground group-hover:text-orange-600 transition-colors duration-100">
-                  {courseStats.learningStreak}
-                </div>
-                <div className="text-sm text-muted-foreground font-bold">Day Streak</div>
-                <div className="text-xs text-muted-foreground mt-1 font-medium">Keep it up!</div>
-              </div>
+              <div className="text-3xl font-black text-foreground">{courseStats.learningStreak}</div>
+              <div className="text-xs font-black text-foreground uppercase">Day Streak</div>
             </div>
           </motion.div>
 
@@ -526,74 +472,60 @@ export default function CourseDetailsTabs({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-card border-3 border-border rounded-xl p-6 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] transition-all duration-100 hover:border-amber-600 group cursor-pointer"
-            whileHover={{ y: -2 }}
+            className="bg-chart-4 border-4 border-foreground p-4 shadow-[4px_4px_0px_0px] shadow-foreground hover:shadow-[6px_6px_0px_0px] hover:shadow-foreground transition-shadow"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 border-2 border-amber-600 dark:border-amber-400 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-100">
-                <BookmarkIcon className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+            <div className="flex flex-col gap-2">
+              <div className="w-12 h-12 bg-background border-4 border-foreground flex items-center justify-center">
+                <BookmarkIcon className="h-6 w-6 text-foreground" />
               </div>
-              <div>
-                <div className="text-2xl font-black text-foreground group-hover:text-amber-600 transition-colors duration-100">
-                  {courseStats.totalBookmarks}
-                </div>
-                <div className="text-sm text-muted-foreground font-bold">Bookmarks</div>
-                <div className="text-xs text-muted-foreground mt-1 font-medium">Saved items</div>
-              </div>
+              <div className="text-3xl font-black text-foreground">{courseStats.totalBookmarks}</div>
+              <div className="text-xs font-black text-foreground uppercase">Bookmarks</div>
             </div>
           </motion.div>
         </div>
 
-        {/* Enhanced Additional Stats - Neobrutalism style */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-card border-3 border-border rounded-xl p-6 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] transition-all duration-100 hover:border-primary group cursor-pointer"
-            whileHover={{ y: -2 }}
+            className="bg-background border-4 border-foreground p-6 shadow-[4px_4px_0px_0px] shadow-foreground hover:shadow-[6px_6px_0px_0px] hover:shadow-foreground transition-shadow"
           >
             <div className="flex items-center justify-between mb-4">
-              <span className="text-lg font-black text-foreground group-hover:text-primary transition-colors duration-100 uppercase">
-                Study Time This Week
-              </span>
-              <div className="w-10 h-10 bg-primary/10 dark:bg-primary/20 border-2 border-primary rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-100">
-                <Calendar className="h-5 w-5 text-primary" />
+              <span className="text-base font-black text-foreground uppercase">Study Time This Week</span>
+              <div className="w-10 h-10 bg-foreground border-4 border-foreground flex items-center justify-center">
+                <Calendar className="h-5 w-5 text-background" />
               </div>
             </div>
-            <div className="text-3xl font-black text-primary mb-2 group-hover:scale-105 transition-transform duration-100">
+            <div className="text-4xl font-black text-foreground mb-2">
               {formatDuration(courseStats.studyTimeThisWeek)}
             </div>
-            <div className="text-sm text-muted-foreground font-medium group-hover:text-muted-foreground/80 transition-colors duration-100">
-              Keep up the great work!
-            </div>
+            <div className="text-sm font-bold text-muted-foreground uppercase">Keep it up!</div>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="bg-card border-3 border-border rounded-xl p-6 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] transition-all duration-100 hover:border-amber-600 group cursor-pointer"
-            whileHover={{ y: -2 }}
+            className="bg-background border-4 border-foreground p-6 shadow-[4px_4px_0px_0px] shadow-foreground hover:shadow-[6px_6px_0px_0px] hover:shadow-foreground transition-shadow"
           >
             <div className="flex items-center justify-between mb-4">
-              <span className="text-lg font-black text-foreground group-hover:text-amber-600 transition-colors duration-100 uppercase">
-                Quiz Average
-              </span>
-              <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 border-2 border-amber-600 dark:border-amber-400 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-100">
-                <Star className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <span className="text-base font-black text-foreground uppercase">Quiz Average</span>
+              <div className="w-10 h-10 bg-foreground border-4 border-foreground flex items-center justify-center">
+                <Star className="h-5 w-5 text-background" />
               </div>
             </div>
-            <div className="text-3xl font-black text-amber-600 dark:text-amber-400 mb-2 group-hover:scale-105 transition-transform duration-100">
-              {courseStats.averageScore}%
-            </div>
-            <div className="text-sm text-muted-foreground font-medium group-hover:text-muted-foreground/80 transition-colors duration-100">
-              {courseStats.averageScore >= 80 ? "Excellent!" : courseStats.averageScore >= 60 ? "Good work!" : "Keep practicing!"}
+            <div className="text-4xl font-black text-foreground mb-2">{courseStats.averageScore}%</div>
+            <div className="text-sm font-bold text-muted-foreground uppercase">
+              {courseStats.averageScore >= 80
+                ? "Excellent!"
+                : courseStats.averageScore >= 60
+                  ? "Good work!"
+                  : "Keep practicing!"}
             </div>
           </motion.div>
         </div>
 
-        {/* Enhanced Skill Level Badge - Neobrutalism style */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -603,59 +535,43 @@ export default function CourseDetailsTabs({
           <Badge
             variant="default"
             className={cn(
-              "px-8 py-4 text-lg font-black uppercase tracking-wide hover:shadow-[6px_6px_0px_0px] transition-all duration-100 hover:scale-105 cursor-pointer group",
-              skillStyling.badge
+              "px-8 py-4 text-lg font-black uppercase tracking-wider hover:shadow-[8px_8px_0px_0px] hover:shadow-foreground transition-shadow cursor-pointer",
+              skillStyling.badge,
             )}
           >
-            <SkillIcon className="h-6 w-6 mr-3 group-hover:scale-110 transition-transform duration-100" />
+            <SkillIcon className="h-6 w-6 mr-3" />
             {courseStats.skillLevel} Level
-            <motion.div
-              className="ml-2 inline-block"
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-            >
-              {courseStats.skillLevel === "Expert" ? "🏆" : courseStats.skillLevel === "Advanced" ? "⭐" : "🎯"}
-            </motion.div>
           </Badge>
         </motion.div>
 
-        {/* Enhanced Course Progress Bar */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
-          className="bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl p-6 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:border-primary/30"
+          className="bg-background border-4 border-foreground p-6 shadow-[4px_4px_0px_0px] shadow-foreground"
         >
-          <h4 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
+          <h4 className="text-lg font-black text-foreground mb-4 flex items-center gap-2 uppercase">
+            <TrendingUp className="h-5 w-5 text-foreground" />
             Course Progress
           </h4>
           <div className="space-y-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground font-medium">Completed</span>
-              <span className="font-bold text-foreground">
+              <span className="font-bold text-foreground uppercase">Completed</span>
+              <span className="font-black text-foreground">
                 {formatDuration(courseStats.completedDuration)} / {formatDuration(courseStats.totalDuration)}
               </span>
             </div>
-            <div className="relative">
-              <Progress
-                value={(courseStats.completedDuration / courseStats.totalDuration) * 100}
-                className="h-4 bg-muted/30"
-              />
+            <div className="relative h-6 bg-muted border-4 border-foreground">
               <motion.div
-                className="absolute top-0 left-0 h-4 bg-gradient-to-r from-primary to-primary/80 rounded-full"
+                className="absolute top-0 left-0 h-full bg-foreground"
                 initial={{ width: 0 }}
                 animate={{ width: `${(courseStats.completedDuration / courseStats.totalDuration) * 100}%` }}
-                transition={{ duration: 1.5, ease: "easeOut", delay: 0.9 }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse rounded-full"></div>
-              </motion.div>
+                transition={{ duration: 1, ease: "linear" }}
+              />
             </div>
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="flex justify-between text-xs font-black text-foreground uppercase">
               <span>0%</span>
-              <span className="font-medium text-primary">
-                {Math.round((courseStats.completedDuration / courseStats.totalDuration) * 100)}%
-              </span>
+              <span>{Math.round((courseStats.completedDuration / courseStats.totalDuration) * 100)}%</span>
               <span>100%</span>
             </div>
           </div>
@@ -667,41 +583,38 @@ export default function CourseDetailsTabs({
   return (
     <div className="h-full w-full flex flex-col">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full w-full flex flex-col">
-        {/* Enhanced tab navigation with sticky positioning */}
-        <TabsList className="sticky top-0 z-10 grid w-full grid-cols-4 h-auto bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/30 p-2 md:p-3 gap-1 md:gap-3 shadow-sm">
+        <TabsList className="sticky top-0 z-10 grid w-full grid-cols-4 h-auto bg-white border-4 border-black p-2 gap-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <TabsTrigger
             value="summary"
-            className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
+            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:border-4 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-4 border-transparent hover:border-black px-3 md:px-4"
           >
-            <FileText className="h-4 w-4 md:h-5 md:w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
-            <span className="font-semibold">Summary</span>
+            <FileText className="h-5 w-5 md:h-6 md:w-6" />
+            <span className="tracking-tight">Summary</span>
           </TabsTrigger>
-    {/* Quiz tab - always visible, access is visually handled by GlassDoorLock */}
           <TabsTrigger
             value="quiz"
-            className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
+            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:border-4 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-4 border-transparent hover:border-black px-3 md:px-4"
           >
-            <MessageSquare className="h-4 w-4 md:h-5 md:w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
-            <span className="font-semibold">Quiz</span>
+            <MessageSquare className="h-5 w-5 md:h-6 md:w-6" />
+            <span className="tracking-tight">Quiz</span>
           </TabsTrigger>
           <TabsTrigger
             value="notes"
-            className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
+            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:border-4 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-4 border-transparent hover:border-black px-3 md:px-4"
           >
-            <StickyNote className="h-4 w-4 md:h-5 md:w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
-            <span className="font-semibold">Notes</span>
+            <StickyNote className="h-5 w-5 md:h-6 md:w-6" />
+            <span className="tracking-tight">Notes</span>
           </TabsTrigger>
           <TabsTrigger
             value="bookmarks"
-            className="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-sm font-medium h-12 md:h-16 data-[state=active]:bg-background data-[state=active]:shadow-xl data-[state=active]:border data-[state=active]:border-primary/20 data-[state=active]:text-primary transition-all duration-300 rounded-xl hover:bg-background/50 group px-2 md:px-4"
+            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:border-4 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-4 border-transparent hover:border-black px-3 md:px-4"
           >
-            <BookmarkIcon className="h-4 w-4 md:h-5 md:w-5 group-data-[state=active]:text-primary transition-colors duration-200" />
-            <span className="font-semibold">Bookmarks</span>
+            <BookmarkIcon className="h-5 w-5 md:h-6 md:w-6" />
+            <span className="tracking-tight">Bookmarks</span>
           </TabsTrigger>
         </TabsList>
 
-        {/* Enhanced tabs content with better spacing and smooth transitions */}
-        <TabsContent value="summary" className="flex-1 overflow-auto w-full p-0">
+        <TabsContent value="summary" className="flex-1 overflow-auto w-full p-0 mt-6">
           <AnimatePresence mode="wait">
             {isTabLoading ? (
               <motion.div
@@ -721,16 +634,15 @@ export default function CourseDetailsTabs({
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
               >
-                {/* GlassDoorLock handles authentication and subscription visually */}
                 {currentChapter ? (
                   <GlassDoorLock
                     isLocked={!canAccessSummary}
-                    previewRatio={0.2} // show top 20%
-                    reason={!user ? 'Sign in to continue learning' : 'Upgrade your plan to unlock this content'}
+                    previewRatio={0.2}
+                    reason={!user ? "Sign in to continue learning" : "Upgrade your plan to unlock this content"}
                     className="p-0"
-                    blurIntensity={canAccessSummary ? 'light' : 'medium'}
+                    blurIntensity={canAccessSummary ? "light" : "medium"}
                   >
-                    <div className="p-4 sm:p-6">
+                    <div className="p-6 border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                       <CourseAISummary
                         chapterId={currentChapter.id}
                         name={currentChapter.title || currentChapter.name || "Chapter Summary"}
@@ -746,12 +658,12 @@ export default function CourseDetailsTabs({
                       animate={{ opacity: 1, scale: 1 }}
                       className="text-center space-y-4"
                     >
-                      <div className="w-20 h-20 bg-muted/30 rounded-full flex items-center justify-center mx-auto">
-                        <FileText className="h-10 w-10 opacity-50" />
+                      <div className="w-24 h-24 bg-muted border-4 border-black flex items-center justify-center mx-auto">
+                        <FileText className="h-12 w-12 opacity-50" />
                       </div>
                       <div>
-                        <h3 className="text-xl font-semibold mb-2">No Chapter Selected</h3>
-                        <p className="text-base text-muted-foreground">
+                        <h3 className="text-2xl font-black mb-3 uppercase">No Chapter Selected</h3>
+                        <p className="text-base text-muted-foreground font-bold">
                           Select a chapter from the playlist to view AI-generated summary and insights
                         </p>
                       </div>
@@ -763,16 +675,15 @@ export default function CourseDetailsTabs({
           </AnimatePresence>
         </TabsContent>
 
-        <TabsContent value="quiz" className="flex-1 overflow-auto w-full p-0">
-          {/* GlassDoorLock handles authentication and subscription visually */}
+        <TabsContent value="quiz" className="flex-1 overflow-auto w-full p-0 mt-6">
           {currentChapter ? (
             <GlassDoorLock
               isLocked={!canAccessQuiz}
-              reason={!user ? 'Sign in to continue learning' : 'Upgrade your plan to unlock this content'}
+              reason={!user ? "Sign in to continue learning" : "Upgrade your plan to unlock this content"}
               className="p-0"
-              blurIntensity={canAccessQuiz ? 'light' : 'medium'}
+              blurIntensity={canAccessQuiz ? "light" : "medium"}
             >
-              <div className="p-4">
+              <div className="p-6 border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <CourseDetailsQuiz
                   key={currentChapter.id}
                   course={course}
@@ -780,7 +691,7 @@ export default function CourseDetailsTabs({
                   accessLevels={{
                     isAuthenticated,
                     isSubscribed: Boolean(isSubscribed || (currentChapter as any)?.isFreeQuiz === true),
-                    isAdmin
+                    isAdmin,
                   }}
                   isPublicCourse={course.isPublic || false}
                   chapterId={currentChapter.id.toString()}
@@ -794,12 +705,12 @@ export default function CourseDetailsTabs({
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center space-y-4"
               >
-                <div className="w-20 h-20 bg-muted/30 rounded-full flex items-center justify-center mx-auto">
-                  <MessageSquare className="h-10 w-10 opacity-50" />
+                <div className="w-24 h-24 bg-muted border-4 border-black flex items-center justify-center mx-auto">
+                  <MessageSquare className="h-12 w-12 opacity-50" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">No Chapter Selected</h3>
-                  <p className="text-base text-muted-foreground">
+                  <h3 className="text-2xl font-black mb-3 uppercase">No Chapter Selected</h3>
+                  <p className="text-base text-muted-foreground font-bold">
                     Select a chapter from the playlist to take interactive quizzes and test your knowledge
                   </p>
                 </div>
@@ -808,20 +719,20 @@ export default function CourseDetailsTabs({
           )}
         </TabsContent>
 
-        <TabsContent value="bookmarks" className="flex-1 overflow-auto w-full p-0">
-          <Card className="border border-border/40 shadow-sm bg-background">
-            <CardHeader className="pb-3 px-4 py-3">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <BookmarkIcon className="h-6 w-6 text-primary" />
+        <TabsContent value="bookmarks" className="flex-1 overflow-auto w-full p-0 mt-6">
+          <Card className="border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white">
+            <CardHeader className="pb-4 px-6 py-6 border-b-4 border-black">
+              <CardTitle className="flex items-center gap-3 text-2xl font-black uppercase tracking-tight">
+                <BookmarkIcon className="h-7 w-7 text-foreground" />
                 Video Bookmarks
               </CardTitle>
-              <CardDescription className="text-sm">
+              <CardDescription className="text-sm font-bold text-muted-foreground uppercase tracking-tight">
                 {bookmarks.length > 0
-                  ? `${bookmarks.length} bookmark${bookmarks.length !== 1 ? "s" : ""} saved for this video`
-                  : "Press 'B' while watching to bookmark important moments"}
+                  ? `${bookmarks.length} bookmark${bookmarks.length !== 1 ? "s" : ""} saved`
+                  : "Press 'B' to bookmark moments"}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 px-4 pb-4">
+            <CardContent className="space-y-4 px-6 pb-6 pt-6">
               {isAuthenticated && bookmarks.length > 0 ? (
                 <div className="space-y-4">
                   {bookmarks.map((bookmark, index) => (
@@ -829,25 +740,24 @@ export default function CourseDetailsTabs({
                       key={bookmark.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
+                      transition={{ delay: index * 0.05 }}
                       onClick={() => handleSeekToBookmark(bookmark.time)}
-                      className="group flex items-center justify-between p-6 bg-card border border-border/40 rounded-xl cursor-pointer hover:shadow-lg transition-all duration-300 hover:border-primary/30"
+                      className="group flex items-center justify-between p-5 bg-white border-4 border-black cursor-pointer hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow"
                     >
-                      <div className="flex items-center gap-6">
-                        <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-bold shadow-sm text-lg">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-black flex items-center justify-center text-white font-black text-xl border-4 border-black">
                           {index + 1}
                         </div>
                         <div>
                           <div className="flex items-center gap-3 mb-2">
                             <Badge
                               variant="default"
-                              className="bg-primary/10 text-primary border-primary/20 text-sm px-3 py-1"
+                              className="bg-yellow-300 text-black border-4 border-black text-base px-3 py-1 font-black uppercase"
                             >
                               {formatTime(bookmark.time)}
                             </Badge>
-                            <Clock className="h-4 w-4 text-muted-foreground" />
                           </div>
-                          <p className="font-semibold text-foreground group-hover:text-primary transition-colors text-lg">
+                          <p className="font-black text-foreground text-lg uppercase tracking-tight">
                             {bookmark.title}
                           </p>
                         </div>
@@ -859,7 +769,7 @@ export default function CourseDetailsTabs({
                           e.stopPropagation()
                           handleRemoveBookmark(bookmark.id)
                         }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity border-4 border-black hover:bg-red-500 hover:text-white font-black uppercase"
                       >
                         Remove
                       </Button>
@@ -872,18 +782,18 @@ export default function CourseDetailsTabs({
                   animate={{ opacity: 1, scale: 1 }}
                   className="text-center py-16"
                 >
-                  <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <BookmarkIcon className="h-12 w-12 text-primary/50" />
+                  <div className="w-28 h-28 bg-muted border-4 border-black flex items-center justify-center mx-auto mb-8">
+                    <BookmarkIcon className="h-14 w-14 text-foreground" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3">No bookmarks yet</h3>
-                  <p className="text-muted-foreground mb-6 max-w-sm mx-auto text-base leading-relaxed">
-                    While watching videos, press 'B' or click the bookmark button to save important moments
+                  <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">No bookmarks yet</h3>
+                  <p className="text-muted-foreground mb-8 max-w-sm mx-auto text-base font-bold">
+                    Press 'B' while watching to save important moments
                   </p>
                   <Badge
                     variant="default"
-                    className="bg-primary/5 text-primary border-primary/20 text-base px-4 py-2"
+                    className="bg-black text-white border-4 border-black text-lg px-6 py-3 font-black uppercase"
                   >
-                    Press B to bookmark
+                    Press B
                   </Badge>
                 </motion.div>
               ) : (
@@ -892,14 +802,15 @@ export default function CourseDetailsTabs({
                   animate={{ opacity: 1, scale: 1 }}
                   className="text-center py-16"
                 >
-                  <div className="w-24 h-24 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Lock className="h-12 w-12 text-muted-foreground" />
+                  <div className="w-28 h-28 bg-muted border-4 border-black flex items-center justify-center mx-auto mb-8">
+                    <Lock className="h-14 w-14 text-foreground" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3">Sign in to save bookmarks</h3>
-                  <p className="text-muted-foreground mb-6 text-base leading-relaxed">
-                    Create an account to bookmark important video moments and track your progress
-                  </p>
-                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" size="lg">
+                  <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">Sign in required</h3>
+                  <p className="text-muted-foreground mb-8 text-base font-bold">Create an account to save bookmarks</p>
+                  <Button
+                    className="bg-black text-white border-4 border-black hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] font-black uppercase text-lg px-8 py-6"
+                    size="lg"
+                  >
                     Sign In
                   </Button>
                 </motion.div>
@@ -908,19 +819,19 @@ export default function CourseDetailsTabs({
           </Card>
         </TabsContent>
 
-        <TabsContent value="notes" className="flex-1 overflow-auto w-full p-0">
-          <Card className="border border-border/40 shadow-sm bg-background">
-            <CardHeader className="pb-3 px-4 py-3">
+        <TabsContent value="notes" className="flex-1 overflow-auto w-full p-0 mt-6">
+          <Card className="border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white">
+            <CardHeader className="pb-4 px-6 py-6 border-b-4 border-black">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-3 text-xl">
-                    <StickyNote className="h-6 w-6 text-primary" />
+                  <CardTitle className="flex items-center gap-3 text-2xl font-black uppercase tracking-tight">
+                    <StickyNote className="h-7 w-7 text-foreground" />
                     Course Notes
                   </CardTitle>
-                  <CardDescription className="text-sm">
+                  <CardDescription className="text-sm font-bold text-muted-foreground uppercase tracking-tight mt-2">
                     {filteredNotes.length > 0
-                      ? `${filteredNotes.length} note${filteredNotes.length !== 1 ? "s" : ""} ${notesSearchQuery || notesFilter !== "all" ? "found" : "saved for this course"}`
-                      : "Keep track of important insights and key learnings"}
+                      ? `${filteredNotes.length} note${filteredNotes.length !== 1 ? "s" : ""} ${notesSearchQuery || notesFilter !== "all" ? "found" : "saved"}`
+                      : "Track important insights"}
                   </CardDescription>
                 </div>
                 {isAuthenticated && (
@@ -928,8 +839,11 @@ export default function CourseDetailsTabs({
                     courseId={course.id}
                     chapterId={currentChapter?.id}
                     trigger={
-                      <Button size="sm" className="bg-primary hover:bg-primary/90">
-                        <Plus className="h-4 w-4 mr-2" />
+                      <Button
+                        size="lg"
+                        className="bg-black text-white border-4 border-black hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] font-black uppercase px-6"
+                      >
+                        <Plus className="h-5 w-5 mr-2" />
                         Add Note
                       </Button>
                     }
@@ -937,117 +851,113 @@ export default function CourseDetailsTabs({
                 )}
               </div>
 
-              {/* Search and Filter Controls */}
               {isAuthenticated && notes.length > 0 && (
-                <div className="flex items-center gap-3 mt-4">
-                  <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-3 mt-6">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-foreground" />
                     <Input
                       placeholder="Search notes..."
                       value={notesSearchQuery}
                       onChange={(e) => setNotesSearchQuery(e.target.value)}
-                      className="pl-9"
+                      className="pl-12 border-4 border-black font-bold h-12 text-base"
                     />
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
                       variant={notesFilter === "all" ? "default" : "outline"}
-                      size="sm"
+                      size="lg"
                       onClick={() => setNotesFilter("all")}
-                      className="text-xs"
+                      className="text-sm font-black uppercase border-4 border-black"
                     >
-                      <BookOpen className="h-3 w-3 mr-1" />
                       All
                     </Button>
                     <Button
                       variant={notesFilter === "recent" ? "default" : "outline"}
-                      size="sm"
+                      size="lg"
                       onClick={() => setNotesFilter("recent")}
-                      className="text-xs"
+                      className="text-sm font-black uppercase border-4 border-black"
                     >
-                      <Calendar className="h-3 w-3 mr-1" />
                       Recent
                     </Button>
                     <Button
                       variant={notesFilter === "chapter" ? "default" : "outline"}
-                      size="sm"
+                      size="lg"
                       onClick={() => setNotesFilter("chapter")}
-                      className="text-xs"
+                      className="text-sm font-black uppercase border-4 border-black"
                     >
-                      <Tag className="h-3 w-3 mr-1" />
-                      This Chapter
+                      Chapter
                     </Button>
                   </div>
                 </div>
               )}
             </CardHeader>
-            <CardContent className="space-y-4 px-4 pb-4">
+            <CardContent className="space-y-4 px-6 pb-6 pt-6">
               {isAuthenticated && filteredNotes.length > 0 ? (
                 <ScrollArea className="h-[600px] pr-4">
                   <div className="space-y-4">
-                    {filteredNotes.map((note: Bookmark & {
-                      course?: { id: number; title: string; slug: string } | null;
-                      chapter?: { id: number; title: string } | null;
-                    }, index: number) => (
-                      <motion.div
-                        key={note.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="group p-6 bg-card/50 backdrop-blur-sm border border-border/40 rounded-xl hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:border-primary/30"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className="w-10 h-10 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                                <StickyNote className="h-5 w-5 text-green-600" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                                  <Clock className="h-4 w-4" />
-                                  <span>{new Date(note.createdAt).toLocaleDateString()}</span>
-                                  {note.chapter && (
-                                    <>
-                                      <Separator orientation="vertical" className="h-4" />
-                                      <BookOpen className="h-4 w-4" />
-                                      <span className="truncate font-medium">{note.chapter.title}</span>
-                                    </>
-                                  )}
+                    {filteredNotes.map(
+                      (
+                        note: Bookmark & {
+                          course?: { id: number; title: string; slug: string } | null
+                          chapter?: { id: number; title: string } | null
+                        },
+                        index: number,
+                      ) => (
+                        <motion.div
+                          key={note.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="group p-5 bg-white border-4 border-black hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-4 mb-4">
+                                <div className="w-12 h-12 bg-green-300 border-4 border-black flex items-center justify-center">
+                                  <StickyNote className="h-6 w-6 text-foreground" />
                                 </div>
-                                {(note as any).timestamp && (
-                                  <div className="flex items-center gap-1 text-xs text-primary">
-                                    <PlayCircle className="h-3 w-3" />
-                                    <span>at {Math.floor((note as any).timestamp / 60)}:{((note as any).timestamp % 60).toString().padStart(2, '0')}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-3 text-sm font-black text-foreground mb-1">
+                                    <Clock className="h-4 w-4" />
+                                    <span className="uppercase">{new Date(note.createdAt).toLocaleDateString()}</span>
+                                    {note.chapter && (
+                                      <>
+                                        <Separator orientation="vertical" className="h-4 bg-black" />
+                                        <span className="truncate uppercase">{note.chapter.title}</span>
+                                      </>
+                                    )}
                                   </div>
-                                )}
+                                </div>
+                              </div>
+                              <div className="bg-yellow-100 border-4 border-black p-4">
+                                <p className="text-foreground whitespace-pre-wrap text-base font-bold">{note.note}</p>
                               </div>
                             </div>
-                            <div className="bg-muted/20 rounded-lg p-4 border border-border/20 group-hover:bg-muted/30 transition-colors duration-300">
-                              <p className="text-foreground whitespace-pre-wrap text-sm leading-relaxed">
-                                {note.note}
-                              </p>
+                            <div className="flex items-center gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <NoteModal
+                                courseId={course.id}
+                                chapterId={currentChapter?.id}
+                                existingNote={note}
+                                trigger={
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-10 w-10 p-0 border-4 border-black hover:bg-blue-300 font-black"
+                                  >
+                                    <Edit3 className="h-5 w-5" />
+                                  </Button>
+                                }
+                              />
+                              <DeleteNoteDialog
+                                noteId={note.id.toString()}
+                                noteContent={note.note || ""}
+                                onDelete={deleteNote}
+                              />
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <NoteModal
-                              courseId={course.id}
-                              chapterId={currentChapter?.id}
-                              existingNote={note}
-                              trigger={
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-blue-500/10 hover:text-blue-600">
-                                  <Edit3 className="h-4 w-4" />
-                                </Button>
-                              }
-                            />
-                            <DeleteNoteDialog
-                              noteId={note.id.toString()}
-                              noteContent={note.note || ''}
-                              onDelete={deleteNote}
-                            />
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      ),
+                    )}
                   </div>
                 </ScrollArea>
               ) : isAuthenticated ? (
@@ -1056,26 +966,28 @@ export default function CourseDetailsTabs({
                   animate={{ opacity: 1, scale: 1 }}
                   className="text-center py-16"
                 >
-                  <div className="w-24 h-24 bg-gradient-to-br from-muted/30 to-muted/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <StickyNote className="h-12 w-12 text-muted-foreground/50" />
+                  <div className="w-28 h-28 bg-muted border-4 border-black flex items-center justify-center mx-auto mb-8">
+                    <StickyNote className="h-14 w-14 text-foreground" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3">
+                  <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">
                     {notesSearchQuery || notesFilter !== "all" ? "No notes found" : "No notes yet"}
                   </h3>
-                  <p className="text-muted-foreground mb-6 max-w-sm mx-auto text-base leading-relaxed">
+                  <p className="text-muted-foreground mb-8 max-w-sm mx-auto text-base font-bold">
                     {notesSearchQuery || notesFilter !== "all"
-                      ? "Try adjusting your search or filter criteria"
-                      : "Start taking notes to capture important insights and key learnings from this course"
-                    }
+                      ? "Try adjusting your search"
+                      : "Start taking notes to capture insights"}
                   </p>
-                  {(!notesSearchQuery && notesFilter === "all") && (
+                  {!notesSearchQuery && notesFilter === "all" && (
                     <NoteModal
                       courseId={course.id}
                       chapterId={currentChapter?.id}
                       trigger={
-                        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" size="lg">
-                          <StickyNote className="h-5 w-5 mr-2" />
-                          Create Your First Note
+                        <Button
+                          className="bg-black text-white border-4 border-black hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] font-black uppercase text-lg px-8 py-6"
+                          size="lg"
+                        >
+                          <StickyNote className="h-6 w-6 mr-3" />
+                          Create Note
                         </Button>
                       }
                     />
@@ -1087,14 +999,15 @@ export default function CourseDetailsTabs({
                   animate={{ opacity: 1, scale: 1 }}
                   className="text-center py-16"
                 >
-                  <div className="w-24 h-24 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Lock className="h-12 w-12 text-muted-foreground" />
+                  <div className="w-28 h-28 bg-muted border-4 border-black flex items-center justify-center mx-auto mb-8">
+                    <Lock className="h-14 w-14 text-foreground" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3">Sign in to take notes</h3>
-                  <p className="text-muted-foreground mb-6 text-base leading-relaxed">
-                    Create an account to save notes and track your learning progress
-                  </p>
-                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" size="lg">
+                  <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">Sign in required</h3>
+                  <p className="text-muted-foreground mb-8 text-base font-bold">Create an account to save notes</p>
+                  <Button
+                    className="bg-black text-white border-4 border-black hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] font-black uppercase text-lg px-8 py-6"
+                    size="lg"
+                  >
                     Sign In
                   </Button>
                 </motion.div>

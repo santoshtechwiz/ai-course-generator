@@ -18,8 +18,8 @@ const footerLinks = [
     title: "Platform",
     links: [
       { name: "Explore", href: "/dashboard/explore" },
-      { name: "Courses", href: "/dashboard/learn" },
-      { name: "Quizzes", href: "/quizzes" },
+      { name: "Courses", href: "/dashboard" },
+      { name: "Quizzes", href: "/dashboard/quizzes" },
       { name: "Create", href: "/dashboard/create" },
     ],
   },
@@ -27,14 +27,14 @@ const footerLinks = [
     title: "Resources",
     links: [
       { name: "Dashboard", href: "/dashboard" },
-      { name: "My Progress", href: "/dashboard/history" },
+      { name: "My Progress", href: "/dashboard/account" },
       { name: "Subscription", href: "/dashboard/subscription" },
     ],
   },
   {
     title: "Support",
     links: [
-      { name: "About", href: "/about" },
+      { name: "About", href: "/dashboard/about" },
       { name: "Contact Us", href: "/contactus" },
       { name: "Privacy Policy", href: "/privacy" },
       { name: "Terms of Service", href: "/terms" },
@@ -43,10 +43,10 @@ const footerLinks = [
 ]
 
 const socialLinks = [
-  { icon: Twitter, label: "Twitter", href: "#" },
-  { icon: Facebook, label: "Facebook", href: "#" },
-  { icon: Linkedin, label: "LinkedIn", href: "#" },
-  { icon: Instagram, label: "Instagram", href: "#" },
+  { icon: Twitter, label: "Twitter", href: "https://twitter.com/courseai" },
+  { icon: Facebook, label: "Facebook", href: "https://facebook.com/courseailearning" },
+  { icon: Linkedin, label: "LinkedIn", href: "https://linkedin.com/company/courseai" },
+  { icon: Instagram, label: "Instagram", href: "https://instagram.com/courseai_official" },
 ]
 
 export default function Footer() {
@@ -125,7 +125,7 @@ export default function Footer() {
                 {section.links.map((link) => (
                   <li key={link.name}>
                     <Button
-                      variant="link"
+                      variant="ghost"
                       asChild
                       className="p-0 h-auto text-muted-foreground hover:text-foreground text-sm font-normal"
                     >

@@ -197,12 +197,64 @@ const MCQOption = memo(({
           {option.letter}
         </motion.div>
 
-        {/* Option text with enhanced typography */}
+        {/* Option text with enhanced typography and code formatting */}
         <div className={cn(
           "flex-1 text-base font-medium leading-relaxed transition-colors relative z-10",
           isSelected ? `${colors.text} font-bold` : "text-foreground"
         )}>
-          {option.text}
+          {/* Render option text with code formatting support */}
+          {(() => {
+            const text = option.text;
+            
+            // Check if option contains code-like elements (backticks, brackets, operators)
+            const hasCodeElements = /`.*?`|[\[\]{}()]|===|!==|&&|\|\||->|=>/.test(text);
+            
+            if (hasCodeElements) {
+              // Split by backticks to handle inline code
+              const parts = text.split(/(`[^`]+`)/g);
+              
+              return (
+                <span className="flex flex-wrap items-center gap-1">
+                  {parts.map((part, idx) => {
+                    if (part.startsWith('`') && part.endsWith('`')) {
+                      // Render code with monospace styling
+                      const code = part.slice(1, -1);
+                      return (
+                        <code 
+                          key={idx}
+                          className={cn(
+                            "px-2 py-1 rounded text-sm font-mono font-semibold border-2 border-border",
+                            "bg-muted dark:bg-muted/50",
+                            isSelected ? colors.text : "text-foreground"
+                          )}
+                        >
+                          {code}
+                        </code>
+                      );
+                    }
+                    // Check if entire text looks like code (no backticks but has code patterns)
+                    if (idx === 0 && parts.length === 1 && /^[\w\.\[\]()]+$/.test(part)) {
+                      return (
+                        <code 
+                          key={idx}
+                          className={cn(
+                            "font-mono font-semibold",
+                            isSelected ? colors.text : "text-foreground"
+                          )}
+                        >
+                          {part}
+                        </code>
+                      );
+                    }
+                    return <span key={idx}>{part}</span>;
+                  })}
+                </span>
+              );
+            }
+            
+            // Regular text without code elements
+            return text;
+          })()}
         </div>
 
         {/* Enhanced selection indicator */}

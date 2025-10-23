@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 import type { QuizType } from "@/app/types/quiz-types"
-import { cn } from "@/lib/utils"
+import { cn, getColorClasses } from "@/lib/utils"
 import { QUIZ_TYPE_CONFIG } from "./quiz-type-config"
 
 const quizTypes = [
@@ -90,6 +90,7 @@ function QuizSidebarComponent({
   showPublicOnly = false,
   onPublicOnlyChange,
 }: QuizSidebarProps) {
+  const { cardPrimary, buttonSecondary } = getColorClasses()
   const [showMobileFilters, setShowMobileFilters] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
   const [localQuestionCount, setLocalQuestionCount] = useState<[number, number]>([0, 50])
@@ -105,7 +106,6 @@ function QuizSidebarComponent({
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  // Fix: Use stringified comparison to prevent infinite loops
   useEffect(() => {
     const rangeKey = `${questionCountRange[0]}-${questionCountRange[1]}`
     if (rangeKey !== prevRangeRef.current) {
@@ -149,7 +149,7 @@ function QuizSidebarComponent({
               variant="ghost"
               size="sm"
               onClick={() => selectedTypes.forEach(toggleQuizType)}
-              className="h-7 px-3 text-xs font-bold text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-2 border-transparent hover:border-destructive/30"
+              className="h-8 px-3 text-xs font-black text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-3 border-transparent hover:border-destructive/30 rounded-lg transition-all"
             >
               Clear
             </Button>
@@ -164,17 +164,17 @@ function QuizSidebarComponent({
                 key={type.id}
                 onClick={() => toggleQuizType(type.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 p-3 rounded-xl cursor-pointer group transition-all duration-200 border-2",
+                  "w-full flex items-center gap-3 p-4 rounded-xl cursor-pointer group transition-all duration-200 border-3",
                   isSelected
-                    ? "bg-primary/10 border-primary shadow-[2px_2px_0px_0px_hsl(var(--primary))]"
-                    : "border-border hover:bg-muted/50 hover:border-border hover:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+                    ? "bg-primary/20 border-primary neo-shadow-primary hover:neo-shadow-lg hover:translate-x-[-2px] hover:translate-y-[-2px]"
+                    : "border-border hover:bg-muted/50 neo-shadow hover:neo-shadow-lg hover:translate-x-[-2px] hover:translate-y-[-2px]",
                 )}
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className={cn("p-2 rounded-lg border-2 flex-shrink-0 shadow-[2px_2px_0px_0px_hsl(var(--border))]", type.bg, type.border)}>
-                    <TypeIcon className={cn("h-4 w-4", type.color)} />
+                  <div className={cn("p-2.5 rounded-lg border-3 flex-shrink-0 neo-shadow", type.bg, type.border)}>
+                    <TypeIcon className={cn("h-5 w-5", type.color)} strokeWidth={2.5} />
                   </div>
-                  <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                  <span className="text-sm font-black text-foreground group-hover:text-primary transition-colors truncate">
                     {type.label}
                   </span>
                 </div>
@@ -184,7 +184,7 @@ function QuizSidebarComponent({
         </div>
       </div>
 
-      <Separator className="bg-border" />
+      <Separator className="bg-border h-[3px]" />
 
       {/* Question Count Range */}
       {onQuestionCountChange && (
@@ -199,7 +199,7 @@ function QuizSidebarComponent({
               onValueChange={handleQuestionCountChange}
               className="my-6"
             />
-            <div className="flex justify-between items-center text-xs font-bold text-muted-foreground">
+            <div className="flex justify-between items-center text-xs font-black text-muted-foreground">
               <span>{localQuestionCount[0]} min</span>
               <span>{localQuestionCount[1]} max</span>
             </div>
@@ -210,11 +210,16 @@ function QuizSidebarComponent({
       {/* Public Only Toggle */}
       {onPublicOnlyChange && (
         <>
-          <Separator className="bg-border" />
-          <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border-2 border-border">
+          <Separator className="bg-border h-[3px]" />
+          <div
+            className={cn(
+              "flex items-center justify-between p-4 rounded-xl border-3 border-border neo-shadow",
+              "bg-muted/30",
+            )}
+          >
             <div className="space-y-1">
               <Label className="text-sm font-black text-foreground cursor-pointer">Public Only</Label>
-              <p className="text-xs text-muted-foreground font-medium">Show only public templates</p>
+              <p className="text-xs text-muted-foreground font-bold">Show only public templates</p>
             </div>
             <Switch checked={showPublicOnly} onCheckedChange={onPublicOnlyChange} />
           </div>
@@ -226,14 +231,17 @@ function QuizSidebarComponent({
   return (
     <>
       {/* Desktop Sidebar - Fixed width, no overlap */}
-      <div className="hidden lg:block w-64 flex-shrink-0">
+      <div className="hidden lg:block w-72 flex-shrink-0">
         <div className="sticky top-24 space-y-4">
-          <Card className="bg-card border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]">
+          <Card className={cn(cardPrimary, "rounded-xl")}>
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-black text-foreground">Filter Quizzes</CardTitle>
+                <CardTitle className="text-xl font-black text-foreground">Filter Quizzes</CardTitle>
                 {hasActiveFilters && (
-                  <Badge variant="secondary" className="text-xs font-bold bg-primary/10 text-primary border-2 border-primary/30">
+                  <Badge
+                    variant="secondary"
+                    className="text-xs font-black bg-primary/20 text-primary border-3 border-primary/30 neo-shadow px-3 py-1"
+                  >
                     {selectedTypes.length + (search ? 1 : 0) + (showPublicOnly ? 1 : 0)}
                   </Badge>
                 )}
@@ -249,23 +257,29 @@ function QuizSidebarComponent({
         <Button
           variant="outline"
           onClick={() => setShowMobileFilters(!showMobileFilters)}
-          className="w-full justify-between bg-card border-3 border-border h-12 px-4 font-bold shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all"
+          className={cn(buttonSecondary, "w-full justify-between h-14 px-5 rounded-xl")}
         >
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
+          <div className="flex items-center gap-3">
+            <Filter className="h-5 w-5" strokeWidth={2.5} />
             <span>Filter Quizzes</span>
             {hasActiveFilters && (
-              <Badge variant="secondary" className="text-xs font-bold bg-primary/10 text-primary border-2 border-primary/30 ml-2">
+              <Badge
+                variant="secondary"
+                className="text-xs font-black bg-primary/20 text-primary border-3 border-primary/30 neo-shadow ml-2 px-3 py-1"
+              >
                 {selectedTypes.length + (search ? 1 : 0) + (showPublicOnly ? 1 : 0)}
               </Badge>
             )}
           </div>
-          <ChevronDown className={cn("h-4 w-4 transition-transform", showMobileFilters && "rotate-180")} />
+          <ChevronDown
+            className={cn("h-5 w-5 transition-transform", showMobileFilters && "rotate-180")}
+            strokeWidth={2.5}
+          />
         </Button>
 
         <Collapsible open={showMobileFilters} onOpenChange={setShowMobileFilters}>
           <CollapsibleContent>
-            <Card className="mt-4 bg-card border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]">
+            <Card className={cn("mt-4 rounded-xl", cardPrimary)}>
               <CardContent className="pt-6">{renderFilters()}</CardContent>
             </Card>
           </CollapsibleContent>
@@ -276,7 +290,6 @@ function QuizSidebarComponent({
 }
 
 export const QuizSidebar = memo(QuizSidebarComponent, (prevProps, nextProps) => {
-  // Custom comparison to prevent unnecessary re-renders
   return (
     prevProps.search === nextProps.search &&
     prevProps.isSearching === nextProps.isSearching &&
