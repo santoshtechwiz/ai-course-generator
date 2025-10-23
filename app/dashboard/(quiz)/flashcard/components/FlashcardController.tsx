@@ -54,7 +54,7 @@ export function FlashcardController({
           exit={{ opacity: 0, height: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <Card className="border border-border/50">
+          <Card className="border-4 border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-neo)]">
             <CardContent className="p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
