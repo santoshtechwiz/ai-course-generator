@@ -24,6 +24,7 @@ export const LOADER_MESSAGES = {
   LOADING_CODE: "Loading code challenge...",
   LOADING_DOCUMENT_QUIZ: "Loading document quiz...",
   LOADING_FLASHCARD_QUIZ: "Loading flashcard quiz...",
+  LOADING_ORDERING: "Loading ordering quiz...",
 
   // Generation/Creation States
   GENERATING_QUIZ: "Generating quiz...",
@@ -38,6 +39,11 @@ export const LOADER_MESSAGES = {
   // Review Mode
   LOADING_REVIEW: "Loading review...",
   PREPARING_REVIEW: "Preparing your review session...",
+
+  // Navigation States
+  LOADING_NEXT_QUESTION: "Loading next question...",
+  LOADING_PREVIOUS_QUESTION: "Loading previous question...",
+  SUBMITTING_ANSWER: "Submitting answer...",
 
   // Error Recovery
   RETRYING: "Retrying...",

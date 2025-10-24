@@ -24,7 +24,7 @@ import {
 import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import BlanksQuiz from "./BlanksQuiz"
-import { UnifiedLoader } from "@/components/loaders"
+import { QuizLoader } from "@/components/quiz/QuizLoader"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
 // Type removed - using any for quiz question types
 
@@ -194,23 +194,17 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
     }
   }, [dispatch, slug, router])
 
-  // COMMIT: Show calculating loader during submission with stable positioning
+  // Show calculating loader during submission
   if (isSubmitting) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center bg-background">
-        <div className="text-center space-y-4 px-4">
-          <UnifiedLoader
-            state="loading"
-            variant="spinner"
-            size="lg"
-            message={LOADER_MESSAGES.CALCULATING_RESULTS}
-            className="text-center"
-          />
-          <p className="text-sm text-muted-foreground animate-pulse">
-            Please wait while we analyze your answers
-          </p>
-        </div>
-      </div>
+      <QuizLoader
+        state="loading"
+        context="calculation"
+        variant="spinner"
+        size="lg"
+        message={LOADER_MESSAGES.CALCULATING_RESULTS}
+        fullPage
+      />
     )
   }
 
@@ -244,11 +238,13 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   
   if (isLoading) {
     return (
-      <UnifiedLoader
+      <QuizLoader
         state="loading"
+        context="initial"
         variant="skeleton"
         message={LOADER_MESSAGES.LOADING_BLANKS}
-        size="md"
+        size="lg"
+        className="min-h-[60vh]"
       />
     )
   }

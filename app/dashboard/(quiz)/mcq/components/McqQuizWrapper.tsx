@@ -25,7 +25,7 @@ import {
 import { NoResults } from "@/components/ui/no-results"
 import { isPrivateError } from "../../components/privateErrorUtils"
 import McqQuiz from "./McqQuiz"
-import { UnifiedLoader } from "@/components/loaders"
+import { QuizLoader } from "@/components/quiz/QuizLoader"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
 import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
@@ -196,32 +196,31 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     }
   }, [dispatch, router, slug])
 
-  // COMMIT: Show calculating loader during submission with stable positioning
+  // Show calculating loader during submission
   if (isSubmitting) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center bg-background">
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
-          size="lg"
-          message={LOADER_MESSAGES.CALCULATING_RESULTS}
-          className="p-8"
-        />
-      </div>
+      <QuizLoader
+        state="loading"
+        context="calculation"
+        variant="spinner"
+        size="lg"
+        message={LOADER_MESSAGES.CALCULATING_RESULTS}
+        fullPage
+      />
     )
   }
 
   // Loading state with improved handling
   if (quizStatus === 'loading' && !questions.length) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
-          size="lg"
-          message={LOADER_MESSAGES.LOADING_MCQ}
-        />
-      </div>
+      <QuizLoader
+        state="loading"
+        context="initial"
+        variant="skeleton"
+        size="lg"
+        message={LOADER_MESSAGES.LOADING_MCQ}
+        className="min-h-[60vh]"
+      />
     )
   }
 
@@ -351,13 +350,13 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
 
   // Fallback loading state
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <UnifiedLoader
-        state="loading"
-        message={LOADER_MESSAGES.LOADING_QUIZ}
-        variant="spinner"
-        size="lg"
-      />
-    </div>
+    <QuizLoader
+      state="loading"
+      context="initial"
+      message={LOADER_MESSAGES.LOADING_QUIZ}
+      variant="spinner"
+      size="lg"
+      className="min-h-[60vh]"
+    />
   )
 }

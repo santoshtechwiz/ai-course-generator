@@ -5,7 +5,7 @@ import { UnifiedQuizQuestion, type MCQQuestion } from "@/components/quiz/Unified
 import { QuizStateProvider } from "@/components/quiz/QuizStateProvider"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
 import { Loader } from "@/components/loader"
-import { UnifiedLoader } from "@/components/loaders"
+import { QuizLoader } from "@/components/quiz/QuizLoader"
 
 interface McqQuizProps {
   question: {
@@ -83,9 +83,11 @@ const McqQuiz = ({
           {/* Loading overlay when submitting */}
           {stateManager.isSubmitting && (
             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
-              <UnifiedLoader
+              <QuizLoader
                 state="loading"
+                context="submission"
                 variant="spinner"
+                overlay
                 size="lg"
                 message="Submitting your quiz answers..."
                 className="text-center"

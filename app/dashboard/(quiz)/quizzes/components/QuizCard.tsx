@@ -6,9 +6,10 @@ import type React from "react"
 import { useState, memo, useCallback, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Clock, Star, BookOpen, Loader2, Play, Bookmark, Users, TrendingUp, Target } from "lucide-react"
+import { Clock, Star, BookOpen, Play, Bookmark, Users, TrendingUp, Target } from "lucide-react"
 import Link from "next/link"
 import { cn, getColorClasses } from "@/lib/utils"
+import { QuizInlineLoader } from "@/components/quiz/QuizLoader"
 import { QUIZ_TYPE_CONFIG } from "./quiz-type-config"
 import type { QuizType } from "@/app/types/quiz-types"
 
@@ -164,12 +165,11 @@ function QuizCardComponent({
 
           {loading && (
             <div className="absolute inset-0 bg-[var(--color-bg)]/90 backdrop-blur-sm flex items-center justify-center z-20 rounded-xl">
-              <div className="flex flex-col items-center gap-3">
-                <div className="relative">
-                  <Loader2 className="h-8 w-8 animate-spin text-[var(--color-primary)]" strokeWidth={3} />
-                </div>
-                <span className="text-base font-black text-[var(--color-text)]">Starting quiz...</span>
-              </div>
+              <QuizInlineLoader
+                size="lg"
+                message="Starting quiz..."
+                variant="spinner"
+              />
             </div>
           )}
 
@@ -219,10 +219,11 @@ function QuizCardComponent({
               disabled={loading}
             >
               {loading ? (
-                <>
-                  <Loader2 className="w-6 h-6 animate-spin" strokeWidth={3} />
-                  <span>Loading...</span>
-                </>
+                <QuizInlineLoader
+                  size="sm"
+                  message="Loading..."
+                  variant="dots"
+                />
               ) : (
                 <>
                   <Play className="w-6 h-6" strokeWidth={2.5} aria-hidden />

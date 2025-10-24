@@ -16,7 +16,7 @@ import { FlashcardController } from "./FlashcardController"
 
 import { Button } from "@/components/ui/button"
 import { RotateCcw, Heart, Brain } from "lucide-react"
-import { UnifiedLoader } from "@/components/loaders"
+import { QuizLoader } from "@/components/quiz/QuizLoader"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
 
 interface FlashCard {
@@ -285,9 +285,11 @@ export default function FlashCardQuiz({
   if (isFinishing) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-        <UnifiedLoader
+        <QuizLoader
           state="loading"
+          context="submission"
           variant="spinner"
+          fullPage
           size="lg"
           message={LOADER_MESSAGES.CALCULATING_RESULTS}
           className="p-8"

@@ -34,7 +34,7 @@ import { toast } from "sonner";
 import { NoResults } from "@/components/ui/no-results";
 import { useAuth } from "@/modules/auth";
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
-import { UnifiedLoader } from "@/components/loaders";
+import { QuizLoader } from "@/components/quiz/QuizLoader";
 import { LOADER_MESSAGES } from "@/constants/loader-messages";
 import { useQuizContext } from "../../components/layouts/QuizPlayLayout";
 
@@ -201,15 +201,14 @@ export default function FlashcardQuizWrapper({
   // Loading skeleton with simplified UI
   if (quizStatus === "loading" || quizStatus === "idle") {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
-          size="lg"
-          message={LOADER_MESSAGES.LOADING_FLASHCARDS}
-          className="text-center"
-        />
-      </div>
+      <QuizLoader
+        state="loading"
+        context="initial"
+        variant="skeleton"
+        size="lg"
+        message={LOADER_MESSAGES.LOADING_FLASHCARDS}
+        className="min-h-[60vh]"
+      />
     )
   }
 

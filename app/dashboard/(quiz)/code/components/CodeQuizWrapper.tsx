@@ -27,7 +27,7 @@ import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "@/components/quiz/QuizActions"
-import { UnifiedLoader } from "@/components/loaders"
+import { QuizLoader } from "@/components/quiz/QuizLoader"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
 
 
@@ -267,30 +267,26 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   // Show calculating loader during submission
   if (isSubmitting) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
-        <div className="text-center space-y-4 px-4">
-          <UnifiedLoader
-            state="loading"
-            variant="spinner"
-            size="lg"
-            message={LOADER_MESSAGES.CALCULATING_RESULTS}
-            className="text-center"
-          />
-          <p className="text-sm text-muted-foreground animate-pulse">
-            Please wait while we analyze your answers
-          </p>
-        </div>
-      </div>
+      <QuizLoader
+        state="loading"
+        context="calculation"
+        variant="spinner"
+        size="lg"
+        message={LOADER_MESSAGES.CALCULATING_RESULTS}
+        fullPage
+      />
     )
   }
 
   if (isLoading) {
     return (
-      <UnifiedLoader
+      <QuizLoader
         state="loading"
+        context="initial"
         variant="skeleton"
         message={LOADER_MESSAGES.LOADING_CODE}
-        size="md"
+        size="lg"
+        className="min-h-[60vh]"
       />
     )
   }
@@ -309,11 +305,13 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   }
   if (!formattedQuestion) {
     return (
-      <UnifiedLoader
+      <QuizLoader
         state="loading"
+        context="initial"
         variant="skeleton"
         message={LOADER_MESSAGES.LOADING_QUIZ}
-        size="md"
+        size="lg"
+        className="min-h-[60vh]"
       />
     )
   } 

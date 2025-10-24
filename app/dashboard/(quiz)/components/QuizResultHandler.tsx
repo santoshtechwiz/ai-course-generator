@@ -9,7 +9,7 @@ import { RefreshCw } from 'lucide-react'
 
 import { NoResults } from '@/components/ui/no-results'
 import SignInPrompt from '@/app/auth/signin/components/SignInPrompt'
-import { UnifiedLoader } from '@/components/loaders'
+import { QuizLoader } from '@/components/quiz/QuizLoader'
 import { LOADER_MESSAGES } from '@/constants/loader-messages'
 
 import { useAuth } from '@/modules/auth'
@@ -291,18 +291,13 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         exit={{ opacity: 0 }}
         className="fixed inset-0 flex items-center justify-center bg-background z-50"
       >
-        <div className="text-center space-y-4 px-4">
-          <UnifiedLoader
-            state="loading"
-            variant="progress"
-            size="lg"
-            message={LOADER_MESSAGES.CALCULATING_RESULTS}
-            className="text-center"
-          />
-          <p className="text-sm text-muted-foreground animate-pulse">
-            Please wait while we analyze your answers
-          </p>
-        </div>
+        <QuizLoader
+          state="loading"
+          context="calculation"
+          variant="progress"
+          size="lg"
+          message={LOADER_MESSAGES.CALCULATING_RESULTS}
+        />
       </motion.div>
     )
   }
@@ -316,8 +311,9 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         exit={{ opacity: 0 }}
         className="fixed inset-0 flex items-center justify-center bg-background z-50"
       >
-        <UnifiedLoader
+        <QuizLoader
           state="loading"
+          context="page"
           variant="spinner"
           size="lg"
           message={viewState === 'redirecting' ? LOADER_MESSAGES.REDIRECTING_TO_QUIZ : LOADER_MESSAGES.LOADING_RESULTS}

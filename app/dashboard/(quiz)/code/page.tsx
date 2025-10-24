@@ -4,7 +4,7 @@ import CodeQuizForm from "./components/CodeQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
 import { useFeatureAccess } from "@/hooks/useFeatureAccess"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
-import { UnifiedLoader } from "@/components/loaders"
+import { QuizLoader } from "@/components/quiz/QuizLoader"
 import { UnifiedUpgradeTrigger } from "@/components/shared/UnifiedUpgradeTrigger"
 import { useAuth } from "@/modules/auth"
 import { useEffect } from "react"
@@ -44,11 +44,13 @@ const CodePage = () => {
       isLoggedIn={isAuthenticated}
     >
       {isLoading ? (
-        <UnifiedLoader
+        <QuizLoader
           state="loading"
-          variant="spinner"
+          context="page"
+          variant="skeleton"
           message="Loading quiz configuration..."
-          size="md"
+          size="lg"
+          className="min-h-[60vh]"
         />
       ) : (
         <>

@@ -5,7 +5,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { loadOrderingQuiz, submitOrderingQuiz, saveAnswer, setCurrentQuestion } from '@/store/slices/ordering-quiz-slice'
 import { setQuizResults } from '@/store/slices/quiz/quiz-slice'
-import { UnifiedLoader } from '@/components/loaders'
+import { QuizLoader } from '@/components/quiz/QuizLoader'
 import { LOADER_MESSAGES } from '@/constants/loader-messages'
 import OrderingQuizSingle from '@/components/quiz/OrderingQuizSingle'
 import { QuizStateProvider } from '@/components/quiz/QuizStateProvider'
@@ -206,14 +206,14 @@ export default function OrderingQuizWrapper({ slug }: OrderingQuizWrapperProps) 
   // Loading state
   if (isLoading && !quizData) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
-          size="lg"
-          message={LOADER_MESSAGES.LOADING_QUIZ}
-        />
-      </div>
+      <QuizLoader
+        state="loading"
+        context="initial"
+        variant="skeleton"
+        size="lg"
+        message={LOADER_MESSAGES.LOADING_ORDERING}
+        className="min-h-[60vh]"
+      />
     )
   }
 
@@ -246,14 +246,14 @@ export default function OrderingQuizWrapper({ slug }: OrderingQuizWrapperProps) 
   // No data state
   if (!quizData || !question) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
-          size="lg"
-          message="Loading quiz..."
-        />
-      </div>
+      <QuizLoader
+        state="loading"
+        context="initial"
+        variant="skeleton"
+        size="lg"
+        message={LOADER_MESSAGES.LOADING_QUIZ}
+        className="min-h-[60vh]"
+      />
     )
   }
 
@@ -279,15 +279,14 @@ export default function OrderingQuizWrapper({ slug }: OrderingQuizWrapperProps) 
           <div className="w-full h-full flex flex-col space-y-6 relative">
             {/* Loading overlay when submitting */}
             {stateManager.isSubmitting && (
-              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
-                <UnifiedLoader
-                  state="loading"
-                  variant="spinner"
-                  size="lg"
-                  message="Submitting your quiz answers..."
-                  className="text-center"
-                />
-              </div>
+              <QuizLoader
+                state="loading"
+                context="submission"
+                variant="spinner"
+                size="lg"
+                message="Submitting your quiz answers..."
+                overlay
+              />
             )}
 
             {/* Question Component */}
