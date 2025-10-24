@@ -30,14 +30,18 @@ module.exports = {
       },
 
       boxShadow: {
-        neo: "6px 6px 0px #111",
+        neo: "6px 6px 0px #000",
+        "neo-sm": "3px 3px 0px #000",
+        "neo-lg": "8px 8px 0px #000",
         neoDark: "6px 6px 0px #fff",
+        "neo-sm-dark": "3px 3px 0px #fff",
+        "neo-lg-dark": "8px 8px 0px #fff",
       },
 
       borderRadius: {
-        lg: "16px",
-        md: "10px",
-        sm: "6px",
+        lg: "1rem",
+        md: "0.75rem",
+        sm: "0.5rem",
       },
 
       fontFamily: {
@@ -56,6 +60,16 @@ module.exports = {
         lg: "1024px",
         xl: "1280px",
         "2xl": "1536px",
+      },
+
+      zIndex: {
+        dropdown: "1000",
+        sticky: "1020",
+        fixed: "1030",
+        "modal-backdrop": "1040",
+        modal: "1050",
+        popover: "1060",
+        tooltip: "1070",
       },
     },
   },

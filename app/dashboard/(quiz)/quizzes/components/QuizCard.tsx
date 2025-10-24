@@ -8,7 +8,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import neo from '@/components/neo/tokens'
 import { Button } from "@/components/ui/button"
-import { Clock, Star, BookOpen, Loader2, Play, Bookmark, Users, TrendingUp, Target } from "lucide-react"
+import { Clock, Star, BookOpen, Play, Bookmark, Users, TrendingUp, Target } from "lucide-react"
+import { NeoLoader } from "@/components/loaders"
 import Link from "next/link"
 import { cn, getColorClasses } from "@/lib/utils"
 import { QUIZ_TYPE_CONFIG } from "./quiz-type-config"
@@ -169,7 +170,7 @@ function QuizCardComponent({
             <div className="absolute inset-0 bg-[var(--color-bg)]/90 backdrop-blur-sm flex items-center justify-center z-20 rounded-xl">
               <div className="flex flex-col items-center gap-3">
                 <div className="relative">
-                  <Loader2 className="h-8 w-8 animate-spin text-[var(--color-primary)]" strokeWidth={3} />
+                  <NeoLoader variant="spinner" size="lg" />
                 </div>
                 <span className="text-base font-black text-[var(--color-text)]">Starting quiz...</span>
               </div>
@@ -227,8 +228,7 @@ function QuizCardComponent({
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-6 h-6 animate-spin" strokeWidth={3} />
-                  <span>Loading...</span>
+                  <NeoLoader variant="spinner" size="sm" message="Loading..." inline />
                 </>
               ) : (
                 <>

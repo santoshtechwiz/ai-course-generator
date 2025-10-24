@@ -175,7 +175,7 @@ export function MainNavbar() {
     <>
       <motion.header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50",
+          "fixed top-0 left-0 right-0 z-fixed",
           // Use neobrutalism tokens for consistent geometry and borders
           neo.card,
           isScrolled && "shadow-[0_10px_0_0_#000]",

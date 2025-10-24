@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* === Neobrutalism Design System — Premium Edition === */
+/* === Neobrutalism Design System — Unified Edition === */
 :root {
   /* Core brand colors */
   --color-bg: #fffdf5;
@@ -16,9 +16,13 @@
   --shadow-offset-y: 6px;
   --shadow-color: #000000;
   --shadow-neo: var(--shadow-offset-x) var(--shadow-offset-y) 0 var(--shadow-color);
+  --shadow-neo-sm: 3px 3px 0 var(--shadow-color);
+  --shadow-neo-lg: 8px 8px 0 var(--shadow-color);
 
   /* Radii & Typography */
   --radius: 0.75rem;
+  --radius-sm: 0.5rem;
+  --radius-lg: 1rem;
   --font-base: 500;
   --font-heading: 700;
 
@@ -26,6 +30,15 @@
   --color-success: #00b341;
   --color-warning: #ffb300;
   --color-error: #ff3b3b;
+
+  /* Z-index scale */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
 }
 
 /* === Dark Mode === */
@@ -64,11 +77,36 @@
            hover:shadow-none sm:p-6 lg:p-8;
   }
 
+  .neuro-card-sm {
+    @apply bg-[var(--color-card)] border-2 border-[var(--color-border)]
+           shadow-[var(--shadow-neo-sm)] rounded-[var(--radius-sm)] p-3
+           transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5
+           hover:shadow-none;
+  }
+
+  .neuro-card-lg {
+    @apply bg-[var(--color-card)] border-4 border-[var(--color-border)]
+           shadow-[var(--shadow-neo-lg)] rounded-[var(--radius-lg)] p-8
+           transition-transform hover:-translate-x-2 hover:-translate-y-2
+           hover:shadow-none;
+  }
+
   .neuro-button {
     @apply inline-flex items-center justify-center gap-2
-           bg-[var(--color-primary)] text-[var(--color-text)]
+           bg-[var(--color-primary)] text-white
            border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]
-           font-semibold px-5 py-3 rounded-[var(--radius)]
+           font-black px-5 py-3 rounded-[var(--radius)]
+           transition-transform duration-150 ease-in-out
+           hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none
+           active:translate-x-[4px] active:translate-y-[4px] active:shadow-none
+           sm:px-6 sm:py-3.5 md:px-8 md:py-4;
+  }
+
+  .neuro-button-secondary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-[var(--color-accent)] text-[var(--color-text)]
+           border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]
+           font-black px-5 py-3 rounded-[var(--radius)]
            transition-transform duration-150 ease-in-out
            hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none
            active:translate-x-[4px] active:translate-y-[4px] active:shadow-none
@@ -77,15 +115,22 @@
 
   .neuro-input {
     @apply bg-[var(--color-card)] border-4 border-[var(--color-border)] px-3 py-2
-           rounded-none focus:ring-4 focus:ring-[var(--color-accent)]
+           rounded-[var(--radius-sm)] focus:ring-4 focus:ring-[var(--color-accent)]
            focus:border-[var(--color-accent)] placeholder:text-gray-500
+           shadow-[var(--shadow-neo-sm)] transition-all duration-150
            sm:py-3 sm:px-4;
   }
 
   .neuro-badge {
-    @apply inline-block px-3 py-1 border-4 border-[var(--color-border)]
+    @apply inline-flex items-center justify-center px-3 py-1 border-4 border-[var(--color-border)]
            bg-[var(--color-accent)] text-[var(--color-text)]
-           shadow-[var(--shadow-neo)] text-sm sm:text-base;
+           shadow-[var(--shadow-neo-sm)] text-sm font-black rounded-[var(--radius-sm)];
+  }
+
+  .neuro-badge-primary {
+    @apply inline-flex items-center justify-center px-3 py-1 border-4 border-[var(--color-border)]
+           bg-[var(--color-primary)] text-white
+           shadow-[var(--shadow-neo-sm)] text-sm font-black rounded-[var(--radius-sm)];
   }
 
   .neuro-option {
@@ -95,7 +140,18 @@
   }
 
   .neuro-option-selected {
-    @apply bg-[var(--color-primary)] text-[var(--color-bg)]
+    @apply bg-[var(--color-primary)] text-white
            border-[var(--color-border)] shadow-[var(--shadow-neo)];
+  }
+
+  /* Sticky header utilities */
+  .neuro-sticky-header {
+    @apply sticky top-0 z-[var(--z-sticky)] bg-[var(--color-bg)] 
+           border-b-4 border-[var(--color-border)] shadow-[var(--shadow-neo-sm)];
+  }
+
+  .neuro-sticky-header-elevated {
+    @apply sticky top-0 z-[var(--z-fixed)] bg-[var(--color-bg)] 
+           border-b-4 border-[var(--color-border)] shadow-[var(--shadow-neo)];
   }
 }

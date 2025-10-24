@@ -368,7 +368,7 @@ export default function QuizPlayLayout({
     const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
     return (
       <motion.header 
-        className="sticky top-0 z-40 bg-[var(--color-bg)] border-b-4 border-black shadow-[4px_4px_0_#000]"
+        className="neuro-sticky-header-elevated"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
@@ -377,7 +377,7 @@ export default function QuizPlayLayout({
           "mx-auto w-full py-3 sm:py-4 transition-all duration-300",
           isFullscreen 
             ? "max-w-none px-2 sm:px-4" 
-            : "max-w-screen-2xl px-3 sm:px-4 lg:px-6"
+            : "max-w-screen-2xl px-4 sm:px-6 lg:px-8"
         )}>
           <div className="flex items-center justify-between gap-4">
             <motion.div 

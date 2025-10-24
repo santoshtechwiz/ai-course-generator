@@ -1,16 +1,21 @@
 "use client"
-
-// Unified Loader (Recommended)
+// Unified NeoLoader (Primary - Neobrutalism Design System)
 export {
-  UnifiedLoader,
+  NeoLoader,
   PageLoader,
   InlineLoader,
-  
-  
+  ButtonLoader,
+  SkeletonLoader,
+} from './NeoLoader'
+
+// Legacy Loaders (Deprecated - use NeoLoader instead)
+export {
+  UnifiedLoader,
+  PageLoader as LegacyPageLoader,
+  InlineLoader as LegacyInlineLoader,
 } from './UnifiedLoader'
 
-// Legacy Loaders (Deprecated - use UnifiedLoader instead)
-export { SuspenseGlobalFallback } from './SuspenseGlobalFallback'
+export { SuspenseGlobalFallback } from './SuspenseGlobalFallback'balFallback'
 
 
 // Progress API
