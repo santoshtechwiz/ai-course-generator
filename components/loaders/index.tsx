@@ -1,22 +1,9 @@
 "use client"
 
-// Unified Loader (Recommended)
-export {
-  UnifiedLoader,
-  PageLoader,
-  InlineLoader,
-  
-  
-} from './UnifiedLoader'
+// Neobrutalism Unified Loaders (Primary)
+export { NeoLoader, SkeletonLoader, Loader } from '../loader'
 
-// Legacy Loaders (Deprecated - use UnifiedLoader instead)
-export { SuspenseGlobalFallback } from './SuspenseGlobalFallback'
-
-
-// Progress API
-
-
-
-// Course Progress Loaders
+// Global Fallback for Suspense boundaries
+export { SuspenseGlobalFallback } from './SuspenseGlobalFallback'se Progress Loaders
 
 

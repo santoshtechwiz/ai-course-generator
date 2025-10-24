@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* === Neobrutalism Design System — Premium Edition === */
+/* === Neobrutalism Design System — Unified Edition === */
 :root {
   /* Core brand colors */
   --color-bg: #fffdf5;
@@ -12,20 +12,30 @@
 
   /* Depth & Shadows */
   --color-border: #000000;
-  --shadow-offset-x: 6px;
-  --shadow-offset-y: 6px;
+  --shadow-offset-x: 4px;
+  --shadow-offset-y: 4px;
   --shadow-color: #000000;
   --shadow-neo: var(--shadow-offset-x) var(--shadow-offset-y) 0 var(--shadow-color);
+  --shadow-neo-lg: 6px 6px 0 var(--shadow-color);
+  --shadow-neo-xl: 8px 8px 0 var(--shadow-color);
 
   /* Radii & Typography */
-  --radius: 0.75rem;
+  --radius: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 2rem;
   --font-base: 500;
   --font-heading: 700;
+  --font-black: 900;
 
-  /* Accent utilities */
+  /* Status colors */
   --color-success: #00b341;
   --color-warning: #ffb300;
   --color-error: #ff3b3b;
+  --color-info: #0066cc;
+
+  /* Sticky header offset for consistent layout */
+  --header-height: 4rem;
+  --sticky-offset: calc(var(--header-height) + 1rem);
 }
 
 /* === Dark Mode === */
@@ -43,59 +53,394 @@
 /* === Base Layer === */
 @layer base {
   * {
-    @apply transition-all duration-200 ease-in-out;
+    @apply transition-colors duration-200 ease-in-out;
   }
 
   body {
-    @apply bg-[var(--color-bg)] text-[var(--color-text)] font-sans tracking-tight;
+    @apply bg-[var(--color-bg)] text-[var(--color-text)] font-sans tracking-tight antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold text-[var(--color-text)] leading-tight;
+    @apply font-black text-[var(--color-text)] leading-tight;
+  }
+
+  /* Accessibility improvements */
+  .reduce-motion * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Focus styles for better accessibility */
+  *:focus-visible {
+    @apply outline-4 outline-offset-2 outline-[var(--color-primary)];
   }
 }
 
-/* === Component Utilities === */
+/* === Neobrutalism Component System === */
 @layer components {
-  .neuro-card {
+  /* === Cards === */
+  .neo-card {
     @apply bg-[var(--color-card)] border-4 border-[var(--color-border)]
-           shadow-[var(--shadow-neo)] rounded-[var(--radius)] p-5
-           transition-transform hover:-translate-x-1 hover:-translate-y-1
-           hover:shadow-none sm:p-6 lg:p-8;
+           shadow-[var(--shadow-neo)] rounded-[var(--radius)] p-6
+           transition-all duration-200 ease-in-out;
   }
 
-  .neuro-button {
+  .neo-card:hover {
+    @apply -translate-x-1 -translate-y-1 shadow-[var(--shadow-neo-lg)];
+  }
+
+  .neo-card-lg {
+    @apply neo-card rounded-[var(--radius-lg)] p-8 shadow-[var(--shadow-neo-lg)];
+  }
+
+  .neo-card-xl {
+    @apply neo-card rounded-[var(--radius-xl)] p-10 shadow-[var(--shadow-neo-xl)];
+  }
+
+  /* === Buttons === */
+  .neo-button {
     @apply inline-flex items-center justify-center gap-2
-           bg-[var(--color-primary)] text-[var(--color-text)]
+           bg-[var(--color-primary)] text-white
            border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]
-           font-semibold px-5 py-3 rounded-[var(--radius)]
-           transition-transform duration-150 ease-in-out
-           hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none
-           active:translate-x-[4px] active:translate-y-[4px] active:shadow-none
-           sm:px-6 sm:py-3.5 md:px-8 md:py-4;
+           font-black px-6 py-3 rounded-[var(--radius)]
+           transition-all duration-150 ease-in-out
+           hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[var(--shadow-neo-lg)]
+           active:translate-x-1 active:translate-y-1 active:shadow-none;
   }
 
-  .neuro-input {
-    @apply bg-[var(--color-card)] border-4 border-[var(--color-border)] px-3 py-2
-           rounded-none focus:ring-4 focus:ring-[var(--color-accent)]
-           focus:border-[var(--color-accent)] placeholder:text-gray-500
-           sm:py-3 sm:px-4;
+  .neo-button-secondary {
+    @apply neo-button bg-[var(--color-card)] text-[var(--color-text)]
+           hover:bg-[var(--color-muted)];
   }
 
-  .neuro-badge {
-    @apply inline-block px-3 py-1 border-4 border-[var(--color-border)]
+  .neo-button-accent {
+    @apply neo-button bg-[var(--color-accent)] text-[var(--color-text)];
+  }
+
+  .neo-button-sm {
+    @apply px-4 py-2 text-sm;
+  }
+
+  .neo-button-lg {
+    @apply px-8 py-4 text-lg;
+  }
+
+  /* === Inputs === */
+  .neo-input {
+    @apply bg-[var(--color-card)] border-4 border-[var(--color-border)] 
+           px-4 py-3 rounded-[var(--radius)] font-medium
+           focus:ring-4 focus:ring-[var(--color-accent)]/30
+           focus:border-[var(--color-accent)] focus:-translate-x-0.5 focus:-translate-y-0.5
+           focus:shadow-[var(--shadow-neo)] placeholder:text-[var(--color-text)]/50
+           transition-all duration-150;
+  }
+
+  /* === Badges === */
+  .neo-badge {
+    @apply inline-flex items-center justify-center px-3 py-1 
+           border-2 border-[var(--color-border)]
            bg-[var(--color-accent)] text-[var(--color-text)]
-           shadow-[var(--shadow-neo)] text-sm sm:text-base;
+           shadow-[2px_2px_0_var(--shadow-color)] text-sm font-black
+           rounded-md;
   }
 
-  .neuro-option {
-    @apply cursor-pointer border-4 border-[var(--color-border)] p-3 rounded-[var(--radius)]
+  .neo-badge-primary {
+    @apply neo-badge bg-[var(--color-primary)] text-white;
+  }
+
+  .neo-badge-success {
+    @apply neo-badge bg-[var(--color-success)] text-white;
+  }
+
+  .neo-badge-warning {
+    @apply neo-badge bg-[var(--color-warning)] text-[var(--color-text)];
+  }
+
+  .neo-badge-error {
+    @apply neo-badge bg-[var(--color-error)] text-white;
+  }
+
+  /* === Interactive Elements === */
+  .neo-option {
+    @apply cursor-pointer border-4 border-[var(--color-border)] 
+           p-4 rounded-[var(--radius)] bg-[var(--color-card)]
            shadow-[var(--shadow-neo)] transition-all duration-150 ease-in-out
-           hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none;
+           hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[var(--shadow-neo-lg)];
   }
 
-  .neuro-option-selected {
-    @apply bg-[var(--color-primary)] text-[var(--color-bg)]
-           border-[var(--color-border)] shadow-[var(--shadow-neo)];
+  .neo-option-selected {
+    @apply bg-[var(--color-primary)] text-white
+           border-[var(--color-border)] shadow-[var(--shadow-neo-lg)]
+           -translate-x-1 -translate-y-1;
   }
+
+  /* === Layout Helpers === */
+  .neo-sticky-header {
+    @apply sticky top-0 z-40 bg-[var(--color-bg)] 
+           border-b-4 border-[var(--color-border)] 
+           shadow-[0_4px_0_0_var(--color-border)];
+  }
+
+  .neo-container {
+    @apply max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* === Responsive Grid System === */
+  .neo-grid {
+    @apply grid gap-4 sm:gap-6 lg:gap-8;
+  }
+
+  .neo-grid-1 {
+    @apply neo-grid grid-cols-1;
+  }
+
+  .neo-grid-2 {
+    @apply neo-grid grid-cols-1 sm:grid-cols-2;
+  }
+
+  .neo-grid-3 {
+    @apply neo-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
+  .neo-grid-4 {
+    @apply neo-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+
+  .neo-grid-auto {
+    @apply neo-grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))];
+  }
+
+  /* === Responsive Spacing === */
+  .neo-space-y {
+    @apply space-y-4 sm:space-y-6 lg:space-y-8;
+  }
+
+  .neo-space-x {
+    @apply space-x-4 sm:space-x-6 lg:space-x-8;
+  }
+
+  .neo-gap {
+    @apply gap-4 sm:gap-6 lg:gap-8;
+  }
+
+  /* === Responsive Padding === */
+  .neo-p {
+    @apply p-4 sm:p-6 lg:p-8;
+  }
+
+  .neo-px {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  .neo-py {
+    @apply py-4 sm:py-6 lg:py-8;
+  }
+
+  /* === Interactive States === */
+  .neo-interactive {
+    @apply transition-all duration-200 ease-in-out
+           hover:-translate-x-1 hover:-translate-y-1 hover:shadow-neo-lg
+           active:translate-x-1 active:translate-y-1 active:shadow-none
+           focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-primary;
+  }
+
+  .neo-hover-lift {
+    @apply transition-transform duration-200 ease-in-out
+           hover:-translate-y-2 hover:shadow-neo-lg;
+  }
+
+  /* === Mobile Optimizations === */
+  @media (max-width: 640px) {
+    .neo-card {
+      @apply p-4 rounded-lg;
+    }
+    
+    .neo-button {
+      @apply min-h-[44px] px-4;
+    }
+    
+    .neo-container {
+      @apply px-3;
+    }
+  }
+
+  /* === Touch Device Optimizations === */
+  @media (hover: none) and (pointer: coarse) {
+    .neo-interactive:hover {
+      transform: none;
+      box-shadow: var(--shadow-neo);
+    }
+    
+    .neo-hover-lift:hover {
+      transform: none;
+    }
+  }
+
+  /* === Enhanced Animations === */
+  .neo-pulse {
+    animation: neo-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes neo-pulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: var(--shadow-neo);
+    }
+    50% {
+      transform: scale(1.02);
+      box-shadow: var(--shadow-neo-lg);
+    }
+  }
+
+  .neo-bounce {
+    animation: neo-bounce 1s infinite;
+  }
+
+  @keyframes neo-bounce {
+    0%, 20%, 53%, 80%, 100% {
+      transform: translate3d(0,0,0);
+    }
+    40%, 43% {
+      transform: translate3d(0, -8px, 0);
+    }
+    70% {
+      transform: translate3d(0, -4px, 0);
+    }
+    90% {
+      transform: translate3d(0, -2px, 0);
+    }
+  }
+
+  .neo-shake {
+    animation: neo-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+
+  @keyframes neo-shake {
+    10%, 90% {
+      transform: translate3d(-1px, 0, 0);
+    }
+    20%, 80% {
+      transform: translate3d(2px, 0, 0);
+    }
+    30%, 50%, 70% {
+      transform: translate3d(-4px, 0, 0);
+    }
+    40%, 60% {
+      transform: translate3d(4px, 0, 0);
+    }
+  }
+
+  .neo-wiggle {
+    animation: neo-wiggle 0.8s ease-in-out infinite;
+  }
+
+  @keyframes neo-wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(1deg); }
+    75% { transform: rotate(-1deg); }
+  }
+
+  .neo-slide-up {
+    animation: neo-slide-up 0.3s ease-out;
+  }
+
+  @keyframes neo-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .neo-slide-in {
+    animation: neo-slide-in 0.3s ease-out;
+  }
+
+  @keyframes neo-slide-in {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .neo-fade-in {
+    animation: neo-fade-in 0.3s ease-out;
+  }
+
+  @keyframes neo-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .neo-scale-in {
+    animation: neo-scale-in 0.2s ease-out;
+  }
+
+  @keyframes neo-scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* === Loading Animations === */
+  .neo-loading-dots {
+    display: inline-flex;
+    gap: 2px;
+  }
+
+  .neo-loading-dots > div {
+    width: 4px;
+    height: 4px;
+    background: var(--color-primary);
+    border-radius: 50%;
+    animation: neo-loading-dots 1.4s ease-in-out infinite both;
+  }
+
+  .neo-loading-dots > div:nth-child(1) { animation-delay: -0.32s; }
+  .neo-loading-dots > div:nth-child(2) { animation-delay: -0.16s; }
+
+  @keyframes neo-loading-dots {
+    0%, 80%, 100% {
+      transform: scale(0);
+      opacity: 0.5;
+    }
+    40% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .neo-spinner {
+    animation: neo-spinner 1s linear infinite;
+  }
+
+  @keyframes neo-spinner {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* === Stagger Animations === */
+  .neo-stagger > * {
+    animation: neo-slide-up 0.3s ease-out;
+  }
+
+  .neo-stagger > *:nth-child(1) { animation-delay: 0s; }
+  .neo-stagger > *:nth-child(2) { animation-delay: 0.1s; }
+  .neo-stagger > *:nth-child(3) { animation-delay: 0.2s; }
+  .neo-stagger > *:nth-child(4) { animation-delay: 0.3s; }
+  .neo-stagger > *:nth-child(5) { animation-delay: 0.4s; }
+  .neo-stagger > *:nth-child(n+6) { animation-delay: 0.5s; }
 }

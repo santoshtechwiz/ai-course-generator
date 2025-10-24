@@ -176,9 +176,9 @@ export function MainNavbar() {
       <motion.header
         className={cn(
           "fixed top-0 left-0 right-0 z-50",
-          // Use neobrutalism tokens for consistent geometry and borders
+          "neo-sticky-header",
           neo.card,
-          isScrolled && "shadow-[0_10px_0_0_#000]",
+          isScrolled && "shadow-neo-lg",
         )}
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -189,7 +189,7 @@ export function MainNavbar() {
           duration: 0.3
         }}
       >
-        <div className="container flex h-16 items-center justify-between px-3 sm:px-4 lg:px-6 max-w-7xl mx-auto">
+        <div className="neo-container flex h-16 items-center justify-between">
           {/* Mobile menu trigger (left) - matches the left-docked mobile overlay in the screenshot */}
           <div className="flex items-center mr-2 md:hidden">
             <Button

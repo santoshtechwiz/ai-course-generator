@@ -6,16 +6,29 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-md border-4 border-black px-2.5 py-0.5 text-xs font-base w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-black focus-visible:ring-black/50 focus-visible:ring-[3px] overflow-hidden shadow-[2px_2px_0_#000]",
+  "neo-badge w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-primary overflow-hidden",
   {
     variants: {
       variant: {
-        default: "bg-[var(--color-primary)] text-white",
-        neutral: "bg-[var(--color-muted)] text-[var(--color-text)]",
+        default: "neo-badge-primary",
+        primary: "neo-badge-primary",
+        secondary: "bg-card text-foreground",
+        accent: "bg-accent text-foreground",
+        success: "neo-badge-success",
+        warning: "neo-badge-warning",
+        error: "neo-badge-error",
+        neutral: "bg-muted text-foreground",
+        outline: "bg-background text-foreground border-2",
+      },
+      size: {
+        default: "px-3 py-1 text-sm",
+        sm: "px-2 py-0.5 text-xs",
+        lg: "px-4 py-2 text-base",
       },
     },
     defaultVariants: {
       variant: "default",
+      size: "default",
     },
   },
 )
@@ -23,6 +36,7 @@ const badgeVariants = cva(
 function Badge({
   className,
   variant,
+  size,
   asChild = false,
   ...props
 }: React.ComponentProps<"span"> &
@@ -34,7 +48,7 @@ function Badge({
   return (
     <Comp
       data-slot="badge"
-      className={cn(badgeVariants({ variant }), className)}
+      className={cn(badgeVariants({ variant, size }), className)}
       {...props}
     />
   )

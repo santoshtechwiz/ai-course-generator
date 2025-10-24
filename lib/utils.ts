@@ -104,20 +104,20 @@ const getAIModelFromConfig = (userType: string): string => {
  */
 export function getColorClasses() {
   return {
-    buttonPrimary:
-      "bg-primary text-primary-foreground border-3 border-border neo-shadow hover:neo-shadow-lg hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:neo-shadow transition-all font-bold",
-    buttonSecondary:
-      "bg-secondary text-secondary-foreground border-3 border-border neo-shadow hover:neo-shadow-lg hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:neo-shadow transition-all font-bold",
-    buttonAccent:
-      "bg-accent text-accent-foreground border-3 border-border neo-shadow hover:neo-shadow-lg hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:neo-shadow transition-all font-bold",
-    buttonIcon:
-      "border-3 border-border neo-shadow hover:neo-shadow-lg hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all",
-    cardPrimary: "border-3 border-border neo-shadow bg-card",
-    cardSecondary: "border-3 border-border neo-shadow-lg bg-card",
-    cardAccent: "border-3 border-primary neo-shadow-primary bg-card",
-    badge: "border-2 border-border font-bold px-3 py-1",
-    input:
-      "border-3 border-border neo-shadow focus:neo-shadow-lg focus:translate-x-[-1px] focus:translate-y-[-1px] transition-all font-medium",
+    // Updated to use new neo classes
+    buttonPrimary: "neo-button",
+    buttonSecondary: "neo-button-secondary",
+    buttonAccent: "neo-button-accent",
+    buttonIcon: "neo-button neo-button-sm p-2",
+    
+    // Card classes
+    cardPrimary: "neo-card",
+    cardSecondary: "neo-card-lg",
+    cardAccent: "neo-card border-primary",
+    
+    // Form elements
+    badge: "neo-badge",
+    input: "neo-input",
   }
 }
 
