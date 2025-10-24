@@ -127,17 +127,17 @@ export function MainNavbar() {
           href={item.href}
           className={cn(
             "relative px-4 py-2 text-sm font-black transition-all duration-150",
-            "border-4 border-transparent rounded-md transform hover:scale-105",
+            "border-4 border-transparent rounded-none transform hover:scale-105",
             "active:scale-95 active:translate-y-1",
             active 
-              ? "border-black bg-[var(--color-primary)] text-white shadow-[4px_4px_0_#000]" 
-              : "hover:border-black hover:bg-[var(--color-muted)] hover:shadow-[3px_3px_0_#000]",
+              ? "border-[var(--color-border)] bg-[var(--color-primary)] text-white shadow-[4px_4px_0_#000]" 
+              : "hover:border-[var(--color-border)] hover:bg-[var(--color-muted)] hover:shadow-[3px_3px_0_#000]",
           )}
         >
           {item.name}
           {active && (
             <motion.div
-              className="absolute bottom-0 left-0 right-0 h-1 bg-current rounded-full"
+              className="absolute bottom-0 left-0 right-0 h-1 bg-current"
               layoutId="navbar-indicator"
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
             />
@@ -157,11 +157,11 @@ export function MainNavbar() {
           href={item.href}
           onClick={() => setIsMobileMenuOpen(false)}
           className={cn(
-            "block px-4 py-3 min-h-[48px] flex items-center font-black border-4 rounded-md",
+            "block px-4 py-3 min-h-[48px] flex items-center font-black border-4 rounded-none",
             "transition-all duration-150 active:scale-95 active:translate-y-1",
             active 
-              ? "bg-[var(--color-primary)] text-white border-black shadow-[4px_4px_0_#000]" 
-              : "border-transparent hover:border-black hover:bg-[var(--color-muted)] hover:shadow-[3px_3px_0_#000]",
+              ? "bg-[var(--color-primary)] text-white border-[var(--color-border)] shadow-[4px_4px_0_#000]" 
+              : "border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-muted)] hover:shadow-[3px_3px_0_#000]",
           )}
         >
           {item.name}
@@ -175,10 +175,9 @@ export function MainNavbar() {
     <>
       <motion.header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50",
-          // Use neobrutalism tokens for consistent geometry and borders
-          neo.card,
-          isScrolled && "shadow-[0_10px_0_0_#000]",
+          "fixed top-0 left-0 right-0 z-[60]",
+          "bg-[var(--color-bg)] border-b-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]",
+          "transition-all duration-200"
         )}
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -269,8 +268,9 @@ export function MainNavbar() {
                 onClick={() => setIsSearchModalOpen(true)}
                 className={cn(
                   buttonIcon,
-                  "border-2 border-transparent hover:border-border",
-                  "hover:shadow-[3px_3px_0px_0px_hsl(var(--border))] transition-all duration-150"
+                  "border-3 border-[var(--color-border)] hover:border-[var(--color-border)]",
+                  "hover:shadow-[3px_3px_0px_0px_var(--color-border)] transition-all duration-150",
+                  "bg-[var(--color-bg)]"
                 )}
               >
                 <Search className="h-4 w-4" />
@@ -313,9 +313,9 @@ export function MainNavbar() {
                   className={cn(
                     "hidden sm:flex font-black",
                     buttonPrimary,
-                    "min-h-[40px] border-3 shadow-[4px_4px_0px_0px_hsl(var(--border))]",
-                    "hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] active:shadow-[2px_2px_0px_0px_hsl(var(--border))]",
-                    "active:translate-y-1 transition-all duration-150"
+                    "min-h-[40px] border-4 shadow-[4px_4px_0_#000]",
+                    "hover:shadow-[6px_6px_0_#000] active:shadow-[2px_2px_0_#000]",
+                    "active:translate-y-1 transition-all duration-150 rounded-none"
                   )}
                   size="sm"
                 >
@@ -337,8 +337,9 @@ export function MainNavbar() {
                     className={cn(
                       "md:hidden",
                       buttonIcon,
-                      "border-2 border-transparent hover:border-border",
-                      "hover:shadow-[3px_3px_0px_0px_hsl(var(--border))] transition-all duration-150"
+                      "border-3 border-[var(--color-border)] hover:border-[var(--color-border)]",
+                      "hover:shadow-[3px_3px_0px_0px_var(--color-border)] transition-all duration-150",
+                      "bg-[var(--color-bg)]"
                     )}
                     suppressHydrationWarning
                     aria-label="Toggle menu"
@@ -353,7 +354,7 @@ export function MainNavbar() {
                 </motion.div>
               </SheetTrigger>
               {/* Slide in from left on mobile to align with neobrutalism left-docked nav in mock */}
-              <SheetContent side="left" className="w-[85vw] max-w-sm p-0 bg-background border-r-4 border-border shadow-[4px_0px_0px_0px_hsl(var(--border))]">
+              <SheetContent side="left" className="w-[85vw] max-w-sm p-0 bg-[var(--color-bg)] border-r-4 border-[var(--color-border)] shadow-[4px_0px_0px_0px_var(--color-border)]">
                 <motion.div 
                   className="h-full flex flex-col"
                   initial={{ x: 300 }}
@@ -361,7 +362,7 @@ export function MainNavbar() {
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 >
                   {/* Enhanced Header */}
-                  <div className="p-4 border-b-4 border-border flex items-center justify-between bg-secondary-background">
+                  <div className="p-4 border-b-4 border-[var(--color-border)] flex items-center justify-between bg-[var(--color-bg)]">
                     <motion.div whileHover={{ scale: 1.05 }}>
                       <Logo />
                     </motion.div>
@@ -378,12 +379,12 @@ export function MainNavbar() {
                   </nav>
                   
                   {/* Enhanced Footer */}
-                  <div className="p-4 border-t-4 border-border space-y-3 bg-secondary-background">
+                  <div className="p-4 border-t-4 border-[var(--color-border)] space-y-3 bg-[var(--color-bg)]">
                     {isAuthenticated ? (
                       <>
                         {availableCredits !== null && (
                           <motion.div 
-                            className="flex items-center justify-between p-3 bg-background border-3 border-border rounded-lg shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+                            className="flex items-center justify-between p-3 bg-[var(--color-bg)] border-3 border-[var(--color-border)] rounded-none shadow-[4px_4px_0_#000]"
                             whileHover={{ scale: 1.02 }}
                             transition={{ type: "spring", stiffness: 400, damping: 17 }}
                           >
@@ -399,8 +400,8 @@ export function MainNavbar() {
                                 <Badge 
                                   variant="secondary" 
                                   className={cn(
-                                    "text-xs px-1.5 py-0.5 border-2 border-border font-black",
-                                    "shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+                                    "text-xs px-1.5 py-0.5 border-2 border-[var(--color-border)] font-black",
+                                    "shadow-[2px_2px_0_#000] rounded-none"
                                   )}
                                 >
                                   {subscriptionPlan}
@@ -430,11 +431,11 @@ export function MainNavbar() {
                       >
                         <Button 
                           className={cn(
-                            "w-full min-h-[48px] font-black border-3",
+                            "w-full min-h-[48px] font-black border-4 rounded-none",
                             buttonPrimary,
-                            "shadow-[4px_4px_0px_0px_hsl(var(--border))]",
-                            "hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]",
-                            "active:shadow-[2px_2px_0px_0px_hsl(var(--border))] active:translate-y-1"
+                            "shadow-[4px_4px_0_#000]",
+                            "hover:shadow-[6px_6px_0_#000]",
+                            "active:shadow-[2px_2px_0_#000] active:translate-y-1"
                           )}
                           onClick={() => {
                             handleSignIn()
