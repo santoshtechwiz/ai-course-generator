@@ -39,6 +39,17 @@ import MobilePlaylistOverlay from "./MobilePlaylistOverlay"
 import { storageManager } from "@/utils/storage-manager"
 import { useBookmarks } from "@/hooks/use-bookmarks"
 
+// Simple stat badge component - compact design
+const CourseStatBadge = ({ icon: Icon, value, label }: { icon: any; value: string; label: string }) => (
+  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+    <Icon className="h-3.5 w-3.5 text-black flex-shrink-0" />
+    <div className="flex flex-col leading-tight">
+      <span className="text-xs font-black text-black">{value}</span>
+      <span className="text-[10px] font-bold text-gray-600 uppercase">{label}</span>
+    </div>
+  </div>
+)
+
 interface ModernCoursePageProps {
   course: FullCourseType
   initialChapterId?: string
@@ -139,17 +150,6 @@ function validateChapter(chapter: any): boolean {
 }
 
 const MemoizedCourseDetailsTabs = React.memo(CourseDetailsTabs)
-
-// Course stats badge component
-const CourseStatBadge = ({ icon: Icon, value, label }: { icon: any; value: string; label: string }) => (
-  <div className="flex items-center gap-2 bg-white border-2 border-black px-3 py-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-    <Icon className="h-4 w-4" />
-    <div className="flex flex-col">
-      <span className="font-black text-sm">{value}</span>
-      <span className="text-xs font-bold text-gray-600">{label}</span>
-    </div>
-  </div>
-)
 
 const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId, isFullscreen = false }) => {
   const router = useRouter()
@@ -1477,16 +1477,19 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       )}
 
       {/* Enhanced Main content */}
-      <main className={cn("transition-all duration-300", state.isTheaterMode && "bg-black")}>
+      <main className={cn("transition-all duration-100", state.isTheaterMode && "bg-black")}>
+        {/* Top spacer for MainNavbar */}
+        {!state.isTheaterMode && <div className="h-16" />}
+        
         <div
           className={cn(
-            "mx-auto transition-all duration-300",
-            state.isTheaterMode ? "max-w-none px-0" : "max-w-[1920px] px-4 sm:px-6 py-6",
+            "mx-auto transition-all duration-100",
+            state.isTheaterMode ? "max-w-none px-0" : "max-w-[1600px] px-4 sm:px-6 lg:px-8 py-4",
           )}
         >
           {/* Course Stats Bar */}
           {!state.isTheaterMode && (
-            <div className="flex flex-wrap gap-3 mb-6">
+            <div className="flex flex-wrap gap-2 mb-3">
               <CourseStatBadge 
                 icon={Play} 
                 value={videoPlaylist.length.toString()} 
@@ -1514,22 +1517,23 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
           <div
             className={cn(
-              "transition-all duration-300",
+              "transition-all duration-100",
               state.sidebarCollapsed || state.isTheaterMode
-                ? "flex flex-col max-w-7xl mx-auto"
-                : "flex flex-col lg:grid lg:grid-cols-[4fr_320px] xl:grid-cols-[4.5fr_320px] 2xl:grid-cols-[5fr_350px] gap-6",
+                ? "flex flex-col"
+                : "flex flex-col lg:grid lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px] gap-4",
             )}
           >
             {/* Video and content area */}
-            <div className="space-y-6 min-w-0">
+            <div className="space-y-3 min-w-0">
               {/* Guest Progress Indicator */}
               {!user && (
-                <div className="mb-4 transition-transform duration-200">
+                <div className="mb-3 transition-transform duration-100">
                   <GuestProgressIndicator courseId={course.id} />
                 </div>
               )}
 
-              <div className="relative transition-all duration-200">
+              {/* Video Player - Clean minimal container */}
+              <div className="relative">
                 {isPiPActive ? (
                   <div className="bg-gray-100 border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
                     <div className="aspect-video bg-gray-200 flex items-center justify-center">
@@ -1543,66 +1547,59 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                     </div>
                   </div>
                 ) : (
-                  <div
-                    className={cn(
-                      "overflow-hidden w-full aspect-video border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-black",
-                      state.isTheaterMode && "border-0 shadow-none",
-                    )}
-                  >
-                    <div className="bg-black relative w-full aspect-video">
-                      <VideoPlayer
-                        youtubeVideoId={currentVideoId || ""}
-                        chapterId={currentChapter?.id ? String(currentChapter.id) : ""}
-                        chapterTitle={currentChapter?.title || ""}
-                        bookmarks={bookmarkItems}
-                        onProgress={handleVideoProgress}
-                        onEnded={handleVideoEnded}
-                        onVideoLoad={handleVideoLoad}
-                        onPlayerReady={handlePlayerReady}
-                        onPictureInPictureToggle={handlePIPToggle}
-                        isPiPActive={isPiPActive}
-                        onTheaterModeToggle={handleTheaterModeToggle}
-                        isTheaterMode={state.isTheaterMode}
-                        isLoading={state.isVideoLoading}
-                        initialSeekSeconds={(() => {
-                          try {
-                            if (
-                              courseProgress?.videoProgress?.playedSeconds &&
-                              String(courseProgress.videoProgress.currentChapterId) === String(currentChapter?.id)
-                            ) {
-                              const ts = Number(courseProgress.videoProgress.playedSeconds)
-                              if (!isNaN(ts) && ts > 0) return ts
-                            }
-                          } catch {}
-                          return undefined
-                        })()}
-                        courseId={course.id}
-                        courseName={course.title}
-                        autoPlay={state.autoplayMode}
-                        onToggleAutoPlay={handleAutoplayToggle}
-                        onNextVideo={handleNextVideo}
-                        nextVideoId={nextVideoId || undefined}
-                        nextVideoTitle={nextVideoTitle}
-                        hasNextVideo={hasNextVideo}
-                        autoAdvanceNext={state.autoplayMode}
-                      />
-                    </div>
+                  <div className="w-full aspect-video bg-black overflow-hidden">
+                    <VideoPlayer
+                      youtubeVideoId={currentVideoId || ""}
+                      chapterId={currentChapter?.id ? String(currentChapter.id) : ""}
+                      chapterTitle={currentChapter?.title || ""}
+                      bookmarks={bookmarkItems}
+                      onProgress={handleVideoProgress}
+                      onEnded={handleVideoEnded}
+                      onVideoLoad={handleVideoLoad}
+                      onPlayerReady={handlePlayerReady}
+                      onPictureInPictureToggle={handlePIPToggle}
+                      isPiPActive={isPiPActive}
+                      onTheaterModeToggle={handleTheaterModeToggle}
+                      isTheaterMode={state.isTheaterMode}
+                      isLoading={state.isVideoLoading}
+                      initialSeekSeconds={(() => {
+                        try {
+                          if (
+                            courseProgress?.videoProgress?.playedSeconds &&
+                            String(courseProgress.videoProgress.currentChapterId) === String(currentChapter?.id)
+                          ) {
+                            const ts = Number(courseProgress.videoProgress.playedSeconds)
+                            if (!isNaN(ts) && ts > 0) return ts
+                          }
+                        } catch {}
+                        return undefined
+                      })()}
+                      courseId={course.id}
+                      courseName={course.title}
+                      autoPlay={state.autoplayMode}
+                      onToggleAutoPlay={handleAutoplayToggle}
+                      onNextVideo={handleNextVideo}
+                      nextVideoId={nextVideoId || undefined}
+                      nextVideoTitle={nextVideoTitle}
+                      hasNextVideo={hasNextVideo}
+                      autoAdvanceNext={state.autoplayMode}
+                    />
                   </div>
                 )}
               </div>
 
               {/* Current Chapter Info */}
               {!state.isTheaterMode && currentChapter && (
-                <div className="bg-white border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="font-black text-xl uppercase tracking-tight">{currentChapter.title}</h2>
+                <div className="bg-white border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <h2 className="font-black text-lg uppercase tracking-tight truncate">{currentChapter.title}</h2>
                       {currentChapter.description && (
-                        <p className="text-gray-600 font-bold mt-1">{currentChapter.description}</p>
+                        <p className="text-gray-600 font-bold text-sm mt-0.5 line-clamp-1">{currentChapter.description}</p>
                       )}
                     </div>
                     {videoDurations[currentVideoId || ""] && (
-                      <div className="bg-yellow-400 border-2 border-black px-3 py-1 font-black text-sm">
+                      <div className="bg-yellow-400 border-2 border-black px-2.5 py-1 font-black text-xs whitespace-nowrap flex-shrink-0">
                         {formatDuration(videoDurations[currentVideoId || ""])}
                       </div>
                     )}
@@ -1612,15 +1609,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
               {/* Contextual Sign-In Prompt */}
               {!user && (
-                <div className="bg-blue-200 border-4 border-black p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                <div className="bg-blue-200 border-4 border-black p-3 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                   <ContextualSignInPrompt action="continue_course" courseId={String(course.id)} />
                 </div>
               )}
 
               {!state.isTheaterMode && (
-                <div className="transition-all duration-200">
-                  <div className="border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white">
-                    <div className="p-6">
+                <div className="transition-all duration-100">
+                  <div className="border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white">
+                    <div className="p-3">
                       <MemoizedCourseDetailsTabs
                         course={course}
                         currentChapter={currentChapter}
@@ -1633,9 +1630,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
               )}
 
               {!state.isTheaterMode && (
-                <div className="transition-all duration-200">
-                  <div className="border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white">
-                    <div className="p-6">
+                <div className="transition-all duration-100">
+                  <div className="border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white">
+                    <div className="p-3">
                       <ReviewsSection slug={course.slug} />
                     </div>
                   </div>
@@ -1645,8 +1642,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
             {/* Enhanced Sidebar */}
             {!state.sidebarCollapsed && !state.isTheaterMode && (
-              <div className="hidden lg:block space-y-3 min-w-0 w-full transition-transform duration-200">
-                <div className="border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white h-full">
+              <div className="hidden lg:block space-y-3 min-w-0 w-full">
+                <div className="border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white h-full overflow-hidden">
                   <div className="p-0">
                     {sidebarCourse.chapters.length === 0 ? (
                       <div className="p-8 text-center">
