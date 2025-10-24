@@ -27,6 +27,7 @@ import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { useRandomQuizzes } from "@/hooks/useRandomQuizzes"
+import neo from "@/components/neo/tokens"
 
 // Simplified constants
 const QUIZ_ROUTES = {
@@ -180,8 +181,8 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
       whileHover={{ y: -4 }}
       transition={{ type: "spring", stiffness: 300 }}
     >
-      <Card className={cn(
-        "border border-border bg-card shadow-sm rounded-lg transition-all duration-300",
+      <Card className={cn(neo.inner,
+        "bg-card shadow-sm rounded-lg transition-all duration-300",
         isActive && "ring-2 ring-primary/30 shadow-md"
       )}>
         <CardContent className="p-4">
@@ -195,8 +196,8 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
                 <Badge 
-                  variant="secondary"
-                  className="font-semibold text-xs rounded-md px-2 py-0"
+                    variant="neutral"
+                    className={cn(neo.badge, "text-xs h-7 px-2 py-0 rounded-md font-semibold")}
                 >
                   {quiz.quizType.toUpperCase()}
                 </Badge>
@@ -228,24 +229,28 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
           )}
 
           {/* Action Button */}
-          <Link href={`${route}/${quiz.slug}`} className="block">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {/* Use Button asChild to avoid nesting interactive elements (anchor > button) */}
+            <Button
+              asChild
+              size="lg"
+              className={cn(
+                "w-full font-semibold text-sm bg-primary text-primary-foreground rounded-lg",
+                "shadow-sm hover:shadow-md transition-all duration-300",
+                "hover:bg-primary/90"
+              )}
             >
-              <Button
-                size="lg"
-                className={cn(
-                  "w-full font-semibold text-sm bg-primary text-primary-foreground rounded-lg",
-                  "shadow-sm hover:shadow-md transition-all duration-300",
-                  "hover:bg-primary/90"
-                )}
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Start Challenge
-              </Button>
-            </motion.div>
-          </Link>
+              <Link href={`${route}/${quiz.slug}`}>
+                <>
+                  <Play className="w-4 h-4 mr-2" />
+                  Start Challenge
+                </>
+              </Link>
+            </Button>
+          </motion.div>
         </CardContent>
       </Card>
     </motion.div>
@@ -366,24 +371,7 @@ const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
 ErrorState.displayName = "ErrorState"
 
 
-// Mock data for fallback
-const MOCK_QUIZZES: Quiz[] = [
-  {
-    id: "1",
-    title: "JavaScript Fundamentals Challenge",
-    quizType: "mcq",
-    difficulty: "medium",
-    questionCount: 15,
-    slug: "js-fundamentals",
-    isPublic: true,
-    description: "Test your core JavaScript knowledge with this comprehensive quiz",
-    estimatedTime: 20,
-    rating: 4.5,
-    viewCount: 1250,
-    likeCount: 89
-  }
- 
-]
+// No mocked fallback quizzes — rely on API and show EmptyState when none available.
 
 // Main component
 export const RandomQuiz = memo(({
@@ -398,12 +386,12 @@ export const RandomQuiz = memo(({
   const [isAutoRotating, setIsAutoRotating] = useState(autoRotate)
   const rotationRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Use mock data if no quizzes are available from the API
+  // Use server data only — show empty state when there are no quizzes
   const displayQuizzes = useMemo(() => {
     if (quizzes && quizzes.length > 0) {
       return quizzes.slice(0, maxQuizzes)
     }
-    return MOCK_QUIZZES.slice(0, maxQuizzes)
+    return []
   }, [quizzes, maxQuizzes])
 
   const currentQuiz = useMemo(() => displayQuizzes[currentIndex], [displayQuizzes, currentIndex])
@@ -495,15 +483,23 @@ export const RandomQuiz = memo(({
     )
   }
 
+  // If no quizzes returned from API, show the EmptyState (no mocked data)
+  if (!loading && displayQuizzes.length === 0) {
+    return (
+      <div className={cn("w-full max-w-2xl mx-auto", className)}>
+        <EmptyState />
+      </div>
+    )
+  }
   return (
     <motion.div
-      className={cn("w-full max-w-2xl mx-auto bg-card border border-border rounded-lg shadow-sm", className)}
+      className={cn("w-full max-w-2xl mx-auto", neo.card, className)}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
     >
-      {/* Enhanced Header with proper containment */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border-b border-border bg-muted/30">
+      {/* Enhanced Header with neobrutalism tokens */}
+      <div className={cn(neo.header, "flex flex-col sm:flex-row sm:items-center justify-between gap-3")}>
         <div className="flex items-center gap-3">
           <motion.div 
             className="p-2 bg-primary text-primary-foreground rounded-lg"

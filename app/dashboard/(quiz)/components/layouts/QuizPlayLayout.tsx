@@ -631,6 +631,20 @@ export default function QuizPlayLayout({
       isFullscreen && "overflow-hidden"
     )}>
       {header}
+      {/* Mobile toggle for sidebar */}
+      {isMobile && !isFullscreen && !isFocusMode && (
+        <div className="fixed bottom-4 right-4 z-50 lg:hidden">
+          <Button
+            variant="neutral"
+            size="sm"
+            onClick={toggleSidebar}
+            aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+            className="h-12 w-12 p-0 shadow-[6px_6px_0px_0px_hsl(var(--border))]"
+          >
+            {sidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
+          </Button>
+        </div>
+      )}
       
       <main className={cn(
         "mx-auto w-full py-6 transition-all duration-300 space-y-6",
