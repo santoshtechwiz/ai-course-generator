@@ -98,8 +98,8 @@ export function DashboardLayout({
           {/* Main Navbar - Complete navigation with AI features, search, and user management */}
           <MainNavbar />
 
-          {/* Main Content Area - No padding, children control their own layout */}
-          <main className="min-h-[calc(100vh-4rem)] pt-20">
+          {/* Main Content Area - Consistent header offset */}
+          <main className="min-h-[calc(100vh-var(--header-height))] pt-sticky">
             {/* Credit Guidance Banner - Shows for 0-credit users */}
             <CreditGuidanceBanner />
             

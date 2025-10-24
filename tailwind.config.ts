@@ -10,43 +10,83 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Neobrutal base palette — aligned to globals.css variables
-        background: "#fffdf5", // --color-bg
-        foreground: "#0a0a0a", // --color-text
-        accent: "#ff007f", // --color-primary (neobrutal pink)
-        accentHover: "#e60076",
-        card: "#ffffff", // --color-card
-        border: "#000000", // --color-border
-        muted: "#f2f2f2", // --color-muted
-        success: "#00b341", // --color-success
-        warning: "#ffb300",
-        danger: "#ff3b3b",
+        // Neobrutalism core palette — synced with CSS variables
+        background: "var(--color-bg)",
+        foreground: "var(--color-text)",
+        primary: "var(--color-primary)",
+        accent: "var(--color-accent)",
+        card: "var(--color-card)",
+        border: "var(--color-border)",
+        muted: "var(--color-muted)",
+        
+        // Status colors
+        success: "var(--color-success)",
+        warning: "var(--color-warning)",
+        error: "var(--color-error)",
+        info: "var(--color-info)",
 
-        // Dark mode
-        darkBackground: "#1a1a1a", // matches .dark in globals.css
+        // Legacy color support for existing components
+        accentHover: "#e60076",
+        danger: "var(--color-error)",
+        darkBackground: "#1a1a1a",
         darkForeground: "#fafafa",
         darkCard: "#2b2b2b",
         darkBorder: "#fafafa",
       },
 
       boxShadow: {
-        neo: "6px 6px 0px #111",
-        neoDark: "6px 6px 0px #fff",
+        // Neobrutalism shadow system
+        neo: "var(--shadow-neo)",
+        "neo-lg": "var(--shadow-neo-lg)",
+        "neo-xl": "var(--shadow-neo-xl)",
+        "neo-sm": "2px 2px 0 var(--shadow-color)",
+        
+        // Legacy shadows for compatibility
+        neoDark: "4px 4px 0px #fff",
       },
 
       borderRadius: {
-        lg: "16px",
-        md: "10px",
-        sm: "6px",
+        // Enhanced radius system
+        sm: "0.5rem",
+        md: "var(--radius)",
+        lg: "var(--radius-lg)", 
+        xl: "var(--radius-xl)",
+        "2xl": "2.5rem",
+      },
+
+      borderWidth: {
+        3: "3px",
+        5: "5px",
+        6: "6px",
       },
 
       fontFamily: {
-        display: ["Poppins", "sans-serif"],
-        body: ["Inter", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Poppins", "Inter", "sans-serif"],
+        mono: ["JetBrains Mono", "Consolas", "monospace"],
+      },
+
+      fontWeight: {
+        black: "var(--font-black)",
+        bold: "var(--font-heading)",
+        medium: "var(--font-base)",
+      },
+
+      spacing: {
+        18: "4.5rem",
+        88: "22rem",
+        "header": "var(--header-height)",
+        "sticky": "var(--sticky-offset)",
       },
 
       transitionTimingFunction: {
         smooth: "cubic-bezier(0.16, 1, 0.3, 1)",
+        neo: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+      },
+
+      animation: {
+        "neo-pulse": "neo-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "neo-bounce": "neo-bounce 1s infinite",
       },
 
       screens: {
@@ -61,32 +101,44 @@ module.exports = {
   },
 
   plugins: [
-    plugin(function (tw: any) {
-      const { addComponents } = tw;
+    plugin(function ({ addComponents, addUtilities, theme }: any) {
+      // Enhanced Neobrutalism components
       addComponents({
+        // Legacy card support (now uses neo-card classes)
         ".card": {
-          "@apply bg-card border-4 border-border shadow-neo p-5 rounded-lg transition-transform duration-200": {},
-          "&:hover": {
-            transform: "translateY(-6px)",
-          },
+          "@apply neo-card": {},
         },
+        
+        // Legacy button support
         ".btn": {
-          "@apply px-5 py-3 font-semibold border-4 border-border rounded-md transition-transform duration-200": {},
-          "&:active": {
-            transform: "translate(4px,4px)",
-            boxShadow: "none",
-          },
+          "@apply neo-button": {},
         },
         ".btn-accent": {
-          "@apply bg-accent text-white shadow-neo": {},
-          "&:hover": {
-            "@apply bg-accentHover": {},
-          },
+          "@apply neo-button bg-accent text-white": {},
         },
         ".btn-outline": {
-          "@apply bg-transparent text-foreground border-4 border-border shadow-neo": {},
-          "&:hover": {
-            "@apply bg-foreground text-background": {},
+          "@apply neo-button-secondary": {},
+        },
+
+        // Enhanced responsive container
+        ".neo-container": {
+          "@apply max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8": {},
+        },
+      });
+
+      // Utility classes for consistent spacing and layout
+      addUtilities({
+        ".text-balance": {
+          "text-wrap": "balance",
+        },
+        ".bg-grid": {
+          "background-image": `url("data:image/svg+xml,%3csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3e%3cg fill='%23000000' fill-opacity='0.05' fill-rule='evenodd'%3e%3cpath d='m0 40l40-40h-40v40zm40 0v-40h-40l40 40z'/%3e%3c/g%3e%3c/svg%3e")`,
+        },
+        ".scrollbar-hide": {
+          "-ms-overflow-style": "none",
+          "scrollbar-width": "none",
+          "&::-webkit-scrollbar": {
+            display: "none",
           },
         },
       });

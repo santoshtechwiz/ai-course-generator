@@ -368,16 +368,14 @@ export default function QuizPlayLayout({
     const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
     return (
       <motion.header 
-        className="sticky top-0 z-40 bg-[var(--color-bg)] border-b-4 border-black shadow-[4px_4px_0_#000]"
+        className="neo-sticky-header"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <div className={cn(
-          "mx-auto w-full py-3 sm:py-4 transition-all duration-300",
-          isFullscreen 
-            ? "max-w-none px-2 sm:px-4" 
-            : "max-w-screen-2xl px-3 sm:px-4 lg:px-6"
+          "neo-container py-3 sm:py-4 transition-all duration-300",
+          isFullscreen && "max-w-none px-2 sm:px-4"
         )}>
           <div className="flex items-center justify-between gap-4">
             <motion.div 
@@ -647,10 +645,8 @@ export default function QuizPlayLayout({
       )}
       
       <main className={cn(
-        "mx-auto w-full py-6 transition-all duration-300 space-y-6",
-        isFullscreen 
-          ? "px-2 sm:px-4 max-w-none" 
-          : "max-w-screen-2xl px-4 sm:px-6 lg:px-8"
+        "neo-container py-6 transition-all duration-300 space-y-6",
+        isFullscreen && "max-w-none px-2 sm:px-4"
       )}>
         {/* Breadcrumb Navigation */}
         {!isFullscreen && <BreadcrumbNavigation />}
