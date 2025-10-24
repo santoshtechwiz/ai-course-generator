@@ -101,7 +101,7 @@ const quizTypeIcons: Record<string, React.ComponentType<any>> = {
 
 const QuizSkeleton = () => (
   <motion.div
-    className="w-full p-6 space-y-4 bg-[var(--color-card)] border-4 border-black rounded-xl shadow-[4px_4px_0_#000]"
+    className="w-full p-6 space-y-4 bg-[var(--color-card)] border-4 border-[var(--color-border)] rounded-xl shadow-[var(--shadow-neo)]"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3 }}
@@ -136,7 +136,7 @@ const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) =
   return (
     <motion.div
       className={cn(
-        "inline-flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-black transition-all duration-100 border-4 border-black shadow-[4px_4px_0_#000]",
+        "inline-flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-black transition-all duration-100 border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]",
         isPaused
           ? "bg-[var(--color-bg)] text-[var(--color-text)]/70"
           : "bg-[var(--color-primary)] text-white"
@@ -156,7 +156,7 @@ const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) =
 
 const ProgressBar = ({ progress, questionNumber, totalQuestions }: { progress: number; questionNumber: number; totalQuestions: number }) => (
   <motion.div
-    className="mb-6 p-6 rounded-xl bg-[var(--color-card)] border-4 border-black shadow-[4px_4px_0_#000]"
+    className="mb-6 p-6 rounded-xl bg-[var(--color-card)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]"
     initial={{ opacity: 0, y: -10 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3 }}
@@ -167,13 +167,13 @@ const ProgressBar = ({ progress, questionNumber, totalQuestions }: { progress: n
     aria-label={`Progress: ${progress}%, Question ${questionNumber} of ${totalQuestions}`}
   >
         <div className="flex flex-wrap items-center gap-3 mb-4">
-          <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-primary)] border-4 border-black rounded-xl shadow-[4px_4px_0_#000]">
+          <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-primary)] border-4 border-[var(--color-border)] rounded-xl shadow-[var(--shadow-neo)]">
             <Target className="w-5 h-5 text-white" aria-hidden="true" />
             <span className="text-sm font-black text-white">
               Q{questionNumber}/{totalQuestions}
             </span>
           </div>
-          <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-success)] border-4 border-black rounded-xl shadow-[4px_4px_0_#000]">
+          <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-success)] border-4 border-[var(--color-border)] rounded-xl shadow-[var(--shadow-neo)]">
             <CheckCircle className="w-5 h-5 text-white" aria-hidden="true" />
             <span className="text-sm font-black text-white">
               {progress}% Complete
@@ -186,7 +186,7 @@ const ProgressBar = ({ progress, questionNumber, totalQuestions }: { progress: n
         <span>Progress</span>
         <span className="font-black">{progress}%</span>
       </div>
-      <div className="relative h-6 bg-[var(--color-bg)] border-4 border-black rounded-xl overflow-hidden shadow-[4px_4px_0_#000]">
+      <div className="relative h-6 bg-[var(--color-bg)] border-4 border-[var(--color-border)] rounded-xl overflow-hidden shadow-[var(--shadow-neo)]">
         <motion.div
           className="h-full bg-[var(--color-primary)] rounded-lg"
           initial={{ width: 0 }}
@@ -387,7 +387,7 @@ export default function QuizPlayLayout({
               transition={{ delay: 0.2 }}
             >
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="p-3 rounded-xl bg-[var(--color-primary)] border-4 border-black text-[var(--color-text)] shadow-[4px_4px_0_#000] flex-shrink-0">
+                <div className="p-3 rounded-xl bg-[var(--color-primary)] border-4 border-[var(--color-border)] text-[var(--color-text)] shadow-[var(--shadow-neo)] flex-shrink-0">
                   <QuizTypeIcon className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -529,7 +529,7 @@ export default function QuizPlayLayout({
                   </Button>
                 </div>
                 {isFocusMode && (
-                  <div className="flex items-center gap-2 text-sm text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-4 py-2 rounded-xl border-4 border-black font-black shadow-[4px_4px_0_#000]">
+                  <div className="flex items-center gap-2 text-sm text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-4 py-2 rounded-xl border-4 border-[var(--color-border)] font-black shadow-[var(--shadow-neo)]">
                     <Target className="h-5 w-5" aria-hidden="true" /> Focus
                   </div>
                 )}
@@ -582,7 +582,7 @@ export default function QuizPlayLayout({
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <motion.div
-          className="text-center p-8 bg-[var(--color-card)] rounded-xl shadow-[4px_4px_0_#000] border-4 border-black max-w-md w-full"
+          className="text-center p-8 bg-[var(--color-card)] rounded-xl shadow-[var(--shadow-neo)] border-4 border-[var(--color-border)] max-w-md w-full"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}

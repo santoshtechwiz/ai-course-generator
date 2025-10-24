@@ -118,9 +118,9 @@ function stateReducer(state: ComponentState, action: ComponentAction): Component
 
 // Enhanced loading skeleton with neo-brutalist styling
 const VideoSkeleton = () => (
-  <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-20 rounded-lg border-4 border-black">
+  <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-20 rounded-lg border-4 border-[var(--color-border)]">
     <div className="flex flex-col items-center gap-4 text-white">
-      <div className="w-16 h-16 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center">
+      <div className="w-16 h-16 bg-white border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-black" />
       </div>
       <span className="text-sm font-black uppercase tracking-wide">Loading Video...</span>
@@ -1268,8 +1268,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
   // Auth prompt overlay
   const authPromptOverlay = state.showAuthPrompt ? (
-    <div className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-background/95 backdrop-blur-sm border-4 border-black">
-      <div className="w-full max-w-md bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6">
+    <div className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-background/95 backdrop-blur-sm border-4 border-[var(--color-border)]">
+      <div className="w-full max-w-md bg-white border-4 border-[var(--color-border)] shadow-[var(--shadow-neo-xl)] p-6">
         {!user ? (
           <SignInPrompt
             variant="card"
@@ -1303,7 +1303,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     <div className="min-h-screen bg-white relative">
       {/* Share course notice banner */}
       {course.isShared && (
-        <div className="bg-blue-200 border-b-4 border-black p-4 transition-opacity duration-200">
+        <div className="bg-blue-200 border-b-4 border-[var(--color-border)] p-4 transition-opacity duration-200">
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-6">
             <p className="text-sm font-black text-black uppercase tracking-tight">
               📚 Shared Course Preview — Watch all videos • Take quiz • Save bookmarks (local only)
@@ -1324,7 +1324,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             {/* Left: Course title and progress */}
             <div className="flex-1 min-w-0 flex items-center gap-4">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-yellow-400 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center">
+                <div className="w-12 h-12 bg-yellow-400 border-2 border-[var(--color-border)] shadow-[2px_2px_0_0_var(--color-border)] flex items-center justify-center">
                   <BookOpen className="h-6 w-6 text-black" />
                 </div>
               </div>
@@ -1358,14 +1358,14 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             {/* Center: Enhanced Progress */}
             {!state.headerCompact && (
               <div className="hidden md:flex items-center gap-4">
-                <div className="flex items-center gap-3 bg-white border-2 border-black px-4 py-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <div className="flex items-center gap-3 bg-white border-2 border-[var(--color-border)] px-4 py-2 shadow-[2px_2px_0_0_var(--color-border)]">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-green-600" />
                     <span className="font-black text-sm">
                       {enhancedCourseStats.completedVideos}/{enhancedCourseStats.totalVideos}
                     </span>
                   </div>
-                  <div className="w-32 h-3 bg-gray-200 border border-black">
+                  <div className="w-32 h-3 bg-gray-200 border border-[var(--color-border)]">
                     <div
                       className="h-full bg-green-600 transition-all duration-300"
                       style={{ width: `${enhancedCourseStats.progressPercentage}%` }}
@@ -1384,7 +1384,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                 variant="default"
                 size="sm"
                 onClick={() => dispatch2({ type: "SET_SIDEBAR_COLLAPSED", payload: !state.sidebarCollapsed })}
-                className="hidden xl:flex bg-blue-400 hover:bg-blue-500 text-black font-black border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase"
+                className="hidden xl:flex bg-blue-400 hover:bg-blue-500 text-black font-black border-2 border-[var(--color-border)] shadow-[var(--shadow-neo)] hover:shadow-[2px_2px_0_0_var(--color-border)] transition-all uppercase"
               >
                 {state.sidebarCollapsed ? (
                   <>
@@ -1415,7 +1415,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <span>{enhancedCourseStats.completedVideos} of {enhancedCourseStats.totalVideos} completed</span>
               </div>
-              <div className="bg-white border-2 border-black px-2 py-1 font-black text-sm">
+              <div className="bg-white border-2 border-[var(--color-border)] px-2 py-1 font-black text-sm">
                 {enhancedCourseStats.progressPercentage}%
               </div>
             </div>

@@ -130,8 +130,8 @@ export function MainNavbar() {
             "border-4 border-transparent rounded-md transform hover:scale-105",
             "active:scale-95 active:translate-y-1",
             active 
-              ? "border-black bg-[var(--color-primary)] text-white shadow-[4px_4px_0_#000]" 
-              : "hover:border-black hover:bg-[var(--color-muted)] hover:shadow-[3px_3px_0_#000]",
+              ? "border-[var(--color-border)] bg-[var(--color-primary)] text-white shadow-[var(--shadow-neo)]" 
+              : "hover:border-[var(--color-border)] hover:bg-[var(--color-muted)] hover:shadow-[3px_3px_0_0_var(--color-border)]",
           )}
         >
           {item.name}
@@ -160,8 +160,8 @@ export function MainNavbar() {
             "block px-4 py-3 min-h-[48px] flex items-center font-black border-4 rounded-md",
             "transition-all duration-150 active:scale-95 active:translate-y-1",
             active 
-              ? "bg-[var(--color-primary)] text-white border-black shadow-[4px_4px_0_#000]" 
-              : "border-transparent hover:border-black hover:bg-[var(--color-muted)] hover:shadow-[3px_3px_0_#000]",
+              ? "bg-[var(--color-primary)] text-white border-[var(--color-border)] shadow-[var(--shadow-neo)]" 
+              : "border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-muted)] hover:shadow-[3px_3px_0_0_var(--color-border)]",
           )}
         >
           {item.name}
