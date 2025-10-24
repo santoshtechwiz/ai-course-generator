@@ -6,6 +6,7 @@ import { cn, getColorClasses } from "@/lib/utils"
 import neo from "@/components/neo/tokens"
 import { CheckCircle2, Target, Loader2, FileText, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 
 import SyntaxHighlighter from "react-syntax-highlighter";
 import atomOneDark from "react-syntax-highlighter/dist/styles/atom-one-dark";
@@ -650,16 +651,16 @@ function UnifiedQuizQuestionComponent({
       <div className="text-center space-y-6">
         <div className="flex items-center justify-center gap-3 mb-4">
           {/* Question Progress Badge */}
-          <span className={cn(neo.badge, "inline-flex items-center gap-2 bg-secondary/10 text-foreground") }>
+          <Badge variant="neutral" className={cn(neo.badge, "inline-flex items-center gap-2 bg-secondary/10 text-foreground")}>
             <Target className="w-3 h-3" />
             Question {questionNumber} / {totalQuestions}
-          </span>
-          
+          </Badge>
+
           {/* Difficulty Badge */}
           {question.difficulty && (
-            <span className={cn(neo.badge, question.difficulty === 'easy' ? 'bg-[var(--color-success)] text-white' : question.difficulty === 'medium' ? 'bg-[var(--color-warning)] text-white' : 'bg-[var(--color-destructive)] text-white') }>
+            <Badge variant="neutral" className={cn(neo.badge, question.difficulty === 'easy' ? 'bg-[var(--color-success)] text-white' : question.difficulty === 'medium' ? 'bg-[var(--color-warning)] text-white' : 'bg-[var(--color-destructive)] text-white')}>
               {question.difficulty.toUpperCase()}
-            </span>
+            </Badge>
           )}
         </div>
 
