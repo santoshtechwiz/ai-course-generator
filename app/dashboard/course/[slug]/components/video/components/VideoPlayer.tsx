@@ -32,15 +32,12 @@ import { useNotes } from "@/hooks/use-notes"
 const PlayButton = React.memo(({ onClick }: { onClick: () => void }) => (
   <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
     <button
-      className={cn(
-        neo.card,
-        "rounded-none p-4 sm:p-6 cursor-pointer pointer-events-auto transition-all duration-100 hover:translate-x-1 hover:translate-y-1 focus:outline-none bg-yellow-400 text-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
-      )}
+      className="rounded-full p-6 sm:p-8 cursor-pointer pointer-events-auto transition-all duration-100 hover:scale-110 focus:outline-none bg-white/90 backdrop-blur-sm text-black hover:bg-white"
       onClick={onClick}
       aria-label="Play video"
       type="button"
     >
-      <Play className="h-10 w-10 sm:h-16 sm:w-16 ml-1 fill-black" />
+      <Play className="h-12 w-12 sm:h-16 sm:w-16 fill-black" />
     </button>
   </div>
 ))
@@ -57,12 +54,7 @@ const TheaterModeButton = React.memo(
     onToggle: () => void
   }) => (
     <button
-      className={cn(
-        neo.card,
-        "absolute z-30 rounded-none p-3 transition-all duration-100 font-bold uppercase text-sm tracking-wider",
-        "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
-        isTheater ? "top-4 right-4 bg-red-500 text-white" : "top-4 left-4 bg-cyan-400 text-black",
-      )}
+      className="absolute z-30 rounded-md p-2 transition-all duration-100 bg-black/70 hover:bg-black/90 backdrop-blur-sm text-white top-4 right-4"
       onClick={onToggle}
       aria-label={isTheater ? "Exit theater mode" : "Enter theater mode"}
       title={isTheater ? "Exit theater mode (ESC or T)" : "Enter theater mode (T)"}

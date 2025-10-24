@@ -98,8 +98,11 @@ export function DashboardLayout({
           {/* Main Navbar - Complete navigation with AI features, search, and user management */}
           <MainNavbar />
 
-          {/* Main Content Area - No padding, children control their own layout */}
-          <main className="min-h-[calc(100vh-4rem)] pt-20">
+          {/* Main Content Area - Responsive padding accounts for fixed navbar */}
+          <main className={cn(
+            "min-h-[calc(100vh-4rem)] relative",
+            "pt-16 sm:pt-16 md:pt-20 lg:pt-20"
+          )}>
             {/* Credit Guidance Banner - Shows for 0-credit users */}
             <CreditGuidanceBanner />
             
