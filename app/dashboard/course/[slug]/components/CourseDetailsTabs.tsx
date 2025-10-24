@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { createSelector } from "@reduxjs/toolkit"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { neo } from "@/components/neo/tokens"
+import neo from "@/components/neo/tokens"
 import { Button } from "@/components/ui/button"
 import {
   FileText,

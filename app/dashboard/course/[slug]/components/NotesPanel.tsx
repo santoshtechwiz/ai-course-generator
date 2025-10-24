@@ -10,7 +10,7 @@ import { StickyNote, Clock, Edit3, Lock } from "lucide-react"
 import { NoteModal } from "./modals/NoteModal"
 import { DeleteNoteDialog } from "./modals/DeleteNoteDialog"
 import type { FC } from "react"
-import { neo } from "@/components/neo/tokens"
+import neo from "@/components/neo/tokens"
 import type { Bookmark } from "@prisma/client"
 
 interface Props {

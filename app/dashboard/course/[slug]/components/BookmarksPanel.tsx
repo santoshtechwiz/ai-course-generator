@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Bookmark as BookmarkIcon, Lock } from "lucide-react"
 import type { FC } from "react"
-import { neo } from "@/components/neo/tokens"
+import neo from "@/components/neo/tokens"
 import { cn } from "@/lib/utils"
 import type { BookmarkItem } from "@/store/slices/course-slice"
 

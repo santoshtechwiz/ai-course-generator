@@ -4,7 +4,7 @@
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, Clock, Flame, Bookmark as BookmarkIcon, TrendingUp, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { neo } from "@/components/neo/tokens"
+import neo from "@/components/neo/tokens"
 import type { FC } from "react"
 
 interface Props {
