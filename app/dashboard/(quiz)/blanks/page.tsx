@@ -4,7 +4,7 @@ import BlankQuizForm from "./components/BlankQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
 import { useFeatureAccess } from "@/hooks/useFeatureAccess"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
-import { QuizLoader } from "@/components/quiz/QuizLoader"
+import { ComponentLoader } from "@/components/loaders"
 import { UnifiedUpgradeTrigger } from "@/components/shared/UnifiedUpgradeTrigger"
 import { useAuth } from "@/modules/auth"
 import { useEffect } from "react"
@@ -44,9 +44,7 @@ const BlankPage = () => {
       isLoggedIn={isAuthenticated}
     >
       {isLoading ? (
-        <QuizLoader
-          state="loading"
-          context="page"
+        <ComponentLoader
           variant="skeleton"
           message="Loading quiz form..."
           size="lg"

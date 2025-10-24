@@ -25,7 +25,7 @@ import {
 import { NoResults } from "@/components/ui/no-results"
 import { isPrivateError } from "../../components/privateErrorUtils"
 import McqQuiz from "./McqQuiz"
-import { QuizLoader } from "@/components/quiz/QuizLoader"
+import { useQuizLoader } from "@/components/loaders/LoadingStateProvider"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
 import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
@@ -44,6 +44,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const router = useRouter()
   const dispatch = useDispatch<any>()
   const { user } = useAuth()
+  const quizLoader = useQuizLoader()
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const hasShownLoaderRef = useRef(false)
   const questions = useSelector(selectQuizQuestions)
@@ -63,12 +64,14 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     const loadQuiz = async () => {
       try {
         // Reset loading state and clear any previous errors
+        quizLoader.show(LOADER_MESSAGES.LOADING_MCQ)
         dispatch(resetQuiz())
         hasShownLoaderRef.current = false
 
         // Only dispatch if component is still mounted
         if (isMounted) {
           await dispatch(fetchQuiz({ slug, quizType: "mcq" })).unwrap()
+          quizLoader.hide()
         }
       } catch (err: any) {
         // Only show error if component is still mounted and it's not a cancellation
@@ -107,6 +110,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
               errorName: err?.name
             });
           }
+          quizLoader.hide()
         }
       }
     }
@@ -196,32 +200,18 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     }
   }, [dispatch, router, slug])
 
-  // Show calculating loader during submission
-  if (isSubmitting) {
-    return (
-      <QuizLoader
-        state="loading"
-        context="calculation"
-        variant="spinner"
-        size="lg"
-        message={LOADER_MESSAGES.CALCULATING_RESULTS}
-        fullPage
-      />
-    )
-  }
+  // Handle submission loading
+  useEffect(() => {
+    if (isSubmitting) {
+      quizLoader.show(LOADER_MESSAGES.CALCULATING_RESULTS)
+    } else {
+      quizLoader.hide()
+    }
+  }, [isSubmitting, quizLoader])
 
-  // Loading state with improved handling
+  // Don't render if loading - centralized loader handles it
   if (quizStatus === 'loading' && !questions.length) {
-    return (
-      <QuizLoader
-        state="loading"
-        context="initial"
-        variant="skeleton"
-        size="lg"
-        message={LOADER_MESSAGES.LOADING_MCQ}
-        className="min-h-[60vh]"
-      />
-    )
+    return null
   }
 
   // Requires authentication state
@@ -348,15 +338,6 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     )
   }
 
-  // Fallback loading state
-  return (
-    <QuizLoader
-      state="loading"
-      context="initial"
-      message={LOADER_MESSAGES.LOADING_QUIZ}
-      variant="spinner"
-      size="lg"
-      className="min-h-[60vh]"
-    />
-  )
+  // Fallback - should not reach here with centralized loading
+  return null
 }

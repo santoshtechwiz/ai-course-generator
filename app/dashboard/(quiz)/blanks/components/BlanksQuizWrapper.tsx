@@ -24,7 +24,7 @@ import {
 import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import BlanksQuiz from "./BlanksQuiz"
-import { QuizLoader } from "@/components/quiz/QuizLoader"
+import { useQuizLoader } from "@/components/loaders/LoadingStateProvider"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
 // Type removed - using any for quiz question types
 
@@ -39,6 +39,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   const router = useRouter()
   const dispatch = useAppDispatch()
   const { user } = useAuth()
+  const quizLoader = useQuizLoader()
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const hasShownLoaderRef = useRef(false)
   const [error, setError] = useState<string | null>(null)
@@ -56,10 +57,12 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   useEffect(() => {
     const loadQuiz = async () => {
       try {
+        quizLoader.show(LOADER_MESSAGES.LOADING_BLANKS)
         dispatch(resetQuiz())
         hasShownLoaderRef.current = false
         await dispatch(fetchQuiz({ slug, quizType: "blanks" })).unwrap()
         setError(null)
+        quizLoader.hide()
       } catch (err) {
         // Enhanced error logging with more details
         const errorObj = err as any;
@@ -96,6 +99,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
 
         setError(errorMessage);
         toast.error(errorMessage);
+        quizLoader.hide()
       }
     }
 
@@ -195,18 +199,13 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   }, [dispatch, slug, router])
 
   // Show calculating loader during submission
-  if (isSubmitting) {
-    return (
-      <QuizLoader
-        state="loading"
-        context="calculation"
-        variant="spinner"
-        size="lg"
-        message={LOADER_MESSAGES.CALCULATING_RESULTS}
-        fullPage
-      />
-    )
-  }
+  useEffect(() => {
+    if (isSubmitting) {
+      quizLoader.show(LOADER_MESSAGES.CALCULATING_RESULTS)
+    } else {
+      quizLoader.hide()
+    }
+  }, [isSubmitting, quizLoader])
 
   // Loading & error states
   const isLoading = quizStatus === "loading" || quizStatus === "idle"
@@ -236,17 +235,9 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
       type: cq.type as "blanks", // Explicit type assertion
     }  }, [currentQuestion])
   
+  // Don't render anything if loading - the centralized loader handles it
   if (isLoading) {
-    return (
-      <QuizLoader
-        state="loading"
-        context="initial"
-        variant="skeleton"
-        message={LOADER_MESSAGES.LOADING_BLANKS}
-        size="lg"
-        className="min-h-[60vh]"
-      />
-    )
+    return null
   }
 
   if (hasError) {

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { useSelector } from "react-redux"
 import { NoResults } from "@/components/ui/no-results"
 import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
-import { QuizPageLoader } from "@/components/quiz/QuizLoader"
+import { usePageLoader } from "@/components/loaders/LoadingStateProvider"
 import { isPrivateError } from "../../components/privateErrorUtils"
 
 // ⚡ PERFORMANCE: Lazy load heavy components with framer-motion
@@ -22,6 +22,7 @@ export default function BlanksQuizClient({ params }: BlanksQuizClientProps) {
   // Properly unwrap the params Promise once at the top level
   const { slug } = use(params);
   const router = useRouter();
+  const pageLoader = usePageLoader();
 
   // Get quiz state from Redux for layout purposes
   const quizData = useSelector((state: any) => state.quiz);
@@ -72,7 +73,7 @@ export default function BlanksQuizClient({ params }: BlanksQuizClientProps) {
   }
 
   return (
-    <Suspense fallback={<QuizPageLoader message="Loading quiz..." />}>
+    <Suspense fallback={null}>
       <QuizPlayLayout
         quizSlug={slug}
         quizType="blanks"

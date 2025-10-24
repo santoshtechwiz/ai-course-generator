@@ -27,7 +27,7 @@ import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "@/components/quiz/QuizActions"
-import { QuizLoader } from "@/components/quiz/QuizLoader"
+import { useQuizLoader } from "@/components/loaders/LoadingStateProvider"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
 
 
@@ -40,6 +40,7 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const dispatch = useAppDispatch()
   const router = useRouter()
   const { user } = useAuth()
+  const quizLoader = useQuizLoader()
 
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const hasShownLoaderRef = useRef(false)
@@ -75,11 +76,13 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       isInitializedRef.current = true;
 
       try {
+        quizLoader.show(LOADER_MESSAGES.LOADING_CODE)
         dispatch(resetQuiz());
 
         // Only proceed if component is still mounted
         if (isComponentMounted) {
           await dispatch(fetchQuiz({ slug, quizType: "code" })).unwrap();
+          quizLoader.hide()
         }
       } catch (err) {
         if (isComponentMounted) {
@@ -118,6 +121,7 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
           }
 
           toast.error(errorMessage);
+          quizLoader.hide()
         }
       }
     }
@@ -264,31 +268,18 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const canGoNext = currentQuestionIndex < questions.length - 1
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
-  // Show calculating loader during submission
-  if (isSubmitting) {
-    return (
-      <QuizLoader
-        state="loading"
-        context="calculation"
-        variant="spinner"
-        size="lg"
-        message={LOADER_MESSAGES.CALCULATING_RESULTS}
-        fullPage
-      />
-    )
-  }
+  // Handle submission loading
+  useEffect(() => {
+    if (isSubmitting) {
+      quizLoader.show(LOADER_MESSAGES.CALCULATING_RESULTS)
+    } else {
+      quizLoader.hide()
+    }
+  }, [isSubmitting, quizLoader])
 
+  // Don't render if loading - centralized loader handles it
   if (isLoading) {
-    return (
-      <QuizLoader
-        state="loading"
-        context="initial"
-        variant="skeleton"
-        message={LOADER_MESSAGES.LOADING_CODE}
-        size="lg"
-        className="min-h-[60vh]"
-      />
-    )
+    return null
   }
   if (hasError) {
     return (
@@ -304,16 +295,7 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     )
   }
   if (!formattedQuestion) {
-    return (
-      <QuizLoader
-        state="loading"
-        context="initial"
-        variant="skeleton"
-        message={LOADER_MESSAGES.LOADING_QUIZ}
-        size="lg"
-        className="min-h-[60vh]"
-      />
-    )
+    return null // Let the centralized loader handle this
   } 
   
   return (
