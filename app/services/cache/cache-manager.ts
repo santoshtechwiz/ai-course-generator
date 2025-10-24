@@ -33,7 +33,12 @@ export const CACHE_TTL = {
   VIDEO_ID: 60 * 60 * 24, // 24 hours
   TOPIC_SEARCH: 60 * 30,  // 30 minutes
   CHAPTER_STATUS: 60 * 10, // 10 minutes
-  FALLBACK_CONTENT: 60 * 60 * 2 // 2 hours
+  FALLBACK_CONTENT: 60 * 60 * 2, // 2 hours
+  // Quiz-specific caching
+  RELATED_QUIZZES: 60 * 15, // 15 minutes
+  RANDOM_QUIZZES: 60 * 10,  // 10 minutes
+  QUIZ_LIST: 60 * 5,        // 5 minutes
+  QUIZ_METADATA: 60 * 30,   // 30 minutes
 }
 
 // Cache keys

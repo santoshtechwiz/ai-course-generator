@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/db"
-import { createCacheManager } from "@/app/services/cache/cache-manager"
+import { createCacheManager, CACHE_TTL } from "@/app/services/cache/cache-manager"
 
 const cache = createCacheManager()
+
+// Static route for better Next.js optimization
+export const dynamic = 'force-dynamic'
+export const revalidate = 900 // 15 minutes
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,50 +18,82 @@ export async function GET(req: NextRequest) {
     const tagsParam = searchParams.get("tags") || ""
     const tags = tagsParam ? tagsParam.split(",").map(t => t.trim()).filter(Boolean).slice(0, 5) : []
 
-    const cacheKey = `api:quizzes:related:${quizType || 'all'}:${difficulty || 'any'}:${exclude || 'none'}:${tags.join('|')}:${limit}`
+    // Enhanced cache key with version for cache busting
+    const cacheKey = `api:quizzes:related:v2:${quizType || 'all'}:${difficulty || 'any'}:${exclude || 'none'}:${tags.join('|')}:${limit}`
+    
+    // Check cache first
     const cached = await cache.get<any>(cacheKey)
     if (cached) {
-      return NextResponse.json({ quizzes: cached }, { headers: { "X-Cache": "HIT" } })
+      const response = NextResponse.json({ quizzes: cached })
+      response.headers.set("X-Cache", "HIT")
+      response.headers.set("Cache-Control", "public, max-age=900, stale-while-revalidate=1800")
+      return response
     }
 
+    // Build optimized query
     const where: any = { isPublic: true }
     if (quizType) where.quizType = quizType
     if (difficulty) where.difficulty = difficulty
     if (exclude) where.slug = { not: exclude }
-    // Prefer tag overlap when available (assuming tags is a string[] column)
+    
+    // Enhanced tag matching with better performance
     if (tags.length > 0) {
       where.OR = [
         { tags: { hasSome: tags } },
         { title: { contains: tags[0], mode: 'insensitive' } },
+        { description: { contains: tags[0], mode: 'insensitive' } },
       ]
     }
 
-    // Try ordering by recent activity first, then fallback to createdAt
-      const quizzes = await prisma.userQuiz.findMany({
-        where,
-        take: limit,
-        orderBy: [
-          // @ts-ignore: optional columns depending on schema
-          { lastAttempted: 'desc' as any },
-          { createdAt: 'desc' },
-        ],
-        include: {
-          questions: true,
-        },
-      })
+    // Optimized query with selective includes
+    const quizzes = await prisma.userQuiz.findMany({
+      where,
+      take: limit * 2, // Fetch more to account for filtering
+      orderBy: [
+        { createdAt: 'desc' }, // More reliable than lastAttempted
+        { id: 'desc' }, // Secondary sort for consistency
+      ],
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        quizType: true,
+        difficulty: true,
+        isPublic: true,
+        tags: true,
+        createdAt: true,
+        _count: {
+          select: {
+            questions: true
+          }
+        }
+      },
+    })
 
-    const normalized = quizzes.map((q) => ({
-      id: String(q.id),
-      title: q.title,
-      slug: q.slug,
-      quizType: q.quizType,
-      difficulty: q.difficulty || "medium",
-      questionCount: Array.isArray(q.questions) ? q.questions.length : 0,
-      isPublic: true,
-    }))
+    // Normalize and filter results
+    const normalized = quizzes
+      .filter(q => q.slug !== exclude) // Additional client-side filtering
+      .slice(0, limit) // Trim to requested limit
+      .map((q) => ({
+        id: String(q.id),
+        title: q.title,
+        slug: q.slug,
+        quizType: q.quizType,
+        difficulty: q.difficulty || "medium",
+        questionCount: q._count?.questions || 0,
+        isPublic: true,
+        tags: q.tags || [],
+        createdAt: q.createdAt,
+      }))
 
-    await cache.set(cacheKey, normalized, 60) // 60s TTL
-    return NextResponse.json({ quizzes: normalized }, { headers: { "X-Cache": "MISS" } })
+    // Enhanced caching with longer TTL
+    await cache.set(cacheKey, normalized, CACHE_TTL.RELATED_QUIZZES)
+    
+    const response = NextResponse.json({ quizzes: normalized })
+    response.headers.set("X-Cache", "MISS")
+    response.headers.set("Cache-Control", "public, max-age=900, stale-while-revalidate=1800")
+    response.headers.set("Vary", "Accept-Encoding")
+    return response
   } catch (error) {
     console.error("Related quizzes API error:", error)
     return NextResponse.json({ quizzes: [] }, { status: 200 })
