@@ -63,7 +63,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const session = await getServerAuthSession()
 
   return (
-    <html lang="en" suppressHydrationWarning={true}>
+    <html lang="en" suppressHydrationWarning={true} className="scroll-smooth">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -86,22 +86,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
 
-      <body className={`font-sans antialiased min-h-screen `}>
+      <body className="font-sans antialiased min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
         <BProgressProvider>
           <Providers session={session}>
             {/* Skip Navigation for accessibility */}
             <a
               href="#main-content"
               className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 
-        focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground 
+        focus:z-[60] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground 
         focus:rounded focus:outline-none"
             >
               Skip to main content
             </a>
 
             <RootErrorBoundary>
-              {/* Post-auth context restoration */}
-              <BreadcrumbWelcome />
+              {/* Neobrutalist header - sticky with bold styling */}
+              <header className="neuro-header sticky top-0 z-[60] bg-[var(--color-bg)] text-[var(--color-text)] border-b-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] transition-all duration-200">
+                <BreadcrumbWelcome />
+              </header>
               
               {/* Guest experience provider - client-only to prevent SSR issues */}
               <ClientGuestProvider>
@@ -119,9 +121,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </noscript>
 
                 <Suspense fallback={<SuspenseGlobalFallback />}>
-                  <div className="relative min-h-screen flex flex-col ">
+                  <div className="relative min-h-screen flex flex-col border-l-8 border-r-8 border-[var(--color-border)]">
                     {/* Main Content */}
-                    <main id="main-content" className="flex-1 w-full">
+                    <main id="main-content" className="flex-1 w-full p-4 sm:p-6 lg:p-8 bg-[var(--color-bg)]">
                       <MotionProvider>
                         <Suspense fallback={<SuspenseGlobalFallback />}>
                           {children}

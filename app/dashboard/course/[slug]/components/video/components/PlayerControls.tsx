@@ -263,7 +263,7 @@ const PlayerControls = (props: any) => {
   return (
     <div
       className={cn(
-        "absolute inset-0 z-50 transition-all duration-300 flex flex-col justify-end",
+        "absolute inset-0 z-50 transition-opacity duration-200 flex flex-col justify-end",
         !show && "opacity-0 pointer-events-none",
         !showControls && "opacity-0",
       )}
@@ -277,15 +277,13 @@ const PlayerControls = (props: any) => {
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-black/40 pointer-events-none" />
+      {/* Gradient overlay for better text visibility */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
 
+      {/* Progress bar - minimal clean design */}
       <div
         ref={progressBarRef}
-        className={cn(
-          "relative h-3 bg-black cursor-pointer mx-4 mb-4 group hover:h-4 transition-all duration-150 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
-          neo.inner,
-          "border-black",
-        )}
+        className="relative h-1 bg-white/20 cursor-pointer mx-2 sm:mx-4 mb-2 group hover:h-1.5 transition-all duration-100"
         onClick={handleSeek}
         onMouseMove={handleProgressHover}
         onMouseDown={handleMouseDown}
@@ -300,39 +298,39 @@ const PlayerControls = (props: any) => {
         aria-valuenow={duration * played}
         tabIndex={0}
       >
+        {/* Buffered progress */}
         <div
-          className="absolute left-0 top-0 h-full bg-neutral-600 transition-all duration-300"
+          className="absolute left-0 top-0 h-full bg-white/30 transition-all"
           style={{ width: `${loaded * 100}%` }}
         />
 
+        {/* Played progress */}
         <div
-          className="absolute left-0 top-0 h-full bg-yellow-400 transition-all duration-100"
+          className="absolute left-0 top-0 h-full bg-red-600 transition-all"
           style={{ width: `${played * 100}%` }}
         />
 
         {renderBookmarkIndicators}
 
+        {/* Hover time tooltip */}
         {hoverPosition !== null && hoveredTime !== null && !isDragging && (
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
+            exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.1 }}
-            className={cn("absolute bottom-full mb-4 bg-neo-background text-black px-3 py-2 text-xs font-black uppercase tracking-wider pointer-events-none -translate-x-1/2 shadow-[4px_4px_0px_0px_var(--neo-border)]", neo.inner)}
+            className="absolute bottom-full mb-2 bg-black/90 backdrop-blur-sm text-white px-2 py-1 text-xs font-semibold rounded pointer-events-none -translate-x-1/2"
             style={{ left: `${hoverPosition * 100}%` }}
           >
             {formatTime(hoveredTime)}
           </motion.div>
         )}
 
+        {/* Seek handle */}
         <div
           className={cn(
-            "absolute top-1/2 w-6 h-6 bg-white transform -translate-y-1/2 -translate-x-1/2 cursor-grab z-20 transition-all duration-100",
-            neo.inner,
-            "border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]",
-            "hover:scale-110 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
-            "focus:scale-110 focus:outline-none focus:ring-4 focus:ring-yellow-400 focus:ring-offset-0",
-            isDragging && "scale-125 cursor-grabbing shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] bg-yellow-400",
+            "absolute top-1/2 w-3 h-3 bg-white rounded-full transform -translate-y-1/2 -translate-x-1/2 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity",
+            isDragging && "opacity-100 scale-125 cursor-grabbing",
           )}
           style={{ left: `${played * 100}%`, pointerEvents: "auto" }}
           onMouseDown={handleMouseDown}
@@ -342,59 +340,60 @@ const PlayerControls = (props: any) => {
         />
       </div>
 
-  <div className={cn("flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 bg-neo-background mx-4 mb-4 shadow-[8px_8px_0px_0px_var(--neo-border)]", neo.inner)}>
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+      {/* Control bar - clean minimal design */}
+      <div className="flex items-center justify-between gap-2 px-2 sm:px-4 py-2 bg-black/60 backdrop-blur-sm mx-0 mb-0">
+        <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
+          {/* Play/Pause */}
           <Button
             variant="ghost"
             size="icon"
             onClick={onPlayPause}
-            className={cn(
-              "h-10 w-10 sm:h-11 sm:w-11 bg-yellow-400 hover:bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100 active:shadow-none active:translate-x-[3px] active:translate-y-[3px]",
-              neo.inner,
-              "border-black",
-            )}
+            className="h-9 w-9 sm:h-10 sm:w-10 bg-transparent hover:bg-white/20 text-white transition-colors rounded"
             aria-label={playing ? "Pause" : "Play"}
           >
             {isBuffering ? (
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                className="h-5 w-5 border-3 border-black border-t-transparent rounded-full"
+                className="h-5 w-5 border-2 border-white border-t-transparent rounded-full"
               />
             ) : playing ? (
-              <Pause className="h-5 w-5 fill-black" />
+              <Pause className="h-5 w-5 fill-white" />
             ) : (
-              <Play className="h-5 w-5 ml-0.5 fill-black" />
+              <Play className="h-5 w-5 ml-0.5 fill-white" />
             )}
           </Button>
 
+          {/* Rewind */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onSeekChange(Math.max(0, duration * played - 10))}
-            className="h-9 w-9 bg-neo-background hover:bg-neutral-100 text-black border-3 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:shadow-[1px_1px_0px_0px_var(--neo-border)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
+            className="h-8 w-8 bg-transparent hover:bg-white/20 text-white transition-colors rounded hidden sm:flex"
             aria-label="Rewind 10 seconds"
           >
             <RewindIcon className="h-4 w-4" />
           </Button>
 
+          {/* Fast Forward */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onSeekChange(Math.min(duration, duration * played + 10))}
-            className="h-9 w-9 bg-neo-background hover:bg-neutral-100 text-black border-3 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:shadow-[1px_1px_0px_0px_var(--neo-border)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
+            className="h-8 w-8 bg-transparent hover:bg-white/20 text-white transition-colors rounded hidden sm:flex"
             aria-label="Forward 10 seconds"
           >
             <FastForwardIcon className="h-4 w-4" />
           </Button>
 
+          {/* Volume */}
           <div ref={volumeSliderRef} className="relative flex items-center">
             <Button
               variant="ghost"
               size="icon"
               onClick={onMute}
               onMouseEnter={() => setShowVolumeSlider(true)}
-              className="h-9 w-9 bg-neo-background hover:bg-neutral-100 text-black border-3 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:shadow-[1px_1px_0px_0px_var(--neo-border)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
+              className="h-8 w-8 bg-transparent hover:bg-white/20 text-white transition-colors rounded hidden sm:flex"
               aria-label={muted ? "Unmute" : "Mute"}
             >
               {React.createElement(getVolumeIcon, { className: "h-4 w-4" })}
@@ -403,11 +402,11 @@ const PlayerControls = (props: any) => {
             <AnimatePresence>
               {showVolumeSlider && (
                 <motion.div
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 8 }}
+                  exit={{ opacity: 0, y: 4 }}
                   transition={{ duration: 0.1 }}
-                  className={cn("absolute bottom-full mb-3 left-0 bg-neo-background p-4 shadow-[6px_6px_0px_0px_var(--neo-border)]", neo.inner)}
+                  className="absolute bottom-full mb-2 left-0 bg-black/90 backdrop-blur-sm p-3 rounded"
                   onMouseEnter={() => setShowVolumeSlider(true)}
                   onMouseLeave={() => setShowVolumeSlider(false)}
                 >
@@ -424,48 +423,53 @@ const PlayerControls = (props: any) => {
             </AnimatePresence>
           </div>
 
-          <div className="text-xs sm:text-sm text-black font-black uppercase tracking-wider tabular-nums px-3 py-2 bg-cyan-400 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+          {/* Time display */}
+          <div className="text-xs sm:text-sm text-white font-medium tabular-nums px-2 hidden sm:block">
             <span>{formatTime(duration * played)}</span>
-            <span className="mx-1">/</span>
-            <span>{formatTime(duration)}</span>
+            <span className="mx-1 text-white/60">/</span>
+            <span className="text-white/80">{formatTime(duration)}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap justify-center">
+        {/* Center controls - Auto toggles */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           {/* Auto-play video toggle */}
           {onToggleAutoPlayVideo && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-400 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <Zap className="h-3.5 w-3.5 text-black" />
-              <span className="text-xs font-black uppercase text-black">AUTO</span>
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-purple-600/80 backdrop-blur-sm rounded text-white">
+              <Zap className="h-3 w-3" />
+              <span className="text-xs font-semibold hidden sm:inline">AUTO</span>
               <Switch
                 checked={autoPlayVideo}
                 onCheckedChange={onToggleAutoPlayVideo}
                 aria-label="Toggle auto-play video on page load"
+                className="scale-75"
               />
             </div>
           )}
 
           {/* Autoplay next toggle */}
           {hasNextVideo && onToggleAutoPlayNext && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-pink-400 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <SkipForward className="h-3.5 w-3.5 text-black" />
-              <span className="text-xs font-black uppercase text-black">NEXT</span>
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-600/80 backdrop-blur-sm rounded text-white">
+              <SkipForward className="h-3 w-3" />
+              <span className="text-xs font-semibold hidden sm:inline">NEXT</span>
               <Switch
                 checked={autoPlayNext}
                 onCheckedChange={onToggleAutoPlayNext}
                 aria-label="Toggle autoplay next video"
+                className="scale-75"
               />
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
+        {/* Right controls */}
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
           {/* Next video button */}
           {hasNextVideo && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 bg-neo-background hover:bg-neutral-100 text-black border-3 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:shadow-[1px_1px_0px_0px_var(--neo-border)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-8 w-8 bg-transparent hover:bg-white/20 text-white transition-colors rounded disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={onNextVideo}
               disabled={!canAccessNextVideo}
               title={nextVideoTitle}
@@ -475,12 +479,13 @@ const PlayerControls = (props: any) => {
             </Button>
           )}
 
+          {/* Settings */}
           <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 bg-neo-background hover:bg-neutral-100 text-black border-3 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:shadow-[1px_1px_0px_0px_var(--neo-border)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100"
+                className="h-8 w-8 bg-transparent hover:bg-white/20 text-white transition-colors rounded hidden sm:flex"
                 aria-label="Playback speed"
               >
                 <Settings className="h-4 w-4" />
@@ -488,32 +493,33 @@ const PlayerControls = (props: any) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className={cn("w-40 bg-neo-background shadow-[6px_6px_0px_0px_var(--neo-border)]", neo.inner)}
+              className="w-36 bg-black/95 backdrop-blur-sm border border-white/20 text-white"
             >
-              <div className="px-3 py-2 text-xs font-black uppercase text-black border-b-3 border-black bg-yellow-400">
+              <div className="px-3 py-2 text-xs font-semibold border-b border-white/20">
                 Speed
               </div>
               {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
                 <DropdownMenuItem
                   key={speed}
                   onClick={() => onPlaybackRateChange(speed)}
-                  className="text-black hover:bg-yellow-400 flex justify-between items-center font-bold px-3 py-2 cursor-pointer border-b border-neutral-200 last:border-b-0"
+                  className="text-white hover:bg-white/20 flex justify-between items-center font-medium px-3 py-2 cursor-pointer"
                 >
                   <span>{speed === 1 ? "Normal" : `${speed}x`}</span>
-                  {playbackRate === speed && <div className="w-3 h-3 bg-black border-2 border-black" />}
+                  {playbackRate === speed && <div className="w-2 h-2 bg-white rounded-full" />}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
 
+          {/* Notes */}
           {onToggleNotesPanel && isAuthenticated && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onToggleNotesPanel}
               className={cn(
-                "h-9 w-9 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100 relative",
-                notesPanelOpen ? "bg-green-400 text-black" : "bg-white hover:bg-neutral-100 text-black",
+                "h-8 w-8 transition-colors rounded relative hidden sm:flex",
+                notesPanelOpen ? "bg-green-600 text-white" : "bg-transparent hover:bg-white/20 text-white",
               )}
               aria-label="Notes"
             >
@@ -522,7 +528,7 @@ const PlayerControls = (props: any) => {
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 text-[10px] text-white font-black flex items-center justify-center border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                  className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 text-[10px] text-white font-bold flex items-center justify-center rounded-full"
                 >
                   {notesCount > 9 ? "9+" : notesCount}
                 </motion.div>
@@ -530,14 +536,15 @@ const PlayerControls = (props: any) => {
             </Button>
           )}
 
+          {/* Bookmarks */}
           {onToggleBookmarkPanel && isAuthenticated && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onToggleBookmarkPanel}
               className={cn(
-                "h-9 w-9 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100 hidden sm:flex",
-                bookmarkPanelOpen ? "bg-yellow-400 text-black" : "bg-white hover:bg-neutral-100 text-black",
+                "h-8 w-8 transition-colors rounded hidden sm:flex",
+                bookmarkPanelOpen ? "bg-yellow-600 text-white" : "bg-transparent hover:bg-white/20 text-white",
               )}
               aria-label="Bookmarks"
             >
@@ -545,14 +552,15 @@ const PlayerControls = (props: any) => {
             </Button>
           )}
 
+          {/* Picture-in-Picture */}
           {onPictureInPicture && isPiPSupported && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onPictureInPicture}
               className={cn(
-                "h-9 w-9 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100",
-                isPiPActive ? "bg-cyan-400 text-black" : "bg-white hover:bg-neutral-100 text-black",
+                "h-8 w-8 transition-colors rounded hidden sm:flex",
+                isPiPActive ? "bg-blue-600 text-white" : "bg-transparent hover:bg-white/20 text-white",
               )}
               aria-label="Picture-in-Picture"
             >
@@ -560,14 +568,15 @@ const PlayerControls = (props: any) => {
             </Button>
           )}
 
+          {/* Theater mode */}
           {onToggleTheaterMode && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onToggleTheaterMode}
               className={cn(
-                "h-9 w-9 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100 hidden sm:flex",
-                isTheaterMode ? "bg-purple-400 text-black" : "bg-white hover:bg-neutral-100 text-black",
+                "h-8 w-8 transition-colors rounded hidden sm:flex",
+                isTheaterMode ? "bg-purple-600 text-white" : "bg-transparent hover:bg-white/20 text-white",
               )}
               aria-label="Theater mode"
             >
@@ -575,13 +584,14 @@ const PlayerControls = (props: any) => {
             </Button>
           )}
 
+          {/* Fullscreen */}
           <Button
             variant="ghost"
             size="icon"
             onClick={onToggleFullscreen}
             className={cn(
-              "h-9 w-9 border-3 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100",
-              isFullscreen ? "bg-yellow-400 text-black" : "bg-white hover:bg-neutral-100 text-black",
+              "h-8 w-8 transition-colors rounded",
+              isFullscreen ? "bg-white/20 text-white" : "bg-transparent hover:bg-white/20 text-white",
             )}
             aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
           >

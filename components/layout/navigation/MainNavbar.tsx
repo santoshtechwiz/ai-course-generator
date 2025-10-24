@@ -189,23 +189,6 @@ export function MainNavbar() {
         }}
       >
         <div className="container flex h-16 items-center justify-between px-3 sm:px-4 lg:px-6 max-w-7xl mx-auto">
-          {/* Mobile menu trigger (left) - matches the left-docked mobile overlay in the screenshot */}
-          <div className="flex items-center mr-2 md:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Open menu"
-              onClick={() => setIsMobileMenuOpen(true)}
-              className={cn(
-                "md:hidden",
-                "mr-2",
-                // keep neo icon styles
-                getColorClasses().buttonIcon
-              )}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          </div>
           {/* Enhanced Logo with hover animation */}
           <motion.div
             whileHover={{ scale: 1.05 }}
