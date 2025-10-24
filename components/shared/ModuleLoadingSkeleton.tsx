@@ -35,7 +35,7 @@ export function ModuleLoadingSkeleton({
         {Array(itemCount)
           .fill(0)
           .map((_, i) => (
-            <Card key={i} className="p-4">
+            <Card key={i} className="p-4 sm:p-6 border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] bg-[var(--color-card)]">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Skeleton className="h-6 w-32" />

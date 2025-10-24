@@ -46,7 +46,7 @@ const DashboardHeader = memo(function DashboardHeader({ userData, toggleSidebar 
   }, [userData, memoizedUserData])
 
   return (
-    <header className="sticky top-0 z-20 bg-background border-b-4 border-border h-16 shadow-[0_4px_0px_0px_rgba(0,0,0,0.05)]">
+    <header className="sticky top-0 z-50 bg-[var(--color-card)] border-b-4 border-[var(--color-border)] h-16 shadow-[var(--shadow-neo)]">
       <div className="h-full px-6 flex items-center justify-between">
         {/* Left side - Breadcrumb/Title */}
         <div className="flex items-center gap-4">

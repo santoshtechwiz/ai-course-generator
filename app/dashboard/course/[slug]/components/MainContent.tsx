@@ -1316,10 +1316,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
       {/* Enhanced Sticky Header */}
       <header className={cn(
-        "sticky top-0 z-50 bg-white border-b-4 border-black shadow-[0_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-300",
+        "sticky top-0 z-50 bg-[var(--color-card)] border-b-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] transition-all duration-300",
         state.headerCompact && "py-2"
       )}>
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-4 py-3">
             {/* Left: Course title and progress */}
             <div className="flex-1 min-w-0 flex items-center gap-4">

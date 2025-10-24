@@ -30,8 +30,11 @@ module.exports = {
       },
 
       boxShadow: {
-        neo: "6px 6px 0px #111",
-        neoDark: "6px 6px 0px #fff",
+        neo: "4px 4px 0 0 #000",
+        neoLg: "6px 6px 0 0 #000",
+        neoXl: "8px 8px 0 0 #000",
+        neoDark: "4px 4px 0 0 #fafafa",
+        neoDarkLg: "6px 6px 0 0 #fafafa",
       },
 
       borderRadius: {

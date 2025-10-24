@@ -66,7 +66,7 @@ export default function QuizResultLayout({
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
       <motion.header 
-        className="sticky top-0 z-30 bg-[var(--color-card)] border-b-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]"
+        className="sticky top-0 z-50 bg-[var(--color-card)] border-b-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
@@ -131,10 +131,10 @@ export default function QuizResultLayout({
         </div>
       </motion.header>
 
-      <main className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Detailed Results - Direct display without duplicate hero banner */}
         <motion.div
-          className="rounded-[var(--radius)] border-4 border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-neo)] p-4 sm:p-6 lg:p-8"
+          className="rounded-[var(--radius)] border-4 border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-neo)] p-3 sm:p-4 md:p-6 lg:p-8"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}

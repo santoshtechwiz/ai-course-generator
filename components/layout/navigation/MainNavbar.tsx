@@ -178,7 +178,7 @@ export function MainNavbar() {
           "fixed top-0 left-0 right-0 z-50",
           // Use neobrutalism tokens for consistent geometry and borders
           neo.card,
-          isScrolled && "shadow-[0_10px_0_0_#000]",
+          isScrolled && "shadow-[var(--shadow-neo-lg)]",
         )}
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

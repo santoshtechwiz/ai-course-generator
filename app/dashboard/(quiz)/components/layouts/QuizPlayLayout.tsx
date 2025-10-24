@@ -368,7 +368,7 @@ export default function QuizPlayLayout({
     const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
     return (
       <motion.header 
-        className="sticky top-0 z-40 bg-[var(--color-bg)] border-b-4 border-black shadow-[4px_4px_0_#000]"
+        className="sticky top-0 z-50 bg-[var(--color-bg)] border-b-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
@@ -647,7 +647,7 @@ export default function QuizPlayLayout({
       )}
       
       <main className={cn(
-        "mx-auto w-full py-6 transition-all duration-300 space-y-6",
+        "mx-auto w-full py-4 sm:py-6 transition-all duration-300 space-y-4 sm:space-y-6",
         isFullscreen 
           ? "px-2 sm:px-4 max-w-none" 
           : "max-w-screen-2xl px-4 sm:px-6 lg:px-8"
@@ -691,7 +691,7 @@ export default function QuizPlayLayout({
         <div className={cn(
           "transition-all duration-300",
           sidebarOpen && !isFocusMode && !isFullscreen
-            ? "grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_380px] gap-6 sm:gap-8 md:gap-10 lg:gap-12"
+            ? "grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_380px] gap-4 sm:gap-6 lg:gap-8 xl:gap-10"
             : "flex"
         )}>
           {/* Main Content */}

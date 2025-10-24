@@ -1,16 +1,13 @@
 "use client"
 
+/**
+ * @deprecated This component is deprecated. Use UnifiedLoader from @/components/loaders instead.
+ * This file is kept for backward compatibility only.
+ */
+
 import { Skeleton } from "@/components/ui/skeleton"
 import { ModuleLayout } from "@/components/layout/ModuleLayout"
 
-/**
- * Unified Module Loading Component
- * 
- * This component provides a consistent loading state for all modules
- * (quiz, course, landing) when content is being loaded dynamically.
- * 
- * @returns A skeleton UI for the module being loaded
- */
 export function ModuleLoading() {
   return (
     <ModuleLayout>

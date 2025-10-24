@@ -12,10 +12,9 @@
 
   /* Depth & Shadows */
   --color-border: #000000;
-  --shadow-offset-x: 6px;
-  --shadow-offset-y: 6px;
-  --shadow-color: #000000;
-  --shadow-neo: var(--shadow-offset-x) var(--shadow-offset-y) 0 var(--shadow-color);
+  --shadow-neo: 4px 4px 0 0 #000000;
+  --shadow-neo-lg: 6px 6px 0 0 #000000;
+  --shadow-neo-xl: 8px 8px 0 0 #000000;
 
   /* Radii & Typography */
   --radius: 0.75rem;
@@ -37,7 +36,9 @@
   --color-card: #2b2b2b;
   --color-muted: #333333;
   --color-border: #fafafa;
-  --shadow-color: #fafafa;
+  --shadow-neo: 4px 4px 0 0 #fafafa;
+  --shadow-neo-lg: 6px 6px 0 0 #fafafa;
+  --shadow-neo-xl: 8px 8px 0 0 #fafafa;
 }
 
 /* === Base Layer === */

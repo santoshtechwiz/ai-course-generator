@@ -1,5 +1,10 @@
 "use client"
 
+/**
+ * @deprecated This component is deprecated. Use UnifiedLoader from @/components/loaders instead.
+ * This file is kept for backward compatibility only.
+ */
+
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card } from "@/components/ui/card"
 
