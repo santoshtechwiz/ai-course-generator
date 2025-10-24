@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { neo } from "@/components/neo/tokens"
+import neo from "@/components/neo/tokens"
 import { AlertCircle, Crown, Sparkles, Zap } from "lucide-react"
 import { useRouter } from "next/navigation"
 

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { neo } from "@/components/neo/tokens"
+import neo from "@/components/neo/tokens"
 import { Brain, Target, Clock, TrendingUp } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 

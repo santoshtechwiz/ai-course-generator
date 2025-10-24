@@ -9,7 +9,7 @@ import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { neo } from "@/components/neo/tokens"
+import neo from "@/components/neo/tokens"
 import { 
   ArrowRight, 
   BookOpen, 

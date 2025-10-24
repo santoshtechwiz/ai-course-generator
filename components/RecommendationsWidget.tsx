@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { neo } from "@/components/neo/tokens"
+import neo from "@/components/neo/tokens"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BookOpen, Brain, RefreshCw, TrendingUp } from "lucide-react"
