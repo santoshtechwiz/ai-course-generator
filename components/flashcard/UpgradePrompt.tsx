@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import { neo } from "@/components/neo/tokens"
 import { AlertCircle, Crown, Sparkles, Zap } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -107,7 +109,7 @@ export function UpgradePrompt({ resource, onClose }: UpgradePromptProps) {
               <div className="flex-1">
                 <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
                   Upgrade to Pro
-                  <Badge variant="secondary" className="bg-purple-500/20 text-purple-700 dark:text-purple-300">
+                  <Badge variant="neutral" className={cn(neo.badge, "bg-purple-500/20 text-purple-700 dark:text-purple-300")}> 
                     Most Popular
                   </Badge>
                 </h4>

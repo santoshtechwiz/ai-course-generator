@@ -28,6 +28,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import { neo } from "@/components/neo/tokens"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
@@ -178,17 +179,17 @@ export function ConfirmDialog({
                 )}
 
                 {quizInfo.count && (
-                  <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Questions:</span>
-                    <Badge variant="secondary">{quizInfo.count}</Badge>
+                    <Badge variant="neutral" className={cn(neo.badge)}>{quizInfo.count}</Badge>
                   </div>
                 )}
 
                 {quizInfo.difficulty && (
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Difficulty:</span>
-                    <Badge className={getDifficultyColor(quizInfo.difficulty)}>{quizInfo.difficulty}</Badge>
-                  </div>
+                      <span className="text-muted-foreground">Difficulty:</span>
+                      <Badge variant="neutral" className={cn(neo.badge, getDifficultyColor(quizInfo.difficulty))}>{quizInfo.difficulty}</Badge>
+                    </div>
                 )}
 
                 {typeof quizInfo.estimatedCredits === 'number' && (

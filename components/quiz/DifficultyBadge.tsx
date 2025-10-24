@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { neo } from '@/components/neo/tokens'
 
 type DifficultyBadgeProps = {
   difficulty: string
@@ -17,7 +18,7 @@ export const DifficultyBadge = memo(({ difficulty }: DifficultyBadgeProps) => {
   }[difficulty.toLowerCase()] || 'bg-muted/50 dark:bg-muted/30 text-muted-foreground border-3 border-border font-black shadow-[2px_2px_0px_0px_hsl(var(--border))]'
 
   return (
-    <Badge variant="neutral" className={cn("px-3 py-1.5 text-xs", color)}>
+    <Badge variant="neutral" className={cn(neo.badge, "px-3 py-1.5 text-xs", color)}>
       {difficulty}
     </Badge>
   )

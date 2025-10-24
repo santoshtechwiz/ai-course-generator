@@ -3,6 +3,8 @@
 import Link from "next/link"
 import { useRelatedQuizzes } from "@/hooks/useRelatedQuizzes"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import { neo } from "@/components/neo/tokens"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Target } from "lucide-react"
@@ -54,8 +56,8 @@ export function RelatedQuizSuggestions({
         {quizzes.slice(0, 3).map((q) => (
           <Link key={q.id} href={`/dashboard/${q.quizType}/${q.slug}`} className="group rounded-lg border bg-card p-3 hover:border-primary/50 transition-colors">
             <div className="text-sm font-medium line-clamp-1 group-hover:text-primary">{q.title}</div>
-            <div className="mt-1 text-xs text-muted-foreground flex items-center gap-2">
-              <Badge variant="secondary" className="text-[10px]">{q.quizType}</Badge>
+              <div className="mt-1 text-xs text-muted-foreground flex items-center gap-2">
+              <Badge variant="neutral" className={cn(neo.badge, "text-[10px]")}>{q.quizType}</Badge>
               <span>{q.questionCount} qns</span>
             </div>
           </Link>

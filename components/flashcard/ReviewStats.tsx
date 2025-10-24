@@ -3,6 +3,8 @@
 import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import { neo } from "@/components/neo/tokens"
 import { Brain, Target, Clock, TrendingUp } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -55,7 +57,7 @@ export function ReviewStats({ userId }: ReviewStatsProps) {
               {stats.masteredCount}
             </p>
             <p className="text-sm text-muted-foreground font-medium">Mastered</p>
-            <Badge variant="secondary" className="mt-2 bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30">
+            <Badge variant="neutral" className={cn(neo.badge, "mt-2 bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30")}>
               ✓ Learned
             </Badge>
           </div>
@@ -67,7 +69,7 @@ export function ReviewStats({ userId }: ReviewStatsProps) {
               {stats.learningCount}
             </p>
             <p className="text-sm text-muted-foreground font-medium">Learning</p>
-            <Badge variant="secondary" className="mt-2 bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30">
+            <Badge variant="neutral" className={cn(neo.badge, "mt-2 bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30")}>
               ⚡ In Progress
             </Badge>
           </div>
@@ -79,7 +81,7 @@ export function ReviewStats({ userId }: ReviewStatsProps) {
               {stats.dueCount}
             </p>
             <p className="text-sm text-muted-foreground font-medium">Due Today</p>
-            <Badge variant="secondary" className="mt-2 bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-500/30">
+            <Badge variant="neutral" className={cn(neo.badge, "mt-2 bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-500/30")}>
               📅 Ready
             </Badge>
           </div>

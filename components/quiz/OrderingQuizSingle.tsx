@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import neo from '@/components/neo/tokens'
+
 import { GripVertical, ChevronUp, ChevronDown, Check, Star, ArrowDownUp, Hand } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -524,7 +525,9 @@ function OrderingQuizSingleEnhanced({
               <DifficultyBadge difficulty={question.difficulty} />
 
               {hasChanged && (
-                <Badge className="ml-2 bg-indigo-100 text-indigo-800 border border-indigo-300">Modified</Badge>
+                <Badge variant="neutral" className={cn(neo.badge, "ml-2 bg-indigo-100 text-indigo-800 border border-indigo-300")}>
+                  Modified
+                </Badge>
               )}
             </div>
 
@@ -714,12 +717,12 @@ function OrderingQuizSingleEnhanced({
 
             <div className="flex items-center gap-2">
               {hasChanged ? (
-                <Badge className="bg-amber-100 text-amber-800 border border-amber-300 px-3 py-1">
+                <Badge variant="neutral" className={cn(neo.badge, "bg-amber-100 text-amber-800 border border-amber-300 px-3 py-1")}>
                   <Star className="h-3 w-3 mr-1 inline" />
                   Order modified
                 </Badge>
               ) : (
-                <Badge variant="neutral" className="px-3 py-1">
+                <Badge variant="neutral" className={cn(neo.badge, "px-3 py-1")}>
                   Original order
                 </Badge>
               )}

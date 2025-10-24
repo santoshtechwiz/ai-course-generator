@@ -38,6 +38,9 @@ import { useRelatedQuizzes } from "@/hooks/useRelatedQuizzes"
 import { motion, AnimatePresence } from "framer-motion"
 import RecommendedSection from "@/components/shared/RecommendedSection"
 import { cn } from "@/lib/utils"
+import neo from '@/components/neo/tokens'
+
+
 import { useAuth } from "@/modules/auth"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { QuizActions } from "@/components/quiz/QuizActions"
@@ -394,7 +397,7 @@ export default function QuizPlayLayout({
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge 
                       variant="neutral" 
-                      className="bg-[var(--color-primary)] text-[var(--color-text)] border-4 border-black font-black shadow-[4px_4px_0_#000] px-4 py-2 text-sm"
+                      className={cn(neo.badge, "px-4 py-2 text-sm bg-[var(--color-primary)] text-[var(--color-text)]")}
                     >
                       {quizTypeLabel[quizType] || "Quiz"}
                     </Badge>
@@ -403,20 +406,18 @@ export default function QuizPlayLayout({
                 </div>
               </div>
 
-              <div className="hidden sm:flex items-center gap-4 px-6 py-4 bg-[var(--color-card)] border-4 border-black rounded-xl shadow-[4px_4px_0_#000]">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-3">
-                    <Badge 
-                      variant="neutral" 
-                      className="bg-[var(--color-primary)] text-[var(--color-text)] border-4 border-black font-black shadow-[4px_4px_0_#000] px-4 py-2"
-                    >
-                      {progress}% Complete
-                    </Badge>
-                  </div>
+              <div className={cn("hidden sm:flex items-center gap-4 px-4 py-3 bg-[var(--color-card)] rounded-xl", neo.inner, "shadow-[3px_3px_0px_0px_hsl(var(--border)/0.12)]")}>
+                <div className="flex items-center gap-3">
+                  <Badge 
+                    variant="neutral" 
+                    className={cn(neo.badge, "px-3 py-1 bg-[var(--color-primary)] text-[var(--color-text)] text-sm")}
+                  >
+                    {progress}% Complete
+                  </Badge>
                   <Timer seconds={displaySeconds} isPaused={isPaused} />
                 </div>
                 {isFocusMode && (
-                  <div className="flex items-center gap-3 text-sm text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-4 py-2 rounded-xl border-4 border-black font-black shadow-[4px_4px_0_#000]">
+                  <div className={cn("flex items-center gap-3 text-sm rounded-xl px-3 py-1", neo.inner, "bg-[var(--color-primary)]/10 font-black") }>
                     <Target className="h-5 w-5" aria-hidden="true" /> Focus Mode
                   </div>
                 )}
@@ -434,7 +435,7 @@ export default function QuizPlayLayout({
                   variant="neutral" 
                   size="sm"
                   onClick={togglePause}
-                  className="hover:bg-[var(--color-bg)] transition-all duration-100 border-4 border-black shadow-[4px_4px_0_#000] h-12 w-12 p-0"
+                  className={cn(neo.inner, "hover:bg-[var(--color-bg)] transition-all duration-100 shadow-[3px_3px_0px_0px_hsl(var(--border))] h-12 w-12 p-0")}
                   aria-label={isPaused ? "Resume quiz" : "Pause quiz"}
                 >
                   {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
@@ -444,7 +445,7 @@ export default function QuizPlayLayout({
                   variant="neutral" 
                   size="sm" 
                   onClick={resetQuiz}
-                  className="hover:bg-[var(--color-bg)] transition-all duration-100 border-4 border-black shadow-[4px_4px_0_#000] h-12 w-12 p-0"
+                  className={cn(neo.inner, "hover:bg-[var(--color-bg)] transition-all duration-100 shadow-[3px_3px_0px_0px_hsl(var(--border))] h-12 w-12 p-0")}
                   aria-label="Reset quiz"
                 >
                   <RotateCcw className="h-4 w-4" />
@@ -456,7 +457,7 @@ export default function QuizPlayLayout({
                   variant="neutral" 
                   size="sm" 
                   onClick={goHome} 
-                  className="hover:bg-[var(--color-bg)] transition-all duration-100 border-4 border-black shadow-[4px_4px_0_#000] h-12 w-12 p-0"
+                  className={cn(neo.inner, "hover:bg-[var(--color-bg)] transition-all duration-100 shadow-[3px_3px_0px_0px_hsl(var(--border))] h-12 w-12 p-0")}
                   aria-label="Go to dashboard"
                 >
                   <Home className="h-4 w-4" />
@@ -466,7 +467,7 @@ export default function QuizPlayLayout({
                   variant="neutral" 
                   size="sm" 
                   onClick={toggleFullscreen} 
-                  className="hover:bg-[var(--color-bg)] transition-all duration-100 border-4 border-black shadow-[4px_4px_0_#000] h-12 w-12 p-0"
+                  className={cn(neo.inner, "hover:bg-[var(--color-bg)] transition-all duration-100 shadow-[3px_3px_0px_0px_hsl(var(--border))] h-12 w-12 p-0")}
                   aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                 >
                   {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
@@ -477,7 +478,7 @@ export default function QuizPlayLayout({
                   size="sm" 
                   onClick={toggleSidebar}
                   disabled={isSidebarTransitioning}
-                  className="hover:bg-[var(--color-bg)] transition-all duration-100 border-4 border-black shadow-[4px_4px_0_#000] h-12 w-12 p-0"
+                  className={cn(neo.inner, "hover:bg-[var(--color-bg)] transition-all duration-100 shadow-[3px_3px_0px_0px_hsl(var(--border))] h-12 w-12 p-0")}
                   aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
                   aria-expanded={sidebarOpen}
                 >
@@ -497,22 +498,22 @@ export default function QuizPlayLayout({
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <Badge 
-                    variant="neutral" 
-                    className="bg-[var(--color-success)] text-[var(--color-text)] border-4 border-black font-black shadow-[4px_4px_0_#000] px-4 py-2 text-sm"
-                  >
+                      variant="neutral" 
+                      className={cn(neo.badge, "px-3 py-1 bg-[var(--color-success)] text-[var(--color-text)] text-sm")}
+                    >
                     {progress}%
                   </Badge>
                 </div>
                 <Timer seconds={displaySeconds} isPaused={isPaused} />
               </div>
               
-              <div className="flex items-center justify-between py-3 px-4 bg-[var(--color-card)] border-4 border-black rounded-xl shadow-[4px_4px_0_#000]">
+              <div className={cn("flex items-center justify-between py-3 px-3 bg-[var(--color-card)] rounded-xl", neo.inner, "shadow-[3px_3px_0px_0px_hsl(var(--border)/0.12)]")}>
                 <div className="flex items-center gap-3">
                   <Button 
                     variant="neutral" 
                     size="sm" 
                     onClick={togglePause} 
-                    className="h-12 w-12 p-0 hover:bg-[var(--color-bg)] border-4 border-black shadow-[4px_4px_0_#000] transition-all duration-100"
+                    className={cn(neo.inner, "h-12 w-12 p-0 hover:bg-[var(--color-bg)] shadow-[3px_3px_0px_0px_hsl(var(--border))] transition-all duration-100")}
                     aria-label={isPaused ? "Resume quiz" : "Pause quiz"}
                   >
                     {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
@@ -521,7 +522,7 @@ export default function QuizPlayLayout({
                     variant="neutral" 
                     size="sm" 
                     onClick={resetQuiz} 
-                    className="h-12 w-12 p-0 hover:bg-[var(--color-bg)] border-4 border-black shadow-[4px_4px_0_#000] transition-all duration-100"
+                    className={cn(neo.inner, "h-12 w-12 p-0 hover:bg-[var(--color-bg)] shadow-[3px_3px_0px_0px_hsl(var(--border))] transition-all duration-100")}
                     aria-label="Reset quiz"
                   >
                     <RotateCcw className="h-4 w-4" />
@@ -663,7 +664,7 @@ export default function QuizPlayLayout({
                 </div>
                 <Button 
                   onClick={() => mainRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 text-base px-6 w-full sm:w-auto"
+                  className={cn(neo.buttonPrimary, "px-6 text-base w-full sm:w-auto shadow-[6px_6px_0px_0px_hsl(var(--border))]")}
                   aria-label="Resume quiz from current question"
                 >
                   Resume Quiz
@@ -721,7 +722,7 @@ export default function QuizPlayLayout({
               >
                 <div className="space-y-6">
                   <motion.div 
-                    className="rounded-3xl border border-border bg-card/80 backdrop-blur-xl p-6 shadow-xl"
+                    className={cn("rounded-3xl p-6 backdrop-blur-xl", neo.card)}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
@@ -750,7 +751,7 @@ export default function QuizPlayLayout({
                   </motion.div>
 
                   <motion.div 
-                    className="rounded-3xl border-3 border-border bg-card/80 backdrop-blur-xl p-6 shadow-[6px_6px_0px_0px_hsl(var(--border))]"
+                    className={cn("rounded-3xl p-6 backdrop-blur-xl", neo.card, "shadow-[6px_6px_0px_0px_hsl(var(--border))]")}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
@@ -805,7 +806,7 @@ export default function QuizPlayLayout({
                           <div className="p-2 rounded-lg bg-[hsl(var(--primary))]/20 dark:bg-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] dark:text-[hsl(var(--primary-foreground))] border-2 border-[hsl(var(--primary))]/40 dark:border-[hsl(var(--primary))]/30 shadow-[2px_2px_0px_0px_hsl(var(--border))]">
                             <BookOpen className="w-5 h-5" aria-hidden="true" />
                           </div>
-                          <Badge className={`text-xs font-black border-3 shadow-[2px_2px_0px_0px_hsl(var(--border))] ${difficulty.color}`}>
+                          <Badge variant="neutral" className={cn(neo.badge, `text-xs font-black border-3 shadow-[2px_2px_0px_0px_hsl(var(--border))] ${difficulty.color}`)}>
                             {difficulty.label}
                           </Badge>
                         </div>
@@ -819,7 +820,7 @@ export default function QuizPlayLayout({
                         </p>
                         
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
-                          <Badge variant="neutral" className="text-xs font-bold border-2 bg-[hsl(var(--primary))]/15 dark:bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] dark:text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]/40 dark:border-[hsl(var(--primary))]/30">
+                          <Badge variant="neutral" className={cn(neo.badge, "text-xs font-bold border-2 bg-[hsl(var(--primary))]/15 dark:bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] dark:text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]/40 dark:border-[hsl(var(--primary))]/30") }>
                             {rq.quizType?.toUpperCase()}
                           </Badge>
                           <span className="font-bold text-foreground">{rq.questionCount}</span>

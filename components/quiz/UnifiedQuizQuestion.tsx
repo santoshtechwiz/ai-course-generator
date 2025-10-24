@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useMemo, memo, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn, getColorClasses } from "@/lib/utils"
+import neo from "@/components/neo/tokens"
 import { CheckCircle2, Target, Loader2, FileText, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -470,7 +471,7 @@ function UnifiedQuizQuestionComponent({
                 {index < array.length - 1 && (
                   <input
                     type="text"
-                    className={`${styles.inputText} inline-block w-32 mx-2 text-center`}
+                    className={`${styles.input} inline-block w-32 mx-2 text-center`}
                     placeholder={`Blank ${index + 1}`}
                     value={selectedAnswer.split('___')[index] || ''}
                     onChange={(e) => {
@@ -530,7 +531,7 @@ function UnifiedQuizQuestionComponent({
             placeholder="Type your answer here..."
             value={selectedAnswer}
             onChange={(e) => handleTextInput(e.target.value)}
-            className={`${styles.inputTextarea} min-h-[180px] w-full text-base leading-relaxed resize-none`}
+            className={`${styles.input} min-h-[180px] w-full text-base leading-relaxed resize-none`}
             disabled={isAnswering || isSubmitting}
           />
 
@@ -598,15 +599,16 @@ function UnifiedQuizQuestionComponent({
               
               {/* Language badge */}
               <span className={cn(
-                styles.badgeStatus,
-                "text-xs font-mono font-black"
-              )} style={{ backgroundColor: styles.bgColor }}>
+                getColorClasses().badge,
+                "text-xs font-mono font-black",
+                "bg-green-500 text-white px-3 py-1 rounded-lg border-4 border-black shadow-[3px_3px_0_#000]"
+              )}>
                 {codeQuestion.language || 'JAVASCRIPT'}
               </span>
             </div>
             
-            {/* Code editor with Neobrutalism border */}
-            <div className="rounded-lg overflow-hidden border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]">
+            {/* Code editor with toned-down Neobrutalism border */}
+            <div className="rounded-lg overflow-hidden border-3 border-border shadow-[6px_6px_0px_0px_hsl(var(--border))]">
               <SyntaxHighlighter
                 language={codeQuestion.language || 'javascript'}
                 style={atomOneDark}
@@ -648,24 +650,14 @@ function UnifiedQuizQuestionComponent({
       <div className="text-center space-y-6">
         <div className="flex items-center justify-center gap-3 mb-4">
           {/* Question Progress Badge */}
-          <span 
-            className={cn(
-              getColorClasses(question.type).badgeType,
-              "inline-flex items-center gap-2"
-            )}
-          >
+          <span className={cn(neo.badge, "inline-flex items-center gap-2 bg-secondary/10 text-foreground") }>
             <Target className="w-3 h-3" />
             Question {questionNumber} / {totalQuestions}
           </span>
           
           {/* Difficulty Badge */}
           {question.difficulty && (
-            <span 
-              className={getColorClasses(question.type, question.difficulty).badgeStatus}
-              style={{ 
-                backgroundColor: getColorClasses(question.type, question.difficulty).difficultyColor 
-              }}
-            >
+            <span className={cn(neo.badge, question.difficulty === 'easy' ? 'bg-[var(--color-success)] text-white' : question.difficulty === 'medium' ? 'bg-[var(--color-warning)] text-white' : 'bg-[var(--color-destructive)] text-white') }>
               {question.difficulty.toUpperCase()}
             </span>
           )}
@@ -683,16 +675,8 @@ function UnifiedQuizQuestionComponent({
 
         {/* Quiz Type Indicator with Dynamic Colors */}
         <div className="flex items-center justify-center">
-          <div 
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 border-2 border-border rounded-md shadow-[2px_2px_0px_0px_hsl(var(--border))]",
-              "bg-secondary/50"
-            )}
-          >
-            <CheckCircle2 
-              className="w-4 h-4" 
-              style={{ color: getColorClasses(question.type).bgColor }}
-            />
+          <div className={cn("flex items-center gap-2 px-3 py-1 rounded-xl", neo.inner, "bg-secondary/50")}>
+            <CheckCircle2 className="w-4 h-4 text-[var(--color-primary)]" />
             <span className="text-sm font-bold text-foreground uppercase">
               {question.type === 'mcq' && 'Multiple Choice'}
               {question.type === 'blanks' && 'Fill in the Blanks'}
@@ -713,8 +697,10 @@ function UnifiedQuizQuestionComponent({
             onClick={handleTextSubmit}
             disabled={!selectedAnswer.trim() || isAnswering || isSubmitting}
             className={cn(
-              getColorClasses(question.type).buttonPrimary,
-              "min-w-[180px]"
+              // Keep adaptive color from getColorClasses but reduce the CTA shadow
+              "min-w-[180px]",
+              "shadow-[4px_4px_0px_0px_hsl(var(--border))]",
+              (getColorClasses as any)(question.type).buttonPrimary
             )}
             size="lg"
           >

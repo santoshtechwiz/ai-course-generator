@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
+import neo from '@/components/neo/tokens'
 import { Loader2, Zap, AlertCircle, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -166,14 +167,11 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
               </p>
             </div>
             <div className="text-right">
-              <Badge
-                className={cn(
-                  "font-black border-2 px-3 py-2 text-sm",
+              <Badge variant="neutral" className={cn(neo.badge, "font-black border-2 px-3 py-2 text-sm",
                   canGenerate
                     ? "bg-green-900/40 text-green-300 border-green-600"
                     : "bg-red-900/40 text-red-300 border-red-600"
-                )}
-              >
+                )}>
                 {canGenerate ? "✓" : "✗"} {quizzesRemaining}/{dailyLimit}
               </Badge>
             </div>

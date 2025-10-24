@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
+import { neo } from "@/components/neo/tokens"
 import { Share2, Heart, MoreVertical, Eye, EyeOff, Trash2, Lock, Globe, FileText, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -857,7 +858,7 @@ const QuizActions = memo(
             <h3 className="font-semibold text-lg">{config.label} Actions</h3>
           </div>
           
-          <Badge variant={isPublic ? "default" : "secondary"} className="text-xs">
+          <Badge variant={isPublic ? "default" : "neutral"} className={cn(neo.badge, "text-xs")}>
             {isPublic ? (
               <>
                 <Globe className="w-3 h-3 mr-1" />

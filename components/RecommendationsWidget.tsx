@@ -2,10 +2,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { neo } from "@/components/neo/tokens"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BookOpen, Brain, RefreshCw, TrendingUp } from "lucide-react"
 import Link from "next/link"
+import { cn } from "@/lib/utils"
 import { useSmartRecommendations } from "@/hooks/useRecommendations"
 import { EnhancedErrorBoundary } from "@/components/error-boundary"
 import { UnifiedLoader } from "@/components/loaders"
@@ -161,10 +163,10 @@ function RecommendationItem({ recommendation }: { recommendation: Recommendation
             )}
           </div>
           <div className="flex flex-col items-end gap-1">
-            <Badge variant="secondary" className={`text-xs ${confidenceColor} border-0`}>
+            <Badge variant="neutral" className={cn(neo.badge, `text-xs ${confidenceColor} border-0`)}>
               {Math.round(confidence * 100)}% match
             </Badge>
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="neutral" className={cn(neo.badge, "text-xs")}>
               {type === "course" ? "Course" : "Quiz"}
             </Badge>
           </div>
@@ -172,12 +174,12 @@ function RecommendationItem({ recommendation }: { recommendation: Recommendation
 
         <div className="flex items-center gap-2 mb-2">
           {category && (
-            <Badge variant="outline" className="text-xs bg-primary/5">
+            <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-primary/5")}>
               {category}
             </Badge>
           )}
           {quizType && (
-            <Badge variant="outline" className="text-xs bg-secondary/5">
+            <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-secondary/5")}>
               {quizType}
             </Badge>
           )}

@@ -44,6 +44,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { cn } from '@/lib/utils'
+import neo from '@/components/neo/tokens'
 import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import PlanAwareButton from '@/components/quiz/PlanAwareButton';
@@ -477,7 +479,7 @@ function Tile({
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.95 }}
                         >
-                          <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/50 dark:to-yellow-900/50 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700 font-semibold text-xs">
+                          <Badge variant="neutral" className={cn(neo.badge, "bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/50 dark:to-yellow-900/50 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700 font-semibold text-xs")}>
                             <Crown className="h-3 w-3 mr-1" />
                             {requiredPlanConfig.name}
                           </Badge>
@@ -490,7 +492,7 @@ function Tile({
                   ) : requiredPlan !== 'FREE' && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700">
+                        <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700")}>
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Unlocked
                         </Badge>
@@ -506,7 +508,7 @@ function Tile({
               {/* Metadata */}
               <div className="flex items-center gap-3 mt-2">
                 <motion.div whileHover={{ scale: 1.05 }}>
-                  <Badge variant="outline" className={`text-xs ${getDifficultyColor(difficulty!)}`}>
+                  <Badge variant="neutral" className={cn(neo.badge, `text-xs ${getDifficultyColor(difficulty!)}`)}>
                     <Target className="h-3 w-3 mr-1" />
                     {difficulty}
                   </Badge>
@@ -566,17 +568,17 @@ function Tile({
 
                   <div className="flex items-center gap-3">
                     {showUpgradeBadge ? (
-                      <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/50 dark:to-yellow-900/50 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700">
+                      <Badge variant="neutral" className={cn(neo.badge, "bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/50 dark:to-yellow-900/50 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700")}>
                         <Crown className="h-3 w-3 mr-1" />
                         {requiredPlanConfig.name} Required
                       </Badge>
                     ) : requiredPlan !== 'FREE' && (
-                      <Badge className="bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/50 dark:to-emerald-900/50 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700">
+                      <Badge variant="neutral" className={cn(neo.badge, "bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/50 dark:to-emerald-900/50 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700")}>
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Unlocked
                       </Badge>
                     )}
-                    <Badge variant="outline" className={getDifficultyColor(difficulty!)}>
+                    <Badge variant="neutral" className={cn(neo.badge, getDifficultyColor(difficulty!))}>
                       {difficulty}
                     </Badge>
                   </div>

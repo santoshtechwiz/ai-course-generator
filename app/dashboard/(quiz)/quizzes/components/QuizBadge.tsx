@@ -3,6 +3,7 @@
 import React from "react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { neo } from "@/components/neo/tokens"
 
 interface QuizBadgeProps {
   children?: React.ReactNode
@@ -25,8 +26,8 @@ function QuizBadge({ children, className, variant = "secondary", tone, icon, ...
 
   return (
     <Badge
-      variant={variant === "solid" ? "default" : variant === "outline" ? "outline" : "secondary"}
-      className={cn("text-sm px-3 py-1 font-semibold rounded-full shadow-sm inline-flex items-center gap-2", toneClasses, className)}
+      variant={variant === "solid" ? "default" : "neutral"}
+      className={cn(neo.badge, toneClasses, className)}
       {...props}
     >
       {icon && <span className="flex items-center">{icon}</span>}

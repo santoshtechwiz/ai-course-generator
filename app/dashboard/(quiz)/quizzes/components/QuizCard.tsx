@@ -149,8 +149,8 @@ function QuizCardComponent({
       >
         <Card
           className={cn(
-            "group relative h-full flex flex-col overflow-hidden bg-[var(--color-card)] cursor-pointer border-4 border-black transition-all duration-200",
-            "hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[6px_6px_0_#000]",
+            "group relative h-full min-h-[28rem] flex flex-col overflow-hidden bg-[var(--color-card)] cursor-pointer border-4 border-black transition-all duration-200",
+            "hover:translate-x-[-6px] hover:translate-y-[-6px] hover:shadow-[6px_6px_0_#000]",
             "active:translate-x-[0px] active:translate-y-[0px] active:shadow-none",
             "h-full flex items-center justify-center overflow-hidden",
             loading && "opacity-70 cursor-progress",
@@ -175,14 +175,14 @@ function QuizCardComponent({
           )}
 
           {/* Content Section */}
-          <CardContent className="p-6 flex flex-col gap-4 text-center relative h-full">
+          <CardContent className="p-6 flex flex-col gap-4 text-left relative h-full">
             {/* Illustration per quiz type */}
-            <div className="mb-2">
+            <div className="mb-3 flex justify-center">
               <QuizTypeIllustration type={normalizedType as any} />
             </div>
             {/* Title & Description */}
-            <div className="relative space-y-2 flex-1 flex flex-col justify-center min-h-[4rem]">
-              <h3 className="font-black text-xl leading-tight text-[var(--color-text)] line-clamp-2 group-hover:text-[var(--color-primary)] transition-colors">
+            <div className="relative space-y-2 flex-1 flex flex-col justify-center min-h-[4.5rem]">
+              <h3 id={`quiz-title-${slug}`} className="font-black text-xl leading-tight text-[var(--color-text)] line-clamp-2 group-hover:text-[var(--color-primary)] transition-colors">
                 {title}
               </h3>
               <p className="text-sm text-[var(--color-text)]/70 font-medium line-clamp-2 leading-relaxed">

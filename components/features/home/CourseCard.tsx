@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import neo from '@/components/neo/tokens'
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Star, Heart, Bookmark, Clock, Users, BookOpen, TrendingUp } from "lucide-react"
@@ -243,13 +244,13 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
         {/* Status Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-2">
           {isPopular && (
-            <Badge className="bg-[var(--color-warning)] text-[var(--color-text)] font-black border-4 border-black px-3 py-1 shadow-[3px_3px_0_#000] flex items-center gap-1.5">
+            <Badge variant="neutral" className={cn(neo.badge, "bg-[var(--color-warning)] text-[var(--color-text)] font-black border-4 border-black px-3 py-1 shadow-[3px_3px_0_#000] flex items-center gap-1.5")}>
               <TrendingUp className="w-3 h-3" />
               POPULAR
             </Badge>
           )}
           {isTrending && (
-            <Badge className="bg-[var(--color-destructive)] text-[var(--color-text)] font-black border-4 border-black px-3 py-1 shadow-[3px_3px_0_#000] flex items-center gap-1.5">
+            <Badge variant="neutral" className={cn(neo.badge, "bg-[var(--color-destructive)] text-[var(--color-text)] font-black border-4 border-black px-3 py-1 shadow-[3px_3px_0_#000] flex items-center gap-1.5")}>
               🔥 TRENDING
             </Badge>
           )}
@@ -257,7 +258,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
 
         {/* Category Badge */}
         <div className="absolute bottom-3 left-3">
-          <Badge className={cn("font-black border-4 shadow-[3px_3px_0_#000] px-3 py-1", categoryColor)}>
+          <Badge variant="neutral" className={cn(neo.badge, "font-black border-4 shadow-[3px_3px_0_#000] px-3 py-1", categoryColor)}>
             {category.toUpperCase()}
           </Badge>
         </div>
@@ -267,12 +268,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
       <CardContent className="p-6 flex flex-col gap-4 flex-1">
         {/* Header Row */}
         <div className="flex items-start justify-between gap-3">
-          <Badge
-            className={cn(
-              "font-black border-4 px-3 py-1 shadow-[2px_2px_0_#000]",
-              DIFFICULTY_STYLES[difficultyLevel],
-            )}
-          >
+          <Badge variant="neutral" className={cn(neo.badge, "font-black border-4 px-3 py-1 shadow-[2px_2px_0_#000]", DIFFICULTY_STYLES[difficultyLevel])}>
             {DIFFICULTY_ICONS[difficultyLevel]} {difficultyLevel.toUpperCase()}
           </Badge>
           {price !== undefined ? (
@@ -283,7 +279,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
               )}
             </div>
           ) : (
-            <Badge className="bg-[var(--color-success)] text-[var(--color-text)] font-black px-3 py-1 border-4 border-black shadow-[2px_2px_0_#000]">
+            <Badge variant="neutral" className={cn(neo.badge, "bg-[var(--color-success)] text-[var(--color-text)] font-black px-3 py-1 border-4 border-black shadow-[2px_2px_0_#000]")}>
               FREE
             </Badge>
           )}

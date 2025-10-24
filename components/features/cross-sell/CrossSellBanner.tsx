@@ -9,6 +9,7 @@ import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { neo } from "@/components/neo/tokens"
 import { 
   ArrowRight, 
   BookOpen, 
@@ -173,7 +174,7 @@ function CrossSellItem({ item, index, onClick }: CrossSellItemProps) {
                     {item.title}
                   </h4>
                   {item.confidence && item.confidence > 0.7 && (
-                    <Badge variant="secondary" className="flex-shrink-0 bg-green-500/10 text-green-700 dark:text-green-400 text-xs">
+                    <Badge variant="neutral" className={cn(neo.badge, "flex-shrink-0 bg-green-500/10 text-green-700 dark:text-green-400 text-xs")}>
                       <Star className="h-3 w-3 mr-1" />
                       {Math.round(item.confidence * 100)}%
                     </Badge>
@@ -196,14 +197,15 @@ function CrossSellItem({ item, index, onClick }: CrossSellItemProps) {
                 {/* Metadata */}
                 <div className="flex items-center gap-2 flex-wrap">
                   {item.category && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="neutral" className={cn(neo.badge, "text-xs")}>
                       {item.category}
                     </Badge>
                   )}
                   {item.difficulty && (
                     <Badge 
-                      variant="secondary" 
+                      variant="neutral" 
                       className={cn(
+                        neo.badge,
                         "text-xs",
                         item.difficulty === "easy" && "bg-green-500/10 text-green-700 dark:text-green-400",
                         item.difficulty === "medium" && "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
