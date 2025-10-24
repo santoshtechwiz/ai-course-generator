@@ -87,6 +87,13 @@ module.exports = {
       animation: {
         "neo-pulse": "neo-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "neo-bounce": "neo-bounce 1s infinite",
+        "neo-shake": "neo-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97)",
+        "neo-wiggle": "neo-wiggle 0.8s ease-in-out infinite",
+        "neo-slide-up": "neo-slide-up 0.3s ease-out",
+        "neo-slide-in": "neo-slide-in 0.3s ease-out",
+        "neo-fade-in": "neo-fade-in 0.3s ease-out",
+        "neo-scale-in": "neo-scale-in 0.2s ease-out",
+        "neo-spinner": "neo-spinner 1s linear infinite",
       },
 
       screens: {
@@ -140,6 +147,24 @@ module.exports = {
           "&::-webkit-scrollbar": {
             display: "none",
           },
+        },
+        ".neo-text-shadow": {
+          "text-shadow": "2px 2px 0 var(--color-border)",
+        },
+        ".neo-text-shadow-lg": {
+          "text-shadow": "4px 4px 0 var(--color-border)",
+        },
+        ".safe-top": {
+          "padding-top": "env(safe-area-inset-top)",
+        },
+        ".safe-bottom": {
+          "padding-bottom": "env(safe-area-inset-bottom)",
+        },
+        ".safe-left": {
+          "padding-left": "env(safe-area-inset-left)",
+        },
+        ".safe-right": {
+          "padding-right": "env(safe-area-inset-right)",
         },
       });
     }),

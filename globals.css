@@ -186,7 +186,98 @@
     @apply max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
-  /* === Animations === */
+  /* === Responsive Grid System === */
+  .neo-grid {
+    @apply grid gap-4 sm:gap-6 lg:gap-8;
+  }
+
+  .neo-grid-1 {
+    @apply neo-grid grid-cols-1;
+  }
+
+  .neo-grid-2 {
+    @apply neo-grid grid-cols-1 sm:grid-cols-2;
+  }
+
+  .neo-grid-3 {
+    @apply neo-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
+  .neo-grid-4 {
+    @apply neo-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+
+  .neo-grid-auto {
+    @apply neo-grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))];
+  }
+
+  /* === Responsive Spacing === */
+  .neo-space-y {
+    @apply space-y-4 sm:space-y-6 lg:space-y-8;
+  }
+
+  .neo-space-x {
+    @apply space-x-4 sm:space-x-6 lg:space-x-8;
+  }
+
+  .neo-gap {
+    @apply gap-4 sm:gap-6 lg:gap-8;
+  }
+
+  /* === Responsive Padding === */
+  .neo-p {
+    @apply p-4 sm:p-6 lg:p-8;
+  }
+
+  .neo-px {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  .neo-py {
+    @apply py-4 sm:py-6 lg:py-8;
+  }
+
+  /* === Interactive States === */
+  .neo-interactive {
+    @apply transition-all duration-200 ease-in-out
+           hover:-translate-x-1 hover:-translate-y-1 hover:shadow-neo-lg
+           active:translate-x-1 active:translate-y-1 active:shadow-none
+           focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-primary;
+  }
+
+  .neo-hover-lift {
+    @apply transition-transform duration-200 ease-in-out
+           hover:-translate-y-2 hover:shadow-neo-lg;
+  }
+
+  /* === Mobile Optimizations === */
+  @media (max-width: 640px) {
+    .neo-card {
+      @apply p-4 rounded-lg;
+    }
+    
+    .neo-button {
+      @apply min-h-[44px] px-4;
+    }
+    
+    .neo-container {
+      @apply px-3;
+    }
+  }
+
+  /* === Touch Device Optimizations === */
+  @media (hover: none) and (pointer: coarse) {
+    .neo-interactive:hover {
+      transform: none;
+      box-shadow: var(--shadow-neo);
+    }
+    
+    .neo-hover-lift:hover {
+      transform: none;
+    }
+  }
+
+  /* === Enhanced Animations === */
   .neo-pulse {
     animation: neo-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
@@ -220,4 +311,136 @@
       transform: translate3d(0, -2px, 0);
     }
   }
+
+  .neo-shake {
+    animation: neo-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+
+  @keyframes neo-shake {
+    10%, 90% {
+      transform: translate3d(-1px, 0, 0);
+    }
+    20%, 80% {
+      transform: translate3d(2px, 0, 0);
+    }
+    30%, 50%, 70% {
+      transform: translate3d(-4px, 0, 0);
+    }
+    40%, 60% {
+      transform: translate3d(4px, 0, 0);
+    }
+  }
+
+  .neo-wiggle {
+    animation: neo-wiggle 0.8s ease-in-out infinite;
+  }
+
+  @keyframes neo-wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(1deg); }
+    75% { transform: rotate(-1deg); }
+  }
+
+  .neo-slide-up {
+    animation: neo-slide-up 0.3s ease-out;
+  }
+
+  @keyframes neo-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .neo-slide-in {
+    animation: neo-slide-in 0.3s ease-out;
+  }
+
+  @keyframes neo-slide-in {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .neo-fade-in {
+    animation: neo-fade-in 0.3s ease-out;
+  }
+
+  @keyframes neo-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .neo-scale-in {
+    animation: neo-scale-in 0.2s ease-out;
+  }
+
+  @keyframes neo-scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* === Loading Animations === */
+  .neo-loading-dots {
+    display: inline-flex;
+    gap: 2px;
+  }
+
+  .neo-loading-dots > div {
+    width: 4px;
+    height: 4px;
+    background: var(--color-primary);
+    border-radius: 50%;
+    animation: neo-loading-dots 1.4s ease-in-out infinite both;
+  }
+
+  .neo-loading-dots > div:nth-child(1) { animation-delay: -0.32s; }
+  .neo-loading-dots > div:nth-child(2) { animation-delay: -0.16s; }
+
+  @keyframes neo-loading-dots {
+    0%, 80%, 100% {
+      transform: scale(0);
+      opacity: 0.5;
+    }
+    40% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .neo-spinner {
+    animation: neo-spinner 1s linear infinite;
+  }
+
+  @keyframes neo-spinner {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* === Stagger Animations === */
+  .neo-stagger > * {
+    animation: neo-slide-up 0.3s ease-out;
+  }
+
+  .neo-stagger > *:nth-child(1) { animation-delay: 0s; }
+  .neo-stagger > *:nth-child(2) { animation-delay: 0.1s; }
+  .neo-stagger > *:nth-child(3) { animation-delay: 0.2s; }
+  .neo-stagger > *:nth-child(4) { animation-delay: 0.3s; }
+  .neo-stagger > *:nth-child(5) { animation-delay: 0.4s; }
+  .neo-stagger > *:nth-child(n+6) { animation-delay: 0.5s; }
 }
