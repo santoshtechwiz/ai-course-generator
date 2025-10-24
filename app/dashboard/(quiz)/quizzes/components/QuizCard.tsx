@@ -5,6 +5,8 @@ import { useMemo } from "react"
 import type React from "react"
 import { useState, memo, useCallback, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import neo from '@/components/neo/tokens'
 import { Button } from "@/components/ui/button"
 import { Clock, Star, BookOpen, Loader2, Play, Bookmark, Users, TrendingUp, Target } from "lucide-react"
 import Link from "next/link"
@@ -192,9 +194,9 @@ function QuizCardComponent({
 
             {/* Difficulty Badge */}
             <div className="flex justify-center">
-              <div className={cn("px-4 py-2 text-sm font-black rounded-lg border-4 border-black shadow-[4px_4px_0_#000]", difficulty.color)}>
+              <Badge variant="neutral" className={cn(neo.badge, "px-4 py-2 text-sm font-black", difficulty.color)}>
                 {difficulty.label}
-              </div>
+              </Badge>
             </div>
 
             {/* Stats Grid */}

@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { neo } from '@/components/neo/tokens'
+import neo from '@/components/neo/tokens'
 
 type DifficultyBadgeProps = {
   difficulty: string

@@ -696,12 +696,13 @@ const QuizActions = memo(
       return (
         <div className={cn("flex items-center gap-3 flex-wrap", className)}>
           {/* Status Badge - Neobrutalism styling */}
-          <Badge 
-            variant={isPublic ? "default" : "secondary"} 
+          <Badge
+            variant={isPublic ? "default" : "neutral"}
             className={cn(
+              neo.badge,
               "text-xs font-black border-3 shadow-[3px_3px_0px_0px_hsl(var(--border))] px-3 py-1.5 h-10 flex items-center gap-2",
-              isPublic 
-                ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-600 dark:border-emerald-400" 
+              isPublic
+                ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-600 dark:border-emerald-400"
                 : "bg-muted dark:bg-muted/50 text-muted-foreground border-border"
             )}
           >

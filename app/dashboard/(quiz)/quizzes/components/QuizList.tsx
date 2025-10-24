@@ -19,6 +19,7 @@ import {
 import { QuizCard } from "./QuizCard"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
+import neo from '@/components/neo/tokens'
 import { cn, getColorClasses } from "@/lib/utils"
 import {
   cardVariants,
@@ -213,8 +214,8 @@ function QuizListComponent({
           <div
             className={cn(
               "h-16 w-16 mb-6 rounded-xl bg-destructive/10",
-              "border-3 border-border neo-shadow",
-              "flex items-center justify-center",
+              neo.inner,
+              "neo-shadow flex items-center justify-center",
             )}
           >
             <AlertCircle className="h-8 w-8 text-destructive" strokeWidth={3} />
