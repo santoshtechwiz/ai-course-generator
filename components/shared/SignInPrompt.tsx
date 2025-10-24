@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { cn } from "@/lib/utils"
+import neo from "@/components/neo/tokens"
 import { Separator } from '@/components/ui/separator'
 import { 
   LogIn, 
@@ -172,7 +174,7 @@ export default function SignInPrompt({
               {config.description}
             </p>
             {feature && (
-              <Badge variant="outline" className="mt-2">
+              <Badge variant="neutral" className={cn(neo.badge, "mt-2")}>
                 Feature: {feature}
               </Badge>
             )}

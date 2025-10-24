@@ -3,6 +3,7 @@
 import React from "react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
+import neo from "@/components/neo/tokens"
 import {
   Share2,
   RotateCcw,
@@ -146,10 +147,10 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
               <div className="text-white/90 text-lg mb-4">{feedback}</div>
 
               <div className="flex items-center justify-center gap-3 flex-wrap">
-                <Badge className="bg-white/20 text-white border-white/30 font-bold uppercase">
+                <Badge variant="neutral" className={cn(neo.badge, "bg-white/20 text-white border-white/30 font-bold uppercase")}>
                   {getGradeEmoji(metrics.grade)} Grade: {metrics.grade}
                 </Badge>
-                <Badge className="bg-white/20 text-white border-white/30 font-bold uppercase">
+                <Badge variant="neutral" className={cn(neo.badge, "bg-white/20 text-white border-white/30 font-bold uppercase")}>
                   {metrics.isCorrect ? "✓ PERFECT" : `${metrics.accuracy}% CORRECT`}
                 </Badge>
               </div>

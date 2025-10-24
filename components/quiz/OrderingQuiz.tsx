@@ -24,6 +24,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
+import neo from "@/components/neo/tokens"
 import { CheckCircle2, XCircle, GripVertical, ChevronUp, ChevronDown, Hand, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -228,11 +229,12 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 space-y-3">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <Badge className="bg-primary text-primary-foreground border-3 border-border shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.1)] font-bold uppercase tracking-wide">
+                  <Badge variant="neutral" className={cn(neo.badge, "bg-primary text-primary-foreground border-3 border-border shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.1)] font-bold uppercase tracking-wide")}>
                     🎯 Ordering Quiz
                   </Badge>
                   {question.difficulty && (
-                    <Badge className={cn(
+                    <Badge variant="neutral" className={cn(
+                      neo.badge,
                       "border-3 border-border shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.1)] font-bold uppercase tracking-wide",
                       question.difficulty === 'easy' && "bg-green-500 text-white",
                       question.difficulty === 'medium' && "bg-yellow-500 text-black",

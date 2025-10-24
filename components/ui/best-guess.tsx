@@ -6,6 +6,7 @@ import { useMemo } from "react"
 import { CheckIcon, XIcon, AlertTriangleIcon, InfoIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import neo from "@/components/neo/tokens"
 import { getSimilarityFeedback } from "@/lib/utils/text-similarity"
 
 interface BestGuessProps {
@@ -100,7 +101,7 @@ export function BestGuess({
           {icon}
           <span className={`ml-2 font-medium ${color}`}>{label}</span>
           {similarityDisplay > 0 && (
-            <Badge variant="outline" className="ml-2 text-xs">
+            <Badge variant="neutral" className={cn(neo.badge, "ml-2 text-xs")}>
               Match: {similarityDisplay}%
             </Badge>
           )}
@@ -140,10 +141,10 @@ export function BestGuess({
             <p className="text-sm font-semibold text-muted-foreground mb-1">Other Acceptable Answers:</p>
             <div className="flex flex-wrap gap-2">
               {similarAnswers.map((answer, i) => (
-                <Badge 
-                  key={i} 
-                  variant="outline" 
-                  className="bg-background/50 text-muted-foreground py-1 px-2"
+                <Badge
+                  key={i}
+                  variant="neutral"
+                  className={cn(neo.badge, "bg-background/50 text-muted-foreground py-1 px-2")}
                 >
                   {answer}
                 </Badge>

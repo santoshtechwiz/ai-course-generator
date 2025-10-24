@@ -4,6 +4,7 @@ import type React from "react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
+import neo from '@/components/neo/tokens'
 import { GripVertical, ChevronUp, ChevronDown, Check, Star, ArrowDownUp, Hand } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -118,7 +119,11 @@ function DifficultyBadge({ difficulty }: { difficulty?: OrderingQuizQuestion["di
     medium: "bg-yellow-100 text-yellow-800 border-yellow-300",
     hard: "bg-red-100 text-red-800 border-red-300",
   }
-  return <Badge className={`text-xs font-semibold border-2 ${colors[difficulty]}`}>{difficulty}</Badge>
+  return (
+    <Badge variant="neutral" className={cn(neo.badge, "px-3 py-1.5 text-xs font-semibold", colors[difficulty])}>
+      {difficulty}
+    </Badge>
+  )
 }
 
 /* Minimal progress ring showing completion percentage */
@@ -513,9 +518,9 @@ function OrderingQuizSingleEnhanced({
         <CardHeader className="flex items-start justify-between gap-4 p-6 bg-gradient-to-br from-primary/5 to-transparent">
           <div className="flex-1">
             <div className="flex items-center gap-3 flex-wrap">
-              <Badge className="bg-primary/10 text-primary border border-primary/20">
-                Question {questionNumber} / {totalQuestions}
-              </Badge>
+              <Badge variant="neutral" className={cn(neo.badge, "bg-primary/10 text-primary border border-primary/20")}>
+                  Question {questionNumber} / {totalQuestions}
+                </Badge>
               <DifficultyBadge difficulty={question.difficulty} />
 
               {hasChanged && (
