@@ -314,11 +314,11 @@ function QuizListComponent({
   }
 
   return (
-    <div className="flex gap-6">
+    <div className="flex flex-col lg:flex-row gap-6">
       {/* Sidebar */}
       <motion.div
         {...fadeInUp(0.1)}
-        className="w-80 flex-shrink-0"
+        className="hidden lg:block w-80 flex-shrink-0"
       >
         <div className="sticky top-6">
           <QuizSidebar
