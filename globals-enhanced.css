@@ -1,0 +1,472 @@
+@import "tailwindcss";
+
+/* ===================================================================
+   🎯 ULTIMATE NEOBRUTALISM DESIGN SYSTEM
+   Bold • Playful • Geometric • High Contrast
+   =================================================================== */
+
+:root {
+  /* === CORE BRAND PALETTE === */
+  --neo-bg: #fffef7;
+  --neo-text: #0a0a0a;
+  --neo-border: #000000;
+  
+  /* === PRIMARY COLORS (Bold & Vibrant) === */
+  --neo-primary: #ff006e;      /* Hot Pink */
+  --neo-primary-hover: #d90058;
+  --neo-primary-light: #ff4d9a;
+  
+  --neo-secondary: #8338ec;    /* Electric Purple */
+  --neo-secondary-hover: #6c2bd9;
+  --neo-secondary-light: #a663f0;
+  
+  --neo-accent: #00f5d4;       /* Cyan */
+  --neo-accent-hover: #00d4b8;
+  --neo-accent-light: #4df7e0;
+  
+  /* === SURFACE COLORS === */
+  --neo-card: #ffffff;
+  --neo-card-hover: #fafafa;
+  --neo-muted: #f5f5f5;
+  --neo-muted-dark: #e5e5e5;
+  
+  /* === STATUS COLORS === */
+  --neo-success: #00c851;      /* Bright Green */
+  --neo-success-light: #4ddb7a;
+  --neo-warning: #ffbb33;      /* Bright Orange */
+  --neo-warning-light: #ffd700;
+  --neo-error: #ff4444;        /* Bright Red */
+  --neo-error-light: #ff7777;
+  --neo-info: #33b5e5;         /* Bright Blue */
+  --neo-info-light: #66c7ed;
+  
+  /* === EXTENDED PALETTE === */
+  --neo-yellow: #ffd60a;       /* Sunshine Yellow */
+  --neo-orange: #ff8500;       /* Vibrant Orange */
+  --neo-lime: #32d74b;         /* Electric Lime */
+  --neo-teal: #30d5c8;         /* Bright Teal */
+  --neo-indigo: #5856d6;       /* Deep Indigo */
+  --neo-pink: #ff2d92;         /* Neon Pink */
+  
+  /* === SHADOWS & DEPTH === */
+  --neo-shadow-sm: 2px 2px 0 var(--neo-border);
+  --neo-shadow-md: 4px 4px 0 var(--neo-border);
+  --neo-shadow-lg: 6px 6px 0 var(--neo-border);
+  --neo-shadow-xl: 8px 8px 0 var(--neo-border);
+  --neo-shadow-2xl: 12px 12px 0 var(--neo-border);
+  
+  /* === BORDERS === */
+  --neo-border-sm: 2px;
+  --neo-border-md: 3px;
+  --neo-border-lg: 4px;
+  --neo-border-xl: 5px;
+  
+  /* === RADIUS === */
+  --neo-radius-sm: 6px;
+  --neo-radius-md: 10px;
+  --neo-radius-lg: 16px;
+  --neo-radius-xl: 20px;
+  
+  /* === TYPOGRAPHY === */
+  --neo-font-weight-normal: 500;
+  --neo-font-weight-bold: 700;
+  --neo-font-weight-black: 900;
+  
+  /* === ANIMATIONS === */
+  --neo-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --neo-transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --neo-transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* === SPACING === */
+  --neo-space-xs: 0.5rem;
+  --neo-space-sm: 1rem;
+  --neo-space-md: 1.5rem;
+  --neo-space-lg: 2rem;
+  --neo-space-xl: 3rem;
+}
+
+/* === DARK MODE THEME === */
+.dark {
+  --neo-bg: #0f0f0f;
+  --neo-text: #fafafa;
+  --neo-border: #ffffff;
+  
+  /* Adjusted colors for dark mode */
+  --neo-primary: #ff4d9a;
+  --neo-primary-hover: #ff006e;
+  --neo-secondary: #a663f0;
+  --neo-secondary-hover: #8338ec;
+  --neo-accent: #4df7e0;
+  --neo-accent-hover: #00f5d4;
+  
+  --neo-card: #1a1a1a;
+  --neo-card-hover: #242424;
+  --neo-muted: #2a2a2a;
+  --neo-muted-dark: #333333;
+  
+  /* Dark mode shadows */
+  --neo-shadow-sm: 2px 2px 0 var(--neo-border);
+  --neo-shadow-md: 4px 4px 0 var(--neo-border);
+  --neo-shadow-lg: 6px 6px 0 var(--neo-border);
+  --neo-shadow-xl: 8px 8px 0 var(--neo-border);
+  --neo-shadow-2xl: 12px 12px 0 var(--neo-border);
+}
+
+/* ===================================================================
+   🎨 BASE LAYER
+   =================================================================== */
+@layer base {
+  * {
+    @apply border-[var(--neo-border)];
+  }
+  
+  html {
+    @apply scroll-smooth;
+  }
+  
+  body {
+    @apply bg-[var(--neo-bg)] text-[var(--neo-text)] 
+           font-medium antialiased selection:bg-[var(--neo-primary)] 
+           selection:text-white;
+  }
+  
+  /* Typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold text-[var(--neo-text)] leading-tight tracking-tight;
+  }
+  
+  h1 { @apply text-4xl md:text-5xl lg:text-6xl font-black; }
+  h2 { @apply text-3xl md:text-4xl lg:text-5xl font-bold; }
+  h3 { @apply text-2xl md:text-3xl lg:text-4xl font-bold; }
+  h4 { @apply text-xl md:text-2xl lg:text-3xl font-bold; }
+  h5 { @apply text-lg md:text-xl lg:text-2xl font-bold; }
+  h6 { @apply text-base md:text-lg lg:text-xl font-bold; }
+  
+  /* Links */
+  a {
+    @apply text-[var(--neo-primary)] font-semibold 
+           transition-colors duration-200 
+           hover:text-[var(--neo-primary-hover)] 
+           focus:outline-none focus:ring-4 focus:ring-[var(--neo-accent)];
+  }
+  
+  /* Form elements */
+  input, textarea, select {
+    @apply bg-[var(--neo-card)] border-[var(--neo-border-lg)] 
+           border-[var(--neo-border)] rounded-[var(--neo-radius-md)]
+           px-4 py-3 font-medium
+           focus:outline-none focus:ring-4 focus:ring-[var(--neo-accent)]
+           focus:border-[var(--neo-accent)]
+           transition-all duration-200;
+  }
+  
+  /* Buttons reset */
+  button {
+    @apply font-semibold transition-all duration-200;
+  }
+}
+
+/* ===================================================================
+   🧩 COMPONENT UTILITIES
+   =================================================================== */
+@layer components {
+  
+  /* === CARDS === */
+  .neo-card {
+    @apply bg-[var(--neo-card)] border-[var(--neo-border-lg)] 
+           border-[var(--neo-border)] rounded-[var(--neo-radius-lg)]
+           shadow-[var(--neo-shadow-lg)] p-6
+           transition-all duration-200 ease-out
+           hover:shadow-[var(--neo-shadow-xl)] 
+           hover:-translate-x-1 hover:-translate-y-1;
+  }
+  
+  .neo-card-sm {
+    @apply bg-[var(--neo-card)] border-[var(--neo-border-md)] 
+           border-[var(--neo-border)] rounded-[var(--neo-radius-md)]
+           shadow-[var(--neo-shadow-md)] p-4
+           transition-all duration-200 ease-out
+           hover:shadow-[var(--neo-shadow-lg)] 
+           hover:-translate-x-0.5 hover:-translate-y-0.5;
+  }
+  
+  .neo-card-lg {
+    @apply bg-[var(--neo-card)] border-[var(--neo-border-xl)] 
+           border-[var(--neo-border)] rounded-[var(--neo-radius-xl)]
+           shadow-[var(--neo-shadow-xl)] p-8
+           transition-all duration-300 ease-out
+           hover:shadow-[var(--neo-shadow-2xl)] 
+           hover:-translate-x-2 hover:-translate-y-2;
+  }
+  
+  /* === BUTTONS === */
+  .neo-btn {
+    @apply inline-flex items-center justify-center gap-2
+           font-bold px-6 py-3 rounded-[var(--neo-radius-md)]
+           border-[var(--neo-border-lg)] border-[var(--neo-border)]
+           shadow-[var(--neo-shadow-md)] 
+           transition-all duration-150 ease-out
+           hover:shadow-[var(--neo-shadow-lg)]
+           hover:-translate-x-1 hover:-translate-y-1
+           active:translate-x-1 active:translate-y-1 
+           active:shadow-none
+           focus:outline-none focus:ring-4 focus:ring-[var(--neo-accent)]
+           disabled:opacity-50 disabled:cursor-not-allowed
+           disabled:transform-none disabled:shadow-[var(--neo-shadow-md)];
+  }
+  
+  .neo-btn-primary {
+    @apply neo-btn bg-[var(--neo-primary)] text-white
+           hover:bg-[var(--neo-primary-hover)];
+  }
+  
+  .neo-btn-secondary {
+    @apply neo-btn bg-[var(--neo-secondary)] text-white
+           hover:bg-[var(--neo-secondary-hover)];
+  }
+  
+  .neo-btn-accent {
+    @apply neo-btn bg-[var(--neo-accent)] text-[var(--neo-text)]
+           hover:bg-[var(--neo-accent-hover)];
+  }
+  
+  .neo-btn-outline {
+    @apply neo-btn bg-transparent text-[var(--neo-text)]
+           hover:bg-[var(--neo-text)] hover:text-[var(--neo-bg)];
+  }
+  
+  .neo-btn-success {
+    @apply neo-btn bg-[var(--neo-success)] text-white
+           hover:bg-[var(--neo-success-light)];
+  }
+  
+  .neo-btn-warning {
+    @apply neo-btn bg-[var(--neo-warning)] text-[var(--neo-text)]
+           hover:bg-[var(--neo-warning-light)];
+  }
+  
+  .neo-btn-error {
+    @apply neo-btn bg-[var(--neo-error)] text-white
+           hover:bg-[var(--neo-error-light)];
+  }
+  
+  /* Button sizes */
+  .neo-btn-sm {
+    @apply px-4 py-2 text-sm rounded-[var(--neo-radius-sm)]
+           shadow-[var(--neo-shadow-sm)]
+           hover:shadow-[var(--neo-shadow-md)];
+  }
+  
+  .neo-btn-lg {
+    @apply px-8 py-4 text-lg rounded-[var(--neo-radius-lg)]
+           shadow-[var(--neo-shadow-lg)]
+           hover:shadow-[var(--neo-shadow-xl)];
+  }
+  
+  /* === INPUTS === */
+  .neo-input {
+    @apply bg-[var(--neo-card)] border-[var(--neo-border-lg)] 
+           border-[var(--neo-border)] rounded-[var(--neo-radius-md)]
+           px-4 py-3 font-medium shadow-[var(--neo-shadow-sm)]
+           focus:outline-none focus:ring-4 focus:ring-[var(--neo-accent)]
+           focus:border-[var(--neo-accent)] focus:shadow-[var(--neo-shadow-md)]
+           transition-all duration-200;
+  }
+  
+  /* === BADGES === */
+  .neo-badge {
+    @apply inline-flex items-center gap-1 px-3 py-1 
+           text-sm font-bold rounded-[var(--neo-radius-sm)]
+           border-[var(--neo-border-md)] border-[var(--neo-border)]
+           shadow-[var(--neo-shadow-sm)];
+  }
+  
+  .neo-badge-primary {
+    @apply neo-badge bg-[var(--neo-primary)] text-white;
+  }
+  
+  .neo-badge-secondary {
+    @apply neo-badge bg-[var(--neo-secondary)] text-white;
+  }
+  
+  .neo-badge-success {
+    @apply neo-badge bg-[var(--neo-success)] text-white;
+  }
+  
+  .neo-badge-warning {
+    @apply neo-badge bg-[var(--neo-warning)] text-[var(--neo-text)];
+  }
+  
+  .neo-badge-error {
+    @apply neo-badge bg-[var(--neo-error)] text-white;
+  }
+  
+  /* === SPECIAL EFFECTS === */
+  .neo-glow {
+    @apply relative overflow-hidden;
+  }
+  
+  .neo-glow::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-[var(--neo-primary)] 
+           via-[var(--neo-accent)] to-[var(--neo-secondary)]
+           opacity-20 blur-xl -z-10;
+  }
+  
+  .neo-tilt {
+    @apply transition-transform duration-300 ease-out
+           hover:rotate-1 hover:scale-105;
+  }
+  
+  .neo-bounce {
+    animation: neo-bounce 2s infinite;
+  }
+  
+  .neo-pulse {
+    animation: neo-pulse 2s infinite;
+  }
+  
+  .neo-wiggle {
+    animation: neo-wiggle 1s ease-in-out infinite;
+  }
+  
+  /* === LAYOUT UTILITIES === */
+  .neo-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .neo-grid {
+    @apply grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3;
+  }
+  
+  .neo-flex-center {
+    @apply flex items-center justify-center;
+  }
+  
+  .neo-flex-between {
+    @apply flex items-center justify-between;
+  }
+  
+  /* === QUIZ-SPECIFIC COMPONENTS === */
+  .neo-quiz-option {
+    @apply neo-card cursor-pointer transition-all duration-200
+           hover:bg-[var(--neo-muted)] 
+           focus:outline-none focus:ring-4 focus:ring-[var(--neo-accent)]
+           active:scale-95;
+  }
+  
+  .neo-quiz-option-selected {
+    @apply bg-[var(--neo-primary)] text-white border-[var(--neo-primary)];
+  }
+  
+  .neo-quiz-option-correct {
+    @apply bg-[var(--neo-success)] text-white border-[var(--neo-success)];
+  }
+  
+  .neo-quiz-option-incorrect {
+    @apply bg-[var(--neo-error)] text-white border-[var(--neo-error)];
+  }
+  
+  .neo-progress-bar {
+    @apply w-full h-4 bg-[var(--neo-muted)] rounded-[var(--neo-radius-lg)]
+           border-[var(--neo-border-md)] border-[var(--neo-border)]
+           shadow-[var(--neo-shadow-sm)] overflow-hidden;
+  }
+  
+  .neo-progress-fill {
+    @apply h-full bg-gradient-to-r from-[var(--neo-primary)] to-[var(--neo-accent)]
+           transition-all duration-500 ease-out;
+  }
+}
+
+/* ===================================================================
+   🎭 ANIMATIONS
+   =================================================================== */
+@keyframes neo-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes neo-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes neo-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(1deg); }
+  75% { transform: rotate(-1deg); }
+}
+
+@keyframes neo-slide-in {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes neo-slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes neo-scale-in {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* ===================================================================
+   🎯 UTILITY ANIMATIONS
+   =================================================================== */
+.neo-animate-slide-in {
+  animation: neo-slide-in 0.3s ease-out;
+}
+
+.neo-animate-slide-up {
+  animation: neo-slide-up 0.3s ease-out;
+}
+
+.neo-animate-scale-in {
+  animation: neo-scale-in 0.3s ease-out;
+}
+
+/* ===================================================================
+   ♿ ACCESSIBILITY & REDUCED MOTION
+   =================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .neo-tilt:hover {
+    transform: none;
+  }
+}
+
+/* ===================================================================
+   📱 RESPONSIVE ADJUSTMENTS
+   =================================================================== */
+@media (max-width: 640px) {
+  .neo-card, .neo-card-lg {
+    @apply p-4;
+  }
+  
+  .neo-btn {
+    @apply px-4 py-2 text-sm;
+  }
+  
+  .neo-btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+}
+
+/* ===================================================================
+   🎨 PRINT STYLES
+   =================================================================== */
+@media print {
+  .neo-card, .neo-btn {
+    @apply shadow-none border-2 border-black;
+  }
+}
