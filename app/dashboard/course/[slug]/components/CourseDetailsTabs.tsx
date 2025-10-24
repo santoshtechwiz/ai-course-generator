@@ -4,33 +4,21 @@ import { useState, useCallback, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { createSelector } from "@reduxjs/toolkit"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { neo } from "@/components/neo/tokens"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import {
   FileText,
   MessageSquare,
   Award,
-  TrendingUp,
   BookmarkIcon,
-  Clock,
   Target,
   Zap,
   Trophy,
   Star,
   PlayCircle,
-  CheckCircle,
-  Calendar,
-  Flame,
   StickyNote,
-  Edit3,
-  Plus,
-  Lock,
-  Search,
 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import type { RootState } from "@/store"
@@ -42,17 +30,15 @@ const CourseDetailsQuiz = dynamic(() => import("./CourseQuiz"), { ssr: false })
 const CourseAISummary = dynamic(() => import("./CourseSummary"), { ssr: false })
 const CertificateGenerator = dynamic(() => import("./CertificateGenerator"), { ssr: false })
 import { PDFDownloadLink } from "@react-pdf/renderer"
-import { motion, AnimatePresence } from "framer-motion"
-import { cn } from "@/lib/utils"
+// Reduced framer-motion usage for performance; prefer CSS transitions for simple UI transitions
 import { useAuth } from "@/modules/auth"
-import { NoteModal } from "./modals/NoteModal"
-import { DeleteNoteDialog } from "./modals/DeleteNoteDialog"
 import { useNotes } from "@/hooks/use-notes"
 import { useBookmarks } from "@/hooks/use-bookmarks"
-import type { Bookmark } from "@prisma/client"
 import GlassDoorLock from "@/components/shared/GlassDoorLock"
 import { useFeatureAccess } from "@/hooks/useFeatureAccess"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
+import BookmarksPanel from "./BookmarksPanel"
+import NotesPanel from "./NotesPanel"
 
 // ✨ Skeleton loader component for smooth tab transitions
 const TabSkeleton = () => (
@@ -211,7 +197,6 @@ export default function CourseDetailsTabs({
     courseId: course.id,
     chapterId: currentChapter?.id,
   })
-
   // Enhanced course statistics calculation - use external data if available
   const courseStats = useMemo(() => {
     const totalChapters = course.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0) || 0
@@ -322,27 +307,27 @@ export default function CourseDetailsTabs({
     switch (level) {
       case "Expert":
         return {
-          badge: "bg-accent text-foreground border-4 border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
+          badge: "bg-accent text-foreground border border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
           icon: Star,
         }
       case "Advanced":
         return {
-          badge: "bg-chart-1 text-foreground border-4 border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
+          badge: "bg-chart-1 text-foreground border border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
           icon: Trophy,
         }
       case "Intermediate":
         return {
-          badge: "bg-chart-3 text-foreground border-4 border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
+          badge: "bg-chart-3 text-foreground border border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
           icon: Target,
         }
       case "Novice":
         return {
-          badge: "bg-chart-2 text-foreground border-4 border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
+          badge: "bg-chart-2 text-foreground border border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
           icon: Zap,
         }
       default:
         return {
-          badge: "bg-muted text-foreground border-4 border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
+          badge: "bg-muted text-foreground border border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
           icon: PlayCircle,
         }
     }
@@ -364,11 +349,7 @@ export default function CourseDetailsTabs({
           >
             {loading ? (
               <>
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                  className="w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2"
-                />
+                <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2 inline-block animate-spin" />
                 Preparing...
               </>
             ) : (
@@ -383,231 +364,34 @@ export default function CourseDetailsTabs({
     )
   }
 
-  const ProgressVisualization = () => {
-    const skillStyling = getSkillLevelStyling(courseStats.skillLevel)
-    const SkillIcon = skillStyling.icon
-
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-center">
-          <div className="relative w-48 h-48 border-4 border-foreground bg-background shadow-[8px_8px_0px_0px] shadow-foreground">
-            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="50" stroke="currentColor" strokeWidth="8" fill="none" className="text-muted" />
-              <motion.circle
-                cx="60"
-                cy="60"
-                r="50"
-                stroke="currentColor"
-                strokeWidth="8"
-                fill="none"
-                strokeLinecap="butt"
-                strokeDasharray={`${2 * Math.PI * 50}`}
-                initial={{ strokeDashoffset: 2 * Math.PI * 50 }}
-                animate={{
-                  strokeDashoffset: 2 * Math.PI * 50 * (1 - courseStats.progressPercentage / 100),
-                }}
-                transition={{ duration: 1, ease: "linear" }}
-                className="text-foreground"
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-5xl font-black text-foreground">{courseStats.progressPercentage}%</div>
-                <div className="text-sm font-bold text-foreground uppercase mt-1">Complete</div>
-                <div className="text-xs font-bold text-muted-foreground mt-1">
-                  {courseStats.completedChapters}/{courseStats.totalChapters}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-chart-1 border-4 border-foreground p-4 shadow-[4px_4px_0px_0px] shadow-foreground hover:shadow-[6px_6px_0px_0px] hover:shadow-foreground transition-shadow"
-          >
-            <div className="flex flex-col gap-2">
-              <div className="w-12 h-12 bg-background border-4 border-foreground flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-foreground" />
-              </div>
-              <div className="text-3xl font-black text-foreground">{courseStats.completedChapters}</div>
-              <div className="text-xs font-black text-foreground uppercase">Completed</div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-chart-3 border-4 border-foreground p-4 shadow-[4px_4px_0px_0px] shadow-foreground hover:shadow-[6px_6px_0px_0px] hover:shadow-foreground transition-shadow"
-          >
-            <div className="flex flex-col gap-2">
-              <div className="w-12 h-12 bg-background border-4 border-foreground flex items-center justify-center">
-                <Clock className="h-6 w-6 text-foreground" />
-              </div>
-              <div className="text-3xl font-black text-foreground">{formatDuration(courseStats.estimatedTimeLeft)}</div>
-              <div className="text-xs font-black text-foreground uppercase">Remaining</div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-chart-2 border-4 border-foreground p-4 shadow-[4px_4px_0px_0px] shadow-foreground hover:shadow-[6px_6px_0px_0px] hover:shadow-foreground transition-shadow"
-          >
-            <div className="flex flex-col gap-2">
-              <div className="w-12 h-12 bg-background border-4 border-foreground flex items-center justify-center">
-                <Flame className="h-6 w-6 text-foreground" />
-              </div>
-              <div className="text-3xl font-black text-foreground">{courseStats.learningStreak}</div>
-              <div className="text-xs font-black text-foreground uppercase">Day Streak</div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-chart-4 border-4 border-foreground p-4 shadow-[4px_4px_0px_0px] shadow-foreground hover:shadow-[6px_6px_0px_0px] hover:shadow-foreground transition-shadow"
-          >
-            <div className="flex flex-col gap-2">
-              <div className="w-12 h-12 bg-background border-4 border-foreground flex items-center justify-center">
-                <BookmarkIcon className="h-6 w-6 text-foreground" />
-              </div>
-              <div className="text-3xl font-black text-foreground">{courseStats.totalBookmarks}</div>
-              <div className="text-xs font-black text-foreground uppercase">Bookmarks</div>
-            </div>
-          </motion.div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="bg-background border-4 border-foreground p-6 shadow-[4px_4px_0px_0px] shadow-foreground hover:shadow-[6px_6px_0px_0px] hover:shadow-foreground transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-base font-black text-foreground uppercase">Study Time This Week</span>
-              <div className="w-10 h-10 bg-foreground border-4 border-foreground flex items-center justify-center">
-                <Calendar className="h-5 w-5 text-background" />
-              </div>
-            </div>
-            <div className="text-4xl font-black text-foreground mb-2">
-              {formatDuration(courseStats.studyTimeThisWeek)}
-            </div>
-            <div className="text-sm font-bold text-muted-foreground uppercase">Keep it up!</div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="bg-background border-4 border-foreground p-6 shadow-[4px_4px_0px_0px] shadow-foreground hover:shadow-[6px_6px_0px_0px] hover:shadow-foreground transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-base font-black text-foreground uppercase">Quiz Average</span>
-              <div className="w-10 h-10 bg-foreground border-4 border-foreground flex items-center justify-center">
-                <Star className="h-5 w-5 text-background" />
-              </div>
-            </div>
-            <div className="text-4xl font-black text-foreground mb-2">{courseStats.averageScore}%</div>
-            <div className="text-sm font-bold text-muted-foreground uppercase">
-              {courseStats.averageScore >= 80
-                ? "Excellent!"
-                : courseStats.averageScore >= 60
-                  ? "Good work!"
-                  : "Keep practicing!"}
-            </div>
-          </motion.div>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.7 }}
-          className="text-center"
-        >
-          <Badge
-            variant="default"
-            className={cn(
-              "px-8 py-4 text-lg font-black uppercase tracking-wider hover:shadow-[8px_8px_0px_0px] hover:shadow-foreground transition-shadow cursor-pointer",
-              skillStyling.badge,
-            )}
-          >
-            <SkillIcon className="h-6 w-6 mr-3" />
-            {courseStats.skillLevel} Level
-          </Badge>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="bg-background border-4 border-foreground p-6 shadow-[4px_4px_0px_0px] shadow-foreground"
-        >
-          <h4 className="text-lg font-black text-foreground mb-4 flex items-center gap-2 uppercase">
-            <TrendingUp className="h-5 w-5 text-foreground" />
-            Course Progress
-          </h4>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-bold text-foreground uppercase">Completed</span>
-              <span className="font-black text-foreground">
-                {formatDuration(courseStats.completedDuration)} / {formatDuration(courseStats.totalDuration)}
-              </span>
-            </div>
-            <div className="relative h-6 bg-muted border-4 border-foreground">
-              <motion.div
-                className="absolute top-0 left-0 h-full bg-foreground"
-                initial={{ width: 0 }}
-                animate={{ width: `${(courseStats.completedDuration / courseStats.totalDuration) * 100}%` }}
-                transition={{ duration: 1, ease: "linear" }}
-              />
-            </div>
-            <div className="flex justify-between text-xs font-black text-foreground uppercase">
-              <span>0%</span>
-              <span>{Math.round((courseStats.completedDuration / courseStats.totalDuration) * 100)}%</span>
-              <span>100%</span>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    )
-  }
-
   return (
     <div className="h-full w-full flex flex-col">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full w-full flex flex-col">
-        <TabsList className="sticky top-0 z-10 grid w-full grid-cols-4 h-auto bg-neo-background border-4 border-neo-border p-2 gap-3 shadow-[4px_4px_0px_0px_var(--neo-border)]">
+  <TabsList className={cn("sticky top-[var(--course-sticky-offset)] z-50 grid w-full grid-cols-4 h-auto bg-neo-background p-2 gap-3 shadow-[4px_4px_0px_0px_var(--neo-border)] overflow-visible backdrop-blur-sm", neo.inner)}>
           <TabsTrigger
             value="summary"
-            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border-4 data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border-4 border-transparent hover:border-neo-border px-3 md:px-4"
+            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 min-h-[56px] leading-none data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border border-transparent hover:border-neo-border px-3 md:px-4"
           >
             <FileText className="h-5 w-5 md:h-6 md:w-6" />
             <span className="tracking-tight">Summary</span>
           </TabsTrigger>
           <TabsTrigger
             value="quiz"
-            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border-4 data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border-4 border-transparent hover:border-neo-border px-3 md:px-4"
+            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border border-transparent hover:border-neo-border px-3 md:px-4"
           >
             <MessageSquare className="h-5 w-5 md:h-6 md:w-6" />
             <span className="tracking-tight">Quiz</span>
           </TabsTrigger>
           <TabsTrigger
             value="notes"
-            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border-4 data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border-4 border-transparent hover:border-neo-border px-3 md:px-4"
+            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border border-transparent hover:border-neo-border px-3 md:px-4"
           >
             <StickyNote className="h-5 w-5 md:h-6 md:w-6" />
             <span className="tracking-tight">Notes</span>
           </TabsTrigger>
           <TabsTrigger
             value="bookmarks"
-            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border-4 data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border-4 border-transparent hover:border-neo-border px-3 md:px-4"
+            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border border-transparent hover:border-neo-border px-3 md:px-4"
           >
             <BookmarkIcon className="h-5 w-5 md:h-6 md:w-6" />
             <span className="tracking-tight">Bookmarks</span>
@@ -615,64 +399,46 @@ export default function CourseDetailsTabs({
         </TabsList>
 
         <TabsContent value="summary" className="flex-1 overflow-auto w-full p-0 mt-6">
-          <AnimatePresence mode="wait">
-            {isTabLoading ? (
-              <motion.div
-                key="summary-loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                <TabSkeleton />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="summary-content"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                {currentChapter ? (
-                  <GlassDoorLock
-                    isLocked={!canAccessSummary}
-                    previewRatio={0.2}
-                    reason={!user ? "Sign in to continue learning" : "Upgrade your plan to unlock this content"}
-                    className="p-0"
-                    blurIntensity={canAccessSummary ? "light" : "medium"}
-                  >
-                    <div className="p-6 border-4 border-neo-border bg-neo-background shadow-[4px_4px_0px_0px_var(--neo-border)]">
-                      <CourseAISummary
-                        chapterId={currentChapter.id}
-                        name={currentChapter.title || currentChapter.name || "Chapter Summary"}
-                        existingSummary={currentChapter.summary || null}
-                        isAdmin={isAdmin}
-                      />
-                    </div>
-                  </GlassDoorLock>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-muted-foreground p-8">
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="text-center space-y-4"
-                    >
-                      <div className="w-24 h-24 bg-muted border-4 border-neo-border flex items-center justify-center mx-auto">
-                        <FileText className="h-12 w-12 opacity-50" />
-                      </div>
-                      <div>
-                        <h3 className="text-2xl font-black mb-3 uppercase">No Chapter Selected</h3>
-                        <p className="text-base text-muted-foreground font-bold">
-                          Select a chapter from the playlist to view AI-generated summary and insights
-                        </p>
-                      </div>
-                    </motion.div>
+          {isTabLoading ? (
+            <div className="transition-opacity duration-150">
+              <TabSkeleton />
+            </div>
+          ) : (
+            <div className="transition-transform transition-opacity duration-200">
+              {currentChapter ? (
+                <GlassDoorLock
+                  isLocked={!canAccessSummary}
+                  previewRatio={0.2}
+                  reason={!user ? "Sign in to continue learning" : "Upgrade your plan to unlock this content"}
+                  className="p-0"
+                  blurIntensity={canAccessSummary ? "light" : "medium"}
+                >
+                  <div className={`p-6 bg-neo-background shadow-[4px_4px_0px_0px_var(--neo-border)] ${neo.inner}`}>
+                    <CourseAISummary
+                      chapterId={currentChapter.id}
+                      name={currentChapter.title || currentChapter.name || "Chapter Summary"}
+                      existingSummary={currentChapter.summary || null}
+                      isAdmin={isAdmin}
+                    />
                   </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                </GlassDoorLock>
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground p-8">
+                  <div className="text-center space-y-4 transition-transform duration-200">
+                    <div className={`w-24 h-24 bg-muted flex items-center justify-center mx-auto ${neo.inner}`}>
+                      <FileText className="h-12 w-12 opacity-50" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black mb-3 uppercase">No Chapter Selected</h3>
+                      <p className="text-base text-muted-foreground font-bold">
+                        Select a chapter from the playlist to view AI-generated summary and insights
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="quiz" className="flex-1 overflow-auto w-full p-0 mt-6">
@@ -683,7 +449,7 @@ export default function CourseDetailsTabs({
               className="p-0"
               blurIntensity={canAccessQuiz ? "light" : "medium"}
             >
-              <div className="p-6 border-4 border-neo-border bg-neo-background shadow-[4px_4px_0px_0px_var(--neo-border)]">
+                  <div className={`p-6 bg-neo-background shadow-[4px_4px_0px_0px_var(--neo-border)] ${neo.inner}`}>
                 <CourseDetailsQuiz
                   key={currentChapter.id}
                   course={course}
@@ -700,12 +466,8 @@ export default function CourseDetailsTabs({
             </GlassDoorLock>
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center space-y-4"
-              >
-                <div className="w-24 h-24 bg-muted border-4 border-neo-border flex items-center justify-center mx-auto">
+                <div className="text-center space-y-4 transition-transform duration-200">
+                <div className={`w-24 h-24 bg-muted flex items-center justify-center mx-auto ${neo.inner}`}>
                   <MessageSquare className="h-12 w-12 opacity-50" />
                 </div>
                 <div>
@@ -714,306 +476,33 @@ export default function CourseDetailsTabs({
                     Select a chapter from the playlist to take interactive quizzes and test your knowledge
                   </p>
                 </div>
-              </motion.div>
+              </div>
             </div>
           )}
         </TabsContent>
 
         <TabsContent value="bookmarks" className="flex-1 overflow-auto w-full p-0 mt-6">
-          <Card className="border-4 border-neo-border shadow-[6px_6px_0px_0px_var(--neo-border)] bg-neo-background">
-            <CardHeader className="pb-4 px-6 py-6 border-b-4 border-neo-border">
-              <CardTitle className="flex items-center gap-3 text-2xl font-black uppercase tracking-tight">
-                <BookmarkIcon className="h-7 w-7 text-foreground" />
-                Video Bookmarks
-              </CardTitle>
-              <CardDescription className="text-sm font-bold text-muted-foreground uppercase tracking-tight">
-                {bookmarks.length > 0
-                  ? `${bookmarks.length} bookmark${bookmarks.length !== 1 ? "s" : ""} saved`
-                  : "Press 'B' to bookmark moments"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 px-6 pb-6 pt-6">
-              {isAuthenticated && bookmarks.length > 0 ? (
-                <div className="space-y-4">
-                  {bookmarks.map((bookmark, index) => (
-                    <motion.div
-                      key={bookmark.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      onClick={() => handleSeekToBookmark(bookmark.time)}
-                      className="group flex items-center justify-between p-5 bg-neo-background border-4 border-neo-border cursor-pointer hover:shadow-[6px_6px_0px_0px_var(--neo-border)] transition-shadow"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-neo-border flex items-center justify-center text-neo-background font-black text-xl border-4 border-neo-border">
-                          {index + 1}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <Badge
-                              variant="default"
-                              className="bg-yellow-300 text-black border-4 border-neo-border text-base px-3 py-1 font-black uppercase"
-                            >
-                              {formatTime(bookmark.time)}
-                            </Badge>
-                          </div>
-                          <p className="font-black text-foreground text-lg uppercase tracking-tight">
-                            {bookmark.title}
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleRemoveBookmark(bookmark.id)
-                        }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity border-4 border-neo-border hover:bg-red-500 hover:text-white font-black uppercase"
-                      >
-                        Remove
-                      </Button>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : isAuthenticated ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-center py-16"
-                >
-                  <div className="w-28 h-28 bg-muted border-4 border-neo-border flex items-center justify-center mx-auto mb-8">
-                    <BookmarkIcon className="h-14 w-14 text-foreground" />
-                  </div>
-                  <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">No bookmarks yet</h3>
-                  <p className="text-muted-foreground mb-8 max-w-sm mx-auto text-base font-bold">
-                    Press 'B' while watching to save important moments
-                  </p>
-                  <Badge
-                    variant="default"
-                    className="bg-neo-border text-neo-background border-4 border-neo-border text-lg px-6 py-3 font-black uppercase"
-                  >
-                    Press B
-                  </Badge>
-                </motion.div>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-center py-16"
-                >
-                  <div className="w-28 h-28 bg-muted border-4 border-neo-border flex items-center justify-center mx-auto mb-8">
-                    <Lock className="h-14 w-14 text-foreground" />
-                  </div>
-                  <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">Sign in required</h3>
-                  <p className="text-muted-foreground mb-8 text-base font-bold">Create an account to save bookmarks</p>
-                  <Button
-                    className="bg-neo-border text-neo-background border-4 border-neo-border hover:shadow-[6px_6px_0px_0px_var(--neo-border)] font-black uppercase text-lg px-8 py-6"
-                    size="lg"
-                  >
-                    Sign In
-                  </Button>
-                </motion.div>
-              )}
-            </CardContent>
-          </Card>
+          <BookmarksPanel
+            bookmarks={bookmarks}
+            isAuthenticated={isAuthenticated}
+            handleSeekToBookmark={handleSeekToBookmark}
+            handleRemoveBookmark={handleRemoveBookmark}
+            formatTime={formatTime}
+          />
         </TabsContent>
 
         <TabsContent value="notes" className="flex-1 overflow-auto w-full p-0 mt-6">
-          <Card className="border-4 border-neo-border shadow-[6px_6px_0px_0px_var(--neo-border)] bg-neo-background">
-            <CardHeader className="pb-4 px-6 py-6 border-b-4 border-neo-border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-3 text-2xl font-black uppercase tracking-tight">
-                    <StickyNote className="h-7 w-7 text-foreground" />
-                    Course Notes
-                  </CardTitle>
-                  <CardDescription className="text-sm font-bold text-muted-foreground uppercase tracking-tight mt-2">
-                    {filteredNotes.length > 0
-                      ? `${filteredNotes.length} note${filteredNotes.length !== 1 ? "s" : ""} ${notesSearchQuery || notesFilter !== "all" ? "found" : "saved"}`
-                      : "Track important insights"}
-                  </CardDescription>
-                </div>
-                {isAuthenticated && (
-                  <NoteModal
-                    courseId={course.id}
-                    chapterId={currentChapter?.id}
-                    trigger={
-                      <Button
-                        size="lg"
-                        className="bg-neo-border text-neo-background border-4 border-neo-border hover:shadow-[6px_6px_0px_0px_var(--neo-border)] font-black uppercase px-6"
-                      >
-                        <Plus className="h-5 w-5 mr-2" />
-                        Add Note
-                      </Button>
-                    }
-                  />
-                )}
-              </div>
-
-              {isAuthenticated && notes.length > 0 && (
-                <div className="flex items-center gap-3 mt-6">
-                  <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-foreground" />
-                    <Input
-                      placeholder="Search notes..."
-                      value={notesSearchQuery}
-                      onChange={(e) => setNotesSearchQuery(e.target.value)}
-                      className="pl-12 border-4 border-neo-border font-bold h-12 text-base"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant={notesFilter === "all" ? "default" : "outline"}
-                      size="lg"
-                      onClick={() => setNotesFilter("all")}
-                      className="text-sm font-black uppercase border-4 border-neo-border"
-                    >
-                      All
-                    </Button>
-                    <Button
-                      variant={notesFilter === "recent" ? "default" : "outline"}
-                      size="lg"
-                      onClick={() => setNotesFilter("recent")}
-                      className="text-sm font-black uppercase border-4 border-neo-border"
-                    >
-                      Recent
-                    </Button>
-                    <Button
-                      variant={notesFilter === "chapter" ? "default" : "outline"}
-                      size="lg"
-                      onClick={() => setNotesFilter("chapter")}
-                      className="text-sm font-black uppercase border-4 border-neo-border"
-                    >
-                      Chapter
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-4 px-6 pb-6 pt-6">
-              {isAuthenticated && filteredNotes.length > 0 ? (
-                <ScrollArea className="h-[600px] pr-4">
-                  <div className="space-y-4">
-                    {filteredNotes.map(
-                      (
-                        note: Bookmark & {
-                          course?: { id: number; title: string; slug: string } | null
-                          chapter?: { id: number; title: string } | null
-                        },
-                        index: number,
-                      ) => (
-                        <motion.div
-                          key={note.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="group p-5 bg-neo-background border-4 border-neo-border hover:shadow-[6px_6px_0px_0px_var(--neo-border)] transition-shadow"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 bg-green-300 border-4 border-neo-border flex items-center justify-center">
-                                  <StickyNote className="h-6 w-6 text-foreground" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-3 text-sm font-black text-foreground mb-1">
-                                    <Clock className="h-4 w-4" />
-                                    <span className="uppercase">{new Date(note.createdAt).toLocaleDateString()}</span>
-                                    {note.chapter && (
-                                      <>
-                                        <Separator orientation="vertical" className="h-4 bg-neo-border" />
-                                        <span className="truncate uppercase">{note.chapter.title}</span>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="bg-yellow-100 border-4 border-neo-border p-4">
-                                <p className="text-foreground whitespace-pre-wrap text-base font-bold">{note.note}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <NoteModal
-                                courseId={course.id}
-                                chapterId={currentChapter?.id}
-                                existingNote={note}
-                                trigger={
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-10 w-10 p-0 border-4 border-neo-border hover:bg-blue-300 font-black"
-                                  >
-                                    <Edit3 className="h-5 w-5" />
-                                  </Button>
-                                }
-                              />
-                              <DeleteNoteDialog
-                                noteId={note.id.toString()}
-                                noteContent={note.note || ""}
-                                onDelete={deleteNote}
-                              />
-                            </div>
-                          </div>
-                        </motion.div>
-                      ),
-                    )}
-                  </div>
-                </ScrollArea>
-              ) : isAuthenticated ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-center py-16"
-                >
-                  <div className="w-28 h-28 bg-muted border-4 border-neo-border flex items-center justify-center mx-auto mb-8">
-                    <StickyNote className="h-14 w-14 text-foreground" />
-                  </div>
-                  <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">
-                    {notesSearchQuery || notesFilter !== "all" ? "No notes found" : "No notes yet"}
-                  </h3>
-                  <p className="text-muted-foreground mb-8 max-w-sm mx-auto text-base font-bold">
-                    {notesSearchQuery || notesFilter !== "all"
-                      ? "Try adjusting your search"
-                      : "Start taking notes to capture insights"}
-                  </p>
-                  {!notesSearchQuery && notesFilter === "all" && (
-                    <NoteModal
-                      courseId={course.id}
-                      chapterId={currentChapter?.id}
-                      trigger={
-                        <Button
-                          className="bg-neo-border text-neo-background border-4 border-neo-border hover:shadow-[6px_6px_0px_0px_var(--neo-border)] font-black uppercase text-lg px-8 py-6"
-                          size="lg"
-                        >
-                          <StickyNote className="h-6 w-6 mr-3" />
-                          Create Note
-                        </Button>
-                      }
-                    />
-                  )}
-                </motion.div>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-center py-16"
-                >
-                  <div className="w-28 h-28 bg-muted border-4 border-neo-border flex items-center justify-center mx-auto mb-8">
-                    <Lock className="h-14 w-14 text-foreground" />
-                  </div>
-                  <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">Sign in required</h3>
-                  <p className="text-muted-foreground mb-8 text-base font-bold">Create an account to save notes</p>
-                  <Button
-                    className="bg-neo-border text-neo-background border-4 border-neo-border hover:shadow-[6px_6px_0px_0px_var(--neo-border)] font-black uppercase text-lg px-8 py-6"
-                    size="lg"
-                  >
-                    Sign In
-                  </Button>
-                </motion.div>
-              )}
-            </CardContent>
-          </Card>
+          <NotesPanel
+            filteredNotes={filteredNotes}
+            isAuthenticated={isAuthenticated}
+            notesSearchQuery={notesSearchQuery}
+            setNotesSearchQuery={setNotesSearchQuery}
+            notesFilter={notesFilter}
+            setNotesFilter={setNotesFilter}
+            deleteNote={deleteNote}
+            courseId={course.id}
+            currentChapterId={currentChapter?.id}
+          />
         </TabsContent>
       </Tabs>
     </div>

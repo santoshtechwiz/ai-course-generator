@@ -1,0 +1,14 @@
+<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="flashcardTitle">
+  <title id="flashcardTitle">Flashcard Illustration</title>
+  <rect width="240" height="240" rx="24" fill="#FFFBEB"/>
+  <g transform="translate(28,30)">
+    <rect x="0" y="0" width="84" height="60" rx="8" fill="#FDE68A" />
+    <rect x="96" y="0" width="84" height="60" rx="8" fill="#FDE68A" />
+    <rect x="0" y="76" width="180" height="36" rx="6" fill="#92400E" />
+    <text x="90" y="102" font-family="Inter, system-ui" font-weight="700" font-size="14" fill="#fff" text-anchor="middle">Flip</text>
+  </g>
+  <g transform="translate(20,160)">
+    <rect x="0" y="0" width="200" height="44" rx="10" fill="#F59E0B" />
+    <text x="100" y="28" font-family="Inter, system-ui" font-weight="700" font-size="14" fill="#fff" text-anchor="middle">Flashcards</text>
+  </g>
+</svg>

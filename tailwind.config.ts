@@ -10,22 +10,23 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Neobrutal base palette
-        background: "#f5f5f5",
-        foreground: "#111",
-        accent: "#2563eb", // royal blue pop
-        accentHover: "#1e40af",
-        card: "#ffffff",
-        border: "#111",
-        muted: "#888",
-        success: "#16a34a",
-        danger: "#dc2626",
+        // Neobrutal base palette — aligned to globals.css variables
+        background: "#fffdf5", // --color-bg
+        foreground: "#0a0a0a", // --color-text
+        accent: "#ff007f", // --color-primary (neobrutal pink)
+        accentHover: "#e60076",
+        card: "#ffffff", // --color-card
+        border: "#000000", // --color-border
+        muted: "#f2f2f2", // --color-muted
+        success: "#00b341", // --color-success
+        warning: "#ffb300",
+        danger: "#ff3b3b",
 
         // Dark mode
-        darkBackground: "#0e0e0e",
-        darkForeground: "#f5f5f5",
-        darkCard: "#1a1a1a",
-        darkBorder: "#fff",
+        darkBackground: "#1a1a1a", // matches .dark in globals.css
+        darkForeground: "#fafafa",
+        darkCard: "#2b2b2b",
+        darkBorder: "#fafafa",
       },
 
       boxShadow: {
@@ -60,7 +61,8 @@ module.exports = {
   },
 
   plugins: [
-    plugin(function ({ addComponents }) {
+    plugin(function (tw: any) {
+      const { addComponents } = tw;
       addComponents({
         ".card": {
           "@apply bg-card border-4 border-border shadow-neo p-5 rounded-lg transition-transform duration-200": {},

@@ -3,21 +3,16 @@
 import React, { useState, useCallback, useMemo, memo, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn, getColorClasses } from "@/lib/utils"
-import { CheckCircle2, Target, Loader2, AlertCircle, Lightbulb, FileText, BookOpen } from "lucide-react"
+import { CheckCircle2, Target, Loader2, FileText, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
 
 import SyntaxHighlighter from "react-syntax-highlighter";
 import atomOneDark from "react-syntax-highlighter/dist/styles/atom-one-dark";
 
 import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
-import { generateHints } from "@/lib/utils/hint-system-unified"
 import { handleError, handleSuccess } from "@/utils/error-handler"
 import { HintSystem } from "./HintSystem"
-import { AdaptiveFeedbackWrapper, useAdaptiveFeedback } from "./AdaptiveFeedbackWrapper"
+import { useAdaptiveFeedback } from "./AdaptiveFeedbackWrapper"
 import { useAuth } from "@/modules/auth"
 
 type QuizQuestionType = 'mcq' | 'blanks' | 'openended' | 'code'

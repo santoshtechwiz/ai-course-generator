@@ -13,7 +13,7 @@ import { useSession } from "next-auth/react"
 import { AccessControl } from "@/components/ui/access-control"
 import { AlertCircle, CheckCircle, BookOpen, Lightbulb, XCircle, Award, BarChart3, RotateCcw, Home, Download } from "lucide-react" // Added Award
 import { cn } from "@/lib/utils"
-import { motion } from "framer-motion"
+// framer-motion removed for simpler CSS transitions
 import { storageManager } from "@/utils/storage-manager"
 import { useProgressEvents } from "@/utils/progress-events"
 import { selectQuizProgressFromEvents, selectCurrentQuizAnswers } from "@/store/slices/progress-events-slice"
@@ -375,16 +375,16 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
   }
 
   const startContent = (
-    <Card className="w-full max-w-4xl mx-auto rounded-xl shadow-lg border border-purple-200 dark:border-purple-900">
-      <CardContent className="text-center py-12 px-6 bg-purple-50/30 dark:bg-purple-950/20 rounded-b-xl">
-        <Lightbulb className="w-12 h-12 text-purple-600 dark:text-purple-400 mx-auto mb-4" />
-        <h2 className="text-2xl font-semibold mb-4 text-purple-800 dark:text-purple-200">
+    <Card className="w-full max-w-4xl mx-auto rounded-xl shadow-lg border border-muted">
+      <CardContent className="text-center py-12 px-6 bg-muted/10 rounded-b-xl">
+        <Lightbulb className="w-12 h-12 text-foreground mx-auto mb-4" />
+        <h2 className="text-2xl font-semibold mb-4 text-foreground">
           Ready to test your knowledge?
         </h2>
         <p className="text-muted-foreground mb-6">
           This quiz will help you reinforce what you've learned in this chapter.
         </p>
-        <Button onClick={startQuiz} size="lg" className="bg-purple-600 hover:bg-purple-700 text-white">
+        <Button onClick={startQuiz} size="lg" className="bg-foreground hover:bg-foreground/90 text-background">
           Start Quiz
         </Button>
       </CardContent>
@@ -392,22 +392,22 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
   )
 
   const activeQuizContent = currentQuestion && (
-    <Card className="w-full max-w-4xl mx-auto rounded-xl shadow-lg border border-purple-200 dark:border-purple-900">
+    <Card className="w-full max-w-4xl mx-auto rounded-xl shadow-lg border border-muted">
       <CardHeader className="p-6 pb-4">
-        <CardTitle className="flex items-center gap-3 text-2xl font-semibold text-purple-800 dark:text-purple-200">
-          <BookOpen className="h-6 w-6 text-purple-500 dark:text-purple-300" />
+        <CardTitle className="flex items-center gap-3 text-2xl font-semibold text-foreground">
+          <BookOpen className="h-6 w-6 text-foreground" />
           {/* Question counter removed for cleaner layout */}
         </CardTitle>
         <p className="text-lg font-medium mt-4 text-foreground">{currentQuestion.question}</p>
       </CardHeader>
-      <CardContent className="space-y-4 p-6 bg-purple-50/30 dark:bg-purple-950/20 rounded-b-xl">
+      <CardContent className="space-y-4 p-6 bg-muted/10 rounded-b-xl">
         <RadioGroup value={quizState.answers[String(currentQuestion.id)] || ""} onValueChange={handleAnswer}>
           {Array.isArray(currentQuestion.options) && currentQuestion.options.map((opt: string, idx: number) => (
             <div
               key={idx}
-              className="flex items-center space-x-3 p-4 border border-purple-200 dark:border-purple-800 rounded-lg bg-white dark:bg-purple-950 hover:bg-purple-100 dark:hover:bg-purple-800 transition-all duration-200 cursor-pointer"
+              className="flex items-center space-x-3 p-4 border border-muted rounded-lg bg-white hover:bg-muted/10 transition-all duration-200 cursor-pointer"
             >
-              <RadioGroupItem value={opt} id={`option-${idx}`} className="text-purple-600" />
+              <RadioGroupItem value={opt} id={`option-${idx}`} className="text-foreground" />
               <Label htmlFor={`option-${idx}`} className="cursor-pointer text-base flex-1">
                 {opt}
               </Label>
@@ -418,10 +418,10 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
         {/* Action Buttons */}
         <div className="flex gap-3 mt-6">
           <Button
-            onClick={submitAnswer}
-            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-            disabled={!quizState.answers[String(currentQuestion.id)]}
-          >
+              onClick={submitAnswer}
+              className="flex-1 bg-foreground hover:bg-foreground/90 text-background"
+              disabled={!quizState.answers[String(currentQuestion.id)]}
+            >
             Submit Answer
           </Button>
 
@@ -429,7 +429,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
             <Button
               onClick={handleNextQuestion}
               variant="outline"
-              className="px-6 border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-950"
+              className="px-6 border-muted text-foreground hover:bg-muted/10"
             >
               Next Question
             </Button>
@@ -440,21 +440,21 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
   )
 
   const resultsContent = (
-    <Card className="w-full max-w-4xl mx-auto rounded-xl shadow-xl border border-purple-200 dark:border-purple-900 overflow-hidden">
-      <CardHeader className="p-8 pb-6 bg-gradient-to-r from-purple-50/50 via-purple-25/30 to-purple-50/50 dark:from-purple-950/30 dark:via-purple-900/20 dark:to-purple-950/30">
+    <Card className="w-full max-w-4xl mx-auto rounded-xl shadow-xl border border-muted overflow-hidden">
+      <CardHeader className="p-8 pb-6 bg-muted/10">
         <div className="text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-800 dark:to-purple-900 rounded-full">
-              <Award className="h-8 w-8 text-purple-600 dark:text-purple-300" />
+            <div className="p-3 bg-muted rounded-full">
+              <Award className="h-8 w-8 text-foreground" />
             </div>
-            <CardTitle className="text-3xl font-bold text-purple-800 dark:text-purple-200">
+            <CardTitle className="text-3xl font-bold text-foreground">
               Quiz Completed!
             </CardTitle>
           </div>
 
           {/* Score Display */}
-          <div className="bg-white/80 dark:bg-purple-950/50 rounded-xl p-6 border border-purple-200/50 dark:border-purple-700/50 shadow-sm">
-            <div className="text-2xl font-bold text-purple-700 dark:text-purple-300 mb-2">
+          <div className="bg-white/80 rounded-xl p-6 border border-muted/50 shadow-sm">
+            <div className="text-2xl font-bold text-foreground mb-2">
               {quizState.score} out of {effectiveQuestions.length}
             </div>
             <div className="text-lg text-muted-foreground mb-3">
@@ -462,9 +462,9 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
             </div>
 
             {/* Progress Bar */}
-            <div className="w-full bg-purple-100 dark:bg-purple-900 rounded-full h-3 mb-4">
+            <div className="w-full bg-muted rounded-full h-3 mb-4">
               <div
-                className="bg-gradient-to-r from-purple-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out"
+                className="bg-foreground h-3 rounded-full transition-all duration-1000 ease-out"
                 style={{ width: `${(quizState.score / effectiveQuestions.length) * 100}%` }}
               />
             </div>
@@ -485,9 +485,9 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
         </div>
       </CardHeader>
 
-      <CardContent className="p-8 bg-purple-50/30 dark:bg-purple-950/20">
+      <CardContent className="p-8 bg-muted/10 dark:bg-muted/90">
         <div className="space-y-4">
-          <h3 className="text-xl font-semibold text-purple-800 dark:text-purple-200 mb-6 flex items-center gap-2">
+          <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
             Review Your Answers
           </h3>
@@ -496,11 +496,8 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
             const userAnswer = quizState.answers[q.id]
             const isCorrect = userAnswer?.trim() === q.answer?.trim()
             return (
-              <motion.div
+              <div
                 key={q.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
                 className={cn(
                   "p-6 rounded-xl border-2 shadow-sm transition-all duration-200",
                   isCorrect
@@ -515,7 +512,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
                   )}>
                     {isCorrect ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                   </div>
-                  <span className="text-purple-800 dark:text-purple-200 leading-relaxed">
+                  <span className="text-foreground leading-relaxed">
                     {index + 1}. {q.question}
                   </span>
                 </h4>
@@ -540,19 +537,19 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
                     </div>
                   )}
                 </div>
-              </motion.div>
+              </div>
             )
           })}
         </div>
       </CardContent>
 
       {/* Action Buttons - Redesigned with better alignment */}
-      <CardContent className="p-8 bg-gradient-to-r from-purple-100/50 via-purple-50/30 to-purple-100/50 dark:from-purple-900/30 dark:via-purple-950/20 dark:to-purple-900/30 border-t border-purple-200/50 dark:border-purple-700/50">
+      <CardContent className="p-8 bg-muted/10 border-t border-muted/50">
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <Button
             onClick={retakeQuiz}
             size="lg"
-            className="flex-1 sm:flex-none min-w-[200px] bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+            className="flex-1 sm:flex-none min-w-[200px] bg-foreground hover:bg-foreground/90 text-background shadow-lg hover:shadow-xl transition-all duration-200"
           >
             <RotateCcw className="h-4 w-4 mr-2" />
             Retake Quiz
@@ -562,7 +559,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
             onClick={() => window.location.reload()}
             variant="outline"
             size="lg"
-            className="flex-1 sm:flex-none min-w-[200px] border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-600 dark:text-purple-300 dark:hover:bg-purple-950/50 shadow-sm hover:shadow-md transition-all duration-200"
+            className="flex-1 sm:flex-none min-w-[200px] border-muted text-foreground hover:bg-muted/10 shadow-sm hover:shadow-md transition-all duration-200"
           >
             <Home className="h-4 w-4 mr-2" />
             Back to Course
@@ -572,7 +569,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
             onClick={() => window.print()}
             variant="outline"
             size="lg"
-            className="flex-1 sm:flex-none min-w-[200px] border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-600 dark:text-purple-300 dark:hover:bg-purple-950/50 shadow-sm hover:shadow-md transition-all duration-200"
+            className="flex-1 sm:flex-none min-w-[200px] border-muted text-foreground hover:bg-muted/10 shadow-sm hover:shadow-md transition-all duration-200"
           >
             <Download className="h-4 w-4 mr-2" />
             Print Results
@@ -580,18 +577,18 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
         </div>
 
         {/* Additional Stats */}
-        <div className="mt-6 pt-6 border-t border-purple-200/50 dark:border-purple-700/50">
+        <div className="mt-6 pt-6 border-t border-muted/50">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-            <div className="bg-white/60 dark:bg-purple-950/40 rounded-lg p-4 border border-purple-200/30 dark:border-purple-700/30">
-              <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">{effectiveQuestions.length}</div>
+            <div className="bg-white/80 rounded-lg p-4 border border-muted/30">
+              <div className="text-2xl font-bold text-foreground">{effectiveQuestions.length}</div>
               <div className="text-sm text-muted-foreground">Total Questions</div>
             </div>
-            <div className="bg-white/60 dark:bg-purple-950/40 rounded-lg p-4 border border-purple-200/30 dark:border-purple-700/30">
+            <div className="bg-white/80 rounded-lg p-4 border border-muted/30">
               <div className="text-2xl font-bold text-green-600 dark:text-green-400">{quizState.score}</div>
               <div className="text-sm text-muted-foreground">Correct Answers</div>
             </div>
-            <div className="bg-white/60 dark:bg-purple-950/40 rounded-lg p-4 border border-purple-200/30 dark:border-purple-700/30">
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <div className="bg-white/80 rounded-lg p-4 border border-muted/30">
+              <div className="text-2xl font-bold text-foreground">
                 {Math.round((quizState.score / effectiveQuestions.length) * 100)}%
               </div>
               <div className="text-sm text-muted-foreground">Score</div>

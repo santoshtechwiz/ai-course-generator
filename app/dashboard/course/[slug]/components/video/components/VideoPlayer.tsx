@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { getYouTubeThumbnailUrl } from "@/utils/youtube-thumbnails"
 import { Play, Maximize } from "lucide-react"
 import { cn } from "@/lib/utils"
+import neo from "@/components/neo/tokens"
 import { toast } from "@/components/ui/use-toast"
 import type { VideoPlayerProps } from "../types"
 import ChapterStartOverlay from "./ChapterStartOverlay"
@@ -31,7 +32,10 @@ import { useNotes } from "@/hooks/use-notes"
 const PlayButton = React.memo(({ onClick }: { onClick: () => void }) => (
   <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
     <button
-      className="rounded-none p-4 sm:p-6 cursor-pointer pointer-events-auto transition-all duration-100 hover:translate-x-1 hover:translate-y-1 focus:outline-none bg-yellow-400 text-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-4 border-black"
+      className={cn(
+        neo.card,
+        "rounded-none p-4 sm:p-6 cursor-pointer pointer-events-auto transition-all duration-100 hover:translate-x-1 hover:translate-y-1 focus:outline-none bg-yellow-400 text-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
+      )}
       onClick={onClick}
       aria-label="Play video"
       type="button"
@@ -54,7 +58,8 @@ const TheaterModeButton = React.memo(
   }) => (
     <button
       className={cn(
-        "absolute z-30 rounded-none p-3 transition-all duration-100 border-4 border-black font-bold uppercase text-sm tracking-wider",
+        neo.card,
+        "absolute z-30 rounded-none p-3 transition-all duration-100 font-bold uppercase text-sm tracking-wider",
         "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
         isTheater ? "top-4 right-4 bg-red-500 text-white" : "top-4 left-4 bg-cyan-400 text-black",
       )}
@@ -1121,7 +1126,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
       <div
         ref={containerRef as any}
         className={cn(
-          "relative object-contain w-full h-full bg-black overflow-hidden group video-player-container border-4 border-black",
+          cn(neo.card, "relative object-contain w-full h-full bg-black overflow-hidden group video-player-container"),
           isTheaterMode && "theater-mode",
           playerState.isNativePiPActive && "pip-active",
           className,
@@ -1197,7 +1202,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
 
         {!shouldHideMainPlayer && (
           <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-30">
-            <div className="bg-pink-500 border-4 border-black rounded-none p-2 sm:p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className={cn(neo.card, "bg-pink-500 rounded-none p-2 sm:p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]")}>
               <span className="text-black font-black text-xs sm:text-sm select-none uppercase tracking-wider">
                 CourseAI
               </span>
@@ -1250,9 +1255,9 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
 
         {playerState.isNativePiPActive && (
           <div className="absolute inset-0 z-20 bg-cyan-400 flex items-center justify-center border-8 border-black">
-            <div className="text-center text-black max-w-md mx-auto p-8 bg-white border-4 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
+            <div className={cn(neo.card, "text-center text-black max-w-md mx-auto p-8 bg-white shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]")}>
               <div className="mb-6">
-                <div className="w-24 h-24 mx-auto rounded-none bg-pink-500 flex items-center justify-center mb-6 border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                <div className={cn(neo.card, "w-24 h-24 mx-auto rounded-none bg-pink-500 flex items-center justify-center mb-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]")}>
                   <svg className="w-12 h-12 text-black" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553-.894l2-1A1 1 0 0018 9V7a1 1 0 00-1.447-.894l-2 1z" />
                   </svg>
@@ -1267,7 +1272,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
                   onClick={handlePictureInPicture}
                   variant="default"
                   size="lg"
-                  className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-black uppercase tracking-wider border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-none"
+                  className={cn(neo.card, "w-full bg-yellow-400 hover:bg-yellow-500 text-black font-black uppercase tracking-wider shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-none")}
                 >
                   Return to Main Player
                 </Button>

@@ -451,7 +451,8 @@ function QuizListComponent({
         >
           <motion.div
             className={cn(
-              "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 max-w-[1800px] mx-auto",
+              // Align with course list layout: fewer columns for wider cards
+              "grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 max-w-7xl mx-auto",
             )}
             variants={containerVariants}
             initial="hidden"

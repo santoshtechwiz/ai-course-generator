@@ -1,0 +1,12 @@
+<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="openTitle">
+  <title id="openTitle">Open Ended Illustration</title>
+  <rect width="240" height="240" rx="24" fill="#FFF1F2"/>
+  <g transform="translate(28,36)">
+    <path d="M0 120 L40 88 L120 8 L160 48 L80 128 L0 120 Z" fill="#F472B6" opacity="0.95" />
+    <path d="M140 36 L196 92" stroke="#7C3AED" stroke-width="6" stroke-linecap="round" />
+  </g>
+  <g transform="translate(24,168)">
+    <rect x="0" y="0" width="192" height="36" rx="8" fill="#EC4899" />
+    <text x="96" y="24" font-family="Inter, system-ui" font-weight="700" font-size="14" fill="#fff" text-anchor="middle">Write</text>
+  </g>
+</svg>

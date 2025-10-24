@@ -4,6 +4,8 @@ import { useState, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import neo from "@/components/neo/tokens"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
@@ -166,7 +168,7 @@ export default function VideoGenerationSection({ course, onVideoGenerated }: Vid
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className="bg-white/50">
+            <Badge variant="outline" className={cn(neo.badge, "bg-white/50")}>
               <Zap className="h-3 w-3 mr-1" />
               AI Generated
             </Badge>

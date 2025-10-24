@@ -10,6 +10,7 @@ import { Clock, Star, BookOpen, Loader2, Play, Bookmark, Users, TrendingUp, Targ
 import Link from "next/link"
 import { cn, getColorClasses } from "@/lib/utils"
 import { QUIZ_TYPE_CONFIG } from "./quiz-type-config"
+import QuizTypeIllustration from "./QuizTypeIllustrations"
 import type { QuizType } from "@/app/types/quiz-types"
 
 interface QuizCardProps {
@@ -175,6 +176,10 @@ function QuizCardComponent({
 
           {/* Content Section */}
           <CardContent className="p-6 flex flex-col gap-4 text-center relative h-full">
+            {/* Illustration per quiz type */}
+            <div className="mb-2">
+              <QuizTypeIllustration type={normalizedType as any} />
+            </div>
             {/* Title & Description */}
             <div className="relative space-y-2 flex-1 flex flex-col justify-center min-h-[4rem]">
               <h3 className="font-black text-xl leading-tight text-[var(--color-text)] line-clamp-2 group-hover:text-[var(--color-primary)] transition-colors">

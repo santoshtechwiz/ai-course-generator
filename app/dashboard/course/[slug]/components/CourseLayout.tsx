@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { FullCourseType } from "@/app/types/types"
 import dynamic from "next/dynamic"
 import { cn, getColorClasses } from "@/lib/utils"
-import { motion, AnimatePresence } from "framer-motion"
+// Reduced framer-motion usage on course layout; using CSS transitions for simpler effects
 import { JsonLD } from "@/lib/seo"
 import { ErrorBoundary } from "react-error-boundary"
 import { ModuleLoadingSkeleton } from "@/components/shared/ModuleLoadingSkeleton"
@@ -65,18 +65,17 @@ const CourseLayout: React.FC<CourseLayoutProps> = ({
       {/* ✅ Breadcrumbs removed for cleaner course header */}
 
       {/* Main Content Area */}
-      <div className={cn(
-        "flex-1 transition-all duration-300",
-        isFullscreen && "bg-black"
-      )}>
-        <ErrorBoundary
+      <div
+        className={cn(
+          "flex-1 transition-all duration-300",
+          isFullscreen && "bg-black"
+        )}
+        // Expose a CSS variable to control sticky offsets for inner components (tabs/header)
+        style={{ ['--course-sticky-offset' as any]: '5.5rem' }}
+      >
+          <ErrorBoundary
           fallback={
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="flex flex-col items-center justify-center min-h-[60vh] p-4"
-            >
+            <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 transition-transform duration-200">
               <div className={cn(cardSecondary, "text-center space-y-6 p-8 bg-destructive/5")}>
                 <div className={cn(
                   "w-16 h-16 bg-destructive/10 rounded-xl",
@@ -102,18 +101,14 @@ const CourseLayout: React.FC<CourseLayoutProps> = ({
                   </Button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           }
         >
           <Suspense
             fallback={
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="space-y-4"
-              >
+              <div className="space-y-4 transition-opacity duration-200">
                 <ModuleLoadingSkeleton variant="detailed" itemCount={1} />
-              </motion.div>
+              </div>
             }
           >
             <MainContent

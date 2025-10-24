@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import neo from "@/components/neo/tokens"
 import { StickyNote, Plus, Edit3, Trash2, Clock, Loader2 } from "lucide-react"
 import { useNotes } from "@/hooks/use-notes"
 import { NoteModal } from "../../modals/NoteModal"
@@ -64,7 +66,7 @@ export function NotesPanel({
             <StickyNote className="h-5 w-5 text-green-400" />
             <h3 className="text-lg font-semibold text-white">Notes</h3>
           </div>
-          <Badge variant="neutral" className="bg-green-500/30 text-green-300 border-green-500/50">
+          <Badge variant="neutral" className={cn(neo.badge, "bg-green-500/30 text-green-300 border-green-500/50")}>
             {notes.length}
           </Badge>
         </div>

@@ -1,0 +1,14 @@
+<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="orderingTitle">
+  <title id="orderingTitle">Ordering Illustration</title>
+  <rect width="240" height="240" rx="24" fill="#F5F3FF"/>
+  <g transform="translate(24,32)">
+    <rect x="0" y="0" width="192" height="28" rx="6" fill="#EDE9FE" />
+    <rect x="0" y="44" width="140" height="28" rx="6" fill="#D8B4FE" />
+    <rect x="0" y="88" width="92" height="28" rx="6" fill="#D8B4FE" />
+    <path d="M160 16 L192 16 L176 0 Z" fill="#7C3AED" />
+  </g>
+  <g transform="translate(24,168)">
+    <rect x="0" y="0" width="192" height="36" rx="8" fill="#7C3AED" />
+    <text x="96" y="24" font-family="Inter, system-ui" font-weight="700" font-size="14" fill="#fff" text-anchor="middle">Order Items</text>
+  </g>
+</svg>

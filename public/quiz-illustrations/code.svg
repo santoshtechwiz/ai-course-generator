@@ -1,0 +1,15 @@
+<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="codeTitle">
+  <title id="codeTitle">Code Challenge Illustration</title>
+  <rect width="240" height="240" rx="24" fill="#ECFDF5"/>
+  <g transform="translate(28,36)">
+    <rect x="0" y="0" width="184" height="28" rx="6" fill="#D1FAE5" />
+    <rect x="0" y="40" width="184" height="96" rx="8" fill="#065F46" />
+    <text x="12" y="64" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Courier New', monospace" font-size="12" fill="#D1FAE5">const sum = (a, b) =&gt; a + b;</text>
+    <path d="M16 96 L40 72" stroke="#34D399" stroke-width="3" stroke-linecap="round" />
+    <path d="M168 96 L144 72" stroke="#34D399" stroke-width="3" stroke-linecap="round" />
+  </g>
+  <g transform="translate(24,168)">
+    <rect x="0" y="0" width="192" height="36" rx="8" fill="#10B981" />
+    <text x="96" y="24" font-family="Inter, system-ui" font-weight="700" font-size="14" fill="#fff" text-anchor="middle">Run Code</text>
+  </g>
+</svg>

@@ -92,35 +92,42 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
     description,
     rating,
     slug,
-    unitCount,
-    lessonCount,
-    quizCount,
+    courseId,
+    variant = "grid",
+    unitCount = 0,
+    lessonCount = 0,
+    quizCount = 0,
+    viewCount,
     category = "General",
-    duration = "4-6 weeks",
+    duration,
     className,
-    loading = false,
+    loading,
     image,
     difficulty,
     price,
     originalPrice,
-    isPopular = false,
-    isTrending = false,
-    enrolledCount = 1234,
-    instructor = "Course Instructor",
-    isEnrolled = false,
+    isPopular,
+    isTrending,
+    completionRate,
+    enrolledCount,
+    instructor,
+    isEnrolled,
     progressPercentage = 0,
     completedChapters = 0,
     totalChapters = unitCount || 0,
     lastAccessedAt,
-    variant = "grid",
+    currentChapterTitle,
+    timeSpent,
+    tags = [],
   } = props
 
   const [isNavigating, setIsNavigating] = useState(false)
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [isFavorite, setIsFavorite] = useState(false)
   const router = useRouter()
-const finalImage = image || getRandomFallbackImage();
-console.log(finalImage);
+
+  const finalImage = image || getRandomFallbackImage()
+
   const difficultyLevel =
     difficulty ||
     (unitCount + lessonCount > 20 ? "Advanced" : unitCount + lessonCount > 10 ? "Intermediate" : "Beginner")
@@ -181,7 +188,7 @@ console.log(finalImage);
       )}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => {
+      onKeyDown={(e: React.KeyboardEvent) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault()
           handleCardClick(e as any)
@@ -305,7 +312,7 @@ console.log(finalImage);
             </div>
             <div className="flex items-center gap-1.5">
               <Users className="h-5 w-5" />
-              <span className="font-black">{enrolledCount.toLocaleString()}</span>
+              <span className="font-black">{(enrolledCount || 0).toLocaleString()}</span>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
@@ -358,7 +365,7 @@ console.log(finalImage);
           </div>
         )}
       </CardContent>
-    </Card>
+  </Card>
   )
 })
 

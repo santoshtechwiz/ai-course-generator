@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 import { createThumbnailErrorHandler, getYouTubeThumbnailUrl } from "@/utils/youtube-thumbnails"
 import { useMilestoneTracker } from "@/hooks/use-milestone-tracker"
+import neo from "@/components/neo/tokens"
 
 interface Chapter {
   id: string
@@ -377,20 +378,20 @@ const ChapterPlaylist: React.FC<ChapterPlaylistProps> = ({
                   )}
 
                   {/* Chapter number badge - Neobrutalism */}
-                  <div className="absolute top-1 left-1 bg-black text-white text-xs px-2 py-1 font-black border border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.8)]">
+                  <div className={cn("absolute top-1 left-1", neo.badge, "bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.8)]")}>
                     #{chapterIndex + 1}
                   </div>
 
                   {/* Status badge - Completed */}
                   {isCompleted && (
-                    <div className="absolute top-1 right-1 bg-green-400 text-black text-xs px-2 py-1 font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.8)]">
+                    <div className={cn("absolute top-1 right-1", neo.badge, "bg-green-400 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.8)]")}>
                       ✓ DONE
                     </div>
                   )}
 
                   {/* Status badge - In Progress */}
                   {!isCompleted && chapterProgress > 0 && !isActive && (
-                    <div className="absolute top-1 right-1 bg-yellow-300 text-black text-xs px-2 py-1 font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.8)]">
+                    <div className={cn("absolute top-1 right-1", neo.badge, "bg-yellow-300 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.8)]")}>
                       {Math.round(chapterProgress)}%
                     </div>
                   )}

@@ -5,6 +5,8 @@ import Image from 'next/image'
 import { motion } from "framer-motion"
 import { BookOpen, Play, Star, Users, Clock, Heart } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import neo from "@/components/neo/tokens"
 import { CategoryIcon } from "@/app/category-icon"
 
 interface RelatedCourseCardProps {
@@ -185,7 +187,7 @@ const RelatedCourseCard: React.FC<RelatedCourseCardProps> = ({ course, index, on
             </div>
 
             {course.level && (
-              <Badge variant="outline" className="text-xs px-2 py-0.5 font-medium border-primary/30 text-primary">
+              <Badge variant="outline" className={cn(neo.badge, "text-xs px-2 py-0.5 font-medium border-primary/30 text-primary")}>
                 {course.level}
               </Badge>
             )}

@@ -27,6 +27,7 @@ import {
   ExternalLink,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import neo from "@/components/neo/tokens"
 import { useCourseActions } from "@/hooks/useCourseActions"
 import { useAuth } from "@/modules/auth"
 import { toast } from "@/components/ui/use-toast"
@@ -173,12 +174,13 @@ export default function ActionButtons({ slug, title, isOwner, courseId, classNam
       {/* Enhanced Privacy Status Badge */}
       {isOwner && (
         <Badge
-          variant={status.isPublic ? "default" : "secondary"}
+          variant={status.isPublic ? "default" : "neutral"}
           className={cn(
             "hidden md:inline-flex items-center gap-1 transition-all duration-200",
+            neo.badge,
             status.isPublic
-              ? "bg-[hsl(var(--success))]/10 text-[hsl(var(--success))] border-[hsl(var(--success))]/20 hover:bg-[hsl(var(--success))]/20 dark:bg-[hsl(var(--success))]/10 dark:text-[hsl(var(--success))] dark:border-[hsl(var(--success))]/30"
-              : "bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
+              ? "bg-[hsl(var(--success))]/10 text-[hsl(var(--success))] hover:bg-[hsl(var(--success))]/20 dark:bg-[hsl(var(--success))]/10 dark:text-[hsl(var(--success))]"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
           )}
         >
           {status.isPublic ? (
