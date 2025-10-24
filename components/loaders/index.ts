@@ -1,19 +1,11 @@
-// Centralized Loader System
+// Simple Loader System (Fixed)
 export { 
-  CentralizedLoader,
+  SimpleLoader,
   PageLoader,
   QuizLoader,
   ComponentLoader,
   InlineLoader
-} from './CentralizedLoader'
-
-export {
-  LoadingStateProvider,
-  useLoadingState,
-  usePageLoader,
-  useQuizLoader,
-  useComponentLoader
-} from './LoadingStateProvider'
+} from './SimpleLoader'
 
 // Keep existing exports for backward compatibility
 export { SuspenseGlobalFallback } from './SuspenseGlobalFallback'

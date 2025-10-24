@@ -18,7 +18,6 @@ import { ConditionalFooter } from "@/components/layout/ConditionalFooter"
 import { Toaster } from "@/components/ui/toaster"
 import { BreadcrumbWelcome } from "@/components/auth/BreadcrumbWelcome"
 import { ClientGuestProvider } from "@/components/guest/ClientGuestProvider"
-import { LoadingStateProvider } from "@/components/loaders/LoadingStateProvider"
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
@@ -119,22 +118,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   </div>
                 </noscript>
 
-                <LoadingStateProvider>
-                  <Suspense fallback={<SuspenseGlobalFallback />}>
-                    <div className="relative min-h-screen flex flex-col ">
-                      {/* Main Content */}
-                      <main id="main-content" className="flex-1 w-full">
-                        <MotionProvider>
-                          <Suspense fallback={<SuspenseGlobalFallback />}>
-                            {children}
-                          </Suspense>
-                        </MotionProvider>
-                      </main>
-                      {/* Conditional Footer - Hidden on sidebar-enabled dashboard pages */}
-                      <ConditionalFooter />
-                    </div>
-                  </Suspense>
-                </LoadingStateProvider>
+                <Suspense fallback={<SuspenseGlobalFallback />}>
+                  <div className="relative min-h-screen flex flex-col ">
+                    {/* Main Content */}
+                    <main id="main-content" className="flex-1 w-full">
+                      <MotionProvider>
+                        <Suspense fallback={<SuspenseGlobalFallback />}>
+                          {children}
+                        </Suspense>
+                      </MotionProvider>
+                    </main>
+                    {/* Conditional Footer - Hidden on sidebar-enabled dashboard pages */}
+                    <ConditionalFooter />
+                  </div>
+                </Suspense>
               </ClientGuestProvider>
             </RootErrorBoundary>
 

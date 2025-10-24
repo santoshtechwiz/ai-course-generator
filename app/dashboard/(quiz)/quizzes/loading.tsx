@@ -1,5 +1,5 @@
 import { PageWrapper } from "@/components/layout/PageWrapper"
-import { ComponentLoader } from "@/components/loaders"
+import { ComponentLoader } from "@/components/loaders/SimpleLoader"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
 
 export default function QuizzesLoading() {
