@@ -20,7 +20,6 @@ export * from "./hover-card"
 export * from "./input"
 export * from "./label"
 
-export * from "./loading"
 export * from "./menubar"
 export * from "./navigation-menu"
 export * from "./popover"
