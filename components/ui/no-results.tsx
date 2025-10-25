@@ -119,7 +119,7 @@ export function NoResults({
       <div className={isLeftPlacement ? "flex-1 text-center sm:text-left" : ""}>
         <h3 className={cn(
           "font-semibold",
-          isLeftPlacement ? "text-lg sm:text-xl mb-2" : "text-xl sm:text-2xl mb-2 sm:mb-3"
+          isLeftPlacement ? "text-base sm:text-lg mb-2" : "text-lg sm:text-xl mb-2 sm:mb-3"
         )}>
           {content.title}
         </h3>

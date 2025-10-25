@@ -145,10 +145,10 @@ export function AdaptiveFeedbackWrapper({
         className="mt-4"
       >
         <Card className={cn(
-          "p-5 border-2 rounded-xl shadow-sm",
+          "p-5 border-4 border-border rounded-xl shadow-[6px_6px_0px_0px_hsl(var(--border))]",
           isSuccess 
-            ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/10 border-green-500/50" 
-            : "bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/10 border-amber-500/50"
+            ? "bg-success/10" 
+            : "bg-warning/10"
         )}>
           {/* Feedback Message */}
           <div className="flex items-start gap-4 mb-4">
@@ -201,7 +201,7 @@ export function AdaptiveFeedbackWrapper({
               transition={{ duration: 0.3 }}
               className="mb-4"
             >
-              <Alert className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/10 border-blue-200 dark:border-blue-800 rounded-lg shadow-sm">
+              <Alert className="bg-accent/10 border-4 border-accent rounded-lg shadow-[4px_4px_0px_0px_hsl(var(--border))]">
                 <div className="flex items-start gap-3">
                   <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                   <AlertDescription className="text-sm text-blue-900 dark:text-blue-100 leading-relaxed">
@@ -222,7 +222,7 @@ export function AdaptiveFeedbackWrapper({
               className="mb-3"
             >
               {!showFullAnswer ? (
-                <Alert className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/10 border-purple-200 dark:border-purple-800 rounded-lg shadow-sm">
+                <Alert className="bg-primary/10 border-4 border-primary rounded-lg shadow-[4px_4px_0px_0px_hsl(var(--border))]">
                   <div className="flex items-start gap-3">
                     <BookOpen className="h-5 w-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
                     <AlertDescription className="text-sm text-purple-900 dark:text-purple-100 leading-relaxed w-full">
@@ -248,7 +248,7 @@ export function AdaptiveFeedbackWrapper({
                   </div>
                 </Alert>
               ) : (
-                <Alert className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/10 border-purple-200 dark:border-purple-800 rounded-lg shadow-sm">
+                <Alert className="bg-purple-50 dark:bg-purple-950/20 border-4 border-purple-200 dark:border-purple-800 rounded-lg shadow-[4px_4px_0px_0px_hsl(var(--border))]">
                   <div className="flex items-start gap-3">
                     <BookOpen className="h-5 w-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
                     <AlertDescription className="text-sm text-purple-900 dark:text-purple-100 leading-relaxed">

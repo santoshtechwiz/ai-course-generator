@@ -232,7 +232,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto neuro-strong-typography">
       {submitError && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
@@ -415,33 +415,39 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                     type="button"
                     variant={difficulty === level.value ? "default" : "outline"}
                     className={cn(
-                      "capitalize w-full h-12 lg:h-14 font-medium transition-all duration-200 text-base lg:text-lg",
-                      difficulty === level.value ? "border-primary shadow-sm" : "hover:border-primary/50",
-                      "focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                      "capitalize w-full h-14 font-black transition-all duration-200 text-base lg:text-lg border-4",
+                      difficulty === level.value
+                        ? level.value === "easy"
+                          ? "bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]"
+                          : level.value === "medium"
+                            ? "bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]"
+                            : "bg-[var(--color-error)]/20 text-[var(--color-error)] border-[var(--color-error)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]"
+                        : "bg-[var(--color-card)] text-[var(--color-text)] border-[var(--color-border)] hover:bg-[var(--color-muted)] shadow-[2px_2px_0px_0px_hsl(var(--border))] hover:shadow-[4px_4px_0px_0px_hsl(var(--border))]",
+                      "focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2",
                     )}
                     onClick={() => setValue("difficulty", level.value as "easy" | "medium" | "hard")}
                     aria-pressed={difficulty === level.value}
                   >
                     {level.label}
-                    {difficulty === level.value && <Check className="ml-2 h-4 w-4 lg:h-5 lg:w-5" />}
+                    {difficulty === level.value && <Check className="ml-2 h-4 w-4 lg:h-5 lg:w-5 text-[var(--color-text)]" />}
                   </Button>
                 ))}
               </div>
             </motion.div>
 
             <motion.div
-              className="bg-primary/5 border border-primary/20 rounded-lg p-4 lg:p-6 space-y-3 lg:space-y-4"
+              className="bg-[var(--color-card)] border-4 border-[var(--color-border)] rounded-lg p-4 lg:p-6 space-y-3 lg:space-y-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
             >
-              <h3 className="text-base lg:text-lg font-semibold mb-2 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 lg:h-5 lg:w-5 text-primary" />
+              <h3 className="text-base lg:text-lg font-semibold mb-2 flex items-center gap-2 text-[var(--color-text)]">
+                <Sparkles className="h-4 w-4 lg:h-5 lg:w-5 text-[var(--color-primary)]" />
                 Available Credits
               </h3>
-              <Progress value={creditInfo.totalCredits > 0 ? (creditInfo.remainingCredits / creditInfo.totalCredits) * 100 : 0} className="h-2 lg:h-3" />
-              <p className="text-xs lg:text-sm text-muted-foreground">
-                {creditInfo.usedCredits} used of {creditInfo.totalCredits} total credits. <span className="font-bold text-primary">{creditInfo.remainingCredits} remaining</span>.
+              <Progress value={creditInfo.totalCredits > 0 ? (creditInfo.remainingCredits / creditInfo.totalCredits) * 100 : 0} className="h-3 border-2 border-[var(--color-border)] bg-[var(--color-card)]" />
+              <p className="text-xs lg:text-sm text-[var(--color-text)]">
+                {creditInfo.usedCredits} used of {creditInfo.totalCredits} total credits. <span className="font-bold text-[var(--color-primary)]">{creditInfo.remainingCredits} remaining</span>.
               </p>
             </motion.div>
 
@@ -473,7 +479,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                 isEnabled={!isDisabled}
                 isLoading={isLoading}
                 loadingLabel="Generating Quiz..."
-                className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] hover:opacity-90 text-primary-foreground border-0 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-[var(--color-primary)] text-[var(--color-bg)] border-4 border-[var(--color-border)] shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] disabled:opacity-50 disabled:cursor-not-allowed"
                 customStates={{
                   default: {
                     tooltip: "Click to generate your quiz",

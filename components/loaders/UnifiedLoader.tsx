@@ -138,9 +138,9 @@ export function UnifiedLoader({
   /* 🎨 Progress Loader */
   const Progress = () => (
     <div className={cn("space-y-3", fullWidth ? "w-full" : "w-48")}>
-      <div className="h-3 bg-yellow-100 border-2 border-black rounded-md overflow-hidden shadow-[3px_3px_0_0_#000]">
+      <div className="h-3 bg-[var(--color-muted)] border-6 border-[var(--color-border)] rounded-md overflow-hidden shadow-[var(--shadow-neo)]">
         <motion.div
-          className="h-full bg-pink-500 border-r-2 border-black"
+          className="h-full bg-[var(--color-primary)] border-r-6 border-[var(--color-border)]"
           initial={{ width: 0 }}
           animate={{ width: `${Math.max(0, Math.min(100, progress ?? 0))}%` }}
           transition={{ duration: 0.3, ease: "easeOut" }}
@@ -162,9 +162,9 @@ export function UnifiedLoader({
   /* 🎨 Skeleton Loader */
   const Skeleton = () => (
     <div className={cn("space-y-3", fullWidth ? "w-full" : "w-64")}>
-      <div className="h-4 bg-yellow-200 border-2 border-black rounded-md animate-pulse shadow-[3px_3px_0_0_#000]" />
-      <div className="h-4 bg-yellow-200 border-2 border-black rounded-md animate-pulse w-3/4 shadow-[3px_3px_0_0_#000]" />
-      <div className="h-3 bg-yellow-200 border-2 border-black rounded-md animate-pulse w-1/2 shadow-[3px_3px_0_0_#000]" />
+      <div className="h-4 bg-[var(--color-muted)] border-6 border-[var(--color-border)] rounded-md animate-pulse shadow-[var(--shadow-neo)]" />
+      <div className="h-4 bg-[var(--color-muted)] border-6 border-[var(--color-border)] rounded-md animate-pulse w-3/4 shadow-[var(--shadow-neo)]" />
+      <div className="h-3 bg-[var(--color-muted)] border-6 border-[var(--color-border)] rounded-md animate-pulse w-1/2 shadow-[var(--shadow-neo)]" />
     </div>
   )
 
@@ -174,7 +174,7 @@ export function UnifiedLoader({
       animate={isReducedMotion ? {} : { scale: [1, 1.05, 1], opacity: [0.7, 1, 0.7] }}
       transition={{ duration: 2, repeat: Infinity }}
       className={cn(
-        "rounded-full bg-pink-300 border-2 border-black flex items-center justify-center shadow-[4px_4px_0_0_#000]",
+        "rounded-full bg-[var(--color-primary)] border-6 border-[var(--color-border)] flex items-center justify-center shadow-[var(--shadow-neo)]",
         sizeMap[size].container
       )}
     >
@@ -350,7 +350,7 @@ function ButtonLoader({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 flex items-center justify-center bg-yellow-100/80 border-2 border-black rounded-md"
+            className="absolute inset-0 flex items-center justify-center bg-[var(--color-muted)]/80 border-6 border-[var(--color-border)] rounded-md"
           >
             <UnifiedLoader
               state="loading"

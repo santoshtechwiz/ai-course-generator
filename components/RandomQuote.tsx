@@ -88,11 +88,7 @@ const RandomQuote = () => {
   }
 
   return (
-    <Card className="relative overflow-hidden bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-primary/20 shadow-sm">
-      {/* Background decoration */}
-      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-primary/5 to-transparent" aria-hidden="true" />
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-full -translate-y-16 translate-x-16" aria-hidden="true" />
-      
+    <Card className="relative overflow-hidden bg-card border-4 border-border shadow-[6px_6px_0px_0px_hsl(var(--border))]">
       <section className="relative p-4" role="region" aria-labelledby="quote-heading" aria-live="polite">
         <h2 id="quote-heading" className="sr-only">Inspirational Quotes</h2>
         <div className="flex items-center justify-between gap-4">

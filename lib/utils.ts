@@ -105,19 +105,19 @@ const getAIModelFromConfig = (userType: string): string => {
 export function getColorClasses() {
   return {
     buttonPrimary:
-      "bg-primary text-primary-foreground border-3 border-border neo-shadow hover:neo-shadow-lg hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:neo-shadow transition-all font-bold",
+      "bg-primary text-primary-foreground border-6 border-[var(--color-border)] shadow-[var(--shadow-neo)] hover:shadow-[var(--shadow-neo-hover)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[var(--shadow-neo-active)] transition-all font-bold",
     buttonSecondary:
-      "bg-secondary text-secondary-foreground border-3 border-border neo-shadow hover:neo-shadow-lg hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:neo-shadow transition-all font-bold",
+      "bg-secondary text-secondary-foreground border-6 border-[var(--color-border)] shadow-[var(--shadow-neo)] hover:shadow-[var(--shadow-neo-hover)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[var(--shadow-neo-active)] transition-all font-bold",
     buttonAccent:
-      "bg-accent text-accent-foreground border-3 border-border neo-shadow hover:neo-shadow-lg hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:neo-shadow transition-all font-bold",
+      "bg-accent text-accent-foreground border-6 border-[var(--color-border)] shadow-[var(--shadow-neo)] hover:shadow-[var(--shadow-neo-hover)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[var(--shadow-neo-active)] transition-all font-bold",
     buttonIcon:
-      "border-3 border-border neo-shadow hover:neo-shadow-lg hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all",
-    cardPrimary: "border-3 border-border neo-shadow bg-card",
-    cardSecondary: "border-3 border-border neo-shadow-lg bg-card",
-    cardAccent: "border-3 border-primary neo-shadow-primary bg-card",
-    badge: "border-2 border-border font-bold px-3 py-1",
+      "border-6 border-[var(--color-border)] shadow-[var(--shadow-neo)] hover:shadow-[var(--shadow-neo-hover)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all",
+    cardPrimary: "border-6 border-[var(--color-border)] shadow-[var(--shadow-neo)] bg-[var(--color-card)]",
+    cardSecondary: "border-6 border-[var(--color-border)] shadow-[var(--shadow-neo-hover)] bg-[var(--color-card)]",
+    cardAccent: "border-6 border-[var(--color-primary)] shadow-[var(--shadow-neo)] bg-[var(--color-card)]",
+    badge: "border-6 border-[var(--color-border)] font-bold px-3 py-1",
     input:
-      "border-3 border-border neo-shadow focus:neo-shadow-lg focus:translate-x-[-1px] focus:translate-y-[-1px] transition-all font-medium",
+      "border-6 border-[var(--color-border)] shadow-[var(--shadow-neo)] focus:shadow-[var(--shadow-neo-hover)] focus:translate-x-[-1px] focus:translate-y-[-1px] transition-all font-medium",
   }
 }
 

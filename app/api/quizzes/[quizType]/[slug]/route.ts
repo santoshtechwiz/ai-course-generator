@@ -15,13 +15,15 @@ export async function GET(
     // Extract parameters - await params first
     const { quizType, slug } = await context.params
 
-    // Try cache first
+    // Try cache first (15 minutes TTL for individual quiz pages)
     const cacheKey = `api:quiz:${quizType}:${slug}`
     const cached = await cache.get<any>(cacheKey)
     if (cached) {
       const response = NextResponse.json(cached)
       response.headers.set("X-Cache", "HIT")
-      response.headers.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+      response.headers.set("Cache-Control", "public, s-maxage=900, stale-while-revalidate=1800")
+      response.headers.set("CDN-Cache-Control", "public, s-maxage=900")
+      response.headers.set("Vercel-CDN-Cache-Control", "public, s-maxage=900")
       return response
     }
     
@@ -50,16 +52,18 @@ export async function GET(
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
     }
     
-    // Save to memory cache
-    await cache.set(cacheKey, quiz, 60) // 60s TTL for API-level cache
+    // Save to memory cache (15 minutes)
+    await cache.set(cacheKey, quiz, 900)
 
     // Debug log the quiz data
     console.log(`Quiz data for ${quizType}/${slug}:`, JSON.stringify(quiz, null, 2));
     
-    // Add caching headers to the response
+    // Add comprehensive caching headers to the response
     const response = NextResponse.json(quiz)
     response.headers.set("X-Cache", "MISS")
-    response.headers.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+    response.headers.set("Cache-Control", "public, s-maxage=900, stale-while-revalidate=1800")
+    response.headers.set("CDN-Cache-Control", "public, s-maxage=900")
+    response.headers.set("Vercel-CDN-Cache-Control", "public, s-maxage=900")
     return response
   } catch (error) {
     // Handle PRIVATE_QUIZ errors

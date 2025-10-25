@@ -54,61 +54,31 @@ import { getPlanConfig, isQuizTypeAvailable } from '@/types/subscription-plans';
 import type { SubscriptionPlanType } from '@/types/subscription';
 import { useToast } from '@/hooks/use-toast';
 
-// Enhanced color system with glassmorphism
+// Use centralized Nerobrutal theme tokens for colors (visual-only changes)
 const getColorClasses = (color: string, isLocked: boolean) => {
-  const colorMap = {
-    blue: {
-      card: isLocked
-        ? "backdrop-blur-sm bg-gradient-to-br from-gray-50/80 via-slate-50/80 to-gray-50/80 hover:from-gray-100/90 hover:via-slate-100/90 hover:to-gray-100/90 dark:from-gray-950/80 dark:via-slate-950/80 dark:to-gray-950/80 dark:hover:from-gray-900/90 dark:hover:via-slate-900/90 dark:hover:to-gray-900/90 border-gray-200/50 dark:border-gray-700/50 opacity-75"
-        : "backdrop-blur-sm bg-gradient-to-br from-blue-50/80 via-indigo-50/80 to-purple-50/80 hover:from-blue-100/90 hover:via-indigo-100/90 hover:to-purple-100/90 dark:from-blue-950/80 dark:via-indigo-950/80 dark:to-purple-950/80 dark:hover:from-blue-900/90 dark:hover:via-indigo-900/90 dark:hover:to-purple-900/90 border-blue-200/50 dark:border-blue-700/50",
-      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-blue-600 dark:text-blue-400",
-      button: isLocked ? "bg-gradient-to-r from-gray-400 to-gray-500" : "bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
-    },
-    green: {
-      card: isLocked
-        ? "backdrop-blur-sm bg-gradient-to-br from-gray-50/80 via-slate-50/80 to-gray-50/80 hover:from-gray-100/90 hover:via-slate-100/90 hover:to-gray-100/90 dark:from-gray-950/80 dark:via-slate-950/80 dark:to-gray-950/80 dark:hover:from-gray-900/90 dark:hover:via-slate-900/90 dark:hover:to-gray-900/90 border-gray-200/50 dark:border-gray-700/50 opacity-75"
-        : "backdrop-blur-sm bg-gradient-to-br from-green-50/80 via-emerald-50/80 to-teal-50/80 hover:from-green-100/90 hover:via-emerald-100/90 hover:to-teal-100/90 dark:from-green-950/80 dark:via-emerald-950/80 dark:to-teal-950/80 dark:hover:from-green-900/90 dark:hover:via-emerald-900/90 dark:hover:to-teal-900/90 border-green-200/50 dark:border-green-700/50",
-      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-green-600 dark:text-green-400",
-      button: isLocked ? "bg-gradient-to-r from-gray-400 to-gray-500" : "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-    },
-    purple: {
-      card: isLocked
-        ? "backdrop-blur-sm bg-gradient-to-br from-gray-50/80 via-slate-50/80 to-gray-50/80 hover:from-gray-100/90 hover:via-slate-100/90 hover:to-gray-100/90 dark:from-gray-950/80 dark:via-slate-950/80 dark:to-gray-950/80 dark:hover:from-gray-900/90 dark:hover:via-slate-900/90 dark:hover:to-gray-900/90 border-gray-200/50 dark:border-gray-700/50 opacity-75"
-        : "backdrop-blur-sm bg-gradient-to-br from-purple-50/80 via-violet-50/80 to-fuchsia-50/80 hover:from-purple-100/90 hover:via-violet-100/90 hover:to-fuchsia-100/90 dark:from-purple-950/80 dark:via-violet-950/80 dark:to-fuchsia-950/80 dark:hover:from-purple-900/90 dark:hover:via-violet-900/90 dark:hover:to-fuchsia-900/90 border-purple-200/50 dark:border-purple-700/50",
-      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-purple-600 dark:text-purple-400",
-      button: isLocked ? "bg-gradient-to-r from-gray-400 to-gray-500" : "bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600"
-    },
-    orange: {
-      card: isLocked
-        ? "backdrop-blur-sm bg-gradient-to-br from-gray-50/80 via-slate-50/80 to-gray-50/80 hover:from-gray-100/90 hover:via-slate-100/90 hover:to-gray-100/90 dark:from-gray-950/80 dark:via-slate-950/80 dark:to-gray-950/80 dark:hover:from-gray-900/90 dark:hover:via-slate-900/90 dark:hover:to-gray-900/90 border-gray-200/50 dark:border-gray-700/50 opacity-75"
-        : "backdrop-blur-sm bg-gradient-to-br from-orange-50/80 via-red-50/80 to-pink-50/80 hover:from-orange-100/90 hover:via-red-100/90 hover:to-pink-100/90 dark:from-orange-950/80 dark:via-red-950/80 dark:to-pink-950/80 dark:hover:from-orange-900/90 dark:hover:via-red-900/90 dark:hover:to-pink-900/90 border-orange-200/50 dark:border-orange-700/50",
-      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-orange-600 dark:text-orange-400",
-      button: isLocked ? "bg-gradient-to-r from-gray-400 to-gray-500" : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
-    },
-    teal: {
-      card: isLocked
-        ? "backdrop-blur-sm bg-gradient-to-br from-gray-50/80 via-slate-50/80 to-gray-50/80 hover:from-gray-100/90 hover:via-slate-100/90 hover:to-gray-100/90 dark:from-gray-950/80 dark:via-slate-950/80 dark:to-gray-950/80 dark:hover:from-gray-900/90 dark:hover:via-slate-900/90 dark:hover:to-gray-900/90 border-gray-200/50 dark:border-gray-700/50 opacity-75"
-        : "backdrop-blur-sm bg-gradient-to-br from-teal-50/80 via-cyan-50/80 to-sky-50/80 hover:from-teal-100/90 hover:via-cyan-100/90 hover:to-sky-100/90 dark:from-teal-950/80 dark:via-cyan-950/80 dark:to-sky-950/80 dark:hover:from-teal-900/90 dark:hover:via-cyan-900/90 dark:hover:to-sky-900/90 border-teal-200/50 dark:border-teal-700/50",
-      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-teal-600 dark:text-teal-400",
-      button: isLocked ? "bg-gradient-to-r from-gray-400 to-gray-500" : "bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
-    },
-    indigo: {
-      card: isLocked
-        ? "backdrop-blur-sm bg-gradient-to-br from-gray-50/80 via-slate-50/80 to-gray-50/80 hover:from-gray-100/90 hover:via-slate-100/90 hover:to-gray-100/90 dark:from-gray-950/80 dark:via-slate-950/80 dark:to-gray-950/80 dark:hover:from-gray-900/90 dark:hover:via-slate-900/90 dark:hover:to-gray-900/90 border-gray-200/50 dark:border-gray-700/50 opacity-75"
-        : "backdrop-blur-sm bg-gradient-to-br from-indigo-50/80 via-blue-50/80 to-cyan-50/80 hover:from-indigo-100/90 hover:via-blue-100/90 hover:to-cyan-100/90 dark:from-indigo-950/80 dark:via-blue-950/80 dark:to-cyan-950/80 dark:hover:from-indigo-900/90 dark:hover:via-blue-900/90 dark:hover:to-cyan-900/90 border-indigo-200/50 dark:border-indigo-700/50",
-      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-indigo-600 dark:text-indigo-400",
-      button: isLocked ? "bg-gradient-to-r from-gray-400 to-gray-500" : "bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600"
-    },
-    rose: {
-      card: isLocked
-        ? "backdrop-blur-sm bg-gradient-to-br from-gray-50/80 via-slate-50/80 to-gray-50/80 hover:from-gray-100/90 hover:via-slate-100/90 hover:to-gray-100/90 dark:from-gray-950/80 dark:via-slate-950/80 dark:to-gray-950/80 dark:hover:from-gray-900/90 dark:hover:via-slate-900/90 dark:hover:to-gray-900/90 border-gray-200/50 dark:border-gray-700/50 opacity-75"
-        : "backdrop-blur-sm bg-gradient-to-br from-rose-50/80 via-pink-50/80 to-purple-50/80 hover:from-rose-100/90 hover:via-pink-100/90 hover:to-purple-100/90 dark:from-rose-950/80 dark:via-pink-950/80 dark:to-purple-950/80 dark:hover:from-rose-900/90 dark:hover:via-pink-900/90 dark:hover:to-purple-900/90 border-rose-200/50 dark:border-rose-700/50",
-      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-rose-600 dark:text-rose-400",
-      button: isLocked ? "bg-gradient-to-r from-gray-400 to-gray-500" : "bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600"
-    }
+  // Map logical color names to theme variables used in the design system
+  const mapToVar: Record<string, string> = {
+    blue: 'primary',
+    green: 'success',
+    purple: 'secondary',
+    orange: 'accent',
+    teal: 'success',
+    indigo: 'primary',
+    rose: 'error',
   };
-  
-  return colorMap[color as keyof typeof colorMap] || colorMap.blue;
+
+  const token = mapToVar[color] || 'primary';
+
+  const baseCard = isLocked
+    ? 'bg-[var(--color-card)] border-4 border-[var(--color-border)] opacity-80'
+    : 'bg-[var(--color-card)] border-4 border-[var(--color-border)] shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]';
+
+  const iconClass = isLocked ? 'text-gray-400 dark:text-gray-600' : `text-[var(--color-${token})]`;
+  const buttonClass = isLocked
+    ? 'bg-[var(--color-muted)] border-4 border-[var(--color-border)] text-[var(--color-text)] shadow-[4px_4px_0px_0px_hsl(var(--border))]'
+    : `bg-[var(--color-${token})] border-4 border-[var(--color-border)] text-[var(--color-bg)] hover:bg-[var(--color-accent)]`;
+
+  return { card: baseCard, icon: iconClass, button: buttonClass };
 };
 
 interface CreateTileGridProps {
@@ -342,11 +312,16 @@ const iconVariants = {
 };
 
 const getDifficultyColor = (difficulty: string) => {
+  // Map difficulties to Nerobrutal semantic tokens
   switch (difficulty) {
-    case "Easy": return "bg-green-100 text-green-700 border-green-200";
-    case "Medium": return "bg-yellow-100 text-yellow-700 border-yellow-200";
-    case "Advanced": return "bg-red-100 text-red-700 border-red-200";
-    default: return "bg-gray-100 text-gray-700 border-gray-200";
+    case 'Easy':
+      return 'bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/50';
+    case 'Medium':
+      return 'bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/50';
+    case 'Advanced':
+      return 'bg-[var(--color-error)]/20 text-[var(--color-error)] border-[var(--color-error)]/50';
+    default:
+      return 'bg-[var(--color-muted)]/20 text-[var(--color-text)] border-[var(--color-border)]/50';
   }
 };
 
@@ -479,7 +454,7 @@ function Tile({
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.95 }}
                         >
-                          <Badge variant="neutral" className={cn(neo.badge, "bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/50 dark:to-yellow-900/50 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700 font-semibold text-xs")}>
+                          <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))] font-semibold")}>
                             <Crown className="h-3 w-3 mr-1" />
                             {requiredPlanConfig.name}
                           </Badge>
@@ -492,7 +467,7 @@ function Tile({
                   ) : requiredPlan !== 'FREE' && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700")}>
+                        <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/40")}>
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Unlocked
                         </Badge>
@@ -543,11 +518,11 @@ function Tile({
       </TooltipProvider>
       
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-4xl lg:max-w-5xl max-h-[90vh] p-0 overflow-hidden rounded-2xl flex flex-col">
+        <DialogContent className="sm:max-w-4xl lg:max-w-5xl max-h-[90vh] p-0 border-4 border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-neo)] overflow-hidden flex flex-col">
           <div className="grid lg:grid-cols-2 flex-1 min-h-0">
             {/* Left side - Hero content */}
-            <div className={`p-6 lg:p-8 bg-gradient-to-br ${colorClasses.card.replace('backdrop-blur-sm', '').replace('border-white/20', 'border-r')} flex flex-col`}>
-              <DialogHeader className="space-y-6">
+            <div className="p-6 lg:p-8 bg-[var(--color-bg)] border-r-4 border-[var(--color-border)] flex flex-col">
+              <DialogHeader className="space-y-4 sm:space-y-6">
                 <DialogTitle className="flex items-center justify-between">
                   <div className={`flex items-center text-4xl font-bold ${colorClasses.icon}`}>
                     <motion.div
@@ -568,12 +543,12 @@ function Tile({
 
                   <div className="flex items-center gap-3">
                     {showUpgradeBadge ? (
-                      <Badge variant="neutral" className={cn(neo.badge, "bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/50 dark:to-yellow-900/50 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700")}>
+                      <Badge variant="neutral" className={cn(neo.badge, "bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))]")}> 
                         <Crown className="h-3 w-3 mr-1" />
                         {requiredPlanConfig.name} Required
                       </Badge>
                     ) : requiredPlan !== 'FREE' && (
-                      <Badge variant="neutral" className={cn(neo.badge, "bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/50 dark:to-emerald-900/50 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700")}>
+                      <Badge variant="neutral" className={cn(neo.badge, "bg-[var(--color-success)]/20 dark:bg-[var(--color-success)]/10 text-[var(--color-success)] dark:text-[var(--color-success)] border-[var(--color-success)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))]")}> 
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Unlocked
                       </Badge>
@@ -596,7 +571,7 @@ function Tile({
                         transition={{ duration: 0.5, type: "spring" }}
                         className="text-center py-6 bg-white/50 dark:bg-gray-800/50 rounded-xl border backdrop-blur-sm"
                       >
-                        <p className="text-xl font-medium italic px-6">
+                        <p className="text-lg font-medium italic px-6">
                           "{taglines[currentTagline]}"
                         </p>
                         <div className="flex justify-center mt-4 space-x-2">
@@ -637,8 +612,8 @@ function Tile({
             </div>
 
             {/* Right side - Details */}
-            <div className="p-8 overflow-y-auto flex-1">
-              <div className="space-y-8">
+            <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto flex-1">
+              <div className="space-y-6 sm:space-y-8">
                 {/* Quick stats */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -665,7 +640,7 @@ function Tile({
                   transition={{ delay: 0.4 }}
                   className="space-y-4"
                 >
-                  <h3 className="text-xl font-bold flex items-center">
+                  <h3 className="text-lg font-bold flex items-center">
                     <CheckCircle className={`h-6 w-6 mr-3 ${colorClasses.icon}`} />
                     What You Get
                   </h3>
@@ -698,7 +673,7 @@ function Tile({
                   transition={{ delay: 0.6 }}
                   className="space-y-4"
                 >
-                  <h3 className="text-xl font-bold flex items-center">
+                  <h3 className="text-lg font-bold flex items-center">
                     <Sparkles className={`h-6 w-6 mr-3 ${colorClasses.icon}`} />
                     How It Works
                   </h3>
@@ -741,7 +716,7 @@ function Tile({
                 onClick={() => router.push(url)}
                 requiredPlan={accessRequiredPlan || requiredPlan}
                 allowPublicAccess={true}
-                className={`w-full h-12 font-bold text-lg ${colorClasses.button} text-white shadow-xl hover:shadow-2xl transition-all duration-300 group`}
+                className={`w-full h-12 font-bold text-base ${colorClasses.button} text-white shadow-xl hover:shadow-2xl transition-all duration-300 group`}
               />
             </motion.div>
           </DialogFooter>
@@ -783,14 +758,14 @@ export function CreateTileGrid() {
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 border border-blue-200 dark:border-blue-800"
+          className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[var(--color-primary)]/10 dark:bg-[var(--color-primary)]/30 border-4 border-[var(--color-primary)]/20 shadow-[4px_4px_0px_0px_hsl(var(--border))]"
         >
-          <Sparkles className="h-5 w-5 text-blue-600" />
-          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">AI-Powered Learning Tools</span>
+          <Sparkles className="h-5 w-5 text-[var(--color-primary)]" />
+          <span className="text-sm font-medium text-[var(--color-primary)]">AI-Powered Learning Tools</span>
         </motion.div>
 
         <motion.h1
-          className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 dark:from-white dark:via-blue-200 dark:to-purple-200 bg-clip-text text-transparent"
+          className="text-4xl md:text-5xl font-bold text-foreground"
           whileHover={{ scale: 1.05 }}
         >
           Create Amazing<br />Learning Content
@@ -832,7 +807,7 @@ export function CreateTileGrid() {
             className="text-center mb-8"
             whileHover={{ scale: 1.02 }}
           >
-            <h2 className="text-3xl font-bold mb-2">{category.title}</h2>
+            <h2 className="text-2xl font-bold mb-2">{category.title}</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">{category.description}</p>
           </motion.div>
 
@@ -853,17 +828,17 @@ export function CreateTileGrid() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 1.2 }}
-        className="text-center space-y-6 p-8 rounded-2xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 border backdrop-blur-sm"
+        className="text-center space-y-6 p-8 rounded-2xl bg-card border-6 border-border shadow-neo"
       >
         <motion.div
           whileHover={{ scale: 1.1, rotate: 360 }}
           transition={{ duration: 0.6 }}
-          className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white mb-4"
+          className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary text-white mb-4 border-6 border-primary-foreground shadow-neo"
         >
           <Brain className="h-8 w-8" />
         </motion.div>
 
-        <h3 className="text-2xl font-bold">Need Something Custom?</h3>
+        <h3 className="text-xl font-bold">Need Something Custom?</h3>
         <p className="text-muted-foreground max-w-md mx-auto">
           Can't find what you're looking for? Our AI can help you create any type of educational content.
         </p>
@@ -874,7 +849,7 @@ export function CreateTileGrid() {
         >
           <Button
             size="lg"
-            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold px-8 py-3 shadow-lg hover:shadow-xl transition-all duration-300"
+            className="bg-primary hover:bg-accent text-white font-semibold px-8 py-3 border-6 border-primary-foreground shadow-neo hover:shadow-neo-hover neo-hover-lift"
             onClick={() => window.location.href = '/contactus'}
           >
             <Sparkles className="h-5 w-5 mr-2" />

@@ -154,23 +154,23 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
   }
 
   return (
-    <div className={cn("w-full max-w-2xl mx-auto", className)}>
-      <Card className="border-2 border-amber-600 bg-black/40 backdrop-blur-sm">
-        <CardHeader className="border-b-2 border-amber-600/30 bg-black/60">
+    <div className={cn("w-full max-w-2xl mx-auto neuro-strong-typography", className)}>
+      <Card className="border-4 border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-neo)]">
+        <CardHeader className="border-b-4 border-[var(--color-border)] bg-[var(--color-border)]">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-2xl font-black text-amber-400 mb-2">
+              <CardTitle className="text-xl font-black text-[var(--color-text)] mb-2">
                 ⚙️ GENERATE QUIZ
               </CardTitle>
-              <p className="text-sm text-white/70">
+              <p className="text-sm text-[var(--color-text)]/70">
                 Choose a topic and create your ordering quiz
               </p>
             </div>
             <div className="text-right">
-              <Badge variant="neutral" className={cn(neo.badge, "font-black border-2 px-3 py-2 text-sm",
+              <Badge variant="neutral" className={cn(neo.badge, "font-black border-4 px-3 py-2 text-sm",
                   canGenerate
-                    ? "bg-green-900/40 text-green-300 border-green-600"
-                    : "bg-red-900/40 text-red-300 border-red-600"
+                    ? "bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/40"
+                    : "bg-[var(--color-error)]/20 text-[var(--color-error)] border-[var(--color-error)]/40"
                 )}>
                 {canGenerate ? "✓" : "✗"} {quizzesRemaining}/{dailyLimit}
               </Badge>
@@ -230,13 +230,13 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
                   onChange={handleTopicChange}
                   disabled={!canGenerate || isLoading}
                   className={cn(
-                    "border-2 bg-black/40 text-white placeholder:text-white/40",
+                    "border-4 bg-[var(--color-card)] text-[var(--color-text)] placeholder:text-[var(--color-text)]/40",
                     touched.topic
                       ? isTopicValid
-                        ? "border-green-600 focus:border-green-600"
-                        : "border-red-600 focus:border-red-600"
-                      : "border-white/20 focus:border-amber-600",
-                    "font-mono py-2"
+                        ? "border-[var(--color-success)] focus:border-[var(--color-success)]"
+                        : "border-[var(--color-error)] focus:border-[var(--color-error)]"
+                      : "border-[var(--color-border)] focus:border-[var(--color-primary)]",
+                    "font-mono py-2 shadow-[var(--shadow-neo)]"
                   )}
                 />
 
@@ -246,7 +246,7 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full left-0 right-0 mt-1 bg-black/80 border-2 border-amber-600 rounded-lg z-10 max-h-40 overflow-y-auto"
+                    className="absolute top-full left-0 right-0 mt-1 bg-[var(--color-card)] border-4 border-[var(--color-border)] rounded-lg z-10 max-h-40 overflow-y-auto shadow-[var(--shadow-neo)]"
                   >
                     {suggestedTopics.map((topic, idx) => (
                       <button
@@ -294,15 +294,15 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
                     }
                     disabled={!canGenerate || isLoading}
                     className={cn(
-                      "p-3 rounded-lg border-2 transition-all font-bold uppercase text-xs tracking-wider",
+                      "h-14 w-full font-black text-base flex flex-col items-center justify-center gap-2 rounded-md border-4 transition-all duration-200",
                       formData.difficulty === option.value
-                        ? "border-amber-600 bg-amber-900/30 text-amber-300"
-                        : "border-white/20 bg-black/30 text-white/70 hover:border-amber-600/50"
+                        ? cn(diff.color, diff.textColor, 'shadow-[4px_4px_0px_0px_hsl(var(--border))]')
+                        : 'bg-[var(--color-card)] text-[var(--color-text)] border-[var(--color-border)] hover:bg-[var(--color-muted)] shadow-[2px_2px_0px_0px_hsl(var(--border))]'
                     )}
                   >
                     <div className="text-lg mb-1">{option.icon}</div>
                     <div>{option.label}</div>
-                    <div className="text-xs text-white/50 mt-1">{option.description}</div>
+                    <div className="text-xs text-[var(--color-text)]/50 mt-1">{option.description}</div>
                   </button>
                 ))}
               </div>
@@ -353,10 +353,10 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
                 type="submit"
                 disabled={!isFormValid || isLoading}
                 className={cn(
-                  "w-full py-3 border-2 font-black uppercase text-sm tracking-wider",
+                  "w-full h-14 text-lg font-bold bg-[var(--color-primary)] text-[var(--color-bg)] border-4 border-[var(--color-border)] shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]",
                   isFormValid && !isLoading
-                    ? "bg-amber-600 hover:bg-amber-700 text-black border-amber-700"
-                    : "bg-gray-600 text-white border-gray-700 cursor-not-allowed"
+                    ? "hover:bg-[var(--color-accent)]"
+                    : "bg-[var(--color-muted)] text-[var(--color-text)] cursor-not-allowed opacity-50"
                 )}
               >
                 {isLoading ? (
@@ -384,12 +384,12 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
           </form>
 
           {/* Info Box */}
-          <div className="p-3 bg-black/40 border-l-4 border-blue-600 rounded-lg space-y-2">
-            <p className="text-xs font-bold text-blue-300 uppercase">💡 TIP</p>
-            <p className="text-xs text-white/70">
+          <div className="p-4 bg-[var(--color-card)] border-l-4 border-[var(--color-primary)] rounded-lg space-y-2 shadow-[var(--shadow-neo)]">
+            <p className="text-sm font-bold text-[var(--color-primary)] uppercase">💡 TIP</p>
+            <p className="text-sm text-[var(--color-text)]/70">
               Be specific with your topic for better quiz generation. For example:
-              <strong className="text-amber-300"> "API Authentication with JWT"</strong> instead
-              of just <strong className="text-amber-300">"APIs"</strong>.
+              <strong className="text-[var(--color-accent)]"> "API Authentication with JWT"</strong> instead
+              of just <strong className="text-[var(--color-accent)]">"APIs"</strong>.
             </p>
           </div>
         </CardContent>

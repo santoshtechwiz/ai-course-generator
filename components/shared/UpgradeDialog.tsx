@@ -50,31 +50,31 @@ export function UpgradeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md border-[3px] border-foreground bg-background shadow-[8px_8px_0px_0px_rgb(0,0,0)] rounded-none">
+      <DialogContent className="sm:max-w-md border-4 border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-neo)]">
         {/* Close Button */}
         <button
           onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-2 border-foreground bg-background w-8 h-8 flex items-center justify-center"
+          className="absolute right-3 top-3 rounded-none border-2 border-[var(--color-border)] bg-[var(--color-bg)] w-8 h-8 flex items-center justify-center shadow-[2px_2px_0_var(--color-border)] hover:bg-[var(--color-card)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg)]"
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4 text-[var(--color-text)]" />
           <span className="sr-only">Close</span>
         </button>
 
         <DialogHeader className="text-center space-y-4 pt-6">
-          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center border-[3px] border-foreground shadow-[4px_4px_0px_0px_rgb(0,0,0)]">
-            <Crown className="w-10 h-10 text-white" />
+          <div className="mx-auto w-20 h-20 bg-[var(--color-primary)] rounded-none flex items-center justify-center border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]">
+            <Crown className="w-10 h-10 text-[var(--color-bg)]" />
           </div>
           <div className="space-y-3">
-            <DialogTitle className="text-2xl font-black text-foreground uppercase tracking-tight">
+            <DialogTitle className="text-xl font-black text-[var(--color-text)] uppercase tracking-tight">
               Upgrade Required
             </DialogTitle>
-            <DialogDescription className="text-base text-foreground/80 font-medium">
+            <DialogDescription className="text-base text-[var(--color-text)]/70 font-medium">
               {feature
                 ? `"${feature}" requires ${requiredPlanConfig.name} plan`
                 : `This feature requires ${requiredPlanConfig.name} plan`
               }
               {currentPlan && (
-                <span className="block mt-2 text-sm font-normal px-3 py-1 bg-amber-100 text-amber-900 border-2 border-amber-900 inline-block">
+                <span className="block mt-2 text-sm font-normal px-3 py-1 bg-[var(--color-bg)] text-[var(--color-text)] border-2 border-[var(--color-border)] inline-block">
                   Current: {currentPlan}
                 </span>
               )}
@@ -83,15 +83,15 @@ export function UpgradeDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <div className="p-4 bg-blue-50 border-[3px] border-foreground shadow-[4px_4px_0px_0px_rgb(0,0,0)]">
-            <h4 className="font-black text-lg mb-3 flex items-center text-foreground">
-              <Zap className="w-5 h-5 mr-2 text-yellow-500" />
+          <div className="p-4 bg-[var(--color-bg)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]">
+            <h4 className="font-black text-lg mb-3 flex items-center text-[var(--color-text)]">
+              <Zap className="w-5 h-5 mr-2 text-[var(--color-primary)]" />
               {requiredPlanConfig.name} Includes:
             </h4>
             <ul className="space-y-2">
               {getPlanBenefits().map((benefit, index) => (
-                <li key={index} className="flex items-start text-sm font-medium text-foreground/90">
-                  <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
+                <li key={index} className="flex items-start text-sm font-medium text-[var(--color-text)]/90">
+                  <CheckCircle2 className="w-4 h-4 mr-2 text-[var(--color-primary)] mt-0.5 flex-shrink-0" />
                   {benefit}
                 </li>
               ))}
@@ -99,8 +99,8 @@ export function UpgradeDialog({
           </div>
 
           {/* Premium Badge */}
-          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 border-[3px] border-foreground py-2 px-4 text-center">
-            <div className="flex items-center justify-center gap-2 font-black text-foreground uppercase text-sm tracking-wide">
+          <div className="bg-[var(--color-primary)] border-4 border-[var(--color-border)] py-2 px-4 text-center shadow-[var(--shadow-neo)]">
+            <div className="flex items-center justify-center gap-2 font-black text-[var(--color-bg)] uppercase text-sm tracking-wide">
               <Sparkles className="w-4 h-4" />
               Most Popular Plan
               <Sparkles className="w-4 h-4" />
@@ -112,14 +112,14 @@ export function UpgradeDialog({
           <Button
             variant="neutral"
             onClick={() => onOpenChange(false)}
-            className="flex-1 border-[3px] border-foreground bg-background text-foreground font-bold hover:bg-foreground hover:text-background transition-all duration-200 shadow-[4px_4px_0px_0px_rgb(0,0,0)] hover:shadow-[2px_2px_0px_0px_rgb(0,0,0)] active:shadow-[0px_0px_0px_0px_rgb(0,0,0)] active:translate-x-1 active:translate-y-1"
+            className="flex-1 border-4 border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] font-bold hover:bg-[var(--color-card)] transition-all duration-200 shadow-[var(--shadow-neo)] hover:shadow-[2px_2px_0_var(--color-border)] active:shadow-none active:translate-x-1 active:translate-y-1"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Maybe Later
           </Button>
           <Button
             onClick={handleUpgrade}
-            className="flex-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-foreground font-black border-[3px] border-foreground hover:from-yellow-500 hover:to-orange-600 transition-all duration-200 shadow-[4px_4px_0px_0px_rgb(0,0,0)] hover:shadow-[6px_6px_0px_0px_rgb(0,0,0)] active:shadow-[2px_2px_0px_0px_rgb(0,0,0)] active:translate-x-1 active:translate-y-1"
+            className="flex-1 bg-[var(--color-primary)] text-[var(--color-bg)] font-black border-4 border-[var(--color-border)] hover:bg-[var(--color-primary)]/90 transition-all duration-200 shadow-[var(--shadow-neo)] hover:shadow-[6px_6px_0_var(--color-border)] active:shadow-[2px_2px_0_var(--color-border)] active:translate-x-1 active:translate-y-1"
           >
             <Crown className="w-4 h-4 mr-2" />
             Upgrade Now

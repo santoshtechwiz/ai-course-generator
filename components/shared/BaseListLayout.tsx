@@ -63,7 +63,7 @@ export function BaseListLayout({
                   </div>
                 )}
                 <div>
-                  <h1 className="text-3xl md:text-4xl font-black text-[hsl(var(--foreground))] leading-tight">
+                  <h1 className="text-2xl md:text-3xl font-black text-[hsl(var(--foreground))] leading-tight">
                     {title}
                   </h1>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] font-medium mt-1">

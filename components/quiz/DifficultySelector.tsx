@@ -98,12 +98,12 @@ export const DifficultySelector = React.memo(function DifficultySelector({
             onClick={() => handleDifficultyChange(option.value)}
             disabled={disabled}
             className={cn(
-              'relative px-4 py-3 font-bold border-2 transition-all',
+              'relative px-4 py-3 font-bold border-6 transition-all',
               'flex items-center justify-center gap-2 h-12',
               'text-sm sm:text-base',
               value === option.value
-                ? 'border-primary bg-primary text-primary-foreground shadow-[3px_3px_0px_0px_hsl(var(--foreground))]'
-                : 'border-border bg-card text-foreground hover:border-primary hover:shadow-[2px_2px_0px_0px_hsl(var(--foreground))]',
+                ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-text)] shadow-[var(--shadow-neo)]'
+                : 'border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-neo)]',
               disabled && 'opacity-50 cursor-not-allowed'
             )}
             aria-pressed={value === option.value}
@@ -122,7 +122,7 @@ export const DifficultySelector = React.memo(function DifficultySelector({
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
-          className="border-2 border-border bg-muted/50 p-3"
+          className="border-6 border-[var(--color-border)] bg-[var(--color-muted)]/50 p-3"
         >
           <p className="text-sm text-foreground font-semibold">
             {DIFFICULTY_CONFIG[value].label}

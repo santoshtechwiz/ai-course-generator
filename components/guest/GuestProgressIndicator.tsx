@@ -88,7 +88,7 @@ export function GuestProgressIndicator({
   }
   
   return (
-    <Card className={`bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 ${className}`}>
+    <Card className={`bg-blue-50 border-4 border-blue-200 shadow-[4px_4px_0px_0px_hsl(var(--border))] ${className}`}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-blue-900">

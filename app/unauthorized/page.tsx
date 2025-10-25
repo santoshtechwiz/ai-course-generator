@@ -11,7 +11,7 @@ export default function UnauthorizedPage() {
           <ShieldAlert className="h-12 w-12 text-destructive" />
         </div>
 
-        <h1 className="text-3xl font-bold">Access Denied</h1>
+        <h1 className="text-2xl font-bold">Access Denied</h1>
 
         <p className="text-muted-foreground">
           You don't have permission to access this page. This area is restricted to administrators only.

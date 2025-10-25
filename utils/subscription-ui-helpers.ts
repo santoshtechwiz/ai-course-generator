@@ -453,7 +453,7 @@ export function getPlanStatus(context: PlanStatusContext): PlanStatusConfig {
   const isCurrentActivePlan = isSubscribed && isPlanActive
   
   const result: PlanStatusConfig = {
-    cardClass: 'shadow-sm'
+    cardClass: 'shadow-[var(--shadow-neo)]'
   }
   
   // Authenticated user - show active plan styling
@@ -464,11 +464,11 @@ export function getPlanStatus(context: PlanStatusContext): PlanStatusConfig {
     }
     
     result.cardClass = cancelAtPeriodEnd
-      ? 'border-2 border-warning dark:border-warning'
-      : 'border-2 border-success dark:border-success'
+      ? 'border-6 border-[var(--color-warning)] dark:border-[var(--color-warning)]'
+      : 'border-6 border-[var(--color-success)] dark:border-[var(--color-success)]'
     
     result.bannerText = cancelAtPeriodEnd ? 'Cancels at Period End' : 'Current Plan'
-    result.bannerClass = cancelAtPeriodEnd ? 'bg-warning' : 'bg-success'
+    result.bannerClass = cancelAtPeriodEnd ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-success)]'
   }
   
   // Canceled plan styling
@@ -477,7 +477,7 @@ export function getPlanStatus(context: PlanStatusContext): PlanStatusConfig {
       text: 'Canceled',
       variant: 'destructive'
     }
-    result.cardClass = 'border-2 border-warning dark:border-warning'
+    result.cardClass = 'border-6 border-[var(--color-warning)] dark:border-[var(--color-warning)]'
   }
   
   // Best value styling (if not current plan)

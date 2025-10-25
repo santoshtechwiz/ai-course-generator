@@ -60,7 +60,7 @@ export function UpgradePrompt({ resource, onClose }: UpgradePromptProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className="border-2 border-orange-500/50 bg-gradient-to-br from-orange-500/5 to-yellow-500/5">
+      <Card className="border-4 border-warning bg-warning/10 shadow-neo">
         <CardHeader>
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
@@ -103,7 +103,7 @@ export function UpgradePrompt({ resource, onClose }: UpgradePromptProps) {
           </div>
 
           {/* Upgrade CTA */}
-          <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 p-4 rounded-lg border border-purple-500/20">
+          <div className="bg-primary/10 p-4 rounded-lg border-4 border-primary/20 shadow-neo">
             <div className="flex items-start gap-3">
               <Crown className="h-6 w-6 text-purple-600 flex-shrink-0 mt-1" />
               <div className="flex-1">
@@ -136,7 +136,7 @@ export function UpgradePrompt({ resource, onClose }: UpgradePromptProps) {
                   </li>
                 </ul>
                 <Button
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold shadow-lg"
+                  className="w-full bg-primary text-white font-bold border-4 border-border shadow-neo hover:shadow-neo-xl"
                   onClick={() => router.push('/dashboard/subscription')}
                 >
                   <Crown className="h-4 w-4 mr-2" />

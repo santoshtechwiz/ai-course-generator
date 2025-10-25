@@ -118,9 +118,9 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
             variant="ghost"
             size="icon"
             className={cn(
-              "relative rounded-full border-2 border-transparent",
+              "relative rounded-full border-6 border-transparent",
               buttonIcon,
-              "hover:border-border hover:shadow-[3px_3px_0px_0px_hsl(var(--border))]",
+              "hover:border-[var(--color-border)] hover:shadow-[var(--shadow-neo)]",
               "transition-all duration-150"
             )}
             onMouseEnter={() => setIsHovering(true)}
@@ -149,11 +149,11 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
                   <Badge
                     variant="default"
                     className={cn(
-                      "h-5 min-w-5 flex items-center justify-center rounded-full px-1 text-[10px] font-black border-2 border-border",
+                      "h-5 min-w-5 flex items-center justify-center rounded-full px-1 text-[10px] font-black border-6 border-[var(--color-border)]",
                       badgeCount,
-                      "shadow-[2px_2px_0px_0px_hsl(var(--border))]",
-                      creditStatus === "low" && "bg-yellow-500 text-yellow-950",
-                      creditStatus === "empty" && "bg-red-500 text-red-950"
+                      "shadow-[var(--shadow-neo)]",
+                      creditStatus === "low" && "bg-[var(--color-warning)] text-[var(--color-text)]",
+                      creditStatus === "empty" && "bg-[var(--color-error)] text-[var(--color-text)]"
                     )}
                   >
                     {creditInfo.remainingCredits > 99 ? "99+" : creditInfo.remainingCredits}
@@ -167,7 +167,7 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: [0, 1.2, 1] }}
-                className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-500 rounded-full border border-yellow-700"
+                className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[var(--color-warning)] rounded-full border border-[var(--color-border)]"
               />
             )}
 
@@ -177,7 +177,7 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
                 initial={{ scale: 0 }}
                 animate={{ scale: [0, 1.2, 1] }}
                 transition={{ delay: 0.2 }}
-                className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border border-red-700"
+                className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[var(--color-error)] rounded-full border border-[var(--color-border)]"
               />
             )}
 
@@ -190,8 +190,8 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
         align="end"
         className={cn(
           "w-full max-w-sm sm:max-w-md md:max-w-lg rounded-lg p-0",
-          "border-3 border-border shadow-[6px_6px_0px_0px_hsl(var(--border))]",
-          "bg-background backdrop-blur-sm"
+          "border-4 border-border shadow-[8px_8px_0px_0px_hsl(var(--border))]",
+          "bg-background"
         )}
       >
         {/* Header with enhanced styling */}
@@ -202,16 +202,16 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
               <span className="text-sm font-black">Credit Usage</span>
             </div>
             {creditStatus === "good" && (
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <CheckCircle2 className="h-4 w-4 text-[var(--color-success)]" />
             )}
             {creditStatus === "warning" && (
-              <Sparkles className="h-4 w-4 text-yellow-600" />
+              <Sparkles className="h-4 w-4 text-[var(--color-warning)]" />
             )}
             {creditStatus === "low" && (
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertTriangle className="h-4 w-4 text-[var(--color-warning)]" />
             )}
             {creditStatus === "empty" && (
-              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <AlertTriangle className="h-4 w-4 text-[var(--color-error)]" />
             )}
           </div>
         </DropdownMenuLabel>
@@ -224,17 +224,17 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
               {creditInfo.usedCredits} / {creditInfo.totalCredits}
             </span>
           </div>
-          <div className="w-full bg-secondary-background border-2 border-border rounded-full h-3 overflow-hidden">
+          <div className="w-full bg-[var(--color-muted)] border-6 border-[var(--color-border)] rounded-full h-3 overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${creditProgress}%` }}
               transition={{ duration: 0.8, type: "spring" }}
               className={cn(
                 "h-full rounded-full transition-all duration-300",
-                creditStatus === "good" && "bg-green-500",
-                creditStatus === "warning" && "bg-yellow-500",
-                creditStatus === "low" && "bg-orange-500",
-                creditStatus === "empty" && "bg-red-500"
+                creditStatus === "good" && "bg-[var(--color-success)]",
+                creditStatus === "warning" && "bg-[var(--color-warning)]",
+                creditStatus === "low" && "bg-[var(--color-accent)]",
+                creditStatus === "empty" && "bg-[var(--color-error)]"
               )}
             />
           </div>
@@ -247,13 +247,13 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
           <div className="grid grid-cols-2 gap-3">
             <motion.div 
               className={cn(
-                "p-3 border-2 border-border rounded-lg text-center",
-                "bg-secondary-background shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+                "p-3 border-6 border-[var(--color-border)] rounded-lg text-center",
+                "bg-[var(--color-muted)] shadow-[var(--shadow-neo)]"
               )}
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >
-              <div className="text-2xl font-black text-green-600">
+              <div className="text-xl font-black text-[var(--color-success)]">
                 {creditInfo.remainingCredits.toLocaleString()}
               </div>
               <div className="text-xs font-bold text-muted-foreground mt-1">
@@ -263,13 +263,13 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
 
             <motion.div 
               className={cn(
-                "p-3 border-2 border-border rounded-lg text-center",
-                "bg-secondary-background shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+                "p-3 border-6 border-[var(--color-border)] rounded-lg text-center",
+                "bg-[var(--color-muted)] shadow-[var(--shadow-neo)]"
               )}
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >
-              <div className="text-2xl font-black text-blue-600">
+              <div className="text-xl font-black text-[var(--color-accent)]">
                 {creditInfo.usedCredits.toLocaleString()}
               </div>
               <div className="text-xs font-bold text-muted-foreground mt-1">
@@ -293,9 +293,9 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
             <Badge 
               variant="secondary" 
               className={cn(
-                "ml-2 border-2 border-border font-black",
-                "shadow-[2px_2px_0px_0px_hsl(var(--border))]",
-                isSubscribed ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+                "ml-2 border-6 border-[var(--color-border)] font-black",
+                "shadow-[var(--shadow-neo)]",
+                isSubscribed ? "bg-[var(--color-success)] text-[var(--color-text)]" : "bg-[var(--color-muted)] text-[var(--color-text)]"
               )}
             >
               {subscriptionPlan}
@@ -309,7 +309,7 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
           <div className="flex items-center mt-2">
             <div className={cn(
               "w-2 h-2 rounded-full mr-2",
-              isSubscribed ? "bg-green-500 animate-pulse" : "bg-gray-400"
+              isSubscribed ? "bg-[var(--color-success)] animate-pulse" : "bg-[var(--color-muted)]"
             )} />
             <span className="text-xs font-bold">
               Status: {subscriptionStatus}
@@ -326,11 +326,11 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
             >
               <Button
                 className={cn(
-                  "w-full font-black border-3 border-border",
-                  "shadow-[3px_3px_0px_0px_hsl(var(--border))]",
-                  "hover:shadow-[4px_4px_0px_0px_hsl(var(--border))]",
-                  "active:shadow-[1px_1px_0px_0px_hsl(var(--border))] active:translate-y-1",
-                  "transition-all duration-150 bg-blue-500 text-white hover:bg-blue-600"
+                  "w-full font-black border-6 border-[var(--color-border)]",
+                  "shadow-[var(--shadow-neo)]",
+                  "hover:shadow-[var(--shadow-neo-hover)]",
+                  "active:shadow-[var(--shadow-neo-active)] active:translate-y-1",
+                  "transition-all duration-150 bg-[var(--color-primary)] text-[var(--color-text)] hover:bg-[var(--color-accent)]"
                 )}
                 size="sm"
                 onClick={() => window.open('/pricing', '_blank')}

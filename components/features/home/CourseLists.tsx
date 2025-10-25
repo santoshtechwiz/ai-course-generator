@@ -377,7 +377,7 @@ export default function CoursesClient({
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl p-8 mb-6 border-2 border-primary/20"
+          className="bg-primary/10 rounded-2xl p-8 mb-6 border-4 border-primary/20 shadow-[6px_6px_0px_0px_hsl(var(--border))]"
         >
           {hasFilters ? (
             <Search className="w-16 h-16 text-primary mx-auto" />

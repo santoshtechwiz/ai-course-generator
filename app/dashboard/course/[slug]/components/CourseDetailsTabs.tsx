@@ -307,27 +307,27 @@ export default function CourseDetailsTabs({
     switch (level) {
       case "Expert":
         return {
-          badge: "bg-accent text-foreground border border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
+          badge: "bg-[var(--color-success)] text-[var(--color-bg)] border border-[var(--color-border)] shadow-[6px_6px_0px_0px_var(--color-border)]",
           icon: Star,
         }
       case "Advanced":
         return {
-          badge: "bg-chart-1 text-foreground border border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
+          badge: "bg-[var(--color-primary)] text-[var(--color-bg)] border border-[var(--color-border)] shadow-[6px_6px_0px_0px_var(--color-border)]",
           icon: Trophy,
         }
       case "Intermediate":
         return {
-          badge: "bg-chart-3 text-foreground border border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
+          badge: "bg-[var(--color-warning)] text-[var(--color-bg)] border border-[var(--color-border)] shadow-[6px_6px_0px_0px_var(--color-border)]",
           icon: Target,
         }
       case "Novice":
         return {
-          badge: "bg-chart-2 text-foreground border border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
+          badge: "bg-[var(--color-accent)] text-[var(--color-bg)] border border-[var(--color-border)] shadow-[6px_6px_0px_0px_var(--color-border)]",
           icon: Zap,
         }
       default:
         return {
-          badge: "bg-muted text-foreground border border-foreground shadow-[6px_6px_0px_0px] shadow-foreground",
+          badge: "bg-[var(--color-muted)] text-[var(--color-text)] border border-[var(--color-border)] shadow-[6px_6px_0px_0px_var(--color-border)]",
           icon: PlayCircle,
         }
     }
@@ -367,7 +367,7 @@ export default function CourseDetailsTabs({
   return (
     <div className="h-full w-full flex flex-col">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full w-full flex flex-col">
-  <TabsList className={cn("sticky top-[var(--course-sticky-offset)] z-50 grid w-full grid-cols-4 h-auto bg-neo-background p-2 gap-3 shadow-[4px_4px_0px_0px_var(--neo-border)] overflow-visible backdrop-blur-sm", neo.inner)}>
+  <TabsList className={cn("sticky top-[var(--course-sticky-offset)] grid w-full grid-cols-4 h-auto bg-neo-background p-2 gap-3 shadow-[4px_4px_0px_0px_var(--neo-border)] overflow-visible backdrop-blur-sm", neo.inner)} style={{ zIndex: 'var(--z-index-sticky)' }}>
           <TabsTrigger
             value="summary"
             className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 min-h-[56px] leading-none data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border border-transparent hover:border-neo-border px-3 md:px-4"

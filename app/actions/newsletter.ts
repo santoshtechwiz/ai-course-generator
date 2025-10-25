@@ -1,4 +1,4 @@
-"use server"
+
 
 import mailchimp from "@mailchimp/mailchimp_marketing"
 

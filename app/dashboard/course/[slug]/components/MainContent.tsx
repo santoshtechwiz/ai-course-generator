@@ -8,7 +8,7 @@ import { markChapterCompleted } from "@/store/slices/courseProgress-slice"
 import { setPiPActive, setPiPVideoData } from "@/store/slices/course-slice"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
-import { Play, CheckCircle, Menu, X, BookOpen, Zap, Loader2, Clock, Users, Star } from "lucide-react"
+import { Play, CheckCircle, Menu, X, BookOpen, Zap, Loader2, Clock, Star } from "lucide-react"
 import { setCurrentVideoApi } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import CourseDetailsTabs from "./CourseDetailsTabs"
@@ -31,7 +31,6 @@ import { useGuestProgress } from "@/hooks/useGuestProgress"
 import { GuestProgressIndicator, ContextualSignInPrompt } from "@/components/guest"
 import { useSession } from "next-auth/react"
 import VideoPlayer from "./video/components/VideoPlayer"
-import neo from "@/components/neo/tokens"
 import { cn } from "@/lib/utils"
 import CertificateModal from "./CertificateModal"
 import VideoNavigationSidebar from "./ChapterPlaylist"
@@ -39,8 +38,18 @@ import MobilePlaylistOverlay from "./MobilePlaylistOverlay"
 import { storageManager } from "@/utils/storage-manager"
 import { useBookmarks } from "@/hooks/use-bookmarks"
 
-// Simple stat badge component - compact design
 const CourseStatBadge = ({ icon: Icon, value, label }: { icon: any; value: string; label: string }) => (
+  <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
+    <Icon className="h-4 w-4 text-black flex-shrink-0" />
+    <div className="flex flex-col leading-tight">
+      <span className="text-xs font-black text-black">{value}</span>
+      <span className="text-[10px] font-bold text-gray-700 uppercase">{label}</span>
+    </div>
+  </div>
+)
+
+// Simple stat badge component - compact design
+const CourseStatBadge_original = ({ icon: Icon, value, label }: { icon: any; value: string; label: string }) => (
   <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
     <Icon className="h-3.5 w-3.5 text-black flex-shrink-0" />
     <div className="flex flex-col leading-tight">
@@ -565,23 +574,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
         console.log(`[Authenticated] Marking current chapter ${currentChapterId} as completed before advancing`)
 
         const timeSpent = Math.round(currentVideoProgress * (videoDurations[currentVideoId || ""] || 0))
-        const success = enqueueProgress(
-          user.id,
-          course.id,
-          currentChapterId,
-          "chapter_progress",
-          100,
-          timeSpent,
-          {
-            completed: true,
-            courseId: String(course.id),
-            chapterId: String(currentChapterId),
-            trigger: "next_click",
-            videoDuration: videoDurations[currentVideoId || ""] || 0,
-            watchedSeconds: timeSpent,
-            completedAt: Date.now(),
-          },
-        )
+        const success = enqueueProgress(user.id, course.id, currentChapterId, "chapter_progress", 100, timeSpent, {
+          completed: true,
+          courseId: String(course.id),
+          chapterId: String(currentChapterId),
+          trigger: "next_click",
+          videoDuration: videoDurations[currentVideoId || ""] || 0,
+          watchedSeconds: timeSpent,
+          completedAt: Date.now(),
+        })
 
         if (success) {
           dispatch(
@@ -614,24 +615,16 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       if (user?.id && !course.isShared && nextVideoEntry.chapter?.id) {
         console.log(`[Authenticated] Recording video start event for chapter ${nextVideoEntry.chapter.id}`)
 
-        const success = enqueueProgress(
-          user.id,
-          course.id,
-          nextVideoEntry.chapter.id,
-          "chapter_start",
-          0,
-          0,
-          {
-            courseId: String(course.id),
-            chapterId: String(nextVideoEntry.chapter.id),
-            progress: 0,
-            playedSeconds: 0,
-            duration: 0,
-            videoId: nextVid,
-            startedAt: Date.now(),
-            previouslyCompleted: completedChapters.includes(String(nextVideoEntry.chapter.id)),
-          },
-        )
+        const success = enqueueProgress(user.id, course.id, nextVideoEntry.chapter.id, "chapter_start", 0, 0, {
+          courseId: String(course.id),
+          chapterId: String(nextVideoEntry.chapter.id),
+          progress: 0,
+          playedSeconds: 0,
+          duration: 0,
+          videoId: nextVid,
+          startedAt: Date.now(),
+          previouslyCompleted: completedChapters.includes(String(nextVideoEntry.chapter.id)),
+        })
 
         if (success) {
           console.log(`Video start event queued for chapter ${nextVideoEntry.chapter.id}`)
@@ -709,19 +702,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
         if (user?.id && !course.isShared) {
           console.log(`[Authenticated] Video selected: ${videoId} for chapter ${safeChapter.id}`)
 
-          const success = enqueueProgress(
-            user.id,
-            course.id,
-            safeChapter.id,
-            "chapter_start",
-            0,
-            0,
-            {
-              videoId: videoId,
-              startedAt: Date.now(),
-              previouslyCompleted: completedChapters.includes(String(safeChapter.id)),
-            },
-          )
+          const success = enqueueProgress(user.id, course.id, safeChapter.id, "chapter_start", 0, 0, {
+            videoId: videoId,
+            startedAt: Date.now(),
+            previouslyCompleted: completedChapters.includes(String(safeChapter.id)),
+          })
 
           if (success) {
             console.log(`Video selection event queued for chapter ${safeChapter.id}`)
@@ -765,24 +750,16 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
           `[Authenticated] Video loaded: ${currentVideoId} with duration ${metadata.duration}s for chapter ${currentChapter.id}`,
         )
 
-        const success = enqueueProgress(
-          user.id,
-          course.id,
-          currentChapter.id,
-          "chapter_progress",
-          0,
-          0,
-          {
-            courseId: String(course.id),
-            chapterId: String(currentChapter.id),
-            progress: 0,
-            playedSeconds: 0,
-            duration: metadata.duration,
-            videoId: currentVideoId,
-            loadedAt: Date.now(),
-            eventSubtype: "video_metadata_loaded",
-          },
-        )
+        const success = enqueueProgress(user.id, course.id, currentChapter.id, "chapter_progress", 0, 0, {
+          courseId: String(course.id),
+          chapterId: String(currentChapter.id),
+          progress: 0,
+          playedSeconds: 0,
+          duration: metadata.duration,
+          videoId: currentVideoId,
+          loadedAt: Date.now(),
+          eventSubtype: "video_metadata_loaded",
+        })
 
         if (success) {
           console.log(`Video metadata load event queued for chapter ${currentChapter.id}`)
@@ -839,23 +816,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             )
 
             const timeSpent = Math.round(currentVideoProgress * (videoDurations[currentVideoId || ""] || 0))
-            const success = enqueueProgress(
-              user.id,
-              courseIdNum,
-              chapterIdNum,
-              "chapter_progress",
-              100,
-              timeSpent,
-              {
-                completed: true,
-                courseId: String(courseIdNum),
-                chapterId: String(chapterIdNum),
-                trigger: "playlist_callback",
-                videoDuration: videoDurations[currentVideoId || ""] || 0,
-                watchedSeconds: timeSpent,
-                completedAt: Date.now(),
-              },
-            )
+            const success = enqueueProgress(user.id, courseIdNum, chapterIdNum, "chapter_progress", 100, timeSpent, {
+              completed: true,
+              courseId: String(courseIdNum),
+              chapterId: String(chapterIdNum),
+              trigger: "playlist_callback",
+              videoDuration: videoDurations[currentVideoId || ""] || 0,
+              watchedSeconds: timeSpent,
+              completedAt: Date.now(),
+            })
 
             if (success) {
               console.log(`[ChapterPlaylist] Chapter completion queued`)
@@ -1290,22 +1259,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     const totalVideos = videoPlaylist.length
     const completedVideos = completedChapters.length
     const totalDuration = formatDuration(totalCourseDuration)
-    
+
     return {
       totalVideos,
       completedVideos,
       totalDuration,
-      progressPercentage: totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0
+      progressPercentage: totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0,
     }
   }, [videoPlaylist.length, completedChapters.length, totalCourseDuration])
 
   return (
-    <div className="min-h-screen bg-white relative">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-200 dark:bg-background dark:text-foreground">
       {/* Share course notice banner */}
       {course.isShared && (
-        <div className="bg-blue-200 border-b-4 border-black p-4 transition-opacity duration-200">
-          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6">
-            <p className="text-sm font-black text-black uppercase tracking-tight">
+        <div className="bg-blue-300 dark:bg-blue-900 border-b-4 border-black dark:border-white p-3 sm:p-4 transition-colors">
+          <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-6">
+            <p className="text-xs sm:text-sm font-black text-black dark:text-white uppercase tracking-tight">
               📚 Shared Course Preview — Watch all videos • Take quiz • Save bookmarks (local only)
             </p>
           </div>
@@ -1314,64 +1283,69 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
       {authPromptOverlay}
 
-      {/* Enhanced Sticky Header */}
-      <header className={cn(
-        "sticky top-0 z-50 bg-white border-b-4 border-black shadow-[0_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-300",
-        state.headerCompact && "py-2"
-      )}>
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between gap-4 py-3">
+      <header
+        className={cn(
+          "sticky top-0 z-50 bg-background dark:bg-background border-b-4 border-black dark:border-white shadow-[0_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[0_4px_0px_0px_rgba(255,255,255,1)] transition-all duration-300",
+          state.headerCompact && "py-2",
+        )}
+      >
+        <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-6">
+          <div className="flex items-center justify-between gap-2 sm:gap-3 lg:gap-4 py-2 sm:py-3">
             {/* Left: Course title and progress */}
-            <div className="flex-1 min-w-0 flex items-center gap-4">
+            <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3 lg:gap-4">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-yellow-400 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center">
-                  <BookOpen className="h-6 w-6 text-black" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-400 dark:bg-yellow-500 border-2 border-black dark:border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] flex items-center justify-center">
+                  <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-black dark:text-white" />
                 </div>
               </div>
-              
+
               <div className="flex-1 min-w-0">
-                <h1 className={cn(
-                  "font-black uppercase tracking-tight truncate text-black",
-                  state.headerCompact ? "text-lg" : "text-2xl lg:text-3xl"
-                )}>
+                <h1
+                  className={cn(
+                    "font-black uppercase tracking-tight truncate text-black dark:text-white",
+                    state.headerCompact ? "text-base sm:text-lg" : "text-lg sm:text-xl lg:text-2xl",
+                  )}
+                >
                   {course.title}
                 </h1>
-                <div className="flex items-center gap-3 mt-1">
-                  <div className="flex items-center gap-1 text-sm font-black text-gray-700">
+                <div className="flex items-center gap-2 mt-0.5 text-xs sm:text-sm font-black text-gray-700 dark:text-gray-300 flex-wrap">
+                  <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     <span>{enhancedCourseStats.totalDuration}</span>
                   </div>
-                  <div className="flex items-center gap-1 text-sm font-black text-gray-700">
+                  <div className="hidden sm:flex items-center gap-1">
                     <Play className="h-3 w-3" />
                     <span>{enhancedCourseStats.totalVideos} videos</span>
                   </div>
                   {state.headerCompact && (
-                    <div className="flex items-center gap-1 text-sm font-black">
-                      <CheckCircle className="h-3 w-3 text-green-600" />
-                      <span>{enhancedCourseStats.completedVideos}/{enhancedCourseStats.totalVideos}</span>
+                    <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                      <CheckCircle className="h-3 w-3" />
+                      <span>
+                        {enhancedCourseStats.completedVideos}/{enhancedCourseStats.totalVideos}
+                      </span>
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Center: Enhanced Progress */}
+            {/* Center: Enhanced Progress - Hidden on mobile */}
             {!state.headerCompact && (
-              <div className="hidden md:flex items-center gap-4">
-                <div className="flex items-center gap-3 bg-white border-2 border-black px-4 py-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <span className="font-black text-sm">
+              <div className="hidden lg:flex items-center gap-2 xl:gap-3">
+                <div className="flex items-center gap-2 bg-background dark:bg-background border-2 border-black dark:border-white px-3 py-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <span className="font-black text-xs">
                       {enhancedCourseStats.completedVideos}/{enhancedCourseStats.totalVideos}
                     </span>
                   </div>
-                  <div className="w-32 h-3 bg-gray-200 border border-black">
+                  <div className="w-24 h-2 bg-gray-300 dark:bg-gray-600 border border-black dark:border-white">
                     <div
-                      className="h-full bg-green-600 transition-all duration-300"
+                      className="h-full bg-green-600 dark:bg-green-500 transition-all duration-300"
                       style={{ width: `${enhancedCourseStats.progressPercentage}%` }}
                     />
                   </div>
-                  <div className="font-black text-sm min-w-[40px] text-center">
+                  <div className="font-black text-xs min-w-[35px] text-center">
                     {enhancedCourseStats.progressPercentage}%
                   </div>
                 </div>
@@ -1379,22 +1353,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             )}
 
             {/* Right: Action buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <Button
                 variant="default"
                 size="sm"
                 onClick={() => dispatch2({ type: "SET_SIDEBAR_COLLAPSED", payload: !state.sidebarCollapsed })}
-                className="hidden xl:flex bg-blue-400 hover:bg-blue-500 text-black font-black border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase"
+                className="hidden xl:flex bg-blue-400 dark:bg-blue-600 hover:bg-blue-500 dark:hover:bg-blue-700 text-black dark:text-white font-black border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[1px_1px_0px_0px_rgba(255,255,255,1)] transition-all uppercase text-xs"
               >
                 {state.sidebarCollapsed ? (
                   <>
-                    <Menu className="h-4 w-4 mr-2" />
-                    Show Chapters
+                    <Menu className="h-3.5 w-3.5 mr-1" />
+                    <span className="hidden sm:inline">Show</span>
                   </>
                 ) : (
                   <>
-                    <X className="h-4 w-4 mr-2" />
-                    Hide Chapters
+                    <X className="h-3.5 w-3.5 mr-1" />
+                    <span className="hidden sm:inline">Hide</span>
                   </>
                 )}
               </Button>
@@ -1408,20 +1382,21 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             </div>
           </div>
 
-          {/* Mobile progress - Enhanced */}
-          <div className="md:hidden border-t-2 border-black pt-3 pb-2">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-sm font-black">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span>{enhancedCourseStats.completedVideos} of {enhancedCourseStats.totalVideos} completed</span>
+          <div className="lg:hidden border-t-2 border-black dark:border-white pt-2 pb-1.5">
+            <div className="flex items-center justify-between mb-1.5 gap-2">
+              <div className="flex items-center gap-1.5 text-xs font-black text-black dark:text-white">
+                <CheckCircle className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                <span>
+                  {enhancedCourseStats.completedVideos}/{enhancedCourseStats.totalVideos}
+                </span>
               </div>
-              <div className="bg-white border-2 border-black px-2 py-1 font-black text-sm">
+              <div className="bg-background dark:bg-background border-2 border-black dark:border-white px-2 py-0.5 font-black text-xs text-black dark:text-white">
                 {enhancedCourseStats.progressPercentage}%
               </div>
             </div>
-            <div className="h-3 bg-gray-200 border border-black">
+            <div className="h-2 bg-gray-300 dark:bg-gray-600 border border-black dark:border-white">
               <div
-                className="h-full bg-green-600 transition-all duration-300"
+                className="h-full bg-green-600 dark:bg-green-500 transition-all duration-300"
                 style={{ width: `${enhancedCourseStats.progressPercentage}%` }}
               />
             </div>
@@ -1431,8 +1406,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
       {/* Video generation section for owners */}
       {(isOwner || user?.isAdmin) && (
-        <div className="bg-yellow-100 border-b-4 border-black transition-all overflow-hidden">
-          <div className="max-w-screen-2xl mx-auto px-4 lg:px-6 py-4">
+        <div className="bg-yellow-100 dark:bg-yellow-900 border-b-4 border-black dark:border-white transition-all overflow-hidden">
+          <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
             <VideoGenerationSection
               course={course}
               onVideoGenerated={(chapterId, videoId) => {
@@ -1445,73 +1420,51 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
         </div>
       )}
 
-      {/* Enhanced Mobile playlist toggle */}
       {!state.isTheaterMode && (
-        <div className="lg:hidden border-b-4 border-black bg-gray-100">
-          <div className="max-w-screen-2xl mx-auto px-4 lg:px-6 py-3">
+        <div className="lg:hidden border-b-4 border-black dark:border-white bg-gray-100 dark:bg-gray-900">
+          <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
             <Button
               variant="neutral"
               onClick={() => dispatch2({ type: "SET_MOBILE_PLAYLIST_OPEN", payload: !state.mobilePlaylistOpen })}
-              className="w-full justify-between h-14 bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all font-black"
+              className="w-full justify-between h-12 sm:h-14 bg-background dark:bg-background border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[1px_1px_0px_0px_rgba(255,255,255,1)] transition-all font-black text-xs sm:text-sm"
             >
-              <div className="flex items-center gap-3">
-                <BookOpen className="h-5 w-5" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
                 <div className="text-left">
-                  <div className="font-black uppercase text-sm">Course Content</div>
-                  <div className="text-xs font-bold text-gray-600">
-                    {currentChapter?.title || "Select a chapter"}
+                  <div className="font-black uppercase text-xs sm:text-sm">Content</div>
+                  <div className="text-xs font-bold text-gray-600 dark:text-gray-400 line-clamp-1">
+                    {currentChapter?.title || "Select chapter"}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 <MobilePlaylistCount
                   currentIndex={currentIndex}
                   hasCurrentChapter={Boolean(currentChapter)}
                   total={videoPlaylist.length}
                 />
-                <div className="w-2 h-2 bg-black rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full"></div>
               </div>
             </Button>
           </div>
         </div>
       )}
 
-      {/* Enhanced Main content */}
       <main className={cn("transition-all duration-100", state.isTheaterMode && "bg-black")}>
-        {/* Top spacer for MainNavbar */}
-        {!state.isTheaterMode && <div className="h-16" />}
-        
+        {!state.isTheaterMode && <div className="h-12 sm:h-16" />}
+
         <div
           className={cn(
             "mx-auto transition-all duration-100",
-            state.isTheaterMode ? "max-w-none px-0" : "max-w-[1600px] px-4 sm:px-6 lg:px-8 py-4",
+            state.isTheaterMode ? "max-w-none px-0" : "max-w-[1600px] px-3 sm:px-4 lg:px-6 py-3 sm:py-4",
           )}
         >
-          {/* Course Stats Bar */}
           {!state.isTheaterMode && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              <CourseStatBadge 
-                icon={Play} 
-                value={videoPlaylist.length.toString()} 
-                label="Videos" 
-              />
-              <CourseStatBadge 
-                icon={Clock} 
-                value={formatDuration(totalCourseDuration)} 
-                label="Total Duration" 
-              />
-              <CourseStatBadge 
-                icon={CheckCircle} 
-                value={`${enhancedCourseStats.progressPercentage}%`} 
-                label="Completed" 
-              />
-              {course.rating && (
-                <CourseStatBadge 
-                  icon={Star} 
-                  value={course.rating.toString()} 
-                  label="Rating" 
-                />
-              )}
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+              <CourseStatBadge icon={Play} value={videoPlaylist.length.toString()} label="Videos" />
+              <CourseStatBadge icon={Clock} value={formatDuration(totalCourseDuration)} label="Duration" />
+              <CourseStatBadge icon={CheckCircle} value={`${enhancedCourseStats.progressPercentage}%`} label="Done" />
+              {course.rating && <CourseStatBadge icon={Star} value={course.rating.toString()} label="Rating" />}
             </div>
           )}
 
@@ -1520,34 +1473,37 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
               "transition-all duration-100",
               state.sidebarCollapsed || state.isTheaterMode
                 ? "flex flex-col"
-                : "flex flex-col lg:grid lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px] gap-4",
+                : "flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] xl:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] gap-2 sm:gap-3 lg:gap-4",
             )}
           >
             {/* Video and content area */}
-            <div className="space-y-3 min-w-0">
+            <div className="space-y-2 sm:space-y-3 min-w-0">
               {/* Guest Progress Indicator */}
               {!user && (
-                <div className="mb-3 transition-transform duration-100">
+                <div className="mb-2 sm:mb-3 transition-transform duration-100">
                   <GuestProgressIndicator courseId={course.id} />
                 </div>
               )}
 
-              {/* Video Player - Clean minimal container */}
               <div className="relative">
                 {isPiPActive ? (
-                  <div className="bg-gray-100 border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-                    <div className="aspect-video bg-gray-200 flex items-center justify-center">
-                      <div className="text-center p-8">
-                        <div className="w-20 h-20 mx-auto mb-4 bg-blue-400 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center">
-                          <Play className="h-10 w-10 text-black" />
+                  <div className="bg-gray-100 dark:bg-gray-900 border-4 border-black dark:border-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] overflow-hidden">
+                    <div className="aspect-video bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+                      <div className="text-center p-4 sm:p-8">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 bg-blue-400 dark:bg-blue-600 border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] flex items-center justify-center">
+                          <Play className="h-8 w-8 sm:h-10 sm:w-10 text-black dark:text-white" />
                         </div>
-                        <h3 className="text-xl font-black mb-2 uppercase tracking-tight">Picture-in-Picture Active</h3>
-                        <p className="text-gray-600 text-sm font-bold">Video is playing in a separate window</p>
+                        <h3 className="text-base sm:text-xl font-black mb-1 sm:mb-2 uppercase tracking-tight text-black dark:text-white">
+                          Picture-in-Picture
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-bold">
+                          Video playing in separate window
+                        </p>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full aspect-video bg-black overflow-hidden">
+                  <div className="w-full aspect-video bg-black overflow-hidden border-4 border-black dark:border-white">
                     <VideoPlayer
                       youtubeVideoId={currentVideoId || ""}
                       chapterId={currentChapter?.id ? String(currentChapter.id) : ""}
@@ -1588,18 +1544,21 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                 )}
               </div>
 
-              {/* Current Chapter Info */}
               {!state.isTheaterMode && currentChapter && (
-                <div className="bg-white border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-3">
-                  <div className="flex items-center justify-between gap-3">
+                <div className="bg-background dark:bg-background border border-border shadow-neo p-2.5 sm:p-3">
+                  <div className="flex items-center justify-between gap-2 sm:gap-3">
                     <div className="min-w-0 flex-1">
-                      <h2 className="font-black text-lg uppercase tracking-tight truncate">{currentChapter.title}</h2>
+                      <h2 className="font-black text-sm sm:text-base lg:text-lg uppercase tracking-tight truncate text-black dark:text-white">
+                        {currentChapter.title}
+                      </h2>
                       {currentChapter.description && (
-                        <p className="text-gray-600 font-bold text-sm mt-0.5 line-clamp-1">{currentChapter.description}</p>
+                        <p className="text-gray-600 dark:text-gray-400 font-bold text-xs sm:text-sm mt-0.5 line-clamp-1">
+                          {currentChapter.description}
+                        </p>
                       )}
                     </div>
                     {videoDurations[currentVideoId || ""] && (
-                      <div className="bg-yellow-400 border-2 border-black px-2.5 py-1 font-black text-xs whitespace-nowrap flex-shrink-0">
+                      <div className="bg-[var(--color-warning)] border-2 border-black dark:border-white px-2 py-1 font-black text-xs whitespace-nowrap flex-shrink-0">
                         {formatDuration(videoDurations[currentVideoId || ""])}
                       </div>
                     )}
@@ -1609,15 +1568,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
               {/* Contextual Sign-In Prompt */}
               {!user && (
-                <div className="bg-blue-200 border-4 border-black p-3 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                <div className="bg-[var(--color-info)]/20 dark:bg-[var(--color-info)]/10 border-4 border-black dark:border-white p-2.5 sm:p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
                   <ContextualSignInPrompt action="continue_course" courseId={String(course.id)} />
                 </div>
               )}
 
               {!state.isTheaterMode && (
                 <div className="transition-all duration-100">
-                  <div className="border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white">
-                    <div className="p-3">
+                  <div className="border-4 border-border shadow-neo bg-card">
+                    <div className="p-2.5 sm:p-3">
                       <MemoizedCourseDetailsTabs
                         course={course}
                         currentChapter={currentChapter}
@@ -1631,8 +1590,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
               {!state.isTheaterMode && (
                 <div className="transition-all duration-100">
-                  <div className="border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white">
-                    <div className="p-3">
+                  <div className="border-4 border-border shadow-neo bg-card">
+                    <div className="p-2.5 sm:p-3">
                       <ReviewsSection slug={course.slug} />
                     </div>
                   </div>
@@ -1640,17 +1599,18 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
               )}
             </div>
 
-            {/* Enhanced Sidebar */}
             {!state.sidebarCollapsed && !state.isTheaterMode && (
-              <div className="hidden lg:block space-y-3 min-w-0 w-full">
-                <div className="border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white h-full overflow-hidden">
+              <div className="hidden lg:block space-y-2 sm:space-y-3 min-w-0 w-full">
+                <div className="border-4 border-border shadow-neo bg-card h-full overflow-hidden">
                   <div className="p-0">
                     {sidebarCourse.chapters.length === 0 ? (
-                      <div className="p-8 text-center">
-                        <BookOpen className="h-16 w-16 mx-auto mb-4 text-black" />
-                        <h3 className="font-black text-lg mb-2 uppercase">No Videos Available</h3>
-                        <p className="text-sm text-gray-600 font-bold">
-                          This course doesn't have any video content yet.
+                      <div className="p-6 sm:p-8 text-center">
+                        <BookOpen className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-3 sm:mb-4 text-black dark:text-white" />
+                        <h3 className="font-black text-base sm:text-lg mb-2 uppercase text-black dark:text-white">
+                          No Videos
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-bold">
+                          This course doesn't have video content yet.
                         </p>
                       </div>
                     ) : (
@@ -1700,16 +1660,16 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
         />
       )}
 
-      {/* Enhanced Subscribe CTA */}
       {!userSubscription && !state.isTheaterMode && (
-        <div className="fixed bottom-6 right-6 z-40 transition-transform duration-200">
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 transition-transform duration-200">
           <Button
             size="lg"
             onClick={() => (window.location.href = "/dashboard/subscription")}
-            className="bg-yellow-400 hover:bg-yellow-500 text-black font-black border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase px-6 py-3"
+            className="bg-[var(--color-warning)] hover:bg-[var(--color-warning)]/90 text-black dark:text-white font-black border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[1px_1px_0px_0px_rgba(255,255,255,1)] transition-all uppercase px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm"
           >
-            <Zap className="h-5 w-5 mr-2" />
-            <span>Unlock All Courses</span>
+            <Zap className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" />
+            <span className="hidden sm:inline">Unlock All</span>
+            <span className="sm:hidden">Unlock</span>
           </Button>
         </div>
       )}

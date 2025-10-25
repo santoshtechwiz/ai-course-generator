@@ -26,21 +26,21 @@ export const DIFFICULTY_CONFIG: Record<DifficultyLevel, Omit<DifficultyConfig, '
   easy: {
     label: 'Easy',
     color:
-      'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg shadow-emerald-500/25',
+      'bg-success text-white border-4 border-border shadow-neo',
     description: 'Basic concepts and fundamental skills. Great for beginners.',
     estimatedTime: '5-10 minutes per question',
   },
   medium: {
     label: 'Medium',
     color:
-      'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25',
+      'bg-warning text-white border-4 border-border shadow-neo',
     description: 'Intermediate concepts requiring some experience.',
     estimatedTime: '10-15 minutes per question',
   },
   hard: {
     label: 'Hard',
     color:
-      'bg-gradient-to-r from-rose-500 to-red-500 text-white shadow-lg shadow-rose-500/25',
+      'bg-danger text-white border-4 border-border shadow-neo',
     description: 'Advanced topics for experienced developers.',
     estimatedTime: '15-20 minutes per question',
   },

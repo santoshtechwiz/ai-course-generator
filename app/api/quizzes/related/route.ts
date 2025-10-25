@@ -4,6 +4,9 @@ import { createCacheManager } from "@/app/services/cache/cache-manager"
 
 const cache = createCacheManager()
 
+// Increase cache TTL for related quizzes - they don't change frequently
+const CACHE_TTL = 900 // 15 minutes (was 60s)
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -15,9 +18,19 @@ export async function GET(req: NextRequest) {
     const tags = tagsParam ? tagsParam.split(",").map(t => t.trim()).filter(Boolean).slice(0, 5) : []
 
     const cacheKey = `api:quizzes:related:${quizType || 'all'}:${difficulty || 'any'}:${exclude || 'none'}:${tags.join('|')}:${limit}`
+    
+    // Check cache first
     const cached = await cache.get<any>(cacheKey)
     if (cached) {
-      return NextResponse.json({ quizzes: cached }, { headers: { "X-Cache": "HIT" } })
+      return NextResponse.json(
+        { quizzes: cached }, 
+        { 
+          headers: { 
+            "X-Cache": "HIT",
+            'Cache-Control': `public, s-maxage=${CACHE_TTL}, stale-while-revalidate=${CACHE_TTL * 2}`,
+          } 
+        }
+      )
     }
 
     const where: any = { isPublic: true }
@@ -56,8 +69,19 @@ export async function GET(req: NextRequest) {
       isPublic: true,
     }))
 
-    await cache.set(cacheKey, normalized, 60) // 60s TTL
-    return NextResponse.json({ quizzes: normalized }, { headers: { "X-Cache": "MISS" } })
+    // Cache with longer TTL
+    await cache.set(cacheKey, normalized, CACHE_TTL)
+    
+    return NextResponse.json(
+      { quizzes: normalized }, 
+      { 
+        headers: { 
+          "X-Cache": "MISS",
+          'Cache-Control': `public, s-maxage=${CACHE_TTL}, stale-while-revalidate=${CACHE_TTL * 2}`,
+          'CDN-Cache-Control': `public, s-maxage=${CACHE_TTL}`,
+        } 
+      }
+    )
   } catch (error) {
     console.error("Related quizzes API error:", error)
     return NextResponse.json({ quizzes: [] }, { status: 200 })

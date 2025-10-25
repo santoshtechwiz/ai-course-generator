@@ -161,7 +161,7 @@ const TestimonialsSlider = () => {
 							<Button
 								variant="outline"
 								size="icon"
-								className="rounded-xl bg-background border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] hover:translate-y-[-2px] transition-all duration-200 h-12 w-12"
+								className="rounded-xl bg-[var(--color-bg)] border-3 border-[var(--color-border)] shadow-[4px_4px_0px_0px_var(--color-border)] hover:shadow-[6px_6px_0px_0px_var(--color-border)] hover:translate-y-[-2px] transition-all duration-200 h-12 w-12"
 								onClick={prevTestimonial}
 								aria-label="Previous testimonial"
 							>
@@ -179,7 +179,7 @@ const TestimonialsSlider = () => {
 							<Button
 								variant="outline"
 								size="icon"
-								className="rounded-xl bg-background border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] hover:translate-y-[-2px] transition-all duration-200 h-12 w-12"
+								className="rounded-xl bg-[var(--color-bg)] border-3 border-[var(--color-border)] shadow-[4px_4px_0px_0px_var(--color-border)] hover:shadow-[6px_6px_0px_0px_var(--color-border)] hover:translate-y-[-2px] transition-all duration-200 h-12 w-12"
 								onClick={nextTestimonial}
 								aria-label="Next testimonial"
 							>
@@ -224,7 +224,7 @@ const TestimonialsSlider = () => {
 												animate={{ opacity: 1, y: 0 }}
 												exit={{ opacity: 0, y: -20 }}
 												transition={{ duration: 0.5, ease: APPLE_EASING }}
-												className="bg-card rounded-3xl p-8 md:p-12 border-3 border-border shadow-[8px_8px_0px_0px_hsl(var(--border))] text-center"
+												className="bg-[var(--color-card)] rounded-3xl p-8 md:p-12 border-3 border-[var(--color-border)] shadow-[8px_8px_0px_0px_var(--color-border)] text-center"
 											>
 												{/* Quote Icon */}
 												<motion.div
@@ -233,8 +233,8 @@ const TestimonialsSlider = () => {
 													transition={{ duration: 0.5, delay: 0.1, ease: APPLE_EASING }}
 													className="flex justify-center mb-8"
 												>
-													<div className="p-4 rounded-2xl bg-primary/10 border-3 border-primary/20">
-														<Quote className="h-8 w-8 text-primary" aria-hidden="true" />
+													<div className="p-4 rounded-2xl bg-[var(--color-primary)]/10 border-3 border-[var(--color-primary)]/20">
+														<Quote className="h-8 w-8 text-[var(--color-primary)]" aria-hidden="true" />
 													</div>
 												</motion.div>
 

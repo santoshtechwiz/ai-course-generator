@@ -37,7 +37,7 @@ export function PlanBadge({ plan, className = "" }: PlanBadgeProps) {
       )
     case "ULTIMATE":
       return (
-        <Badge variant="default" className={`bg-gradient-to-r from-amber-500 to-orange-500 ${className}`}>
+        <Badge variant="default" className={`bg-amber-500 border-4 border-amber-600 shadow-[4px_4px_0px_0px_hsl(var(--border))] ${className}`}>
           Ultimate
         </Badge>
       )

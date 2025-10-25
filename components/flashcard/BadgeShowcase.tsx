@@ -39,11 +39,11 @@ interface BadgeProgress {
 }
 
 const tierColors = {
-  bronze: 'from-orange-600/10 to-orange-800/10 border-orange-600/20',
-  silver: 'from-gray-400/10 to-gray-600/10 border-gray-400/20',
-  gold: 'from-yellow-500/10 to-yellow-700/10 border-yellow-500/20',
-  platinum: 'from-purple-500/10 to-purple-700/10 border-purple-500/20',
-  diamond: 'from-cyan-400/10 to-blue-600/10 border-cyan-400/20'
+  bronze: 'bg-warning/20 border-warning/40',
+  silver: 'bg-muted border-muted-foreground/40',
+  gold: 'bg-warning border-warning',
+  platinum: 'bg-primary/20 border-primary/40',
+  diamond: 'bg-accent/20 border-accent/40'
 }
 
 const categoryLabels: Record<string, string> = {
@@ -177,7 +177,7 @@ function CompactBadgeCard({ item }: { item: BadgeProgress }) {
       whileHover={{ scale: 1.05 }}
     >
       <Card
-        className={`relative overflow-hidden border-2 bg-gradient-to-br ${
+        className={`relative overflow-hidden border-4 shadow-[4px_4px_0px_0px_hsl(var(--border))] ${
           tierColors[badge.tier as keyof typeof tierColors]
         }`}
       >

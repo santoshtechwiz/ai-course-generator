@@ -80,13 +80,13 @@ export default function QuickActionsCard({
   const getVariantStyles = (variant?: string) => {
     switch (variant) {
       case "primary":
-        return "bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border-blue-600"
+        return "bg-[var(--color-primary)] hover:bg-[var(--color-accent)] text-[var(--color-text)] border-[var(--color-border)] shadow-neo hover:shadow-neo-hover neo-hover-lift"
       case "warning":
-        return "bg-gradient-to-br from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-orange-600"
+        return "bg-[var(--color-warning)] hover:bg-[var(--color-accent)] text-[var(--color-text)] border-[var(--color-border)] shadow-neo hover:shadow-neo-hover neo-hover-lift"
       case "success":
-        return "bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-green-600"
+        return "bg-[var(--color-success)] hover:bg-[var(--color-accent)] text-[var(--color-text)] border-[var(--color-border)] shadow-neo hover:shadow-neo-hover neo-hover-lift"
       default:
-        return "bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-700 dark:hover:to-gray-800 border-gray-300 dark:border-gray-700"
+        return "bg-[var(--color-card)] hover:bg-[var(--color-muted)] text-[var(--color-text)] border-[var(--color-border)] shadow-neo hover:shadow-neo-hover neo-hover-lift"
     }
   }
 

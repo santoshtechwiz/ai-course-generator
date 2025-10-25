@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { getAuthSession } from "@/lib/auth"
+import { createCacheManager } from "@/app/services/cache/cache-manager"
+
+// Initialize cache manager
+const cache = createCacheManager()
+
+// Cache duration: 30 minutes for related courses (they don't change often)
+const CACHE_TTL = 1800 // 30 minutes
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,6 +17,23 @@ export async function GET(request: NextRequest) {
 
     if (!courseId) {
       return NextResponse.json({ error: "Course ID is required" }, { status: 400 })
+    }
+
+    // Create cache key based on courseId and limit
+    const cacheKey = `related-courses:${courseId}:${limit}`
+    
+    // Try to get from cache first
+    const cachedData = await cache.get<any>(cacheKey)
+    if (cachedData) {
+      return NextResponse.json(
+        { success: true, data: cachedData },
+        { 
+          headers: { 
+            'X-Cache': 'HIT',
+            'Cache-Control': `public, s-maxage=${CACHE_TTL}, stale-while-revalidate=${CACHE_TTL * 2}`,
+          } 
+        }
+      )
     }
 
     // Get the current course to find related courses
@@ -190,10 +214,19 @@ export async function GET(request: NextRequest) {
       transformedCourses.push(...additionalCourses)
     }
 
-    return NextResponse.json({
-      success: true,
-      data: transformedCourses
-    })
+    // Cache the result before returning
+    await cache.set(cacheKey, transformedCourses, CACHE_TTL)
+
+    return NextResponse.json(
+      { success: true, data: transformedCourses },
+      { 
+        headers: { 
+          'X-Cache': 'MISS',
+          'Cache-Control': `public, s-maxage=${CACHE_TTL}, stale-while-revalidate=${CACHE_TTL * 2}`,
+          'CDN-Cache-Control': `public, s-maxage=${CACHE_TTL}`,
+        } 
+      }
+    )
   } catch (error) {
     console.error("Error fetching related courses:", error)
     

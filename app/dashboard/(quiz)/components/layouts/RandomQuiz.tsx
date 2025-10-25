@@ -27,7 +27,6 @@ import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { useRandomQuizzes } from "@/hooks/useRandomQuizzes"
-import neo from "@/components/neo/tokens"
 
 // Simplified constants
 const QUIZ_ROUTES = {
@@ -85,12 +84,12 @@ const FLOAT_ANIMATION = {
 interface Quiz {
   id: string
   title: string
-  quizType: keyof typeof QUIZ_ROUTES
+  quizType: string
   difficulty: string
   questionCount: number
   timeStarted?: Date
-  slug: string
-  isPublic: boolean
+  slug?: string
+  isPublic?: boolean
   isFavorite?: boolean
   description?: string
   tags?: string[]
@@ -109,8 +108,8 @@ interface RandomQuizProps {
 }
 
 // Enhanced sub-components
-const QuizIcon = memo(({ type, className }: { type: keyof typeof QUIZ_ICONS; className?: string }) => {
-  const Icon = QUIZ_ICONS[type] || Target
+const QuizIcon = memo(({ type, className }: { type: string; className?: string }) => {
+  const Icon = QUIZ_ICONS[type as keyof typeof QUIZ_ICONS] || Target
   return (
     <motion.div
       whileHover={{ scale: 1.1, rotate: 5 }}
@@ -169,7 +168,7 @@ const QuizStats = memo(({
 QuizStats.displayName = "QuizStats"
 
 const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) => {
-  const route = QUIZ_ROUTES[quiz.quizType] || QUIZ_ROUTES.mcq
+  const route = QUIZ_ROUTES[quiz.quizType as keyof typeof QUIZ_ROUTES] || QUIZ_ROUTES.mcq
 
   return (
     <motion.div
@@ -181,15 +180,15 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
       whileHover={{ y: -4 }}
       transition={{ type: "spring", stiffness: 300 }}
     >
-      <Card className={cn(neo.inner,
-        "bg-card shadow-sm rounded-lg transition-all duration-300",
-        isActive && "ring-2 ring-primary/30 shadow-md"
+      <Card className={cn(
+        "bg-[var(--color-card)] shadow-[var(--shadow-neo)] rounded-none transition-all duration-300 border-4 border-[var(--color-border)]",
+        isActive && "ring-2 ring-[var(--color-primary)]/30 shadow-[var(--shadow-neo)]"
       )}>
         <CardContent className="p-4">
           {/* Header - Cleaner layout */}
           <div className="flex items-start gap-3 mb-3">
             <div className={cn(
-              "p-2 bg-primary text-primary-foreground rounded-lg flex-shrink-0"
+              "p-2 bg-[var(--color-primary)] text-[var(--color-bg)] rounded-none flex-shrink-0 border-2 border-[var(--color-border)]"
             )}>
               <QuizIcon type={quiz.quizType} className="w-5 h-5" />
             </div>
@@ -197,7 +196,7 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
               <div className="flex flex-wrap items-center gap-2 mb-1">
                 <Badge 
                     variant="neutral"
-                    className={cn(neo.badge, "text-xs h-7 px-2 py-0 rounded-md font-semibold")}
+                    className={cn("text-xs h-7 px-2 py-0 rounded-none font-black border-2 border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)]")}
                 >
                   {quiz.quizType.toUpperCase()}
                 </Badge>
@@ -205,7 +204,7 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
                   <DifficultyBadge difficulty={quiz.difficulty} />
                 </div>
               </div>
-              <h3 className="font-semibold text-lg leading-tight text-foreground line-clamp-2 break-words">
+              <h3 className="font-black text-lg leading-tight text-[var(--color-text)] line-clamp-2 break-words">
                 {quiz.title}
               </h3>
             </div>
@@ -223,7 +222,7 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
 
           {/* Description */}
           {quiz.description && (
-            <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed break-words">
+            <p className="text-sm text-[var(--color-text)]/70 mb-4 line-clamp-2 leading-relaxed break-words">
               {quiz.description}
             </p>
           )}
@@ -238,9 +237,9 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
               asChild
               size="lg"
               className={cn(
-                "w-full font-semibold text-sm bg-primary text-primary-foreground rounded-lg",
-                "shadow-sm hover:shadow-md transition-all duration-300",
-                "hover:bg-primary/90"
+                "w-full font-black text-sm bg-[var(--color-primary)] text-[var(--color-bg)] rounded-none border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]",
+                "hover:bg-[var(--color-primary)]/90 transition-all duration-300",
+                "hover:shadow-[6px_6px_0_var(--color-border)] active:shadow-none active:translate-x-1 active:translate-y-1"
               )}
             >
               <Link href={`${route}/${quiz.slug}`}>
@@ -259,7 +258,7 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
 QuizCard.displayName = "QuizCard"
 
 const LoadingCard = memo(() => (
-  <Card className="border border-border bg-card rounded-lg">
+  <Card className="border-4 border-[var(--color-border)] bg-[var(--color-card)] rounded-none">
     <CardContent className="p-4">
       <div className="flex items-center gap-3 mb-3">
         <Skeleton className="w-10 h-10 rounded-lg" />
@@ -284,11 +283,10 @@ LoadingCard.displayName = "LoadingCard"
 const EmptyState = memo(() => (
   <motion.div
     initial={{ opacity: 0, scale: 0.9 }}
-    animate={{ opacity: 1, scale: 1 }}
     transition={{ duration: 0.5 }}
     {...FLOAT_ANIMATION}
   >
-    <Card className="border border-border bg-card rounded-lg">
+    <Card className="border-4 border-[var(--color-border)] bg-[var(--color-card)] rounded-none">
       <CardContent className="p-6 text-center">
         <motion.div 
           className="w-16 h-16 mx-auto mb-4 bg-primary/10 text-primary rounded-xl flex items-center justify-center"
@@ -298,10 +296,10 @@ const EmptyState = memo(() => (
           <Zap className="w-8 h-8" />
         </motion.div>
         
-        <h3 className="text-xl font-semibold mb-2 text-foreground">
+        <h3 className="text-xl font-black mb-2 text-[var(--color-text)]">
           No Quizzes Found
         </h3>
-        <p className="text-muted-foreground mb-4 max-w-sm mx-auto leading-relaxed">
+        <p className="text-[var(--color-text)]/70 mb-4 max-w-sm mx-auto leading-relaxed">
           We're preparing new challenges for you. Check back soon!
         </p>
         
@@ -332,7 +330,7 @@ const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
     animate={{ opacity: 1, scale: 1 }}
     transition={{ duration: 0.5 }}
   >
-    <Card className="border border-destructive/20 bg-destructive/5 rounded-lg">
+    <Card className="border-4 border-[var(--color-border)] bg-[var(--color-card)] rounded-none">
       <CardContent className="p-6 text-center">
         <motion.div 
           className="w-16 h-16 mx-auto mb-4 bg-destructive/10 text-destructive rounded-xl flex items-center justify-center"
@@ -345,10 +343,10 @@ const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
           <Zap className="w-8 h-8" />
         </motion.div>
         
-        <h3 className="text-xl font-semibold mb-2 text-foreground">
+        <h3 className="text-xl font-black mb-2 text-[var(--color-text)]">
           Failed to Load
         </h3>
-        <p className="text-muted-foreground mb-4 max-w-sm mx-auto leading-relaxed">
+        <p className="text-[var(--color-text)]/70 mb-4 max-w-sm mx-auto leading-relaxed">
           We couldn't load quiz recommendations. Let's try again!
         </p>
         
@@ -493,26 +491,26 @@ export const RandomQuiz = memo(({
   }
   return (
     <motion.div
-      className={cn("w-full max-w-2xl mx-auto", neo.card, className)}
+      className={cn("w-full max-w-2xl mx-auto border-4 border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-neo)] rounded-none", className)}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
     >
       {/* Enhanced Header with neobrutalism tokens */}
-      <div className={cn(neo.header, "flex flex-col sm:flex-row sm:items-center justify-between gap-3")}>
+      <div className={cn("pb-4 px-6 py-6 border-b-4 border-[var(--color-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3")}>
         <div className="flex items-center gap-3">
           <motion.div 
-            className="p-2 bg-primary text-primary-foreground rounded-lg"
+            className="p-2 bg-[var(--color-primary)] text-[var(--color-bg)] rounded-none border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]"
             whileHover={{ scale: 1.05, rotate: 5 }}
             transition={{ type: "spring", stiffness: 400 }}
           >
             <Zap className="w-5 h-5" />
           </motion.div>
           <div>
-            <h3 className="font-semibold text-lg text-foreground">
+            <h3 className="font-black text-xl text-[var(--color-text)]">
               Featured Challenge
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-[var(--color-text)]/70">
               Handpicked quizzes to boost your skills
             </p>
           </div>
@@ -542,10 +540,10 @@ export const RandomQuiz = memo(({
                     key={index}
                     onClick={() => setCurrentIndex(index)}
                     className={cn(
-                      "w-2 h-2 rounded-full transition-all duration-300",
+                      "w-2 h-2 rounded-none transition-all duration-300 border border-[var(--color-border)]",
                       index === currentIndex
-                        ? "bg-primary scale-125"
-                        : "bg-muted-foreground/30 hover:bg-primary/50"
+                        ? "bg-[var(--color-primary)] scale-125"
+                        : "bg-[var(--color-text)]/30 hover:bg-[var(--color-primary)]/50"
                     )}
                     whileHover={{ scale: 1.3 }}
                     whileTap={{ scale: 0.9 }}
@@ -553,7 +551,7 @@ export const RandomQuiz = memo(({
                 ))}
               </div>
               
-              <div className="text-xs text-muted-foreground font-medium">
+              <div className="text-xs text-[var(--color-text)]/70 font-bold">
                 {currentIndex + 1} of {displayQuizzes.length}
               </div>
             </div>
@@ -567,7 +565,7 @@ export const RandomQuiz = memo(({
             >
               <Link 
                 href="/dashboard/quizzes" 
-                className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                className="inline-flex items-center gap-1 text-sm font-bold text-[var(--color-primary)] hover:text-[var(--color-primary)]/80 transition-colors"
               >
                 Explore all quizzes
                 <ArrowRight className="w-4 h-4" />
