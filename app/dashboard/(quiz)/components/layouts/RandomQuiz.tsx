@@ -180,9 +180,9 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
         "bg-[var(--color-card)] shadow-[var(--shadow-neo)] rounded-none transition-all duration-300 border-4 border-[var(--color-border)]",
         isActive && "ring-2 ring-[var(--color-primary)]/30 shadow-[var(--shadow-neo)]"
       )}>
-        <CardContent className="p-4">
+        <CardContent className="p-3">
           {/* Header - Cleaner layout */}
-          <div className="flex items-start gap-3 mb-3">
+          <div className="flex items-start gap-2 mb-2">
             <div className={cn(
               "p-2 bg-[var(--color-primary)] text-[var(--color-bg)] rounded-none flex-shrink-0 border-2 border-[var(--color-border)]"
             )}>
@@ -207,7 +207,7 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
           </div>
 
           {/* Stats */}
-          <div className="mb-3">
+          <div className="mb-2">
             <QuizStats 
               questionCount={quiz.questionCount}
               estimatedTime={quiz.estimatedTime}
@@ -217,8 +217,8 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
           </div>
 
           {/* Description */}
-          {quiz.description && (
-            <p className="text-sm text-[var(--color-text)]/70 mb-4 line-clamp-2 leading-relaxed break-words">
+            {quiz.description && (
+            <p className="text-sm text-[var(--color-text)]/70 mb-2 line-clamp-2 leading-relaxed break-words">
               {quiz.description}
             </p>
           )}
@@ -493,7 +493,7 @@ export const RandomQuiz = memo(({
       transition={{ duration: 0.6, ease: "easeOut" }}
     >
       {/* Enhanced Header with neobrutalism tokens */}
-      <div className={cn("pb-4 px-6 py-6 border-b-4 border-[var(--color-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3")}>
+  <div className={cn("px-4 py-4 border-b-2 border-[var(--color-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-2")}>
         <div className="flex items-center gap-3">
           <motion.div 
             className="p-2 bg-[var(--color-primary)] text-[var(--color-bg)] rounded-none border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]"
@@ -510,14 +510,13 @@ export const RandomQuiz = memo(({
               Handpicked quizzes to boost your skills
             </p>
           </div>
-        </div>
+          </div>
 
-     
       </div>
 
       {/* Enhanced Content */}
-      <div className="p-4">
-        <div className="space-y-4">
+      <div className="p-2">
+        <div className="space-y-2">
           {/* Quiz Card */}
           <div className="w-full">
             <AnimatePresence mode="wait">
@@ -529,7 +528,7 @@ export const RandomQuiz = memo(({
 
           {/* Enhanced Progress Indicators */}
           {displayQuizzes.length > 1 && (
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col items-center gap-2">
               <div className="flex gap-1.5">
                 {displayQuizzes.map((_, index) => (
                   <motion.button
@@ -554,7 +553,7 @@ export const RandomQuiz = memo(({
           )}
 
           {/* Enhanced View All Link */}
-          <div className="text-center pt-2">
+          <div className="text-center pt-1">
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

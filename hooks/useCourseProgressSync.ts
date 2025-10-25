@@ -214,7 +214,7 @@ export function useCourseProgressSync(courseId: string | number) {
     if (isAuthenticated && userId) {
       fetchAndSyncProgress()
     }
-    return () => abortControllerRef.current?.abort()
+    return () => abortControllerRef.current?.abort('Component unmounting')
   }, [fetchAndSyncProgress, isAuthenticated, userId])
 
   return { courseProgress, refetch: fetchAndSyncProgress }

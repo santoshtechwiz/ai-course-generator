@@ -251,7 +251,7 @@ class VideoProcessingService {
     // Register the process for possible cancellation
     this.activeProcesses.set(chapterId, {
       cancel: () => {
-        abortController.abort();
+        abortController.abort('Processing cancelled by user');
         updateStatus({
           status: "error",
           error: "Processing cancelled",

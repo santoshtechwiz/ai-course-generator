@@ -301,12 +301,12 @@ export default function FlashCardQuiz({
         ? "min-h-screen flex flex-col justify-center px-0"
         : "w-full px-3 sm:px-4 lg:px-6"
     )}>
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-accent text-white border-3 sm:border-4 border-border shadow-neo mb-3 sm:mb-4 font-black text-xs sm:text-sm rounded-md">
-            <Brain className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span>Flashcard Quiz</span>
+        <div className="text-center hidden">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-[var(--color-accent)] text-[var(--color-bg)] border-3 sm:border-4 border-border shadow-neo mb-3 sm:mb-4 font-black text-xs sm:text-sm rounded-md">
+              <Brain className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>Flashcard Quiz</span>
+            </div>
           </div>
-        </div>
 
       {/* Controller - Hidden in focus mode */}
       {!isFocusMode && (
@@ -381,16 +381,16 @@ export default function FlashCardQuiz({
 
       {/* Simple Action Bar - Flip and Save only (navigation moved to controller) */}
       <div className={cn(
-        "flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 px-2 sm:px-0",
-        isFocusMode && "mt-6 sm:mt-8"
+        "flex flex-col sm:flex-row justify-center gap-2 sm:gap-2 px-2 sm:px-0",
+        isFocusMode && "mt-4 sm:mt-6"
       )}>
         <Button 
           variant="neutral" 
           onClick={toggleFlip}
           size="lg"
           className={cn(
-            "px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-black bg-accent text-white border-3 sm:border-4 border-border shadow-neo hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none w-full sm:w-auto",
-            isFocusMode && "sm:min-w-[200px]"
+            "px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-black bg-[var(--color-accent)] text-[var(--color-bg)] border-2 sm:border-3 border-border shadow-neo hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none w-full sm:w-auto",
+            isFocusMode && "sm:min-w-[160px]"
           )}
         >
           <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
@@ -402,8 +402,8 @@ export default function FlashCardQuiz({
           onClick={handleSaveCard}
           size="lg"
           className={cn(
-            "px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-black bg-card text-foreground border-3 sm:border-4 border-border shadow-neo hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none w-full sm:w-auto",
-            isFocusMode && "sm:min-w-[200px]"
+            "px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-black bg-card text-foreground border-2 sm:border-3 border-border shadow-neo hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none w-full sm:w-auto",
+            isFocusMode && "sm:min-w-[160px]"
           )}
         >
           <Heart className={`w-4 h-4 sm:w-5 sm:h-5 mr-2 ${isSaved ? "fill-current text-danger" : "text-foreground"}`} />
@@ -421,12 +421,12 @@ export default function FlashCardQuiz({
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className={cn(
-                "px-6 sm:px-8 py-4 sm:py-6 rounded-lg text-white font-black text-lg sm:text-xl shadow-neo border-4 border-border max-w-sm w-full",
-                ratingAnimation === "correct" && "bg-success",
-                ratingAnimation === "still_learning" && "bg-accent",
-                ratingAnimation === "incorrect" && "bg-danger"
-              )}
+                className={cn(
+                  "px-6 sm:px-8 py-4 sm:py-6 rounded-lg font-black text-lg sm:text-xl shadow-neo border-4 border-border max-w-sm w-full",
+                  ratingAnimation === "correct" && "bg-[var(--color-success)] text-[var(--color-bg)]",
+                  ratingAnimation === "still_learning" && "bg-[var(--color-accent)] text-[var(--color-bg)]",
+                  ratingAnimation === "incorrect" && "bg-[var(--color-error)] text-[var(--color-bg)]"
+                )}
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}

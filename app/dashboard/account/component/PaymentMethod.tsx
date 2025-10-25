@@ -63,7 +63,7 @@ function PaymentMethodFormContent({ onSuccess }: PaymentMethodFormProps) {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => {
         if (!controller.signal.aborted) {
-          controller.abort()
+          controller.abort('Payment request timeout')
         }
       }, 15000) // 15 second timeout
 

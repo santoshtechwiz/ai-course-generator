@@ -636,7 +636,7 @@ export default function QuizPlayLayout({
             ref={mainRef}
             className={cn(
               "w-full rounded-lg border-4 border-border bg-card shadow-neo transition-all duration-300",
-              isFullscreen ? "p-3 sm:p-4 lg:p-6 min-h-[calc(100vh-8rem)]" : "p-4 sm:p-6 lg:p-8",
+              isFullscreen ? "p-2 sm:p-3 lg:p-4 min-h-[calc(100vh-8rem)]" : "p-3 sm:p-4 lg:p-6",
             )}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

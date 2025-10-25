@@ -141,12 +141,12 @@ export const fetchFlashCardQuiz = createAsyncThunk(
 
       // Combine signals
       if (signal?.aborted) {
-        abortController.abort()
+        abortController.abort('Request was cancelled')
         return rejectWithValue('Request was cancelled')
       }
       
       signal?.addEventListener('abort', () => {
-        abortController.abort()
+        abortController.abort('Parent signal aborted')
       })
 
       const response = await fetch(`/api/quizzes/flashcard/${slug}`, {
@@ -159,12 +159,12 @@ export const fetchFlashCardQuiz = createAsyncThunk(
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        abortController.abort()
+        abortController.abort('Request failed')
         return rejectWithValue(errorData.message || `Failed to fetch flashcard quiz: ${response.status}`)
       }
       
       const data = await response.json()
-      abortController.abort()
+      abortController.abort('Request completed successfully')
       console.log('Fetched flashcard quiz data:', data);
       
       if (!data) {

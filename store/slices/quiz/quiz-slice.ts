@@ -89,7 +89,7 @@ export const fetchQuiz = createAsyncThunk<
       const combinedSignal = abortController.signal
       if (signal) {
         signal.addEventListener('abort', () => {
-          abortController.abort()
+          abortController.abort('Parent signal aborted')
         })
       }
 
@@ -153,7 +153,7 @@ export const fetchQuiz = createAsyncThunk<
       const controller = new AbortController()
       const timeoutId = setTimeout(() => {
         if (!controller.signal.aborted) {
-          controller.abort()
+          controller.abort('Request timeout')
         }
       }, 30000) // 30 second timeout
 

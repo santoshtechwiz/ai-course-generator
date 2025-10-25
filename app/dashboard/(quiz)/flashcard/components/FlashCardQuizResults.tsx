@@ -187,21 +187,21 @@ export default function FlashCardResults({
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10 space-y-10">
+    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       {/* Confetti celebration */}
       {showConfetti && <Confetti isActive={showConfetti} />}
 
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4">
         <motion.div
           initial={{ scale: 0.8 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 300, delay: 0.2 }}
         >
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] bg-clip-text text-transparent">
             {title}
           </h1>
-          <p className="text-muted-foreground text-lg mt-2">Quiz Complete!</p>
+          <p className="text-[var(--color-text)]/70 text-base mt-2">Quiz Complete!</p>
         </motion.div>
 
         <motion.div
@@ -225,11 +225,11 @@ export default function FlashCardResults({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-2 border-blue-200 dark:border-blue-800 shadow-xl">
+        <Card className="bg-gradient-to-br from-[var(--color-accent)]/10 to-[var(--color-accent)]/5 dark:from-[var(--color-accent)]/20 dark:to-[var(--color-accent)]/10 border-2 border-[var(--color-accent)]/30 dark:border-[var(--color-accent)]/40 shadow-xl">
           <CardHeader className="pb-3">
-            <CardTitle className="flex gap-3 items-center text-blue-700 dark:text-blue-300">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center">
-                <Flame className="w-5 h-5 text-primary-foreground" />
+            <CardTitle className="flex gap-3 items-center text-[var(--color-accent)] dark:text-[var(--color-accent)]">
+              <div className="w-10 h-10 bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent)] rounded-xl flex items-center justify-center">
+                <Flame className="w-5 h-5 text-[var(--color-bg)]" />
               </div>
               Your Score
             </CardTitle>
@@ -240,11 +240,11 @@ export default function FlashCardResults({
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.6, type: "spring" }}
-              className="text-5xl font-bold text-primary mb-2"
+              className="text-3xl sm:text-4xl font-bold text-[var(--color-text)] mb-2"
             >
               {Math.round(percentage)}%
             </motion.div>
-            <p className="text-muted-foreground">
+            <p className="text-[var(--color-text)]/70">
               <motion.span
                 key={`correct-count-${correctAnswers}`}
                 initial={{ opacity: 0.6 }}
@@ -259,18 +259,18 @@ export default function FlashCardResults({
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20 border-2 border-emerald-200 dark:border-emerald-800 shadow-xl">
+        <Card className="bg-gradient-to-br from-[var(--color-success)]/10 to-[var(--color-success)]/5 dark:from-[var(--color-success)]/20 dark:to-[var(--color-success)]/10 border-2 border-[var(--color-success)]/30 dark:border-[var(--color-success)]/40 shadow-xl">
           <CardHeader className="pb-3">
-            <CardTitle className="flex gap-3 items-center text-emerald-700 dark:text-emerald-300">
-              <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-green-500 rounded-xl flex items-center justify-center">
-                <Clock className="w-5 h-5 text-primary-foreground" />
+            <CardTitle className="flex gap-3 items-center text-[var(--color-success)] dark:text-[var(--color-success)]">
+              <div className="w-10 h-10 bg-gradient-to-r from-[var(--color-success)] to-[var(--color-success)] rounded-xl flex items-center justify-center">
+                <Clock className="w-5 h-5 text-[var(--color-bg)]" />
               </div>
               Time Spent
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-2">
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatTime(totalTime)}</div>
-            <p className="text-gray-600 dark:text-gray-400">
+            <div className="text-2xl font-bold text-[var(--color-success)] dark:text-[var(--color-success)]">{formatTime(totalTime)}</div>
+            <p className="text-[var(--color-text)]/70 dark:text-[var(--color-text)]/70">
               <span className="font-semibold">{avgTime}s</span> average per card
             </p>
           </CardContent>
@@ -284,56 +284,56 @@ export default function FlashCardResults({
             <div className="space-y-2">
               <motion.div
                 whileHover={{ scale: 1.1 }}
-                className="w-12 h-12 mx-auto bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center"
+                className="w-12 h-12 mx-auto bg-gradient-to-r from-[var(--color-success)] to-[var(--color-success)] rounded-full flex items-center justify-center"
               >
-                <CheckCircle className="text-primary-foreground w-6 h-6" />
+                <CheckCircle className="text-[var(--color-bg)] w-6 h-6" />
               </motion.div>
               <motion.div
                 key={`correct-${correctAnswers}`}
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.3 }}
-                className="text-xl font-bold text-emerald-600 dark:text-emerald-400"
+                className="text-xl font-bold text-[var(--color-success)] dark:text-[var(--color-success)]"
               >
                 {correctAnswers}
               </motion.div>
-              <div className="text-xs text-muted-foreground">Known</div>
+              <div className="text-xs text-[var(--color-text)]/70">Known</div>
             </div>
             <div className="space-y-2">
               <motion.div
                 whileHover={{ scale: 1.1 }}
-                className="w-12 h-12 mx-auto bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center"
+                className="w-12 h-12 mx-auto bg-gradient-to-r from-[var(--color-warning)] to-[var(--color-warning)] rounded-full flex items-center justify-center"
               >
-                <HelpCircle className="text-primary-foreground w-6 h-6" />
+                <HelpCircle className="text-[var(--color-bg)] w-6 h-6" />
               </motion.div>
               <motion.div
                 key={`learning-${stillLearningAnswers}`}
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.3 }}
-                className="text-xl font-bold text-amber-600 dark:text-amber-400"
+                className="text-xl font-bold text-[var(--color-warning)] dark:text-[var(--color-warning)]"
               >
                 {stillLearningAnswers}
               </motion.div>
-              <div className="text-xs text-muted-foreground">Learning</div>
+              <div className="text-xs text-[var(--color-text)]/70">Learning</div>
             </div>
             <div className="space-y-2">
               <motion.div
                 whileHover={{ scale: 1.1 }}
-                className="w-12 h-12 mx-auto bg-gradient-to-r from-red-500 to-rose-500 rounded-full flex items-center justify-center"
+                className="w-12 h-12 mx-auto bg-gradient-to-r from-[var(--color-error)] to-[var(--color-error)] rounded-full flex items-center justify-center"
               >
-                <XCircle className="text-primary-foreground w-6 h-6" />
+                <XCircle className="text-[var(--color-bg)] w-6 h-6" />
               </motion.div>
               <motion.div
                 key={`incorrect-${incorrectAnswers}`}
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.3 }}
-                className="text-xl font-bold text-red-600 dark:text-red-400"
+                className="text-xl font-bold text-[var(--color-error)] dark:text-[var(--color-error)]"
               >
                 {incorrectAnswers}
               </motion.div>
-              <div className="text-xs text-muted-foreground">Need Study</div>
+              <div className="text-xs text-[var(--color-text)]/70">Need Study</div>
             </div>
           </CardContent>
         </Card>
@@ -342,12 +342,12 @@ export default function FlashCardResults({
       {/* Review Tabs */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
         <Tabs defaultValue="correct" value={tab} onValueChange={setTab}>
-          <TabsList className="w-full grid grid-cols-3 max-w-2xl mx-auto h-14 bg-muted rounded-2xl p-1">
+          <TabsList className="w-full grid grid-cols-3 max-w-2xl mx-auto h-12 bg-[var(--color-card)] border-2 border-[var(--color-border)] rounded-2xl p-1 shadow-neo">
             {tabs.map((t) => (
               <TabsTrigger
                 key={t.key}
                 value={t.key}
-                className="flex items-center gap-2 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-lg"
+                className="flex items-center gap-2 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-[var(--color-accent)] data-[state=active]:text-[var(--color-bg)] data-[state=active]:shadow-neo"
               >
                 {t.icon}
                 <span className="hidden sm:inline">{t.label}</span>
@@ -361,11 +361,11 @@ export default function FlashCardResults({
           {tabs.map((t) => (
             <TabsContent key={t.key} value={t.key} className="mt-8 space-y-4">
               {grouped[t.key as keyof typeof grouped].length === 0 ? (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
-                  <div className="text-6xl mb-4">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-8">
+                  <div className="text-4xl mb-4">
                     {t.key === "correct" ? "🎉" : t.key === "still_learning" ? "📚" : "🤔"}
                   </div>
-                  <p className="text-muted-foreground text-lg">No {t.label.toLowerCase()} cards yet</p>
+                  <p className="text-[var(--color-text)]/70 text-base">No {t.label.toLowerCase()} cards yet</p>
                 </motion.div>
               ) : (
                 <div className="grid gap-4">
@@ -383,8 +383,8 @@ export default function FlashCardResults({
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="bg-muted rounded-xl p-4 border border-border">
-                            <p className="text-foreground leading-relaxed">{q.answer}</p>
+                          <div className="bg-[var(--color-card)] rounded-xl p-4 border-2 border-[var(--color-border)] shadow-neo">
+                            <p className="text-[var(--color-text)] leading-relaxed">{q.answer}</p>
                           </div>
                         </CardContent>
                       </Card>
@@ -399,12 +399,12 @@ export default function FlashCardResults({
 
       {/* Action Buttons */}
       <motion.div
-        className="space-y-8 pt-8"
+        className="space-y-6 pt-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.7 }}
       >
-        <h3 className="text-center text-2xl font-semibold text-foreground">What's next?</h3>
+        <h3 className="text-center text-xl font-semibold text-[var(--color-text)]">What's next?</h3>
 
         {/* Review Options */}
         {(reviewCardsState.length > 0 || stillLearningCardsState.length > 0) && (
@@ -415,14 +415,14 @@ export default function FlashCardResults({
                 transition={{ duration: 0.5 }}
                 whileHover={{ y: -4 }}
               >
-                <Card className="border-2 border-amber-200 dark:border-amber-800 hover:border-amber-400 dark:hover:border-amber-600 transition-all duration-300 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 shadow-xl hover:shadow-2xl">
-                  <CardContent className="p-8 flex flex-col items-center text-center space-y-4">
-                    <div className="w-16 h-16 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
-                      <HelpCircle className="h-8 w-8 text-primary-foreground" />
+                <Card className="border-2 border-[var(--color-warning)]/30 dark:border-[var(--color-warning)]/40 hover:border-[var(--color-warning)]/50 dark:hover:border-[var(--color-warning)]/60 transition-all duration-300 bg-gradient-to-br from-[var(--color-warning)]/10 to-[var(--color-warning)]/5 dark:from-[var(--color-warning)]/20 dark:to-[var(--color-warning)]/10 shadow-xl hover:shadow-2xl">
+                  <CardContent className="p-6 flex flex-col items-center text-center space-y-4">
+                    <div className="w-16 h-16 bg-gradient-to-r from-[var(--color-warning)] to-[var(--color-warning)] rounded-2xl flex items-center justify-center shadow-lg">
+                      <HelpCircle className="h-8 w-8 text-[var(--color-bg)]" />
                     </div>
                     <div>
                       <motion.h3
-                        className="text-xl font-bold text-foreground mb-2"
+                        className="text-xl font-bold text-[var(--color-text)] mb-2"
                         key={`still-learning-${stillLearningCardsCount}`}
                         initial={{ opacity: 0.8 }}
                         animate={{ opacity: 1 }}
@@ -430,11 +430,11 @@ export default function FlashCardResults({
                       >
                         Review {stillLearningCardsCount} Learning Cards
                       </motion.h3>
-                      <p className="text-muted-foreground">Focus on cards you're still mastering</p>
+                      <p className="text-[var(--color-text)]/70">Focus on cards you're still mastering</p>
                     </div>
                     <Button
                       size="lg"
-                      className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-primary-foreground px-8 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-0"
+                      className="bg-gradient-to-r from-[var(--color-warning)] to-[var(--color-warning)] hover:from-[var(--color-warning)] hover:to-[var(--color-warning)] text-[var(--color-bg)] px-8 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-0"
                       onClick={() => onReviewStillLearning(stillLearningCardsState)}
                     >
                       <BookOpen className="w-5 h-5 mr-2" />
@@ -451,14 +451,14 @@ export default function FlashCardResults({
                 transition={{ duration: 0.5 }}
                 whileHover={{ y: -4 }}
               >
-                <Card className="border-2 border-red-200 dark:border-red-800 hover:border-red-400 dark:hover:border-red-600 transition-all duration-300 bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/20 dark:to-rose-950/20 shadow-xl hover:shadow-2xl">
-                  <CardContent className="p-8 flex flex-col items-center text-center space-y-4">
-                    <div className="w-16 h-16 bg-gradient-to-r from-red-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg">
-                      <XCircle className="h-8 w-8 text-primary-foreground" />
+                <Card className="border-2 border-[var(--color-error)]/30 dark:border-[var(--color-error)]/40 hover:border-[var(--color-error)]/50 dark:hover:border-[var(--color-error)]/60 transition-all duration-300 bg-gradient-to-br from-[var(--color-error)]/10 to-[var(--color-error)]/5 dark:from-[var(--color-error)]/20 dark:to-[var(--color-error)]/10 shadow-xl hover:shadow-2xl">
+                  <CardContent className="p-6 flex flex-col items-center text-center space-y-4">
+                    <div className="w-16 h-16 bg-gradient-to-r from-[var(--color-error)] to-[var(--color-error)] rounded-2xl flex items-center justify-center shadow-lg">
+                      <XCircle className="h-8 w-8 text-[var(--color-bg)]" />
                     </div>
                     <div>
                       <motion.h3
-                        className="text-xl font-bold text-foreground mb-2"
+                        className="text-xl font-bold text-[var(--color-text)] mb-2"
                         key={`review-${reviewCardsCount}`}
                         initial={{ opacity: 0.8 }}
                         animate={{ opacity: 1 }}
@@ -466,11 +466,11 @@ export default function FlashCardResults({
                       >
                         Study {reviewCardsCount} Difficult Cards
                       </motion.h3>
-                      <p className="text-muted-foreground">Focus on cards that need more attention</p>
+                      <p className="text-[var(--color-text)]/70">Focus on cards that need more attention</p>
                     </div>
                     <Button
                       size="lg"
-                      className="bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-primary-foreground px-8 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-0"
+                      className="bg-gradient-to-r from-[var(--color-error)] to-[var(--color-error)] hover:from-[var(--color-error)] hover:to-[var(--color-error)] text-[var(--color-bg)] px-8 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-0"
                       onClick={() => onReview(reviewCardsState)}
                     >
                       <RefreshCw className="w-5 h-5 mr-2" />
