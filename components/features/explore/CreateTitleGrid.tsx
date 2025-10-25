@@ -518,10 +518,10 @@ function Tile({
       </TooltipProvider>
       
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-4xl lg:max-w-5xl max-h-[90vh] p-0 overflow-hidden rounded-2xl flex flex-col">
+        <DialogContent className="sm:max-w-4xl lg:max-w-5xl max-h-[90vh] p-0 border-4 border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-neo)] overflow-hidden flex flex-col">
           <div className="grid lg:grid-cols-2 flex-1 min-h-0">
             {/* Left side - Hero content */}
-            <div className="p-6 lg:p-8 bg-card border-r-6 border-border flex flex-col">
+            <div className="p-6 lg:p-8 bg-[var(--color-bg)] border-r-4 border-[var(--color-border)] flex flex-col">
               <DialogHeader className="space-y-4 sm:space-y-6">
                 <DialogTitle className="flex items-center justify-between">
                   <div className={`flex items-center text-4xl font-bold ${colorClasses.icon}`}>
