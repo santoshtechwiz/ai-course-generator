@@ -31,7 +31,7 @@ export function CreditsDisplay({
         initial={prefersReducedMotion ? {} : "hidden"}
         animate={prefersReducedMotion ? {} : "visible"}
       >
-        <Skeleton className="h-8 w-24 rounded-lg bg-gradient-to-r from-primary/20 to-secondary/20" />
+        <Skeleton className="h-8 w-24 rounded-lg bg-muted border-4 border-border shadow-neo" />
       </motion.div>
     )
   }
@@ -41,11 +41,10 @@ export function CreditsDisplay({
   return (
     <motion.div
       className={cn(
-        "flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border transition-all duration-300 text-xs sm:text-sm",
-        "bg-gradient-to-r from-primary/10 via-secondary/5 to-accent/10",
-        "border-primary/20 hover:border-primary/40",
-        "hover:shadow-lg hover:shadow-primary/10",
-        "backdrop-blur-sm"
+        "flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border-4 transition-all duration-300 text-xs sm:text-sm",
+        "bg-primary/10",
+        "border-primary/40 shadow-neo",
+        "hover:shadow-neo-xl"
       )}
       data-testid="credits-display"
       variants={prefersReducedMotion ? {} : {

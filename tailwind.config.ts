@@ -25,8 +25,9 @@ module.exports = {
 
       boxShadow: {
         neo: "var(--shadow-neo)",
-        'neo-sm': "3px 3px 0px var(--shadow-color)",
-        'neo-lg': "8px 8px 0px var(--shadow-color)",
+        'neo-sm': "6px 6px 0px var(--shadow-color)",
+        'neo-lg': "12px 12px 0px var(--shadow-color)",
+        'neo-xl': "16px 16px 0px var(--shadow-color)",
       },
 
       borderRadius: {
@@ -60,15 +61,15 @@ module.exports = {
       const { addComponents } = tw;
       addComponents({
         ".card": {
-          "@apply bg-card border-4 border-border shadow-neo p-4 sm:p-5 rounded-lg transition-transform duration-200": {},
+          "@apply bg-card border-6 border-border shadow-neo p-6 sm:p-8 rounded-lg transition-transform duration-200": {},
           "&:hover": {
-            transform: "translateY(-6px)",
+            transform: "translateY(-8px)",
           },
         },
         ".btn": {
-          "@apply px-4 sm:px-5 py-2 sm:py-3 font-semibold border-4 border-border rounded-md transition-transform duration-200 flex items-center justify-center gap-2": {},
+          "@apply px-6 sm:px-8 py-3 sm:py-4 font-semibold border-6 border-border rounded-md transition-transform duration-200 flex items-center justify-center gap-2": {},
           "&:active": {
-            transform: "translate(4px,4px)",
+            transform: "translate(6px,6px)",
             boxShadow: "none",
           },
         },

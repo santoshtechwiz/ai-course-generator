@@ -38,7 +38,7 @@ export function PageHeader({
           {Icon && (
             <Icon className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 xl:h-10 xl:w-10 text-purple-600 dark:text-purple-400 flex-shrink-0" />
           )}
-          <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 dark:from-purple-400 dark:via-blue-400 dark:to-indigo-400 bg-clip-text text-transparent leading-tight">
+          <span className="text-primary leading-tight">
             {title}
           </span>
         </h1>

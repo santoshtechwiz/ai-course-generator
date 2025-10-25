@@ -223,7 +223,7 @@ export default function EnhancedFlashcard({
                 zIndex: -1,
               }}
             >
-              <Card className="h-96 bg-gradient-to-br from-muted to-muted/50" />
+              <Card className="h-96 bg-muted border-4 border-border shadow-neo" />
             </motion.div>
             <motion.div
               className="absolute inset-0 opacity-10"
@@ -232,7 +232,7 @@ export default function EnhancedFlashcard({
                 zIndex: -2,
               }}
             >
-              <Card className="h-96 bg-gradient-to-br from-muted to-muted/50" />
+              <Card className="h-96 bg-muted border-4 border-border shadow-neo" />
             </motion.div>
           </>
         )}

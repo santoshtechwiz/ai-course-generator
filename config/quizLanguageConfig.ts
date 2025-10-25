@@ -93,56 +93,56 @@ export const LANGUAGE_GROUP_CONFIG: Record<LanguageGroup, LanguageGroupConfig> =
     icon: Star,
     description: 'Most commonly used languages',
     color:
-      'bg-gradient-to-r from-amber-400 to-yellow-500 text-white shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 border-0',
+      'bg-warning text-white border-4 border-border shadow-neo hover:shadow-neo-xl',
     hoverScale: 'hover:scale-105',
   },
   Web: {
     icon: Globe,
     description: 'Web and internet technologies',
     color:
-      'bg-gradient-to-r from-blue-400 to-cyan-500 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 border-0',
+      'bg-accent text-white border-4 border-border shadow-neo hover:shadow-neo-xl',
     hoverScale: 'hover:scale-105',
   },
   Mobile: {
     icon: Smartphone,
     description: 'Mobile app development',
     color:
-      'bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/25 hover:shadow-green-500/40 border-0',
+      'bg-success text-white border-4 border-border shadow-neo hover:shadow-neo-xl',
     hoverScale: 'hover:scale-105',
   },
   Systems: {
     icon: Cpu,
     description: 'Systems and low-level programming',
     color:
-      'bg-gradient-to-r from-red-400 to-rose-500 text-white shadow-lg shadow-red-500/25 hover:shadow-red-500/40 border-0',
+      'bg-danger text-white border-4 border-border shadow-neo hover:shadow-neo-xl',
     hoverScale: 'hover:scale-105',
   },
   Data: {
     icon: Database,
     description: 'Data science and databases',
     color:
-      'bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-[hsl(var(--primary-foreground))] shadow-lg shadow-[hsl(var(--primary))]/25 hover:shadow-[hsl(var(--primary))]/40 border-0',
+      'bg-primary text-white border-4 border-border shadow-neo hover:shadow-neo-xl',
     hoverScale: 'hover:scale-105',
   },
   Functional: {
     icon: Zap,
     description: 'Functional programming languages',
     color:
-      'bg-gradient-to-r from-orange-400 to-amber-500 text-white shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 border-0',
+      'bg-warning text-white border-4 border-border shadow-neo hover:shadow-neo-xl',
     hoverScale: 'hover:scale-105',
   },
   Scripts: {
     icon: Terminal,
     description: 'Scripting and automation',
     color:
-      'bg-gradient-to-r from-slate-400 to-gray-500 text-white shadow-lg shadow-slate-500/25 hover:shadow-slate-500/40 border-0',
+      'bg-muted text-foreground border-4 border-border shadow-neo hover:shadow-neo-xl',
     hoverScale: 'hover:scale-105',
   },
   Other: {
     icon: Code,
     description: 'Other programming languages',
     color:
-      'bg-gradient-to-r from-teal-400 to-cyan-500 text-white shadow-lg shadow-teal-500/25 hover:shadow-teal-500/40 border-0',
+      'bg-accent text-white border-4 border-border shadow-neo hover:shadow-neo-xl',
     hoverScale: 'hover:scale-105',
   },
 } as const

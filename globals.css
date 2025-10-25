@@ -1,170 +1,99 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
+/* === Neobrutalism Design System — Premium Edition === */
 :root {
-  /* Enhanced Neobrutal color palette with bold, distinct colors */
-  --background: oklch(0.98 0 0);
-  --foreground: oklch(0.12 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.12 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.12 0 0);
+  /* Core brand colors */
+  --color-bg: #fffdf5;
+  --color-text: #0a0a0a;
+  --color-primary: #ff007f;
+  --color-accent: #00f5d4;
+  --color-card: #ffffff;
+  --color-muted: #f2f2f2;
 
-  /* Primary: Bold electric blue */
-  --primary: oklch(0.35 0.25 264);
-  --primary-foreground: oklch(0.98 0 0);
+  /* Depth & Shadows */
+  --color-border: #000000;
+  --shadow-offset-x: 8px;
+  --shadow-offset-y: 8px;
+  --shadow-color: #000000;
+  --shadow-neo: var(--shadow-offset-x) var(--shadow-offset-y) 0 var(--shadow-color);
 
-  /* Secondary: Vibrant yellow */
-  --secondary: oklch(0.85 0.22 86);
-  --secondary-foreground: oklch(0.12 0 0);
+  /* Radii & Typography */
+  --radius: 0.75rem;
+  --font-base: 500;
+  --font-heading: 700;
 
-  /* Main: Bold black for hero sections */
-  --main: oklch(0.12 0 0);
-  --main-foreground: oklch(0.98 0 0);
-
-  /* Accent: Bright red/coral */
-  --accent: oklch(0.65 0.25 25);
-  --accent-foreground: oklch(0.98 0 0);
-
-  --muted: oklch(0.92 0 0);
-  --muted-foreground: oklch(0.5 0 0);
-  --destructive: oklch(0.65 0.25 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.2 0 0);
-  --input: oklch(0.92 0 0);
-  --ring: oklch(0.35 0.25 264);
-
-  /* Chart colors - bold and distinct */
-  --chart-1: oklch(0.35 0.25 264);
-  --chart-2: oklch(0.85 0.22 86);
-  --chart-3: oklch(0.65 0.25 25);
-  --chart-4: oklch(0.45 0.2 150);
-  --chart-5: oklch(0.75 0.18 40);
-
-  --radius: 0.5rem;
-  --sidebar: oklch(0.98 0 0);
-  --sidebar-foreground: oklch(0.12 0 0);
-  --sidebar-primary: oklch(0.35 0.25 264);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.85 0.22 86);
-  --sidebar-accent-foreground: oklch(0.12 0 0);
-  --sidebar-border: oklch(0.2 0 0);
-  --sidebar-ring: oklch(0.35 0.25 264);
-
-  /* Success, warning, info colors */
-  --success: oklch(0.55 0.2 142);
-  --warning: oklch(0.85 0.22 86);
-  --info: oklch(0.35 0.25 264);
+  /* Code syntax highlighting */
+  --color-code-bg: #282c34;
 }
 
+/* === Dark Mode === */
 .dark {
-  /* Dark mode with high contrast Neobrutal colors */
-  --background: oklch(0.1 0 0);
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.15 0 0);
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.15 0 0);
-  --popover-foreground: oklch(0.95 0 0);
-
-  /* Primary: Bright electric blue */
-  --primary: oklch(0.65 0.25 264);
-  --primary-foreground: oklch(0.1 0 0);
-
-  /* Secondary: Bright yellow */
-  --secondary: oklch(0.9 0.22 86);
-  --secondary-foreground: oklch(0.1 0 0);
-
-  /* Main: White for hero sections */
-  --main: oklch(0.95 0 0);
-  --main-foreground: oklch(0.1 0 0);
-
-  /* Accent: Bright coral */
-  --accent: oklch(0.75 0.25 25);
-  --accent-foreground: oklch(0.1 0 0);
-
-  --muted: oklch(0.25 0 0);
-  --muted-foreground: oklch(0.7 0 0);
-  --destructive: oklch(0.75 0.25 25);
-  --destructive-foreground: oklch(0.1 0 0);
-  --border: oklch(0.3 0 0);
-  --input: oklch(0.2 0 0);
-  --ring: oklch(0.65 0.25 264);
-
-  /* Chart colors */
-  --chart-1: oklch(0.65 0.25 264);
-  --chart-2: oklch(0.9 0.22 86);
-  --chart-3: oklch(0.75 0.25 25);
-  --chart-4: oklch(0.6 0.2 150);
-  --chart-5: oklch(0.85 0.18 40);
-
-  --sidebar: oklch(0.15 0 0);
-  --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: oklch(0.65 0.25 264);
-  --sidebar-primary-foreground: oklch(0.1 0 0);
-  --sidebar-accent: oklch(0.9 0.22 86);
-  --sidebar-accent-foreground: oklch(0.1 0 0);
-  --sidebar-border: oklch(0.3 0 0);
-  --sidebar-ring: oklch(0.65 0.25 264);
-
-  /* Success, warning, info colors */
-  --success: oklch(0.7 0.2 142);
-  --warning: oklch(0.9 0.22 86);
-  --info: oklch(0.65 0.25 264);
+  --color-bg: #1a1a1a;
+  --color-text: #fafafa;
+  --color-primary: #ff4bd1;
+  --color-accent: #00f0a0;
+  --color-card: #2b2b2b;
+  --color-muted: #333333;
+  --color-border: #fafafa;
+  --shadow-color: #fafafa;
 }
 
-@theme inline {
-  --font-sans: "Geist", "Geist Fallback";
-  --font-mono: "Geist Mono", "Geist Mono Fallback";
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 2px);
-  --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) + 2px);
-  --radius-xl: calc(var(--radius) + 6px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-main: var(--main);
-  --color-main-foreground: var(--main-foreground);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-info: var(--info);
-}
-
+/* === Base Layer === */
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply transition-all duration-200 ease-in-out;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[var(--color-bg)] text-[var(--color-text)] font-sans tracking-tight;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold text-[var(--color-text)] leading-tight;
+  }
+}
+
+/* === Component Utilities === */
+@layer components {
+  .neuro-card {
+    @apply bg-[var(--color-card)] border-6 border-[var(--color-border)]
+           shadow-[var(--shadow-neo)] rounded-[var(--radius)] p-6
+           transition-transform hover:-translate-x-2 hover:-translate-y-2
+           hover:shadow-none sm:p-8 lg:p-10;
+  }
+
+  .neuro-button {
+    @apply inline-flex items-center justify-center gap-2
+           bg-[var(--color-primary)] text-[var(--color-text)]
+           border-6 border-[var(--color-border)] shadow-[var(--shadow-neo)]
+           font-semibold px-6 py-4 rounded-[var(--radius)]
+           transition-transform duration-150 ease-in-out
+           hover:-translate-x-2 hover:-translate-y-2 hover:shadow-none
+           active:translate-x-[6px] active:translate-y-[6px] active:shadow-none
+           sm:px-8 sm:py-5 md:px-10 md:py-6;
+  }
+
+  .neuro-input {
+    @apply bg-[var(--color-card)] border-6 border-[var(--color-border)] px-4 py-3
+           rounded-none focus:ring-4 focus:ring-[var(--color-accent)]
+           focus:border-[var(--color-accent)] placeholder:text-gray-500
+           sm:py-4 sm:px-5;
+  }
+
+  .neuro-badge {
+    @apply inline-block px-4 py-2 border-6 border-[var(--color-border)]
+           bg-[var(--color-accent)] text-[var(--color-text)]
+           shadow-[var(--shadow-neo)] text-sm sm:text-base;
+  }
+
+  .neuro-option {
+    @apply cursor-pointer border-6 border-[var(--color-border)] p-4 rounded-[var(--radius)]
+           shadow-[var(--shadow-neo)] transition-all duration-150 ease-in-out
+           hover:-translate-x-2 hover:-translate-y-2 hover:shadow-none;
+  }
+
+  .neuro-option-selected {
+    @apply bg-[var(--color-primary)] text-[var(--color-bg)]
+           border-[var(--color-border)] shadow-[var(--shadow-neo)];
   }
 }

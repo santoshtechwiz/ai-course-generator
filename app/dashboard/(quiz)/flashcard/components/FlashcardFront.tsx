@@ -87,7 +87,7 @@ export function FlashcardFront({
               </div>
               
               {/* Code Content */}
-              <div className="max-h-60 sm:max-h-72 overflow-y-auto bg-[#282c34]">
+              <div className="max-h-60 sm:max-h-72 overflow-y-auto bg-[var(--color-code-bg,#282c34)]">
                 <SyntaxHighlighter
                   language={language}
                   style={atomOneDark}
@@ -96,7 +96,7 @@ export function FlashcardFront({
                     margin: 0,
                     fontSize: '0.75rem',
                     padding: '1rem',
-                    background: '#282c34',
+                    background: 'var(--color-code-bg, #282c34)',
                     borderRadius: 0,
                     lineHeight: '1.6',
                   }}

@@ -9,16 +9,15 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
 import { BreadcrumbNavigation } from "@/components/navigation/BreadcrumbNavigation"
-import { 
-  Clock, 
-  Home, 
-  Maximize, 
-  Minimize, 
-  X, 
-  Target, 
-  Play, 
+import {
+  Clock,
+  Home,
+  Maximize,
+  Minimize,
+  X,
+  Target,
+  Play,
   Pause,
-  RotateCcw,
   BookOpen,
   Award,
   Zap,
@@ -27,7 +26,7 @@ import {
   Brain,
   Lock,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
 } from "lucide-react"
 
 import { RandomQuiz } from "./RandomQuiz"
@@ -35,7 +34,6 @@ import { useRelatedQuizzes } from "@/hooks/useRelatedQuizzes"
 import { motion, AnimatePresence } from "framer-motion"
 import RecommendedSection from "@/components/shared/RecommendedSection"
 import { cn } from "@/lib/utils"
-import neo from '@/components/neo/tokens'
 
 import { useAuth } from "@/modules/auth"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
@@ -55,7 +53,7 @@ const QuizContext = createContext<QuizContextType | undefined>(undefined)
 export const useQuizContext = () => {
   const context = useContext(QuizContext)
   if (context === undefined) {
-    throw new Error('useQuizContext must be used within a QuizPlayLayout')
+    throw new Error("useQuizContext must be used within a QuizPlayLayout")
   }
   return context
 }
@@ -118,7 +116,6 @@ const QuizSkeleton = () => (
 
 const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) => {
   const formatTime = (s: number) => {
-    // Ensure s is a valid number and not negative
     const safeSeconds = Math.max(0, Math.floor(s || 0))
     if (safeSeconds === 0) return "0:00"
     if (safeSeconds < 60) return `0:${safeSeconds.toString().padStart(2, "0")}`
@@ -131,15 +128,13 @@ const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) =
     <motion.div
       className={cn(
         "inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-black transition-all duration-100 border-3 sm:border-4 border-border shadow-neo-sm",
-        isPaused
-          ? "bg-muted text-muted-foreground"
-          : "bg-accent text-white"
+        isPaused ? "bg-muted text-muted-foreground" : "bg-accent text-white",
       )}
       whileHover={{ scale: 1.05, y: -2 }}
       transition={{ duration: 0.1 }}
       layout
       aria-live="polite"
-      aria-label={`Timer: ${formatTime(seconds)}, ${isPaused ? 'paused' : 'running'}`}
+      aria-label={`Timer: ${formatTime(seconds)}, ${isPaused ? "paused" : "running"}`}
     >
       <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
       <span className="tabular-nums font-mono font-black text-xs sm:text-sm">{formatTime(seconds)}</span>
@@ -148,6 +143,180 @@ const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) =
   )
 }
 
+const QuizHeader = ({
+  title,
+  quizType,
+  difficulty,
+  questionNumber,
+  totalQuestions,
+  displaySeconds,
+  isPaused,
+  isFullscreen,
+  sidebarOpen,
+  isMobile,
+  isSidebarTransitioning,
+  onTogglePause,
+  onGoHome,
+  onToggleFullscreen,
+  onToggleSidebar,
+  progress,
+}: any) => {
+  const QuizTypeIcon = quizTypeIcons[quizType] || Award
+
+  return (
+    <motion.header
+      className="border-b-4 border-border bg-card shadow-neo"
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+    >
+      <div
+        className={cn(
+          "mx-auto w-full py-3 sm:py-4 transition-all duration-300",
+          isFullscreen ? "max-w-none px-3 sm:px-4" : "max-w-7xl px-3 sm:px-4 lg:px-8",
+        )}
+      >
+        {/* Main header row */}
+        <div className="flex items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-0">
+          <motion.div
+            className="min-w-0 flex-1 flex items-center gap-2 sm:gap-3"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="p-2 sm:p-2.5 rounded-lg bg-accent border-3 sm:border-4 border-border text-white shadow-neo-sm sm:shadow-neo flex-shrink-0">
+                <QuizTypeIcon className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h1
+                  className="text-sm sm:text-base lg:text-lg font-black text-foreground truncate mb-0.5 sm:mb-1"
+                  title={title}
+                >
+                  {title}
+                </h1>
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <Badge
+                    variant="neutral"
+                    className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-black bg-accent text-white border-2 sm:border-4 border-border shadow-neo-sm rounded-md sm:rounded-lg"
+                  >
+                    {quizTypeLabel[quizType] || "Quiz"}
+                  </Badge>
+                  <DifficultyBadge difficulty={difficulty} />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Desktop controls */}
+          <motion.div
+            className="hidden sm:flex items-center gap-1.5 sm:gap-2"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="hidden lg:flex items-center gap-2 px-3 py-2 bg-card rounded-lg border-4 border-border shadow-neo">
+              <Badge
+                variant="neutral"
+                className="px-2 py-1 text-xs font-black bg-accent text-white border-4 border-border shadow-neo-sm rounded-md"
+              >
+                {progress}%
+              </Badge>
+              <Timer seconds={displaySeconds} isPaused={isPaused} />
+            </div>
+
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Button
+                variant="neutral"
+                size="sm"
+                onClick={onTogglePause}
+                className="hover:bg-muted transition-all duration-100 border-4 sm:border-6 border-border shadow-neo-sm h-9 w-9 sm:h-11 sm:w-11 p-0 rounded-lg bg-card"
+                aria-label={isPaused ? "Resume quiz" : "Pause quiz"}
+              >
+                {isPaused ? (
+                  <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                ) : (
+                  <Pause className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                )}
+              </Button>
+
+              <Button
+                variant="neutral"
+                size="sm"
+                onClick={onGoHome}
+                className="hover:bg-muted transition-all duration-100 border-4 sm:border-6 border-border shadow-neo-sm h-9 w-9 sm:h-11 sm:w-11 p-0 rounded-lg bg-card"
+                aria-label="Go to dashboard"
+              >
+                <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </Button>
+
+              <Button
+                variant="neutral"
+                size="sm"
+                onClick={onToggleFullscreen}
+                className="hover:bg-muted transition-all duration-100 border-4 sm:border-6 border-border shadow-neo-sm h-9 w-9 sm:h-11 sm:w-11 p-0 rounded-lg bg-card"
+                aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              >
+                {isFullscreen ? (
+                  <Minimize className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                ) : (
+                  <Maximize className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                )}
+              </Button>
+
+              <Button
+                variant="neutral"
+                size="sm"
+                onClick={onToggleSidebar}
+                disabled={isSidebarTransitioning}
+                className="hover:bg-muted transition-all duration-100 border-4 sm:border-6 border-border shadow-neo-sm h-9 w-9 sm:h-11 sm:w-11 p-0 rounded-lg bg-card"
+                aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+                aria-expanded={sidebarOpen}
+              >
+                {sidebarOpen ? (
+                  <PanelLeftClose className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                ) : (
+                  <PanelLeftOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                )}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Mobile progress bar */}
+        {isMobile && (
+          <motion.div
+            className="flex items-center justify-between gap-2 sm:gap-3 p-2 sm:p-3 bg-card rounded-lg border-4 sm:border-6 border-border shadow-neo"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Badge
+              variant="neutral"
+              className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-black bg-accent text-white border-4 sm:border-6 border-border shadow-neo-sm rounded-md"
+            >
+              {progress}%
+            </Badge>
+            <Timer seconds={displaySeconds} isPaused={isPaused} />
+            <Button
+              variant="neutral"
+              size="sm"
+              onClick={onTogglePause}
+              className="h-8 w-8 sm:h-10 sm:w-10 p-0 hover:bg-muted border-4 sm:border-6 border-border shadow-neo-sm transition-all duration-100 rounded-lg bg-card"
+              aria-label={isPaused ? "Resume quiz" : "Pause quiz"}
+            >
+              {isPaused ? (
+                <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              ) : (
+                <Pause className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              )}
+            </Button>
+          </motion.div>
+        )}
+      </div>
+    </motion.header>
+  )
+}
 
 export default function QuizPlayLayout({
   children,
@@ -160,44 +329,41 @@ export default function QuizPlayLayout({
   timeSpent = 0,
 }: QuizPlayLayoutProps) {
   const isMobile = useMediaQuery("(max-width: 767px)")
+  const isTablet = useMediaQuery("(max-width: 1024px)")
   const pathname = usePathname()
   const [isLoaded, setIsLoaded] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile) // Close by default on mobile
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isFocusMode, setIsFocusMode] = useState(false)
   const [showEngage, setShowEngage] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
   const [isSidebarTransitioning, setIsSidebarTransitioning] = useState(false)
-  
-  // Local state for quiz properties to enable immediate UI updates
+
   const [localIsPublic, setLocalIsPublic] = useState(isPublic)
   const [localIsFavorite, setLocalIsFavorite] = useState(isFavorite)
-  
-  // Update local state when props change
+
   useEffect(() => {
     setLocalIsPublic(isPublic)
   }, [isPublic])
-  
+
   useEffect(() => {
     setLocalIsFavorite(isFavorite)
   }, [isFavorite])
-  
-  const { quizzes: relatedQuizzes } = useRelatedQuizzes({ 
-    quizType, 
-    difficulty: quizData?.difficulty, 
-    exclude: quizSlug, 
-    limit: 6, 
-    tags: Array.isArray(quizData?.tags) ? quizData?.tags : undefined 
+
+  const { quizzes: relatedQuizzes } = useRelatedQuizzes({
+    quizType,
+    difficulty: quizData?.difficulty,
+    exclude: quizSlug,
+    limit: 6,
+    tags: Array.isArray(quizData?.tags) ? quizData?.tags : undefined,
   })
   const [showConfetti, setShowConfetti] = useState(false)
   const mainRef = useRef<HTMLDivElement>(null)
   const sidebarRef = useRef<HTMLDivElement>(null)
 
-  // Session and subscription management
   const { user: authUser } = useAuth()
   const { subscription } = useUnifiedSubscription()
 
-  // Determine ownership and subscription status
   const isOwner = useMemo((): boolean => {
     const sessionUserId = authUser?.id
     const quizUserId = quizData?.userId
@@ -214,13 +380,11 @@ export default function QuizPlayLayout({
     return new Date(subscription.expirationDate) < new Date()
   }, [subscription?.expirationDate])
 
-  // Auto-increment timer when not provided
   const [elapsed, setElapsed] = useState(0)
   useEffect(() => {
     setIsLoaded(true)
-    // Only start local timer if no timeSpent prop is provided
     if (timeSpent > 0) return
-    
+
     const interval = setInterval(() => {
       if (!isPaused) {
         setElapsed((e) => Math.max(0, e + 1))
@@ -229,11 +393,10 @@ export default function QuizPlayLayout({
     return () => clearInterval(interval)
   }, [isPaused, timeSpent])
 
-  // Engagement modal: show once per slug
   useEffect(() => {
     if (!quizSlug) return
     const key = `ai_quiz_engagement_${quizSlug}`
-    const seen = typeof window !== 'undefined' ? localStorage.getItem(key) : null
+    const seen = typeof window !== "undefined" ? localStorage.getItem(key) : null
     if (seen === null) {
       const t = setTimeout(() => setShowEngage(true), 2000)
       return () => clearTimeout(t)
@@ -242,23 +405,20 @@ export default function QuizPlayLayout({
 
   const title = quizData?.title || "Untitled Quiz"
   const difficulty = quizData?.difficulty || "medium"
-  // Ensure totalQuestions is always at least 1 to prevent division by zero
   const totalQuestions = Math.max(1, Array.isArray(quizData?.questions) ? quizData.questions.length : 1)
-  // Ensure questionNumber is within valid bounds [1, totalQuestions]
   const questionNumber = Math.max(
     1,
     Math.min(
-      quizData?.currentQuestionIndex !== undefined && typeof quizData.currentQuestionIndex === 'number' 
-        ? quizData.currentQuestionIndex + 1 
-        : 1, 
-      totalQuestions
-    )
+      quizData?.currentQuestionIndex !== undefined && typeof quizData.currentQuestionIndex === "number"
+        ? quizData.currentQuestionIndex + 1
+        : 1,
+      totalQuestions,
+    ),
   )
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarTransitioning(true)
     setSidebarOpen((s) => !s)
-    // Reset transitioning state after animation
     setTimeout(() => setIsSidebarTransitioning(false), 300)
   }, [])
 
@@ -271,10 +431,8 @@ export default function QuizPlayLayout({
   const goHome = useCallback(() => (window.location.href = "/dashboard/quizzes"), [])
   const resetQuiz = useCallback(() => {
     setElapsed(0)
-    // Add your reset logic here
   }, [])
 
-  // Quiz action callbacks for immediate UI updates
   const handleVisibilityChange = useCallback((newIsPublic: boolean) => {
     setLocalIsPublic(newIsPublic)
   }, [])
@@ -284,173 +442,37 @@ export default function QuizPlayLayout({
   }, [])
 
   const handleDelete = useCallback(() => {
-    // Navigate to quizzes page after successful deletion
     window.location.href = "/dashboard/quizzes"
   }, [])
 
-  const QuizTypeIcon = quizTypeIcons[quizType] || Award
-  const progress = useMemo(() => Math.min(100, Math.max(0, Math.round((questionNumber / totalQuestions) * 100))), [questionNumber, totalQuestions])
-  
-  // Hide heavy sidebar actions on result/review pages to avoid duplicate CTAs
+  const progress = useMemo(
+    () => Math.min(100, Math.max(0, Math.round((questionNumber / totalQuestions) * 100))),
+    [questionNumber, totalQuestions],
+  )
+
   const hideSidebarActions = useMemo(() => {
     if (!pathname) return false
     const p = pathname.toLowerCase()
-    return p.includes('/results') || p.includes('/review') || p.includes('/result')
+    return p.includes("/results") || p.includes("/review") || p.includes("/result")
   }, [pathname])
-  
-  // Close sidebar when clicking outside on mobile
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (isMobile && 
-          sidebarOpen && 
-          sidebarRef.current && 
-          !sidebarRef.current.contains(event.target as Node) &&
-          mainRef.current &&
-          !mainRef.current.contains(event.target as Node)) {
+      if (
+        isMobile &&
+        sidebarOpen &&
+        sidebarRef.current &&
+        !sidebarRef.current.contains(event.target as Node) &&
+        mainRef.current &&
+        !mainRef.current.contains(event.target as Node)
+      ) {
         setSidebarOpen(false)
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [isMobile, sidebarOpen])
-
-  const header = useMemo(() => {
-    const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
-    return (
-      <motion.header 
-        className="border-b-4 border-border bg-card shadow-neo dark:bg-card dark:border-border"
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-      >
-        <div className={cn(
-          "mx-auto w-full py-3 sm:py-4 transition-all duration-300",
-          isFullscreen 
-            ? "max-w-none px-3 sm:px-4" 
-            : "max-w-7xl px-3 sm:px-4 lg:px-8"
-        )}>
-          <div className="flex items-center justify-between gap-2 sm:gap-3">
-            <motion.div 
-              className="min-w-0 flex-1 flex items-center gap-2 sm:gap-3"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <div className="p-2 sm:p-2.5 rounded-lg bg-accent border-3 sm:border-4 border-border text-white shadow-neo-sm sm:shadow-neo flex-shrink-0">
-                  <QuizTypeIcon className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h1 className="text-sm sm:text-base lg:text-lg font-black text-foreground truncate mb-0.5 sm:mb-1" title={title}>
-                    {title}
-                  </h1>
-                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                    <Badge 
-                      variant="neutral" 
-                      className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-black bg-accent text-white border-2 sm:border-4 border-border shadow-neo-sm rounded-md sm:rounded-lg"
-                    >
-                      {quizTypeLabel[quizType] || "Quiz"}
-                    </Badge>
-                    <DifficultyBadge difficulty={difficulty} />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div 
-              className="flex items-center gap-1.5 sm:gap-2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              {/* Compact progress and timer for desktop */}
-              <div className="hidden lg:flex items-center gap-2 px-3 py-2 bg-card rounded-lg border-4 border-border shadow-neo">
-                <Badge 
-                  variant="neutral" 
-                  className="px-2 py-1 text-xs font-black bg-accent text-white border-4 border-border shadow-neo-sm rounded-md"
-                >
-                  {progress}%
-                </Badge>
-                <Timer seconds={displaySeconds} isPaused={isPaused} />
-              </div>
-              
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <Button 
-                  variant="neutral" 
-                  size="sm" 
-                  onClick={togglePause}
-                  className="hidden sm:flex hover:bg-muted transition-all duration-100 border-3 sm:border-4 border-border shadow-neo-sm h-9 w-9 sm:h-11 sm:w-11 p-0 rounded-lg bg-card"
-                  aria-label={isPaused ? "Resume quiz" : "Pause quiz"}
-                >
-                  {isPaused ? <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Pause className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-                </Button>
-                
-                <Button 
-                  variant="neutral" 
-                  size="sm" 
-                  onClick={goHome} 
-                  className="hover:bg-muted transition-all duration-100 border-3 sm:border-4 border-border shadow-neo-sm h-9 w-9 sm:h-11 sm:w-11 p-0 rounded-lg bg-card"
-                  aria-label="Go to dashboard"
-                >
-                  <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </Button>
-                
-                <Button 
-                  variant="neutral" 
-                  size="sm" 
-                  onClick={toggleFullscreen} 
-                  className="hover:bg-muted transition-all duration-100 border-3 sm:border-4 border-border shadow-neo-sm h-9 w-9 sm:h-11 sm:w-11 p-0 rounded-lg bg-card"
-                  aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                >
-                  {isFullscreen ? <Minimize className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Maximize className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-                </Button>
-                
-                <Button 
-                  variant="neutral" 
-                  size="sm" 
-                  onClick={toggleSidebar}
-                  disabled={isSidebarTransitioning}
-                  className="hover:bg-muted transition-all duration-100 border-3 sm:border-4 border-border shadow-neo-sm h-9 w-9 sm:h-11 sm:w-11 p-0 rounded-lg bg-card"
-                  aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-                  aria-expanded={sidebarOpen}
-                >
-                  {sidebarOpen ? <PanelLeftClose className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <PanelLeftOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-                </Button>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Mobile progress bar */}
-          {isMobile && (
-            <motion.div 
-              className="mt-2 sm:mt-3 flex items-center justify-between gap-2 sm:gap-3 p-2 sm:p-3 bg-card rounded-lg border-3 sm:border-4 border-border shadow-neo"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <Badge 
-                variant="neutral" 
-                className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-black bg-accent text-white border-3 sm:border-4 border-border shadow-neo-sm rounded-md"
-              >
-                {progress}%
-              </Badge>
-              <Timer seconds={displaySeconds} isPaused={isPaused} />
-              <Button 
-                variant="neutral" 
-                size="sm" 
-                onClick={togglePause} 
-                className="h-8 w-8 sm:h-10 sm:w-10 p-0 hover:bg-muted border-3 sm:border-4 border-border shadow-neo-sm transition-all duration-100 rounded-lg bg-card"
-                aria-label={isPaused ? "Resume quiz" : "Pause quiz"}
-              >
-                {isPaused ? <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Pause className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-              </Button>
-            </motion.div>
-          )}
-        </div>
-      </motion.header>
-    )
-  }, [title, quizType, difficulty, isMobile, questionNumber, totalQuestions, timeSpent, elapsed, isFullscreen, sidebarOpen, isFocusMode, isPaused, QuizTypeIcon, isSidebarTransitioning, toggleSidebar, togglePause, goHome, toggleFullscreen, resetQuiz, progress])
 
   useEffect(() => {
     if (progress === 100) {
@@ -462,33 +484,25 @@ export default function QuizPlayLayout({
 
   const canResume = questionNumber > 1
 
-  // Handle responsive sidebar behavior
   const prevIsMobileRef = useRef<boolean | null>(null)
   useEffect(() => {
-    // Skip on initial mount
     if (prevIsMobileRef.current === null) {
       prevIsMobileRef.current = isMobile
-      setSidebarOpen(!isMobile) // Close on mobile, open on desktop
+      setSidebarOpen(!isMobile)
       return
     }
-    
-    // Update sidebar state when switching between mobile/desktop
+
     if (prevIsMobileRef.current !== isMobile) {
       setSidebarOpen(!isMobile)
       prevIsMobileRef.current = isMobile
     }
   }, [isMobile])
 
-  // Check if quiz should be visible to current user
   const canViewQuiz = useMemo(() => {
-    // Public quizzes are visible to everyone
     if (isPublic) return true
-    
-    // Private quizzes are only visible to the owner
     return isOwner
   }, [isPublic, isOwner])
 
-  // If quiz is private and user can't view it, show access denied message
   if (!canViewQuiz) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -498,19 +512,16 @@ export default function QuizPlayLayout({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Lock className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 mx-auto mb-4 text-muted-foreground" aria-hidden="true" />
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-black text-foreground mb-2">
-            Private Quiz
-          </h1>
+          <Lock
+            className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 mx-auto mb-4 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <h1 className="text-lg sm:text-xl lg:text-2xl font-black text-foreground mb-2">Private Quiz</h1>
           <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
             This quiz is private and can only be viewed by its owner.
           </p>
-          {!authUser && (
-            <p className="text-sm text-muted-foreground mb-4">
-              Please log in to access private quizzes.
-            </p>
-          )}
-          <Button 
+          {!authUser && <p className="text-sm text-muted-foreground mb-4">Please log in to access private quizzes.</p>}
+          <Button
             onClick={goHome}
             className="mt-4 border-4 border-border shadow-neo bg-accent text-white hover:bg-accentHover font-black rounded-lg px-4 sm:px-6 py-2 sm:py-2.5"
             aria-label="Return to quizzes dashboard"
@@ -533,21 +544,34 @@ export default function QuizPlayLayout({
     )
   }
 
-  // Ensure displaySeconds is always a valid positive number
   const displaySeconds = Math.max(0, timeSpent > 0 ? timeSpent : elapsed)
 
   return (
-    <div className={cn(
-      "min-h-screen bg-background relative overflow-x-hidden", 
-      isFullscreen && "overflow-hidden"
-    )}>
-      {/* Top spacer to prevent content from sliding under MainNavbar (h-16 = 64px) */}
+    <div className={cn("min-h-screen bg-background relative overflow-x-hidden", isFullscreen && "overflow-hidden")}>
+      {/* Top spacer for MainNavbar */}
       <div className="h-16" aria-hidden="true" />
-      
-      {/* Quiz header - NOT sticky, just a regular header */}
-      {header}
-      
-      {/* Mobile toggle for sidebar - positioned below quiz header */}
+
+      {/* Quiz header */}
+      <QuizHeader
+        title={title}
+        quizType={quizType}
+        difficulty={difficulty}
+        questionNumber={questionNumber}
+        totalQuestions={totalQuestions}
+        displaySeconds={displaySeconds}
+        isPaused={isPaused}
+        isFullscreen={isFullscreen}
+        sidebarOpen={sidebarOpen}
+        isMobile={isMobile}
+        isSidebarTransitioning={isSidebarTransitioning}
+        onTogglePause={togglePause}
+        onGoHome={goHome}
+        onToggleFullscreen={toggleFullscreen}
+        onToggleSidebar={toggleSidebar}
+        progress={progress}
+      />
+
+      {/* Mobile sidebar toggle button */}
       {isMobile && !isFullscreen && !isFocusMode && (
         <div className="fixed bottom-4 right-4 z-50 lg:hidden">
           <Button
@@ -561,16 +585,16 @@ export default function QuizPlayLayout({
           </Button>
         </div>
       )}
-      
-      <main className={cn(
-        "mx-auto w-full transition-all duration-300 space-y-3 sm:space-y-4",
-        isFullscreen 
-          ? "px-2 sm:px-4 max-w-none py-3 sm:py-4" 
-          : "max-w-7xl px-3 sm:px-4 lg:px-8 py-3 sm:py-4"
-      )}>
+
+      <main
+        className={cn(
+          "mx-auto w-full transition-all duration-300 space-y-3 sm:space-y-4",
+          isFullscreen ? "px-2 sm:px-4 max-w-none py-3 sm:py-4" : "max-w-7xl px-3 sm:px-4 lg:px-8 py-3 sm:py-4",
+        )}
+      >
         {/* Breadcrumb Navigation */}
         {!isFullscreen && <BreadcrumbNavigation />}
-        
+
         {/* Resume CTA */}
         <AnimatePresence>
           {canResume && !isFullscreen && (
@@ -588,11 +612,13 @@ export default function QuizPlayLayout({
                   </div>
                   <div>
                     <p className="font-black text-foreground text-sm sm:text-base">Continue where you left off</p>
-                    <p className="text-muted-foreground mt-0.5 font-bold text-xs sm:text-sm">Question {questionNumber} of {totalQuestions}</p>
+                    <p className="text-muted-foreground mt-0.5 font-bold text-xs sm:text-sm">
+                      Question {questionNumber} of {totalQuestions}
+                    </p>
                   </div>
                 </div>
-                <Button 
-                  onClick={() => mainRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                <Button
+                  onClick={() => mainRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
                   className="px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-black w-full sm:w-auto border-4 border-border shadow-neo rounded-lg bg-accent text-white hover:bg-accentHover"
                   aria-label="Resume quiz from current question"
                 >
@@ -603,20 +629,21 @@ export default function QuizPlayLayout({
           )}
         </AnimatePresence>
 
-        <div className={cn(
-          "transition-all duration-300",
-          sidebarOpen && !isFocusMode && !isFullscreen
-            ? "grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-3 sm:gap-4 lg:gap-6"
-            : "flex"
-        )}>
+        {/* Main content grid */}
+        <div
+          className={cn(
+            "transition-all duration-300",
+            sidebarOpen && !isFocusMode && !isFullscreen && !isMobile
+              ? "grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-3 sm:gap-4 lg:gap-6"
+              : "flex",
+          )}
+        >
           {/* Main Content */}
-          <motion.section 
+          <motion.section
             ref={mainRef}
             className={cn(
               "w-full rounded-lg border-4 border-border bg-card shadow-neo transition-all duration-300",
-              isFullscreen 
-                ? "p-3 sm:p-4 lg:p-6 min-h-[calc(100vh-8rem)]" 
-                : "p-4 sm:p-6 lg:p-8"
+              isFullscreen ? "p-3 sm:p-4 lg:p-6 min-h-[calc(100vh-8rem)]" : "p-4 sm:p-6 lg:p-8",
             )}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -624,25 +651,27 @@ export default function QuizPlayLayout({
             aria-label="Quiz content"
           >
             <div className="w-full h-full">
-              <QuizContext.Provider value={{
-                isFocusMode,
-                toggleFocusMode: () => setIsFocusMode(f => !f),
-                isFullscreen,
-                setIsFullscreen,
-                sidebarOpen,
-                setSidebarOpen
-              }}>
+              <QuizContext.Provider
+                value={{
+                  isFocusMode,
+                  toggleFocusMode: () => setIsFocusMode((f) => !f),
+                  isFullscreen,
+                  setIsFullscreen,
+                  sidebarOpen,
+                  setSidebarOpen,
+                }}
+              >
                 {children}
               </QuizContext.Provider>
             </div>
           </motion.section>
 
-          {/* Enhanced Sidebar - Responsive */}
+          {/* Desktop Sidebar */}
           <AnimatePresence>
-            {sidebarOpen && !isFocusMode && !isFullscreen && (
+            {sidebarOpen && !isFocusMode && !isFullscreen && !isMobile && (
               <motion.aside
                 ref={sidebarRef}
-                className="hidden lg:block w-full max-w-[300px]"
+                className="hidden lg:block w-full max-w-[320px]"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
@@ -650,7 +679,7 @@ export default function QuizPlayLayout({
                 aria-label="Quiz sidebar with actions and recommendations"
               >
                 <div className="space-y-4">
-                  <motion.div 
+                  <motion.div
                     className="rounded-lg p-4 bg-card border-4 border-border shadow-neo"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -658,7 +687,7 @@ export default function QuizPlayLayout({
                   >
                     {!hideSidebarActions && (
                       <Suspense fallback={<QuizSkeleton />}>
-                        <QuizActions 
+                        <QuizActions
                           quizId={quizId || ""}
                           quizSlug={quizSlug}
                           quizType={quizType}
@@ -673,13 +702,13 @@ export default function QuizPlayLayout({
                           onVisibilityChange={handleVisibilityChange}
                           onFavoriteChange={handleFavoriteChange}
                           onDelete={handleDelete}
-                          className="w-full" 
+                          className="w-full"
                         />
                       </Suspense>
                     )}
                   </motion.div>
 
-                  <motion.div 
+                  <motion.div
                     className="rounded-lg p-4 bg-card border-4 border-border shadow-neo"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -695,7 +724,7 @@ export default function QuizPlayLayout({
           </AnimatePresence>
         </div>
 
-        {/* Enhanced Related Quizzes */}
+        {/* Related Quizzes Section */}
         <AnimatePresence>
           {!isFullscreen && relatedQuizzes.length > 0 && (
             <motion.div
@@ -709,57 +738,67 @@ export default function QuizPlayLayout({
               <RecommendedSection title="Continue Learning">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {relatedQuizzes.slice(0, 3).map((rq, index) => {
-                    // Calculate difficulty based on question count
                     const getDifficultyInfo = (count: number) => {
-                      if (count <= 5) return { label: "Beginner", color: "bg-green-100 text-green-800 border-green-800" }
-                      if (count <= 15) return { label: "Intermediate", color: "bg-blue-100 text-blue-800 border-blue-800" }
+                      if (count <= 5)
+                        return { label: "Beginner", color: "bg-green-100 text-green-800 border-green-800" }
+                      if (count <= 15)
+                        return { label: "Intermediate", color: "bg-blue-100 text-blue-800 border-blue-800" }
                       return { label: "Advanced", color: "bg-red-100 text-red-800 border-red-800" }
                     }
                     const difficulty = getDifficultyInfo(rq.questionCount)
-                    
+
                     return (
                       <motion.a
                         key={rq.id}
                         href={`/dashboard/${rq.quizType}/${rq.slug}`}
-                        className="group rounded-xl border-4 border-[var(--border)] hover:border-[var(--border)] bg-[var(--card)] p-4 shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000] hover:-translate-y-1 transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-primary)]/40 overflow-hidden relative"
+                        className="group rounded-xl border-4 border-border hover:border-border bg-card p-4 shadow-neo hover:shadow-neo-lg hover:-translate-y-1 transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/40 overflow-hidden relative"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.7 + index * 0.1 }}
                         aria-label={`Try ${rq.title} quiz`}
                       >
-                        {/* Accent bar on top */}
-                        <div className="absolute top-0 left-0 right-0 h-2 bg-[var(--color-primary)]" />
-                        
+                        {/* Accent bar */}
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-primary" />
+
                         <div className="flex items-start justify-between mb-3 mt-1">
-                          <div className="p-2 rounded-lg bg-[var(--color-primary)]/20 text-[var(--color-primary)] border-4 border-[var(--border)] shadow-[2px_2px_0_#000]">
+                          <div className="p-2 rounded-lg bg-primary/20 text-primary border-4 border-border shadow-neo-sm">
                             <BookOpen className="w-4 h-4" aria-hidden="true" />
                           </div>
-                          <Badge variant="neutral" className={cn(neo.badge, `text-xs font-black border-4 border-[var(--border)] shadow-[2px_2px_0_#000] ${difficulty.color}`)}>
+                          <Badge
+                            variant="neutral"
+                            className={cn("text-xs font-black border-4 border-border shadow-neo-sm", difficulty.color)}
+                          >
                             {difficulty.label}
                           </Badge>
                         </div>
-                        
-                        <h3 className="font-black text-[var(--foreground)] line-clamp-2 group-hover:text-[var(--color-primary)] transition-colors mb-2 text-sm">
+
+                        <h3 className="font-black text-foreground line-clamp-2 group-hover:text-primary transition-colors mb-2 text-sm">
                           {rq.title}
                         </h3>
-                        
-                        <p className="text-xs text-[var(--muted-foreground)] line-clamp-1 mb-3 font-bold">
+
+                        <p className="text-xs text-muted-foreground line-clamp-1 mb-3 font-bold">
                           {rq.difficulty || "Quiz"}
                         </p>
-                        
+
                         <div className="flex items-center gap-2 text-xs mb-3">
-                          <Badge variant="neutral" className={cn(neo.badge, "text-xs font-black border-4 border-[var(--border)] bg-[var(--color-primary)]/15 text-[var(--color-primary)] shadow-[2px_2px_0_#000]") }>
+                          <Badge
+                            variant="neutral"
+                            className="text-xs font-black border-4 border-border bg-primary/15 text-primary shadow-neo-sm"
+                          >
                             {rq.quizType?.toUpperCase()}
                           </Badge>
-                          <span className="font-black text-[var(--foreground)]">{rq.questionCount}</span>
-                          <span className="text-[var(--muted-foreground)] font-bold">questions</span>
+                          <span className="font-black text-foreground">{rq.questionCount}</span>
+                          <span className="text-muted-foreground font-bold">questions</span>
                         </div>
-                        
-                        <div className="flex items-center justify-between pt-3 border-t-4 border-[var(--border)]">
+
+                        <div className="flex items-center justify-between pt-3 border-t-4 border-border">
                           <span className="text-sm text-green-600 font-black group-hover:text-green-700 transition-colors">
                             Start →
                           </span>
-                          <Play className="w-4 h-4 text-green-600 group-hover:scale-125 transition-transform" aria-hidden="true" />
+                          <Play
+                            className="w-4 h-4 text-green-600 group-hover:scale-125 transition-transform"
+                            aria-hidden="true"
+                          />
                         </div>
                       </motion.a>
                     )
@@ -771,50 +810,50 @@ export default function QuizPlayLayout({
         </AnimatePresence>
       </main>
 
-      {/* Enhanced Mobile Sidebar */}
+      {/* Mobile Sidebar Modal */}
       <AnimatePresence>
-        {sidebarOpen && !isFocusMode && !isFullscreen && (
-          <motion.div 
-            className="fixed inset-0 z-50 lg:hidden" 
-            role="dialog" 
+        {sidebarOpen && !isFocusMode && !isFullscreen && isMobile && (
+          <motion.div
+            className="fixed inset-0 z-50 lg:hidden"
+            role="dialog"
             aria-modal="true"
             aria-label="Mobile quiz sidebar"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div 
-              className="absolute inset-0 bg-black/60" 
+            <motion.div
+              className="absolute inset-0 bg-black/60"
               onClick={() => setSidebarOpen(false)}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               aria-hidden="true"
             />
-            <motion.div 
-              className="absolute right-0 top-0 h-full w-full sm:w-5/6 max-w-sm bg-white border-l-4 border-black shadow-[8px_0_0_#000]"
+            <motion.div
+              className="absolute right-0 top-0 h-full w-full sm:w-5/6 max-w-sm bg-card border-l-4 border-border shadow-neo"
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               ref={sidebarRef}
             >
-              <div className="flex items-center justify-between p-4 border-b-4 border-black min-h-[4rem]">
-                <h2 className="text-lg font-black text-black">Quiz Panel</h2>
-                <Button 
-                  variant="neutral" 
-                  size="sm" 
+              <div className="flex items-center justify-between p-4 border-b-4 border-border min-h-[4rem]">
+                <h2 className="text-lg font-black text-foreground">Quiz Panel</h2>
+                <Button
+                  variant="neutral"
+                  size="sm"
                   onClick={() => setSidebarOpen(false)}
-                  className="hover:bg-gray-100 min-h-[44px] min-w-[44px] p-3 border-4 border-black shadow-[4px_4px_0_#000] rounded-lg bg-white"
+                  className="hover:bg-muted min-h-[44px] min-w-[44px] p-3 border-4 border-border shadow-neo rounded-lg bg-card"
                   aria-label="Close sidebar"
                 >
                   <X className="h-5 w-5" />
                 </Button>
               </div>
-              
+
               <div className="overflow-y-auto max-h-[calc(100vh-5rem)] p-4 space-y-4">
                 <Suspense fallback={<QuizSkeleton />}>
-                  <QuizActions 
+                  <QuizActions
                     quizId={quizId || ""}
                     quizSlug={quizSlug || ""}
                     quizType={quizType || "quiz"}
@@ -832,7 +871,7 @@ export default function QuizPlayLayout({
                     className="w-full"
                   />
                 </Suspense>
-                
+
                 <Suspense fallback={<QuizSkeleton />}>
                   <RandomQuiz autoRotate={!isMobile} />
                 </Suspense>
