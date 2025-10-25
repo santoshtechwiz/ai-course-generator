@@ -104,7 +104,7 @@ const FaqAccordion = () => {
 				>
 					Everything you need
 					<br />
-					<span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+					<span className="text-primary">
 						to know
 					</span>
 				</motion.h2>

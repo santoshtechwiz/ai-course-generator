@@ -48,7 +48,6 @@ interface ContextConfig {
   benefits: string[]
   icon: React.ElementType
   color: string
-  gradient: string
 }
 
 const CONTEXT_CONFIGS: Record<SignInContext, ContextConfig> = {
@@ -62,8 +61,7 @@ const CONTEXT_CONFIGS: Record<SignInContext, ContextConfig> = {
       'Sync across devices'
     ],
     icon: LogIn,
-    color: 'text-blue-600',
-    gradient: 'from-blue-500 to-cyan-500'
+    color: 'text-blue-600'
   },
   quiz: {
     title: 'Sign in to save your quiz results',
@@ -75,8 +73,7 @@ const CONTEXT_CONFIGS: Record<SignInContext, ContextConfig> = {
       'Earn achievements'
     ],
     icon: Star,
-    color: 'text-purple-600',
-    gradient: 'from-purple-500 to-pink-500'
+    color: 'text-purple-600'
   },
   course: {
     title: 'Sign in to access this course',
@@ -88,8 +85,7 @@ const CONTEXT_CONFIGS: Record<SignInContext, ContextConfig> = {
       'Get certificates'
     ],
     icon: Shield,
-    color: 'text-green-600',
-    gradient: 'from-green-500 to-emerald-500'
+    color: 'text-green-600'
   },
   pdf: {
     title: 'Sign in to generate PDFs',
@@ -101,8 +97,7 @@ const CONTEXT_CONFIGS: Record<SignInContext, ContextConfig> = {
       'Keep offline copies'
     ],
     icon: Zap,
-    color: 'text-orange-600',
-    gradient: 'from-orange-500 to-red-500'
+    color: 'text-orange-600'
   },
   feature: {
     title: 'Sign in to unlock this feature',
@@ -114,8 +109,7 @@ const CONTEXT_CONFIGS: Record<SignInContext, ContextConfig> = {
       'Priority support'
     ],
     icon: Zap,
-    color: 'text-indigo-600',
-    gradient: 'from-indigo-500 to-purple-500'
+    color: 'text-indigo-600'
   }
 }
 
@@ -163,11 +157,11 @@ export default function SignInPrompt({
       <div className="space-y-6">
         {/* Header */}
         <div className="text-center space-y-3">
-          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br ${config.gradient} bg-opacity-10`}>
+          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/20 border-4 border-primary shadow-[4px_4px_0px_0px_hsl(var(--border))]`}>
             <IconComponent className={`w-8 h-8 ${config.color}`} />
           </div>
           <div>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
               {customMessage || config.title}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mt-2">
@@ -257,7 +251,7 @@ export default function SignInPrompt({
           {/* Sign Up Button */}
           <Button
             onClick={handleSignUp}
-            className={`w-full h-12 text-base bg-gradient-to-r ${config.gradient} hover:opacity-90 text-white`}
+            className={`w-full h-12 text-base bg-primary hover:bg-primary/90 border-4 border-primary-foreground shadow-[4px_4px_0px_0px_hsl(var(--border))] text-primary-foreground`}
             size="lg"
           >
             <LogIn className="w-5 h-5 mr-2" />

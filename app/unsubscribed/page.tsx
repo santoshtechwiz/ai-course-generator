@@ -25,7 +25,7 @@ export default function UnsubscribedPage() {
             >
               <CheckCircle size={64} strokeWidth={1.5} />
             </motion.div>
-            <h2 className="text-2xl font-semibold text-foreground">You're Unsubscribed</h2>
+            <h2 className="text-xl font-semibold text-foreground">You're Unsubscribed</h2>
             <p className="text-muted-foreground text-sm">
               You’ve been successfully removed from our mailing list. Sorry to see you go!
             </p>

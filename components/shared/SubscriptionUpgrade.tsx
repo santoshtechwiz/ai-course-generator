@@ -64,7 +64,7 @@ interface SubscriptionUpgradeProps {
       <div className="space-y-4">
         {/* Minimal header with icon */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/20 border-4 border-blue-500 shadow-[4px_4px_0px_0px_hsl(var(--border))]">
             <Crown className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
@@ -81,7 +81,7 @@ interface SubscriptionUpgradeProps {
         <div className="flex gap-2">
           <Button
             onClick={handleUpgrade}
-            className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl transition-all"
+            className="flex-1 bg-blue-600 hover:bg-blue-700 border-4 border-blue-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] text-white"
             size="lg"
           >
             <Crown className="w-4 h-4 mr-2" />
@@ -111,7 +111,7 @@ interface SubscriptionUpgradeProps {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+              className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 bg-black/80"
               onClick={(e) => {
                 // Close on backdrop click
                 if (e.target === e.currentTarget && onClose) {

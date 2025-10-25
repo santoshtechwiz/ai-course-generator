@@ -51,7 +51,7 @@ export function ReviewStats({ userId }: ReviewStatsProps) {
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Mastered Cards */}
-          <div className="flex flex-col items-center justify-center p-6 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-2 border-green-500/20">
+          <div className="flex flex-col items-center justify-center p-6 rounded-xl bg-green-500/10 border-4 border-green-500/20 shadow-[4px_4px_0px_0px_hsl(var(--border))]">
             <Brain className="h-8 w-8 text-green-600 dark:text-green-400 mb-2" />
             <p className="text-3xl font-black text-green-700 dark:text-green-300">
               {stats.masteredCount}
@@ -63,7 +63,7 @@ export function ReviewStats({ userId }: ReviewStatsProps) {
           </div>
 
           {/* Learning Cards */}
-          <div className="flex flex-col items-center justify-center p-6 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-2 border-blue-500/20">
+          <div className="flex flex-col items-center justify-center p-6 rounded-xl bg-blue-500/10 border-4 border-blue-500/20 shadow-[4px_4px_0px_0px_hsl(var(--border))]">
             <Target className="h-8 w-8 text-blue-600 dark:text-blue-400 mb-2" />
             <p className="text-3xl font-black text-blue-700 dark:text-blue-300">
               {stats.learningCount}
@@ -75,7 +75,7 @@ export function ReviewStats({ userId }: ReviewStatsProps) {
           </div>
 
           {/* Due Today */}
-          <div className="flex flex-col items-center justify-center p-6 rounded-xl bg-gradient-to-br from-orange-500/10 to-red-500/10 border-2 border-orange-500/20">
+          <div className="flex flex-col items-center justify-center p-6 rounded-xl bg-orange-500/10 border-4 border-orange-500/20 shadow-[4px_4px_0px_0px_hsl(var(--border))]">
             <Clock className="h-8 w-8 text-orange-600 dark:text-orange-400 mb-2" />
             <p className="text-3xl font-black text-orange-700 dark:text-orange-300">
               {stats.dueCount}

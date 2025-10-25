@@ -1545,7 +1545,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
               </div>
 
               {!state.isTheaterMode && currentChapter && (
-                <div className="bg-background dark:bg-background border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] p-2.5 sm:p-3">
+                <div className="bg-background dark:bg-background border border-border shadow-neo p-2.5 sm:p-3">
                   <div className="flex items-center justify-between gap-2 sm:gap-3">
                     <div className="min-w-0 flex-1">
                       <h2 className="font-black text-sm sm:text-base lg:text-lg uppercase tracking-tight truncate text-black dark:text-white">
@@ -1558,7 +1558,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                       )}
                     </div>
                     {videoDurations[currentVideoId || ""] && (
-                      <div className="bg-yellow-400 dark:bg-yellow-500 border-2 border-black dark:border-white px-2 py-1 font-black text-xs whitespace-nowrap flex-shrink-0">
+                      <div className="bg-[var(--color-warning)] border-2 border-black dark:border-white px-2 py-1 font-black text-xs whitespace-nowrap flex-shrink-0">
                         {formatDuration(videoDurations[currentVideoId || ""])}
                       </div>
                     )}
@@ -1568,14 +1568,14 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
               {/* Contextual Sign-In Prompt */}
               {!user && (
-                <div className="bg-blue-200 dark:bg-blue-900 border-4 border-black dark:border-white p-2.5 sm:p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+                <div className="bg-[var(--color-info)]/20 dark:bg-[var(--color-info)]/10 border-4 border-black dark:border-white p-2.5 sm:p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
                   <ContextualSignInPrompt action="continue_course" courseId={String(course.id)} />
                 </div>
               )}
 
               {!state.isTheaterMode && (
                 <div className="transition-all duration-100">
-                  <div className="border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] bg-background dark:bg-background">
+                  <div className="border-4 border-border shadow-neo bg-card">
                     <div className="p-2.5 sm:p-3">
                       <MemoizedCourseDetailsTabs
                         course={course}
@@ -1590,7 +1590,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
               {!state.isTheaterMode && (
                 <div className="transition-all duration-100">
-                  <div className="border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] bg-background dark:bg-background">
+                  <div className="border-4 border-border shadow-neo bg-card">
                     <div className="p-2.5 sm:p-3">
                       <ReviewsSection slug={course.slug} />
                     </div>
@@ -1601,7 +1601,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
             {!state.sidebarCollapsed && !state.isTheaterMode && (
               <div className="hidden lg:block space-y-2 sm:space-y-3 min-w-0 w-full">
-                <div className="border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] bg-background dark:bg-background h-full overflow-hidden">
+                <div className="border-4 border-border shadow-neo bg-card h-full overflow-hidden">
                   <div className="p-0">
                     {sidebarCourse.chapters.length === 0 ? (
                       <div className="p-6 sm:p-8 text-center">
@@ -1665,7 +1665,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
           <Button
             size="lg"
             onClick={() => (window.location.href = "/dashboard/subscription")}
-            className="bg-yellow-400 dark:bg-yellow-500 hover:bg-yellow-500 dark:hover:bg-yellow-600 text-black dark:text-white font-black border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[1px_1px_0px_0px_rgba(255,255,255,1)] transition-all uppercase px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm"
+            className="bg-[var(--color-warning)] hover:bg-[var(--color-warning)]/90 text-black dark:text-white font-black border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[1px_1px_0px_0px_rgba(255,255,255,1)] transition-all uppercase px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm"
           >
             <Zap className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" />
             <span className="hidden sm:inline">Unlock All</span>

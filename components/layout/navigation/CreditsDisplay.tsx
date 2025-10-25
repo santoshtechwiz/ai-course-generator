@@ -72,8 +72,8 @@ export function CreditsDisplay({
       </motion.div>
       <span
         className={cn(
-          "text-sm font-medium tabular-nums bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
-          isLowCredits ? "from-destructive to-destructive" : ""
+          "text-sm font-medium tabular-nums text-primary",
+          isLowCredits ? "text-destructive" : ""
         )}
       >
         {availableCredits.toLocaleString()}
@@ -92,7 +92,7 @@ export function CreditsDisplay({
             variant="secondary"
             className={cn(
               "text-xs font-medium ml-2 px-2 py-0.5",
-              "bg-gradient-to-r from-secondary to-accent text-secondary-foreground",
+              "bg-secondary text-secondary-foreground border-4 border-secondary shadow-[4px_4px_0px_0px_hsl(var(--border))]",
               "border border-secondary/20 shadow-sm"
             )}
           >

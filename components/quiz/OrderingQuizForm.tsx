@@ -159,7 +159,7 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
         <CardHeader className="border-b-2 border-amber-600/30 bg-black/60">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-2xl font-black text-amber-400 mb-2">
+              <CardTitle className="text-xl font-black text-amber-400 mb-2">
                 ⚙️ GENERATE QUIZ
               </CardTitle>
               <p className="text-sm text-white/70">

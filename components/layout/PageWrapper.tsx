@@ -34,7 +34,7 @@ export function PageHeader({
   return (
     <header className={`${variantStyles[variant]} ${className || ''}`}>
       <div className="space-y-4">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight flex items-center justify-center gap-2 sm:gap-3 text-balance">
+        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight flex items-center justify-center gap-2 sm:gap-3 text-balance">
           {Icon && (
             <Icon className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 xl:h-10 xl:w-10 text-purple-600 dark:text-purple-400 flex-shrink-0" />
           )}

@@ -96,7 +96,7 @@ export function ContextualSignInPrompt({
   
   if (variant === 'banner') {
     return (
-      <div className={`bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 ${className}`}>
+      <div className={`bg-blue-600 text-white p-4 border-4 border-blue-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] ${className}`}>
         <div className="flex items-center justify-between max-w-4xl mx-auto">
           <div className="flex items-center space-x-3">
             {content.icon}

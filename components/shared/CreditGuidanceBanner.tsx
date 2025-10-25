@@ -105,7 +105,7 @@ export function CreditGuidanceBanner() {
                   <Button
                     size="sm"
                     onClick={handleUpgrade}
-                    className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-medium shadow-sm hover:shadow-md transition-all"
+                    className="bg-amber-500 hover:bg-amber-600 border-4 border-amber-600 shadow-[4px_4px_0px_0px_hsl(var(--border))] text-white font-medium"
                   >
                     <Sparkles className="w-4 h-4 mr-1.5" />
                     Upgrade to Premium

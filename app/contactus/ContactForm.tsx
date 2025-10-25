@@ -200,9 +200,9 @@ export default function ImprovedContactForm() {
                             type="button"
                             onClick={() => handleIssueSelect(issue.value)}
                             className={cn(
-                              "flex items-start p-4 rounded-lg border-2 text-left transition-all duration-300 hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm",
-                              selectedIssueType === issue.value ? "border-primary bg-primary/5" : "border-muted",
-                              "group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                              "flex items-start p-4 rounded-lg border-6 text-left transition-all duration-300 hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-primary)]/5 hover:shadow-[var(--shadow-neo)]",
+                              selectedIssueType === issue.value ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5" : "border-[var(--color-muted)]",
+                              "group focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2",
                             )}
                             aria-pressed={selectedIssueType === issue.value}
                           >
@@ -314,10 +314,10 @@ export default function ImprovedContactForm() {
                             <Label
                               htmlFor={`priority-${priority.value}`}
                               className={cn(
-                                "flex flex-col items-center justify-between rounded-md border-2 border-muted p-4 hover:bg-primary/5 hover:border-primary/50 [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5",
+                                "flex flex-col items-center justify-between rounded-md border-6 border-[var(--color-muted)] p-4 hover:bg-[var(--color-primary)]/5 hover:border-[var(--color-primary)]/50 [&:has([data-state=checked])]:border-[var(--color-primary)] [&:has([data-state=checked])]:bg-[var(--color-primary)]/5",
                                 priority.value === "high" &&
-                                  "[&:has([data-state=checked])]:border-red-500 [&:has([data-state=checked])]:bg-red-50 dark:[&:has([data-state=checked])]:bg-red-950/10",
-                                "transition-all cursor-pointer focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2",
+                                  "[&:has([data-state=checked])]:border-[var(--color-error)] [&:has([data-state=checked])]:bg-[var(--color-error)]/10 dark:[&:has([data-state=checked])]:bg-[var(--color-error)]/10",
+                                "transition-all cursor-pointer focus-within:ring-2 focus-within:ring-[var(--color-primary)] focus-within:ring-offset-2",
                               )}
                             >
                               <span

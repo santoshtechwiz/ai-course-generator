@@ -105,7 +105,7 @@ const Page = async ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto py-6 space-y-6">
         {process.env.NODE_ENV === 'development' && <NavigationDebugger />}
         <JsonLD type="CreativeWork" data={creativeWorkSchema} />
@@ -117,10 +117,8 @@ const Page = async ({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Enhanced Left Section - Course Creation Form */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="relative overflow-hidden border-primary/20 shadow-lg bg-gradient-to-br from-card via-card to-primary/5">
-              {/* Background decoration */}
-              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-primary/10 to-transparent rounded-full -translate-y-20 translate-x-20" />
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-primary/5 to-transparent rounded-full translate-y-16 -translate-x-16" />
+            <Card className="relative overflow-hidden border-6 border-border shadow-neo bg-card">
+              {/* Clean Nerobrutal design - no decorative gradients */}
               
               <CardHeader className="relative">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -130,7 +128,7 @@ const Page = async ({
                         <BookOpen className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <CardTitle className="text-xl font-bold text-foreground">
+                        <CardTitle className="text-lg font-bold text-foreground">
                           Create Your Course
                         </CardTitle>
                         <p className="text-sm text-muted-foreground">
@@ -157,7 +155,7 @@ const Page = async ({
                 {/* Enhanced form wrapper with visual feedback */}
                 <div className="relative">
                   {/* Form background with subtle pattern */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 rounded-lg" />
+                  <div className="absolute inset-0 bg-card rounded-lg border-6 border-border" />
                   
                   {/* Form container with enhanced styling */}
                   <div className="relative bg-background/50 backdrop-blur-sm border border-border/50 rounded-lg p-6 shadow-sm">
@@ -210,9 +208,8 @@ const Page = async ({
 
           {/* Enhanced Right Section - Popular Courses */}
           <div className="space-y-6">
-            <Card className="relative overflow-hidden border-border/50 shadow-lg bg-gradient-to-br from-card to-muted/20">
-              {/* Background decoration */}
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-primary/10 to-transparent rounded-full -translate-y-12 translate-x-12" />
+            <Card className="relative overflow-hidden border-6 border-border shadow-neo bg-card">
+              {/* Clean Nerobrutal design */}
               
               <CardHeader className="relative pb-4">
                 <div className="flex items-center justify-between">
@@ -221,11 +218,11 @@ const Page = async ({
                       <TrendingUp className="h-4 w-4 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg font-semibold">Popular Courses</CardTitle>
+                      <CardTitle className="text-base font-semibold">Popular Courses</CardTitle>
                       <p className="text-xs text-muted-foreground">Trending in the community</p>
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="neutral" className="text-xs">
                     Live
                   </Badge>
                 </div>
@@ -236,8 +233,8 @@ const Page = async ({
 
                 {/* Enhanced CTA Section */}
                 <div className="border-t border-border/30 pt-4 mt-6">
-                  <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20 p-4">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-primary/20 to-transparent rounded-full -translate-y-8 translate-x-8" />
+                  <div className="relative overflow-hidden rounded-lg bg-primary/10 border-6 border-primary p-4">
+                    {/* Clean design */}
                     
                     <div className="relative flex items-start gap-3">
                       <div className="p-2 rounded-full bg-primary/20 border border-primary/30">

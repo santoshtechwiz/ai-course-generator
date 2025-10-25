@@ -62,11 +62,11 @@ export default function ReviewDashboardPage() {
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-3 mb-2">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20">
+            <div className="p-3 rounded-2xl bg-[var(--color-primary)]/20">
               <Brain className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <h1 className="text-4xl font-black bg-gradient-to-r from-primary via-purple-600 to-accent bg-clip-text text-transparent">
+          <h1 className="text-3xl font-black text-[var(--color-primary)]">
             Review Dashboard
           </h1>
           <p className="text-lg text-muted-foreground">
@@ -149,7 +149,7 @@ export default function ReviewDashboardPage() {
                 <div className="flex justify-center pt-4">
                   <Button
                     size="lg"
-                    className="px-8 py-6 text-lg font-bold bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-xl hover:shadow-2xl transition-all"
+                    className="px-8 py-6 text-base font-bold bg-[var(--color-primary)] hover:bg-[var(--color-accent)] text-[var(--color-text)] shadow-neo hover:shadow-neo-hover neo-hover-lift transition-all"
                     onClick={() => {
                       // TODO: Implement review session with specific cards
                       const firstCard = dueCards.cards[0]

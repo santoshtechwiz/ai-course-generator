@@ -277,8 +277,8 @@ const MCQOption = memo(({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className={cn(
-                "absolute inset-0 backdrop-blur-sm rounded-lg flex items-center justify-center z-20",
-                `${colors.light}/80`
+                "absolute inset-0 rounded-lg flex items-center justify-center z-20 border-4 border-border",
+                `${colors.light}`
               )}
             >
               <motion.div
@@ -546,9 +546,9 @@ function UnifiedQuizQuestionComponent({
             </div>
             <div className={cn(
               "px-3 py-1 border-2 border-border text-sm font-bold",
-              wordCount < minWords && "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200",
-              wordCount > maxWords && "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200",
-              wordCount >= minWords && wordCount <= maxWords && "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
+              wordCount < minWords && "bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/50",
+              wordCount > maxWords && "bg-[var(--color-error)]/20 text-[var(--color-error)] border-[var(--color-error)]/50",
+              wordCount >= minWords && wordCount <= maxWords && "bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/50"
             )}>
               {wordCount < minWords ? `${minWords - wordCount} more words needed` :
                wordCount > maxWords ? `${wordCount - maxWords} words over limit` :
@@ -591,9 +591,9 @@ function UnifiedQuizQuestionComponent({
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className={cn(
-                  "p-2 bg-green-500 border-2 border-border rounded-md shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+                  "p-2 bg-[var(--color-success)] border-2 border-border rounded-md shadow-[2px_2px_0px_0px_hsl(var(--border))]"
                 )}>
-                  <BookOpen className="w-5 h-5 text-white" />
+                  <BookOpen className="w-5 h-5 text-[var(--color-bg)]" />
                 </div>
                 <span className="text-base font-bold text-foreground uppercase">Code Snippet</span>
               </div>
@@ -602,7 +602,7 @@ function UnifiedQuizQuestionComponent({
               <span className={cn(
                 getColorClasses().badge,
                 "text-xs font-mono font-black",
-                "bg-green-500 text-white px-3 py-1 rounded-lg border-4 border-black shadow-[3px_3px_0_#000]"
+                "bg-[var(--color-success)] text-[var(--color-bg)] px-3 py-1 rounded-lg border-4 border-black shadow-[3px_3px_0_#000]"
               )}>
                 {codeQuestion.language || 'JAVASCRIPT'}
               </span>
@@ -669,7 +669,7 @@ function UnifiedQuizQuestionComponent({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
-          className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground leading-tight px-4 max-w-4xl mx-auto"
+          className="text-xl sm:text-2xl lg:text-3xl font-black text-foreground leading-tight px-4 max-w-4xl mx-auto"
         >
           {questionText}
         </motion.h2>

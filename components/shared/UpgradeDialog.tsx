@@ -61,11 +61,11 @@ export function UpgradeDialog({
         </button>
 
         <DialogHeader className="text-center space-y-4 pt-6">
-          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center border-[3px] border-foreground shadow-[4px_4px_0px_0px_rgb(0,0,0)]">
+          <div className="mx-auto w-20 h-20 bg-yellow-400 rounded-full flex items-center justify-center border-[3px] border-foreground shadow-[4px_4px_0px_0px_rgb(0,0,0)]">
             <Crown className="w-10 h-10 text-white" />
           </div>
           <div className="space-y-3">
-            <DialogTitle className="text-2xl font-black text-foreground uppercase tracking-tight">
+            <DialogTitle className="text-xl font-black text-foreground uppercase tracking-tight">
               Upgrade Required
             </DialogTitle>
             <DialogDescription className="text-base text-foreground/80 font-medium">
@@ -99,7 +99,7 @@ export function UpgradeDialog({
           </div>
 
           {/* Premium Badge */}
-          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 border-[3px] border-foreground py-2 px-4 text-center">
+          <div className="bg-yellow-400 border-[3px] border-foreground py-2 px-4 text-center">
             <div className="flex items-center justify-center gap-2 font-black text-foreground uppercase text-sm tracking-wide">
               <Sparkles className="w-4 h-4" />
               Most Popular Plan
@@ -119,7 +119,7 @@ export function UpgradeDialog({
           </Button>
           <Button
             onClick={handleUpgrade}
-            className="flex-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-foreground font-black border-[3px] border-foreground hover:from-yellow-500 hover:to-orange-600 transition-all duration-200 shadow-[4px_4px_0px_0px_rgb(0,0,0)] hover:shadow-[6px_6px_0px_0px_rgb(0,0,0)] active:shadow-[2px_2px_0px_0px_rgb(0,0,0)] active:translate-x-1 active:translate-y-1"
+            className="flex-1 bg-yellow-400 text-foreground font-black border-[3px] border-foreground hover:bg-yellow-500 transition-all duration-200 shadow-[4px_4px_0px_0px_rgb(0,0,0)] hover:shadow-[6px_6px_0px_0px_rgb(0,0,0)] active:shadow-[2px_2px_0px_0px_rgb(0,0,0)] active:translate-x-1 active:translate-y-1"
           >
             <Crown className="w-4 h-4 mr-2" />
             Upgrade Now

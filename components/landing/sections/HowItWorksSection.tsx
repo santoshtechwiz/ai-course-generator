@@ -320,7 +320,7 @@ const HowItWorksSection = () => {
         >
           From idea to
           <br />
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
+          <span className="text-primary">
             extraordinary course
           </span>
         </motion.h2>

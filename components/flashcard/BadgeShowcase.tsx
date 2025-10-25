@@ -177,7 +177,7 @@ function CompactBadgeCard({ item }: { item: BadgeProgress }) {
       whileHover={{ scale: 1.05 }}
     >
       <Card
-        className={`relative overflow-hidden border-2 bg-gradient-to-br ${
+        className={`relative overflow-hidden border-4 shadow-[4px_4px_0px_0px_hsl(var(--border))] ${
           tierColors[badge.tier as keyof typeof tierColors]
         }`}
       >

@@ -48,7 +48,7 @@ export default function TermsOfService() {
     <div className="container mx-auto px-4 py-8">
       <JsonLD type="webPage" data={termsSchema} />
 
-      <h1 className="text-3xl font-bold mb-6 text-foreground">Terms of Service</h1>
+      <h1 className="text-2xl font-bold mb-6 text-foreground">Terms of Service</h1>
 
       <p className="mb-4 text-muted-foreground">Last updated: {new Date().toLocaleDateString()}</p>
 

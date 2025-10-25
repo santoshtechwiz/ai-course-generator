@@ -297,9 +297,9 @@ export default function OrderingQuizForm({
 
           <div className="grid grid-cols-3 gap-3 md:gap-4">
             {[
-              { value: 'easy', label: 'Easy', icon: '🟢', color: 'bg-green-600', textColor: 'text-white' },
-              { value: 'medium', label: 'Medium', icon: '🟡', color: 'bg-yellow-600', textColor: 'text-white' },
-              { value: 'hard', label: 'Hard', icon: '🔴', color: 'bg-red-600', textColor: 'text-white' },
+              { value: 'easy', label: 'Easy', icon: '🟢', color: 'bg-[var(--color-success)]', textColor: 'text-white' },
+              { value: 'medium', label: 'Medium', icon: '🟡', color: 'bg-[var(--color-warning)]', textColor: 'text-white' },
+              { value: 'hard', label: 'Hard', icon: '🔴', color: 'bg-[var(--color-error)]', textColor: 'text-white' },
             ].map((diff) => (
               <motion.button
                 key={diff.value}

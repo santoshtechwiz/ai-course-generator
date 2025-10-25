@@ -4,7 +4,7 @@ import { AlertTriangle } from "lucide-react"
 export default function DevModeBanner() {
   return (
     <div
-      className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-400 p-4 mb-8 rounded-xl shadow-sm"
+      className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 border-4 border-yellow-500 shadow-[4px_4px_0px_0px_hsl(var(--border))] text-yellow-700 dark:text-yellow-400 p-4 mb-8 rounded-xl"
       role="alert"
     >
       <div className="flex items-center">

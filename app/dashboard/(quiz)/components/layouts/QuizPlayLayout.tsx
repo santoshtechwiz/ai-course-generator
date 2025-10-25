@@ -25,8 +25,7 @@ import {
   MessageSquare,
   Brain,
   Lock,
-  PanelLeftClose,
-  PanelLeftOpen,
+  PanelLeftClose                    
 } from "lucide-react"
 
 import { RandomQuiz } from "./RandomQuiz"
@@ -38,7 +37,13 @@ import { cn } from "@/lib/utils"
 import { useAuth } from "@/modules/auth"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { QuizActions } from "@/components/quiz/QuizActions"
-
+ const getDifficultyInfo = (count: number) => {
+                      if (count <= 5)
+                        return { label: "Beginner", color: "bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/50" }
+                      if (count <= 15)
+                        return { label: "Intermediate", color: "bg-[var(--color-primary)]/20 text-[var(--color-primary)] border-[var(--color-primary)]/50" }
+                      return { label: "Advanced", color: "bg-[var(--color-error)]/20 text-[var(--color-error)] border-[var(--color-error)]/50" }
+                    }
 interface QuizContextType {
   isFocusMode: boolean
   toggleFocusMode: () => void
@@ -128,7 +133,7 @@ const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) =
     <motion.div
       className={cn(
         "inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-black transition-all duration-100 border-3 sm:border-4 border-border shadow-neo-sm",
-        isPaused ? "bg-muted text-muted-foreground" : "bg-accent text-white",
+        isPaused ? "bg-muted text-muted-foreground" : "bg-[var(--color-accent)] text-[var(--color-bg)]",
       )}
       whileHover={{ scale: 1.05, y: -2 }}
       transition={{ duration: 0.1 }}
@@ -185,7 +190,7 @@ const QuizHeader = ({
             transition={{ delay: 0.2 }}
           >
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <div className="p-2 sm:p-2.5 rounded-lg bg-accent border-3 sm:border-4 border-border text-white shadow-neo-sm sm:shadow-neo flex-shrink-0">
+              <div className="p-2 sm:p-2.5 rounded-lg bg-[var(--color-accent)] border-3 sm:border-4 border-border text-[var(--color-bg)] shadow-neo-sm sm:shadow-neo flex-shrink-0">
                 <QuizTypeIcon className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
               </div>
               <div className="min-w-0 flex-1">
@@ -198,7 +203,7 @@ const QuizHeader = ({
                 <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                   <Badge
                     variant="neutral"
-                    className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-black bg-accent text-white border-2 sm:border-4 border-border shadow-neo-sm rounded-md sm:rounded-lg"
+                    className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-black bg-[var(--color-accent)] text-[var(--color-bg)] border-2 sm:border-4 border-border shadow-neo-sm rounded-md sm:rounded-lg"
                   >
                     {quizTypeLabel[quizType] || "Quiz"}
                   </Badge>
@@ -218,7 +223,7 @@ const QuizHeader = ({
             <div className="hidden lg:flex items-center gap-2 px-3 py-2 bg-card rounded-lg border-4 border-border shadow-neo">
               <Badge
                 variant="neutral"
-                className="px-2 py-1 text-xs font-black bg-accent text-white border-4 border-border shadow-neo-sm rounded-md"
+                className="px-2 py-1 text-xs font-black bg-[var(--color-accent)] text-[var(--color-bg)] border-4 border-border shadow-neo-sm rounded-md"
               >
                 {progress}%
               </Badge>
@@ -293,7 +298,7 @@ const QuizHeader = ({
           >
             <Badge
               variant="neutral"
-              className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-black bg-accent text-white border-4 sm:border-6 border-border shadow-neo-sm rounded-md"
+              className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-black bg-[var(--color-accent)] text-[var(--color-bg)] border-4 sm:border-6 border-border shadow-neo-sm rounded-md"
             >
               {progress}%
             </Badge>
@@ -523,7 +528,7 @@ export default function QuizPlayLayout({
           {!authUser && <p className="text-sm text-muted-foreground mb-4">Please log in to access private quizzes.</p>}
           <Button
             onClick={goHome}
-            className="mt-4 border-4 border-border shadow-neo bg-accent text-white hover:bg-accentHover font-black rounded-lg px-4 sm:px-6 py-2 sm:py-2.5"
+            className="mt-4 border-4 border-border shadow-neo bg-[var(--color-accent)] text-[var(--color-bg)] hover:bg-[var(--color-accent)]/90 font-black rounded-lg px-4 sm:px-6 py-2 sm:py-2.5"
             aria-label="Return to quizzes dashboard"
           >
             Return to Dashboard
@@ -607,8 +612,8 @@ export default function QuizPlayLayout({
             >
               <div className="relative p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 sm:p-2.5 rounded-lg bg-accent border-3 sm:border-4 border-border shadow-neo-sm flex-shrink-0">
-                    <Play className="h-4 w-4 sm:h-5 sm:w-5 text-white" aria-hidden="true" />
+                  <div className="p-2 sm:p-2.5 rounded-lg bg-[var(--color-accent)] border-3 sm:border-4 border-border shadow-neo-sm flex-shrink-0">
+                    <Play className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--color-bg)]" aria-hidden="true" />
                   </div>
                   <div>
                     <p className="font-black text-foreground text-sm sm:text-base">Continue where you left off</p>
@@ -619,7 +624,7 @@ export default function QuizPlayLayout({
                 </div>
                 <Button
                   onClick={() => mainRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                  className="px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-black w-full sm:w-auto border-4 border-border shadow-neo rounded-lg bg-accent text-white hover:bg-accentHover"
+                  className="px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-black w-full sm:w-auto border-4 border-border shadow-neo rounded-lg bg-[var(--color-accent)] text-[var(--color-bg)] hover:bg-[var(--color-accent)]/90"
                   aria-label="Resume quiz from current question"
                 >
                   Resume Quiz
@@ -740,10 +745,10 @@ export default function QuizPlayLayout({
                   {relatedQuizzes.slice(0, 3).map((rq, index) => {
                     const getDifficultyInfo = (count: number) => {
                       if (count <= 5)
-                        return { label: "Beginner", color: "bg-green-100 text-green-800 border-green-800" }
+                        return { label: "Beginner", color: "bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/50" }
                       if (count <= 15)
-                        return { label: "Intermediate", color: "bg-blue-100 text-blue-800 border-blue-800" }
-                      return { label: "Advanced", color: "bg-red-100 text-red-800 border-red-800" }
+                        return { label: "Intermediate", color: "bg-[var(--color-primary)]/20 text-[var(--color-primary)] border-[var(--color-primary)]/50" }
+                      return { label: "Advanced", color: "bg-[var(--color-error)]/20 text-[var(--color-error)] border-[var(--color-error)]/50" }
                     }
                     const difficulty = getDifficultyInfo(rq.questionCount)
 
@@ -792,11 +797,11 @@ export default function QuizPlayLayout({
                         </div>
 
                         <div className="flex items-center justify-between pt-3 border-t-4 border-border">
-                          <span className="text-sm text-green-600 font-black group-hover:text-green-700 transition-colors">
+                          <span className="text-sm text-[var(--color-success)] font-black group-hover:text-[var(--color-success)]/80 transition-colors">
                             Start →
                           </span>
                           <Play
-                            className="w-4 h-4 text-green-600 group-hover:scale-125 transition-transform"
+                            className="w-4 h-4 text-[var(--color-success)] group-hover:scale-125 transition-transform"
                             aria-hidden="true"
                           />
                         </div>

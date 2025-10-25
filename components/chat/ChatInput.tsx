@@ -91,7 +91,7 @@ const ChatInput = memo(({
   }, [messages])
 
   return (
-    <div className="border-t p-3 bg-background/50 backdrop-blur-sm">
+    <div className="border-t-4 border-border p-3 bg-background">
       {/* Suggestions */}
       {messages.length === 0 && (
         <motion.div
@@ -141,7 +141,7 @@ const ChatInput = memo(({
           className={cn(
             "flex-grow text-sm h-11 rounded-full transition-all",
             "focus-visible:ring-primary/30 focus-visible:border-primary/50",
-            "border-border/50 bg-background/50 backdrop-blur-sm",
+            "border-4 border-border bg-background",
             !canUseChat && "opacity-60 cursor-not-allowed"
           )}
           aria-label="Chat message input"

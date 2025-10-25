@@ -590,7 +590,7 @@ function EmptyState({ showProgress }: { showProgress: boolean }) {
       className="flex flex-col items-center justify-center py-16 px-4"
     >
       <div className="relative mb-8">
-        <div className="w-24 h-24 bg-gradient-to-br from-primary/10 to-accent/10 rounded-full flex items-center justify-center">
+        <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center border-4 border-primary/20 shadow-[4px_4px_0px_0px_hsl(var(--border))]">
           <BookOpen className="h-12 w-12 text-primary/60" />
         </div>
         <div className="absolute -top-2 -right-2 w-8 h-8 bg-accent rounded-full flex items-center justify-center">

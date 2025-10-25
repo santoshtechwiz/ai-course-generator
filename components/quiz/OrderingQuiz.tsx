@@ -224,7 +224,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
   return (
     <div className={cn("w-full max-w-4xl mx-auto", className)} data-has-reordered={hasUserReordered}>
       <Card className="border-4 border-border shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.1)] rounded-xl overflow-hidden bg-background">
-        <CardHeader className="border-b-4 border-border pb-6 bg-gradient-to-r from-primary/10 via-primary/5 to-purple-500/10">
+        <CardHeader className="border-b-4 border-border pb-6 bg-card">
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 space-y-3">
@@ -245,7 +245,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                   )}
                 </div>
 
-                <CardTitle className="text-3xl font-black leading-tight text-foreground">
+                <CardTitle className="text-2xl font-black leading-tight text-foreground">
                   {question.title}
                 </CardTitle>
 
@@ -290,7 +290,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                     size="sm"
                     variant="neutral"
                     onClick={() => setShowInstructions(false)}
-                    className="h-8 w-8 p-0 border-2 border-border shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
+                    className="h-8 w-8 p-0 border-6 border-[var(--color-border)] shadow-[var(--shadow-neo)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[var(--shadow-neo-active)] transition-all"
                     aria-label="Close instructions"
                   >
                     <X className="h-4 w-4" />
@@ -301,13 +301,13 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
           </div>
         </CardHeader>
 
-        <CardContent className="p-6 space-y-6 bg-gradient-to-br from-background via-background to-muted/20">
+        <CardContent className="p-6 space-y-6 bg-card">
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b-2 border-border pb-3">
               <h3 className="text-xl font-black text-foreground uppercase tracking-tight">
                 Arrange the steps in the correct order
               </h3>
-              <div className="text-sm font-bold text-muted-foreground bg-muted px-3 py-1 rounded-lg border-2 border-border">
+              <div className="text-sm font-bold text-[var(--color-text)] bg-[var(--color-muted)] px-3 py-1 rounded-lg border-6 border-[var(--color-border)]">
                 {currentSteps.length} steps
               </div>
             </div>
@@ -331,7 +331,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 56 }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl border-4 border-green-600 shadow-[5px_5px_0px_0px_rgba(34,197,94,0.5)] flex items-center justify-center"
+                            className="bg-green-400 rounded-xl border-4 border-green-600 shadow-[6px_6px_0px_0px_hsl(var(--border))] flex items-center justify-center"
                           >
                             <span className="text-white font-black text-base uppercase tracking-wide">
                               ⬇️ Drop Here
@@ -477,7 +477,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 48 }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="bg-gradient-to-r from-green-400 to-emerald-400 rounded-lg border-2 border-green-500 flex items-center justify-center"
+                            className="bg-green-400 rounded-lg border-4 border-green-500 shadow-[4px_4px_0px_0px_hsl(var(--border))] flex items-center justify-center"
                           >
                             <span className="text-white font-semibold text-sm">Drop Here</span>
                           </motion.div>
