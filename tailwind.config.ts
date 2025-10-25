@@ -11,33 +11,28 @@ module.exports = {
     extend: {
       colors: {
         // Neobrutal base palette — aligned to globals.css variables
-        background: "#fffdf5", // --color-bg
-        foreground: "#0a0a0a", // --color-text
-        accent: "#ff007f", // --color-primary (neobrutal pink)
+        background: "var(--color-bg)",
+        foreground: "var(--color-text)",
+        accent: "var(--color-primary)",
         accentHover: "#e60076",
-        card: "#ffffff", // --color-card
-        border: "#000000", // --color-border
-        muted: "#f2f2f2", // --color-muted
-        success: "#00b341", // --color-success
-        warning: "#ffb300",
-        danger: "#ff3b3b",
-
-        // Dark mode
-        darkBackground: "#1a1a1a", // matches .dark in globals.css
-        darkForeground: "#fafafa",
-        darkCard: "#2b2b2b",
-        darkBorder: "#fafafa",
+        card: "var(--color-card)",
+        border: "var(--color-border)",
+        muted: "var(--color-muted)",
+        success: "var(--color-success)",
+        warning: "var(--color-warning)",
+        danger: "var(--color-error)",
       },
 
       boxShadow: {
-        neo: "6px 6px 0px #111",
-        neoDark: "6px 6px 0px #fff",
+        neo: "var(--shadow-neo)",
+        'neo-sm': "3px 3px 0px var(--shadow-color)",
+        'neo-lg': "8px 8px 0px var(--shadow-color)",
       },
 
       borderRadius: {
-        lg: "16px",
-        md: "10px",
-        sm: "6px",
+        lg: "var(--radius)",
+        md: "calc(var(--radius) * 0.67)",
+        sm: "calc(var(--radius) * 0.5)",
       },
 
       fontFamily: {
@@ -65,13 +60,13 @@ module.exports = {
       const { addComponents } = tw;
       addComponents({
         ".card": {
-          "@apply bg-card border-4 border-border shadow-neo p-5 rounded-lg transition-transform duration-200": {},
+          "@apply bg-card border-4 border-border shadow-neo p-4 sm:p-5 rounded-lg transition-transform duration-200": {},
           "&:hover": {
             transform: "translateY(-6px)",
           },
         },
         ".btn": {
-          "@apply px-5 py-3 font-semibold border-4 border-border rounded-md transition-transform duration-200": {},
+          "@apply px-4 sm:px-5 py-2 sm:py-3 font-semibold border-4 border-border rounded-md transition-transform duration-200 flex items-center justify-center gap-2": {},
           "&:active": {
             transform: "translate(4px,4px)",
             boxShadow: "none",

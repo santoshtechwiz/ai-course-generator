@@ -66,138 +66,118 @@ const AboutSection = () => {
   ]
 
   return (
-    <div className="w-full" ref={containerRef}>
-      <div className="text-center mb-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="inline-block px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
-        >
-          About CourseAI
-        </motion.div>
-
-        <motion.h2
-          id="about-heading"
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-          className="text-3xl md:text-5xl font-bold mb-6"
-        >
-          AI-Powered Learning
-          <br />
-          Made Simple
-        </motion.h2>
-
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed"
-        >
-          CourseAI helps you create courses using YouTube videos and generate intelligent quizzes using AI.
-          Build structured learning experiences, track progress, and share your content effectively.
-        </motion.p>
-      </div>
-
-  <div className="grid gap-8 md:grid-cols-2 lg:gap-12 max-w-6xl mx-auto">
-        {sections.map((section, index) => (
+    <div className="w-full px-4" ref={containerRef}>
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-16">
           <motion.div
-            key={section.title}
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-            transition={{
-              duration: 0.7,
-              delay: 0.3 + index * 0.1,
-              ease: APPLE_EASING,
-            }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="inline-block px-4 py-2 rounded-sm bg-primary/10 text-primary text-sm font-bold mb-6 border-3 border-primary/30"
           >
-            <div className="overflow-hidden transition-none hover:translate-x-[2px] hover:translate-y-[-2px] h-full rounded-sm border-2 border-border bg-card shadow-[4px_4px_0px_0px_var(--border)] hover:shadow-[6px_6px_0px_0px_var(--border)]">
-              <div className="p-6 sm:p-8 space-y-5 h-full flex flex-col">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 rounded-sm bg-main text-main-foreground border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]">
-                    <section.icon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-xl font-bold tracking-tight">{section.title}</h3>
-                </div>
-                <p className="text-muted-foreground flex-grow leading-relaxed text-base">{section.description}</p>
-              </div>
-            </div>
+            About CourseAI
           </motion.div>
-        ))}
-      </div>
 
-      {/* Values section */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-        transition={{ duration: 0.7, delay: 0.8, ease: APPLE_EASING }}
-        className="mt-24 text-center"
-      >
-        <h3 className="text-2xl md:text-3xl font-bold mb-12">Our Values</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {values.map((value, index) => (
-            <RevealAnimation key={value.title} delay={0.9 + index * 0.1}>
-              <div className="bg-card rounded-sm p-6 border-2 border-border h-full flex flex-col items-center shadow-[4px_4px_0px_0px_var(--border)] hover:translate-x-[2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_var(--border)] transition-none">
-                <div className="p-4 rounded-sm bg-muted border-2 border-border mb-4 shadow-[2px_2px_0px_0px_var(--border)]">
-                  {value.icon === "sparkles" && (
-                    <motion.div>
-                      <svg className="w-8 h-8">
-                        <Sparkles className="w-8 h-8" />
-                      </svg>
-                    </motion.div>
-                  )}
-                  {value.icon === "users" && (
-                    <motion.div>
-                      <svg className="w-8 h-8">
-                        <Users className="w-8 h-8" />
-                      </svg>
-                    </motion.div>
-                  )}
-                  {value.icon === "star" && (
-                    <motion.div>
-                      <svg className="w-8 h-8">
-                        <Star className="w-8 h-8" />
-                      </svg>
-                    </motion.div>
-                  )}
+          <motion.h2
+            id="about-heading"
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="text-4xl md:text-6xl font-black mb-6 tracking-tight"
+          >
+            AI-Powered Learning
+            <br />
+            Made Simple
+          </motion.h2>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed font-medium"
+          >
+            CourseAI helps you create courses using YouTube videos and generate intelligent quizzes using AI. Build
+            structured learning experiences, track progress, and share your content effectively.
+          </motion.p>
+        </div>
+
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mb-20">
+          {sections.map((section, index) => (
+            <motion.div
+              key={section.title}
+              initial={{ opacity: 0, y: 30 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+              transition={{
+                duration: 0.7,
+                delay: 0.3 + index * 0.1,
+                ease: APPLE_EASING,
+              }}
+            >
+              <div className="overflow-hidden transition-all duration-200 hover:translate-x-[-2px] hover:translate-y-[-2px] h-full rounded-sm border-4 border-primary bg-card shadow-[6px_6px_0px_0px_var(--primary)] hover:shadow-[8px_8px_0px_0px_var(--primary)]">
+                <div className="p-8 space-y-5 h-full flex flex-col">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 rounded-sm bg-primary text-primary-foreground border-3 border-primary shadow-[3px_3px_0px_0px_var(--primary)]">
+                      <section.icon className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-xl font-black tracking-tight">{section.title}</h3>
+                  </div>
+                  <p className="text-muted-foreground flex-grow leading-relaxed text-base font-medium">
+                    {section.description}
+                  </p>
                 </div>
-                <h4 className="text-xl font-semibold mb-2">{value.title}</h4>
-                <p className="text-muted-foreground">{value.description}</p>
-
-                <motion.div
-                  className="w-12 h-1 bg-gradient-to-r from-primary/50 to-primary/0 rounded-full mt-4"
-                  whileHover={{ width: 80 }}
-                  transition={{ duration: 0.5 }}
-                />
               </div>
-            </RevealAnimation>
+            </motion.div>
           ))}
         </div>
-      </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-        transition={{ duration: 0.7, delay: 1.2, ease: APPLE_EASING }}
-        className="text-center mt-24"
-      >
-        <Button
-          size="lg"
-          className="px-4 sm:px-6 py-3 text-lg font-medium rounded-full hover:shadow-lg hover:-translate-y-1 transition-all"
-          onClick={() => (window.location.href = "/contactus")}
+        {/* Values section */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.7, delay: 0.8, ease: APPLE_EASING }}
+          className="mt-24 text-center"
         >
-          Get in Touch
-          <motion.span
-            className="inline-block ml-2"
-            initial={{ x: 0 }}
-            whileHover={{ x: 5 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          <h3 className="text-3xl md:text-4xl font-black mb-12 tracking-tight">Our Values</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {values.map((value, index) => (
+              <RevealAnimation key={value.title} delay={0.9 + index * 0.1}>
+                <div className="bg-card rounded-sm p-8 border-4 border-accent h-full flex flex-col items-center shadow-[6px_6px_0px_0px_var(--accent)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_var(--accent)] transition-all duration-200">
+                  <div className="p-4 rounded-sm bg-accent text-accent-foreground border-3 border-accent mb-6 shadow-[3px_3px_0px_0px_var(--accent)]">
+                    {value.icon === "sparkles" && <Sparkles className="w-8 h-8" />}
+                    {value.icon === "users" && <Users className="w-8 h-8" />}
+                    {value.icon === "star" && <Star className="w-8 h-8" />}
+                  </div>
+                  <h4 className="text-xl font-black mb-3 tracking-tight">{value.title}</h4>
+                  <p className="text-muted-foreground font-medium leading-relaxed">{value.description}</p>
+                </div>
+              </RevealAnimation>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.7, delay: 1.2, ease: APPLE_EASING }}
+          className="text-center mt-24"
+        >
+          <Button
+            size="lg"
+            className="px-8 py-4 text-lg font-black rounded-sm bg-primary text-primary-foreground border-3 border-primary shadow-[4px_4px_0px_0px_var(--primary)] hover:translate-x-[2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_var(--primary)] transition-all duration-200"
+            onClick={() => (window.location.href = "/contactus")}
           >
-            <ArrowRight className="h-4 w-4" />
-          </motion.span>
-        </Button>
-      </motion.div>
+            Get in Touch
+            <motion.span
+              className="inline-block ml-2"
+              initial={{ x: 0 }}
+              whileHover={{ x: 5 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            >
+              <ArrowRight className="h-5 w-5" />
+            </motion.span>
+          </Button>
+        </motion.div>
+      </div>
     </div>
   )
 }

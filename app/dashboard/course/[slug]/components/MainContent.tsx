@@ -1520,7 +1520,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
               "transition-all duration-100",
               state.sidebarCollapsed || state.isTheaterMode
                 ? "flex flex-col"
-                : "flex flex-col lg:grid lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px] gap-4",
+                : "flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)] xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] gap-3 lg:gap-4",
             )}
           >
             {/* Video and content area */}

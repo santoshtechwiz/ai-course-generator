@@ -430,7 +430,7 @@ function UnifiedQuizQuestionComponent({
 
   const renderMCQContent = useCallback(() => {
     return (
-      <div className="w-full max-w-3xl mx-auto space-y-3">
+      <div className="w-full max-w-4xl mx-auto space-y-3 px-2 sm:px-4">
         {mcqOptions.map((option, index) => (
           <MCQOption
             key={option.id}
@@ -452,8 +452,8 @@ function UnifiedQuizQuestionComponent({
     const styles = getColorClasses('blanks')
 
     return (
-      <div className="w-full max-w-3xl mx-auto space-y-6">
-        <div className={`${styles.cardPrimary} p-8`}>
+      <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 px-2 sm:px-4">
+        <div className={`${styles.cardPrimary} p-4 sm:p-6 lg:p-8`}>
           {/* Icon Badge */}
           <div className="inline-flex items-center justify-center w-12 h-12 bg-amber-500 border-3 border-border dark:border-border shadow-[4px_4px_0px_rgba(0,0,0,0.5)] dark:shadow-[4px_4px_0px_rgba(255,255,255,0.1)] mb-6">
             <FileText className="w-6 h-6 text-white" />
@@ -515,8 +515,8 @@ function UnifiedQuizQuestionComponent({
     const styles = getColorClasses('openended')
 
     return (
-      <div className="w-full max-w-3xl mx-auto space-y-6">
-        <div className={`${styles.cardPrimary} p-8`}>
+      <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 px-2 sm:px-4">
+        <div className={`${styles.cardPrimary} p-4 sm:p-6 lg:p-8`}>
           {/* Icon Badge */}
           <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-500 border-3 border-border dark:border-border shadow-[4px_4px_0px_rgba(0,0,0,0.5)] dark:shadow-[4px_4px_0px_rgba(255,255,255,0.1)] mb-6">
             <BookOpen className="w-6 h-6 text-white" />
@@ -581,11 +581,11 @@ function UnifiedQuizQuestionComponent({
     const styles = getColorClasses('code') // Code uses green accent (#10B981)
 
     return (
-      <div className="w-full max-w-4xl mx-auto space-y-6">
+      <div className="w-full max-w-5xl mx-auto space-y-4 sm:space-y-6 px-2 sm:px-4">
         {codeQuestion.codeSnippet && (
           <div className={cn(
             styles.cardPrimary,
-            "p-6 bg-white"
+            "p-4 sm:p-6 bg-card"
           )}>
             {/* Code snippet header */}
             <div className="flex items-center justify-between mb-4">
