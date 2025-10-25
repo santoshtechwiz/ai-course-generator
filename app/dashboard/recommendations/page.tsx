@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense } from "react"
-import { UnifiedLoader } from "@/components/loaders/UnifiedLoader"
+import { GlobalLoader } from "@/components/ui/loader"
 import { useAuth } from "@/hooks"
 import dynamic from "next/dynamic"
 import { redirect } from "next/navigation"
@@ -27,9 +27,7 @@ export default function RecommendationsPage() {
       </div>
 
       <Suspense fallback={
-        <UnifiedLoader
-          variant="spinner"
-          size="md"
+        <GlobalLoader
           message="Loading recommendations..."
         />
       }>

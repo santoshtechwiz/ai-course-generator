@@ -27,7 +27,7 @@ import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "@/components/quiz/QuizActions"
-import { UnifiedLoader } from "@/components/loaders"
+import { AppLoader } from "@/components/ui/loader"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
 
 
@@ -269,10 +269,8 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
         <div className="text-center space-y-4 px-4">
-          <UnifiedLoader
-            state="loading"
-            variant="spinner"
-            size="lg"
+          <AppLoader
+            size="large"
             message={LOADER_MESSAGES.CALCULATING_RESULTS}
             className="text-center"
           />
@@ -286,11 +284,9 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
 
   if (isLoading) {
     return (
-      <UnifiedLoader
-        state="loading"
-        variant="skeleton"
+      <AppLoader
+        size="medium"
         message={LOADER_MESSAGES.LOADING_CODE}
-        size="md"
       />
     )
   }
@@ -309,11 +305,9 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   }
   if (!formattedQuestion) {
     return (
-      <UnifiedLoader
-        state="loading"
-        variant="skeleton"
+      <AppLoader
+        size="medium"
         message={LOADER_MESSAGES.LOADING_QUIZ}
-        size="md"
       />
     )
   } 

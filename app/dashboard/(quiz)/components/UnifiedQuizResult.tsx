@@ -23,7 +23,7 @@ import { QuizType } from "@/app/types/quiz-types"
 import { resetQuiz } from "@/store/slices/quiz"
 import { useAuth } from "@/modules/auth"
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
-import { UnifiedLoader } from "@/components/loaders"
+import { AppLoader } from "@/components/ui/loader"
 import BlankQuizResults from "../blanks/components/BlankQuizResults"
 import OpenEndedQuizResults from "../openended/components/QuizResultsOpenEnded"
 import OrderingQuizResults from "../ordering/components/OrderingQuizResults"
@@ -102,10 +102,8 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
   if (isAuthLoading) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
-          size="lg"
+        <AppLoader
+          size="large"
           message="Loading your quiz results..."
           className="text-center"
         />

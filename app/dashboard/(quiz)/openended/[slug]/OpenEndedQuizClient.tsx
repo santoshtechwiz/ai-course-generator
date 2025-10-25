@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useSelector } from "react-redux"
-import { PageLoader } from "@/components/loaders"
+import { AppLoader } from "@/components/ui/loader"
 
 // ⚡ PERFORMANCE: Lazy load heavy components with framer-motion
 const OpenEndedQuizWrapper = lazy(() => import("../components/OpenEndedQuizWrapper"))
@@ -40,13 +40,13 @@ export default function OpenEndedQuizClient({ params }: OpenEndedQuizClientProps
   }
 
   return (
-    <Suspense fallback={<PageLoader message="Loading quiz..." />}>
-      <QuizPlayLayout 
-        quizSlug={slug} 
+    <Suspense fallback={<div className="min-h-[200px] flex items-center justify-center"><div className="animate-spin h-6 w-6 border-2 border-primary border-r-transparent rounded-full" /></div>}>
+      <QuizPlayLayout
+        quizSlug={slug}
         quizType="openended"
         quizData={quizData || null}
         quizId={slug}
-        isPublic={true} 
+        isPublic={true}
         isFavorite={false}
       >
         <OpenEndedQuizWrapper slug={slug} />

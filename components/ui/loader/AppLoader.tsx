@@ -10,7 +10,7 @@ interface LoaderProps {
   className?: string
 }
 
-export const Loader = React.memo(function Loader({
+export const AppLoader = React.memo(function AppLoader({
   message = "Loading...",
   size = 'medium',
   className
@@ -22,7 +22,12 @@ export const Loader = React.memo(function Loader({
   }
 
   return (
-    <div className={cn("flex flex-col items-center justify-center space-y-4 p-6 bg-[var(--color-card)] border-4 border-black rounded-md shadow-[4px_4px_0_#000]", className)}>
+    <div
+      className={cn("flex flex-col items-center justify-center space-y-4 p-6 bg-[var(--color-card)] border-4 border-black rounded-md shadow-[4px_4px_0_#000]", className)}
+      role="status"
+      aria-live="polite"
+      aria-label={message}
+    >
       <div className="relative">
         <Loader2 className={cn("animate-spin text-[var(--color-primary)]", sizeClasses[size])} />
         {/* Add a subtle pulse effect behind the spinner */}
@@ -49,7 +54,7 @@ export const Loader = React.memo(function Loader({
   )
 })
 
-Loader.displayName = "Loader"
+AppLoader.displayName = "AppLoader"
 
 interface SkeletonLoaderProps {
   lines?: number

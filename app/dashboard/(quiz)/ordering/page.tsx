@@ -5,7 +5,7 @@ import { useAuth } from "@/modules/auth";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { UnifiedLoader } from "@/components/loaders";
+import { AppLoader } from "@/components/ui/loader"
 import { getPlanConfig } from "@/types/subscription-plans";
 import type { SubscriptionPlanType } from "@/types/subscription-plans";
 import OrderingQuizForm from "./components/OrderingQuizForm";
@@ -73,11 +73,9 @@ const OrderingQuizPage = () => {
       isLoggedIn={isAuthenticated}
     >
       {isLoading ? (
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
+        <AppLoader
+          size="medium"
           message="Loading quiz configuration..."
-          size="md"
         />
       ) : (
         <OrderingQuizForm

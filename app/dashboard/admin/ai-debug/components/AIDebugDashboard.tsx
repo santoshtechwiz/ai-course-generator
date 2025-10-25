@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Loader } from "@/components/loader"
+import { AppLoader } from "@/components/ui/loader"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle2, XCircle, Clock, Zap } from "lucide-react"
 
@@ -192,7 +192,7 @@ export default function AIDebugDashboard() {
                     >
                       {loading === key ? (
                         <>
-                          <Loader message="" />
+                          <AppLoader message="" />
                           Testing...
                         </>
                       ) : (
@@ -237,7 +237,7 @@ export default function AIDebugDashboard() {
                     >
                       {loading === key ? (
                         <>
-                          <Loader message="" />
+                          <AppLoader message="" />
                           Testing...
                         </>
                       ) : (

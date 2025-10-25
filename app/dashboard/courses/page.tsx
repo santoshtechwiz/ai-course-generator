@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense } from "react"
-import { UnifiedLoader } from "@/components/loaders/UnifiedLoader"
+import { AppLoader, GlobalLoader } from "@/components/ui/loader"
 import { useAuth } from "@/hooks"
 import { useUserData } from "@/hooks/useUserDashboard"
 import dynamic from "next/dynamic"
@@ -27,9 +27,8 @@ export default function CoursesPage() {
   if (isLoading || !userData) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <UnifiedLoader
-          variant="spinner"
-          size="lg"
+        <AppLoader
+          size="large"
           message="Loading your courses..."
         />
       </div>
@@ -55,9 +54,7 @@ export default function CoursesPage() {
       </div>
 
       <Suspense fallback={
-        <UnifiedLoader
-          variant="spinner"
-          size="md"
+        <GlobalLoader
           message="Loading courses..."
         />
       }>

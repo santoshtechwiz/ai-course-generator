@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader } from "@/components/loader";
+import { AppLoader } from "@/components/ui/loader";
 import { useState } from "react";
 
 export default function ThemeTestPage() {
@@ -133,7 +133,7 @@ export default function ThemeTestPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
-            <Loader />
+            <AppLoader />
           </CardContent>
         </Card>
 

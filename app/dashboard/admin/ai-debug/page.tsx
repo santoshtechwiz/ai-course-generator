@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import AIDebugDashboard from "./components/AIDebugDashboard"
-import { Loader } from "@/components/loader"
+import { AppLoader } from "@/components/ui/loader"
 
 export const dynamic = 'force-dynamic'
 
@@ -33,7 +33,7 @@ export default async function AIDebugPage() {
         </p>
       </div>
 
-      <Suspense fallback={<Loader message="Loading AI Debug Dashboard..." />}>
+      <Suspense fallback={<AppLoader message="Loading AI Debug Dashboard..." />}>
         <AIDebugDashboard />
       </Suspense>
     </div>

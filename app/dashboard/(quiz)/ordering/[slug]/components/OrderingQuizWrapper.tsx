@@ -5,7 +5,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { loadOrderingQuiz, submitOrderingQuiz, saveAnswer, setCurrentQuestion } from '@/store/slices/ordering-quiz-slice'
 import { setQuizResults } from '@/store/slices/quiz/quiz-slice'
-import { UnifiedLoader } from '@/components/loaders'
+import { AppLoader } from "@/components/ui/loader"
 import { LOADER_MESSAGES } from '@/constants/loader-messages'
 import OrderingQuizSingle from '@/components/quiz/OrderingQuizSingle'
 import { QuizStateProvider } from '@/components/quiz/QuizStateProvider'
@@ -207,10 +207,8 @@ export default function OrderingQuizWrapper({ slug }: OrderingQuizWrapperProps) 
   if (isLoading && !quizData) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
-          size="lg"
+        <AppLoader
+          size="large"
           message={LOADER_MESSAGES.LOADING_QUIZ}
         />
       </div>
@@ -247,10 +245,8 @@ export default function OrderingQuizWrapper({ slug }: OrderingQuizWrapperProps) 
   if (!quizData || !question) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
-          size="lg"
+        <AppLoader
+          size="large"
           message="Loading quiz..."
         />
       </div>
@@ -280,10 +276,8 @@ export default function OrderingQuizWrapper({ slug }: OrderingQuizWrapperProps) 
             {/* Loading overlay when submitting */}
             {stateManager.isSubmitting && (
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
-                <UnifiedLoader
-                  state="loading"
-                  variant="spinner"
-                  size="lg"
+                <AppLoader
+                  size="large"
                   message="Submitting your quiz answers..."
                   className="text-center"
                 />

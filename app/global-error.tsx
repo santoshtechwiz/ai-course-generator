@@ -24,7 +24,7 @@ import {
   XCircle,
   BookOpen
 } from "lucide-react"
-import { UnifiedLoader } from "@/components/loaders/UnifiedLoader"
+import { AppLoader } from "@/components/ui/loader"
 import {
   FADE,
   SLIDE_UP,
@@ -247,10 +247,8 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                   className="space-y-4"
                 >
                   <div className="flex items-center justify-center gap-3">
-                    <UnifiedLoader
-                      state="loading"
-                      variant="spinner"
-                      size="md"
+                    <AppLoader
+                      size="medium"
                       message="Attempting to recover..."
                     />
                   </div>

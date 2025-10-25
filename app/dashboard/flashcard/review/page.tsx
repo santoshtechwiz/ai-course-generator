@@ -10,7 +10,7 @@ import { ReviewStats } from "@/components/flashcard/ReviewStats"
 import { BadgeShowcase } from "@/components/flashcard/BadgeShowcase"
 import { ReviewCalendar } from "@/components/flashcard/ReviewCalendar"
 import { BreadcrumbNavigation, LearningDashboardLink } from "@/components/navigation/BreadcrumbNavigation"
-import { PageLoader } from "@/components/loaders"
+import { AppLoader } from "@/components/ui/loader"
 import { Brain, Play, Calendar, Trophy } from "lucide-react"
 import { useAuth } from "@/hooks"
 import { Badge } from "@/components/ui/badge"
@@ -104,7 +104,7 @@ export default function ReviewDashboardPage() {
           <CardContent>
             {isLoading ? (
               <div className="py-12">
-                <PageLoader message="Loading your review cards..." />
+                <AppLoader message="Loading your review cards..." />
               </div>
             ) : dueCards && dueCards.count > 0 ? (
               <div className="space-y-6">

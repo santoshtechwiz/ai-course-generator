@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { OrderingQuizForm, type OrderingQuizFormData } from "@/components/quiz/OrderingQuizForm"
 import { OrderingQuiz } from "@/components/quiz/OrderingQuiz"
 import { OrderingQuizResult } from "@/components/quiz/OrderingQuizResult"
-import { Loader } from "@/components/loader"
+import { AppLoader } from "@/components/ui/loader"
 import type { OrderingQuizQuestion } from "@/app/types/quiz-types"
 import { OrderingQuizMetrics } from "@/lib/ordering-quiz/scoring-service"
 import { AlertCircle } from "lucide-react"
@@ -148,7 +148,7 @@ export default function OrderingQuizDemo() {
               exit={{ opacity: 0 }}
               className="flex flex-col items-center justify-center py-16"
             >
-              <Loader message={`Generating quiz about "${pageData.formData?.topic}"...`} />
+              <AppLoader message={`Generating quiz about "${pageData.formData?.topic}"...`} />
             </motion.div>
           )}
 

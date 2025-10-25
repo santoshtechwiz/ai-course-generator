@@ -4,7 +4,7 @@
  * @param seconds - The number of seconds to format
  * @returns A formatted time string
  */
-const formatTime = (seconds: number): string => {
+export const formatTime = (seconds: number): string => {
   if (isNaN(seconds)) return "0:00"
 
   const h = Math.floor(seconds / 3600)

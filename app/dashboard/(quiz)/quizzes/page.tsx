@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { getAuthSession } from "@/lib/auth"
 import { getQuizzes, type QuizListItem } from "@/app/actions/getQuizes"
 import ClientOnly from "@/components/ClientOnly"
-import { SuspenseGlobalFallback } from "@/components/loaders"
+import { GlobalLoader } from "@/components/ui/loader"
 import { generateMetadata, JsonLD } from "@/lib/seo"
 import EnhancedQuizzesClient from "./components/QuizzesClient"
 
@@ -90,7 +90,7 @@ const Page = async () => {
 
         <section aria-live="polite" aria-busy="false">
           <ClientOnly>
-            <Suspense fallback={<SuspenseGlobalFallback text="Loading amazing quizzes…" />}>
+            <Suspense fallback={<GlobalLoader message="Loading amazing quizzes…" />}>
               <div className="prose prose-invert max-w-none mb-6 sr-only" aria-hidden>
                 {/* Keep SEO content available for screen readers if needed */}
                 <h2>Interactive quizzes collection</h2>

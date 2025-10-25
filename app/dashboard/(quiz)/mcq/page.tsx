@@ -6,7 +6,7 @@ import CreateQuizForm from "./components/CreateQuizForm";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { UnifiedLoader } from "@/components/loaders";
+import { AppLoader } from "@/components/ui/loader"
 import { getPlanConfig } from "@/types/subscription-plans";
 
 export const dynamic = 'force-dynamic'
@@ -75,11 +75,9 @@ const McqPage = () => {
       isLoggedIn={isAuthenticated}
     >
       {isLoading ? (
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
+        <AppLoader
+          size="medium"
           message="Loading quiz configuration..."
-          size="md"
         />
       ) : (
         <CreateQuizForm

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { useSelector } from "react-redux"
 import { NoResults } from "@/components/ui/no-results"
 import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
-import { PageLoader } from "@/components/loaders"
+import { AppLoader } from "@/components/ui/loader"
 import { isPrivateError } from "../../components/privateErrorUtils"
 
 // ⚡ PERFORMANCE: Lazy load heavy components with framer-motion
@@ -72,7 +72,7 @@ export default function BlanksQuizClient({ params }: BlanksQuizClientProps) {
   }
 
   return (
-    <Suspense fallback={<PageLoader message="Loading quiz..." />}>
+    <Suspense fallback={<div className="min-h-[200px] flex items-center justify-center"><div className="animate-spin h-6 w-6 border-2 border-primary border-r-transparent rounded-full" /></div>}>
       <QuizPlayLayout
         quizSlug={slug}
         quizType="blanks"

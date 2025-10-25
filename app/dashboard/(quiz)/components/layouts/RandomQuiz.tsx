@@ -7,10 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
-  ChevronLeft,
-  ChevronRight,
   Play,
-  Pause,
   Clock,
   Star,
   BookOpen,
@@ -20,7 +17,6 @@ import {
   Zap,
   Target,
   RefreshCw,
-  Users,
   ArrowRight
 } from "lucide-react"
 import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
