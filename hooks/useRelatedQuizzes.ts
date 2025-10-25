@@ -32,7 +32,7 @@ export function useRelatedQuizzes(params: { quizType?: string; difficulty?: stri
       return
     }
 
-    if (abortRef.current) abortRef.current.abort()
+    if (abortRef.current) abortRef.current.abort('New request initiated')
     abortRef.current = new AbortController()
 
     try {
@@ -61,7 +61,7 @@ export function useRelatedQuizzes(params: { quizType?: string; difficulty?: stri
 
   useEffect(() => {
     fetchRelated()
-    return () => abortRef.current?.abort()
+    return () => abortRef.current?.abort('Component unmounting')
   }, [fetchRelated])
 
   return { quizzes, loading, error, refetch: fetchRelated }

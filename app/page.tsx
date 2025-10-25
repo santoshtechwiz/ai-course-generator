@@ -1,6 +1,6 @@
 import CourseAILandingPage from "@/components/landing/CourseAILandingPage"
 import { Suspense } from "react"
-import { SuspenseGlobalFallback } from "@/components/loaders"
+import { GlobalLoader } from "@/components/ui/loader"
 import { ModuleLayout } from "@/components/layout/ModuleLayout"
 import { PageHeader } from "@/components/layout/PageWrapper"
 import { generateMetadata } from "@/lib/seo"
@@ -35,7 +35,7 @@ export default function HomePage() {
   return (
     <ModuleLayout>
       <PageHeader title={""} description={""}>
-        <Suspense fallback={<SuspenseGlobalFallback text="Loading home…" />}>
+        <Suspense fallback={<GlobalLoader message="Loading home…" />}>
           <CourseAILandingPage />
         </Suspense>
       </PageHeader>

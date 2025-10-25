@@ -12,7 +12,7 @@ import CourseAIState from "@/components/development/CourseAIState"
 import { MainNavbar } from "@/components/layout/navigation/MainNavbar"
 import { CreditGuidanceBanner } from "@/components/shared/CreditGuidanceBanner"
 import { cn } from "@/lib/utils"
-import { SuspenseGlobalFallback } from "@/components/loaders"
+import { GlobalLoader } from "@/components/ui/loader"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -107,7 +107,7 @@ export function DashboardLayout({
             <CreditGuidanceBanner />
             
             <ReduxErrorBoundary>
-              <Suspense fallback={<SuspenseGlobalFallback text="Loading page..." />}>
+              <Suspense fallback={<GlobalLoader message="Loading page..." />}>
                 {children}
               </Suspense>
             </ReduxErrorBoundary>

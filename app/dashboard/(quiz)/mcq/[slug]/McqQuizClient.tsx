@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { PageLoader } from "@/components/loaders"
+import { AppLoader } from "@/components/ui/loader"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
 import { useSelector } from "react-redux"
 
@@ -42,7 +42,7 @@ export default function McqQuizClient({ params }: McqQuizClientProps) {
   }
 
   return (
-    <Suspense fallback={<PageLoader message={LOADER_MESSAGES.LOADING_MCQ} />}>
+    <Suspense fallback={<div className="min-h-[200px] flex items-center justify-center"><div className="animate-spin h-6 w-6 border-2 border-primary border-r-transparent rounded-full" /></div>}>
       <QuizPlayLayout
         quizSlug={slug}
         quizType="mcq"

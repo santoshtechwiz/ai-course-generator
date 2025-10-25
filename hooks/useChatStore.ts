@@ -101,7 +101,7 @@ export function useChatStore(userId: string): UseChatStoreReturn {
   useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
+        abortControllerRef.current.abort('Component unmounting')
       }
     }
   }, [])
@@ -134,7 +134,7 @@ export function useChatStore(userId: string): UseChatStoreReturn {
 
     // Cancel previous request if any
     if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
+      abortControllerRef.current.abort('New message sent')
     }
     abortControllerRef.current = new AbortController()
 

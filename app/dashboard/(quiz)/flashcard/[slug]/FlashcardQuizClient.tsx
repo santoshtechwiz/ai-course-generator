@@ -9,7 +9,7 @@ import { RootState } from "@/store"
 import { NoResults } from "@/components/ui/no-results"
 import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
 import { isPrivateError } from "../../components/privateErrorUtils"
-import { PageLoader } from "@/components/loaders"
+import { AppLoader } from "@/components/ui/loader"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
 import { useAuth } from "@/hooks"
 
@@ -85,7 +85,7 @@ export default function FlashcardQuizClient({ params }: FlashcardQuizClientProps
   }
 
   return (
-    <Suspense fallback={<PageLoader message={LOADER_MESSAGES.LOADING_FLASHCARD_QUIZ} />}>
+    <Suspense fallback={<div className="min-h-[200px] flex items-center justify-center"><div className="animate-spin h-6 w-6 border-2 border-primary border-r-transparent rounded-full" /></div>}>
       <QuizPlayLayout
         quizSlug={slug}
         quizType="flashcard"

@@ -1,5 +1,7 @@
 'use client'
 
+import { AppLoader } from "@/components/ui/loader"
+
 import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSelector } from 'react-redux'
@@ -9,7 +11,6 @@ import { RefreshCw } from 'lucide-react'
 
 import { NoResults } from '@/components/ui/no-results'
 import SignInPrompt from '@/app/auth/signin/components/SignInPrompt'
-import { UnifiedLoader } from '@/components/loaders'
 import { LOADER_MESSAGES } from '@/constants/loader-messages'
 
 import { useAuth } from '@/modules/auth'
@@ -292,10 +293,8 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         className="fixed inset-0 flex items-center justify-center bg-background z-50"
       >
         <div className="text-center space-y-4 px-4">
-          <UnifiedLoader
-            state="loading"
-            variant="progress"
-            size="lg"
+          <AppLoader
+            size="large"
             message={LOADER_MESSAGES.CALCULATING_RESULTS}
             className="text-center"
           />
@@ -316,10 +315,8 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         exit={{ opacity: 0 }}
         className="fixed inset-0 flex items-center justify-center bg-background z-50"
       >
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
-          size="lg"
+        <AppLoader
+          size="large"
           message={viewState === 'redirecting' ? LOADER_MESSAGES.REDIRECTING_TO_QUIZ : LOADER_MESSAGES.LOADING_RESULTS}
           className="text-center"
         />

@@ -169,7 +169,7 @@ export const useRandomQuizzes = (maxQuizzes = 6): UseRandomQuizzesReturn => {
     // Cancel previous request if it exists
     if (abortControllerRef.current) {
       try {
-        abortControllerRef.current.abort()
+        abortControllerRef.current.abort('New request initiated')
       } catch (e) {
         // ignore
       }
@@ -344,7 +344,7 @@ export const useRandomQuizzes = (maxQuizzes = 6): UseRandomQuizzesReturn => {
     // Cleanup function to abort any pending requests
     return () => {
       if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
+        abortControllerRef.current.abort('Component unmounting')
       }
     }
   }, [fetchRandomQuizzes])

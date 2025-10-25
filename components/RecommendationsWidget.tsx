@@ -10,7 +10,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { useSmartRecommendations } from "@/hooks/useRecommendations"
 import { EnhancedErrorBoundary } from "@/components/error-boundary"
-import { UnifiedLoader } from "@/components/loaders"
+import { AppLoader } from "@/components/ui/loader"
 
 interface Recommendation {
   type: "course" | "quiz"
@@ -42,10 +42,8 @@ function RecommendationsWidget() {
           <CardTitle className="text-lg">Recommended for You</CardTitle>
         </CardHeader>
         <CardContent>
-          <UnifiedLoader
-            state="loading"
-            variant="spinner"
-            size="md"
+          <AppLoader
+            size="medium"
             message="Generating personalized recommendations..."
             className="py-8"
           />

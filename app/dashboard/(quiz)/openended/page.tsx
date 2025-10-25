@@ -5,7 +5,7 @@ import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription";
 import { useAuth } from "@/modules/auth";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
 import OpenEndedQuizForm from "./components/OpenEndedQuizForm";
-import { UnifiedLoader } from "@/components/loaders";
+import { AppLoader } from "@/components/ui/loader"
 import { UnifiedUpgradeTrigger } from "@/components/shared/UnifiedUpgradeTrigger";
 import { useEffect } from "react";
 import { getPlanConfig } from "@/types/subscription-plans";
@@ -44,11 +44,9 @@ const OpenEndedPage = () => {
       isLoggedIn={isAuthenticated}
     >
       {isLoading ? (
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
+        <AppLoader
+          size="medium"
           message="Loading quiz configuration..."
-          size="md"
         />
       ) : (
         <>

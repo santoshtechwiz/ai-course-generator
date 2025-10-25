@@ -7,7 +7,7 @@ import {
   Suspense,
   memo,
 } from "react"
-import { UnifiedLoader } from "@/components/loaders/UnifiedLoader"
+import { AppLoader } from "@/components/ui/loader"
 import { DashboardErrorBoundary } from "@/components/ui/dashboard-error-boundary"
 import { AlertTriangle, RefreshCw, BookOpen, GraduationCap, TrendingUp, CreditCard } from "lucide-react"
 import { signIn, useSession } from "next-auth/react"
@@ -224,9 +224,8 @@ export default function DashboardPage() {
   if (isLoading || isLoadingUserData || isLoadingUserStats) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <UnifiedLoader
-          variant="spinner"
-          size="lg"
+        <AppLoader
+          size="large"
           message="Loading your dashboard..."
           className="text-center"
         />

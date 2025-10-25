@@ -25,7 +25,8 @@ import {
   MessageSquare,
   Brain,
   Lock,
-  PanelLeftClose                    
+  PanelLeftClose,
+  PanelLeftOpen
 } from "lucide-react"
 
 import { RandomQuiz } from "./RandomQuiz"
@@ -336,7 +337,6 @@ export default function QuizPlayLayout({
   const isMobile = useMediaQuery("(max-width: 767px)")
   const isTablet = useMediaQuery("(max-width: 1024px)")
   const pathname = usePathname()
-  const [isLoaded, setIsLoaded] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isFocusMode, setIsFocusMode] = useState(false)
@@ -387,7 +387,6 @@ export default function QuizPlayLayout({
 
   const [elapsed, setElapsed] = useState(0)
   useEffect(() => {
-    setIsLoaded(true)
     if (timeSpent > 0) return
 
     const interval = setInterval(() => {
@@ -538,17 +537,6 @@ export default function QuizPlayLayout({
     )
   }
 
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-4 border-accent mx-auto"></div>
-          <p className="text-muted-foreground font-black text-sm sm:text-base">Loading quiz...</p>
-        </div>
-      </div>
-    )
-  }
-
   const displaySeconds = Math.max(0, timeSpent > 0 ? timeSpent : elapsed)
 
   return (
@@ -648,7 +636,7 @@ export default function QuizPlayLayout({
             ref={mainRef}
             className={cn(
               "w-full rounded-lg border-4 border-border bg-card shadow-neo transition-all duration-300",
-              isFullscreen ? "p-3 sm:p-4 lg:p-6 min-h-[calc(100vh-8rem)]" : "p-4 sm:p-6 lg:p-8",
+              isFullscreen ? "p-2 sm:p-3 lg:p-4 min-h-[calc(100vh-8rem)]" : "p-3 sm:p-4 lg:p-6",
             )}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

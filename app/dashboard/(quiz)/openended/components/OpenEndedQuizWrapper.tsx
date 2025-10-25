@@ -28,7 +28,7 @@ import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import OpenEndedQuiz from "./OpenEndedQuiz"
 
-import { UnifiedLoader } from "@/components/loaders"
+import { AppLoader } from "@/components/ui/loader"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
 // Type removed - using any for quiz question types
 
@@ -221,10 +221,8 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     return (
       <div className="min-h-[60vh] flex items-center justify-center bg-background">
         <div className="text-center space-y-4 px-4">
-          <UnifiedLoader
-            state="loading"
-            variant="spinner"
-            size="lg"
+          <AppLoader
+            size="large"
             message={LOADER_MESSAGES.CALCULATING_RESULTS}
             className="text-center"
           />
@@ -268,11 +266,9 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
 
   if (isLoading) {
     return (
-      <UnifiedLoader
-        state="loading"
-        variant="skeleton"
+      <AppLoader
+        size="medium"
         message={LOADER_MESSAGES.LOADING_OPENENDED}
-        size="md"
       />
     )
   }

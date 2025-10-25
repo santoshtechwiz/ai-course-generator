@@ -5,13 +5,12 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { FAQSchema } from "@/lib/seo";
 import { motion, AnimatePresence } from "framer-motion";
-import { UnifiedLoader } from "@/components/loaders/UnifiedLoader";
+import { AppLoader } from "@/components/ui/loader";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Suspense } from "react";
-import { SuspenseGlobalFallback } from "@/components/loaders";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -21,7 +20,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-// Simple, clean loading component using UnifiedLoader
+// Simple, clean loading component using AppLoader
 function ExploreLoadingState() {
   return (
     <motion.div
@@ -48,10 +47,8 @@ function ExploreLoadingState() {
           className="relative"
         >
           <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/20 to-purple-600/20 blur-xl animate-pulse" />
-          <UnifiedLoader
-            variant="spinner"
-            size="lg"
-            message="Loading explore tools..."
+          <AppLoader
+            size="large"
             className="relative z-10"
           />
         </motion.div>

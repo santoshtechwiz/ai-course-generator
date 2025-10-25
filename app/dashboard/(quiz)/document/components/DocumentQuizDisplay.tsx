@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/components/ui/use-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion, AnimatePresence } from "framer-motion"
-import { InlineLoader } from "@/components/loaders"
+import { AppLoader } from "@/components/ui/loader"
 
 // Lazy load PDF components for better performance
 const EnhancedPDFDownloadButton = lazy(() =>
@@ -436,7 +436,7 @@ export default function DocumentQuizDisplay({
           <Suspense
             fallback={
               <Button variant="outline" size="sm" disabled className="flex items-center gap-2">
-                <InlineLoader size="xs" variant="spinner" />
+                <AppLoader size="small" />
                 <span>Preparing PDF...</span>
               </Button>
             }

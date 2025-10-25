@@ -931,7 +931,7 @@ export default function DocumentQuizPage() {
           // abort any in-flight generation request
           if (currentRequestControllerRef.current) {
             try {
-              currentRequestControllerRef.current.abort()
+              currentRequestControllerRef.current.abort('User cancelled request')
             } catch (err) {
               /* ignore */
             }

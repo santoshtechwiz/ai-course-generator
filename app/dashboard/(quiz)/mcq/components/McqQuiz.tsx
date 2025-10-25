@@ -4,8 +4,7 @@ import { useMemo } from "react"
 import { UnifiedQuizQuestion, type MCQQuestion } from "@/components/quiz/UnifiedQuizQuestion"
 import { QuizStateProvider } from "@/components/quiz/QuizStateProvider"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
-import { Loader } from "@/components/loader"
-import { UnifiedLoader } from "@/components/loaders"
+import { AppLoader } from "@/components/ui/loader"
 
 interface McqQuizProps {
   question: {
@@ -83,10 +82,8 @@ const McqQuiz = ({
           {/* Loading overlay when submitting */}
           {stateManager.isSubmitting && (
             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
-              <UnifiedLoader
-                state="loading"
-                variant="spinner"
-                size="lg"
+              <AppLoader
+                size="large"
                 message="Submitting your quiz answers..."
                 className="text-center"
               />

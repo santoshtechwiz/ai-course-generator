@@ -10,7 +10,7 @@ import { DefaultSEO, generateMetadata as generateBaseMetadata } from "@/lib/seo"
 import GoogleAnalyticsClient from "@/components/analytics/GoogleAnalyticsClient"
 
 import { RootErrorBoundary } from "@/components/layout/RootErrorBoundary"
-import { SuspenseGlobalFallback } from "@/components/loaders"
+import { GlobalLoader } from "@/components/ui/loader"
 
 import { MotionProvider } from "@/components/MotionProvider"
 import { ConditionalFooter } from "@/components/layout/ConditionalFooter"
@@ -109,12 +109,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   </div>
                 </noscript>
 
-                <Suspense fallback={<SuspenseGlobalFallback />}>
+                <Suspense fallback={<GlobalLoader message="Loading CourseAI..." />}>
                   <div className="relative min-h-screen flex flex-col border-l-0 border-r-0 sm:border-l-8 sm:border-r-8 border-[var(--color-border)]">
                     {/* Main Content */}
                     <main id="main-content" className="flex-1 w-full p-4 sm:p-6 lg:p-8 bg-[var(--color-bg)]">
                       <MotionProvider>
-                        <Suspense fallback={<SuspenseGlobalFallback />}>{children}</Suspense>
+                        {children}
                       </MotionProvider>
                     </main>
                     {/* Conditional Footer - Hidden on sidebar-enabled dashboard pages */}

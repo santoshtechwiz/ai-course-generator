@@ -25,7 +25,7 @@ import {
 import { NoResults } from "@/components/ui/no-results"
 import { isPrivateError } from "../../components/privateErrorUtils"
 import McqQuiz from "./McqQuiz"
-import { UnifiedLoader } from "@/components/loaders"
+import { AppLoader } from "@/components/ui/loader"
 import { LOADER_MESSAGES } from "@/constants/loader-messages"
 import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
@@ -200,10 +200,8 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   if (isSubmitting) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center bg-background">
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
-          size="lg"
+        <AppLoader
+          size="large"
           message={LOADER_MESSAGES.CALCULATING_RESULTS}
           className="p-8"
         />
@@ -215,10 +213,8 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   if (quizStatus === 'loading' && !questions.length) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <UnifiedLoader
-          state="loading"
-          variant="spinner"
-          size="lg"
+        <AppLoader
+          size="large"
           message={LOADER_MESSAGES.LOADING_MCQ}
         />
       </div>
@@ -352,11 +348,9 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   // Fallback loading state
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <UnifiedLoader
-        state="loading"
+      <AppLoader
+        size="large"
         message={LOADER_MESSAGES.LOADING_QUIZ}
-        variant="spinner"
-        size="lg"
       />
     </div>
   )
