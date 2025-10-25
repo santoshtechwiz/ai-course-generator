@@ -130,7 +130,7 @@ const HowItWorksSection = () => {
                   }}
                   className="text-center"
                 >
-                  <FileText className="h-8 w-8 mx-auto mb-2 text-primary" />
+                  <FileText className="h-8 w-8 mx-auto mb-2 text-[var(--color-primary)]" />
                   <span className="text-sm text-muted-foreground">Enter course title</span>
                 </motion.div>
               </div>
@@ -142,7 +142,7 @@ const HowItWorksSection = () => {
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: Math.random() * 0.3 }}
-                  className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium border-2 border-primary/20"
+                  className="px-3 py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-medium border-2 border-[var(--color-primary)]/20"
                 >
                   {format}
                 </motion.div>
@@ -172,13 +172,13 @@ const HowItWorksSection = () => {
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: i * 0.1 }}
                   className={cn(
-                    "bg-card p-4 rounded-lg border-3 border-border flex items-center transition-all duration-200",
+                    "bg-[var(--color-card)] p-4 rounded-lg border-3 border-[var(--color-border)] flex items-center transition-all duration-200",
                     i === Math.floor(progress / 25) 
-                      ? "shadow-[4px_4px_0px_0px_hsl(var(--primary))] border-primary/50" 
-                      : "shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+                      ? "shadow-[4px_4px_0px_0px_var(--color-primary)] border-[var(--color-primary)]/50" 
+                      : "shadow-[4px_4px_0px_0px_var(--color-border)]"
                   )}
                 >
-                  <div className="w-6 h-6 rounded-full bg-primary/10 text-primary text-sm font-bold flex items-center justify-center mr-3 border-2 border-primary/20">
+                  <div className="w-6 h-6 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-bold flex items-center justify-center mr-3 border-2 border-[var(--color-primary)]/20">
                     {i + 1}
                   </div>
                   <div className="flex-grow font-medium">{item}</div>
@@ -233,10 +233,10 @@ const HowItWorksSection = () => {
                 </motion.div>
               ))}
             </div>
-            <div className="mt-6 p-1 bg-card rounded-lg border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]">
-              <div className="h-3 rounded-full bg-muted overflow-hidden">
+            <div className="mt-6 p-1 bg-[var(--color-card)] rounded-lg border-3 border-[var(--color-border)] shadow-[4px_4px_0px_0px_var(--color-border)]">
+              <div className="h-3 rounded-full bg-[var(--color-muted)] overflow-hidden">
                 <motion.div 
-                  className="h-full bg-primary rounded-full"
+                  className="h-full bg-[var(--color-primary)] rounded-full"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -253,7 +253,7 @@ const HowItWorksSection = () => {
             <motion.div
               initial={{ scale: 0.8 }}
               animate={{ scale: progress > 50 ? 1 : 0.9 }}
-              className="w-20 h-20 mx-auto rounded-2xl bg-primary text-primary-foreground flex items-center justify-center border-4 border-border shadow-[8px_8px_0px_0px_hsl(var(--border))]"
+              className="w-20 h-20 mx-auto rounded-2xl bg-[var(--color-primary)] text-[var(--color-bg)] flex items-center justify-center border-4 border-[var(--color-border)] shadow-[8px_8px_0px_0px_var(--color-border)]"
             >
               <CheckCircle className="h-10 w-10" />
             </motion.div>
@@ -261,10 +261,10 @@ const HowItWorksSection = () => {
               {progress < 50 ? "Setting up your course..." : "Course Ready to Share!"}
             </div>
             
-            <div className="p-1 bg-card rounded-lg border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))] max-w-xs mx-auto">
-              <div className="h-4 rounded-full bg-muted overflow-hidden">
+            <div className="p-1 bg-[var(--color-card)] rounded-lg border-3 border-[var(--color-border)] shadow-[4px_4px_0px_0px_var(--color-border)] max-w-xs mx-auto">
+              <div className="h-4 rounded-full bg-[var(--color-muted)] overflow-hidden">
                 <motion.div 
-                  className="h-full bg-primary rounded-full"
+                  className="h-full bg-[var(--color-primary)] rounded-full"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -306,7 +306,7 @@ const HowItWorksSection = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6, ease: APPLE_EASING }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary text-sm font-black border-3 border-primary/20 shadow-[3px_3px_0px_0px_hsl(var(--border))] mb-6"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-black border-3 border-[var(--color-primary)]/20 shadow-[3px_3px_0px_0px_var(--color-border)] mb-6"
         >
           <Sparkles className="h-4 w-4" />
           How It Works
@@ -320,7 +320,7 @@ const HowItWorksSection = () => {
         >
           From idea to
           <br />
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
+          <span className="text-primary">
             extraordinary course
           </span>
         </motion.h2>
@@ -343,14 +343,14 @@ const HowItWorksSection = () => {
           {/* Progress bar */}
           <div className="relative">
             <div 
-              className="relative h-4 bg-card rounded-2xl border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))] overflow-hidden"
+              className="relative h-4 bg-[var(--color-card)] rounded-2xl border-3 border-[var(--color-border)] shadow-[4px_4px_0px_0px_var(--color-border)] overflow-hidden"
               role="progressbar"
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={progress}
             >
               <motion.div
-                className="absolute top-0 left-0 h-full bg-primary rounded-xl"
+                className="absolute top-0 left-0 h-full bg-[var(--color-primary)] rounded-xl"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -371,12 +371,12 @@ const HowItWorksSection = () => {
                 >
                   <motion.div
                     className={cn(
-                      "w-14 h-14 rounded-2xl flex items-center justify-center mb-3 border-3 shadow-[4px_4px_0px_0px_hsl(var(--border))] transition-all duration-300",
+                      "w-14 h-14 rounded-2xl flex items-center justify-center mb-3 border-3 shadow-[4px_4px_0px_0px_var(--color-border)] transition-all duration-300",
                       index === activeStep
-                        ? "bg-primary text-primary-foreground border-primary shadow-[4px_4px_0px_0px_hsl(var(--primary))]"
+                        ? "bg-[var(--color-primary)] text-[var(--color-bg)] border-[var(--color-primary)] shadow-[4px_4px_0px_0px_var(--color-primary)]"
                         : index < activeStep
-                          ? "bg-primary/20 text-primary border-primary/30"
-                          : "bg-card text-muted-foreground border-border",
+                          ? "bg-[var(--color-primary)]/20 text-[var(--color-primary)] border-[var(--color-primary)]/30"
+                          : "bg-[var(--color-card)] text-[var(--color-muted)] border-[var(--color-border)]",
                     )}
                     animate={
                       index === activeStep
@@ -413,7 +413,7 @@ const HowItWorksSection = () => {
 
         {/* Main Content Area */}
         <motion.div
-          className="relative bg-card rounded-3xl p-6 md:p-8 border-3 border-border shadow-[8px_8px_0px_0px_hsl(var(--border))] overflow-hidden"
+          className="relative bg-[var(--color-card)] rounded-3xl p-6 md:p-8 border-3 border-[var(--color-border)] shadow-[8px_8px_0px_0px_var(--color-border)] overflow-hidden"
           style={{ minHeight: "480px" }}
           layout
         >
@@ -428,7 +428,7 @@ const HowItWorksSection = () => {
             <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start h-full">
               <div className="lg:w-1/2">
                 <motion.div
-                  className="inline-flex items-center justify-center p-5 rounded-2xl bg-primary text-primary-foreground text-2xl font-black mb-6 border-4 border-border shadow-[8px_8px_0px_0px_hsl(var(--border))]"
+                  className="inline-flex items-center justify-center p-5 rounded-2xl bg-[var(--color-primary)] text-[var(--color-bg)] text-2xl font-black mb-6 border-4 border-[var(--color-border)] shadow-[8px_8px_0px_0px_var(--color-border)]"
                   animate={{
                     y: [0, -4, 0],
                   }}
@@ -455,7 +455,7 @@ const HowItWorksSection = () => {
                   
                   <Button
                     variant="outline"
-                    className="rounded-xl border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] hover:translate-y-[-2px] transition-all duration-200 px-6 py-3 font-black text-base"
+                    className="rounded-xl border-3 border-[var(--color-border)] shadow-[4px_4px_0px_0px_var(--color-border)] hover:shadow-[6px_6px_0px_0px_var(--color-border)] hover:translate-y-[-2px] transition-all duration-200 px-6 py-3 font-black text-base"
                     onClick={prevStep}
                   >
                     <ChevronLeft className="h-5 w-5 mr-2" />
@@ -465,14 +465,14 @@ const HowItWorksSection = () => {
               </div>
 
               <div className="lg:w-1/2 w-full">
-                <div className="bg-background rounded-2xl p-6 border-3 border-border shadow-[6px_6px_0px_0px_hsl(var(--border))]">
+                <div className="bg-[var(--color-bg)] rounded-2xl p-6 border-3 border-[var(--color-border)] shadow-[6px_6px_0px_0px_var(--color-border)]">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-500 border-2 border-border"></div>
-                      <div className="w-3 h-3 rounded-full bg-yellow-500 border-2 border-border"></div>
-                      <div className="w-3 h-3 rounded-full bg-green-500 border-2 border-border"></div>
+                      <div className="w-3 h-3 rounded-full bg-[var(--color-error)] border-2 border-[var(--color-border)]"></div>
+                      <div className="w-3 h-3 rounded-full bg-[var(--color-warning)] border-2 border-[var(--color-border)]"></div>
+                      <div className="w-3 h-3 rounded-full bg-[var(--color-success)] border-2 border-[var(--color-border)]"></div>
                     </div>
-                    <div className="px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-black border-2 border-primary/20">
+                    <div className="px-4 py-2 rounded-lg bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-black border-2 border-[var(--color-primary)]/20">
                       Step {activeStep + 1} of {steps.length}
                     </div>
                   </div>

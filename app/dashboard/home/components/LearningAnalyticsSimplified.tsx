@@ -77,7 +77,7 @@ export default function LearningAnalyticsSimplified({
         {/* Key Metrics Row */}
         <div className="grid grid-cols-3 gap-4">
           {/* Weekly Quizzes */}
-          <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-4 rounded-lg">
+          <div className="bg-primary/5 p-4 rounded-lg border-4 border-primary/10 shadow-[4px_4px_0px_0px_hsl(var(--border))]">
             <div className="flex items-center gap-2 mb-2">
               <BookOpen className="h-4 w-4 text-primary" />
               <span className="text-sm text-muted-foreground">This Week</span>
@@ -89,7 +89,7 @@ export default function LearningAnalyticsSimplified({
           </div>
 
           {/* Study Time */}
-          <div className="bg-gradient-to-br from-secondary/5 to-secondary/10 p-4 rounded-lg">
+          <div className="bg-secondary/5 p-4 rounded-lg border-4 border-secondary/10 shadow-[4px_4px_0px_0px_hsl(var(--border))]">
             <div className="flex items-center gap-2 mb-2">
               <Clock className="h-4 w-4 text-secondary" />
               <span className="text-sm text-muted-foreground">Study Time</span>
@@ -101,7 +101,7 @@ export default function LearningAnalyticsSimplified({
           </div>
 
           {/* Current Streak */}
-          <div className="bg-gradient-to-br from-warning/5 to-warning/10 p-4 rounded-lg">
+          <div className="bg-warning/5 p-4 rounded-lg border-4 border-warning/10 shadow-[4px_4px_0px_0px_hsl(var(--border))]">
             <div className="flex items-center gap-2 mb-2">
               <Flame className="h-4 w-4 text-warning" />
               <span className="text-sm text-muted-foreground">Streak {streakEmoji}</span>
@@ -144,7 +144,7 @@ export default function LearningAnalyticsSimplified({
         </div>
 
         {/* Badge Progress */}
-        <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950 dark:to-yellow-900 p-4 rounded-lg">
+        <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg border-4 border-yellow-100 dark:border-yellow-900 shadow-[4px_4px_0px_0px_hsl(var(--border))]">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-warning" />

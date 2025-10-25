@@ -44,7 +44,7 @@ const PageHeader = ({
         <div className="space-y-3 flex-1">
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl lg:text-4xl flex items-center gap-3" id="page-title">
             {icon && <span className="text-accent">{icon}</span>}
-            <span className="bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <span className="text-foreground">
               {title}
             </span>
           </h1>

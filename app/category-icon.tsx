@@ -45,8 +45,8 @@ export function CategoryIcon({
       className={cn(
         "rounded-xl flex items-center justify-center transition-all duration-300",
         containerSizeClasses[size],
-        variant === "gradient" && `bg-gradient-to-br ${category.gradient} text-white shadow-lg`,
-        variant === "outline" && `border-2 ${category.color} bg-transparent`,
+        variant === "gradient" && `bg-[var(--color-primary)] text-white shadow-neo`,
+        variant === "outline" && `border-6 border-[var(--color-border)] bg-transparent`,
         variant === "default" && category.color,
         className,
       )}

@@ -87,7 +87,7 @@ export function CrossSellBanner({
       {...fadeInUp(0.3)}
       className={cn("w-full", className)}
     >
-      <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-accent/5 shadow-lg overflow-hidden">
+      <Card className="border-4 border-primary/20 bg-primary/5 shadow-[6px_6px_0px_0px_hsl(var(--border))] overflow-hidden">
         <CardContent className="p-6 relative">
           {/* Dismiss button */}
           {onDismiss && (

@@ -294,7 +294,7 @@ export default function DashboardPage() {
         <main className="p-4 sm:p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
         {/* Welcome Section */}
         <div className="space-y-2">
-          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-primary">
             Welcome back, {safeUserData.name?.split(' ')[0] || 'Learner'}! 👋
           </h1>
           <p className="text-muted-foreground text-base">

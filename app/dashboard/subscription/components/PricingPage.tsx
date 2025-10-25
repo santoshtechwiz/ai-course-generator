@@ -499,12 +499,12 @@ export function PricingPage({
       >
         <div className="flex flex-col md:flex-row gap-6 items-center">
           <div className="md:w-1/4 flex justify-center">
-            <div className="bg-gradient-to-r from-primary to-accent p-6 rounded-full shadow-[4px_4px_0px_0px_var(--border)] transform hover:scale-105 transition-transform duration-300">
+            <div className="bg-primary p-6 rounded-full border-4 border-primary-foreground shadow-[6px_6px_0px_0px_hsl(var(--border))] transform hover:scale-105 transition-transform duration-300">
               <Zap className="h-12 w-12 text-white" />
             </div>
           </div>
           <div className="md:w-3/4 text-left">
-            <h3 className="text-2xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+            <h3 className="text-2xl font-bold mb-4 text-primary">
               Understanding Token Usage
             </h3>
             <p className="text-muted-foreground mb-4">
@@ -540,7 +540,7 @@ export function PricingPage({
 
       {/* FAQ Section - Inline */}
       <div className="mt-12">
-        <h2 className="text-2xl font-bold mb-6 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+        <h2 className="text-2xl font-bold mb-6 text-center text-blue-600 dark:text-blue-400">
           Frequently Asked Questions
         </h2>
         <Accordion type="single" collapsible className="w-full space-y-4">

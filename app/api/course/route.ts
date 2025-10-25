@@ -4,6 +4,14 @@ import { createChaptersSchema } from "@/schema/schema"
 import { courseService } from "@/app/services/course.service"
 import type { CategoryId } from "@/config/categories"
 
+// Cache configuration for course endpoints
+const CACHE_DURATION = {
+  SINGLE_COURSE: 600, // 10 minutes for single course by slug
+  COURSE_LIST: 300, // 5 minutes for course listings
+  USER_COURSES: 60, // 1 minute for user-specific courses
+  SEARCH_RESULTS: 180, // 3 minutes for search results
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const search = searchParams.get("search") || undefined
@@ -27,7 +35,13 @@ export async function GET(req: NextRequest) {
       // Use service to get course by slug
       try {
         const course = await courseService.getCourseBySlug(slug)
-        return NextResponse.json(course)
+        
+        // Return with longer cache for single course
+        return NextResponse.json(course, {
+          headers: {
+            'Cache-Control': `private, s-maxage=${CACHE_DURATION.SINGLE_COURSE}, stale-while-revalidate=${CACHE_DURATION.SINGLE_COURSE * 2}`,
+          }
+        })
       } catch (error) {
         if ((error as Error).message === "Course not found") {
           return NextResponse.json({ error: "Course not found" }, { status: 404 })
@@ -41,6 +55,14 @@ export async function GET(req: NextRequest) {
   } else {
     // Handle course listing (no slug provided)
     try {
+      // Determine cache duration based on query type
+      let cacheDuration = CACHE_DURATION.COURSE_LIST
+      if (userId) {
+        cacheDuration = CACHE_DURATION.USER_COURSES
+      } else if (search) {
+        cacheDuration = CACHE_DURATION.SEARCH_RESULTS
+      }
+
       // Use service to get filtered courses
       const result = await courseService.getCourses({
         search,
@@ -52,7 +74,16 @@ export async function GET(req: NextRequest) {
         sortOrder,
       })
 
-      return NextResponse.json(result)
+      // Return with appropriate cache headers
+      return NextResponse.json(result, {
+        headers: {
+          'Cache-Control': userId 
+            ? `private, s-maxage=${cacheDuration}, stale-while-revalidate=${cacheDuration * 2}`
+            : `public, s-maxage=${cacheDuration}, stale-while-revalidate=${cacheDuration * 2}`,
+          'CDN-Cache-Control': `public, s-maxage=${cacheDuration}`,
+          'Vercel-CDN-Cache-Control': `public, s-maxage=${cacheDuration}`,
+        }
+      })
     } catch (error) {
       console.error("Error fetching courses:", error)
       return NextResponse.json({ error: "Failed to fetch courses" }, { status: 500 })

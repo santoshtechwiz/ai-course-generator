@@ -144,7 +144,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
   const ErrorIcon = errorInfo.icon
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 md:p-6 items-center justify-center relative overflow-hidden">
+    <div className="flex min-h-screen bg-background p-4 md:p-6 items-center justify-center relative overflow-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
@@ -213,10 +213,10 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               animate="animate"
               transition={{ delay: 0.3 }}
             >
-              <CardTitle className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              <CardTitle className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
                 Oops! Something went wrong
               </CardTitle>
-              <p className="text-muted-foreground text-lg mt-2">
+              <p className="text-muted-foreground text-base mt-2">
                 We're sorry for the inconvenience. Our team has been notified.
               </p>
             </motion.div>
@@ -228,7 +228,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               animate="animate"
               transition={{ delay: 0.4 }}
             >
-              <Badge variant="outline" className="text-sm px-3 py-1">
+              <Badge variant="neutral" className="text-sm px-3 py-1">
                 <ErrorIcon className="h-3 w-3 mr-1" />
                 {errorInfo.type.charAt(0).toUpperCase() + errorInfo.type.slice(1)} Error
               </Badge>
@@ -440,7 +440,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
 
               <motion.div variants={getStaggeredAnimation()}>
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   onClick={handleGoBack}
                   className="w-full h-11 text-base font-medium"
                   size="lg"

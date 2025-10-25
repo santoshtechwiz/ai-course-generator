@@ -58,11 +58,11 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
   return (
     <div
       ref={containerRef}
-      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20 pb-16 bg-main text-main-foreground"
+      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20 pb-16 px-4 sm:px-6 lg:px-8 bg-background text-foreground"
     >
 
-  {/* Content - Full Width */}
-  <div className="w-full max-w-none">
+  {/* Content - Full Width with max-width constraint */}
+  <div className="w-full max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{
@@ -73,7 +73,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           className="mb-6"
         >
           <motion.span
-            className="inline-block px-4 sm:px-6 py-3 border-4 border-main-foreground text-main-foreground text-sm font-black mb-6 shadow-[4px_4px_0px_0px_var(--main-foreground)]"
+            className="inline-block px-4 sm:px-6 py-3 border-4 border-[var(--color-border)] text-[var(--color-text)] text-sm font-black mb-6 shadow-neo"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{
               opacity: isInView ? 1 : 0,
@@ -87,7 +87,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
 
         {/* Main heading - Clear and honest */}
         <motion.h1
-          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tight mb-6 sm:mb-8 max-w-5xl mx-auto leading-none text-center"
+          className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight mb-6 sm:mb-8 max-w-5xl mx-auto leading-tight text-center px-2"
           initial={{ opacity: 0, y: 15 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
           transition={{ duration: 0.7, delay: 0.3, ease: APPLE_EASING }}
@@ -95,11 +95,11 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
         >
           CREATE VIDEO COURSES AND
           <br />
-          <span className="text-main-foreground">GENERATE QUIZZES</span>
+          <span className="text-foreground">GENERATE QUIZZES</span>
         </motion.h1>
 
         <motion.p
-          className="text-lg sm:text-xl md:text-2xl max-w-4xl mx-auto mb-8 sm:mb-12 leading-relaxed text-center font-medium"
+          className="text-base sm:text-lg md:text-xl lg:text-2xl max-w-4xl mx-auto mb-8 sm:mb-12 leading-relaxed text-center font-medium px-4"
           initial={{ opacity: 0, y: 15 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
           transition={{ duration: 0.7, delay: 0.4, ease: APPLE_EASING }}
@@ -110,13 +110,13 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
         </motion.p>
 
         <motion.div
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6"
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 px-4"
           initial={{ opacity: 0, y: 15 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
           transition={{ duration: 0.7, delay: 0.5, ease: APPLE_EASING }}
         >
           <FeedbackButton
-            className="h-14 px-4 sm:px-8 py-4 text-lg font-black border-4 border-main-foreground shadow-[6px_6px_0px_0px_var(--main-foreground)] hover:translate-x-[3px] hover:translate-y-[-3px] hover:shadow-[9px_9px_0px_0px_var(--main-foreground)] transition-none w-full sm:w-auto bg-main-foreground text-main"
+            className="h-12 sm:h-14 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-black border-4 border-border shadow-neo hover:translate-x-[3px] hover:translate-y-[-3px] hover:shadow-[9px_9px_0px_0px_var(--color-border)] transition-none w-full sm:w-auto bg-foreground text-background max-w-xs"
             loadingText="Opening..."
             successText="Let's go!"
             onClickAsync={async () => {
@@ -130,7 +130,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           </FeedbackButton>
 
           <FeedbackButton
-            className="h-14 px-4 sm:px-8 py-4 text-lg font-black border-4 border-main-foreground bg-transparent text-main-foreground hover:bg-main-foreground hover:text-main transition-none w-full sm:w-auto justify-center"
+            className="h-12 sm:h-14 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-black border-4 border-border bg-transparent text-foreground hover:bg-foreground hover:text-background transition-none w-full sm:w-auto justify-center max-w-xs"
             loadingText="Loading..."
             successText="Enjoy!"
             onClickAsync={async () => {
@@ -149,19 +149,19 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.8, delay: 1.2, ease: APPLE_EASING }}
-          className="mt-16"
+          className="mt-12 sm:mt-16 px-4"
         >
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 lg:gap-8 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 lg:gap-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2" role="text">
-              <div className="w-2 h-2 rounded-sm bg-success" aria-hidden="true"></div>
+              <div className="w-2 h-2 rounded-sm bg-[var(--color-success)]" aria-hidden="true"></div>
               <span>Video course builder</span>
             </div>
             <div className="flex items-center gap-2" role="text">
-              <div className="w-2 h-2 rounded-sm bg-primary" aria-hidden="true"></div>
+              <div className="w-2 h-2 rounded-sm bg-[var(--color-primary)]" aria-hidden="true"></div>
               <span>AI quiz generation</span>
             </div>
             <div className="flex items-center gap-2" role="text">
-              <div className="w-2 h-2 rounded-sm bg-warning" aria-hidden="true"></div>
+              <div className="w-2 h-2 rounded-sm bg-[var(--color-warning)]" aria-hidden="true"></div>
               <span>Progress tracking</span>
             </div>
           </div>

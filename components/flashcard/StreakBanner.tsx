@@ -33,7 +33,7 @@ export function StreakBanner({ userId }: StreakBannerProps) {
     >
       <Card className="overflow-hidden">
         <CardContent className="p-0">
-          <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-orange-500/20 via-red-500/20 to-pink-500/20 border-l-4 border-orange-500">
+          <div className="flex items-center gap-4 p-4 bg-warning/20 border-l-6 border-warning">
             <motion.div
               animate={{ scale: [1, 1.1, 1] }}
               transition={{ duration: 2, repeat: Infinity }}

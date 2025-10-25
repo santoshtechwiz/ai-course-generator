@@ -139,10 +139,10 @@ export function DashboardSidebar({ userData, userStats }: DashboardSidebarProps)
       {/* Logo/Brand */}
       <div className="flex h-16 items-center border-b px-6 flex-shrink-0">
         <Link href="/dashboard/home" className="flex items-center space-x-2 group">
-          <div className="h-8 w-8 bg-gradient-to-br from-primary to-primary/60 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
+          <div className="h-8 w-8 bg-[var(--color-primary)] rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
             <GraduationCap className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-lg font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+          <span className="text-lg font-bold text-[var(--color-primary)]">
             CourseAI
           </span>
         </Link>

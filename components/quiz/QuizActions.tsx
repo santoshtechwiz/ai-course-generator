@@ -480,7 +480,7 @@ const quizTypeConfig = {
   },
   openended: {
     label: "Open Ended",
-    color: "bg-emerald-600",
+    color: "bg-[var(--color-success)]",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -489,7 +489,7 @@ const quizTypeConfig = {
   },
   blanks: {
     label: "Fill in Blanks",
-    color: "bg-orange-600",
+    color: "bg-[var(--color-warning)]",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M12 2v20M2 12h20" />
@@ -498,7 +498,7 @@ const quizTypeConfig = {
   },
   code: {
     label: "Code",
-    color: "bg-blue-600",
+    color: "bg-[var(--color-primary)]",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="m18 16 4-4-4-4M6 8l-4 4 4 4M14.5 4l-5 16" />
@@ -702,7 +702,7 @@ const QuizActions = memo(
               neo.badge,
               "text-xs font-black border-3 shadow-[3px_3px_0px_0px_hsl(var(--border))] px-3 py-1.5 h-10 flex items-center gap-2",
               isPublic
-                ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-600 dark:border-emerald-400"
+                ? "bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)] dark:bg-[var(--color-success)]/10 dark:text-[var(--color-success)] dark:border-[var(--color-success)]"
                 : "bg-muted dark:bg-muted/50 text-muted-foreground border-border"
             )}
           >

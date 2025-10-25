@@ -1,101 +1,452 @@
 @import "tailwindcss";
 
-/* === Neobrutalism Design System — Premium Edition === */
+/* === Nerobrutal Design System — Premium Edition === */
 :root {
-  /* Core brand colors */
-  --color-bg: #fffdf5;
+  /* Core brand colors - Nerobrutal Palette */
+  --color-bg: #f7f3ef; /* slightly warmer/off-white to reduce pure white surfaces */
   --color-text: #0a0a0a;
   --color-primary: #ff007f;
-  --color-accent: #00f5d4;
-  --color-card: #ffffff;
+  --color-secondary: #00f5d4;
+  --color-accent: #ff6b35;
+  --color-card: #f6efe8; /* off-white card surface for gentler contrast */
   --color-muted: #f2f2f2;
+  --color-success: #00d4aa;
+  --color-warning: #ff9500;
+  --color-error: #ff3b30;
+  --color-info: #007aff;
 
-  /* Depth & Shadows */
+  /* Depth & Shadows - Enhanced for Nerobrutal */
   --color-border: #000000;
   --shadow-offset-x: 6px;
   --shadow-offset-y: 6px;
   --shadow-color: #000000;
   --shadow-neo: var(--shadow-offset-x) var(--shadow-offset-y) 0 var(--shadow-color);
+  --shadow-neo-hover: 8px 8px 0 var(--shadow-color);
+  --shadow-neo-active: 2px 2px 0 var(--shadow-color);
+  --shadow-neo-inset: inset 2px 2px 0 var(--shadow-color);
 
-  /* Radii & Typography */
-  --radius: 0.75rem;
+  /* Spacing - Nerobrutal Scale */
+  --spacing-xs: 0.25rem;    /* 4px */
+  --spacing-sm: 0.5rem;     /* 8px */
+  --spacing-md: 0.75rem;    /* 12px */
+  --spacing-lg: 1rem;       /* 16px */
+  --spacing-xl: 1.5rem;     /* 24px */
+  --spacing-2xl: 2rem;      /* 32px */
+  --spacing-3xl: 3rem;      /* 48px */
+
+  /* Border Radius - Blocky for Nerobrutal */
+  --radius: 0.5rem;         /* 8px - slightly rounded for accessibility */
+  --radius-none: 0rem;      /* 0px - true blocky */
+  --radius-sm: 0.25rem;     /* 4px */
+  --radius-lg: 1rem;        /* 16px */
+
+  /* Typography */
   --font-base: 500;
   --font-heading: 700;
+  --font-mono: 'JetBrains Mono', monospace;
 
-  /* Accent utilities */
-  --color-success: #00b341;
-  --color-warning: #ffb300;
-  --color-error: #ff3b3b;
+  /* Font Sizes */
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.875rem;  /* 14px */
+  --font-size-base: 1rem;    /* 16px */
+  --font-size-lg: 1.125rem;  /* 18px */
+  --font-size-xl: 1.25rem;   /* 20px */
+  --font-size-2xl: 1.5rem;   /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+  --font-size-4xl: 2.25rem;  /* 36px */
+
+  /* Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+
+  /* Z-Index Scale */
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+  --z-index-toast: 1080;
+
+  /* Transitions */
+  --transition-fast: 150ms ease-in-out;
+  --transition-normal: 200ms ease-in-out;
+  --transition-slow: 300ms ease-in-out;
+
+  /* Focus & Interaction */
+  --focus-ring-width: 3px;
+  --focus-ring-color: var(--color-accent);
+  --focus-ring-offset: 2px;
+
+  /* Hover Effects */
+  --hover-lift: -4px;
+  --hover-shadow: 10px 10px 0 var(--shadow-color);
+
+  /* Active/Pressed Effects */
+  --active-press: 2px;
+  --active-shadow: none;
+
+  /* Code syntax highlighting */
+  --color-code-bg: #282c34;
+  --color-code-text: #abb2bf;
 }
 
-/* === Dark Mode === */
+/* === Dark Mode - Nerobrutal Dark Palette === */
 .dark {
   --color-bg: #1a1a1a;
   --color-text: #fafafa;
   --color-primary: #ff4bd1;
-  --color-accent: #00f0a0;
+  --color-secondary: #00f0a0;
+  --color-accent: #ff8c42;
   --color-card: #2b2b2b;
   --color-muted: #333333;
+  --color-success: #00e5b8;
+  --color-warning: #ffb347;
+  --color-error: #ff6b6b;
+  --color-info: #4da6ff;
   --color-border: #fafafa;
   --shadow-color: #fafafa;
+  --color-code-bg: #2d3748;
+  --color-code-text: #e2e8f0;
 }
-
 /* === Base Layer === */
 @layer base {
   * {
-    @apply transition-all duration-200 ease-in-out;
+    transition: all 200ms ease-in-out;
   }
 
   body {
-    @apply bg-[var(--color-bg)] text-[var(--color-text)] font-sans tracking-tight;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: Inter, sans-serif;
+    letter-spacing: -0.025em;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold text-[var(--color-text)] leading-tight;
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1.25;
   }
 }
 
 /* === Component Utilities === */
 @layer components {
   .neuro-card {
-    @apply bg-[var(--color-card)] border-4 border-[var(--color-border)]
-           shadow-[var(--shadow-neo)] rounded-[var(--radius)] p-5
-           transition-transform hover:-translate-x-1 hover:-translate-y-1
-           hover:shadow-none sm:p-6 lg:p-8;
+    background-color: var(--color-card);
+    border: 6px solid var(--color-border);
+    box-shadow: var(--shadow-neo);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    transition: transform 200ms ease-in-out;
+  }
+
+  .neuro-card:hover {
+    transform: translate(-8px, -8px);
+    box-shadow: var(--shadow-neo-hover);
   }
 
   .neuro-button {
-    @apply inline-flex items-center justify-center gap-2
-           bg-[var(--color-primary)] text-[var(--color-text)]
-           border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]
-           font-semibold px-5 py-3 rounded-[var(--radius)]
-           transition-transform duration-150 ease-in-out
-           hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none
-           active:translate-x-[4px] active:translate-y-[4px] active:shadow-none
-           sm:px-6 sm:py-3.5 md:px-8 md:py-4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background-color: var(--color-primary);
+    color: var(--color-text);
+    border: 6px solid var(--color-border);
+    box-shadow: var(--shadow-neo);
+    font-weight: 500;
+    padding: 1.5rem 2rem;
+    border-radius: var(--radius);
+    transition: transform 150ms ease-in-out;
+    cursor: pointer;
+  }
+
+  .neuro-button:hover {
+    transform: translate(-6px, -6px);
+    box-shadow: var(--shadow-neo-hover);
+  }
+
+  .neuro-button:active {
+    transform: translate(6px, 6px);
+    box-shadow: var(--shadow-neo-active);
   }
 
   .neuro-input {
-    @apply bg-[var(--color-card)] border-4 border-[var(--color-border)] px-3 py-2
-           rounded-none focus:ring-4 focus:ring-[var(--color-accent)]
-           focus:border-[var(--color-accent)] placeholder:text-gray-500
-           sm:py-3 sm:px-4;
+    background-color: var(--color-card);
+    border: 6px solid var(--color-border);
+    padding: 0.75rem 1rem;
+    border-radius: 0;
+    transition: all 200ms ease-in-out;
+  }
+
+  .neuro-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--color-accent);
+    border-color: var(--color-accent);
   }
 
   .neuro-badge {
-    @apply inline-block px-3 py-1 border-4 border-[var(--color-border)]
-           bg-[var(--color-accent)] text-[var(--color-text)]
-           shadow-[var(--shadow-neo)] text-sm sm:text-base;
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border: 6px solid var(--color-border);
+    background-color: var(--color-accent);
+    color: var(--color-text);
+    box-shadow: var(--shadow-neo);
+    font-size: 0.875rem;
   }
 
   .neuro-option {
-    @apply cursor-pointer border-4 border-[var(--color-border)] p-3 rounded-[var(--radius)]
-           shadow-[var(--shadow-neo)] transition-all duration-150 ease-in-out
-           hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none;
+    cursor: pointer;
+    border: 6px solid var(--color-border);
+    padding: 1rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-neo);
+    transition: all 150ms ease-in-out;
+  }
+
+  .neuro-option:hover {
+    transform: translate(-6px, -6px);
+    box-shadow: var(--shadow-neo-hover);
   }
 
   .neuro-option-selected {
-    @apply bg-[var(--color-primary)] text-[var(--color-bg)]
-           border-[var(--color-border)] shadow-[var(--shadow-neo)];
+    background-color: var(--color-primary);
+    color: var(--color-bg);
+    border-color: var(--color-border);
+    box-shadow: var(--shadow-neo);
+  }
+
+  /* Overlay & Modal Styles */
+  .neuro-overlay {
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: none;
+    z-index: var(--z-index-modal-backdrop);
+  }
+
+  .neuro-modal {
+    background-color: var(--color-card);
+    border: 6px solid var(--color-border);
+    box-shadow: var(--shadow-neo);
+    border-radius: var(--radius);
+    z-index: var(--z-index-modal);
+  }
+
+  .neuro-tooltip {
+    background-color: var(--color-card);
+    border: 4px solid var(--color-border);
+    box-shadow: var(--shadow-neo);
+    border-radius: var(--radius-sm);
+    z-index: var(--z-index-tooltip);
+  }
+
+  .neuro-popover {
+    background-color: var(--color-card);
+    border: 4px solid var(--color-border);
+    box-shadow: var(--shadow-neo);
+    border-radius: var(--radius);
+    z-index: var(--z-index-popover);
+  }
+
+  /* Typography Classes */
+  .neuro-heading-1 {
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-heading);
+    line-height: var(--line-height-tight);
+    color: var(--color-text);
+  }
+
+  .neuro-heading-2 {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-heading);
+    line-height: var(--line-height-tight);
+    color: var(--color-text);
+  }
+
+  .neuro-heading-3 {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-heading);
+    line-height: var(--line-height-tight);
+    color: var(--color-text);
+  }
+
+  .neuro-body {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-base);
+    line-height: var(--line-height-normal);
+    color: var(--color-text);
+  }
+
+  .neuro-body-sm {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-base);
+    line-height: var(--line-height-normal);
+    color: var(--color-text);
+  }
+
+  .neuro-caption {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-base);
+    line-height: var(--line-height-normal);
+    color: var(--color-text);
+    opacity: 0.8;
+  }
+
+  /* Interactive States */
+  .neuro-hover-lift {
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  }
+
+  .neuro-hover-lift:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: var(--shadow-neo-hover);
+  }
+
+  .neuro-press {
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  .neuro-press:active {
+    transform: translate(2px, 2px);
+    box-shadow: var(--shadow-neo-active);
+  }
+
+  /* Focus States */
+  .neuro-focus {
+    transition: box-shadow var(--transition-fast);
+  }
+
+  .neuro-focus:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-accent);
+  }
+
+  /* Loading States */
+  .neuro-loading {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .neuro-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: loading-shimmer 1.5s infinite;
+  }
+
+  @keyframes loading-shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+}
+
+/* === Nerobrutal - Shadcn Override Surface (no component edits) === */
+@layer components {
+  /* Target shadcn Input primitive via data-slot attribute used in the project */
+  input[data-slot="input"], textarea[data-slot="input"] {
+    background-color: var(--color-card);
+    color: var(--color-text);
+    border: 6px solid var(--color-border);
+    box-shadow: var(--shadow-neo);
+    border-radius: var(--radius-none);
+    padding: 0.75rem 1rem;
+    min-height: 44px;
+    height: auto;
+    font-weight: 600;
+    font-family: var(--font-mono), Inter, sans-serif;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  input[data-slot="input"]:focus-visible, textarea[data-slot="input"]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+    border-color: var(--focus-ring-color);
+    transform: translate(-2px, -2px);
+  }
+
+  /* Make labels bolder and more uppercased across forms to match Nerobrutal aesthetic */
+  label {
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+  }
+
+  /* Buttons (submit / primary CTAs) - heavier, blocky, with neo shadow */
+  button[type="submit"], .neuro-button, .btn-primary {
+    border-width: 6px !important;
+    border-style: solid !important;
+    border-color: var(--color-border) !important;
+    background-color: var(--color-primary) !important;
+    color: var(--color-text) !important;
+    box-shadow: var(--shadow-neo) !important;
+    padding: 1rem 1.5rem !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    border-radius: var(--radius) !important;
+  }
+
+  button[disabled], button[aria-disabled="true"] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: var(--shadow-neo-inset) !important;
+  }
+
+  /* Range / slider styling */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 10px;
+    background: linear-gradient(90deg, var(--color-muted), var(--color-muted));
+    border-radius: 999px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    background: var(--color-accent);
+    border: 6px solid var(--color-border);
+    box-shadow: var(--shadow-neo);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    background: var(--color-accent);
+    border: 6px solid var(--color-border);
+    box-shadow: var(--shadow-neo);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  /* Small numeric / step display (tokenized) */
+  .neuro-step-display {
+    min-width: fit-content;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--color-accent);
+    border: 6px solid var(--color-border);
+    color: var(--color-text);
+    box-shadow: var(--shadow-neo);
+    font-family: var(--font-mono);
+    font-weight: 900;
+    border-radius: 0.5rem;
+  }
+
+  /* Increase global base weight for stronger typography without touching components */
+  .neuro-strong-typography, body, .neuro-root {
+    --font-base: 600;
   }
 }

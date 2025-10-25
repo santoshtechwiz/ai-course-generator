@@ -143,10 +143,10 @@ export default function CourseCreationForm({ maxQuestions, params }: {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50/20 to-white">
+    <div className="min-h-screen bg-[var(--color-bg)]">
       <div className="container mx-auto px-4 py-6 md:py-8 lg:py-10 max-w-3xl">
         <Card className="rounded-xl shadow-lg overflow-hidden border-0">
-          <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+          <CardHeader className="bg-[var(--color-primary)] text-[var(--color-text)]">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-xl sm:text-2xl font-bold">
@@ -215,7 +215,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
                 <Progress 
                   value={((step - 1) / (totalSteps - 1)) * 100} 
                   className="h-3 transition-all duration-300 bg-gray-200" 
-                  indicatorClassName="bg-gradient-to-r from-blue-500 to-indigo-500"
+                  indicatorClassName="bg-[var(--color-primary)]"
                 />
               </div>
             </div>
@@ -245,7 +245,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
                     type="button"
                     onClick={handleNext}
                     disabled={!isStepValid() || maxQuestions === 0}
-                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg transition-all"
+                    className="w-full sm:w-auto px-6 py-3 bg-[var(--color-primary)] hover:bg-[var(--color-accent)] text-[var(--color-text)] shadow-neo hover:shadow-neo-hover neo-hover-lift transition-all"
                   >
                     Continue to {steps[step].label} <span className="ml-2">→</span>
                   </Button>
@@ -258,7 +258,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
                     isEnabled={step === 3 && !showConfirmDialog}
                     creditsRequired={1}
                     requiredPlan="FREE"
-                    className="w-full sm:w-auto px-6 py-3 shadow-lg transition-transform hover:scale-[1.02] bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                    className="w-full sm:w-auto px-6 py-3 shadow-neo neo-hover-lift bg-[var(--color-success)] hover:bg-[var(--color-accent)] text-[var(--color-text)]"
                     loadingLabel="Creating Course..."
                     customStates={{
                       noCredits: {

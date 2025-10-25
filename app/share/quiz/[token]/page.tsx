@@ -184,7 +184,7 @@ export default async function ShareQuizPage({ params, searchParams }: ShareQuizP
       return (
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center max-w-md">
-            <h1 className="text-4xl font-black mb-4">Access Denied</h1>
+            <h1 className="text-3xl font-black mb-4">Access Denied</h1>
             <p className="text-muted-foreground mb-8">
               {validation.error || "This share link is invalid or has expired."}
             </p>
@@ -213,7 +213,7 @@ export default async function ShareQuizPage({ params, searchParams }: ShareQuizP
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Error</h1>
+          <h1 className="text-xl font-bold mb-4">Error</h1>
           <p className="text-muted-foreground mb-6">Failed to load the shared quiz.</p>
           <a href="/" className="inline-block px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold">
             Go Home

@@ -214,7 +214,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--color-bg)] to-[var(--color-card)]">
+          <div className="w-full h-full flex items-center justify-center bg-[var(--color-card)] border-4 border-[var(--color-border)] shadow-[4px_4px_0px_0px_hsl(var(--border))]">
             <BookOpen className="w-20 h-20 text-[var(--color-text)]/70" />
           </div>
         )}

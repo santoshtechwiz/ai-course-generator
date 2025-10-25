@@ -23,14 +23,14 @@ export function UserAvatar({ user, userInitials, prefersReducedMotion }: UserAva
       }}
     >
       <Avatar className={cn(
-        "h-8 w-8 border-2 transition-all duration-300",
-        "border-primary/50 hover:border-primary hover:shadow-lg hover:shadow-primary/20",
-        "bg-gradient-to-br from-background to-muted/50"
+        "h-8 w-8 border-4 transition-all duration-300 shadow-[4px_4px_0px_0px_hsl(var(--border))]",
+        "border-primary/50 hover:border-primary",
+        "bg-background"
       )}>
         <AvatarImage src={user?.image || ""} alt={user?.name || "User"} />
         <AvatarFallback className={cn(
-          "bg-gradient-to-br from-primary/20 to-secondary/20 text-primary font-semibold",
-          "hover:from-primary/30 hover:to-secondary/30 transition-all duration-300"
+          "bg-primary/20 text-primary font-semibold border-4 border-primary",
+          "hover:bg-primary/30 transition-all duration-300"
         )}>
           {userInitials}
         </AvatarFallback>

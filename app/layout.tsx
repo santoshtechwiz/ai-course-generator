@@ -1,6 +1,5 @@
-import React from "react"
+import type React from "react"
 import type { Metadata } from "next"
-import { Inter, Poppins, JetBrains_Mono } from "next/font/google"
 import "../globals.css"
 
 import { Providers } from "@/store/provider"
@@ -8,11 +7,11 @@ import { getServerAuthSession } from "@/lib/server-auth"
 import { Suspense } from "react"
 
 import { DefaultSEO, generateMetadata as generateBaseMetadata } from "@/lib/seo"
-import GoogleAnalyticsClient from '@/components/analytics/GoogleAnalyticsClient'
+import GoogleAnalyticsClient from "@/components/analytics/GoogleAnalyticsClient"
 
 import { RootErrorBoundary } from "@/components/layout/RootErrorBoundary"
 import { SuspenseGlobalFallback } from "@/components/loaders"
-import BProgressProvider from "./providers"
+
 import { MotionProvider } from "@/components/MotionProvider"
 import { ConditionalFooter } from "@/components/layout/ConditionalFooter"
 import { Toaster } from "@/components/ui/toaster"
@@ -26,9 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
     const session = await getServerAuthSession()
     const userName = session?.user?.name
 
-    const title = userName
-      ? `${userName}'s Dashboard • CourseAI`
-      : "CourseAI - Create Courses and Quizzes with AI"
+    const title = userName ? `${userName}'s Dashboard • CourseAI` : "CourseAI - Create Courses and Quizzes with AI"
 
     const description = session?.user
       ? "Access your personalized dashboard to create courses, quizzes, and educational content with AI-powered tools."
@@ -38,13 +35,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title,
       description,
       canonical: siteUrl,
-      keywords: [
-        "AI education",
-        "course creator",
-        "quiz maker",
-        "educational content",
-        "e-learning platform",
-      ],
+      keywords: ["AI education", "course creator", "quiz maker", "educational content", "e-learning platform"],
       type: "website",
       url: siteUrl,
     })
@@ -71,10 +62,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         {/* Search Engine Verification */}
         {process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION && (
-          <meta
-            name="google-site-verification"
-            content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION}
-          />
+          <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION} />
         )}
 
         {/* Preconnect for performance */}
@@ -87,7 +75,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
 
       <body className="font-sans antialiased min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
-        <BProgressProvider>
+       
           <Providers session={session}>
             {/* Skip Navigation for accessibility */}
             <a
@@ -104,7 +92,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <header className="neuro-header sticky top-0 z-[60] bg-[var(--color-bg)] text-[var(--color-text)] border-b-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] transition-all duration-200">
                 <BreadcrumbWelcome />
               </header>
-              
+
               {/* Guest experience provider - client-only to prevent SSR issues */}
               <ClientGuestProvider>
                 {/* Simplified noscript message */}
@@ -113,7 +101,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     <div className="flex">
                       <div className="ml-3">
                         <p className="text-sm text-warning">
-                          JavaScript is required for CourseAI to work properly. Please enable JavaScript and refresh the page.
+                          JavaScript is required for CourseAI to work properly. Please enable JavaScript and refresh the
+                          page.
                         </p>
                       </div>
                     </div>
@@ -121,13 +110,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </noscript>
 
                 <Suspense fallback={<SuspenseGlobalFallback />}>
-                  <div className="relative min-h-screen flex flex-col border-l-8 border-r-8 border-[var(--color-border)]">
+                  <div className="relative min-h-screen flex flex-col border-l-0 border-r-0 sm:border-l-8 sm:border-r-8 border-[var(--color-border)]">
                     {/* Main Content */}
                     <main id="main-content" className="flex-1 w-full p-4 sm:p-6 lg:p-8 bg-[var(--color-bg)]">
                       <MotionProvider>
-                        <Suspense fallback={<SuspenseGlobalFallback />}>
-                          {children}
-                        </Suspense>
+                        <Suspense fallback={<SuspenseGlobalFallback />}>{children}</Suspense>
                       </MotionProvider>
                     </main>
                     {/* Conditional Footer - Hidden on sidebar-enabled dashboard pages */}
@@ -143,9 +130,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Suspense>
             <DefaultSEO enableFAQ={false} />
             <Toaster />
-          
           </Providers>
-        </BProgressProvider>
+
       </body>
     </html>
   )

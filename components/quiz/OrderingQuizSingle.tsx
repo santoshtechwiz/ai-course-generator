@@ -116,9 +116,9 @@ function shuffleArray<T>(array: T[], seed?: number): T[] {
 function DifficultyBadge({ difficulty }: { difficulty?: OrderingQuizQuestion["difficulty"] }) {
   if (!difficulty) return null
   const colors = {
-    easy: "bg-green-100 text-green-800 border-green-300",
-    medium: "bg-yellow-100 text-yellow-800 border-yellow-300",
-    hard: "bg-red-100 text-red-800 border-red-300",
+    easy: "bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/50",
+    medium: "bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/50",
+    hard: "bg-[var(--color-error)]/20 text-[var(--color-error)] border-[var(--color-error)]/50",
   }
   return (
     <Badge variant="neutral" className={cn(neo.badge, "px-3 py-1.5 text-xs font-semibold", colors[difficulty])}>
@@ -205,7 +205,7 @@ function StepItem({
           initial={{ opacity: 0, scaleY: 0 }}
           animate={{ opacity: 1, scaleY: 1 }}
           exit={{ opacity: 0, scaleY: 0 }}
-          className="absolute -top-2 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent rounded-full z-50"
+          className="absolute -top-2 left-0 right-0 h-1 bg-green-500 rounded-full z-50 border-2 border-green-600"
         >
           <motion.div
             className="absolute left-1/2 -translate-x-1/2 -top-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg whitespace-nowrap"
@@ -258,7 +258,7 @@ function StepItem({
               "relative p-3 rounded-lg transition-all duration-200 flex flex-col items-center justify-center gap-0.5 border-2 cursor-grab active:cursor-grabbing",
               isDragged
                 ? "bg-blue-500 text-white border-blue-600 shadow-xl shadow-blue-500/50"
-                : "bg-gradient-to-br from-primary/20 to-primary/10 text-primary border-primary/30 group-hover:from-primary/30 group-hover:to-primary/20 group-hover:border-primary/50 group-hover:shadow-lg",
+                : "bg-primary/20 text-primary border-4 border-primary shadow-[4px_4px_0px_0px_hsl(var(--border))] group-hover:bg-primary/30 group-hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]",
             )}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -516,7 +516,7 @@ function OrderingQuizSingleEnhanced({
   return (
     <div className={cn("w-full max-w-4xl mx-auto", className)}>
       <Card className="shadow-xl border-2">
-        <CardHeader className="flex items-start justify-between gap-4 p-6 bg-gradient-to-br from-primary/5 to-transparent">
+        <CardHeader className="flex items-start justify-between gap-4 p-6 bg-primary/5 border-b-4 border-primary/20">
           <div className="flex-1">
             <div className="flex items-center gap-3 flex-wrap">
               <Badge variant="neutral" className={cn(neo.badge, "bg-primary/10 text-primary border border-primary/20")}>
@@ -576,7 +576,7 @@ function OrderingQuizSingleEnhanced({
                 transition={{ duration: 0.3 }}
                 className="relative overflow-hidden"
               >
-                <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-blue-50 border-2 border-blue-200 rounded-xl p-5 shadow-lg">
+                <div className="bg-blue-50 border-4 border-blue-200 rounded-xl p-5 shadow-[6px_6px_0px_0px_hsl(var(--border))]">
                   <button
                     onClick={() => setShowInstructions(false)}
                     className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -595,7 +595,7 @@ function OrderingQuizSingleEnhanced({
                         repeat: Number.POSITIVE_INFINITY,
                         repeatDelay: 1,
                       }}
-                      className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg"
+                      className="flex-shrink-0 w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center border-4 border-blue-600 shadow-[4px_4px_0px_0px_hsl(var(--border))]"
                     >
                       <Hand className="h-6 w-6 text-white" />
                     </motion.div>
@@ -641,7 +641,7 @@ function OrderingQuizSingleEnhanced({
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl p-4 shadow-xl"
+              className="bg-blue-500 text-white rounded-xl p-4 border-4 border-blue-600 shadow-[6px_6px_0px_0px_hsl(var(--border))]"
             >
               <div className="flex items-center justify-center gap-3 font-semibold">
                 <motion.div

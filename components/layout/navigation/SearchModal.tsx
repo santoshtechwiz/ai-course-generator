@@ -233,7 +233,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[600px] md:max-w-[700px] lg:max-w-[800px] w-[90vw] max-h-[90vh] p-0 rounded-xl overflow-hidden">
+      <DialogContent className="sm:max-w-[600px] md:max-w-[700px] lg:max-w-[800px] w-[90vw] max-h-[90vh] p-0 border-4 border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-neo)] overflow-hidden">
         <motion.div
           className="flex flex-col h-full max-h-[90vh]"
           initial={{ opacity: 0, scale: 0.95 }}
@@ -241,8 +241,8 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.3, type: "spring", stiffness: 300, damping: 25 }}
         >
-          <DialogHeader className="px-4 py-2 border-b">
-            <DialogTitle className="text-xl font-semibold">Search Courses and Quizzes</DialogTitle>
+          <DialogHeader className="px-4 py-2 border-b-4 border-[var(--color-border)] bg-[var(--color-bg)]">
+            <DialogTitle className="text-xl font-black text-[var(--color-text)]">Search Courses and Quizzes</DialogTitle>
           </DialogHeader>
 
           <div className="flex-1 overflow-hidden p-4">

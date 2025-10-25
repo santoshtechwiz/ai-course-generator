@@ -85,14 +85,14 @@ function WelcomeStep({ onNext, onSkip }: StepProps) {
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-        className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground"
+        className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-primary text-primary-foreground border-4 border-primary-foreground shadow-[6px_6px_0px_hsl(var(--border))]"
       >
         <Rocket className="w-12 h-12" />
       </motion.div>
 
       <div className="space-y-3">
-        <h2 className="text-3xl font-bold">Welcome to CourseAI! 🎉</h2>
-        <p className="text-lg text-muted-foreground max-w-md mx-auto">
+        <h2 className="text-2xl font-bold">Welcome to CourseAI! 🎉</h2>
+        <p className="text-base text-muted-foreground max-w-md mx-auto">
           Let's get you started on your learning journey. This will only take a minute.
         </p>
       </div>
@@ -390,7 +390,7 @@ function CompleteStep({ onNext }: StepProps) {
       </motion.div>
 
       <div className="space-y-3">
-        <h2 className="text-3xl font-bold">You're all set! 🎉</h2>
+        <h2 className="text-2xl font-bold">You're all set! 🎉</h2>
         <p className="text-lg text-muted-foreground max-w-md mx-auto">
           Your personalized learning experience is ready. Let's start your journey!
         </p>

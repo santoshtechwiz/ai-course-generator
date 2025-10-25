@@ -284,8 +284,28 @@ export default function CreateQuizForm({
     return Math.min((credits / maxCreditDisplay) * 100, 100)
   }, [credits])
 
+  const difficultyOptions = React.useMemo(() => {
+    return [
+      {
+        value: "easy",
+        label: "Easy",
+        icon: "🟢",
+      },
+      {
+        value: "medium",
+        label: "Medium",
+        icon: "🟡",
+      },
+      {
+        value: "hard",
+        label: "Hard",
+        icon: "🔴",
+      },
+    ]
+  }, [])
+
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto neuro-strong-typography">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 md:space-y-8">
         {/* Topic Selection */}
         <motion.div
@@ -360,7 +380,7 @@ export default function CreateQuizForm({
             <div className="flex items-center justify-between">
               <Timer className="w-6 h-6 text-muted-foreground" />
               <motion.span
-                className="text-3xl font-black text-black tabular-nums"
+                className="text-3xl font-black text-[var(--color-text)] tabular-nums"
                 key={amount}
                 initial={{ scale: 1.2 }}
                 animate={{ scale: 1 }}
@@ -417,45 +437,63 @@ export default function CreateQuizForm({
           </Label>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {["easy", "medium", "hard"].map((level) => (
+            {difficultyOptions.map((level) => (
               <Button
-                key={level}
+                key={level.value}
                 type="button"
-                variant={difficulty === level ? "default" : "outline"}
+                variant={difficulty === level.value ? "default" : "outline"}
                 className={cn(
                   "capitalize w-full h-14 font-black transition-all duration-200 text-base border-4",
-                  difficulty === level
-                    ? level === "easy"
-                      ? "bg-green-300 text-black border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
-                      : level === "medium"
-                        ? "bg-yellow-300 text-black border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
-                        : "bg-red-300 text-black border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
-                    : "bg-white text-black border-black hover:bg-gray-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
+                  difficulty === level.value
+                    ? level.value === "easy"
+                      ? "bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]"
+                      : level.value === "medium"
+                        ? "bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]"
+                        : "bg-[var(--color-error)]/20 text-[var(--color-error)] border-[var(--color-error)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]"
+                    : "bg-[var(--color-card)] text-[var(--color-text)] border-[var(--color-border)] hover:bg-[var(--color-muted)] shadow-[2px_2px_0px_0px_hsl(var(--border))] hover:shadow-[4px_4px_0px_0px_hsl(var(--border))]",
                 )}
-                onClick={() => setValue("difficulty", level as "easy" | "medium" | "hard")}
-                aria-pressed={difficulty === level}
+                onClick={() => setValue("difficulty", level.value as "easy" | "medium" | "hard")}
+                aria-pressed={difficulty === level.value}
               >
-                {level}
-                {difficulty === level && <Check className="ml-2 h-5 w-5" />}
+                <span className="mr-2">{level.icon}</span>
+                {level.label}
+                {difficulty === level.value && <Check className="ml-2 h-5 w-5 text-[var(--color-text)]" />}
               </Button>
             ))}
           </div>
+
+          {difficulty && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="border-4 border-[var(--color-border)] bg-[var(--color-muted)]/50 p-4 text-sm rounded-xl"
+            >
+              <p className="font-black text-[var(--color-foreground)]">
+                {difficultyOptions.find(d => d.value === difficulty)?.label} Multiple Choice:
+              </p>
+              <p className="text-[var(--color-muted-foreground)] text-xs mt-2">
+                {difficulty === "easy" && "Basic facts, definitions, simple concepts. Examples: What is a variable? Choose the correct syntax. 2-3 minutes per question."}
+                {difficulty === "medium" && "Application of concepts, comparisons. Examples: Which method is most efficient? What does this code output? 3-5 minutes per question."}
+                {difficulty === "hard" && "Complex scenarios, analysis, edge cases. Examples: Debug this algorithm. Optimize this solution. 5-8 minutes per question."}
+              </p>
+            </motion.div>
+          )}
         </motion.div>
 
         {/* Available Credits */}
         <motion.div
-          className="bg-gray-50 border-4 border-black rounded-xl p-6 space-y-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+          className="bg-[var(--color-card)] border-4 border-[var(--color-border)] rounded-xl p-6 space-y-4 shadow-[4px_4px_0px_0px_hsl(var(--border))]"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <h3 className="text-lg font-black mb-2 flex items-center gap-2 text-black">
-            <Sparkles className="h-5 w-5 text-black" />
+          <h3 className="text-lg font-black mb-2 flex items-center gap-2 text-[var(--color-text)]">
+            <Sparkles className="h-5 w-5 text-[var(--color-primary)]" />
             Available Credits
           </h3>
-          <Progress value={creditInfo.totalCredits > 0 ? (creditInfo.remainingCredits / creditInfo.totalCredits) * 100 : 0} className="h-3 border-2 border-black bg-white" />
-          <p className="text-sm text-gray-700 font-bold">
-            {creditInfo.usedCredits} used of {creditInfo.totalCredits} total credits. <span className="font-black text-black">{creditInfo.remainingCredits} remaining</span>.
+          <Progress value={creditInfo.totalCredits > 0 ? (creditInfo.remainingCredits / creditInfo.totalCredits) * 100 : 0} className="h-3 border-2 border-[var(--color-border)] bg-[var(--color-card)]" />
+          <p className="text-sm text-[var(--color-text)] font-bold">
+            {creditInfo.usedCredits} used of {creditInfo.totalCredits} total credits. <span className="font-black text-[var(--color-text)]">{creditInfo.remainingCredits} remaining</span>.
           </p>
         </motion.div>
 
@@ -484,7 +522,7 @@ export default function CreateQuizForm({
             isEnabled={!isDisabled}
             isLoading={isLoading}
             loadingLabel="Generating Quiz..."
-            className="w-full h-14 text-lg font-black transition-all duration-300 bg-black text-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-14 text-lg font-black transition-all duration-300 bg-[var(--color-primary)] text-[var(--color-bg)] border-4 border-[var(--color-border)] shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] hover:bg-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed"
             customStates={{
               default: {
                 tooltip: "Click to generate your quiz",

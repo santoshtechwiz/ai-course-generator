@@ -52,15 +52,17 @@ export async function GET(req: NextRequest) {
         }
       })
 
-      // Cache for a short duration (60s) because this endpoint is inexpensive and non-critical
-      await cache.set(cacheKey, results, 60)
+      // Cache for 15 minutes - random quizzes don't change frequently
+      await cache.set(cacheKey, results, 900)
       return results
     })
 
-    // Return response with caching headers
+    // Return response with comprehensive caching headers
     const response = NextResponse.json({ quizzes })
     response.headers.set("X-Cache", "MISS")
-    response.headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=120")
+    response.headers.set("Cache-Control", "public, s-maxage=900, stale-while-revalidate=1800")
+    response.headers.set("CDN-Cache-Control", "public, s-maxage=900")
+    response.headers.set("Vercel-CDN-Cache-Control", "public, s-maxage=900")
     return response
 
   } catch (error) {

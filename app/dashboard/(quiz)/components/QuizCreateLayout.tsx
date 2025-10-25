@@ -24,26 +24,26 @@ export function QuizCreateLayout({ children, title, description, helpText, isLog
   const isTablet = useMediaQuery("(max-width: 1024px)")
 
   return (
-    <div className="min-h-screen bg-neo-background">
+    <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
       <div className="max-w-none mx-auto px-2 sm:px-3 lg:px-4 py-3 sm:py-4">
         <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
-          <Card className="flex-1 border-4 border-neo-border bg-neo-background shadow-[4px_4px_0px_0px_var(--neo-border)]">
-            <CardHeader className="bg-neo-border border-b-4 border-neo-border px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-5 relative">
+          <Card className="flex-1 border-4 border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-neo)]">
+            <CardHeader className="bg-[var(--color-primary)] border-b-4 border-[var(--color-border)] px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-5 relative">
               <div className="text-center space-y-2 sm:space-y-3">
                 <motion.div
-                  className="inline-flex p-2 sm:p-2.5 bg-neo-background border-4 border-neo-border shadow-[4px_4px_0px_0px_var(--neo-border)] rounded-xl"
+                  className="inline-flex p-2 sm:p-2.5 bg-[var(--color-bg)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] rounded-xl"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <TextQuote className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-black" />
+                  <TextQuote className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-[var(--color-text)]" />
                 </motion.div>
 
                 <div className="space-y-2">
-                  <CardTitle className="text-lg sm:text-xl lg:text-2xl font-black text-white leading-tight">
-                    {title} <span className="text-black bg-neo-background px-2 py-1 border-2 border-neo-border">Quiz</span>
+                  <CardTitle className="text-lg sm:text-xl lg:text-2xl font-black text-[var(--color-bg)] leading-tight">
+                    {title} <span className="text-[var(--color-text)] bg-[var(--color-bg)] px-2 py-1 border-2 border-[var(--color-border)]">Quiz</span>
                   </CardTitle>
 
-                  <p className="text-xs sm:text-sm lg:text-base text-gray-300 max-w-2xl mx-auto leading-relaxed px-2 font-bold">
+                  <p className="text-xs sm:text-sm lg:text-base text-[var(--color-bg)]/90 max-w-2xl mx-auto leading-relaxed px-2 font-bold">
                     {description}
                   </p>
                 </div>
@@ -53,12 +53,12 @@ export function QuizCreateLayout({ children, title, description, helpText, isLog
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="bg-neo-background border-2 border-neo-border shadow-[2px_2px_0px_0px_var(--neo-border)] hover:bg-neo-background h-7 w-7 sm:h-8 sm:w-8">
-                            <HelpCircle className="h-3 w-3 sm:h-4 sm:w-4 text-black" />
+                          <Button variant="ghost" size="icon" className="bg-[var(--color-card)] border-2 border-[var(--color-border)] h-7 w-7 sm:h-8 sm:w-8">
+                            <HelpCircle className="h-3 w-3 sm:h-4 sm:w-4 text-[var(--color-text)]" />
                             <span className="sr-only">Help</span>
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-xs text-xs sm:text-sm bg-neo-background border-2 border-neo-border text-black">
+                        <TooltipContent side="left" className="max-w-xs text-xs sm:text-sm bg-[var(--color-card)] border-2 border-[var(--color-border)] text-[var(--color-text)]">
                           <p>{helpText}</p>
                         </TooltipContent>
                       </Tooltip>
@@ -68,7 +68,7 @@ export function QuizCreateLayout({ children, title, description, helpText, isLog
               </div>
             </CardHeader>
 
-            <CardContent className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-6 flex-1 bg-neo-background">
+            <CardContent className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-6 flex-1 bg-[var(--color-card)]">
               <div className="h-full">
                 {children}
               </div>

@@ -41,13 +41,25 @@ interface OrderingQuizResultProps {
 }
 
 /**
- * Get color based on score
+ * Get color and shadow based on score for Nerobrutal theme
  */
-function getScoreColor(score: number): string {
-  if (score >= 90) return "from-green-600 to-emerald-600"
-  if (score >= 75) return "from-blue-600 to-cyan-600"
-  if (score >= 60) return "from-yellow-600 to-orange-600"
-  return "from-red-600 to-orange-600"
+function getScoreStyling(score: number): { bgColor: string, shadow: string } {
+  if (score >= 90) return {
+    bgColor: "bg-[var(--color-success)]",
+    shadow: "shadow-[var(--shadow-neo-success)]"
+  }
+  if (score >= 75) return {
+    bgColor: "bg-[var(--color-primary)]",
+    shadow: "shadow-[var(--shadow-neo-primary)]"
+  }
+  if (score >= 60) return {
+    bgColor: "bg-[var(--color-warning)]",
+    shadow: "shadow-[var(--shadow-neo-warning)]"
+  }
+  return {
+    bgColor: "bg-[var(--color-error)]",
+    shadow: "shadow-[var(--shadow-neo-error)]"
+  }
 }
 
 /**
@@ -127,13 +139,9 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="border-2 border-amber-600 bg-black/40 backdrop-blur-sm overflow-hidden">
+        <Card className="border-4 border-amber-600 bg-card overflow-hidden shadow-[8px_8px_0px_0px_hsl(var(--border))]">
           {/* Header with Score */}
-          <div className={cn("bg-gradient-to-r p-8 relative overflow-hidden", getScoreColor(metrics.score))}>
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0 bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2220%22 height=%2220%22><rect fill=%22currentColor%22 width=%2220%22 height=%2220%22/></svg>')] bg-repeat" />
-            </div>
-
+          <div className={cn("p-8 relative overflow-hidden border-4 border-border", getScoreStyling(metrics.score).bgColor, getScoreStyling(metrics.score).shadow)}>
             <div className="relative z-10 text-center">
               <motion.div
                 initial={{ scale: 0 }}
@@ -141,7 +149,7 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
                 transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
                 className="inline-block mb-4"
               >
-                <div className="text-8xl font-black">{metrics.score}</div>
+                <div className="text-6xl font-black">{metrics.score}</div>
               </motion.div>
 
               <div className="text-white/90 text-lg mb-4">{feedback}</div>
@@ -162,51 +170,51 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
             {/* Key Metrics */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {/* Accuracy */}
-              <div className="p-3 border-2 border-blue-600/50 rounded-lg bg-blue-900/20">
+              <div className="p-3 border-6 border-[var(--color-accent)]/50 rounded-lg bg-[var(--color-accent)]/20">
                 <div className="flex items-center gap-2 mb-1">
-                  <Target className="h-4 w-4 text-blue-400" />
-                  <span className="text-xs font-bold text-blue-300 uppercase">Accuracy</span>
+                  <Target className="h-4 w-4 text-[var(--color-accent)]" />
+                  <span className="text-xs font-bold text-[var(--color-accent)] uppercase">Accuracy</span>
                 </div>
-                <div className="text-2xl font-black text-blue-300">{metrics.accuracy}%</div>
-                <div className="text-xs text-blue-300/60">
+                <div className="text-xl font-black text-[var(--color-accent)]">{metrics.accuracy}%</div>
+                <div className="text-xs text-[var(--color-accent)]/60">
                   {metrics.correctPositions}/{metrics.totalPositions} correct
                 </div>
               </div>
 
               {/* Time */}
-              <div className="p-3 border-2 border-purple-600/50 rounded-lg bg-purple-900/20">
+              <div className="p-3 border-6 border-[var(--color-secondary)]/50 rounded-lg bg-[var(--color-secondary)]/20">
                 <div className="flex items-center gap-2 mb-1">
-                  <Clock className="h-4 w-4 text-purple-400" />
-                  <span className="text-xs font-bold text-purple-300 uppercase">Time</span>
+                  <Clock className="h-4 w-4 text-[var(--color-secondary)]" />
+                  <span className="text-xs font-bold text-[var(--color-secondary)] uppercase">Time</span>
                 </div>
-                <div className="text-2xl font-black text-purple-300">
+                <div className="text-xl font-black text-[var(--color-secondary)]">
                   {formatDuration(metrics.timeTaken)}
                 </div>
-                <div className="text-xs text-purple-300/60">{metrics.speedRating}</div>
+                <div className="text-xs text-[var(--color-secondary)]/60">{metrics.speedRating}</div>
               </div>
 
               {/* Speed Rating */}
-              <div className="p-3 border-2 border-yellow-600/50 rounded-lg bg-yellow-900/20">
+              <div className="p-3 border-6 border-[var(--color-warning)]/50 rounded-lg bg-[var(--color-warning)]/20">
                 <div className="flex items-center gap-2 mb-1">
-                  <Zap className="h-4 w-4 text-yellow-400" />
-                  <span className="text-xs font-bold text-yellow-300 uppercase">Speed</span>
+                  <Zap className="h-4 w-4 text-[var(--color-warning)]" />
+                  <span className="text-xs font-bold text-[var(--color-warning)] uppercase">Speed</span>
                 </div>
-                <div className="text-2xl font-black text-yellow-300">
+                <div className="text-xl font-black text-[var(--color-warning)]">
                   {metrics.speedPercentage}%
                 </div>
-                <div className="text-xs text-yellow-300/60">vs average</div>
+                <div className="text-xs text-[var(--color-warning)]/60">vs average</div>
               </div>
 
               {/* Status */}
-              <div className="p-3 border-2 border-green-600/50 rounded-lg bg-green-900/20">
+              <div className="p-3 border-6 border-[var(--color-success)]/50 rounded-lg bg-[var(--color-success)]/20">
                 <div className="flex items-center gap-2 mb-1">
-                  <Trophy className="h-4 w-4 text-green-400" />
-                  <span className="text-xs font-bold text-green-300 uppercase">Status</span>
+                  <Trophy className="h-4 w-4 text-[var(--color-success)]" />
+                  <span className="text-xs font-bold text-[var(--color-success)] uppercase">Status</span>
                 </div>
-                <div className="text-2xl font-black text-green-300">
+                <div className="text-xl font-black text-[var(--color-success)]">
                   {metrics.isCorrect ? "PERFECT" : "PARTIAL"}
                 </div>
-                <div className="text-xs text-green-300/60">
+                <div className="text-xs text-[var(--color-success)]/60">
                   {metrics.isCorrect ? "All steps correct!" : "Try again"}
                 </div>
               </div>
@@ -256,10 +264,10 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
                     <button
                       onClick={() => toggleStepExpand(step.stepNumber)}
                       className={cn(
-                        "w-full p-3 rounded-lg border-2 text-left transition-colors",
+                        "w-full p-3 rounded-lg border-6 text-left transition-colors",
                         step.isCorrect
-                          ? "border-green-600/50 bg-green-900/20 hover:bg-green-900/30"
-                          : "border-red-600/50 bg-red-900/20 hover:bg-red-900/30"
+                          ? "border-[var(--color-success)]/50 bg-[var(--color-success)]/20 hover:bg-[var(--color-success)]/30"
+                          : "border-[var(--color-error)]/50 bg-[var(--color-error)]/20 hover:bg-[var(--color-error)]/30"
                       )}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -330,7 +338,7 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-3 bg-green-900/20 border-2 border-green-600 rounded-lg text-center text-green-300 font-bold"
+                className="p-3 bg-[var(--color-success)]/20 border-6 border-[var(--color-success)] rounded-lg text-center text-[var(--color-success)] font-bold"
               >
                 {shareMessage}
               </motion.div>
@@ -341,7 +349,7 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
               {onRetry && (
                 <Button
                   onClick={onRetry}
-                  className="flex-1 border-2 bg-amber-600 hover:bg-amber-700 text-black font-bold uppercase"
+                  className="flex-1 border-6 bg-[var(--color-warning)] hover:bg-[var(--color-accent)] text-[var(--color-text)] font-bold uppercase"
                 >
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Try Again
@@ -349,7 +357,7 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
               )}
               <Button
                 onClick={handleShare}
-                className="flex-1 border-2 bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase"
+                className="flex-1 border-6 bg-[var(--color-primary)] hover:bg-[var(--color-accent)] text-[var(--color-text)] font-bold uppercase"
               >
                 <Share2 className="h-4 w-4 mr-2" />
                 Share

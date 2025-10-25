@@ -271,11 +271,11 @@ export default function FlashCardQuiz({
 
   if (!cards || cards.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] text-center">
-        <div className="space-y-4 p-8 bg-[var(--color-card)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] rounded-[var(--radius)] max-w-md mx-auto">
-          <div className="text-6xl">📚</div>
-          <h3 className="text-xl font-black text-[var(--color-text)]">No flashcards available</h3>
-          <p className="text-[var(--color-text)] opacity-75">Please check back later or create your own flashcards</p>
+      <div className="flex items-center justify-center min-h-[60vh] text-center p-4">
+        <div className="space-y-4 p-6 sm:p-8 bg-card border-4 border-border shadow-neo rounded-lg max-w-md mx-auto">
+          <div className="text-5xl sm:text-6xl">📚</div>
+          <h3 className="text-lg sm:text-xl font-black text-foreground">No flashcards available</h3>
+          <p className="text-sm sm:text-base text-muted-foreground">Please check back later or create your own flashcards</p>
         </div>
       </div>
     )
@@ -298,15 +298,15 @@ export default function FlashCardQuiz({
 
   return (
     <div className={cn(
-      "w-full space-y-6",
+      "w-full space-y-4 sm:space-y-6",
       isFocusMode
         ? "min-h-screen flex flex-col justify-center px-0"
-        : "w-full px-4 sm:px-6 lg:px-8"
+        : "w-full px-3 sm:px-4 lg:px-6"
     )}>
         <div className="text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] text-[var(--color-text)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] mb-4 font-black">
-            <Brain className="w-4 h-4" />
-            <span className="text-sm">Flashcard Quiz</span>
+          <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-accent text-white border-3 sm:border-4 border-border shadow-neo mb-3 sm:mb-4 font-black text-xs sm:text-sm rounded-md">
+            <Brain className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Flashcard Quiz</span>
           </div>
         </div>
 
@@ -328,7 +328,7 @@ export default function FlashCardQuiz({
       )}
 
       {/* Main Card */}
-      <div className="relative">
+      <div className="relative px-2 sm:px-0">
         <motion.div
           key={`card-${currentQuestionIndex}`}
           drag="x"
@@ -383,19 +383,19 @@ export default function FlashCardQuiz({
 
       {/* Simple Action Bar - Flip and Save only (navigation moved to controller) */}
       <div className={cn(
-        "flex justify-center gap-3",
-        isFocusMode && "mt-8"
+        "flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 px-2 sm:px-0",
+        isFocusMode && "mt-6 sm:mt-8"
       )}>
         <Button 
           variant="neutral" 
           onClick={toggleFlip}
           size="lg"
           className={cn(
-            "px-8 py-4 text-lg font-black bg-[var(--color-primary)] text-[var(--color-text)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none",
-            isFocusMode && "min-w-[200px]"
+            "px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-black bg-accent text-white border-3 sm:border-4 border-border shadow-neo hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none w-full sm:w-auto",
+            isFocusMode && "sm:min-w-[200px]"
           )}
         >
-          <RotateCcw className="w-5 h-5 mr-2" />
+          <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
           {flipped ? "Show Question" : "Show Answer"}
         </Button>
         
@@ -404,11 +404,11 @@ export default function FlashCardQuiz({
           onClick={handleSaveCard}
           size="lg"
           className={cn(
-            "px-8 py-4 text-lg font-black bg-[var(--color-card)] text-[var(--color-text)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none",
-            isFocusMode && "min-w-[200px]"
+            "px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-black bg-card text-foreground border-3 sm:border-4 border-border shadow-neo hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none w-full sm:w-auto",
+            isFocusMode && "sm:min-w-[200px]"
           )}
         >
-          <Heart className={`w-5 h-5 mr-2 ${isSaved ? "fill-current text-[var(--color-error)]" : "text-[var(--color-text)]"}`} />
+          <Heart className={`w-4 h-4 sm:w-5 sm:h-5 mr-2 ${isSaved ? "fill-current text-danger" : "text-foreground"}`} />
           {isSaved ? "Saved" : "Save"}
         </Button>
       </div>
@@ -417,30 +417,30 @@ export default function FlashCardQuiz({
       <AnimatePresence>
         {ratingAnimation && (
           <motion.div
-            className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+            className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none px-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
               className={cn(
-                "px-8 py-6 rounded-[var(--radius)] text-[var(--color-text)] font-black text-xl shadow-[var(--shadow-neo)] border-4 border-[var(--color-border)]",
-                ratingAnimation === "correct" && "bg-[var(--color-success)]",
-                ratingAnimation === "still_learning" && "bg-[var(--color-accent)]",
-                ratingAnimation === "incorrect" && "bg-[var(--color-error)]"
+                "px-6 sm:px-8 py-4 sm:py-6 rounded-lg text-white font-black text-lg sm:text-xl shadow-neo border-4 border-border max-w-sm w-full",
+                ratingAnimation === "correct" && "bg-success",
+                ratingAnimation === "still_learning" && "bg-accent",
+                ratingAnimation === "incorrect" && "bg-danger"
               )}
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
             >
               <div className="flex items-center gap-3">
-                <span className="text-2xl">
+                <span className="text-xl sm:text-2xl">
                   {ratingAnimation === "correct" && "🎉"}
                   {ratingAnimation === "still_learning" && "📚"}
                   {ratingAnimation === "incorrect" && "💪"}
                 </span>
                 <div>
-                  <div className="font-bold text-lg">
+                  <div className="font-bold text-base sm:text-lg">
                     {ratingAnimation === "correct" && "Perfect!"}
                     {ratingAnimation === "still_learning" && "Keep Learning!"}
                     {ratingAnimation === "incorrect" && "Practice Makes Perfect!"}

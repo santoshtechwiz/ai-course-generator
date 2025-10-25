@@ -467,7 +467,7 @@ export function HintSystem({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+              className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50"
             >
               <motion.div
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -489,7 +489,7 @@ export function HintSystem({
                     </Button>
                     <Button
                       onClick={revealConfirmedHint}
-                      className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/80 hover:to-primary/90"
+                      className="flex-1 bg-primary hover:bg-primary/90 border-4 border-primary-foreground shadow-[4px_4px_0px_0px_hsl(var(--border))]"
                     >
                       Show Hint
                     </Button>
@@ -505,7 +505,7 @@ export function HintSystem({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+              className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50"
             >
               <motion.div
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -543,7 +543,7 @@ export function HintSystem({
                             description: 'Full answer reveal'
                           } as any)
                         }}
-                        className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/80 hover:to-primary/90"
+                        className="flex-1 bg-primary hover:bg-primary/90 border-4 border-primary-foreground shadow-[4px_4px_0px_0px_hsl(var(--border))]"
                       >
                         Reveal Example Answer
                       </Button>
@@ -559,7 +559,7 @@ export function HintSystem({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+              className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50"
             >
               <motion.div
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -603,7 +603,7 @@ export function HintSystem({
                         setShowUpgradePrompt(false)
                         window.location.href = isAuthenticated ? '/dashboard/subscription' : '/auth/signup'
                       }}
-                      className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/80 hover:to-primary/90"
+                      className="flex-1 bg-primary hover:bg-primary/90 border-4 border-primary-foreground shadow-[4px_4px_0px_0px_hsl(var(--border))]"
                     >
                       {isAuthenticated ? "Upgrade Now" : "Get Started Free"}
                     </Button>

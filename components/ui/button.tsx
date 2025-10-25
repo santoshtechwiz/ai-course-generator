@@ -11,16 +11,16 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[var(--color-primary)] text-white hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#000]",
+          "bg-[var(--color-primary)] text-[var(--color-bg)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#000]",
         outline:
           "bg-[var(--color-bg)] text-[var(--color-text)] border-4 border-black hover:bg-[var(--color-muted)]",
         ghost:
           "bg-transparent text-[var(--color-text)] border-0 hover:bg-[var(--color-muted)] shadow-none",
-        noShadow: "bg-[var(--color-primary)] text-white border-4 border-black shadow-none",
+        noShadow: "bg-[var(--color-primary)] text-[var(--color-bg)] border-4 border-black shadow-none",
         neutral:
           "bg-[var(--color-muted)] text-[var(--color-text)] border-4 border-black hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#000]",
         reverse:
-          "bg-[var(--color-accent)] text-white border-4 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_#000]",
+          "bg-[var(--color-accent)] text-[var(--color-bg)] border-4 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_#000]",
       },
       size: {
         default: "h-10 px-4 py-2",

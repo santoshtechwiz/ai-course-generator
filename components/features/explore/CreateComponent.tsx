@@ -50,41 +50,12 @@ export function CreateComponent() {
 
   return (
     <ExploreErrorBoundary>
-      <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-secondary/10 relative overflow-hidden">
+      <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
         {/* Enhanced Background Effects with Current Theme */}
         {!reduceMotion && (
           <>
             <WavyBackground />
             <FloatingShapes />
-
-            {/* Animated gradient orbs - Updated with current theme colors */}
-            <motion.div
-              animate={{
-                x: [0, 100, 0],
-                y: [0, -50, 0],
-                scale: [1, 1.2, 1]
-              }}
-              transition={{ duration: 20, repeat: Infinity }}
-              className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-primary/10 to-purple-600/10 rounded-full blur-3xl"
-            />
-            <motion.div
-              animate={{
-                x: [0, -80, 0],
-                y: [0, 60, 0],
-                scale: [1, 0.8, 1]
-              }}
-              transition={{ duration: 25, repeat: Infinity, delay: 5 }}
-              className="absolute bottom-32 right-32 w-80 h-80 bg-gradient-to-r from-accent/8 to-primary/8 rounded-full blur-3xl"
-            />
-            <motion.div
-              animate={{
-                x: [0, 120, 0],
-                y: [0, -40, 0],
-                scale: [1, 1.3, 1]
-              }}
-              transition={{ duration: 30, repeat: Infinity, delay: 10 }}
-              className="absolute top-1/2 left-1/3 w-72 h-72 bg-gradient-to-r from-accent/6 to-purple-600/6 rounded-full blur-3xl"
-            />
           </>
         )}
 

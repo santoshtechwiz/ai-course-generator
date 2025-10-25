@@ -139,9 +139,9 @@ function ContinueLearningCard({ item, index, onClick }: ContinueLearningCardProp
                 {/* Icon/Thumbnail */}
                 <div className={cn(
                   "flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center",
-                  item.type === "course" 
-                    ? "bg-gradient-to-br from-primary/10 to-primary/5 text-primary" 
-                    : "bg-gradient-to-br from-purple-500/10 to-purple-500/5 text-purple-500"
+                  item.type === "course"
+                    ? "bg-primary/10 text-primary border-4 border-primary shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+                    : "bg-purple-500/10 text-purple-500 border-4 border-purple-500 shadow-[4px_4px_0px_0px_hsl(var(--border))]"
                 )}>
                   <Icon className="h-6 w-6" />
                 </div>
@@ -184,7 +184,7 @@ function ContinueLearningCard({ item, index, onClick }: ContinueLearningCardProp
                         initial={{ width: 0 }}
                         animate={{ width: `${item.progress}%` }}
                         transition={{ duration: 0.8, ease: "easeOut", delay: index * 0.1 }}
-                        className="absolute top-0 left-0 h-2 bg-gradient-to-r from-primary to-primary/80 rounded-full"
+                        className="absolute top-0 left-0 h-2 bg-primary rounded-full border-2 border-primary-foreground"
                       />
                     </div>
                   </div>

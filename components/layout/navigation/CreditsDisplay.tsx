@@ -31,7 +31,7 @@ export function CreditsDisplay({
         initial={prefersReducedMotion ? {} : "hidden"}
         animate={prefersReducedMotion ? {} : "visible"}
       >
-        <Skeleton className="h-8 w-24 rounded-lg bg-gradient-to-r from-primary/20 to-secondary/20" />
+        <Skeleton className="h-8 w-24 rounded-lg bg-muted border-4 border-border shadow-neo" />
       </motion.div>
     )
   }
@@ -41,11 +41,10 @@ export function CreditsDisplay({
   return (
     <motion.div
       className={cn(
-        "flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border transition-all duration-300 text-xs sm:text-sm",
-        "bg-gradient-to-r from-primary/10 via-secondary/5 to-accent/10",
-        "border-primary/20 hover:border-primary/40",
-        "hover:shadow-lg hover:shadow-primary/10",
-        "backdrop-blur-sm"
+        "flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border-4 transition-all duration-300 text-xs sm:text-sm",
+        "bg-primary/10",
+        "border-primary/40 shadow-neo",
+        "hover:shadow-neo-xl"
       )}
       data-testid="credits-display"
       variants={prefersReducedMotion ? {} : {
@@ -73,8 +72,8 @@ export function CreditsDisplay({
       </motion.div>
       <span
         className={cn(
-          "text-sm font-medium tabular-nums bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
-          isLowCredits ? "from-destructive to-destructive" : ""
+          "text-sm font-medium tabular-nums text-primary",
+          isLowCredits ? "text-destructive" : ""
         )}
       >
         {availableCredits.toLocaleString()}
@@ -93,7 +92,7 @@ export function CreditsDisplay({
             variant="secondary"
             className={cn(
               "text-xs font-medium ml-2 px-2 py-0.5",
-              "bg-gradient-to-r from-secondary to-accent text-secondary-foreground",
+              "bg-secondary text-secondary-foreground border-4 border-secondary shadow-[4px_4px_0px_0px_hsl(var(--border))]",
               "border border-secondary/20 shadow-sm"
             )}
           >
