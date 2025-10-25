@@ -3,12 +3,12 @@
 /* === Nerobrutal Design System — Premium Edition === */
 :root {
   /* Core brand colors - Nerobrutal Palette */
-  --color-bg: #fffdf5;
+  --color-bg: #f7f3ef; /* slightly warmer/off-white to reduce pure white surfaces */
   --color-text: #0a0a0a;
   --color-primary: #ff007f;
   --color-secondary: #00f5d4;
   --color-accent: #ff6b35;
-  --color-card: #ffffff;
+  --color-card: #f6efe8; /* off-white card surface for gentler contrast */
   --color-muted: #f2f2f2;
   --color-success: #00d4aa;
   --color-warning: #ff9500;
@@ -342,5 +342,111 @@
   @keyframes loading-shimmer {
     0% { left: -100%; }
     100% { left: 100%; }
+  }
+}
+
+/* === Nerobrutal - Shadcn Override Surface (no component edits) === */
+@layer components {
+  /* Target shadcn Input primitive via data-slot attribute used in the project */
+  input[data-slot="input"], textarea[data-slot="input"] {
+    background-color: var(--color-card);
+    color: var(--color-text);
+    border: 6px solid var(--color-border);
+    box-shadow: var(--shadow-neo);
+    border-radius: var(--radius-none);
+    padding: 0.75rem 1rem;
+    min-height: 44px;
+    height: auto;
+    font-weight: 600;
+    font-family: var(--font-mono), Inter, sans-serif;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  input[data-slot="input"]:focus-visible, textarea[data-slot="input"]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+    border-color: var(--focus-ring-color);
+    transform: translate(-2px, -2px);
+  }
+
+  /* Make labels bolder and more uppercased across forms to match Nerobrutal aesthetic */
+  label {
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+  }
+
+  /* Buttons (submit / primary CTAs) - heavier, blocky, with neo shadow */
+  button[type="submit"], .neuro-button, .btn-primary {
+    border-width: 6px !important;
+    border-style: solid !important;
+    border-color: var(--color-border) !important;
+    background-color: var(--color-primary) !important;
+    color: var(--color-text) !important;
+    box-shadow: var(--shadow-neo) !important;
+    padding: 1rem 1.5rem !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    border-radius: var(--radius) !important;
+  }
+
+  button[disabled], button[aria-disabled="true"] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: var(--shadow-neo-inset) !important;
+  }
+
+  /* Range / slider styling */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 10px;
+    background: linear-gradient(90deg, var(--color-muted), var(--color-muted));
+    border-radius: 999px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    background: var(--color-accent);
+    border: 6px solid var(--color-border);
+    box-shadow: var(--shadow-neo);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    background: var(--color-accent);
+    border: 6px solid var(--color-border);
+    box-shadow: var(--shadow-neo);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  /* Small numeric / step display (tokenized) */
+  .neuro-step-display {
+    min-width: fit-content;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--color-accent);
+    border: 6px solid var(--color-border);
+    color: var(--color-text);
+    box-shadow: var(--shadow-neo);
+    font-family: var(--font-mono);
+    font-weight: 900;
+    border-radius: 0.5rem;
+  }
+
+  /* Increase global base weight for stronger typography without touching components */
+  .neuro-strong-typography, body, .neuro-root {
+    --font-base: 600;
   }
 }

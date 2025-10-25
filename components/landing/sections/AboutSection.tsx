@@ -73,7 +73,7 @@ const AboutSection = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="inline-block px-4 py-2 rounded-sm bg-primary/10 text-primary text-sm font-bold mb-6 border-3 border-primary/30"
+            className="inline-block px-4 py-2 rounded-sm bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-bold mb-6 border-3 border-[var(--color-primary)]/30"
           >
             About CourseAI
           </motion.div>
@@ -113,10 +113,10 @@ const AboutSection = () => {
                 ease: APPLE_EASING,
               }}
             >
-              <div className="overflow-hidden transition-all duration-200 hover:translate-x-[-2px] hover:translate-y-[-2px] h-full rounded-sm border-4 border-primary bg-card shadow-[6px_6px_0px_0px_var(--primary)] hover:shadow-[8px_8px_0px_0px_var(--primary)]">
+              <div className="overflow-hidden transition-all duration-200 hover:translate-x-[-2px] hover:translate-y-[-2px] h-full rounded-sm border-4 border-[var(--color-primary)] bg-[var(--color-card)] shadow-[6px_6px_0px_0px_var(--color-primary)] hover:shadow-[8px_8px_0px_0px_var(--color-primary)]">
                 <div className="p-8 space-y-5 h-full flex flex-col">
                   <div className="flex items-center space-x-4">
-                    <div className="p-3 rounded-sm bg-primary text-primary-foreground border-3 border-primary shadow-[3px_3px_0px_0px_var(--primary)]">
+                    <div className="p-3 rounded-sm bg-[var(--color-primary)] text-[var(--color-bg)] border-3 border-[var(--color-primary)] shadow-[3px_3px_0px_0px_var(--color-primary)]">
                       <section.icon className="w-6 h-6" />
                     </div>
                     <h3 className="text-xl font-black tracking-tight">{section.title}</h3>

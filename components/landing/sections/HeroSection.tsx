@@ -73,7 +73,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           className="mb-6"
         >
           <motion.span
-            className="inline-block px-4 sm:px-6 py-3 border-4 border-border text-foreground text-sm font-black mb-6 shadow-neo"
+            className="inline-block px-4 sm:px-6 py-3 border-4 border-[var(--color-border)] text-[var(--color-text)] text-sm font-black mb-6 shadow-neo"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{
               opacity: isInView ? 1 : 0,
@@ -153,15 +153,15 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
         >
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 lg:gap-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2" role="text">
-              <div className="w-2 h-2 rounded-sm bg-success" aria-hidden="true"></div>
+              <div className="w-2 h-2 rounded-sm bg-[var(--color-success)]" aria-hidden="true"></div>
               <span>Video course builder</span>
             </div>
             <div className="flex items-center gap-2" role="text">
-              <div className="w-2 h-2 rounded-sm bg-accent" aria-hidden="true"></div>
+              <div className="w-2 h-2 rounded-sm bg-[var(--color-primary)]" aria-hidden="true"></div>
               <span>AI quiz generation</span>
             </div>
             <div className="flex items-center gap-2" role="text">
-              <div className="w-2 h-2 rounded-sm bg-warning" aria-hidden="true"></div>
+              <div className="w-2 h-2 rounded-sm bg-[var(--color-warning)]" aria-hidden="true"></div>
               <span>Progress tracking</span>
             </div>
           </div>

@@ -249,17 +249,20 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
       {
         value: "easy",
         label: "Easy",
-        color: "bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg shadow-emerald-500/25",
+        icon: "🟢",
+        color: "bg-[var(--color-success)] text-[var(--color-bg)] shadow-lg",
       },
       {
         value: "medium",
         label: "Medium",
-        color: "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25",
+        icon: "🟡",
+        color: "bg-[var(--color-warning)] text-[var(--color-bg)] shadow-lg",
       },
       {
         value: "hard",
         label: "Hard",
-        color: "bg-gradient-to-r from-rose-500 to-red-500 text-white shadow-lg shadow-rose-500/25",
+        icon: "🔴",
+        color: "bg-[var(--color-error)] text-[var(--color-bg)] shadow-lg",
       },
     ]
   }, [])
@@ -284,7 +287,7 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto neuro-strong-typography">
       {submitError && !isConfirmDialogOpen && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
@@ -439,6 +442,7 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
                 onClick={() => setValue("difficulty", level.value as "easy" | "medium" | "hard")}
                 aria-pressed={difficulty === level.value}
               >
+                <span className="mr-2">{level.icon}</span>
                 {level.label}
                 {difficulty === level.value && <Check className="ml-2 h-4 w-4" />}
               </Button>
@@ -455,9 +459,9 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
                 {difficultyOptions.find(d => d.value === difficulty)?.label}:
               </p>
               <p className="text-muted-foreground text-xs mt-1">
-                {difficulty === "easy" && "Fundamental concepts. 5-10 minutes per question."}
-                {difficulty === "medium" && "Intermediate skills. 10-15 minutes per question."}
-                {difficulty === "hard" && "Advanced topics. 15-20 minutes per question."}
+                {difficulty === "easy" && "Basic syntax, variables, loops. Examples: Hello World, simple calculations. 5-10 minutes per question."}
+                {difficulty === "medium" && "Functions, arrays, conditionals. Examples: Sorting algorithms, data validation. 10-15 minutes per question."}
+                {difficulty === "hard" && "Advanced algorithms, data structures. Examples: Binary trees, dynamic programming. 15-20 minutes per question."}
               </p>
             </motion.div>
           )}

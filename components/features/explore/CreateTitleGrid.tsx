@@ -54,61 +54,31 @@ import { getPlanConfig, isQuizTypeAvailable } from '@/types/subscription-plans';
 import type { SubscriptionPlanType } from '@/types/subscription';
 import { useToast } from '@/hooks/use-toast';
 
-// Enhanced color system with glassmorphism
+// Use centralized Nerobrutal theme tokens for colors (visual-only changes)
 const getColorClasses = (color: string, isLocked: boolean) => {
-  const colorMap = {
-    blue: {
-      card: isLocked
-        ? "bg-gray-50 dark:bg-gray-950 border-4 border-gray-200 dark:border-gray-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] opacity-75"
-        : "bg-blue-50 dark:bg-blue-950 border-4 border-blue-200 dark:border-blue-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]",
-      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-blue-600 dark:text-blue-400",
-      button: isLocked ? "bg-gray-400 border-4 border-gray-500 shadow-[4px_4px_0px_0px_hsl(var(--border))]" : "bg-blue-500 border-4 border-blue-600 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:bg-blue-600"
-    },
-    green: {
-      card: isLocked
-        ? "bg-gray-50 dark:bg-gray-950 border-4 border-gray-200 dark:border-gray-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] opacity-75"
-        : "bg-green-50 dark:bg-green-950 border-4 border-green-200 dark:border-green-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]",
-      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-green-600 dark:text-green-400",
-      button: isLocked ? "bg-gray-400 border-4 border-gray-500 shadow-[4px_4px_0px_0px_hsl(var(--border))]" : "bg-green-500 border-4 border-green-600 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:bg-green-600"
-    },
-    purple: {
-      card: isLocked
-        ? "bg-gray-50 dark:bg-gray-950 border-4 border-gray-200 dark:border-gray-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] opacity-75"
-        : "bg-purple-50 dark:bg-purple-950 border-4 border-purple-200 dark:border-purple-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]",
-      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-purple-600 dark:text-purple-400",
-      button: isLocked ? "bg-gray-400 border-4 border-gray-500 shadow-[4px_4px_0px_0px_hsl(var(--border))]" : "bg-purple-500 border-4 border-purple-600 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:bg-purple-600"
-    },
-    orange: {
-      card: isLocked
-        ? "bg-gray-50 dark:bg-gray-950 border-4 border-gray-200 dark:border-gray-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] opacity-75"
-        : "bg-orange-50 dark:bg-orange-950 border-4 border-orange-200 dark:border-orange-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]",
-      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-orange-600 dark:text-orange-400",
-      button: isLocked ? "bg-gray-400 border-4 border-gray-500 shadow-[4px_4px_0px_0px_hsl(var(--border))]" : "bg-orange-500 border-4 border-orange-600 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:bg-orange-600"
-    },
-    teal: {
-      card: isLocked
-        ? "bg-gray-50 dark:bg-gray-950 border-4 border-gray-200 dark:border-gray-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] opacity-75"
-        : "bg-teal-50 dark:bg-teal-950 border-4 border-teal-200 dark:border-teal-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]",
-      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-teal-600 dark:text-teal-400",
-      button: isLocked ? "bg-gray-400 border-4 border-gray-500 shadow-[4px_4px_0px_0px_hsl(var(--border))]" : "bg-teal-500 border-4 border-teal-600 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:bg-teal-600"
-    },
-    indigo: {
-      card: isLocked
-        ? "bg-gray-50 dark:bg-gray-950 border-4 border-gray-200 dark:border-gray-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] opacity-75"
-        : "bg-indigo-50 dark:bg-indigo-950 border-4 border-indigo-200 dark:border-indigo-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]",
-      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-indigo-600 dark:text-indigo-400",
-      button: isLocked ? "bg-gray-400 border-4 border-gray-500 shadow-[4px_4px_0px_0px_hsl(var(--border))]" : "bg-indigo-500 border-4 border-indigo-600 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:bg-indigo-600"
-    },
-    rose: {
-      card: isLocked
-        ? "bg-gray-50 dark:bg-gray-950 border-4 border-gray-200 dark:border-gray-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] opacity-75"
-        : "bg-rose-50 dark:bg-rose-950 border-4 border-rose-200 dark:border-rose-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]",
-      icon: isLocked ? "text-gray-400 dark:text-gray-600" : "text-rose-600 dark:text-rose-400",
-      button: isLocked ? "bg-gray-400 border-4 border-gray-500 shadow-[4px_4px_0px_0px_hsl(var(--border))]" : "bg-rose-500 border-4 border-rose-600 shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:bg-rose-600"
-    }
+  // Map logical color names to theme variables used in the design system
+  const mapToVar: Record<string, string> = {
+    blue: 'primary',
+    green: 'success',
+    purple: 'secondary',
+    orange: 'accent',
+    teal: 'success',
+    indigo: 'primary',
+    rose: 'error',
   };
-  
-  return colorMap[color as keyof typeof colorMap] || colorMap.blue;
+
+  const token = mapToVar[color] || 'primary';
+
+  const baseCard = isLocked
+    ? 'bg-[var(--color-card)] border-4 border-[var(--color-border)] opacity-80'
+    : 'bg-[var(--color-card)] border-4 border-[var(--color-border)] shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]';
+
+  const iconClass = isLocked ? 'text-gray-400 dark:text-gray-600' : `text-[var(--color-${token})]`;
+  const buttonClass = isLocked
+    ? 'bg-[var(--color-muted)] border-4 border-[var(--color-border)] text-[var(--color-text)] shadow-[4px_4px_0px_0px_hsl(var(--border))]'
+    : `bg-[var(--color-${token})] border-4 border-[var(--color-border)] text-[var(--color-bg)] hover:bg-[var(--color-accent)]`;
+
+  return { card: baseCard, icon: iconClass, button: buttonClass };
 };
 
 interface CreateTileGridProps {
@@ -342,11 +312,16 @@ const iconVariants = {
 };
 
 const getDifficultyColor = (difficulty: string) => {
+  // Map difficulties to Nerobrutal semantic tokens
   switch (difficulty) {
-    case "Easy": return "bg-green-100 text-green-700 border-green-200";
-    case "Medium": return "bg-yellow-100 text-yellow-700 border-yellow-200";
-    case "Advanced": return "bg-red-100 text-red-700 border-red-200";
-    default: return "bg-gray-100 text-gray-700 border-gray-200";
+    case 'Easy':
+      return 'bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/50';
+    case 'Medium':
+      return 'bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/50';
+    case 'Advanced':
+      return 'bg-[var(--color-error)]/20 text-[var(--color-error)] border-[var(--color-error)]/50';
+    default:
+      return 'bg-[var(--color-muted)]/20 text-[var(--color-text)] border-[var(--color-border)]/50';
   }
 };
 
@@ -479,7 +454,7 @@ function Tile({
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.95 }}
                         >
-                          <Badge variant="neutral" className={cn(neo.badge, "bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 border-4 border-amber-300 dark:border-amber-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] font-semibold text-xs")}>
+                          <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))] font-semibold")}>
                             <Crown className="h-3 w-3 mr-1" />
                             {requiredPlanConfig.name}
                           </Badge>
@@ -492,7 +467,7 @@ function Tile({
                   ) : requiredPlan !== 'FREE' && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700")}>
+                        <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/40")}>
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Unlocked
                         </Badge>
@@ -547,7 +522,7 @@ function Tile({
           <div className="grid lg:grid-cols-2 flex-1 min-h-0">
             {/* Left side - Hero content */}
             <div className="p-6 lg:p-8 bg-card border-r-6 border-border flex flex-col">
-              <DialogHeader className="space-y-6">
+              <DialogHeader className="space-y-4 sm:space-y-6">
                 <DialogTitle className="flex items-center justify-between">
                   <div className={`flex items-center text-4xl font-bold ${colorClasses.icon}`}>
                     <motion.div
@@ -568,12 +543,12 @@ function Tile({
 
                   <div className="flex items-center gap-3">
                     {showUpgradeBadge ? (
-                      <Badge variant="neutral" className={cn(neo.badge, "bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 border-4 border-amber-300 dark:border-amber-700 shadow-[4px_4px_0px_0px_hsl(var(--border))]")}>
+                      <Badge variant="neutral" className={cn(neo.badge, "bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))]")}> 
                         <Crown className="h-3 w-3 mr-1" />
                         {requiredPlanConfig.name} Required
                       </Badge>
                     ) : requiredPlan !== 'FREE' && (
-                      <Badge variant="neutral" className={cn(neo.badge, "bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 border-4 border-green-300 dark:border-green-700 shadow-[4px_4px_0px_0px_hsl(var(--border))]")}>
+                      <Badge variant="neutral" className={cn(neo.badge, "bg-[var(--color-success)]/20 dark:bg-[var(--color-success)]/10 text-[var(--color-success)] dark:text-[var(--color-success)] border-[var(--color-success)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))]")}> 
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Unlocked
                       </Badge>
@@ -637,8 +612,8 @@ function Tile({
             </div>
 
             {/* Right side - Details */}
-            <div className="p-8 overflow-y-auto flex-1">
-              <div className="space-y-8">
+            <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto flex-1">
+              <div className="space-y-6 sm:space-y-8">
                 {/* Quick stats */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -783,10 +758,10 @@ export function CreateTileGrid() {
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-blue-100 dark:bg-blue-900/30 border-4 border-blue-200 dark:border-blue-800 shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+          className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[var(--color-primary)]/10 dark:bg-[var(--color-primary)]/30 border-4 border-[var(--color-primary)]/20 shadow-[4px_4px_0px_0px_hsl(var(--border))]"
         >
-          <Sparkles className="h-5 w-5 text-blue-600" />
-          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">AI-Powered Learning Tools</span>
+          <Sparkles className="h-5 w-5 text-[var(--color-primary)]" />
+          <span className="text-sm font-medium text-[var(--color-primary)]">AI-Powered Learning Tools</span>
         </motion.div>
 
         <motion.h1

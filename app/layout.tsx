@@ -110,7 +110,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </noscript>
 
                 <Suspense fallback={<SuspenseGlobalFallback />}>
-                  <div className="relative min-h-screen flex flex-col border-l-8 border-r-8 border-[var(--color-border)]">
+                  <div className="relative min-h-screen flex flex-col border-l-0 border-r-0 sm:border-l-8 sm:border-r-8 border-[var(--color-border)]">
                     {/* Main Content */}
                     <main id="main-content" className="flex-1 w-full p-4 sm:p-6 lg:p-8 bg-[var(--color-bg)]">
                       <MotionProvider>

@@ -89,7 +89,7 @@ const FaqAccordion = () => {
 					whileInView={{ opacity: 1, y: 0 }}
 					viewport={{ once: true, amount: 0.2 }}
 					transition={{ duration: 0.6, ease: APPLE_EASING }}
-					className="inline-block px-3 py-1.5 rounded-sm border-4 border-border bg-primary/10 text-primary text-sm font-medium mb-6"
+					className="inline-block px-3 py-1.5 rounded-sm border-4 border-[var(--color-border)] bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-medium mb-6"
 				>
 					FAQ
 				</motion.div>
@@ -104,7 +104,7 @@ const FaqAccordion = () => {
 				>
 					Everything you need
 					<br />
-					<span className="text-primary">
+					<span className="text-[var(--color-bg)] drop-shadow-lg">
 						to know
 					</span>
 				</motion.h2>
@@ -141,7 +141,7 @@ const FaqAccordion = () => {
 						className="h-full"
 					>
 						<div
-							className="bg-card rounded-2xl p-6 border-3 border-border shadow-[6px_6px_0px_0px_hsl(var(--border))] hover:shadow-[8px_8px_0px_0px_hsl(var(--border))] hover:translate-y-[-2px] transition-all duration-200 cursor-pointer h-full flex flex-col"
+							className="bg-[var(--color-card)] rounded-2xl p-6 border-3 border-[var(--color-border)] shadow-[6px_6px_0px_0px_var(--color-border)] hover:shadow-[8px_8px_0px_0px_var(--color-border)] hover:translate-y-[-2px] transition-all duration-200 cursor-pointer h-full flex flex-col"
 							onClick={() => toggleItem(faq.id)}
 							role="button"
 							aria-expanded={openItem === faq.id}
@@ -163,11 +163,11 @@ const FaqAccordion = () => {
 									transition={{ duration: 0.2, ease: APPLE_EASING }}
 									className="flex-shrink-0 mt-1"
 								>
-									<div className="w-6 h-6 rounded-lg bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
+									<div className="w-6 h-6 rounded-lg bg-[var(--color-primary)]/10 border-2 border-[var(--color-primary)]/20 flex items-center justify-center">
 										{openItem === faq.id ? (
-											<Minus className="h-4 w-4 text-primary" />
+											<Minus className="h-4 w-4 text-[var(--color-primary)]" />
 										) : (
-											<Plus className="h-4 w-4 text-primary" />
+											<Plus className="h-4 w-4 text-[var(--color-primary)]" />
 										)}
 									</div>
 								</motion.div>

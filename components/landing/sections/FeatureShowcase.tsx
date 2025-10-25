@@ -165,9 +165,9 @@ const FeatureShowcase = () => {
                 ease: APPLE_EASING,
               }}
             >
-              <div className="h-full bg-card p-8 border-4 border-primary shadow-[8px_8px_0px_0px_var(--primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[10px_10px_0px_0px_var(--primary)] transition-all duration-200 rounded-sm">
+              <div className="h-full bg-[var(--color-card)] p-8 border-4 border-[var(--color-primary)] shadow-[8px_8px_0px_0px_var(--color-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[10px_10px_0px_0px_var(--color-primary)] transition-all duration-200 rounded-sm">
                 {/* Icon */}
-                <div className="flex items-center justify-center w-16 h-16 border-4 border-primary-foreground bg-primary text-primary-foreground mb-6 shadow-[4px_4px_0px_0px_var(--primary)] rounded-sm">
+                <div className="flex items-center justify-center w-16 h-16 border-4 border-[var(--color-border)] bg-[var(--color-primary)] text-[var(--color-bg)] mb-6 shadow-[4px_4px_0px_0px_var(--color-border)] rounded-sm">
                   <FeatureIcon type={feature.icon} />
                 </div>
 
@@ -187,7 +187,7 @@ const FeatureShowcase = () => {
           viewport={{ once: true, amount: 0.1 }}
           transition={{ duration: 0.6, delay: 0.8, ease: APPLE_EASING }}
         >
-          <div className="inline-flex items-center gap-4 px-8 py-4 border-4 border-primary bg-primary text-primary-foreground shadow-[6px_6px_0px_0px_var(--primary)] hover:translate-x-[2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_var(--primary)] transition-all duration-200 rounded-sm">
+          <div className="inline-flex items-center gap-4 px-8 py-4 border-4 border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-bg)] shadow-[6px_6px_0px_0px_var(--color-primary)] hover:translate-x-[2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_var(--color-primary)] transition-all duration-200 rounded-sm">
             <span className="text-lg font-black">START BUILDING YOUR COURSE</span>
           </div>
         </motion.div>

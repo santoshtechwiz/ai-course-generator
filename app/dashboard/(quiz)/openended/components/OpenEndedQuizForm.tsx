@@ -55,8 +55,7 @@ interface TopicFormProps {
 const TOPIC_CATEGORIES = {
   Academic: {
     icon: BookOpen,
-    color:
-      "bg-gradient-to-r from-blue-400 to-cyan-500 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 border-0",
+    color: "bg-[var(--color-primary)] text-[var(--color-bg)] shadow-lg border-0",
     topics: [
       "Philosophy and Ethics",
       "Literature Analysis",
@@ -70,8 +69,7 @@ const TOPIC_CATEGORIES = {
   },
   Professional: {
     icon: Lightbulb,
-    color:
-      "bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/25 hover:shadow-green-500/40 border-0",
+    color: "bg-[var(--color-success)] text-[var(--color-bg)] shadow-lg border-0",
     topics: [
       "Leadership Strategies",
       "Business Ethics",
@@ -85,8 +83,7 @@ const TOPIC_CATEGORIES = {
   },
   Creative: {
     icon: PenTool,
-    color:
-      "bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-[hsl(var(--primary-foreground))] shadow-lg shadow-[hsl(var(--primary))]/25 hover:shadow-[hsl(var(--primary))]/40 border-0",
+    color: "bg-[var(--color-secondary)] text-[var(--color-bg)] shadow-lg border-0",
     topics: [
       "Creative Writing Prompts",
       "Digital Art Techniques",
@@ -100,8 +97,7 @@ const TOPIC_CATEGORIES = {
   },
   PersonalDevelopment: {
     icon: HelpCircle,
-    color:
-      "bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg shadow-yellow-500/25 hover:shadow-yellow-500/40 border-0",
+    color: "bg-[var(--color-warning)] text-[var(--color-bg)] shadow-lg border-0",
     topics: [
       "Mindfulness Practices",
       "Goal Setting Strategies",
@@ -115,8 +111,7 @@ const TOPIC_CATEGORIES = {
   },
   Social: {
     icon: MessageSquare,
-    color:
-      "bg-gradient-to-r from-red-400 to-rose-500 text-white shadow-lg shadow-red-500/25 hover:shadow-red-500/40 border-0",
+    color: "bg-[var(--color-error)] text-[var(--color-bg)] shadow-lg border-0",
     topics: [
       "Current Social Issues",
       "Cultural Diversity",
@@ -130,8 +125,7 @@ const TOPIC_CATEGORIES = {
   },
   FunAndGames: {
     icon: Sparkles,
-    color:
-      "bg-gradient-to-r from-orange-400 to-yellow-500 text-white shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 border-0",
+    color: "bg-[var(--color-accent)] text-[var(--color-bg)] shadow-lg border-0",
     topics: [
       "Trivia Questions",
       "Board Game Strategies",
@@ -282,7 +276,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   const isDisabled = useMemo(() => isLoading || creditInfo.remainingCredits < 1 || !isValid, [isLoading, creditInfo.remainingCredits, isValid])
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto neuro-strong-typography">
       <div className="space-y-6 md:space-y-8">
         <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-6 md:space-y-8">
           <motion.div
@@ -437,7 +431,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
               isLoading={isLoading}
               isEnabled={!isDisabled}
               loadingLabel="Generating Quiz..."
-              className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] hover:opacity-90 text-primary-foreground border-0 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-14 text-lg font-semibold transition-all duration-300 bg-[var(--color-primary)] text-[var(--color-bg)] border-4 border-[var(--color-border)] shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] disabled:opacity-50 disabled:cursor-not-allowed"
               customStates={{
                 default: {
                   tooltip: "Click to generate your quiz",

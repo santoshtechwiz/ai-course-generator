@@ -112,12 +112,12 @@ const CourseAILandingPage = () => {
       {/* Skip to main content */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 bg-primary text-primary-foreground px-4 py-2 rounded-sm text-sm font-bold focus:outline-none focus:ring-4 focus:ring-primary/50 border-3 border-border"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[110] bg-primary text-primary-foreground px-4 py-2 rounded-sm text-sm font-bold focus:outline-none focus:ring-4 focus:ring-primary/50 border-3 border-border"
       >
         Skip to main content
       </a>
 
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b-4 border-primary">
+  <header className="fixed top-0 left-0 right-0 z-[9999] bg-background backdrop-blur-sm border-b-4 border-primary shadow-lg md:bg-background/95 pointer-events-auto">
         <div className="flex items-center justify-between h-16 px-2 sm:px-4">
           {/* Logo */}
           <div className="flex items-center">
@@ -180,7 +180,7 @@ const CourseAILandingPage = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, ease: APPLE_EASING }}
-              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              className="fixed inset-0 bg-black/25 z-[9998] md:hidden"
               onClick={toggleMenu}
               aria-hidden="true"
             />
@@ -195,7 +195,7 @@ const CourseAILandingPage = () => {
                 damping: 35,
                 ease: APPLE_EASING,
               }}
-              className="fixed top-0 right-0 bottom-0 w-80 bg-background shadow-[-8px_0px_0px_0px_var(--primary)] z-50 border-l-4 border-primary md:hidden"
+              className="fixed top-0 right-0 bottom-0 w-80 bg-background/100 shadow-[-8px_0px_0px_0px_var(--primary)] z-[10000] border-l-4 border-primary md:hidden"
               role="dialog"
               aria-modal="true"
               aria-label="Mobile navigation menu"
@@ -273,69 +273,98 @@ const CourseAILandingPage = () => {
 
         <motion.section
           id="features"
-          className="py-16 md:py-24 border-t-4 border-primary bg-secondary/20"
+          className="py-16 md:py-24 border-t-4 border-[var(--color-primary)] bg-gradient-to-br from-[var(--color-secondary)]/10 via-[var(--color-primary)]/5 to-[var(--color-accent)]/10 relative overflow-hidden"
           aria-labelledby="features-heading"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: APPLE_EASING }}
           viewport={{ once: true, amount: 0.1 }}
         >
-          <FeatureShowcase />
+          {/* Decorative elements (visual only) */}
+          <div className="hidden sm:block absolute top-8 right-0 w-32 h-32 bg-[var(--color-primary)]/20 rounded-full blur-3xl translate-x-16 z-0 pointer-events-none" />
+          <div className="hidden sm:block absolute bottom-0 left-0 w-24 h-24 bg-[var(--color-accent)]/20 rounded-full blur-2xl translate-y-12 -translate-x-12 z-0 pointer-events-none" />
+          <div className="relative z-10">
+            <FeatureShowcase />
+          </div>
         </motion.section>
 
         <motion.section
           id="how-it-works"
-          className="py-16 md:py-24 bg-background border-t-4 border-secondary"
+          className="py-16 md:py-24 bg-[var(--color-bg)] border-t-4 border-[var(--color-accent)] relative overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: APPLE_EASING, delay: 0.1 }}
           viewport={{ once: true, amount: 0.1 }}
         >
-          <HowItWorksSection />
+          {/* Decorative elements (visual only) */}
+          <div className="hidden sm:block absolute top-1/2 left-0 w-40 h-40 bg-[var(--color-accent)]/15 rounded-full blur-3xl -translate-x-20 z-0 pointer-events-none" />
+          <div className="hidden sm:block absolute bottom-0 right-0 w-28 h-28 bg-[var(--color-success)]/20 rounded-full blur-2xl translate-x-14 translate-y-14 z-0 pointer-events-none" />
+          <div className="relative z-10">
+            <HowItWorksSection />
+          </div>
         </motion.section>
 
         <motion.section
           id="testimonials"
-          className="py-16 md:py-24 border-t-4 border-primary bg-primary/5"
+          className="py-16 md:py-24 border-t-4 border-[var(--color-primary)] bg-gradient-to-br from-[var(--color-warning)]/5 via-[var(--color-success)]/5 to-[var(--color-primary)]/5 relative overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: APPLE_EASING, delay: 0.2 }}
           viewport={{ once: true, amount: 0.1 }}
         >
-          <TestimonialsSlider />
+          {/* Decorative elements (visual only) */}
+          <div className="hidden sm:block absolute top-8 left-1/4 w-36 h-36 bg-[var(--color-warning)]/15 rounded-full blur-3xl z-0 pointer-events-none" />
+          <div className="hidden sm:block absolute bottom-1/4 right-1/3 w-20 h-20 bg-[var(--color-success)]/20 rounded-full blur-2xl z-0 pointer-events-none" />
+          <div className="relative z-10">
+            <TestimonialsSlider />
+          </div>
         </motion.section>
 
         <motion.section
           id="about"
-          className="py-16 md:py-24 bg-background border-t-4 border-accent"
+          className="py-16 md:py-24 bg-[var(--color-bg)] border-t-4 border-[var(--color-success)] relative overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: APPLE_EASING, delay: 0.3 }}
           viewport={{ once: true, amount: 0.1 }}
         >
-          <AboutSection />
+          {/* Decorative elements (visual only) */}
+          <div className="hidden sm:block absolute top-1/3 right-0 w-32 h-32 bg-[var(--color-success)]/15 rounded-full blur-3xl translate-x-16 z-0 pointer-events-none" />
+          <div className="hidden sm:block absolute bottom-0 left-1/3 w-24 h-24 bg-[var(--color-primary)]/20 rounded-full blur-2xl -translate-y-12 z-0 pointer-events-none" />
+          <div className="relative z-10">
+            <AboutSection />
+          </div>
         </motion.section>
 
         <motion.section
           id="faq"
-          className="py-16 md:py-24 border-t-4 border-secondary bg-secondary/10"
+          className="py-16 md:py-24 border-t-4 border-[var(--color-secondary)] bg-gradient-to-br from-[var(--color-accent)]/10 via-[var(--color-secondary)]/5 to-[var(--color-warning)]/10 relative overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: APPLE_EASING, delay: 0.4 }}
           viewport={{ once: true, amount: 0.1 }}
         >
-          <FaqAccordion />
+          {/* Decorative elements (visual only) */}
+          <div className="hidden sm:block absolute top-8 left-1/2 w-28 h-28 bg-[var(--color-secondary)]/15 rounded-full blur-3xl -translate-x-14 z-0 pointer-events-none" />
+          <div className="hidden sm:block absolute bottom-1/2 right-0 w-36 h-36 bg-[var(--color-accent)]/20 rounded-full blur-3xl translate-x-18 z-0 pointer-events-none" />
+          <div className="relative z-10">
+            <FaqAccordion />
+          </div>
         </motion.section>
 
         <motion.section
           id="cta"
-          className="py-16 md:py-24 bg-main text-main-foreground border-t-4 border-main"
+          className="py-16 md:py-24 bg-gradient-to-r from-[var(--color-primary)] via-[var(--color-primary)] to-[var(--color-accent)] text-[var(--color-bg)] border-t-4 border-[var(--color-primary)] relative overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: APPLE_EASING, delay: 0.5 }}
           viewport={{ once: true, amount: 0.1 }}
         >
-          <div className="max-w-4xl mx-auto text-center px-4">
+          {/* Decorative elements (visual only) */}
+          <div className="hidden sm:block absolute top-0 left-0 w-40 h-40 bg-[var(--color-bg)]/10 rounded-full blur-3xl -translate-x-20 -translate-y-20 z-0 pointer-events-none" />
+          <div className="hidden sm:block absolute bottom-0 right-0 w-32 h-32 bg-[var(--color-bg)]/15 rounded-full blur-3xl translate-x-16 translate-y-16 z-0 pointer-events-none" />
+          <div className="hidden sm:block absolute top-1/2 left-1/2 w-24 h-24 bg-[var(--color-bg)]/20 rounded-full blur-2xl -translate-x-12 -translate-y-12 z-0 pointer-events-none" />
+          <div className="relative z-10 max-w-4xl mx-auto text-center px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -385,15 +414,15 @@ const CourseAILandingPage = () => {
               viewport={{ once: true, amount: 0.2 }}
               className="mt-12 flex flex-wrap items-center justify-center gap-6 md:gap-10 opacity-95"
             >
-              <div className="flex items-center gap-3 px-4 py-2 border-2 border-main-foreground rounded-sm">
+              <div className="flex items-center gap-3 px-4 py-2 border-2 border-[var(--color-bg)] rounded-sm">
                 <div className="w-3 h-3 rounded-sm bg-current"></div>
                 <span className="text-sm font-bold">AI-powered tools</span>
               </div>
-              <div className="flex items-center gap-3 px-4 py-2 border-2 border-main-foreground rounded-sm">
+              <div className="flex items-center gap-3 px-4 py-2 border-2 border-[var(--color-bg)] rounded-sm">
                 <div className="w-3 h-3 rounded-sm bg-current"></div>
                 <span className="text-sm font-bold">Multiple quiz types</span>
               </div>
-              <div className="flex items-center gap-3 px-4 py-2 border-2 border-main-foreground rounded-sm">
+              <div className="flex items-center gap-3 px-4 py-2 border-2 border-[var(--color-bg)] rounded-sm">
                 <div className="w-3 h-3 rounded-sm bg-current"></div>
                 <span className="text-sm font-bold">Progress tracking</span>
               </div>
@@ -411,7 +440,7 @@ const CourseAILandingPage = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ duration: 0.3, ease: APPLE_EASING }}
-            className="fixed bottom-6 right-6 z-50 rounded-sm border-3 border-primary shadow-[4px_4px_0px_0px_var(--primary)] bg-primary text-primary-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_var(--primary)] p-3 focus:outline-none focus:ring-3 focus:ring-primary/50 transition-all duration-200"
+            className="fixed bottom-6 right-6 z-[110] rounded-sm border-3 border-primary shadow-[4px_4px_0px_0px_var(--primary)] bg-primary text-primary-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_var(--primary)] p-3 focus:outline-none focus:ring-3 focus:ring-primary/50 transition-all duration-200"
             aria-label="Scroll to top of page"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

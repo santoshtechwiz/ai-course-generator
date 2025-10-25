@@ -13,6 +13,7 @@ module.exports = {
         // Neobrutal base palette — aligned to globals.css variables
         background: "var(--color-bg)",
         foreground: "var(--color-text)",
+        primary: "var(--color-primary)",
         accent: "var(--color-primary)",
         accentHover: "#e60076",
         card: "var(--color-card)",
