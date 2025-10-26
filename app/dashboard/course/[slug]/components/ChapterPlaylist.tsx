@@ -295,7 +295,7 @@ const ChapterPlaylist: React.FC<ChapterPlaylistProps> = ({
             const duration = chapter.videoId ? videoDurations?.[chapter.videoId] : undefined
             const hasVideo = !!chapter.videoId
             const isLocked = hasVideo && !chapter.isFree && chapter.locked
-            const thumbnailUrl = chapter.thumbnail || (hasVideo ? getYouTubeThumbnailUrl(chapter.videoId || "", "maxresdefault") : null)
+            const thumbnailUrl = chapter.thumbnail || (hasVideo ? getYouTubeThumbnailUrl(chapter.videoId || "", "hqdefault") : null)
 
             if (chapterIndex === 0) {
               console.log('[ChapterPlaylist] First chapter debug:', {
