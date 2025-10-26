@@ -271,11 +271,12 @@ export class CourseService {
     const { generateCourse } = await import("@/lib/ai/course-ai-service");
     
     const generatedCourse = await generateCourse(
-      title,
-      units.length,
+     title,
+      units,
       userId,
-      userType as any
-    );
+      "BASIC" ,
+      +creditResult.newBalance
+    );  
     
     const outputUnits = generatedCourse.units;
 

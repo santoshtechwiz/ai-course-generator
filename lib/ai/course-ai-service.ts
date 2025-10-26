@@ -284,7 +284,7 @@ export async function generateOpenEnded(
  */
 export async function generateCourse(
   topic: string,
-  numberOfUnits: number = 3,
+  units: string[],
   userId?: string,
   subscriptionPlan: SubscriptionPlanType = 'FREE',
   credits?: number
@@ -299,7 +299,7 @@ export async function generateCourse(
   
   const result = await executeAIService(context, 'generateCourseContent', {
     topic,
-    numberOfUnits,
+    units,
   })
   
   if (!result.success) {

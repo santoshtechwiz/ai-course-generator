@@ -2,7 +2,7 @@ import type { SubscriptionPlanType } from '@/types/subscription'
 import { hasMinimumPlan } from './planHierarchy'
 import { isFeatureEnabled as isFeatureFlagEnabled, getFeatureResult, type FeatureFlagContext } from './featureFlags'
 
-export type FeatureType = 
+export type FeatureType =
   | 'pdf-generation'
   | 'quiz-access'
   | 'quiz-mcq'
@@ -13,7 +13,7 @@ export type FeatureType =
   | 'quiz-ordering'
   | 'quiz-video'
   | 'quiz-ordering'
-    | 'document-quiz'
+  | 'document-quiz'
   | 'course-videos'
   | 'course-premium-content'
   | 'course-creation'
@@ -65,7 +65,7 @@ export const FEATURE_REQUIREMENTS: Record<FeatureType, FeatureRequirement> = {
     requiresSubscription: false,
     minimumPlan: 'FREE'
   },
-  
+
   // Content Features
   'pdf-generation': {
     requiresAuth: true,
@@ -196,10 +196,10 @@ export function checkFeatureAccess(params: {
 
   const featureResult = getFeatureResult(feature, flagContext)
   if (!featureResult.enabled) {
-    return { 
-      canAccess: false, 
+    return {
+      canAccess: false,
       isExplorable: true, // Always allow exploration
-      reason: (featureResult.reason as any) || 'disabled', 
+      reason: (featureResult.reason as any) || 'disabled',
       requiredPlan: req?.minimumPlan || 'BASIC'
     }
   }

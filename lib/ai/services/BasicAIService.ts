@@ -13,6 +13,7 @@ import { buildOrderingPromptWithSchema } from '@/lib/ai/prompts/ordering.prompt'
 import { buildBlanksPromptWithSchema } from '@/lib/ai/prompts/blanks.prompt'
 import { buildVideoQuizPromptWithSchema } from '@/lib/ai/prompts/video.prompt'
 import { truncateTranscript, estimateTokenCount, buildSummaryPromptWithSchema } from '@/lib/ai/prompts/summary.prompt'
+import { buildCoursePromptWithSchema } from '@/lib/ai/prompts/course.prompt'
 
 export class BasicAIService extends AIBaseService {
   constructor(context: AIServiceContext) {
@@ -565,6 +566,104 @@ export class BasicAIService extends AIBaseService {
         data: result.functionCall 
           ? JSON.parse(result.functionCall.arguments).summary
           : result.content,
+        usage: {
+          creditsUsed: creditCost,
+          tokensUsed: result.usage?.totalTokens,
+        },
+      }
+    } catch (error) {
+      return this.handleError(error)
+    }
+  }
+
+  /**
+   * Generate Course Content
+   * Creates a structured course outline with units and chapters with YouTube search queries
+   */
+  async generateCourseContent(params: {
+    topic: string
+    units: string[]
+  }): Promise<AIServiceResult> {
+    try {
+      // 1. Validate feature access
+      const accessCheck = await this.checkFeatureAccess('course-creation')
+      if (!accessCheck.success) return accessCheck
+
+      // 2. Validate and sanitize inputs
+      const topicValidation = this.sanitizeTextInput(params.topic, 200)
+      if (!topicValidation.isValid) {
+        return { success: false, error: topicValidation.error }
+      }
+
+      if (!params.units || !Array.isArray(params.units) || params.units.length === 0) {
+        return { success: false, error: 'Units array is required and cannot be empty' }
+      }
+
+      if (params.units.length > 10) {
+        return { success: false, error: 'Maximum 10 units allowed' }
+      }
+
+      // Validate each unit
+      for (const unit of params.units) {
+        const unitValidation = this.sanitizeTextInput(unit, 100)
+        if (!unitValidation.isValid) {
+          return { success: false, error: `Invalid unit name: ${unitValidation.error}` }
+        }
+      }
+
+      // 3. Check plan-specific limits
+      const limitCheck = this.validatePlanLimits('course-creation', params.units.length)
+      if (!limitCheck.success) return limitCheck
+
+      // 4. Check credits
+      const creditCost = this.getCreditCost('course-creation')
+      const creditCheck = this.checkCredits(creditCost)
+      if (!creditCheck.success) return creditCheck
+
+      // 5. Check rate limits
+      const rateLimitCheck = await this.checkRateLimit()
+      if (!rateLimitCheck.success) return rateLimitCheck
+
+      // 6. Build request using prompt template with function calling
+      const options = this.buildRequestOptions()
+      const model = this.getPrimaryModel()
+
+      const { messages, functions, functionCall } = buildCoursePromptWithSchema({
+        title: topicValidation.sanitizedInput!,
+        units: params.units,
+      })
+
+      const result = await this.provider.generateChatCompletion({
+        model,
+        messages,
+        functions,
+        functionCall,
+        temperature: options.temperature,
+        maxTokens: options.maxTokens,
+      })
+
+      // 7. Log usage
+      await this.logUsage({
+        featureType: 'course-creation',
+        creditsUsed: creditCost,
+        tokensUsed: result.usage?.totalTokens,
+        success: true,
+      })
+
+      // Parse function call response or use content
+      let responseData = result.content
+      if (result.functionCall?.arguments) {
+        try {
+          const parsed = JSON.parse(result.functionCall.arguments)
+          responseData = parsed
+        } catch (e) {
+          console.error('Failed to parse function call arguments:', e)
+        }
+      }
+
+      return {
+        success: true,
+        data: responseData,
         usage: {
           creditsUsed: creditCost,
           tokensUsed: result.usage?.totalTokens,
