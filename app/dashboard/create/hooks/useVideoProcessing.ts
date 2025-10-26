@@ -124,12 +124,12 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       console.log(`📡 Status response for chapter ${chapterId}:`, response.data)
       
       // Successful completion - video is ready
-      if (response.data.videoId) {
-        console.log(`✅ Video completed for chapter ${chapterId}, videoId: ${response.data.videoId}`)
+      if (response.videoId) {
+        console.log(`✅ Video completed for chapter ${chapterId}, videoId: ${response.videoId}`)
         const completedStatus: VideoStatus = {
           chapterId,
           status: "completed",
-          videoId: response.data.videoId,
+          videoId: response.videoId,
           message: "Video generated successfully"
         }
         
@@ -148,12 +148,12 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
         return true
       }
       // Error state
-      if (response.data.videoStatus === "error" || response.data.failed) {
+      if (response.videoStatus === "error" || response.failed) {
         console.log(`❌ Video failed for chapter ${chapterId}`)
         const errorStatus: VideoStatus = {
           chapterId,
           status: "error",
-          message: response.data.error || "Video generation failed"
+          message: response.error || "Video generation failed"
         }
         setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
         setStatuses((prev) => ({

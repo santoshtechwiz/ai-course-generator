@@ -9,7 +9,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DragDropContext } from "react-beautiful-dnd"
 
-import VideoPlayer from "../../course/[slug]/components/video/components/VideoPlayer"
 import { cn } from "@/lib/utils"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { GuidedHelp, GuidedHelpButton, useGuidedHelp } from "./GuidedHelp"
@@ -19,7 +18,8 @@ import EnhancedUnitCard from "./EnhancedUnitCard"
 import { useToast } from "@/hooks"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api-helper"
-import { Chapter, Course, CourseUnit } from "@/app/types/types"
+import type { Chapter, Course, CourseUnit } from "@/app/types/types"
+import VideoPreview from "./VideoPreview"
 
 type CourseProps = {
   course: Course & {
@@ -101,48 +101,44 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Guided Help Modal */}
       {showHelp && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
           <GuidedHelp onClose={closeHelp} onDismissPermanently={dismissPermanently} />
         </div>
       )}
-      <div className="flex-none p-4 border-b">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BookOpen className="w-6 h-6" />
-            {course.title}
+      <div className="flex-none p-4 border-b-4 border-border">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <h1 className="text-xl sm:text-2xl font-black uppercase flex items-center gap-2">
+            <BookOpen className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span className="truncate">{course.title}</span>
           </h1>
           <GuidedHelpButton onClick={openHelp} />
         </div>
         <div className="space-y-2">
           <Progress
             value={progress}
-            className={cn("w-full", {
-              "bg-gray-200": !allChaptersCompleted,
-              "bg-green-100": allChaptersCompleted,
-            })}
-            indicatorClassName={cn({
-              "bg-green-600": allChaptersCompleted,
+            className={cn("w-full border-4 border-border bg-card", {
+              "bg-accent/20": !allChaptersCompleted,
+              "bg-accent/40": allChaptersCompleted,
             })}
           />
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground">
               {completedChapters.size} of {totalChaptersCount} chapters completed
             </p>
             {allChaptersCompleted && (
-              <span className="text-sm text-green-600 font-medium flex items-center">
+              <span className="text-sm text-accent font-black uppercase flex items-center">
                 <CheckCircle className="h-4 w-4 mr-1" />
                 All chapters completed
               </span>
             )}
           </div>
-        </div>{" "}
+        </div>
         {/* Show queue status when videos are being generated */}
         {isGeneratingVideos && (
-          <Alert className="mt-4 bg-primary/10 border-primary/20">
-            <div className="h-4 w-4 text-primary mr-2" />
-            <AlertTitle>Generating Videos</AlertTitle>
+          <Alert className="mt-4 bg-accent/10 border-4 border-accent/20">
+            <div className="h-4 w-4 text-accent mr-2" />
+            <AlertTitle className="font-black uppercase">Generating Videos</AlertTitle>
             <AlertDescription>
               <div className="space-y-2">
                 <div>
@@ -160,9 +156,9 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
         )}
         {/* Show retry options if some videos failed */}
         {chaptersWithErrors > 0 && !isGeneratingVideos && (
-          <Alert variant="destructive" className="mt-4">
+          <Alert variant="destructive" className="mt-4 border-4 border-destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Video Generation Issues</AlertTitle>
+            <AlertTitle className="font-black uppercase">Video Generation Issues</AlertTitle>
             <AlertDescription>
               <div className="space-y-3">
                 <div>
@@ -175,6 +171,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                     variant="outline"
                     onClick={() => handleGenerateAll(true)} // retry failed only
                     disabled={isSaving || isGeneratingVideos}
+                    className="border-4 border-border shadow-neo"
                   >
                     Retry Failed Videos
                   </Button>
@@ -183,6 +180,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                     variant="outline"
                     onClick={() => handleGenerateAll(false)} // regenerate all
                     disabled={isSaving || isGeneratingVideos}
+                    className="border-4 border-border shadow-neo"
                   >
                     Regenerate All Videos
                   </Button>
@@ -191,15 +189,15 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
             </AlertDescription>
           </Alert>
         )}
-      </div>{" "}
+      </div>
       <ScrollArea className="flex-grow">
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="p-4 space-y-4">
             {/* Display a helpful message if there are no chapters */}
             {course.units.flatMap((unit) => unit.chapters).length === 0 && (
-              <Alert className="mb-4">
+              <Alert className="mb-4 border-4 border-border bg-card">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>No Chapters Found</AlertTitle>
+                <AlertTitle className="font-black uppercase">No Chapters Found</AlertTitle>
                 <AlertDescription>
                   Start by adding chapters to your course units. Once you have chapters, you can generate videos for
                   them.
@@ -212,7 +210,6 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                 key={String(unit.id)}
                 title="Unit Management"
                 description="You can reorder chapters by dragging them using the handle on the left. Add custom chapters with the 'Add Chapter' button."
-                side="right"
               >
                 <EnhancedUnitCard
                   unit={unit}
@@ -226,7 +223,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                   isGeneratingVideos={isGeneratingVideos}
                   videoStatuses={videoStatuses}
                   onChapterComplete={handleChapterComplete}
-                  onStartEditingChapter={startEditingChapter}
+                  onStartAddingChapter={startEditingChapter}
                   onSaveChapterTitle={saveChapterTitle}
                   onCancelEditingChapter={cancelEditingChapter}
                   onEditingChapterTitleChange={setEditingChapterTitle}
@@ -245,31 +242,32 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
           </div>
         </DragDropContext>
       </ScrollArea>
-      <div className="flex-none p-4 border-t">
-        <div className="flex items-center justify-between">
-          <Button variant="outline" asChild>
+      <div className="flex-none p-4 border-t-4 border-border">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <Button variant="outline" asChild className="border-4 border-border shadow-neo bg-transparent w-full sm:w-auto">
             <Link href="/dashboard/explore">
               <ChevronLeft className="w-4 h-4 mr-2" />
               Back
             </Link>
-          </Button>{" "}
+          </Button>
           <ContextualHelp
             title="Save Course"
             description="Save your course structure and optionally generate videos for all chapters. You can also save without videos and generate them later from the course page."
-            side="top"
           >
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <Button
                 onClick={saveAndContinue}
                 disabled={isSaving || isGeneratingVideos}
                 className={cn(
-                  "flex-1 transition-all duration-300 shadow-md",
-                  allChaptersCompleted ? "bg-green-600 hover:bg-green-700" : "",
+                  "flex-1 transition-all duration-300 shadow-neo border-4 border-border",
+                  allChaptersCompleted
+                    ? "bg-accent text-background font-black uppercase"
+                    : "bg-card text-card-foreground",
                 )}
               >
                 {isSaving || isGeneratingVideos ? (
                   <span className="flex items-center">
-                    <div className="h-4 w-4 text-primary mr-2" />
+                    <div className="h-4 w-4 text-accent mr-2" />
                     {isSaving ? "Saving..." : "Generating Videos..."}
                   </span>
                 ) : (
@@ -295,8 +293,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                 <Button
                   onClick={() => handleGenerateAll(false)}
                   disabled={isSaving}
-                  variant="outline"
-                  className="whitespace-nowrap"
+                  className="w-full sm:w-auto whitespace-nowrap bg-accent text-background border-4 border-border shadow-neo font-black uppercase"
                 >
                   <PlayCircle className="w-4 h-4 mr-2" />
                   Generate All Videos
@@ -330,7 +327,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                     }
                   }}
                   disabled={isSaving || isGeneratingVideos}
-                  className="whitespace-nowrap"
+                  className="w-full sm:w-auto whitespace-nowrap border-4 border-border shadow-neo"
                 >
                   Save Without Videos
                 </Button>
@@ -341,12 +338,11 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
       </div>
       {/* Video Dialog */}
       <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
-        <DialogContent className="sm:max-w-3xl">
-          {" "}
+        <DialogContent className="sm:max-w-3xl shadow-[8px_8px_0px_0px_var(--border)]">
           <DialogHeader>
             <DialogTitle>{currentVideoTitle}</DialogTitle>
           </DialogHeader>
-          {currentVideoId && <VideoPlayer videoId={currentVideoId} className="mt-2" />}
+          {currentVideoId && <VideoPreview {...({ videoId: currentVideoId } as any)} className="mt-2" />}
         </DialogContent>
       </Dialog>
     </div>

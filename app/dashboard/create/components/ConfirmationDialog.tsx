@@ -10,7 +10,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import type { CreateCourseInput } from "@/schema/schema"
-import { Loader2 } from "lucide-react"
+import { Loader2, AlertCircle } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 interface ConfirmationDialogProps {
   open: boolean
@@ -23,43 +24,71 @@ interface ConfirmationDialogProps {
 export function ConfirmationDialog({ open, onOpenChange, onConfirm, formData, isSubmitting }: ConfirmationDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="shadow-neo border-4 border-border">
         <DialogHeader>
-          <DialogTitle className="text-gray-900">Confirm Course Creation</DialogTitle>
-          <DialogDescription className="text-gray-700">
-            Are you sure you want to create this course? Please review the details below:
+          <DialogTitle className="text-card-foreground font-bold text-lg">Confirm Course Creation</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            Review your course details before creating. This action will deduct 1 credit from your account.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <p>
-            <strong>Title:</strong> {formData.title}
-          </p>
-          <p>
-            <strong>Description:</strong> {formData.description}
-          </p>
-          <p>
-            <strong>Category:</strong> {formData.category}
-          </p>
-          <p>
-            <strong>Units:</strong>
-          </p>
-          <ul className="list-disc pl-5 text-gray-700">
-            {formData.units.map((unit, index) => (
-              <li key={index}>{unit}</li>
-            ))}
-          </ul>
-          <p>
-            <strong>Note:</strong> This action will deduct 1 credit from your account.
-          </p>
+        <div className="space-y-4 max-h-96 overflow-y-auto">
+          <div className="space-y-3">
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-semibold text-card-foreground">Title</span>
+              <p className="text-sm text-muted-foreground break-words">{formData.title}</p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-semibold text-card-foreground">Description</span>
+              <p className="text-sm text-muted-foreground break-words">{formData.description}</p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-semibold text-card-foreground">Category</span>
+              <p className="text-sm text-muted-foreground">{formData.category}</p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-semibold text-card-foreground">Units ({formData.units.length})</span>
+              <ul className="space-y-1">
+                {formData.units.map((unit, index) => (
+                  <li key={index} className="text-sm text-muted-foreground flex items-center gap-2">
+                    <span className="inline-block w-5 h-5 rounded bg-accent/20 text-accent text-xs flex items-center justify-center font-semibold">
+                      {index + 1}
+                    </span>
+                    {unit}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 p-3 bg-accent/10 rounded-lg border border-accent/30">
+            <AlertCircle className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-card-foreground">Credit Deduction</p>
+              <p className="text-sm text-muted-foreground">
+                This action will deduct{" "}
+                <Badge className="mx-1 border-2 border-border bg-accent text-background">1 credit</Badge> from your
+                account
+              </p>
+            </div>
+          </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+            className="border-4 border-border"
+          >
             Cancel
           </Button>
-          <Button onClick={onConfirm} disabled={isSubmitting}>
+          <Button
+            onClick={onConfirm}
+            disabled={isSubmitting}
+            className="bg-accent text-background border-4 border-border shadow-neo font-semibold"
+          >
             {isSubmitting ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2" />
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Creating...
               </>
             ) : (

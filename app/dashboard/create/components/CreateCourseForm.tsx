@@ -143,23 +143,23 @@ export default function CourseCreationForm({ maxQuestions, params }: {
   ]
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)]">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6 md:py-8 lg:py-10 max-w-3xl">
-        <Card className="rounded-xl shadow-lg overflow-hidden border-0">
-          <CardHeader className="bg-[var(--color-primary)] text-[var(--color-text)]">
+        <Card className="rounded-lg border-4 border-border shadow-neo bg-card overflow-hidden">
+          <CardHeader className="bg-card text-card-foreground border-b-4 border-border">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-xl sm:text-2xl font-bold">
                   Create a New Course
                 </CardTitle>
-                <p className="text-blue-100 mt-2">
+                <p className="text-muted-foreground mt-2">
                   Fill in the details for your new course. Progress is automatically saved.
                 </p>
               </div>
               
-              <div className="flex items-center gap-2 bg-blue-500/20 backdrop-blur-sm px-3 py-2 rounded-lg">
-                <span className="text-sm">Available Credits:</span>
-                <Badge variant="secondary" className="text-base px-3 py-1 bg-white text-blue-600">
+              <div className="flex items-center gap-2 bg-accent/10 backdrop-blur-sm px-3 py-2 rounded-lg border border-border">
+                <span className="text-sm font-medium">Available Credits:</span>
+                <Badge variant="secondary" className="text-base px-3 py-1 bg-accent text-background border-4 border-border">
                   {availableCredits}
                 </Badge>
               </div>
@@ -177,16 +177,16 @@ export default function CourseCreationForm({ maxQuestions, params }: {
                     key={i}
                     className={cn(
                       "flex flex-col items-center relative group",
-                      i + 1 === step ? "text-primary" : "text-muted-foreground",
+                      i + 1 === step ? "text-accent" : "text-muted-foreground",
                     )}
                   >
                     <div
                       className={cn(
-                        "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center mb-2 transition-all",
+                        "w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center mb-2 transition-all border-4",
                         i + 1 === step 
-                          ? "bg-primary/10 border-2 border-primary text-primary shadow-md" 
-                          : "bg-muted text-muted-foreground border border-gray-200",
-                        i + 1 <= step ? "ring-2 ring-offset-2 ring-blue-300" : ""
+                          ? "bg-accent/10 border-accent text-accent shadow-neo" 
+                          : "bg-card text-muted-foreground border-border",
+                        i + 1 <= step ? "ring-2 ring-offset-2 ring-accent/30" : ""
                       )}
                     >
                       {s.icon}
@@ -195,10 +195,10 @@ export default function CourseCreationForm({ maxQuestions, params }: {
                     
                     {/* Step number badge */}
                     <span className={cn(
-                      "absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
+                      "absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-4 border-border",
                       i + 1 === step 
-                        ? "bg-primary text-white" 
-                        : "bg-gray-200 text-gray-700"
+                        ? "bg-accent text-background" 
+                        : "bg-card text-muted-foreground"
                     )}>
                       {i + 1}
                     </span>
@@ -208,14 +208,13 @@ export default function CourseCreationForm({ maxQuestions, params }: {
 
               {/* Progress Bar */}
               <div className="mt-6 sm:mt-8">
-                <div className="flex justify-between text-sm text-gray-500 mb-1">
+                <div className="flex justify-between text-sm text-muted-foreground mb-1">
                   <span>Step {step} of {totalSteps}</span>
                   <span>{Math.round(((step - 1) / (totalSteps - 1)) * 100)}% Complete</span>
                 </div>
                 <Progress 
                   value={((step - 1) / (totalSteps - 1)) * 100} 
-                  className="h-3 transition-all duration-300 bg-gray-200 bg-[var(--color-primary)]" 
-                
+                  className="h-3 border-4 border-border bg-card" 
                 />
               </div>
             </div>
@@ -228,13 +227,13 @@ export default function CourseCreationForm({ maxQuestions, params }: {
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex flex-col-reverse sm:flex-row justify-between gap-4 mt-8 pt-6 border-t border-gray-100">
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-4 mt-8 pt-6 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleBack}
                 disabled={step === 1}
-                className="w-full sm:w-auto px-6 py-3 shadow-sm"
+                className="w-full sm:w-auto px-6 py-3 border-4 border-border shadow-neo"
               >
                 Back
               </Button>
@@ -245,7 +244,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
                     type="button"
                     onClick={handleNext}
                     disabled={!isStepValid() || maxQuestions === 0}
-                    className="w-full sm:w-auto px-6 py-3 bg-[var(--color-primary)] hover:bg-[var(--color-accent)] text-[var(--color-text)] shadow-neo hover:shadow-neo-hover neo-hover-lift transition-all"
+                    className="w-full sm:w-auto px-6 py-3 bg-accent text-background border-4 border-border shadow-neo font-black uppercase"
                   >
                     Continue to {steps[step].label} <span className="ml-2">→</span>
                   </Button>
@@ -258,7 +257,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
                     isEnabled={step === 3 && !showConfirmDialog}
                     creditsRequired={1}
                     requiredPlan="FREE"
-                    className="w-full sm:w-auto px-6 py-3 shadow-neo neo-hover-lift bg-[var(--color-success)] hover:bg-[var(--color-accent)] text-[var(--color-text)]"
+                    className="w-full sm:w-auto px-6 py-3 shadow-neo neo-hover-lift bg-accent text-background border-4 border-border font-black uppercase"
                     loadingLabel="Creating Course..."
                     customStates={{
                       noCredits: {
@@ -271,7 +270,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
 
                 {availableCredits > 0 && !isSubscribed && (
                   <p className="text-xs text-muted-foreground text-right max-w-xs">
-                    This action will deduct <Badge variant="outline" className="mx-1">1 credit</Badge> from your account
+                    This action will deduct <Badge variant="outline" className="mx-1 border-4 border-border">1 credit</Badge> from your account
                   </p>
                 )}
               </div>

@@ -436,8 +436,8 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
 
       // Save to database using the existing course update API
       const saveResponse = await api.post(`/api/course/update-chapters`, updateData)
-      if (!saveResponse.data.success) {
-        throw new Error(saveResponse.data.error || "Failed to save course structure")
+      if (!saveResponse.success) {
+        throw new Error(saveResponse.error || "Failed to save course structure")
       }
 
       toast({

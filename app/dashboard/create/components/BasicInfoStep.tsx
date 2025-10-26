@@ -17,7 +17,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="space-y-2">
-        <Label htmlFor="title" className="text-base font-medium">
+        <Label htmlFor="title" className="text-base font-medium text-foreground">
           Course Title
         </Label>
         <Controller
@@ -25,14 +25,19 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
           control={control}
           defaultValue={params?.title || ""}
           render={({ field }) => (
-            <Input {...field} id="title" placeholder="Enter course title" className="transition-all duration-200" />
+            <Input
+              {...field}
+              id="title"
+              placeholder="Enter course title"
+              className="border-4 border-border transition-all duration-200"
+            />
           )}
         />
         {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description" className="text-base font-medium">
+        <Label htmlFor="description" className="text-base font-medium text-foreground">
           Course Description
         </Label>
         <Controller
@@ -43,7 +48,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
               {...field}
               id="description"
               placeholder="Enter course description"
-              className="min-h-[120px] transition-all duration-200"
+              className="min-h-[120px] border-4 border-border transition-all duration-200"
             />
           )}
         />
@@ -52,19 +57,23 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
 
       <div className="space-y-2">
         <div className="flex flex-col gap-1">
-          <Label htmlFor="category" className="text-base font-medium">Category</Label>
-          <p className="text-sm text-muted-foreground">Enter a category that describes your course (e.g., "web development", "data science")</p>
+          <Label htmlFor="category" className="text-base font-medium text-foreground">
+            Category
+          </Label>
+          <p className="text-sm text-muted-foreground">
+            Enter a category that describes your course (e.g., "web development", "data science")
+          </p>
         </div>
         <Controller
           name="category"
           control={control}
           defaultValue={params?.category || ""}
           render={({ field }) => (
-            <Input 
-              {...field} 
-              id="category" 
-              placeholder="e.g., programming, mathematics, design" 
-              className="transition-all duration-200" 
+            <Input
+              {...field}
+              id="category"
+              placeholder="e.g., programming, mathematics, design"
+              className="border-4 border-border transition-all duration-200"
             />
           )}
         />

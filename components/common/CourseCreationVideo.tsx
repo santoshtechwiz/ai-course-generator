@@ -201,14 +201,14 @@ const CourseCreationVideo = () => {
           </div>
 
           {/* Step Indicators */}
-          <div className="flex justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-4 sm:gap-2 mb-8">
             {steps.map((s, index) => (
-              <div key={index} className="flex flex-col items-center flex-1">
+              <div key={index} className="flex flex-col items-center flex-1 min-w-0">
                 <motion.div
                   className={cn(
-                    "rounded-full p-3 transition-colors duration-300",
-                    step >= index 
-                      ? "bg-primary text-primary-foreground shadow-lg" 
+                    "rounded-full p-2 sm:p-3 transition-colors duration-300",
+                    step >= index
+                      ? "bg-primary text-primary-foreground shadow-lg"
                       : "bg-muted text-muted-foreground"
                   )}
                   initial={{ scale: 0 }}
@@ -218,10 +218,10 @@ const CourseCreationVideo = () => {
                 >
                   {s.icon}
                 </motion.div>
-                <span className="text-xs mt-2 text-center font-medium text-xs sm:text-sm">
+                <span className="text-xs mt-2 text-center font-medium leading-tight">
                   {s.title}
                 </span>
-                <span className="text-xs text-muted-foreground text-center text-xs sm:text-sm">
+                <span className="text-xs text-muted-foreground text-center leading-tight hidden sm:block">
                   {s.description}
                 </span>
               </div>

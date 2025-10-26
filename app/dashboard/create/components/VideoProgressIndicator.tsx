@@ -1,6 +1,4 @@
 "use client"
-
-import React from "react"
 import { Loader2, CheckCircle, XCircle, AlertCircle, RefreshCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -28,7 +26,7 @@ export function VideoProgressIndicator({
 }: VideoProgressIndicatorProps) {
   // Default to processing if no status provided
   const currentStatus = status?.status || "processing"
-  
+
   // Size configuration
   const sizeConfig = {
     sm: {
@@ -50,52 +48,51 @@ export function VideoProgressIndicator({
       buttonSize: "h-8 px-3 text-sm",
     },
   }
-  
+
   const { iconSize, progressHeight, textSize, buttonSize } = sizeConfig[size]
-  
+
   // Status icon
   const StatusIcon = () => {
     switch (currentStatus) {
       case "queued":
-        return <AlertCircle className={cn(iconSize, "text-yellow-500 animate-pulse")} />
+        return <AlertCircle className={cn(iconSize, "text-accent animate-pulse")} />
       case "processing":
-        return <Loader2 className={cn(iconSize, "text-blue-500 animate-spin")} />
+        return <Loader2 className={cn(iconSize, "text-accent animate-spin")} />
       case "completed":
-        return <CheckCircle className={cn(iconSize, "text-green-500")} />
+        return <CheckCircle className={cn(iconSize, "text-accent")} />
       case "error":
-        return <XCircle className={cn(iconSize, "text-red-500")} />
+        return <XCircle className={cn(iconSize, "text-destructive")} />
       default:
         return null
     }
   }
-  
-  // Status color
+
+  // Status color mapped to theme tokens
   const getStatusColor = () => {
     switch (currentStatus) {
       case "queued":
-        return "bg-yellow-500"
+        return "bg-accent/20"
       case "processing":
-        return "bg-blue-500"
+        return "bg-accent"
       case "completed":
-        return "bg-green-500"
+        return "bg-accent"
       case "error":
-        return "bg-red-500"
+        return "bg-destructive"
       default:
-        return "bg-gray-500"
+        return "bg-card"
     }
   }
-  
-  // Status message
+
   const getStatusMessage = () => {
     if (status?.message) {
       return status.message
     }
-    
+
     switch (currentStatus) {
       case "queued":
-        return "Queued for processing..."
+        return "Queued for processing... (usually 1-2 minutes)"
       case "processing":
-        return "Processing video..."
+        return "Processing video... (this may take a few minutes)"
       case "completed":
         return "Video ready"
       case "error":
@@ -104,13 +101,13 @@ export function VideoProgressIndicator({
         return "Unknown status"
     }
   }
-  
+
   // Progress value
   const progressValue = (() => {
     if (status?.progress) {
       return status.progress
     }
-    
+
     switch (currentStatus) {
       case "queued":
         return 10
@@ -124,46 +121,52 @@ export function VideoProgressIndicator({
         return 0
     }
   })()
-    return (
-    <div className={cn("flex flex-col space-y-1", className)}>
-      <div className="flex items-center justify-between">
+  return (
+    <div className={cn("flex flex-col space-y-2", className)}>
+      <div className="flex items-center justify-between gap-2">
         {showLabel && (
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-1">
             <StatusIcon />
             <span className={cn("font-medium", textSize)}>{getStatusMessage()}</span>
           </div>
         )}
-        
+
         {showControls && (
-          <div className="flex space-x-2">            {currentStatus === "processing" && onCancel && (
+          <div className="flex space-x-2">
+            {" "}
+            {currentStatus === "processing" && onCancel && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={onCancel}
-                className={buttonSize}
+                className={cn(buttonSize, "border-4 border-border")}
+                aria-label="Cancel video generation"
               >
                 Cancel
               </Button>
             )}
-            
             {currentStatus === "error" && onRetry && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={onRetry}
-                className={cn(buttonSize, "text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600")}
+                className={cn(
+                  buttonSize,
+                  "text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive border-4",
+                )}
+                aria-label="Retry video generation"
               >
                 <RefreshCcw className="h-3 w-3 mr-1" /> Retry
               </Button>
             )}
-            
             {/* Allow retrying even for stuck "processing" videos if they've been in that state for too long */}
             {currentStatus === "processing" && status?.message?.includes("stuck") && onRetry && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={onRetry}
-                className={cn(buttonSize, "text-yellow-500 border-yellow-200 hover:bg-yellow-50 hover:text-yellow-600")}
+                className={cn(buttonSize, "text-accent border-accent hover:bg-accent/10 hover:text-accent border-4")}
+                aria-label="Retry stuck video generation"
               >
                 <RefreshCcw className="h-3 w-3 mr-1" /> Retry Stuck
               </Button>
@@ -171,16 +174,12 @@ export function VideoProgressIndicator({
           </div>
         )}
       </div>
-      
+
       <Progress
         value={progressValue}
-        className={cn(
-          "w-full transition-all", 
-          progressHeight,
-          {
-            "animate-pulse": currentStatus === "processing",
-          }        )}
-        indicatorClassName={cn(getStatusColor())}
+        className={cn("w-full transition-all", progressHeight, {
+          "animate-pulse": currentStatus === "processing",
+        })}
       />
     </div>
   )

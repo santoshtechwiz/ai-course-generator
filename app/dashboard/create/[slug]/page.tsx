@@ -43,8 +43,9 @@ export default async function CreateChapters({ params }: { params: Promise<{ slu
 
 
   return (
-    <div className="flex flex-col min-h-screen bg-shadcn-primary-50">
-      <div className="flex flex-col flex-grow p-4 md:flex-row md:space-x-4">        <div className="w-full md:w-2/3 bg-shadcn-white rounded-lg shadow-md p-4 mb-4 md:mb-0">
+    <div className="flex flex-col min-h-screen bg-background">
+      <div className="flex flex-col flex-grow p-2 sm:p-4 md:flex-row md:space-x-4">
+        <div className="w-full md:w-2/3 bg-card rounded-lg border-4 border-border shadow-neo p-2 sm:p-4 mb-4 md:mb-0">
           <EnhancedConfirmChapters course={finalCourse} />
         </div>
         <div className="w-full md:w-1/3">

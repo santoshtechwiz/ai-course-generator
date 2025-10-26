@@ -24,7 +24,14 @@ export async function POST(req: Request) {
     const result = await videoService.processVideo(chapterId)
     
     console.log(`[Video API] Video processing completed for chapter ${chapterId}:`, result)
-    return NextResponse.json(result)
+    const response={
+      success: result.success,
+      queueStatus:result.videoStatus,
+      chapterId:chapterId,
+      videoId: result.videoId
+
+    }
+    return NextResponse.json({data:response}, { status: 200 })
   } catch (error) {
     console.error(`[Video API] Error processing video:`, error)
     
