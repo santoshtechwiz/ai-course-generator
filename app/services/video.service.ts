@@ -135,6 +135,12 @@ class VideoService {
 
     console.log(`[VideoService] Starting video processing for chapter ${chapterId} with search query: "${chapter.youtubeSearchQuery}"`);
 
+    // Validate search query
+    if (!chapter.youtubeSearchQuery || chapter.youtubeSearchQuery.trim() === '') {
+      console.error(`[VideoService] Chapter ${chapterId} has empty search query`);
+      throw new Error("Chapter has no search query for video generation");
+    }
+
     // Update chapter status to processing
     await videoRepository.updateChapterVideo(chapterId, null, "processing");
 

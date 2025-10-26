@@ -1,4 +1,6 @@
 "use client";
+//no caching
+
 
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -294,8 +296,8 @@ const cardVariants = {
 
 const iconVariants = {
   initial: { scale: 1, rotate: 0 },
-  hover: { 
-    scale: 1.2, 
+  hover: {
+    scale: 1.2,
     rotate: 360,
     transition: { duration: 0.6, type: "spring" }
   },
@@ -335,10 +337,10 @@ function Tile({
   const [isHovered, setIsHovered] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  
+
   // ✅ NEW: Use unified feature access with exploration support
   const { canAccess, isExplorable, reason, requiredPlan: accessRequiredPlan } = useFeatureAccess(featureType);
-  
+
   // All features are explorable, but actions are gated by canAccess
   const showUpgradeBadge = !canAccess; // Show upgrade badge but keep tile interactive
   const requiredPlanConfig = getPlanConfig(accessRequiredPlan || requiredPlan);
@@ -384,12 +386,12 @@ function Tile({
             {/* Floating elements background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
               <motion.div
-                animate={{ 
+                animate={{
                   x: [0, 20, 0],
                   y: [0, -15, 0],
                   rotate: [0, 180, 360]
                 }}
-                transition={{ 
+                transition={{
                   duration: 20,
                   repeat: Infinity,
                   ease: "linear"
@@ -398,14 +400,14 @@ function Tile({
               >
                 <Sparkles className="h-8 w-8" />
               </motion.div>
-              
+
               <motion.div
-                animate={{ 
+                animate={{
                   x: [0, -15, 0],
                   y: [0, 20, 0],
                   rotate: [0, -180, -360]
                 }}
-                transition={{ 
+                transition={{
                   duration: 25,
                   repeat: Infinity,
                   ease: "linear"
@@ -437,7 +439,7 @@ function Tile({
                     {title}
                   </motion.span>
                 </div>
-                
+
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {showUpgradeBadge ? (
                     <Tooltip>
@@ -471,7 +473,7 @@ function Tile({
                   )}
                 </div>
               </CardTitle>
-              
+
               {/* Metadata */}
               <div className="flex items-center gap-3 mt-2">
                 <motion.div whileHover={{ scale: 1.05 }}>
@@ -508,12 +510,12 @@ function Tile({
           </Card>
         </motion.div>
       </TooltipProvider>
-      
+
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-4xl lg:max-w-5xl max-h-[90vh] p-0 border border-border bg-card shadow-lg overflow-hidden flex flex-col">
+        <DialogContent className="bg-[var(--color-card)] sm:max-w-4xl lg:max-w-5xl max-h-[90vh] p-0 border border-border shadow-lg overflow-hidden flex flex-col">
           <div className="grid lg:grid-cols-2 flex-1 min-h-0">
             {/* Left side - Hero content */}
-            <div className="p-6 lg:p-8 bg-background border-r border-border flex flex-col">
+            <div className="p-6 lg:p-8 bg-[var(--color-bg)] border-r border-border flex flex-col">
               <DialogHeader className="space-y-4 sm:space-y-6">
                 <DialogTitle className="flex items-center justify-between">
                   <div className={`flex items-center text-4xl font-bold ${colorClasses.icon}`}>
@@ -535,12 +537,12 @@ function Tile({
 
                   <div className="flex items-center gap-3">
                     {showUpgradeBadge ? (
-                      <Badge variant="neutral" className={cn(neo.badge, "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 shadow-sm")}> 
+                      <Badge variant="neutral" className={cn(neo.badge, "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 shadow-sm")}>
                         <Crown className="h-3 w-3 mr-1" />
                         {requiredPlanConfig.name} Required
                       </Badge>
                     ) : requiredPlan !== 'FREE' && (
-                      <Badge variant="neutral" className={cn(neo.badge, "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 shadow-sm")}> 
+                      <Badge variant="neutral" className={cn(neo.badge, "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 shadow-sm")}>
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Unlocked
                       </Badge>
@@ -561,7 +563,7 @@ function Tile({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -20, scale: 1.05 }}
                         transition={{ duration: 0.5, type: "spring" }}
-                        className="text-center py-6 bg-white/50 dark:bg-gray-800/50 rounded-xl border backdrop-blur-sm"
+                        className="text-center py-6 bg-[var(--color-card)]/60 dark:bg-[var(--color-muted)]/30 rounded-xl border backdrop-blur-sm"
                       >
                         <p className="text-lg font-medium italic px-6">
                           "{taglines[currentTagline]}"
@@ -570,9 +572,8 @@ function Tile({
                           {taglines.map((_, i) => (
                             <motion.div
                               key={i}
-                              className={`h-2 w-2 rounded-full transition-colors ${
-                                i === currentTagline ? colorClasses.icon.replace('text-', 'bg-') : 'bg-gray-300'
-                              }`}
+                              className={`h-2 w-2 rounded-full transition-colors ${i === currentTagline ? colorClasses.icon.replace('text-', 'bg-') : 'bg-gray-300'
+                                }`}
                               animate={{ scale: i === currentTagline ? 1.2 : 1 }}
                             />
                           ))}
@@ -604,7 +605,10 @@ function Tile({
             </div>
 
             {/* Right side - Details */}
-            <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto flex-1">
+            <div
+              className="p-4 sm:p-6 lg:p-8 overflow-y-auto flex-1"
+              style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
+            >
               <div className="space-y-6 sm:space-y-8">
                 {/* Quick stats */}
                 <motion.div
@@ -680,7 +684,7 @@ function Tile({
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.7 + i * 0.1 }}
-                        className="flex items-center p-3 rounded-lg border bg-background/50"
+                        className="flex items-center p-3 rounded-lg border bg-[var(--color-bg)]/50"
                       >
                         <motion.div
                           whileHover={{ scale: 1.1 }}

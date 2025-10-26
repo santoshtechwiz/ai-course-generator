@@ -1,22 +1,19 @@
 import type React from "react"
 import type { Metadata } from "next"
-import "../globals.css"
+import { Suspense } from "react"
 
 import { Providers } from "@/store/provider"
 import { getServerAuthSession } from "@/lib/server-auth"
-import { Suspense } from "react"
-
 import { DefaultSEO, generateMetadata as generateBaseMetadata } from "@/lib/seo"
 import GoogleAnalyticsClient from "@/components/analytics/GoogleAnalyticsClient"
-
 import { RootErrorBoundary } from "@/components/layout/RootErrorBoundary"
 import { GlobalLoader } from "@/components/ui/loader"
-
 import { MotionProvider } from "@/components/MotionProvider"
 import { ConditionalFooter } from "@/components/layout/ConditionalFooter"
-import { Toaster } from "@/components/ui/toaster"
 import { BreadcrumbWelcome } from "@/components/auth/BreadcrumbWelcome"
 import { ClientGuestProvider } from "@/components/guest/ClientGuestProvider"
+
+import "../globals.css"
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
@@ -129,7 +126,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <GoogleAnalyticsClient />
             </Suspense>
             <DefaultSEO enableFAQ={false} />
-            <Toaster />
           </Providers>
 
       </body>

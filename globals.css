@@ -1,22 +1,23 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
-/* === Nerobrutal Design System — Premium Edition === */
+/* === Nerobrutal Design System — Premium Edition (Improved) === */
 :root {
-  /* Core brand colors - Nerobrutal Palette */
-  --color-bg: #f7f3ef; /* slightly warmer/off-white to reduce pure white surfaces */
-  --color-text: #0a0a0a;
-  --color-primary: #ff007f;
-  --color-secondary: #00f5d4;
-  --color-accent: #ff6b35;
-  --color-card: #f6efe8; /* off-white card surface for gentler contrast */
-  --color-muted: #f2f2f2;
+  /* -------------------- Core Colors -------------------- */
+  --color-bg: #f2ece1;        /* off-white background, warmer and distinct from muted */
+  --color-card: #f6e9df;      /* slightly lighter card surface */
+  --color-muted: #e0d7cd;     /* muted areas for secondary content */
+  --color-text: #0a0a0a;      /* main text */
+  --color-primary: #ff007f;   /* primary action / brand */
+  --color-secondary: #00f5d4; /* secondary / accent */
+  --color-accent: #ff6b35;    /* highlights / attention */
   --color-success: #00d4aa;
   --color-warning: #ff9500;
   --color-error: #ff3b30;
   --color-info: #007aff;
+  --color-border: #000000;    /* sharp Nerobrutal borders */
 
-  /* Depth & Shadows - Enhanced for Nerobrutal */
-  --color-border: #000000;
+  /* -------------------- Shadows & Depth -------------------- */
   --shadow-offset-x: 6px;
   --shadow-offset-y: 6px;
   --shadow-color: #000000;
@@ -25,7 +26,7 @@
   --shadow-neo-active: 2px 2px 0 var(--shadow-color);
   --shadow-neo-inset: inset 2px 2px 0 var(--shadow-color);
 
-  /* Spacing - Nerobrutal Scale */
+  /* -------------------- Spacing -------------------- */
   --spacing-xs: 0.25rem;    /* 4px */
   --spacing-sm: 0.5rem;     /* 8px */
   --spacing-md: 0.75rem;    /* 12px */
@@ -34,13 +35,13 @@
   --spacing-2xl: 2rem;      /* 32px */
   --spacing-3xl: 3rem;      /* 48px */
 
-  /* Border Radius - Blocky for Nerobrutal */
-  --radius: 0.5rem;         /* 8px - slightly rounded for accessibility */
-  --radius-none: 0rem;      /* 0px - true blocky */
+  /* -------------------- Border Radius -------------------- */
+  --radius-none: 0rem;      /* true blocky */
   --radius-sm: 0.25rem;     /* 4px */
-  --radius-lg: 1rem;        /* 16px */
+  --radius: 0.5rem;         /* 8px standard */
+  --radius-lg: 1rem;        /* 16px for big blocks */
 
-  /* Typography */
+  /* -------------------- Typography -------------------- */
   --font-base: 500;
   --font-heading: 700;
   --font-mono: 'JetBrains Mono', monospace;
@@ -60,7 +61,7 @@
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.625;
 
-  /* Z-Index Scale */
+  /* -------------------- Z-Index -------------------- */
   --z-index-dropdown: 1000;
   --z-index-sticky: 1020;
   --z-index-fixed: 1030;
@@ -70,28 +71,36 @@
   --z-index-tooltip: 1070;
   --z-index-toast: 1080;
 
-  /* Transitions */
+  /* -------------------- Transitions -------------------- */
   --transition-fast: 150ms ease-in-out;
   --transition-normal: 200ms ease-in-out;
   --transition-slow: 300ms ease-in-out;
 
-  /* Focus & Interaction */
+  /* -------------------- Focus & Interaction -------------------- */
   --focus-ring-width: 3px;
   --focus-ring-color: var(--color-accent);
   --focus-ring-offset: 2px;
 
-  /* Hover Effects */
   --hover-lift: -4px;
   --hover-shadow: 10px 10px 0 var(--shadow-color);
 
-  /* Active/Pressed Effects */
   --active-press: 2px;
   --active-shadow: none;
 
-  /* Code syntax highlighting */
-  --color-code-bg: #282c34;
+  /* -------------------- Code Highlighting -------------------- */
+  --color-code-bg: #1e1e2f;   /* dark background for code blocks */
   --color-code-text: #abb2bf;
+  --color-code-keyword: #ff007f;
+  --color-code-string: #00d4aa;
+  --color-code-comment: #7f8c8d;
+  --color-code-function: #ff6b35;
+
+  /* Ensure Dialog components have visible colors */
+  --dialog-background: #ffffff; /* Light background */
+  --dialog-text: #000000; /* Dark text */
+  --dialog-border: #cccccc; /* Subtle border */
 }
+
 
 /* === Dark Mode - Nerobrutal Dark Palette === */
 .dark {
@@ -110,6 +119,11 @@
   --shadow-color: #fafafa;
   --color-code-bg: #2d3748;
   --color-code-text: #e2e8f0;
+
+  /* Ensure Dialog components have visible colors */
+  --dialog-background: #1e1e1e; /* Dark background */
+  --dialog-text: #f5f5f5; /* Light text */
+  --dialog-border: #444444; /* Subtle border */
 }
 /* === Base Layer === */
 @layer base {
@@ -173,21 +187,9 @@
     transition: transform var(--transition-fast), box-shadow var(--transition-fast);
   }
 
-  input[data-slot="input"]:focus-visible, textarea[data-slot="input"]:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
-    border-color: var(--focus-ring-color);
-    transform: translate(-2px, -2px);
-  }
 
-  /* Make labels bolder and more uppercased across forms to match Nerobrutal aesthetic */
-  label {
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    font-size: var(--font-size-sm);
-    color: var(--color-text);
-  }
+
+
 
   /* Buttons (submit / primary CTAs) - heavier, blocky, with neo shadow */
   button[type="submit"], .neuro-button {
@@ -246,5 +248,12 @@
   /* Increase global base weight for stronger typography without touching components */
   .neuro-strong-typography, body, .neuro-root {
     --font-base: 600;
+  }
+
+  /* Ensure Dialog components have visible colors */
+  .dialog {
+    background-color: var(--dialog-background);
+    color: var(--dialog-text);
+    border: 1px solid var(--dialog-border);
   }
 }

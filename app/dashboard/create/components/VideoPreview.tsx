@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X } from "lucide-react"
+import { X, Play } from "lucide-react"
 
 interface VideoPreviewProps {
   videoId: string
@@ -26,13 +26,23 @@ export default function VideoPreview({ videoId, title = "Preview Video" }: Video
 
   return (
     <>
-      {/* Thumbnail */}
       <div
         onClick={() => setOpen(true)}
-        className="cursor-pointer border-4 border-border rounded-lg hover:scale-[1.02] transition-transform bg-card shadow-neo overflow-hidden"
+        className="cursor-pointer border-4 border-border rounded-lg hover:scale-[1.02] transition-transform bg-card shadow-neo overflow-hidden group"
       >
-        <img src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`} alt={title} className="w-full h-auto" />
-        <div className="p-2 text-xs font-semibold text-card-foreground">{title}</div>
+        <div className="relative w-full aspect-video bg-muted overflow-hidden">
+          <img
+            src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+            alt={title}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
+            <div className="p-3 rounded-full bg-accent text-background shadow-neo border-4 border-border">
+              <Play className="h-5 w-5 fill-current" />
+            </div>
+          </div>
+        </div>
+        <div className="p-2 sm:p-3 text-xs sm:text-sm font-semibold text-card-foreground line-clamp-2">{title}</div>
       </div>
 
       {open && (
@@ -68,7 +78,7 @@ export default function VideoPreview({ videoId, title = "Preview Video" }: Video
             </div>
 
             {/* Title */}
-            <div className="mt-3 text-center font-semibold text-sm text-foreground">{title}</div>
+            <div className="mt-3 text-center font-semibold text-xs sm:text-sm text-foreground">{title}</div>
 
             {/* ESC hint */}
             <div className="mt-2 text-center text-xs text-muted-foreground">Press ESC to close</div>

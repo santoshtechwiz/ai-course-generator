@@ -599,8 +599,8 @@ export class BasicAIService extends AIBaseService {
         return { success: false, error: 'Units array is required and cannot be empty' }
       }
 
-      if (params.units.length > 10) {
-        return { success: false, error: 'Maximum 10 units allowed' }
+      if (params.units.length > 3) {
+        return { success: false, error: 'Maximum 3 units allowed' }
       }
 
       // Validate each unit

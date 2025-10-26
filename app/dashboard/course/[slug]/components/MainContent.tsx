@@ -139,13 +139,20 @@ const VideoSkeleton = () => (
   </div>
 )
 
+// Add a global loading spinner
+const GlobalLoadingSpinner = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+    <div className="w-16 h-16 border-4 border-t-transparent border-white rounded-full animate-spin"></div>
+  </div>
+)
+
 // Helper function to validate chapter
 function validateChapter(chapter: any): boolean {
   return Boolean(
     chapter &&
-      typeof chapter === "object" &&
-      chapter.id &&
-      (typeof chapter.id === "string" || typeof chapter.id === "number"),
+    typeof chapter === "object" &&
+    chapter.id &&
+    (typeof chapter.id === "string" || typeof chapter.id === "number"),
   )
 }
 
@@ -325,10 +332,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
           .filter((chapter) => {
             const isValid = Boolean(
               chapter &&
-                typeof chapter === "object" &&
-                chapter.id &&
-                chapter.videoId &&
-                typeof chapter.videoId === "string",
+              typeof chapter === "object" &&
+              chapter.id &&
+              chapter.videoId &&
+              typeof chapter.videoId === "string",
             )
 
             if (!isValid && chapter) {
@@ -786,7 +793,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
   const handleChapterComplete = useCallback(
     (chapterId: string) => {
-      ;(async () => {
+      ; (async () => {
         console.log(`[ChapterPlaylist Callback] Chapter completed: ${chapterId}`)
 
         const chapterIdNum = Number(chapterId)
@@ -1218,12 +1225,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
   const sidebarCurrentChapter = currentChapter
     ? {
-        id: String(currentChapter.id),
-        title: currentChapter.title,
-        videoId: currentChapter.videoId || undefined,
-        duration: typeof currentChapter.duration === "number" ? currentChapter.duration : undefined,
-        isFree: currentChapter.isFree,
-      }
+      id: String(currentChapter.id),
+      title: currentChapter.title,
+      videoId: currentChapter.videoId || undefined,
+      duration: typeof currentChapter.duration === "number" ? currentChapter.duration : undefined,
+      isFree: currentChapter.isFree,
+    }
     : null
 
   // Auth prompt overlay
@@ -1258,6 +1265,17 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       progressPercentage: totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0,
     }
   }, [videoPlaylist.length, completedChapters.length, totalCourseDuration])
+
+  // Add progress bar for each chapter in the sidebar
+  const ChapterProgressBar = ({ progress }: { progress: number }) => (
+    <div className="w-full h-2 bg-gray-300 rounded">
+      <div
+        className="h-full bg-green-500 rounded"
+        style={{ width: `${progress}%` }}
+        aria-label={`Chapter progress: ${progress}%`}
+      />
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-200 dark:bg-background dark:text-foreground">
@@ -1396,20 +1414,20 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       </header>
 
       {/* Video generation section for owners */}
-      {(isOwner || user?.isAdmin) && (
-        <div className="bg-yellow-100 dark:bg-yellow-900 border-b-4 border-black dark:border-white transition-all overflow-hidden">
-          <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-            <VideoGenerationSection
-              course={course}
-              onVideoGenerated={(chapterId, videoId) => {
-                if (videoId) {
-                  dispatch(setCurrentVideoApi(videoId))
-                }
-              }}
-            />
-          </div>
-        </div>
-      )}
+
+      <VideoGenerationSection
+        course={course}
+        isOwner={isOwner}
+        isAdmin={user?.isAdmin}
+        onVideoGenerated={(chapterId, videoId) => {
+          if (videoId) {
+            dispatch(setCurrentVideoApi(videoId));
+          }
+        }}
+      />
+
+
+
 
       {!state.isTheaterMode && (
         <div className="lg:hidden border-b-4 border-black dark:border-white bg-gray-100 dark:bg-gray-900">
@@ -1442,7 +1460,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       )}
 
       <main className={cn("transition-all duration-100", state.isTheaterMode && "bg-black")}>
-        {!state.isTheaterMode && <div className="h-12 sm:h-16" />}
+        {!state.isTheaterMode ? (
+          <div className="h-12 sm:h-16" />
+        ) : null}
 
         <div
           className={cn(
@@ -1518,7 +1538,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                             const ts = Number(courseProgress.videoProgress.playedSeconds)
                             if (!isNaN(ts) && ts > 0) return ts
                           }
-                        } catch {}
+                        } catch { }
                         return undefined
                       })()}
                       courseId={course.id}
@@ -1530,6 +1550,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                       nextVideoTitle={nextVideoTitle}
                       hasNextVideo={hasNextVideo}
                       autoAdvanceNext={state.autoplayMode}
+                      playbackSpeedOptions={[0.5, 1, 1.5, 2]} // Add playback speed options
+                      subtitleOptions={["English", "Spanish", "French"]} // Add subtitle options
+                      qualityOptions={["360p", "720p", "1080p"]} // Add quality selection options
+                      onPlaybackSpeedChange={(speed) => console.log(`Playback speed changed to: ${speed}`)}
+                      onSubtitleChange={(subtitle) => console.log(`Subtitle changed to: ${subtitle}`)}
+                      onQualityChange={(quality) => console.log(`Quality changed to: ${quality}`)}
                     />
                   </div>
                 )}
@@ -1622,6 +1648,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                         onChapterComplete={handleChapterComplete}
                         isProgressLoading={progressLoading}
                         lastPositions={chapterLastPositions}
+                        renderChapter={(chapter) => (
+                          <div>
+                            <span>{chapter.title}</span>
+                            <ChapterProgressBar progress={progressByVideoId[chapter.videoId] || 0} />
+                          </div>
+                        )}
                       />
                     )}
                   </div>
@@ -1640,7 +1672,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
           course={sidebarCourse}
           currentChapter={sidebarCurrentChapter}
           courseId={course.id.toString()}
-          currentVideoId={currentVideoId || ""}
+          currentVideoId={currentVideoId}
           isAuthenticated={!!user}
           userSubscription={userSubscription || null}
           completedChapters={completedChapters.map(String)}
@@ -1648,6 +1680,14 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
           videoDurations={videoDurations}
           courseStats={courseStats}
           onChapterSelect={handleChapterSelect}
+          closeButton={<button
+            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded"
+            onClick={() => dispatch2({ type: "SET_MOBILE_PLAYLIST_OPEN", payload: false })}
+            aria-label="Close playlist"
+          >
+            Close
+          </button>}
+          swipeToClose
         />
       )}
 
@@ -1673,6 +1713,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
         courseTitle={course.title}
         userName={user?.name || null}
         totalLessons={videoPlaylist.length}
+        className="transition-opacity duration-300 ease-in-out opacity-0 show:opacity-100"
       />
 
       {/* Debug component */}
@@ -1683,6 +1724,47 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             courseId={course.id}
             chapterId={currentChapter?.id ? String(currentChapter.id) : ""}
           />
+        </div>
+      )}
+
+      {/* Global loading spinner */}
+      {state.isVideoLoading && <GlobalLoadingSpinner />}
+
+      {/* Add autoplay feedback indicator */}
+      <div className="autoplay-indicator">
+        <button
+          onClick={handleAutoplayToggle}
+          className={`autoplay-toggle ${state.autoplayMode ? 'active' : ''}`}
+          aria-label={state.autoplayMode ? "Disable autoplay" : "Enable autoplay"}
+        >
+          {state.autoplayMode ? 'Autoplay: On' : 'Autoplay: Off'}
+        </button>
+      </div>
+
+      {/* Add an exit button for theater mode */}
+      {state.isTheaterMode && (
+        <button
+          onClick={() => dispatch2({ type: "SET_THEATER_MODE", payload: false })}
+          className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded shadow-lg"
+          aria-label="Exit Theater Mode"
+        >
+          Exit Theater Mode
+        </button>
+      )}
+
+      {/* Add a description for guest users to encourage signing in */}
+      {!user && (
+        <div className="bg-blue-100 border border-blue-300 p-4 rounded-md text-center">
+          <h2 className="text-lg font-bold text-blue-800">Sign in to unlock more features!</h2>
+          <p className="text-sm text-blue-700 mt-2">
+            By signing in, you can save your progress, access premium content, and enjoy a personalized learning experience.
+          </p>
+          <button
+            onClick={() => router.push('/auth/signin')}
+            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+          >
+            Sign In Now
+          </button>
         </div>
       )}
     </div>

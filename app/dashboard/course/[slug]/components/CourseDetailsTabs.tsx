@@ -17,6 +17,7 @@ import {
   Star,
   PlayCircle,
   StickyNote,
+  LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -39,7 +40,8 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import BookmarksPanel from "./BookmarksPanel"
 import NotesPanel from "./NotesPanel"
-
+const tabBaseClasses = "flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 border border-transparent px-3 md:px-4 transition-all";
+const tabActiveClasses = "bg-neo-border text-neo-background border-neo-border shadow-[4px_4px_0px_0px_var(--neo-border)]";
 // ✨ Skeleton loader component for smooth tab transitions
 const TabSkeleton = () => (
   <div className="space-y-6 p-4 animate-pulse">
@@ -367,35 +369,27 @@ export default function CourseDetailsTabs({
   return (
     <div className="h-full w-full flex flex-col">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full w-full flex flex-col">
-  <TabsList className={cn("sticky top-[var(--course-sticky-offset)] grid w-full grid-cols-4 h-auto bg-neo-background p-2 gap-3 shadow-[4px_4px_0px_0px_var(--neo-border)] overflow-visible backdrop-blur-sm", neo.inner)} style={{ zIndex: 'var(--z-index-sticky)' }}>
-          <TabsTrigger
-            value="summary"
-            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 min-h-[56px] leading-none data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border border-transparent hover:border-neo-border px-3 md:px-4"
-          >
-            <FileText className="h-5 w-5 md:h-6 md:w-6" />
-            <span className="tracking-tight">Summary</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="quiz"
-            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border border-transparent hover:border-neo-border px-3 md:px-4"
-          >
-            <MessageSquare className="h-5 w-5 md:h-6 md:w-6" />
-            <span className="tracking-tight">Quiz</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="notes"
-            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border border-transparent hover:border-neo-border px-3 md:px-4"
-          >
-            <StickyNote className="h-5 w-5 md:h-6 md:w-6" />
-            <span className="tracking-tight">Notes</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="bookmarks"
-            className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 data-[state=active]:bg-neo-border data-[state=active]:text-neo-background data-[state=active]:border data-[state=active]:border-neo-border data-[state=active]:shadow-[4px_4px_0px_0px_var(--neo-border)] transition-all border border-transparent hover:border-neo-border px-3 md:px-4"
-          >
-            <BookmarkIcon className="h-5 w-5 md:h-6 md:w-6" />
-            <span className="tracking-tight">Bookmarks</span>
-          </TabsTrigger>
+        <TabsList className={cn(
+          "grid w-full grid-cols-4 h-auto bg-neo-background p-2 gap-3 shadow-[4px_4px_0px_0px_var(--neo-border)] overflow-visible backdrop-blur-sm",
+          neo.inner
+        )}>
+          {[
+            { value: "summary", icon: FileText, label: "Summary" },
+            { value: "quiz", icon: MessageSquare, label: "Quiz" },
+            { value: "notes", icon: StickyNote, label: "Notes" },
+            { value: "bookmarks", icon: BookmarkIcon, label: "Bookmarks" },
+          ].map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className={({ state }) =>
+                cn(tabBaseClasses, state === "active" && tabActiveClasses, "hover:border-neo-border")
+              }
+            >
+              <tab.icon className="h-5 w-5 md:h-6 md:w-6" />
+              <span className="tracking-tight">{tab.label}</span>
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <TabsContent value="summary" className="flex-1 overflow-auto w-full p-0 mt-6">
@@ -403,41 +397,25 @@ export default function CourseDetailsTabs({
             <div className="transition-opacity duration-150">
               <TabSkeleton />
             </div>
+          ) : currentChapter ? (
+            <GlassDoorLock
+              isLocked={!canAccessSummary}
+              previewRatio={0.2}
+              reason={!user ? "Sign in to continue learning" : "Upgrade your plan to unlock this content"}
+              className="p-0"
+              blurIntensity={canAccessSummary ? "light" : "medium"}
+            >
+              <div className={`p-6 bg-neo-background shadow-[4px_4px_0px_0px_var(--neo-border)] ${neo.inner}`}>
+                <CourseAISummary
+                  chapterId={currentChapter.id}
+                  name={currentChapter.title || currentChapter.name || "Chapter Summary"}
+                  existingSummary={currentChapter.summary || null}
+                  isAdmin={isAdmin}
+                />
+              </div>
+            </GlassDoorLock>
           ) : (
-            <div className="transition-transform transition-opacity duration-200">
-              {currentChapter ? (
-                <GlassDoorLock
-                  isLocked={!canAccessSummary}
-                  previewRatio={0.2}
-                  reason={!user ? "Sign in to continue learning" : "Upgrade your plan to unlock this content"}
-                  className="p-0"
-                  blurIntensity={canAccessSummary ? "light" : "medium"}
-                >
-                  <div className={`p-6 bg-neo-background shadow-[4px_4px_0px_0px_var(--neo-border)] ${neo.inner}`}>
-                    <CourseAISummary
-                      chapterId={currentChapter.id}
-                      name={currentChapter.title || currentChapter.name || "Chapter Summary"}
-                      existingSummary={currentChapter.summary || null}
-                      isAdmin={isAdmin}
-                    />
-                  </div>
-                </GlassDoorLock>
-              ) : (
-                <div className="h-full flex items-center justify-center text-muted-foreground p-8">
-                  <div className="text-center space-y-4 transition-transform duration-200">
-                    <div className={`w-24 h-24 bg-muted flex items-center justify-center mx-auto ${neo.inner}`}>
-                      <FileText className="h-12 w-12 opacity-50" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-black mb-3 uppercase">No Chapter Selected</h3>
-                      <p className="text-base text-muted-foreground font-bold">
-                        Select a chapter from the playlist to view AI-generated summary and insights
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            <EmptyTabMessage icon={FileText} title="No Chapter Selected" message="Select a chapter from the playlist to view AI-generated summary and insights" />
           )}
         </TabsContent>
 
@@ -449,14 +427,14 @@ export default function CourseDetailsTabs({
               className="p-0"
               blurIntensity={canAccessQuiz ? "light" : "medium"}
             >
-                  <div className={`p-6 bg-neo-background shadow-[4px_4px_0px_0px_var(--neo-border)] ${neo.inner}`}>
+              <div className={`p-6 bg-neo-background shadow-[4px_4px_0px_0px_var(--neo-border)] ${neo.inner}`}>
                 <CourseDetailsQuiz
                   key={currentChapter.id}
                   course={course}
                   chapter={currentChapter}
                   accessLevels={{
                     isAuthenticated,
-                    isSubscribed: Boolean(isSubscribed || (currentChapter as any)?.isFreeQuiz === true),
+                    isSubscribed: Boolean(isSubscribed || (currentChapter as any)?.isFreeQuiz),
                     isAdmin,
                   }}
                   isPublicCourse={course.isPublic || false}
@@ -465,19 +443,7 @@ export default function CourseDetailsTabs({
               </div>
             </GlassDoorLock>
           ) : (
-            <div className="h-full flex items-center justify-center text-muted-foreground">
-                <div className="text-center space-y-4 transition-transform duration-200">
-                <div className={`w-24 h-24 bg-muted flex items-center justify-center mx-auto ${neo.inner}`}>
-                  <MessageSquare className="h-12 w-12 opacity-50" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-black mb-3 uppercase">No Chapter Selected</h3>
-                  <p className="text-base text-muted-foreground font-bold">
-                    Select a chapter from the playlist to take interactive quizzes and test your knowledge
-                  </p>
-                </div>
-              </div>
-            </div>
+            <EmptyTabMessage icon={MessageSquare} title="No Chapter Selected" message="Select a chapter from the playlist to take interactive quizzes and test your knowledge" />
           )}
         </TabsContent>
 
@@ -508,3 +474,16 @@ export default function CourseDetailsTabs({
     </div>
   )
 }
+const EmptyTabMessage = ({ icon: Icon, title, message }: { icon: LucideIcon, title: string, message: string }) => (
+  <div className="h-full flex items-center justify-center text-muted-foreground p-8">
+    <div className="text-center space-y-4 transition-transform duration-200">
+      <div className={`w-24 h-24 bg-muted flex items-center justify-center mx-auto ${neo.inner}`}>
+        <Icon className="h-12 w-12 opacity-50" />
+      </div>
+      <div>
+        <h3 className="text-2xl font-black mb-3 uppercase">{title}</h3>
+        <p className="text-base text-muted-foreground font-bold">{message}</p>
+      </div>
+    </div>
+  </div>
+);

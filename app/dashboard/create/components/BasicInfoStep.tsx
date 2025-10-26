@@ -15,9 +15,9 @@ interface BasicInfoStepProps {
 
 export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="space-y-6 w-full">
       <div className="space-y-2">
-        <Label htmlFor="title" className="text-base font-medium text-foreground">
+        <Label htmlFor="title" className="text-sm sm:text-base font-bold text-foreground">
           Course Title
         </Label>
         <Controller
@@ -29,15 +29,15 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
               {...field}
               id="title"
               placeholder="Enter course title"
-              className="border-4 border-border transition-all duration-200"
+              className="border-4 border-border transition-all duration-200 text-sm sm:text-base py-2 sm:py-3"
             />
           )}
         />
-        {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
+        {errors.title && <p className="text-xs sm:text-sm text-destructive font-medium">{errors.title.message}</p>}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description" className="text-base font-medium text-foreground">
+        <Label htmlFor="description" className="text-sm sm:text-base font-bold text-foreground">
           Course Description
         </Label>
         <Controller
@@ -48,19 +48,21 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
               {...field}
               id="description"
               placeholder="Enter course description"
-              className="min-h-[120px] border-4 border-border transition-all duration-200"
+              className="min-h-[100px] sm:min-h-[120px] border-4 border-border transition-all duration-200 text-sm sm:text-base py-2 sm:py-3"
             />
           )}
         />
-        {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
+        {errors.description && (
+          <p className="text-xs sm:text-sm text-destructive font-medium">{errors.description.message}</p>
+        )}
       </div>
 
       <div className="space-y-2">
         <div className="flex flex-col gap-1">
-          <Label htmlFor="category" className="text-base font-medium text-foreground">
+          <Label htmlFor="category" className="text-sm sm:text-base font-bold text-foreground">
             Category
           </Label>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Enter a category that describes your course (e.g., "web development", "data science")
           </p>
         </div>
@@ -73,11 +75,13 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
               {...field}
               id="category"
               placeholder="e.g., programming, mathematics, design"
-              className="border-4 border-border transition-all duration-200"
+              className="border-4 border-border transition-all duration-200 text-sm sm:text-base py-2 sm:py-3"
             />
           )}
         />
-        {errors.category && <p className="text-sm text-destructive">{errors.category.message}</p>}
+        {errors.category && (
+          <p className="text-xs sm:text-sm text-destructive font-medium">{errors.category.message}</p>
+        )}
       </div>
     </div>
   )

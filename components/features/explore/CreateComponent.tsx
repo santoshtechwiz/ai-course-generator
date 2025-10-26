@@ -60,7 +60,7 @@ export function CreateComponent() {
         )}
 
         {/* Main Content */}
-        <main className="flex-grow flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12 relative z-10">
+        <main className="flex-grow flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12  ">
           <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
             <CreateTileGrid />
           </div>

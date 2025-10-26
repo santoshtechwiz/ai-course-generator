@@ -2,10 +2,6 @@
 
 import * as React from "react"
 import { useEffect, Suspense } from "react"
-import { Provider } from "react-redux"
-import { ThemeProvider } from "next-themes"
-import store from "@/store"
-import { Toaster } from "@/components/ui/toaster"
 import { ReduxErrorBoundary } from "@/components/ui/error-boundary"
 import Chatbot from "@/components/Chatbot"
 import CourseAIState from "@/components/development/CourseAIState"
@@ -87,43 +83,33 @@ export function DashboardLayout({
   }, [])
 
   return (
-    <Provider store={store}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange={true}
-      >
-        <div className={cn("min-h-screen bg-background", className)}>
-          {/* Main Navbar - Complete navigation with AI features, search, and user management */}
-          <MainNavbar />
+    <div className={cn("min-h-screen bg-background", className)}>
+      {/* Main Navbar - Complete navigation with AI features, search, and user menu */}
+      <MainNavbar />
 
-          {/* Main Content Area - Responsive padding accounts for fixed navbar */}
-          <main className={cn(
-            "min-h-[calc(100vh-4rem)] relative",
-            "pt-16 sm:pt-16 md:pt-20 lg:pt-20"
-          )}>
-            {/* Credit Guidance Banner - Shows for 0-credit users */}
-            <CreditGuidanceBanner />
-            
-            <ReduxErrorBoundary>
-              <Suspense fallback={<GlobalLoader message="Loading page..." />}>
-                {children}
-              </Suspense>
-            </ReduxErrorBoundary>
-          </main>
+      {/* Main Content Area - Responsive padding accounts for fixed navbar */}
+      <main className={cn(
+        "min-h-[calc(100vh-4rem)] relative",
+        "pt-16 sm:pt-16 md:pt-20 lg:pt-20"
+      )}>
+        {/* Credit Guidance Banner - Shows for 0-credit users */}
+        <CreditGuidanceBanner />
+        
+        <ReduxErrorBoundary>
+          <Suspense fallback={<GlobalLoader message="Loading page..." />}>
+            {children}
+          </Suspense>
+        </ReduxErrorBoundary>
+      </main>
 
-          {/* Global Dashboard Components */}
-          <Toaster />
-          {userId && <Chatbot userId={userId} />}
+      {/* Global Dashboard Components */}
+      {userId && <Chatbot userId={userId} />}
 
-          {/* Development Tools */}
-          {/* {process.env.NODE_ENV !== "production" && (
-            <CourseAIState />
-          )} */}
-        </div>
-      </ThemeProvider>
-    </Provider>
+      {/* Development Tools */}
+      {/* {process.env.NODE_ENV !== "production" && (
+        <CourseAIState />
+      )} */}
+    </div>
   )
 }
 

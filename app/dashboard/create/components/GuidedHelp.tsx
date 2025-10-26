@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import {
   ChevronRight,
   ChevronLeft,
-  DotIcon as DragHandleDots2Icon,
+  GripVertical,
   Edit,
   Video,
   Plus,
@@ -43,29 +43,29 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
       title: "Reordering Chapters",
       description:
         "You can easily change the order of chapters by dragging and dropping them. Just click and hold the drag handle, then move the chapter to its new position.",
-  icon: <DragHandleDots2Icon className="h-6 w-6 text-accent" />,
+  icon: <GripVertical className="h-6 w-6 text-accent" />,
       image: (
-        <div className="border rounded-md p-4 bg-muted/50 my-4">
+        <div className="border-3 border-border rounded-none p-4 my-4">
           <div className="flex items-center gap-2 mb-2">
-            <DragHandleDots2Icon className="h-5 w-5 text-accent animate-pulse" />
-            <div className="h-6 w-40 bg-muted rounded"></div>
+            <GripVertical className="h-5 w-5 text-accent animate-pulse" />
+            <div className="h-6 w-40 bg-muted rounded-none border-2 border-border"></div>
           </div>
-          <div className="flex items-center gap-2 relative">
+          <div className="flex items-center gap-2 ">
             <motion.div
               animate={{
                 y: [0, -5, 0, -5, 0],
               }}
               transition={{
                 duration: 2,
-                repeat: Number.POSITIVE_INFINITY,
+                repeat: Infinity,
                 repeatType: "loop",
               }}
               className="absolute -left-6 -top-6"
             >
               <MousePointerClick className="h-5 w-5 text-accent" />
             </motion.div>
-            <DragHandleDots2Icon className="h-5 w-5 text-muted-foreground" />
-            <div className="h-10 w-full bg-muted rounded"></div>
+            <GripVertical className="h-5 w-5 text-muted-foreground" />
+            <div className="h-10 w-full bg-muted rounded-none border-2 border-border"></div>
           </div>
         </div>
       ),
@@ -74,23 +74,23 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
       title: "Adding Custom Chapters",
       description:
         "You can add your own custom chapters to any unit. Click the 'Add Chapter' button at the bottom of a unit to create a new chapter.",
-  icon: <Plus className="h-6 w-6 text-accent" />,
+  icon: <Plus className="h-6 w-6 text-success" />,
       image: (
-        <div className="border rounded-md p-4 bg-muted/50 my-4">
-          <div className="h-20 w-full bg-muted rounded mb-3"></div>
+        <div className="border-3 border-border rounded-none p-4 bg-muted/50 my-4">
+          <div className="h-20 w-full bg-muted rounded-none border-2 border-border mb-3"></div>
           <motion.div
             animate={{
               scale: [1, 1.05, 1],
             }}
             transition={{
               duration: 1.5,
-              repeat: Number.POSITIVE_INFINITY,
+              repeat: Infinity,
               repeatType: "loop",
             }}
             className="relative"
           >
-            <Button variant="outline" size="sm" className="w-full border-4 border-border shadow-neo">
-              <Plus className="h-4 w-4 mr-2 text-accent" />
+            <Button variant="outline" size="sm" className="w-full font-black border-4 border-border rounded-none">
+              <Plus className="h-4 w-4 mr-2 text-success" />
               Add Chapter
             </Button>
             <motion.div
@@ -99,13 +99,13 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
               }}
               transition={{
                 duration: 1,
-                repeat: Number.POSITIVE_INFINITY,
+                repeat: Infinity,
                 repeatType: "loop",
                 delay: 0.5,
               }}
               className="absolute -right-6 -top-6"
             >
-              <MousePointerClick className="h-5 w-5 text-accent" />
+              <MousePointerClick className="h-5 w-5 text-success" />
             </motion.div>
           </motion.div>
         </div>
@@ -117,18 +117,18 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
         "After adding a chapter, you can customize its title and add a YouTube video. You can either let our AI generate a video or add your own YouTube video ID.",
   icon: <Edit className="h-6 w-6 text-accent" />,
       image: (
-        <div className="border rounded-md p-4 bg-muted/50 my-4">
+        <div className="border-3 border-border rounded-none p-4 bg-muted/50 my-4">
           <div className="flex items-center gap-2 mb-3">
-            <div className="h-6 w-40 bg-muted rounded"></div>
+            <div className="h-6 w-40 bg-muted rounded-none border-2 border-border"></div>
             <Edit className="h-4 w-4 text-accent animate-pulse" />
           </div>
           <div className="flex gap-2 mb-2">
-            <Button variant="outline" size="sm" className="text-xs border-4 border-border shadow-neo">
-              <Video className="h-3.5 w-3.5 mr-1 text-accent" />
+            <Button variant="outline" size="sm" className="text-xs font-black border-2 border-border rounded-none">
+              <Video className="h-3.5 w-3.5 mr-1 text-purple-500" />
               Add Video
             </Button>
           </div>
-          <div className="h-8 w-full bg-accent/10 rounded flex items-center justify-center text-xs text-accent font-medium">
+          <div className="h-8 w-full bg-purple-500/10 rounded-none border-2 border-purple-500 flex items-center justify-center text-xs text-purple-500 font-black">
             Enter YouTube video ID or URL
           </div>
         </div>
@@ -138,22 +138,22 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
       title: "Generating Videos",
       description:
         "You can generate videos for your chapters automatically. Click the 'Generate' button on a chapter to create a video based on the chapter title.",
-  icon: <Video className="h-6 w-6 text-accent" />, 
+  icon: <Video className="h-6 w-6 text-destructive" />,
       image: (
-        <div className="border rounded-md p-4 bg-muted/50 my-4">
-          <div className="h-20 w-full bg-muted rounded mb-3"></div>
+        <div className="border-3 border-border rounded-none p-4 bg-muted/50 my-4">
+          <div className="h-20 w-full bg-muted rounded-none border-2 border-border mb-3"></div>
           <motion.div
             animate={{
               scale: [1, 1.05, 1],
             }}
             transition={{
               duration: 1.5,
-              repeat: Number.POSITIVE_INFINITY,
+              repeat: Infinity,
               repeatType: "loop",
             }}
             className="flex justify-end"
           >
-            <Button size="sm" className="text-xs bg-accent text-background border-4 border-border shadow-neo font-black uppercase">
+            <Button size="sm" className="text-xs font-black bg-destructive hover:bg-red-600 text-white border-4 border-border rounded-none">
               Generate
             </Button>
           </motion.div>
@@ -164,7 +164,7 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
       title: "You're All Set!",
       description:
         "Now you know how to organize and customize your course chapters. Feel free to experiment and create the perfect course structure.",
-  icon: <CheckCircle2 className="h-6 w-6 text-accent" />,
+  icon: <CheckCircle2 className="h-6 w-6 text-success" />,
       image: null,
     },
   ]
@@ -192,39 +192,56 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
   }
 
   return (
-    <Card className="w-full max-w-lg mx-auto border-4 border-border shadow-neo bg-card">
-      <CardHeader className="pb-4 border-b-4 border-border">
+    <Card className="w-full max-w-xl mx-auto shadow-neo border-4 border-border rounded-lg bg-card ring-2 ring-white/10">
+      <CardHeader className="pb-4 border-b-4 border-border bg-muted/30">
         <div className="flex items-center justify-between">
-          <Badge variant="outline" className="px-2 py-1 text-xs bg-accent/10 text-accent border-4 border-accent font-black uppercase">
+          <Badge variant="outline" className="px-3 py-1.5 text-xs font-black bg-accent/10 border-2 border-accent text-accent rounded-none">
             Step {currentStep + 1} of {steps.length}
           </Badge>
-          <Button variant="ghost" size="icon" onClick={handleClose} className="h-8 w-8 border-4 border-border">
+          <Button variant="ghost" size="icon" onClick={handleClose} className="h-8 w-8 border-2 border-transparent hover:border-border rounded-none">
             <X className="h-4 w-4" />
           </Button>
         </div>
-        <CardTitle className="text-xl flex items-center gap-2 mt-2 font-black uppercase">
+        <CardTitle className="text-lg sm:text-xl font-black flex items-center gap-3 mt-3 text-card-foreground">
           {steps[currentStep].icon}
           {steps[currentStep].title}
         </CardTitle>
-        <CardDescription className="text-muted-foreground">{steps[currentStep].description}</CardDescription>
+        <CardDescription className="text-xs sm:text-sm font-medium mt-2 text-muted-foreground">{steps[currentStep].description}</CardDescription>
       </CardHeader>
 
-      <CardContent className="border-b-4 border-border">{steps[currentStep].image}</CardContent>
+      <CardContent className="min-h-[200px] flex items-center justify-center">
+        {steps[currentStep].image}
+      </CardContent>
 
-      <CardFooter className="flex flex-col sm:flex-row gap-4 pt-2">
-        <div className="flex items-center space-x-2">
-          <Checkbox id="dontShow" checked={dontShowAgain} onCheckedChange={(checked) => setDontShowAgain(!!checked)} />
-          <Label htmlFor="dontShow" className="text-sm font-normal text-muted-foreground">
+      <CardFooter className="flex flex-col gap-4 pt-4 border-t-4 border-border bg-muted/30">
+        <div className="flex items-center space-x-2 w-full">
+          <Checkbox 
+            id="dontShow" 
+            checked={dontShowAgain} 
+            onCheckedChange={(checked) => setDontShowAgain(!!checked)}
+            className="border-2 border-border rounded-none data-[state=checked]:bg-accent data-[state=checked]:border-accent"
+          />
+          <Label htmlFor="dontShow" className="text-sm font-medium cursor-pointer">
             Don't show this again
           </Label>
         </div>
 
-        <div className="flex gap-2 ml-auto">
-          <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentStep === 0} className="border-4 border-border shadow-neo">
+        <div className="flex gap-2 w-full">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handlePrevious} 
+            disabled={currentStep === 0}
+            className="flex-1 font-black border-4 border-border rounded-none shadow-neo hover:shadow-neo-hover disabled:opacity-50 text-sm sm:text-base py-2 sm:py-3"
+          >
             <ChevronLeft className="h-4 w-4 mr-1" />
             Back
           </Button>
-          <Button size="sm" onClick={handleNext} className="bg-accent text-background border-4 border-border shadow-neo font-black uppercase">
+          <Button 
+            size="sm" 
+            onClick={handleNext}
+            className="flex-1 font-black border-4 border-border rounded-none bg-accent hover:bg-accent/90 text-background shadow-neo hover:shadow-neo-hover text-sm sm:text-base py-2 sm:py-3"
+          >
             {currentStep === steps.length - 1 ? "Finish" : "Next"}
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
@@ -236,7 +253,12 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
 
 export function GuidedHelpButton({ onClick }: { onClick: () => void }) {
   return (
-    <Button variant="outline" size="sm" onClick={onClick} className="flex items-center gap-1.5 border-4 border-border shadow-neo">
+    <Button 
+      variant="outline" 
+      size="sm" 
+      onClick={onClick} 
+      className="flex items-center gap-2 font-black border-4 border-border rounded-none shadow-neo hover:shadow-neo-hover"
+    >
       <Info className="h-4 w-4" />
       <span>Help</span>
     </Button>
@@ -247,12 +269,9 @@ export function useGuidedHelp() {
   const [showHelp, setShowHelp] = useState(false)
 
   useEffect(() => {
-    // Check if the user has dismissed the help before
     const helpDismissed = localStorage.getItem(STORAGE_KEY) === "true"
 
-    // Show help automatically on first visit
     if (!helpDismissed) {
-      // Delay showing the help to allow the page to load fully
       const timer = setTimeout(() => {
         setShowHelp(true)
       }, 1000)

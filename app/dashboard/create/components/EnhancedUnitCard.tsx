@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo } from "react"
+import React from "react"
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Droppable, Draggable } from "react-beautiful-dnd"
@@ -12,7 +12,7 @@ import ChapterEditor from "./ChapterEditor"
 import AddChapterForm from "./AddChapterForm"
 import type { ChapterCardHandler } from "./EnhancedChapterCard"
 import type { VideoStatus } from "../hooks/useVideoProcessing"
-import type { CourseUnit, Chapter } from "@/app/types/course-types"
+import { CourseUnit, Chapter } from "@/app/types/course-types"
 
 interface EnhancedUnitCardProps {
   unit: CourseUnit & { chapters: Chapter[] }
@@ -68,41 +68,57 @@ const EnhancedUnitCard = React.memo<EnhancedUnitCardProps>(
     onGenerateVideo,
     onCancelProcessing,
   }) => {
-    const chapterList = useMemo(() => unit.chapters, [unit.chapters])
-
     return (
-      <Card className="border-4 border-border shadow-neo bg-card">
-        <CardHeader className="pb-2 border-b-4 border-border">
-          <CardTitle className="flex flex-col">
-            <span className="text-xs font-semibold text-muted-foreground uppercase">Unit {unitIndex + 1}</span>
-            <span className="text-base font-semibold mt-1 text-foreground">{unit.title}</span>
+      <Card className="border-3 border-border shadow-neo rounded-none bg-card">
+        <CardHeader className="pb-4 border-b-3 border-border bg-muted/30">
+          <CardTitle className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-none bg-primary text-background text-sm font-black border-2 border-border">
+                {unitIndex + 1}
+              </span>
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                Unit {unitIndex + 1}
+              </span>
+            </div>
+            <span className="text-lg font-black text-foreground">{unit.name}</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 pt-4">
-          <Droppable droppableId={`unit-${String(unit.id)}`} isDropDisabled={false}>
+        
+        <CardContent className="space-y-3 p-4">
+          <Droppable droppableId={`unit-${String(unit.id)}`} isDropDisabled={false} isCombineEnabled={false}>
             {(provided, snapshot) => (
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
                 className={cn(
-                  "space-y-2 p-2 rounded-md transition-colors",
-                  snapshot.isDraggingOver ? "bg-accent/10 border-dashed border-4 border-accent/30" : "",
+                  "space-y-3 p-3 rounded-none transition-all min-h-[100px]",
+                  snapshot.isDraggingOver 
+                    ? "bg-primary/10 border-3 border-dashed border-primary" 
+                    : "bg-transparent",
                 )}
               >
-                {chapterList.map((chapter, chapterIndex) => (
+                {unit.chapters.map((chapter, chapterIndex) => (
                   <Draggable key={String(chapter.id)} draggableId={String(chapter.id)} index={chapterIndex}>
-                    {(provided) => (
-                      <div ref={provided.innerRef} {...provided.draggableProps} className="relative">
+                    {(provided, snapshot) => (
+                      <div 
+                        ref={provided.innerRef} 
+                        {...provided.draggableProps} 
+                        className={cn(
+                          "relative transition-all",
+                          snapshot.isDragging && "opacity-50 rotate-2 scale-105"
+                        )}
+                      >
                         <div className="flex items-start gap-2">
+                          {/* Drag Handle */}
                           <div
                             {...provided.dragHandleProps}
-                            className="mt-3 cursor-grab active:cursor-grabbing"
+                            className="mt-3 cursor-grab active:cursor-grabbing p-2 rounded-none border-2 border-border bg-muted hover:bg-primary hover:border-primary hover:text-background transition-all"
                             data-sidebar="chapter-drag-handle"
-                            aria-label="Drag handle for chapter"
                           >
-                            <GripVertical className="h-5 w-5 text-muted-foreground" />
+                            <GripVertical className="h-5 w-5" />
                           </div>
-                          <div className="flex-1">
+                          
+                          <div className="flex-1 min-w-0">
                             {editingChapterId === String(chapter.id) ? (
                               <ChapterEditor
                                 title={editingChapterTitle}
@@ -111,44 +127,40 @@ const EnhancedUnitCard = React.memo<EnhancedUnitCardProps>(
                                 onCancel={onCancelEditingChapter}
                               />
                             ) : (
-                              <div className="flex items-center gap-2 mb-2">
-                                <h4
-                                  className="font-medium flex-1 text-sm text-foreground truncate"
-                                  data-sidebar="chapter-title"
-                                >
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2 p-2 bg-muted/30 rounded-none border-2 border-border">
+                                <h4 className="font-black flex-1 text-foreground truncate" data-sidebar="chapter-title">
                                   {chapter.title}
                                 </h4>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => onStartEditingChapter(chapter)}
-                                  className="h-7 w-7 p-0"
-                                  aria-label={`Edit chapter: ${chapter.title}`}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                {chapter.videoId && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => onShowVideo(chapter)}
-                                    className="h-7 w-7 p-0"
-                                    aria-label={`Preview video for: ${chapter.title}`}
+                                <div className="flex gap-1 flex-shrink-0">
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => onStartEditingChapter(chapter)}
+                                    className="h-8 w-8 p-0 border-2 border-transparent hover:border-primary hover:bg-primary/10"
                                   >
-                                    <Eye className="h-4 w-4" />
+                                    <Pencil className="h-4 w-4" />
                                   </Button>
-                                )}
-                                {videoStatuses[chapter.id]?.status === "processing" && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => onCancelProcessing(chapter.id)}
-                                    className="text-destructive h-7 w-7 p-0"
-                                    aria-label={`Cancel video generation for: ${chapter.title}`}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                )}
+                                  {chapter.videoId && (
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost" 
+                                      onClick={() => onShowVideo(chapter)}
+                                      className="h-8 w-8 p-0 border-2 border-transparent hover:border-success hover:bg-success/10"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {videoStatuses[chapter.id]?.status === "processing" && (
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost" 
+                                      onClick={() => onCancelProcessing(chapter.id)}
+                                      className="h-8 w-8 p-0 border-2 border-transparent hover:border-danger hover:bg-danger/10 text-danger"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                             )}
                             <EnhancedChapterCard
@@ -157,7 +169,7 @@ const EnhancedUnitCard = React.memo<EnhancedUnitCardProps>(
                               chapterIndex={chapterIndex}
                               onChapterComplete={onChapterComplete}
                               isCompleted={completedChapters.has(String(chapter.id))}
-                              isGenerating={isGeneratingVideos}
+                              isGeneratingVideos={isGeneratingVideos}
                               hideVideoControls={false}
                               onGenerateVideo={onGenerateVideo}
                               isFree={chapterIndex === 0}
@@ -186,13 +198,14 @@ const EnhancedUnitCard = React.memo<EnhancedUnitCardProps>(
             />
           ) : (
             <Button
+              variant="outline"
               size="sm"
-              className="mt-2 w-full bg-accent text-background border-4 border-border shadow-neo font-black uppercase"
+              className="mt-3 w-full h-11 font-black border-3 border-dashed border-primary text-primary hover:bg-primary hover:text-background hover:border-solid rounded-none shadow-neo hover:shadow-neo-hover transition-all"
               onClick={() => onStartAddingChapter(String(unit.id))}
               data-sidebar="add-chapter-button"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Chapter
+              Add Chapter to this Unit
             </Button>
           )}
         </CardContent>

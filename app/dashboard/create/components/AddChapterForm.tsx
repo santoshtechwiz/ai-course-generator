@@ -36,14 +36,14 @@ const AddChapterForm: React.FC<AddChapterFormProps> = ({
   }, [youtubeId, extractYoutubeIdFromUrl])
 
   return (
-    <div className="mt-4 border-4 border-border rounded-lg p-3 space-y-3 bg-card shadow-neo">
-      <h4 className="font-black uppercase text-foreground">Add New Chapter</h4>
+    <div className="mt-4 border-4 border-border rounded-lg p-3 sm:p-4 space-y-3 bg-card shadow-neo">
+      <h4 className="font-black uppercase text-foreground text-sm sm:text-base">Add New Chapter</h4>
       <div className="space-y-2">
         <Input
           placeholder="Chapter title"
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
-          className="border-4 border-border"
+          className="border-4 border-border text-sm sm:text-base py-2 sm:py-3"
         />
         <div className="space-y-1">
           <Input
@@ -51,7 +51,7 @@ const AddChapterForm: React.FC<AddChapterFormProps> = ({
             value={youtubeId}
             onChange={(e) => onYoutubeIdChange(e.target.value)}
             className={cn(
-              "border-4 border-border",
+              "border-4 border-border text-sm sm:text-base py-2 sm:py-3",
               validatedId
                 ? "border-accent focus-visible:ring-accent"
                 : youtubeId && !validatedId
@@ -69,8 +69,8 @@ const AddChapterForm: React.FC<AddChapterFormProps> = ({
           )}
           {validatedId && (
             <div className="mt-2 border-4 border-border rounded-lg p-2 bg-card">
-              <p className="text-xs text-accent mb-1 font-medium">Video ID validated: {validatedId}</p>
-              <div className="relative aspect-video bg-muted rounded-lg border-4 border-border">
+              <p className="text-xs text-accent mb-2 font-medium">Video ID validated: {validatedId}</p>
+              <div className="relative aspect-video bg-muted rounded-lg border-4 border-border overflow-hidden">
                 <Image
                   src={getYouTubeThumbnailUrl(validatedId, "hqdefault") || "/placeholder.svg"}
                   alt="Video thumbnail"
@@ -83,19 +83,19 @@ const AddChapterForm: React.FC<AddChapterFormProps> = ({
             </div>
           )}
         </div>
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
           <Button
             size="sm"
             variant="outline"
             onClick={onCancel}
-            className="border-4 border-border shadow-neo bg-transparent"
+            className="border-4 border-border shadow-neo bg-transparent text-sm sm:text-base py-2 sm:py-3"
           >
             Cancel
           </Button>
           <Button
             size="sm"
             onClick={onAdd}
-            className="bg-accent text-background border-4 border-border shadow-neo font-black uppercase"
+            className="bg-accent text-background border-4 border-border shadow-neo font-black uppercase text-sm sm:text-base py-2 sm:py-3"
           >
             Add Chapter
           </Button>

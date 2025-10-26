@@ -25,10 +25,14 @@ import type { FullCourseType, FullChapterType } from "@/app/types/types"
 
 interface VideoGenerationSectionProps {
   course: FullCourseType
+  isOwner:boolean
+  isAdmin:boolean
   onVideoGenerated?: (chapterId: string, videoId: string) => void
 }
 
-export default function VideoGenerationSection({ course, onVideoGenerated }: VideoGenerationSectionProps) {
+export default function VideoGenerationSection({ course,isOwner,isAdmin, onVideoGenerated }: VideoGenerationSectionProps) {
+ 
+  if(!isOwner || !isAdmin) return null;
   const { toast } = useToast()
   const [isGenerating, setIsGenerating] = useState(false)
   // Get chapters that need videos

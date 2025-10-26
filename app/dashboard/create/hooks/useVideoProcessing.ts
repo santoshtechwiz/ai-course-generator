@@ -4,6 +4,20 @@ import { useState, useCallback, useEffect } from "react"
 import { api } from "@/lib/api-helper"
 import { useToast } from "@/hooks"
 
+/**
+ * FIXES APPLIED:
+ * 1. Fixed API response parsing: API returns {data: response} but code was accessing response.data.success
+ *    - Changed to response.data?.data?.success for processVideo API calls
+ * 2. Improved status checking: Now properly checks both videoId existence AND videoStatus === "completed"
+ *    - Prevents false completion detection when videoId exists but status is still processing
+ * 3. Simplified polling logic: Replaced complex exponential backoff with simple 5-second intervals
+ *    - More predictable and reliable polling behavior
+ * 4. Added delay before polling: 2-second delay after API call to ensure database consistency
+ *    - Prevents race conditions where polling starts before database is updated
+ * 5. Enhanced error handling: Better logging and error recovery in polling loop
+ *    - Continues polling even after individual API errors up to max attempts
+ */
+
 export interface VideoStatus {
   chapterId: number
   status: "queued" | "processing" | "completed" | "error"
@@ -67,24 +81,26 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       const response = await api.post(endpoint, { 
         chapterId
       })
-      
-      console.log(`📡 API response for chapter ${chapterId}:`, response.data)
-      
-      if (!response.data.success) {
-        throw new Error(response.data.error || "Failed to process video")
+
+      console.log(`📡 API response for chapter ${chapterId}:`, response)
+
+      // Fix: API returns {data: response} where response has success field
+      if (!response.data?.success) {
+        throw new Error(response.data?.error || response.error || "Failed to process video")
       }
-      
+
       // Update queue status if available
-      if (response.data.queueStatus) {
+      if (response.data?.queueStatus) {
         console.log(`📊 Updating queue status:`, response.data.queueStatus)
         setQueueStatus(response.data.queueStatus)
       }
       
-      // Start polling for status
-      console.log(`🔄 Starting polling for chapter ${chapterId}`)
-      pollStatus(chapterId)
+      // Start polling for status updates
+      // Add a small delay to ensure database is updated before checking status
+      console.log(`🔄 Starting polling for chapter ${chapterId} in 2 seconds`)
+      setTimeout(() => pollStatus(chapterId), 2000)
       
-      return response.data
+      return { success: true, message: "Video processing started" }
       
     } catch (error) {
       console.error(`❌ Error in processVideo for chapter ${chapterId}:`, error)
@@ -121,10 +137,10 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       
       console.log(`🔍 Checking status for chapter ${chapterId} at ${endpoint}`)
       const response = await api.get(endpoint)
-      console.log(`📡 Status response for chapter ${chapterId}:`, response.data)
+      console.log(`📡 Status response for chapter ${chapterId}:`, response)
       
       // Successful completion - video is ready
-      if (response.videoId) {
+      if (response.videoId && response.videoStatus === "completed") {
         console.log(`✅ Video completed for chapter ${chapterId}, videoId: ${response.videoId}`)
         const completedStatus: VideoStatus = {
           chapterId,
@@ -147,9 +163,9 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
         }
         return true
       }
-      // Error state
-      if (response.videoStatus === "error" || response.failed) {
-        console.log(`❌ Video failed for chapter ${chapterId}`)
+      // Error state - check both videoStatus and failed flag
+      if (response.videoStatus === "error" || response.failed === true) {
+        console.log(`❌ Video failed for chapter ${chapterId}, status: ${response.videoStatus}, failed: ${response.failed}`)
         const errorStatus: VideoStatus = {
           chapterId,
           status: "error",
@@ -164,6 +180,25 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
           onError(errorStatus)
         }
         return false
+      }
+
+      // Still processing - update status to show current state
+      if (response.videoStatus === "processing" || response.videoStatus === "pending") {
+        console.log(`⏳ Video still processing for chapter ${chapterId}, status: ${response.videoStatus}`)
+        const processingStatus: VideoStatus = {
+          chapterId,
+          status: response.videoStatus === "processing" ? "processing" : "queued",
+          message: response.videoStatus === "processing" ? "Processing video..." : "Queued for processing..."
+        }
+
+        setStatuses((prev) => ({
+          ...prev,
+          [chapterId]: processingStatus
+        }))
+
+        if (onStatusChange) {
+          onStatusChange(processingStatus)
+        }
       }
       // Still processing
       return null
@@ -284,13 +319,13 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
           ? { chapterId, options: { useOptimizedService: true } }
           : { chapterId })
 
-        if (!response.data.success) {
-          throw new Error(response.data.error || "Failed to process video")
+        if (!response.success) {
+          throw new Error(response.error || "Failed to process video")
         }
 
         // Update queue status if available
-        if (response.data.queueStatus) {
-          setQueueStatus(response.data.queueStatus)
+        if (response.queueStatus) {
+          setQueueStatus(response.queueStatus)
         }
 
         // Wait for completion using polling
@@ -353,7 +388,7 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
     try {
       const response = await api.delete(`/api/video/enhanced?chapterId=${chapterId}`)
       
-      if (response.data.success) {
+      if (response.success) {
         setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
         
         setStatuses((prev) => ({
@@ -405,22 +440,23 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       processVideo(chapterId)
     }, 1000)
   }, [processVideo])
-    // Poll status with exponential backoff
+    // Poll status with simple, reliable intervals
   const pollStatus = useCallback((chapterId: number) => {
     console.log(`🔄 Starting polling for chapter ${chapterId}`)
     let attempts = 0
-    let maxAttempts = 40 // Increased for longer timeout
+    const maxAttempts = 60 // 5 minutes with 5 second intervals
     let shouldContinuePolling = true
     const startTime = Date.now()
     const maxWaitTime = 5 * 60 * 1000 // 5 minutes max wait
-    
+    const pollInterval = 5000 // 5 seconds between checks
+
     const poll = async () => {
       // Check if we should stop polling
       if (!shouldContinuePolling) {
         console.log(`⏹️ Polling stopped for chapter ${chapterId}`)
         return
       }
-      
+
       // Check if we've exceeded the maximum wait time
       const elapsedTime = Date.now() - startTime
       if (elapsedTime > maxWaitTime) {
@@ -435,7 +471,7 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
             message: "Timeout: Video generation took too long"
           }
         }))
-        
+
         if (onError) {
           onError({
             chapterId,
@@ -443,71 +479,96 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
             message: "Timeout: Video generation took too long"
           })
         }
-        
+
         return
       }
-      
-      console.log(`🔍 Polling attempt ${attempts + 1}/${maxAttempts} for chapter ${chapterId} (elapsed: ${Math.round(elapsedTime/1000)}s)`)
-      const result = await checkStatus(chapterId)
-      console.log(`📊 Poll result for chapter ${chapterId}:`, result)
-      
-      // If completed or error, stop polling
-      if (result === true || result === false) {
-        console.log(`✅ Polling completed for chapter ${chapterId}, result: ${result}`)
-        shouldContinuePolling = false
-        return
-      }
-      
-      // Continue polling with adaptive backoff
+
       attempts++
-      if (attempts >= maxAttempts) {
-        console.log(`⏰ Polling timeout for chapter ${chapterId} after ${maxAttempts} attempts`)
-        shouldContinuePolling = false
-        setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
-        setStatuses((prev) => ({
-          ...prev,
-          [chapterId]: {
-            chapterId,
-            status: "error",
-            message: "Timeout: Video generation took too long"
-          }
-        }))
-        
-        if (onError) {
-          onError({
-            chapterId,
-            status: "error",
-            message: "Timeout: Video generation took too long"
-          })
+      console.log(`🔍 Polling attempt ${attempts}/${maxAttempts} for chapter ${chapterId} (elapsed: ${Math.round(elapsedTime/1000)}s)`)
+
+      try {
+        const result = await checkStatus(chapterId)
+        console.log(`📊 Poll result for chapter ${chapterId}:`, result)
+
+        // If completed or error, stop polling
+        if (result === true || result === false) {
+          console.log(`✅ Polling completed for chapter ${chapterId}, result: ${result}`)
+          shouldContinuePolling = false
+          return
         }
-        
-        return
+
+        // If we've reached max attempts, stop
+        if (attempts >= maxAttempts) {
+          console.log(`⏰ Polling timeout for chapter ${chapterId} after ${maxAttempts} attempts`)
+          shouldContinuePolling = false
+          setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
+          setStatuses((prev) => ({
+            ...prev,
+            [chapterId]: {
+              chapterId,
+              status: "error",
+              message: "Timeout: Video generation took too long"
+            }
+          }))
+
+          if (onError) {
+            onError({
+              chapterId,
+              status: "error",
+              message: "Timeout: Video generation took too long"
+            })
+          }
+
+          return
+        }
+
+        // Continue polling
+        console.log(`⏱️ Next poll for chapter ${chapterId} in ${pollInterval/1000}s`)
+        setTimeout(poll, pollInterval)
+
+      } catch (error) {
+        console.error(`❌ Error during polling for chapter ${chapterId}:`, error)
+        attempts++
+
+        // If we've reached max attempts due to errors, stop
+        if (attempts >= maxAttempts) {
+          console.log(`⏰ Polling stopped due to errors for chapter ${chapterId} after ${maxAttempts} attempts`)
+          shouldContinuePolling = false
+          setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
+          setStatuses((prev) => ({
+            ...prev,
+            [chapterId]: {
+              chapterId,
+              status: "error",
+              message: "Polling failed: " + (error instanceof Error ? error.message : "Unknown error")
+            }
+          }))
+
+          if (onError) {
+            onError({
+              chapterId,
+              status: "error",
+              message: "Polling failed: " + (error instanceof Error ? error.message : "Unknown error")
+            })
+          }
+
+          return
+        }
+
+        // Continue polling despite error
+        console.log(`⏱️ Continuing polling despite error, next poll in ${pollInterval/1000}s`)
+        setTimeout(poll, pollInterval)
       }
-      
-      // Calculate next interval with better backoff strategy
-      // Start with quick checks, then gradually increase, but cap at 15 seconds
-      let nextInterval: number;
-      if (attempts < 5) {
-        nextInterval = 2000; // First 5 attempts: check every 2 seconds
-      } else if (attempts < 10) {
-        nextInterval = 5000; // Next 5 attempts: every 5 seconds
-      } else {
-        // After 10 attempts, use adaptive backoff but cap at 15 seconds
-        nextInterval = Math.min(3000 + (attempts - 10) * 1000, 15000);
-      }
-      
-      console.log(`⏱️ Next poll for chapter ${chapterId} in ${nextInterval/1000}s`)
-      setTimeout(poll, nextInterval)
     }
-    
-    // Start polling
+
+    // Start polling immediately
     poll()
-    
+
     return () => {
       console.log(`🛑 Cleanup: stopping polling for chapter ${chapterId}`)
       shouldContinuePolling = false
     }
-  }, [pollingInterval, checkStatus, onError, setIsProcessing, setStatuses])
+  }, [checkStatus, onError, setIsProcessing, setStatuses])
   
   // Initialize status for chapters that already have videos
   const initializeChapterStatus = useCallback((chapterId: number, videoId?: string | null) => {

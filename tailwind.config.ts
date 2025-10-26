@@ -22,6 +22,11 @@ module.exports = {
         success: "var(--color-success)",
         warning: "var(--color-warning)",
         danger: "var(--color-error)",
+        dialog: {
+          background: "var(--dialog-background)",
+          text: "var(--dialog-text)",
+          border: "var(--dialog-border)",
+        },
       },
 
       boxShadow: {
