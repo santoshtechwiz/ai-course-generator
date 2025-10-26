@@ -1,6 +1,4 @@
 "use client";
-//no caching
-
 
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,6 +20,7 @@ import {
   Crown,
   Zap,
   BookMarked,
+  X,
 } from "lucide-react";
 import {
   Card,
@@ -377,9 +376,8 @@ function Tile({
           className="h-full"
         >
           <Card
-            className={`h-full flex flex-col justify-between transition-all duration-500 border border-gray-200 rounded-lg shadow-sm hover:shadow-md group`}
+            className={`h-full flex flex-col justify-between transition-all duration-500 border border-gray-200 rounded-lg shadow-sm hover:shadow-md group cursor-pointer`}
             onClick={(e) => {
-              // Always allow exploration - open details modal
               setIsOpen(true);
             }}
           >
@@ -513,48 +511,63 @@ function Tile({
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="bg-[var(--color-card)] sm:max-w-4xl lg:max-w-5xl max-h-[90vh] p-0 border border-border shadow-lg overflow-hidden flex flex-col">
+          {/* Mobile Close Button */}
+          <div className="lg:hidden absolute top-4 right-4 z-50">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsOpen(false)}
+              className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm border"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
           <div className="grid lg:grid-cols-2 flex-1 min-h-0">
             {/* Left side - Hero content */}
-            <div className="p-6 lg:p-8 bg-[var(--color-bg)] border-r border-border flex flex-col">
-              <DialogHeader className="space-y-4 sm:space-y-6">
+            <div className="p-4 sm:p-6 lg:p-8 bg-[var(--color-bg)] border-r border-border flex flex-col">
+              <DialogHeader className="space-y-3 sm:space-y-4">
                 <DialogTitle className="flex items-center justify-between">
-                  <div className={`flex items-center text-4xl font-bold ${colorClasses.icon}`}>
+                  <div className={`flex items-center text-2xl sm:text-3xl lg:text-4xl font-bold ${colorClasses.icon}`}>
                     <motion.div
                       initial={{ rotate: 0, scale: 0.8 }}
                       animate={{ rotate: 360, scale: 1 }}
                       transition={{ duration: 0.8, type: "spring", stiffness: 200 }}
                     >
-                      <Icon className="h-12 w-12 mr-4" />
+                      <Icon className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mr-3 sm:mr-4" />
                     </motion.div>
                     <motion.span
                       initial={{ opacity: 0, x: -30 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.6, delay: 0.2 }}
+                      className="text-lg sm:text-xl lg:text-2xl"
                     >
                       {title}
                     </motion.span>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                     {showUpgradeBadge ? (
-                      <Badge variant="neutral" className={cn(neo.badge, "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 shadow-sm")}>
+                      <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 shadow-sm")}>
                         <Crown className="h-3 w-3 mr-1" />
-                        {requiredPlanConfig.name} Required
+                        <span className="hidden sm:inline">{requiredPlanConfig.name} Required</span>
+                        <span className="sm:hidden">{requiredPlanConfig.name}</span>
                       </Badge>
                     ) : requiredPlan !== 'FREE' && (
-                      <Badge variant="neutral" className={cn(neo.badge, "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 shadow-sm")}>
+                      <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 shadow-sm")}>
                         <CheckCircle className="h-3 w-3 mr-1" />
-                        Unlocked
+                        <span className="hidden sm:inline">Unlocked</span>
                       </Badge>
                     )}
                     <Badge variant="neutral" className={cn(neo.badge, getDifficultyColor(difficulty!))}>
-                      {difficulty}
+                      <span className="hidden sm:inline">{difficulty}</span>
+                      <span className="sm:hidden">{difficulty?.charAt(0)}</span>
                     </Badge>
                   </div>
                 </DialogTitle>
 
                 <DialogDescription asChild>
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     {/* Rotating taglines */}
                     <AnimatePresence mode="wait">
                       <motion.div
@@ -563,12 +576,12 @@ function Tile({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -20, scale: 1.05 }}
                         transition={{ duration: 0.5, type: "spring" }}
-                        className="text-center py-6 bg-[var(--color-card)]/60 dark:bg-[var(--color-muted)]/30 rounded-xl border backdrop-blur-sm"
+                        className="text-center py-4 sm:py-6 bg-[var(--color-card)]/60 dark:bg-[var(--color-muted)]/30 rounded-xl border backdrop-blur-sm"
                       >
-                        <p className="text-lg font-medium italic px-6">
+                        <p className="text-base sm:text-lg font-medium italic px-4 sm:px-6">
                           "{taglines[currentTagline]}"
                         </p>
-                        <div className="flex justify-center mt-4 space-x-2">
+                        <div className="flex justify-center mt-3 sm:mt-4 space-x-2">
                           {taglines.map((_, i) => (
                             <motion.div
                               key={i}
@@ -585,7 +598,7 @@ function Tile({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.5, delay: 0.4 }}
-                      className="text-lg text-muted-foreground leading-relaxed text-center"
+                      className="text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed text-center"
                     >
                       {description}
                     </motion.p>
@@ -598,34 +611,33 @@ function Tile({
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 0.1 }}
                 transition={{ delay: 1, duration: 1 }}
-                className="flex justify-center mt-8"
+                className="flex justify-center mt-6 lg:mt-8"
               >
-                <Icon className={`h-32 w-32 ${colorClasses.icon}`} />
+                <Icon className={`h-20 w-20 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${colorClasses.icon}`} />
               </motion.div>
             </div>
 
             {/* Right side - Details */}
             <div
-              className="p-4 sm:p-6 lg:p-8 overflow-y-auto flex-1"
-              style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
+              className="p-4 sm:p-6 lg:p-8 overflow-y-auto flex-1 scrollbar-hide"
             >
-              <div className="space-y-6 sm:space-y-8">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Quick stats */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                  className="grid grid-cols-2 gap-3 sm:gap-4"
                 >
-                  <div className="text-center p-4 rounded-lg bg-muted/30 border">
-                    <Target className={`h-8 w-8 mx-auto mb-2 ${colorClasses.icon}`} />
-                    <div className="font-semibold">{difficulty}</div>
-                    <div className="text-sm text-muted-foreground">Difficulty</div>
+                  <div className="text-center p-3 sm:p-4 rounded-lg bg-muted/30 border">
+                    <Target className={`h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-1 sm:mb-2 ${colorClasses.icon}`} />
+                    <div className="text-sm sm:text-base font-semibold">{difficulty}</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Difficulty</div>
                   </div>
-                  <div className="text-center p-4 rounded-lg bg-muted/30 border">
-                    <Zap className={`h-8 w-8 mx-auto mb-2 ${colorClasses.icon}`} />
-                    <div className="font-semibold">AI Powered</div>
-                    <div className="text-sm text-muted-foreground">Instant Generation</div>
+                  <div className="text-center p-3 sm:p-4 rounded-lg bg-muted/30 border">
+                    <Zap className={`h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-1 sm:mb-2 ${colorClasses.icon}`} />
+                    <div className="text-sm sm:text-base font-semibold">AI Powered</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Instant Generation</div>
                   </div>
                 </motion.div>
 
@@ -634,29 +646,29 @@ function Tile({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="space-y-4"
+                  className="space-y-3 sm:space-y-4"
                 >
-                  <h3 className="text-lg font-bold flex items-center">
-                    <CheckCircle className={`h-6 w-6 mr-3 ${colorClasses.icon}`} />
+                  <h3 className="text-base sm:text-lg font-bold flex items-center">
+                    <CheckCircle className={`h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3 ${colorClasses.icon}`} />
                     What You Get
                   </h3>
-                  <div className="grid gap-4">
+                  <div className="grid gap-2 sm:gap-3">
                     {benefits?.map((benefit, i) => (
                       <motion.div
                         key={i}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.5 + i * 0.1 }}
-                        className="flex items-center p-4 rounded-lg bg-muted/20 border hover:bg-muted/30 transition-colors"
+                        className="flex items-center p-2 sm:p-3 rounded-lg bg-muted/20 border hover:bg-muted/30 transition-colors"
                       >
                         <motion.div
                           whileHover={{ scale: 1.2, rotate: 360 }}
                           transition={{ duration: 0.3 }}
-                          className={`mr-4 ${colorClasses.icon}`}
+                          className={`mr-3 sm:mr-4 ${colorClasses.icon}`}
                         >
-                          <CheckCircle className="h-5 w-5" />
+                          <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                         </motion.div>
-                        <span className="font-medium">{benefit}</span>
+                        <span className="text-sm sm:text-base font-medium">{benefit}</span>
                       </motion.div>
                     ))}
                   </div>
@@ -667,13 +679,13 @@ function Tile({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6 }}
-                  className="space-y-4"
+                  className="space-y-3 sm:space-y-4"
                 >
-                  <h3 className="text-lg font-bold flex items-center">
-                    <Sparkles className={`h-6 w-6 mr-3 ${colorClasses.icon}`} />
+                  <h3 className="text-base sm:text-lg font-bold flex items-center">
+                    <Sparkles className={`h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3 ${colorClasses.icon}`} />
                     How It Works
                   </h3>
-                  <div className="grid gap-4">
+                  <div className="grid gap-2 sm:gap-3">
                     {[
                       "Enter your topic ",
                       "AI generates questions instantly",
@@ -684,15 +696,15 @@ function Tile({
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.7 + i * 0.1 }}
-                        className="flex items-center p-3 rounded-lg border bg-[var(--color-bg)]/50"
+                        className="flex items-center p-2 sm:p-3 rounded-lg border bg-[var(--color-bg)]/50"
                       >
                         <motion.div
                           whileHover={{ scale: 1.1 }}
-                          className={`w-8 h-8 rounded-full ${colorClasses.button} flex items-center justify-center font-bold mr-4 flex-shrink-0`}
+                          className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full ${colorClasses.button} flex items-center justify-center text-xs sm:text-sm font-bold mr-3 sm:mr-4 flex-shrink-0`}
                         >
                           {i + 1}
                         </motion.div>
-                        <span>{step}</span>
+                        <span className="text-sm sm:text-base">{step}</span>
                       </motion.div>
                     ))}
                   </div>
@@ -701,7 +713,7 @@ function Tile({
             </div>
           </div>
 
-          <DialogFooter className="flex-col sm:flex-row gap-3 p-6 border-t bg-muted/20 flex-shrink-0">
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-3 p-4 sm:p-6 border-t bg-muted/20 flex-shrink-0">
             <motion.div
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -712,7 +724,7 @@ function Tile({
                 onClick={() => router.push(url)}
                 requiredPlan={accessRequiredPlan || requiredPlan}
                 allowPublicAccess={true}
-                className={`w-full h-12 font-bold text-base ${colorClasses.button} shadow-xl hover:shadow-2xl transition-all duration-300 group`}
+                className={`w-full h-10 sm:h-12 font-bold text-sm sm:text-base ${colorClasses.button} shadow-xl hover:shadow-2xl transition-all duration-300 group`}
               />
             </motion.div>
           </DialogFooter>
@@ -725,32 +737,32 @@ function Tile({
 export function CreateTileGrid() {
 
   return (
-    <section className="w-full max-w-7xl mx-auto px-4 py-8">
+    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
       {/* Enhanced Hero Section */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-center mb-12 space-y-6"
+        className="text-center mb-8 sm:mb-12 space-y-4 sm:space-y-6"
       >
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary/10 dark:bg-primary/30 border border-primary/20 shadow-sm"
+          className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-primary/10 dark:bg-primary/30 border border-primary/20 shadow-sm"
         >
-          <Sparkles className="h-5 w-5 text-primary" />
-          <span className="text-sm font-medium text-primary">AI-Powered Learning Tools</span>
+          <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+          <span className="text-xs sm:text-sm font-medium text-primary">AI-Powered Learning Tools</span>
         </motion.div>
 
         <motion.h1
-          className="text-4xl md:text-5xl font-bold text-foreground"
-          whileHover={{ scale: 1.05 }}
+          className="text-2xl sm:text-4xl md:text-5xl font-bold text-foreground"
+          whileHover={{ scale: 1.02 }}
         >
           Create Amazing<br />Learning Content
         </motion.h1>
 
         <motion.p
-          className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
+          className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
@@ -764,9 +776,9 @@ export function CreateTileGrid() {
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
-        className="mb-12"
+        className="mb-8 sm:mb-12"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
           {tiles.map((tile, index) => (
             <Tile
               key={tile.url}
@@ -782,18 +794,18 @@ export function CreateTileGrid() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 1.2 }}
-        className="text-center space-y-6 p-8 rounded-2xl bg-card border border-border shadow-sm"
+        className="text-center space-y-4 sm:space-y-6 p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl bg-card border border-border shadow-sm"
       >
         <motion.div
           whileHover={{ scale: 1.05 }}
           transition={{ duration: 0.2 }}
-          className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary text-primary-foreground mb-4 shadow-sm"
+          className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary text-primary-foreground mb-2 sm:mb-4 shadow-sm"
         >
-          <Brain className="h-8 w-8" />
+          <Brain className="h-6 w-6 sm:h-8 sm:w-8" />
         </motion.div>
 
-        <h3 className="text-xl font-bold">Need Something Custom?</h3>
-        <p className="text-muted-foreground max-w-md mx-auto">
+        <h3 className="text-lg sm:text-xl font-bold">Need Something Custom?</h3>
+        <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto">
           Can't find what you're looking for? Our AI can help you create any type of educational content.
         </p>
 
@@ -803,10 +815,10 @@ export function CreateTileGrid() {
         >
           <Button
             size="lg"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 py-3 shadow-sm hover:shadow-md transition-all duration-200"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 sm:px-8 py-2 sm:py-3 text-sm sm:text-base shadow-sm hover:shadow-md transition-all duration-200"
             onClick={() => window.location.href = '/contactus'}
           >
-            <Sparkles className="h-5 w-5 mr-2" />
+            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
             Get Custom Help
           </Button>
         </motion.div>
