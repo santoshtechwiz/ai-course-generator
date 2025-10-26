@@ -4,6 +4,8 @@ import React from "react"
 import { Loader2, CheckCircle, XCircle, AlertCircle, RefreshCcw, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { ProgressStepper, type ProgressStep } from "@/components/ui/progress-stepper"
+import { ErrorRecoveryCard } from "@/components/ui/error-recovery-card"
 import { cn } from "@/lib/utils"
 import type { VideoStatus } from "../hooks/useVideoProcessing"
 
@@ -15,6 +17,11 @@ interface VideoProgressIndicatorProps {
   size?: "sm" | "md" | "lg"
   showLabel?: boolean
   className?: string
+  // New props for enhanced progress tracking
+  steps?: ProgressStep[]
+  title?: string
+  subtitle?: string
+  useStepper?: boolean
 }
 
 export function VideoProgressIndicator({
@@ -25,7 +32,33 @@ export function VideoProgressIndicator({
   size = "md",
   showLabel = true,
   className,
+  steps,
+  title,
+  subtitle,
+  useStepper = false,
 }: VideoProgressIndicatorProps) {
+  // Use enhanced stepper if steps are provided and stepper is enabled
+  if (useStepper && steps && steps.length > 0) {
+    return (
+      <ProgressStepper
+        steps={steps}
+        onRetry={(stepId) => {
+          // For now, retry the whole process
+          onRetry?.()
+        }}
+        onCancel={(stepId) => {
+          onCancel?.()
+        }}
+        showControls={showControls}
+        size={size}
+        className={className}
+        title={title}
+        subtitle={subtitle}
+      />
+    )
+  }
+
+  // Fall back to original implementation for backward compatibility
   const currentStatus = status?.status || "processing"
   
   const sizeConfig = {
@@ -137,6 +170,30 @@ export function VideoProgressIndicator({
     }
   })()
 
+  // Show error recovery card for error states
+  if (currentStatus === "error") {
+    return (
+      <ErrorRecoveryCard
+        error={{
+          title: "Video Generation Failed",
+          message: status?.message || "An error occurred while generating the video",
+          suggestions: [
+            "Check your internet connection and try again",
+            "Try generating a shorter video",
+            "Contact support if the problem persists"
+          ],
+          code: status?.jobId ? `JOB-${status.jobId}` : undefined,
+        }}
+        onRetry={onRetry}
+        onCancel={onCancel}
+        retryLabel="Retry Generation"
+        cancelLabel="Cancel"
+        showCancel={showControls}
+        className="border-3 rounded-none"
+      />
+    )
+  }
+
   return (
     <div className={cn(
       "rounded-none border-3 bg-card",
@@ -168,20 +225,6 @@ export function VideoProgressIndicator({
                   )}
                 >
                   <X className="h-3 w-3 mr-1" /> Cancel
-                </Button>
-              )}
-              
-              {currentStatus === "error" && onRetry && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onRetry}
-                  className={cn(
-                    buttonSize,
-                    "font-black border-2 border-warning text-warning hover:bg-warning hover:text-background rounded-none"
-                  )}
-                >
-                  <RefreshCcw className="h-3 w-3 mr-1" /> Retry
                 </Button>
               )}
               

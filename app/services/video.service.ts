@@ -3,6 +3,8 @@ import YoutubeService from "@/services/youtubeService";
 import PQueue from "p-queue";
 import pRetry from "p-retry";
 import delay from "delay";
+import { randomUUID } from "crypto";
+import { quotaManager } from "@/services/quotaManager";
 
 // ============= Type Definitions =============
 
@@ -21,6 +23,7 @@ interface VideoProcessingResponse {
   isReady?: boolean;
   failed?: boolean;
   timestamp?: string;
+  jobId?: string; // Add job ID for tracking
 }
 
 interface ChapterVideoStatusResponse {
@@ -30,6 +33,7 @@ interface ChapterVideoStatusResponse {
   isReady: boolean;
   failed: boolean;
   timestamp: string;
+  jobId?: string; // Add job ID to status response
 }
 
 interface CourseVideoStatusResponse {
@@ -48,6 +52,16 @@ const queue = new PQueue({ concurrency: 1 });
  */
 const chapterCache = new Map<number, ChapterVideoData>();
 
+/**
+ * Active jobs tracking - maps chapterId to jobId
+ */
+const activeJobs = new Map<number, string>();
+
+/**
+ * Job status tracking - maps jobId to status
+ */
+const jobStatuses = new Map<string, { status: 'queued' | 'processing' | 'completed' | 'error', chapterId: number, startTime: number }>();
+
 // ============= Video Service Class =============
 
 /**
@@ -63,10 +77,14 @@ class VideoService {
    */
   async getChapterVideoStatus(chapterId: number): Promise<ChapterVideoStatusResponse> {
     const chapter = await videoRepository.findChapterById(chapterId) as any;
-    
+
     if (!chapter) {
       throw new Error("Chapter not found");
     }
+
+    // Check if there's an active job for this chapter
+    const jobId = activeJobs.get(chapterId);
+    const jobStatus = jobId ? jobStatuses.get(jobId) : null;
 
     return {
       success: true,
@@ -75,6 +93,7 @@ class VideoService {
       isReady: chapter.videoId !== null,
       failed: chapter.videoStatus === "error",
       timestamp: new Date().toISOString(),
+      jobId: jobId || undefined,
     };
   }
 
@@ -87,7 +106,20 @@ class VideoService {
    */
   async processVideo(chapterId: number): Promise<VideoProcessingResponse> {
     console.log(`[VideoService] Processing video for chapter ${chapterId}`);
-    
+
+    // Check if there's already an active job for this chapter
+    const existingJobId = activeJobs.get(chapterId);
+    if (existingJobId) {
+      const jobStatus = jobStatuses.get(existingJobId);
+      console.log(`[VideoService] Chapter ${chapterId} already has active job ${existingJobId}, status: ${jobStatus?.status}`);
+      return {
+        success: true,
+        message: "Video generation already in progress.",
+        videoStatus: jobStatus?.status === 'processing' ? 'processing' : 'queued',
+        jobId: existingJobId,
+      };
+    }
+
     // Get chapter from cache or database
     let chapter = chapterCache.get(chapterId);
 
@@ -123,16 +155,6 @@ class VideoService {
       };
     }
 
-    // If processing is in progress, return early
-    if (chapter.videoStatus === "processing") {
-      console.log(`[VideoService] Chapter ${chapterId} already processing`);
-      return {
-        success: true,
-        message: "Video generation already in progress.",
-        videoStatus: "processing",
-      };
-    }
-
     console.log(`[VideoService] Starting video processing for chapter ${chapterId} with search query: "${chapter.youtubeSearchQuery}"`);
 
     // Validate search query
@@ -140,6 +162,14 @@ class VideoService {
       console.error(`[VideoService] Chapter ${chapterId} has empty search query`);
       throw new Error("Chapter has no search query for video generation");
     }
+
+    // Generate a unique job ID
+    const jobId = randomUUID();
+    console.log(`[VideoService] Generated job ID ${jobId} for chapter ${chapterId}`);
+
+    // Track the job
+    activeJobs.set(chapterId, jobId);
+    jobStatuses.set(jobId, { status: 'queued', chapterId, startTime: Date.now() });
 
     // Update chapter status to processing
     await videoRepository.updateChapterVideo(chapterId, null, "processing");
@@ -149,15 +179,39 @@ class VideoService {
 
     console.log(`[VideoService] Chapter ${chapterId} marked as processing, adding to queue`);
 
-    // Add the task to the queue
-    queue.add(() => this.fetchAndUpdateVideo(chapterId, chapter!.youtubeSearchQuery));
+    // Add the task to the queue with job tracking
+    queue.add(async () => {
+      try {
+        // Update job status to processing
+        jobStatuses.set(jobId, { status: 'processing', chapterId, startTime: Date.now() });
+        console.log(`[VideoService] Job ${jobId} started processing for chapter ${chapterId}`);
+
+        await this.fetchAndUpdateVideo(chapterId, chapter!.youtubeSearchQuery, jobId);
+
+        // Mark job as completed
+        jobStatuses.set(jobId, { status: 'completed', chapterId, startTime: Date.now() });
+        console.log(`[VideoService] Job ${jobId} completed for chapter ${chapterId}`);
+      } catch (error) {
+        // Mark job as error
+        jobStatuses.set(jobId, { status: 'error', chapterId, startTime: Date.now() });
+        console.error(`[VideoService] Job ${jobId} failed for chapter ${chapterId}:`, error);
+      } finally {
+        // Clean up job tracking
+        activeJobs.delete(chapterId);
+        // Keep job status for a while for status queries, but clean up old jobs
+        setTimeout(() => {
+          jobStatuses.delete(jobId);
+        }, 300000); // Clean up after 5 minutes
+      }
+    });
 
     console.log(`[VideoService] Chapter ${chapterId} added to processing queue (queue size: ${queue.size}, pending: ${queue.pending})`);
 
     return {
       success: true,
       message: "Video generation task queued.",
-      videoStatus: "processing",
+      videoStatus: "queued",
+      jobId,
     };
   }
 
@@ -181,9 +235,10 @@ class VideoService {
    * Handles retry logic and cache updates
    * @param chapterId - The ID of the chapter
    * @param youtubeSearchQuery - The YouTube search query
+   * @param jobId - The job ID for tracking
    * @private
    */
-  private async fetchAndUpdateVideo(chapterId: number, youtubeSearchQuery: string): Promise<void> {
+  private async fetchAndUpdateVideo(chapterId: number, youtubeSearchQuery: string, jobId: string): Promise<void> {
     try {
       const videoId = await this.fetchVideoIdWithRetry(youtubeSearchQuery);
 
@@ -226,30 +281,68 @@ class VideoService {
    * @private
    */
   private async fetchVideoIdWithRetry(youtubeSearchQuery: string): Promise<string> {
-    try {
-      return await pRetry(
-        async () => {
-          await delay(1000);
-          const videoId = await YoutubeService.searchYoutube(youtubeSearchQuery);
-          if (!videoId) throw new Error("Failed to fetch video ID");
-          return videoId;
-        },
-        {
-          onFailedAttempt: (error: any) => {
-            const attemptNum = error.attemptNumber || 0;
-            const remaining = (5 - attemptNum) || 0;
-            console.log(`[VideoService] Attempt ${attemptNum} failed. ${remaining} retries remaining...`);
-          },
-          retries: 5,
-        } as any
-      );
-    } catch (error: any) {
-      if (error?.message?.includes('403')) {
-        console.error("[VideoService] 403 Forbidden error: Cannot fetch video ID.");
-        throw new Error("Access forbidden (403). Cannot fetch video ID.");
-      }
-      throw error;
+    const maxRetries = 3
+    const baseDelay = 2000 // 2 seconds
+    let lastError: Error | null = null
+
+    // Check if quota is disabled before attempting any searches
+    if (quotaManager.isDisabled()) {
+      console.error("[VideoService] YouTube API quota disabled - cannot search for videos")
+      throw new Error("quota_exceeded")
     }
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[VideoService] Attempt ${attempt}/${maxRetries} for query: "${youtubeSearchQuery}"`)
+
+        const videoId = await YoutubeService.searchYoutube(youtubeSearchQuery)
+
+        if (videoId) {
+          console.log(`[VideoService] Success on attempt ${attempt} for "${youtubeSearchQuery}": ${videoId}`)
+          return videoId
+        }
+
+        // If no video found but no error, continue to next attempt
+        console.warn(`[VideoService] No video found on attempt ${attempt} for "${youtubeSearchQuery}"`)
+
+      } catch (error: any) {
+        lastError = error
+
+        // Check for quota exceeded - stop immediately
+        if (error?.message?.includes('quota')) {
+          console.error("[VideoService] YouTube API quota exceeded - stopping retries")
+          throw new Error("quota_exceeded")
+        }
+
+        // Check for network/timeout errors that should be retried
+        const isRetryableError = error?.message?.includes('timeout') ||
+                                error?.message?.includes('network') ||
+                                error?.message?.includes('5') || // 5xx server errors
+                                (error?.message?.includes('rateLimit') && error?.message?.includes('Retry-After'))
+
+        if (!isRetryableError) {
+          console.error(`[VideoService] Non-retryable error on attempt ${attempt}:`, error.message)
+          break // Don't retry non-retryable errors
+        }
+
+        console.warn(`[VideoService] Retryable error on attempt ${attempt}:`, error.message)
+
+        // Don't delay on the last attempt
+        if (attempt < maxRetries) {
+          const delay = baseDelay * Math.pow(2, attempt - 1) // Exponential backoff
+          console.log(`[VideoService] Waiting ${delay}ms before retry ${attempt + 1}`)
+          await delay(delay)
+        }
+      }
+    }
+
+    // If we get here, all retries failed
+    if (lastError?.message?.includes('quota')) {
+      throw new Error("quota_exceeded")
+    }
+
+    console.error(`[VideoService] All ${maxRetries} attempts failed for "${youtubeSearchQuery}":`, lastError)
+    throw lastError || new Error("Failed to fetch video ID after all retries")
   }
 }
 

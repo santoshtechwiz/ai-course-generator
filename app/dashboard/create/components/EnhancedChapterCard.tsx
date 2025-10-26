@@ -9,9 +9,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge"
 import { useVideoProcessing, type VideoStatus } from "../hooks/useVideoProcessing"
 import { useToast } from "@/hooks"
-import VideoPlayer from "../../course/[slug]/components/video/components/VideoPlayer"
 import { VideoProgressIndicator } from "./VideoProgressIndicator"
-import type { ChapterGenerationStatus } from "../hooks/useCourseEditor"
+import type { ChapterGenerationStatus } from "../hooks/useEnhancedCourseEditor"
 import { Chapter } from "@/app/types/course-types"
 import VideoPreview from "./VideoPreview"
 
@@ -28,6 +27,7 @@ type Props = {
   hideVideoControls?: boolean
   generationStatus?: ChapterGenerationStatus
   onGenerateVideo?: (chapter: Chapter) => Promise<boolean>
+  onStatusUpdate?: (chapterId: number, status: VideoStatus) => void
   isFree?: boolean
 }
 
@@ -50,6 +50,7 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
       hideVideoControls = false,
       generationStatus,
       onGenerateVideo,
+      onStatusUpdate,
       isFree = false,
     },
     ref,
@@ -58,7 +59,7 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
     const [showVideo, setShowVideo] = useState(false)
     const [userInitiatedGeneration, setUserInitiatedGeneration] = useState(false)
 
-    const { processVideo, cancelProcessing, retryVideo, statuses, isProcessing, initializeChapterStatus } =
+    const { processVideo, cancelProcessing, retryVideo, statuses, isProcessing, initializeChapterStatus, steps } =
       useVideoProcessing({
         useEnhancedService: false,
         onComplete: (status) => {
@@ -67,22 +68,19 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
               onVideoChange(unitId, chapter.id, status.videoId)
             }
             onChapterComplete(String(chapter.id))
-
-            toast({
-              title: "Video Ready",
-              description: "Video has been successfully generated",
-              variant: "default",
-            })
           }
+          // Notify parent of status update
+          onStatusUpdate?.(chapter.id, status)
           setUserInitiatedGeneration(false)
         },
         onError: (status) => {
-          toast({
-            title: "Generation Failed",
-            description: status.message || "Failed to generate video",
-            variant: "destructive",
-          })
+          // Notify parent of status update
+          onStatusUpdate?.(chapter.id, status)
           setUserInitiatedGeneration(false)
+        },
+        onStatusChange: (status) => {
+          // Notify parent of status update
+          onStatusUpdate?.(chapter.id, status)
         },
         pollingInterval: 3000,
       })
@@ -139,11 +137,6 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
 
     const handleGenerateVideo = async () => {
       if (isProcessing[chapter.id] || isGenerating) {
-        toast({
-          title: "Already Processing",
-          description: "Video generation is already in progress",
-          variant: "default",
-        })
         return
       }
 
@@ -157,11 +150,6 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
 
         await processVideo(chapter.id)
       } catch (error) {
-        toast({
-          title: "Generation Failed",
-          description: error instanceof Error ? error.message : "Unknown error occurred",
-          variant: "destructive",
-        })
         setUserInitiatedGeneration(false)
       }
     }
@@ -217,6 +205,7 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
             {userInitiatedGeneration || chapter.videoId || (videoStatus && (videoStatus.status === "queued" || videoStatus.status === "processing")) ? (
               <VideoProgressIndicator
                 status={videoStatus}
+                steps={steps[chapter.id]}
                 onRetry={() => {
                   setUserInitiatedGeneration(true)
                   retryVideo(chapter.id)

@@ -7,7 +7,7 @@ import { api } from "@/lib/api-helper"
 import { useRouter } from "next/navigation"
 import type { Course, CourseUnit, Chapter } from "@prisma/client"
 import type { ChapterCardHandler } from "../components/EnhancedChapterCard"
-import { useVideoProcessing } from "./useVideoProcessing"
+import { useVideoProcessing, type VideoStatus } from "./useVideoProcessing"
 
 type CourseWithUnits = Course & {
   units: (CourseUnit & {
@@ -15,7 +15,7 @@ type CourseWithUnits = Course & {
   })[]
 }
 
-type ChapterStatus = "idle" | "processing" | "success" | "error"
+type ChapterStatus = "idle" | "processing" | "success" | "error" | "quota_exceeded"
 
 interface ChapterGenerationStatus {
   status: ChapterStatus
@@ -39,6 +39,23 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
   const [addingToUnitId, setAddingToUnitId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [generationStatuses, setGenerationStatuses] = useState<Record<string, ChapterGenerationStatus>>({})
+
+  // Update generation status for a chapter
+  const updateChapterStatus = useCallback((chapterId: number, status: VideoStatus) => {
+    // Map VideoStatus to ChapterStatus
+    const chapterStatus: ChapterStatus = status.status === "completed" ? "success" :
+                                         status.status === "error" ? "error" :
+                                         status.status === "quota_exceeded" ? "quota_exceeded" :
+                                         status.status === "processing" ? "processing" : "idle"
+    
+    setGenerationStatuses(prev => ({
+      ...prev,
+      [chapterId]: {
+        status: chapterStatus,
+        message: status.message || "",
+      }
+    }))
+  }, [])
 
   // Refs for chapter components
   const chapterRefs = useRef<Record<string, React.RefObject<ChapterCardHandler>>>({})
@@ -67,7 +84,9 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
         }
       },
       onError: (status) => {
-        console.error(`Video failed for chapter ${status.chapterId}:`, status)
+        console.error(`Video failed for chapter ${status?.chapterId}:`, status)
+        console.error('Status object keys:', Object.keys(status || {}))
+        console.error('Status object:', JSON.stringify(status, null, 2))
       },
     })
 
@@ -169,6 +188,18 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
         console.log(`📊 Chapters with errors to retry: ${chaptersToProcess.length}`)
       }
 
+      // Limit to 3 chapters per unit to avoid quota issues
+      const chaptersByUnit = chaptersToProcess.reduce((acc, chapter) => {
+        const unitId = chapter.unitId
+        if (!acc[unitId]) acc[unitId] = []
+        acc[unitId].push(chapter)
+        return acc
+      }, {} as Record<number, typeof chaptersToProcess>)
+
+      // Take only first 3 chapters from each unit
+      chaptersToProcess = Object.values(chaptersByUnit).flatMap(chapters => chapters.slice(0, 3))
+      console.log(`📊 Limited to 3 chapters per unit: ${chaptersToProcess.length} chapters total`)
+
       if (chaptersToProcess.length === 0) {
         console.log("⚠️ No chapters to process!")
         toast({
@@ -190,10 +221,10 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
 
       toast({
         title: retryFailed ? "Retrying failed videos" : "Generating videos",
-        description: `${retryFailed ? "Retrying" : "Starting video generation for"} ${chaptersToProcess.length} chapters`,
+        description: `${retryFailed ? "Retrying" : "Starting video generation for"} ${chaptersToProcess.length} chapters (limited to 3 per unit)`,
       })
 
-      // Sequential processing
+      // Sequential processing with rate limiting
       const chapterIds = chaptersToProcess.map((chapter) => chapter.id)
       const result = await processMultipleVideos(chapterIds, { retryFailed })
 
@@ -548,5 +579,6 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
     generateVideoForChapter,
     cancelVideoProcessing: cancelProcessing,
     prepareUpdateData,
+    updateChapterStatus,
   }
 }

@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react"
 import { api } from "@/lib/api-helper"
 import { useToast } from "@/hooks"
+import type { ProgressStep } from "@/components/ui/progress-stepper"
 
 /**
  * FIXES APPLIED:
@@ -26,6 +27,7 @@ export interface VideoStatus {
   message?: string
   retryCount?: number  // Track API call retry attempts
   startTime?: number | string // Added for stuck detection
+  jobId?: string // Add job ID for tracking
 }
 
 interface UseVideoProcessingOptions {
@@ -41,6 +43,7 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
   const [isProcessing, setIsProcessing] = useState<Record<number, boolean>>({})
   const [statuses, setStatuses] = useState<Record<number, VideoStatus>>({})
   const [queueStatus, setQueueStatus] = useState<{ size: number; pending: number }>({ size: 0, pending: 0 })
+  const [steps, setSteps] = useState<Record<number, ProgressStep[]>>({})
   
   // Configure options with defaults
   const {
@@ -65,10 +68,44 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
         message: "Queueing video processing..."
       }
       
+      // Initialize progress steps
+      const initialSteps: ProgressStep[] = [
+        {
+          id: 'queue',
+          label: 'Queue Video',
+          status: 'processing',
+          message: 'Preparing to generate video...',
+          startedAt: new Date()
+        },
+        {
+          id: 'script',
+          label: 'Generate Script',
+          status: 'pending',
+          message: 'Creating video script with AI...'
+        },
+        {
+          id: 'video',
+          label: 'Create Video',
+          status: 'pending',
+          message: 'Rendering video content...'
+        },
+        {
+          id: 'upload',
+          label: 'Upload & Finalize',
+          status: 'pending',
+          message: 'Uploading video and preparing for viewing...'
+        }
+      ]
+      
       console.log(`📊 Setting initial status for chapter ${chapterId}:`, initialStatus)
       setStatuses((prev) => ({
         ...prev,
         [chapterId]: initialStatus
+      }))
+      
+      setSteps((prev) => ({
+        ...prev,
+        [chapterId]: initialSteps
       }))
       
       if (onStatusChange) {
@@ -89,18 +126,72 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
         throw new Error(response.data?.error || response.error || "Failed to process video")
       }
 
+      // Check if video is already completed
+      if (response.data?.queueStatus === "completed") {
+        console.log(`✅ Video already completed for chapter ${chapterId}, videoId: ${response.data.videoId}`)
+        
+        const completedStatus: VideoStatus = {
+          chapterId,
+          status: "completed",
+          videoId: response.data.videoId,
+          message: "Video already processed",
+          jobId: response.data.jobId
+        }
+        
+        setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
+        setStatuses((prev) => ({
+          ...prev,
+          [chapterId]: completedStatus
+        }))
+        
+        // Update steps to show completion
+        setSteps((prev) => ({
+          ...prev,
+          [chapterId]: (prev[chapterId] || []).map(step => ({
+            ...step,
+            status: 'completed' as const,
+            progress: 100
+          }))
+        }))
+        
+        if (onComplete) {
+          onComplete(completedStatus)
+        }
+        
+        return { success: true, message: "Video already processed", videoId: response.data.videoId }
+      }
+
+      // Extract job ID from response
+      const jobId = response.data?.jobId
+      console.log(`🎯 Job ID received for chapter ${chapterId}: ${jobId}`)
+
+      // Update initial status with job ID
+      const updatedInitialStatus: VideoStatus = {
+        ...initialStatus,
+        jobId
+      }
+
+      console.log(`📊 Updating initial status for chapter ${chapterId}:`, updatedInitialStatus)
+      setStatuses((prev) => ({
+        ...prev,
+        [chapterId]: updatedInitialStatus
+      }))
+
+      if (onStatusChange) {
+        onStatusChange(updatedInitialStatus)
+      }
+
       // Update queue status if available
       if (response.data?.queueStatus) {
         console.log(`📊 Updating queue status:`, response.data.queueStatus)
         setQueueStatus(response.data.queueStatus)
       }
-      
-      // Start polling for status updates
-      // Add a small delay to ensure database is updated before checking status
-      console.log(`🔄 Starting polling for chapter ${chapterId} in 2 seconds`)
-      setTimeout(() => pollStatus(chapterId), 2000)
-      
-      return { success: true, message: "Video processing started" }
+
+      // Start polling for status updates only if video is not already completed
+      console.log(`🔄 Starting polling for chapter ${chapterId} with job ${jobId}`)
+      pollStatus(chapterId)
+
+      return { success: true, message: "Video processing started", jobId }
       
     } catch (error) {
       console.error(`❌ Error in processVideo for chapter ${chapterId}:`, error)
@@ -140,13 +231,14 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       console.log(`📡 Status response for chapter ${chapterId}:`, response)
       
       // Successful completion - video is ready
-      if (response.videoId && response.videoStatus === "completed") {
+      if (response.videoStatus === "completed") {
         console.log(`✅ Video completed for chapter ${chapterId}, videoId: ${response.videoId}`)
         const completedStatus: VideoStatus = {
           chapterId,
           status: "completed",
           videoId: response.videoId,
-          message: "Video generated successfully"
+          message: "Video generated successfully",
+          jobId: response.jobId
         }
         
         setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
@@ -154,7 +246,17 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
           ...prev,
           [chapterId]: completedStatus
         }))
-        
+
+        // Update steps to show completion
+        setSteps((prev) => ({
+          ...prev,
+          [chapterId]: (prev[chapterId] || []).map(step => ({
+            ...step,
+            status: 'completed' as const,
+            progress: 100
+          }))
+        }))
+
         if (onStatusChange) {
           onStatusChange(completedStatus)
         }
@@ -167,15 +269,28 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       if (response.videoStatus === "error" || response.failed === true) {
         console.log(`❌ Video failed for chapter ${chapterId}, status: ${response.videoStatus}, failed: ${response.failed}`)
         const errorStatus: VideoStatus = {
-          chapterId,
-          status: "error",
-          message: response.error || "Video generation failed"
+          chapterId: chapterId || 0,
+          status: "error" as const,
+          message: response.error || "Video generation failed",
+          jobId: response.jobId
         }
+
+        console.log(`❌ Error status created:`, errorStatus) // Debug log
         setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
         setStatuses((prev) => ({
           ...prev,
           [chapterId]: errorStatus
         }))
+
+        // Update steps to show error
+        setSteps((prev) => ({
+          ...prev,
+          [chapterId]: (prev[chapterId] || []).map(step => ({
+            ...step,
+            status: 'error' as const
+          }))
+        }))
+
         if (onError) {
           onError(errorStatus)
         }
@@ -188,12 +303,44 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
         const processingStatus: VideoStatus = {
           chapterId,
           status: response.videoStatus === "processing" ? "processing" : "queued",
-          message: response.videoStatus === "processing" ? "Processing video..." : "Queued for processing..."
+          message: response.videoStatus === "processing" ? "Processing video..." : "Queued for processing...",
+          jobId: response.jobId
         }
 
         setStatuses((prev) => ({
           ...prev,
           [chapterId]: processingStatus
+        }))
+
+        // Update progress steps based on processing status
+        setSteps((prev) => ({
+          ...prev,
+          [chapterId]: (prev[chapterId] || []).map(step => {
+            switch (step.id) {
+              case 'queue':
+                return {
+                  ...step,
+                  status: 'completed' as const,
+                  progress: 100
+                }
+              case 'script':
+                return {
+                  ...step,
+                  status: 'processing' as const,
+                  progress: 60,
+                  startedAt: step.startedAt || new Date()
+                }
+              case 'video':
+                return {
+                  ...step,
+                  status: 'processing' as const,
+                  progress: 80,
+                  startedAt: step.startedAt || new Date()
+                }
+              default:
+                return step
+            }
+          })
         }))
 
         if (onStatusChange) {
@@ -313,6 +460,12 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
           onStatusChange(queuedStatus)
         }
 
+        // Add delay between requests to avoid quota limits (2 seconds between requests)
+        if (i > 0) {
+          console.log(`⏳ Rate limiting: waiting 2 seconds before processing chapter ${chapterId}`)
+          await new Promise(resolve => setTimeout(resolve, 2000))
+        }
+
         // Call the video generation API directly
         const endpoint = useEnhancedService ? "/api/video/enhanced" : "/api/video"
         const response = await api.post(endpoint, useEnhancedService
@@ -343,9 +496,11 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
 
         const errorStatus: VideoStatus = {
           chapterId,
-          status: "error",
-          message: lastError
+          status: "error" as const,
+          message: lastError || "Unknown error"
         }
+
+        console.log(`❌ Process multiple error status created:`, errorStatus) // Debug log
 
         setStatuses((prev) => ({
           ...prev,
@@ -698,5 +853,6 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
     isProcessing,
     statuses,
     queueStatus,
+    steps,
   }
 }

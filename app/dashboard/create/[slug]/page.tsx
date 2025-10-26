@@ -19,9 +19,17 @@ export default async function CreateChapters({ params }: { params: Promise<{ slu
   const session = await getAuthSession()
   if (!session?.user) {
     return redirect("/dashboard")
-  }  const course = await getCourses(slug)
+  }
+  
+  const course = await getCourses(slug)
 
   if (!course) {
+    return redirect("/dashboard")
+  }
+
+  // Verify course ownership - user can only edit their own courses
+  if (course.userId !== session.user.id) {
+    console.error(`Access denied: User ${session.user.id} tried to access course ${course.id} owned by ${course.userId}`)
     return redirect("/dashboard")
   }
 

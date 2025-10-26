@@ -3,8 +3,7 @@ import { YtTranscript } from "yt-transcript"
 import { Supadata, type TranscriptChunk } from "@supadata/js"
 import pRetry from "p-retry"
 import pTimeout from "p-timeout"
-// Lazy import for youtubei.js to avoid Turbopack circular dependency issues
-// import { Innertube } from "youtubei.js"
+import { quotaManager } from './quotaManager'
 
 interface YoutubeSearchResponse {
   items: Array<{
@@ -107,7 +106,29 @@ class YoutubeService {
   }
 
   static async searchYoutube(searchQuery: string): Promise<string | null> {
+    // Check if quota is disabled
+    if (quotaManager.isDisabled()) {
+      console.warn('[YouTube Search] Quota disabled - skipping search')
+      return null
+    }
+
+    // Check cache first
+    const cachedResult = quotaManager.getCacheEntry(searchQuery)
+    if (cachedResult) {
+      console.log(`[YouTube Search] Cache hit for "${searchQuery}"`)
+      return cachedResult
+    }
+
+    // Check if we're in soft limit mode
+    if (quotaManager.isSoftLimitMode()) {
+      console.warn('[YouTube Search] Soft limit mode - using cache only')
+      return null
+    }
+
     try {
+      // Record the request
+      quotaManager.recordRequest()
+
       const response = await pTimeout(
         this.youtubeClient.get("/search", {
           params: {
@@ -134,14 +155,23 @@ class YoutubeService {
         const videoId = item.id.videoId
         if (videoId && !this.processedVideoIds.has(videoId)) {
           this.processedVideoIds.add(videoId)
+          // Cache the result
+          quotaManager.setCacheEntry(searchQuery, videoId)
           return videoId
         }
       }
 
       console.warn(`[YouTube Search] All suitable videos already used for "${searchQuery}"`)
       return null
-    } catch (error) {
+    } catch (error: any) {
       console.error(`[YouTube Search] Error searching for "${searchQuery}":`, error)
+
+      // Check for quota exceeded error
+      if (error?.message?.includes('quota') || error?.message?.includes('403')) {
+        quotaManager.disableQuota()
+        throw new Error('YouTube API quota exceeded')
+      }
+
       return null
     }
   }

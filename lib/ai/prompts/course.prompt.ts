@@ -23,15 +23,24 @@ export function buildCoursePrompt(options: CoursePromptOptions): AIMessage[] {
   }
 
   const userMessage: AIMessage = {
-    role: 'user',
-    content: `Create a comprehensive course about "${title}".
+  role: 'user',
+  content: `Create a comprehensive course about "${title}".
 The course should cover the following units: ${units.join(', ')}.
-For each unit, generate chapters with:
-- chapter_title: A clear, descriptive title for the chapter
-- youtube_search_query: A detailed search query that will find high-quality instructional videos for this chapter topic
 
-Structure the course logically from basic to advanced concepts.`,
-  }
+**Chapter Limit Rules:**
+- Each unit must contain **no more than 3 chapters**
+- If there is only one unit, generate **a maximum of 5 chapters total**
+- If there are two or more units, generate **a maximum of 3 chapters per unit**
+- Do not exceed these limits.
+
+For each chapter, generate:
+- chapter_title: A clear, descriptive title for the chapter
+- youtube_search_query: A specific, high-quality search query to find good tutorial videos
+
+Ensure the course flows logically from beginner to advanced.
+Return structured content only; no explanations.`,
+}
+
 
   return [systemMessage, userMessage]
 }

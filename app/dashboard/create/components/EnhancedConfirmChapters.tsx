@@ -16,7 +16,6 @@ import { GuidedHelp, GuidedHelpButton, useGuidedHelp } from "./GuidedHelp"
 import { ContextualHelp } from "./ContextualHelp"
 import { useEnhancedCourseEditor } from "../hooks/useEnhancedCourseEditor"
 import EnhancedUnitCard from "./EnhancedUnitCard"
-import { useToast } from "@/hooks"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api-helper"
 import { Chapter, Course, CourseUnit } from "@/app/types/types"
@@ -68,6 +67,8 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
     extractYoutubeIdFromUrl,
     generateVideoForChapter,
     cancelVideoProcessing,
+    generationStatuses,
+    updateChapterStatus,
   } = courseEditor
   const { toast } = useToast()
   
@@ -93,7 +94,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
     }
   }, [course.units, completedChapters.size, handleChapterComplete, toast])
 
-  const chaptersWithErrors = Object.values(videoStatuses).filter((status) => status.status === "error").length
+  const chaptersWithErrors = Object.values(generationStatuses).filter((status) => status.status === "error").length
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -209,7 +210,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
       
       {/* Content Area */}
       <ScrollArea className="flex-grow">
-        <DragDropContext onDragEnd={handleDragEnd}>
+        <DragDropContext onDragEnd={handleDragEnd} ignoreContainerClipping={false}>
           <div className="p-4 lg:p-6 space-y-4">
             {course.units.flatMap((unit) => unit.chapters).length === 0 && (
               <Alert className="border-3 border-yellow-500 bg-yellow-500/10 rounded-none">
@@ -258,6 +259,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                   extractYoutubeIdFromUrl={extractYoutubeIdFromUrl}
                   onGenerateVideo={generateVideoForChapter}
                   onCancelProcessing={cancelVideoProcessing}
+                  onStatusUpdate={updateChapterStatus}
                 />
               </ContextualHelp>
             ))}

@@ -95,6 +95,25 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: Request) {
   try {
+    // Check for simulation mode
+    const isSimulationMode = process.env.NEXT_PUBLIC_SIMULATION_MODE === "true"
+    
+    if (isSimulationMode) {
+      console.log("[Course API] Simulation mode enabled - returning mock course")
+      
+      // Parse request body to get title
+      const data = await req.json()
+      const parsedData = createChaptersSchema.parse(data)
+      
+      // Return mock course data instantly
+      return NextResponse.json({
+        id: "mock-course-id",
+        title: parsedData.title,
+        status: "draft",
+        slug: `mock-${Date.now()}`
+      })
+    }
+
     // Authenticate the user
     const session = await getAuthSession()
     if (!session?.user) {

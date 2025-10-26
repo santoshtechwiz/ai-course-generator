@@ -39,6 +39,7 @@ interface EnhancedUnitCardProps {
   extractYoutubeIdFromUrl: (url: string) => string | null
   onGenerateVideo: (chapter: Chapter) => Promise<boolean>
   onCancelProcessing: (chapterId: number) => Promise<boolean>
+  onStatusUpdate?: (chapterId: number, status: VideoStatus) => void
 }
 
 const EnhancedUnitCard = React.memo<EnhancedUnitCardProps>(
@@ -67,6 +68,7 @@ const EnhancedUnitCard = React.memo<EnhancedUnitCardProps>(
     extractYoutubeIdFromUrl,
     onGenerateVideo,
     onCancelProcessing,
+    onStatusUpdate,
   }) => {
     return (
       <Card className="border-3 border-border shadow-neo rounded-none bg-card">
@@ -169,9 +171,10 @@ const EnhancedUnitCard = React.memo<EnhancedUnitCardProps>(
                               chapterIndex={chapterIndex}
                               onChapterComplete={onChapterComplete}
                               isCompleted={completedChapters.has(String(chapter.id))}
-                              isGeneratingVideos={isGeneratingVideos}
+                              isGenerating={isGeneratingVideos}
                               hideVideoControls={false}
                               onGenerateVideo={onGenerateVideo}
+                              onStatusUpdate={onStatusUpdate}
                               isFree={chapterIndex === 0}
                             />
                           </div>
