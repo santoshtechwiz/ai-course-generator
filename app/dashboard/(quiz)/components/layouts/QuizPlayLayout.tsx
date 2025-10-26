@@ -38,13 +38,6 @@ import { cn } from "@/lib/utils"
 import { useAuth } from "@/modules/auth"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { QuizActions } from "@/components/quiz/QuizActions"
- const getDifficultyInfo = (count: number) => {
-                      if (count <= 5)
-                        return { label: "Beginner", color: "bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/50" }
-                      if (count <= 15)
-                        return { label: "Intermediate", color: "bg-[var(--color-primary)]/20 text-[var(--color-primary)] border-[var(--color-primary)]/50" }
-                      return { label: "Advanced", color: "bg-[var(--color-error)]/20 text-[var(--color-error)] border-[var(--color-error)]/50" }
-                    }
 interface QuizContextType {
   isFocusMode: boolean
   toggleFocusMode: () => void
@@ -153,8 +146,6 @@ const QuizHeader = ({
   title,
   quizType,
   difficulty,
-  questionNumber,
-  totalQuestions,
   displaySeconds,
   isPaused,
   isFullscreen,
@@ -335,7 +326,6 @@ export default function QuizPlayLayout({
   timeSpent = 0,
 }: QuizPlayLayoutProps) {
   const isMobile = useMediaQuery("(max-width: 767px)")
-  const isTablet = useMediaQuery("(max-width: 1024px)")
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -376,14 +366,7 @@ export default function QuizPlayLayout({
     return owner
   }, [authUser?.id, quizData?.userId])
 
-  const isSubscribed = useMemo(() => {
-    return subscription?.isSubscribed === true
-  }, [subscription?.isSubscribed])
 
-  const subscriptionExpired = useMemo(() => {
-    if (!subscription?.expirationDate) return false
-    return new Date(subscription.expirationDate) < new Date()
-  }, [subscription?.expirationDate])
 
   const [elapsed, setElapsed] = useState(0)
   useEffect(() => {
@@ -426,16 +409,10 @@ export default function QuizPlayLayout({
     setTimeout(() => setIsSidebarTransitioning(false), 300)
   }, [])
 
-  const toggleFocusMode = useCallback(() => {
-    setIsFocusMode((f) => !f)
-  }, [])
 
   const toggleFullscreen = useCallback(() => setIsFullscreen((s) => !s), [])
   const togglePause = useCallback(() => setIsPaused((p) => !p), [])
   const goHome = useCallback(() => (window.location.href = "/dashboard/quizzes"), [])
-  const resetQuiz = useCallback(() => {
-    setElapsed(0)
-  }, [])
 
   const handleVisibilityChange = useCallback((newIsPublic: boolean) => {
     setLocalIsPublic(newIsPublic)
@@ -542,8 +519,7 @@ export default function QuizPlayLayout({
   return (
     <div className={cn("min-h-screen bg-background relative overflow-x-hidden", isFullscreen && "overflow-hidden")}>
       {/* Top spacer for MainNavbar */}
-      <div className="h-16" aria-hidden="true" />
-
+    
       {/* Quiz header */}
       <QuizHeader
         title={title}

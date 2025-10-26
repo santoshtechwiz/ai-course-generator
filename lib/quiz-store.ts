@@ -1,4 +1,4 @@
-import type { QuizQuestion } from "@/app/types/quiz-types"
+import type { QuizQuestion } from "../app/types/quiz-types"
 
 type DocumentQuestion = QuizQuestion & {
   id: string

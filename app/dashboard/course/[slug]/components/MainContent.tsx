@@ -48,16 +48,7 @@ const CourseStatBadge = ({ icon: Icon, value, label }: { icon: any; value: strin
   </div>
 )
 
-// Simple stat badge component - compact design
-const CourseStatBadge_original = ({ icon: Icon, value, label }: { icon: any; value: string; label: string }) => (
-  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-    <Icon className="h-3.5 w-3.5 text-black flex-shrink-0" />
-    <div className="flex flex-col leading-tight">
-      <span className="text-xs font-black text-black">{value}</span>
-      <span className="text-[10px] font-bold text-gray-600 uppercase">{label}</span>
-    </div>
-  </div>
-)
+
 
 interface ModernCoursePageProps {
   course: FullCourseType

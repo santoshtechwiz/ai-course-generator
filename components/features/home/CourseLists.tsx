@@ -429,7 +429,7 @@ export default function CoursesClient({
 
   const FilterSidebar = () => (
     <div className="space-y-6">
-      <div className="p-5 bg-[hsl(var(--card))] border-4 border-[hsl(var(--border))] rounded-2xl shadow-[4px_4px_0_0_rgba(0,0,0,0.9)]">
+      <div className="p-4 bg-card border border-border rounded-lg shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h4 className="text-base font-black flex items-center gap-2 text-[hsl(var(--foreground))]">
             <Filter className="w-4 h-4 text-[hsl(var(--primary))]" />
@@ -491,7 +491,7 @@ export default function CoursesClient({
         </div>
       </div>
 
-      <div className="p-5 bg-[hsl(var(--card))] border-4 border-[hsl(var(--border))] rounded-2xl shadow-[4px_4px_0_0_rgba(0,0,0,0.9)]">
+      <div className="p-4 bg-card border border-border rounded-lg shadow-sm">
         <h4 className="text-base font-black mb-4 flex items-center gap-2 text-[hsl(var(--foreground))]">
           <ChevronDown className="w-4 h-4 text-[hsl(var(--primary))]" />
           Sort By

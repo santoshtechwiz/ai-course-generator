@@ -214,8 +214,8 @@ export default function CourseCreationForm({ maxQuestions, params }: {
                 </div>
                 <Progress 
                   value={((step - 1) / (totalSteps - 1)) * 100} 
-                  className="h-3 transition-all duration-300 bg-gray-200" 
-                  indicatorClassName="bg-[var(--color-primary)]"
+                  className="h-3 transition-all duration-300 bg-gray-200 bg-[var(--color-primary)]" 
+                
                 />
               </div>
             </div>

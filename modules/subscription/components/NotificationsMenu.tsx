@@ -42,7 +42,7 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
   const { subscription } = useUnifiedSubscription()
 
   // Get Neobrutalism utility classes
-  const { buttonIcon, badgeCount } = getColorClasses()
+  const { buttonIcon } = getColorClasses()
 
   // Use unified subscription as single source of truth - fixes sync issues
   useEffect(() => {
@@ -150,7 +150,6 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
                     variant="default"
                     className={cn(
                       "h-5 min-w-5 flex items-center justify-center rounded-full px-1 text-[10px] font-black border-6 border-[var(--color-border)]",
-                      badgeCount,
                       "shadow-[var(--shadow-neo)]",
                       creditStatus === "low" && "bg-[var(--color-warning)] text-[var(--color-text)]",
                       creditStatus === "empty" && "bg-[var(--color-error)] text-[var(--color-text)]"

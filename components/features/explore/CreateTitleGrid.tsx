@@ -54,29 +54,29 @@ import { getPlanConfig, isQuizTypeAvailable } from '@/types/subscription-plans';
 import type { SubscriptionPlanType } from '@/types/subscription';
 import { useToast } from '@/hooks/use-toast';
 
-// Use centralized Nerobrutal theme tokens for colors (visual-only changes)
+// Use semantic color classes for better theme compatibility
 const getColorClasses = (color: string, isLocked: boolean) => {
-  // Map logical color names to theme variables used in the design system
-  const mapToVar: Record<string, string> = {
-    blue: 'primary',
-    green: 'success',
-    purple: 'secondary',
-    orange: 'accent',
-    teal: 'success',
-    indigo: 'primary',
-    rose: 'error',
+  // Map logical color names to semantic Tailwind classes
+  const colorMap: Record<string, { primary: string; muted: string; accent: string }> = {
+    blue: { primary: 'text-blue-600', muted: 'text-gray-400', accent: 'hover:bg-blue-50' },
+    green: { primary: 'text-green-600', muted: 'text-gray-400', accent: 'hover:bg-green-50' },
+    purple: { primary: 'text-purple-600', muted: 'text-gray-400', accent: 'hover:bg-purple-50' },
+    orange: { primary: 'text-orange-600', muted: 'text-gray-400', accent: 'hover:bg-orange-50' },
+    teal: { primary: 'text-teal-600', muted: 'text-gray-400', accent: 'hover:bg-teal-50' },
+    indigo: { primary: 'text-indigo-600', muted: 'text-gray-400', accent: 'hover:bg-indigo-50' },
+    rose: { primary: 'text-rose-600', muted: 'text-gray-400', accent: 'hover:bg-rose-50' },
   };
 
-  const token = mapToVar[color] || 'primary';
+  const colors = colorMap[color] || colorMap.blue;
 
   const baseCard = isLocked
-    ? 'bg-[var(--color-card)] border-4 border-[var(--color-border)] opacity-80'
-    : 'bg-[var(--color-card)] border-4 border-[var(--color-border)] shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]';
+    ? 'bg-card border border-border opacity-80'
+    : 'bg-card border border-border shadow-sm hover:shadow-md';
 
-  const iconClass = isLocked ? 'text-gray-400 dark:text-gray-600' : `text-[var(--color-${token})]`;
+  const iconClass = isLocked ? colors.muted : colors.primary;
   const buttonClass = isLocked
-    ? 'bg-[var(--color-muted)] border-4 border-[var(--color-border)] text-[var(--color-text)] shadow-[4px_4px_0px_0px_hsl(var(--border))]'
-    : `bg-[var(--color-${token})] border-4 border-[var(--color-border)] text-[var(--color-bg)] hover:bg-[var(--color-accent)]`;
+    ? 'bg-muted border border-border text-muted-foreground'
+    : `bg-primary border border-primary text-primary-foreground hover:bg-primary/90`;
 
   return { card: baseCard, icon: iconClass, button: buttonClass };
 };
@@ -290,15 +290,6 @@ const cardVariants = {
       stiffness: 100
     }
   }),
-  hover: {
-    y: -8,
-    scale: 1.02,
-    transition: {
-      duration: 0.3,
-      type: "spring",
-      stiffness: 300
-    }
-  }
 };
 
 const iconVariants = {
@@ -312,16 +303,16 @@ const iconVariants = {
 };
 
 const getDifficultyColor = (difficulty: string) => {
-  // Map difficulties to Nerobrutal semantic tokens
+  // Map difficulties to semantic color classes
   switch (difficulty) {
     case 'Easy':
-      return 'bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/50';
+      return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800';
     case 'Medium':
-      return 'bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/50';
+      return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800';
     case 'Advanced':
-      return 'bg-[var(--color-error)]/20 text-[var(--color-error)] border-[var(--color-error)]/50';
+      return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800';
     default:
-      return 'bg-[var(--color-muted)]/20 text-[var(--color-text)] border-[var(--color-border)]/50';
+      return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800';
   }
 };
 
@@ -376,14 +367,15 @@ function Tile({
           custom={index}
           initial="hidden"
           animate="visible"
-          whileHover="hover"
+          whileHover={{ y: -2 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
           variants={cardVariants}
           onHoverStart={() => setIsHovered(true)}
           onHoverEnd={() => setIsHovered(false)}
           className="h-full"
         >
           <Card
-            className={`h-full flex flex-col justify-between transition-all duration-500 border-2 ${colorClasses.card} cursor-pointer hover:shadow-2xl hover:shadow-black/10 relative overflow-hidden group`}
+            className={`h-full flex flex-col justify-between transition-all duration-500 border border-gray-200 rounded-lg shadow-sm hover:shadow-md group`}
             onClick={(e) => {
               // Always allow exploration - open details modal
               setIsOpen(true);
@@ -454,7 +446,7 @@ function Tile({
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.95 }}
                         >
-                          <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))] font-semibold")}>
+                          <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 shadow-sm font-semibold")}>
                             <Crown className="h-3 w-3 mr-1" />
                             {requiredPlanConfig.name}
                           </Badge>
@@ -467,7 +459,7 @@ function Tile({
                   ) : requiredPlan !== 'FREE' && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/40")}>
+                        <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800")}>
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Unlocked
                         </Badge>
@@ -509,7 +501,7 @@ function Tile({
                   onClick={() => router.push(url)}
                   requiredPlan={accessRequiredPlan || requiredPlan}
                   allowPublicAccess={true}
-                  className={`w-full transition-all duration-300 font-semibold ${colorClasses.button} text-white shadow-lg hover:shadow-xl group`}
+                  className={`w-full transition-all duration-300 font-semibold ${colorClasses.button} shadow-lg hover:shadow-xl group`}
                 />
               </motion.div>
             </CardFooter>
@@ -518,10 +510,10 @@ function Tile({
       </TooltipProvider>
       
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-4xl lg:max-w-5xl max-h-[90vh] p-0 border-4 border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-neo)] overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-4xl lg:max-w-5xl max-h-[90vh] p-0 border border-border bg-card shadow-lg overflow-hidden flex flex-col">
           <div className="grid lg:grid-cols-2 flex-1 min-h-0">
             {/* Left side - Hero content */}
-            <div className="p-6 lg:p-8 bg-[var(--color-bg)] border-r-4 border-[var(--color-border)] flex flex-col">
+            <div className="p-6 lg:p-8 bg-background border-r border-border flex flex-col">
               <DialogHeader className="space-y-4 sm:space-y-6">
                 <DialogTitle className="flex items-center justify-between">
                   <div className={`flex items-center text-4xl font-bold ${colorClasses.icon}`}>
@@ -543,12 +535,12 @@ function Tile({
 
                   <div className="flex items-center gap-3">
                     {showUpgradeBadge ? (
-                      <Badge variant="neutral" className={cn(neo.badge, "bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))]")}> 
+                      <Badge variant="neutral" className={cn(neo.badge, "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 shadow-sm")}> 
                         <Crown className="h-3 w-3 mr-1" />
                         {requiredPlanConfig.name} Required
                       </Badge>
                     ) : requiredPlan !== 'FREE' && (
-                      <Badge variant="neutral" className={cn(neo.badge, "bg-[var(--color-success)]/20 dark:bg-[var(--color-success)]/10 text-[var(--color-success)] dark:text-[var(--color-success)] border-[var(--color-success)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))]")}> 
+                      <Badge variant="neutral" className={cn(neo.badge, "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 shadow-sm")}> 
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Unlocked
                       </Badge>
@@ -692,7 +684,7 @@ function Tile({
                       >
                         <motion.div
                           whileHover={{ scale: 1.1 }}
-                          className={`w-8 h-8 rounded-full ${colorClasses.button} text-white flex items-center justify-center font-bold mr-4 flex-shrink-0`}
+                          className={`w-8 h-8 rounded-full ${colorClasses.button} flex items-center justify-center font-bold mr-4 flex-shrink-0`}
                         >
                           {i + 1}
                         </motion.div>
@@ -716,7 +708,7 @@ function Tile({
                 onClick={() => router.push(url)}
                 requiredPlan={accessRequiredPlan || requiredPlan}
                 allowPublicAccess={true}
-                className={`w-full h-12 font-bold text-base ${colorClasses.button} text-white shadow-xl hover:shadow-2xl transition-all duration-300 group`}
+                className={`w-full h-12 font-bold text-base ${colorClasses.button} shadow-xl hover:shadow-2xl transition-all duration-300 group`}
               />
             </motion.div>
           </DialogFooter>
@@ -727,24 +719,6 @@ function Tile({
 }
 
 export function CreateTileGrid() {
-  // Group tiles by category
-  const categories = {
-    assessment: {
-      title: "Assessment Tools",
-      description: "Create quizzes and tests to evaluate learning",
-      tiles: tiles.filter(tile => tile.category === "assessment")
-    },
-    creation: {
-      title: "Content Creation",
-      description: "Build courses and coding challenges",
-      tiles: tiles.filter(tile => tile.category === "creation")
-    },
-    study: {
-      title: "Study Aids",
-      description: "Enhance learning with smart study tools",
-      tiles: tiles.filter(tile => tile.category === "study")
-    }
-  };
 
   return (
     <section className="w-full max-w-7xl mx-auto px-4 py-8">
@@ -753,15 +727,15 @@ export function CreateTileGrid() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-center mb-16 space-y-6"
+        className="text-center mb-12 space-y-6"
       >
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[var(--color-primary)]/10 dark:bg-[var(--color-primary)]/30 border-4 border-[var(--color-primary)]/20 shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+          className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary/10 dark:bg-primary/30 border border-primary/20 shadow-sm"
         >
-          <Sparkles className="h-5 w-5 text-[var(--color-primary)]" />
-          <span className="text-sm font-medium text-[var(--color-primary)]">AI-Powered Learning Tools</span>
+          <Sparkles className="h-5 w-5 text-primary" />
+          <span className="text-sm font-medium text-primary">AI-Powered Learning Tools</span>
         </motion.div>
 
         <motion.h1
@@ -781,59 +755,35 @@ export function CreateTileGrid() {
         </motion.p>
       </motion.div>
 
-      {/* Quick Action Buttons */}
+      {/* All Tools Grid */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="flex flex-wrap justify-center gap-4 mb-16"
+        transition={{ delay: 0.6 }}
+        className="mb-12"
       >
-        <Button variant="outline" size="sm" className="hover:bg-blue-50 hover:border-blue-300">
-          <BookMarked className="h-4 w-4 mr-2" />
-          By Category
-        </Button>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+          {tiles.map((tile, index) => (
+            <Tile
+              key={tile.url}
+              {...tile}
+              index={index}
+            />
+          ))}
+        </div>
       </motion.div>
-
-      {/* Category-based Grid */}
-      {Object.entries(categories).map(([key, category], categoryIndex) => (
-        <motion.div
-          key={key}
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 + categoryIndex * 0.2 }}
-          className="mb-16"
-        >
-          <motion.div
-            className="text-center mb-8"
-            whileHover={{ scale: 1.02 }}
-          >
-            <h2 className="text-2xl font-bold mb-2">{category.title}</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">{category.description}</p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-            {category.tiles.map((tile, index) => (
-              <Tile
-                key={`${key}-${index}`}
-                {...tile}
-                index={categoryIndex * 10 + index}
-              />
-            ))}
-          </div>
-        </motion.div>
-      ))}
 
       {/* Enhanced Footer CTA */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 1.2 }}
-        className="text-center space-y-6 p-8 rounded-2xl bg-card border-6 border-border shadow-neo"
+        className="text-center space-y-6 p-8 rounded-2xl bg-card border border-border shadow-sm"
       >
         <motion.div
-          whileHover={{ scale: 1.1, rotate: 360 }}
-          transition={{ duration: 0.6 }}
-          className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary text-white mb-4 border-6 border-primary-foreground shadow-neo"
+          whileHover={{ scale: 1.05 }}
+          transition={{ duration: 0.2 }}
+          className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary text-primary-foreground mb-4 shadow-sm"
         >
           <Brain className="h-8 w-8" />
         </motion.div>
@@ -844,12 +794,12 @@ export function CreateTileGrid() {
         </p>
 
         <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
           <Button
             size="lg"
-            className="bg-primary hover:bg-accent text-white font-semibold px-8 py-3 border-6 border-primary-foreground shadow-neo hover:shadow-neo-hover neo-hover-lift"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 py-3 shadow-sm hover:shadow-md transition-all duration-200"
             onClick={() => window.location.href = '/contactus'}
           >
             <Sparkles className="h-5 w-5 mr-2" />

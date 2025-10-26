@@ -94,7 +94,6 @@ const MCQOption = memo(({
   onSelect: (id: string) => void
   quizType?: QuizQuestionType
 }) => {
-  const styles = getColorClasses(quizType) // Dynamic color based on quiz type
   const isDisabled = isAnswering || isSubmitting
 
   // Color mappings for different quiz types using theme colors
@@ -449,7 +448,7 @@ function UnifiedQuizQuestionComponent({
 
   const renderBlanksContent = useCallback(() => {
     const blanksQuestion = question as BlanksQuestion
-    const styles = getColorClasses('blanks')
+    const styles = getColorClasses()
 
     return (
       <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 px-2 sm:px-4">
@@ -512,7 +511,7 @@ function UnifiedQuizQuestionComponent({
     const wordCount = selectedAnswer.trim().split(/\s+/).filter(word => word.length > 0).length
     const minWords = openEndedQuestion.minWords || 10
     const maxWords = openEndedQuestion.maxWords || 200
-    const styles = getColorClasses('openended')
+    const styles = getColorClasses()
 
     return (
       <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 px-2 sm:px-4">
@@ -578,7 +577,7 @@ function UnifiedQuizQuestionComponent({
 
   const renderCodeContent = useCallback(() => {
     const codeQuestion = question as CodeQuestion
-    const styles = getColorClasses('code') // Code uses green accent (#10B981)
+    const styles = getColorClasses() // Code uses green accent (#10B981)
 
     return (
       <div className="w-full max-w-5xl mx-auto space-y-4 sm:space-y-6 px-2 sm:px-4">

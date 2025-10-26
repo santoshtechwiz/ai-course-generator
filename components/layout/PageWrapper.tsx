@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <div className="container mx-auto max-w-7xl px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 py-3 sm:py-4 md:py-5 lg:py-6">
+    <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       {children}
     </div>
   );

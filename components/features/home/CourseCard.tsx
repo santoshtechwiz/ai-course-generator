@@ -180,9 +180,8 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
     <Card
       onClick={handleCardClick}
       className={cn(
-        "group relative overflow-hidden bg-[var(--color-card)] cursor-pointer border-4 border-black transition-all duration-200",
-        "hover:translate-x-[-6px] hover:translate-y-[-6px] hover:shadow-[6px_6px_0px_0px_#000]",
-        "active:translate-x-[0px] active:translate-y-[0px] active:shadow-none",
+        "group relative overflow-hidden bg-[var(--color-card)] cursor-pointer border border-gray-200 rounded-lg shadow-sm transition-all duration-200",
+        "hover:shadow-md hover:-translate-y-1",
         isNavigating && "opacity-75",
         variant === "list" && "flex flex-col sm:flex-row",
         className,
@@ -265,7 +264,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
       </div>
 
       {/* Content Section */}
-      <CardContent className="p-6 flex flex-col gap-4 flex-1">
+      <CardContent className="p-4 flex flex-col gap-3 flex-1">
         {/* Header Row */}
         <div className="flex items-start justify-between gap-3">
           <Badge variant="neutral" className={cn(neo.badge, "font-black border-4 px-3 py-1 shadow-[2px_2px_0_#000]", DIFFICULTY_STYLES[difficultyLevel])}>
@@ -338,7 +337,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
 
         {/* Progress Section (if enrolled) */}
         {isEnrolled && (
-          <div className="p-4 border-4 border-black bg-[var(--color-bg)] shadow-[3px_3px_0_#000]">
+          <div className="p-3 border border-border bg-muted/50 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-black">
                 {progressPercentage > 0 ? `${progressPercentage}% COMPLETE` : "NOT STARTED"}

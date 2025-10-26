@@ -6,21 +6,27 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-base ring-offset-white transition-all gap-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border-4 border-black shadow-[4px_4px_0_#000]",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-base ring-offset-white transition-all gap-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
   {
     variants: {
       variant: {
         default:
-          "bg-[var(--color-primary)] text-[var(--color-bg)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#000]",
+          "bg-primary text-primary-foreground hover:bg-primary/90",
         outline:
-          "bg-[var(--color-bg)] text-[var(--color-text)] border-4 border-black hover:bg-[var(--color-muted)]",
+          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
         ghost:
-          "bg-transparent text-[var(--color-text)] border-0 hover:bg-[var(--color-muted)] shadow-none",
-        noShadow: "bg-[var(--color-primary)] text-[var(--color-bg)] border-4 border-black shadow-none",
+          "border-0 bg-transparent hover:bg-accent hover:text-accent-foreground shadow-none",
+        noShadow: "bg-primary text-primary-foreground border border-input shadow-none",
         neutral:
-          "bg-[var(--color-muted)] text-[var(--color-text)] border-4 border-black hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#000]",
+          "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground",
         reverse:
-          "bg-[var(--color-accent)] text-[var(--color-bg)] border-4 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_#000]",
+          "bg-accent text-accent-foreground hover:bg-accent/90",
+        link:
+          "text-primary underline-offset-4 hover:underline bg-transparent border-0 shadow-none",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
       },
       size: {
         default: "h-10 px-4 py-2",

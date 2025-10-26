@@ -130,33 +130,33 @@ const QuizStats = memo(({
 }) => (
   <div className="flex flex-wrap gap-2 text-sm">
     <motion.div 
-      className="flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-lg"
+      className="flex items-center gap-2 px-3 py-1 bg-primary/10 border-2 border-primary/20 rounded-none"
       whileHover={{ scale: 1.05 }}
       transition={{ type: "spring", stiffness: 400 }}
     >
       <BookOpen className="w-4 h-4 text-primary" />
-      <span className="font-bold text-primary whitespace-nowrap">{questionCount} Qs</span>
+      <span className="font-black text-primary whitespace-nowrap">{questionCount} Qs</span>
     </motion.div>
     
     {estimatedTime && (
       <motion.div 
-        className="flex items-center gap-2 px-3 py-1 bg-secondary/10 border border-secondary/20 rounded-lg"
+        className="flex items-center gap-2 px-3 py-1 bg-secondary/10 border-2 border-secondary/20 rounded-none"
         whileHover={{ scale: 1.05 }}
         transition={{ type: "spring", stiffness: 400 }}
       >
         <Clock className="w-4 h-4 text-secondary" />
-        <span className="font-bold text-secondary whitespace-nowrap">{estimatedTime}m</span>
+        <span className="font-black text-secondary whitespace-nowrap">{estimatedTime}m</span>
       </motion.div>
     )}
 
     {rating && (
       <motion.div 
-        className="flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg"
+        className="flex items-center gap-2 px-3 py-1 bg-amber-500/10 border-2 border-amber-500/20 rounded-none"
         whileHover={{ scale: 1.05 }}
         transition={{ type: "spring", stiffness: 400 }}
       >
         <Star className="w-4 h-4 text-amber-500 fill-current" />
-        <span className="font-bold text-amber-600 whitespace-nowrap">{rating.toFixed(1)}</span>
+        <span className="font-black text-amber-600 whitespace-nowrap">{rating.toFixed(1)}</span>
       </motion.div>
     )}
   </div>
@@ -257,20 +257,20 @@ const LoadingCard = memo(() => (
   <Card className="border-4 border-[var(--color-border)] bg-[var(--color-card)] rounded-none">
     <CardContent className="p-4">
       <div className="flex items-center gap-3 mb-3">
-        <Skeleton className="w-10 h-10 rounded-lg" />
+        <Skeleton className="w-10 h-10 rounded-none" />
         <div className="flex-1">
-          <Skeleton className="h-3 w-16 mb-2" />
-          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-3 w-16 mb-2 rounded-none" />
+          <Skeleton className="h-5 w-40 rounded-none" />
         </div>
       </div>
       
       <div className="flex flex-wrap gap-2 mb-3">
-        <Skeleton className="h-6 w-16 rounded-md" />
-        <Skeleton className="h-6 w-14 rounded-md" />
-        <Skeleton className="h-6 w-12 rounded-md" />
+        <Skeleton className="h-6 w-16 rounded-none" />
+        <Skeleton className="h-6 w-14 rounded-none" />
+        <Skeleton className="h-6 w-12 rounded-none" />
       </div>
       
-      <Skeleton className="h-10 w-full rounded-lg" />
+      <Skeleton className="h-10 w-full rounded-none" />
     </CardContent>
   </Card>
 ))
@@ -285,7 +285,7 @@ const EmptyState = memo(() => (
     <Card className="border-4 border-[var(--color-border)] bg-[var(--color-card)] rounded-none">
       <CardContent className="p-6 text-center">
         <motion.div 
-          className="w-16 h-16 mx-auto mb-4 bg-primary/10 text-primary rounded-xl flex items-center justify-center"
+          className="w-16 h-16 mx-auto mb-4 bg-primary/10 text-primary rounded-none flex items-center justify-center border-2 border-[var(--color-border)]"
           animate={{ rotate: [0, 5, -5, 0] }}
           transition={{ duration: 4, repeat: Infinity }}
         >
@@ -306,7 +306,7 @@ const EmptyState = memo(() => (
           <Button 
             variant="outline" 
             asChild 
-            className="font-semibold rounded-lg"
+            className="font-black rounded-none border-2 border-[var(--color-border)]"
           >
             <Link href="/dashboard/quizzes" className="flex items-center gap-2">
               <BookOpen className="w-4 h-4" />
@@ -329,7 +329,7 @@ const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
     <Card className="border-4 border-[var(--color-border)] bg-[var(--color-card)] rounded-none">
       <CardContent className="p-6 text-center">
         <motion.div 
-          className="w-16 h-16 mx-auto mb-4 bg-destructive/10 text-destructive rounded-xl flex items-center justify-center"
+          className="w-16 h-16 mx-auto mb-4 bg-destructive/10 text-destructive rounded-none flex items-center justify-center border-2 border-[var(--color-border)]"
           animate={{ 
             scale: [1, 1.1, 1],
             rotate: [0, -5, 5, 0]
@@ -352,7 +352,7 @@ const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
         >
           <Button 
             onClick={onRetry} 
-            className="font-semibold rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="font-black rounded-none bg-destructive text-destructive-foreground hover:bg-destructive/90 border-2 border-[var(--color-border)]"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Try Again
@@ -535,7 +535,7 @@ export const RandomQuiz = memo(({
                     key={index}
                     onClick={() => setCurrentIndex(index)}
                     className={cn(
-                      "w-2 h-2 rounded-none transition-all duration-300 border border-[var(--color-border)]",
+                      "w-2 h-2 rounded-none transition-all duration-300 border-2 border-[var(--color-border)]",
                       index === currentIndex
                         ? "bg-[var(--color-primary)] scale-125"
                         : "bg-[var(--color-text)]/30 hover:bg-[var(--color-primary)]/50"

@@ -6,18 +6,16 @@ import { useCallback, useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { cn } from "@/lib/utils"
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
-  // Add mounted state to prevent hydration mismatch
   const [mounted, setMounted] = useState(false)
 
-  // Only render the dropdown after component has mounted to prevent hydration mismatch
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Memoize theme change handler to prevent unnecessary re-renders
   const handleThemeChange = useCallback(
     (newTheme: string) => {
       setTheme(newTheme)
@@ -25,10 +23,17 @@ export function ThemeToggle() {
     [setTheme],
   )
 
-  // Don't render anything until mounted to prevent hydration issues
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent hover:text-accent-foreground">
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn(
+          "border-3 border-[var(--color-border)]",
+          "hover:shadow-[3px_3px_0px_0px_var(--color-border)]",
+          "transition-all duration-150 rounded-none",
+        )}
+      >
         <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />
         <span className="sr-only">Toggle theme</span>
       </Button>
@@ -38,22 +43,44 @@ export function ThemeToggle() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild suppressHydrationWarning>
-        <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent hover:text-accent-foreground" suppressHydrationWarning>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "border-3 border-[var(--color-border)]",
+            "hover:shadow-[3px_3px_0px_0px_var(--color-border)]",
+            "transition-all duration-150 rounded-none",
+            "focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]",
+          )}
+          suppressHydrationWarning
+        >
           <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
           <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="rounded-xl p-1 min-w-[8rem]">
+      <DropdownMenuContent
+        align="end"
+        className={cn(
+          "rounded-none p-2 min-w-[8rem]",
+          "bg-[var(--color-card)] border-3 border-[var(--color-border)]",
+          "shadow-[var(--shadow-neo)]",
+        )}
+      >
         <DropdownMenuItem
           onClick={() => handleThemeChange("light")}
-          className="flex items-center gap-2 cursor-pointer rounded-md"
+          className={cn(
+            "flex items-center gap-2 cursor-pointer rounded-none p-2",
+            "border-2 border-transparent",
+            "hover:border-[var(--color-border)] hover:bg-[var(--color-muted)]",
+            "transition-all duration-150",
+          )}
         >
           <Sun className="h-4 w-4" />
-          <span>Light</span>
+          <span className="font-medium">Light</span>
           {theme === "light" && (
             <motion.div
-              className="ml-auto h-1.5 w-1.5 rounded-full bg-primary"
+              className="ml-auto h-2 w-2 rounded-full bg-[var(--color-primary)]"
               layoutId="theme-indicator"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -63,13 +90,18 @@ export function ThemeToggle() {
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => handleThemeChange("dark")}
-          className="flex items-center gap-2 cursor-pointer rounded-md"
+          className={cn(
+            "flex items-center gap-2 cursor-pointer rounded-none p-2",
+            "border-2 border-transparent",
+            "hover:border-[var(--color-border)] hover:bg-[var(--color-muted)]",
+            "transition-all duration-150",
+          )}
         >
           <Moon className="h-4 w-4" />
-          <span>Dark</span>
+          <span className="font-medium">Dark</span>
           {theme === "dark" && (
             <motion.div
-              className="ml-auto h-1.5 w-1.5 rounded-full bg-primary"
+              className="ml-auto h-2 w-2 rounded-full bg-[var(--color-primary)]"
               layoutId="theme-indicator"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -79,13 +111,18 @@ export function ThemeToggle() {
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => handleThemeChange("system")}
-          className="flex items-center gap-2 cursor-pointer rounded-md"
+          className={cn(
+            "flex items-center gap-2 cursor-pointer rounded-none p-2",
+            "border-2 border-transparent",
+            "hover:border-[var(--color-border)] hover:bg-[var(--color-muted)]",
+            "transition-all duration-150",
+          )}
         >
           <Monitor className="h-4 w-4" />
-          <span>System</span>
+          <span className="font-medium">System</span>
           {theme === "system" && (
             <motion.div
-              className="ml-auto h-1.5 w-1.5 rounded-full bg-primary"
+              className="ml-auto h-2 w-2 rounded-full bg-[var(--color-primary)]"
               layoutId="theme-indicator"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}

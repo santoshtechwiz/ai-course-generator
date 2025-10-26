@@ -95,34 +95,6 @@ class NotesCache {
     this.batchQueue.set(key, queuedRequest)
     return queuedRequest
   }
-
-  set(filters: NoteFilters, data: any, ttl?: number): void {
-    const key = this.getCacheKey(filters)
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-      ttl: ttl || this.defaultTTL
-    })
-  }
-
-  invalidate(filters?: NoteFilters): void {
-    if (filters) {
-      const key = this.getCacheKey(filters)
-      this.cache.delete(key)
-    } else {
-      this.cache.clear()
-    }
-  }
-
-  // Clean up expired entries
-  cleanup(): void {
-    const now = Date.now()
-    for (const [key, entry] of this.cache.entries()) {
-      if (now - entry.timestamp > entry.ttl) {
-        this.cache.delete(key)
-      }
-    }
-  }
 }
 
 const notesCache = new NotesCache()
@@ -159,17 +131,8 @@ class NoteService {
       return response.json()
     })
 
-    const response = await fetch(`${this.baseUrl}?${params}`)
-    if (!response.ok) {
-      throw new Error(`Failed to fetch notes: ${response.statusText}`)
-    }
-    
-    const result = await response.json()
-    
-    // Cache the result
-    notesCache.set(filters, result)
-    
-    return result
+    // Cache is handled by getOrQueue
+    return notesCache.get(filters)
   }
 
   async createNote(data: CreateNoteData): Promise<Bookmark> {
