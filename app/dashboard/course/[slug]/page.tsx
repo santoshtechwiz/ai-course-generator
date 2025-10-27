@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 
 import { getCourseData } from "@/app/actions/getCourseData"
 import type { FullCourseType } from "@/app/types/types"
-import CourseViewer from "@/components/dashboard/CourseViewer"
+import {CourseViewer} from "@/components/dashboard/CourseViewer"
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
 import { EnhancedErrorBoundary } from "@/components/error-boundary"
 

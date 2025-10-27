@@ -94,30 +94,22 @@ const getAIModelFromConfig = (userType: string): string => {
 };
 
 /**
- * Neobrutalism color utility for quiz components
- * Returns consistent color classes for type, difficulty, and state combinations
- * 
- * @param type - Quiz type (mcq, code, blanks, openended, flashcard)
- * @param difficulty - Difficulty level (easy, medium, hard)
- * @param state - Component state (default, active, loading, error)
- * @returns Object with consistent Neobrutalism color classes and values
+ * Modern design system utility for components
+ * Returns consistent, accessible design system classes
+ *
+ * @returns Object with modern design system classes
  */
 export function getColorClasses() {
   return {
-    buttonPrimary:
-      "bg-primary text-primary-foreground border-6 border-[var(--color-border)] shadow-[var(--shadow-neo)] hover:shadow-[var(--shadow-neo-hover)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[var(--shadow-neo-active)] transition-all font-bold",
-    buttonSecondary:
-      "bg-secondary text-secondary-foreground border-6 border-[var(--color-border)] shadow-[var(--shadow-neo)] hover:shadow-[var(--shadow-neo-hover)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[var(--shadow-neo-active)] transition-all font-bold",
-    buttonAccent:
-      "bg-accent text-accent-foreground border-6 border-[var(--color-border)] shadow-[var(--shadow-neo)] hover:shadow-[var(--shadow-neo-hover)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[var(--shadow-neo-active)] transition-all font-bold",
-    buttonIcon:
-      "border-6 border-[var(--color-border)] shadow-[var(--shadow-neo)] hover:shadow-[var(--shadow-neo-hover)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all",
-    cardPrimary: "border-6 border-[var(--color-border)] shadow-[var(--shadow-neo)] bg-[var(--color-card)]",
-    cardSecondary: "border-6 border-[var(--color-border)] shadow-[var(--shadow-neo-hover)] bg-[var(--color-card)]",
-    cardAccent: "border-6 border-[var(--color-primary)] shadow-[var(--shadow-neo)] bg-[var(--color-card)]",
-    badge: "border-6 border-[var(--color-border)] font-bold px-3 py-1",
-    input:
-      "border-6 border-[var(--color-border)] shadow-[var(--shadow-neo)] focus:shadow-[var(--shadow-neo-hover)] focus:translate-x-[-1px] focus:translate-y-[-1px] transition-all font-medium",
+    buttonPrimary: "btn btn-primary",
+    buttonSecondary: "btn btn-secondary",
+    buttonAccent: "btn btn-accent",
+    buttonIcon: "btn btn-ghost hover-lift",
+    cardPrimary: "card",
+    cardSecondary: "card bg-muted",
+    cardAccent: "card border-primary/20 bg-primary/5",
+    badge: "badge badge-primary",
+    input: "input focus-ring",
   }
 }
 

@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useMediaQuery } from "@/hooks"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { RandomQuiz } from "@/app/dashboard/(quiz)/components/layouts/RandomQuiz"
@@ -23,9 +23,11 @@ export function QuizCreateInterface({ children, title, description, helpText, is
   const isMobile = useMediaQuery("(max-width: 768px)")
   const isTablet = useMediaQuery("(max-width: 1024px)")
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
-      <div className="max-w-none mx-auto px-2 sm:px-3 lg:px-4 py-3 sm:py-4">
+    <div className="w-full bg-[var(--color-bg)] text-[var(--color-text)]">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
         <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
           <Card className="flex-1 border-4 border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-neo)]">
             <CardHeader className="bg-[var(--color-primary)] border-b-4 border-[var(--color-border)] px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-5 relative">
@@ -75,14 +77,45 @@ export function QuizCreateInterface({ children, title, description, helpText, is
             </CardContent>
           </Card>
 
-          {/* Sidebar */}
-          <aside className="w-full lg:w-64 xl:w-72 shrink-0">
-            <div className="lg:sticky lg:top-4 space-y-3 sm:space-y-4">
+          {/* Sidebar: visible on large screens */}
+          <aside className="hidden lg:block w-64 xl:w-72 shrink-0">
+            <div className="sticky top-20 space-y-3 sm:space-y-4">
               <RandomQuiz />
             </div>
           </aside>
+
+          {/* Mobile: toggle button to open sidebar as a drawer */}
+          <div className="lg:hidden mt-3">
+            <div className="flex items-center justify-end">
+              <Button
+                variant="neutral"
+                size="sm"
+                onClick={() => setIsSidebarOpen(true)}
+                className="border-2 border-[var(--color-border)] bg-[var(--color-card)]"
+              >
+                Tips & Quick Quiz
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Mobile sidebar drawer */}
+      {isSidebarOpen && (
+        <div className="fixed inset-0 z-[100] flex">
+          <div className="flex-1" onClick={() => setIsSidebarOpen(false)} />
+          <div className="w-80 max-w-[80%] h-full bg-[var(--color-card)] border-l-2 border-[var(--color-border)] p-4 overflow-auto">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold">Quick Quiz</h3>
+              <Button size="icon" variant="neutral" onClick={() => setIsSidebarOpen(false)} className="h-8 w-8">
+                <span className="sr-only">Close</span>
+                ✕
+              </Button>
+            </div>
+            <RandomQuiz />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

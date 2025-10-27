@@ -4,13 +4,14 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const alertVariants = cva(
-  "relative w-full border-4 border-black p-4 shadow-[4px_4px_0_#000] [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-[var(--color-text)] rounded-md",
+  "relative w-full neo-shadow border-4 neo-hover-lift p-6 rounded-none [&>svg~*]:pl-8 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-6 [&>svg]:top-6 [&>svg]:text-foreground font-bold",
   {
     variants: {
       variant: {
-        default: "bg-[var(--color-card)] text-[var(--color-text)]",
-        destructive:
-          "border-red-500 bg-red-50 text-red-800 dark:border-red-500 dark:bg-red-950 dark:text-red-200 [&>svg]:text-red-800 shadow-[4px_4px_0_#dc2626]",
+        default: "bg-[var(--color-card)] text-[var(--color-text)] border-[var(--color-border)]",
+        success: "bg-[var(--color-success)]/10 text-[var(--color-success)] border-[var(--color-success)]",
+        warning: "bg-[var(--color-warning)]/10 text-[var(--color-warning)] border-[var(--color-warning)]",
+        error: "bg-[var(--color-error)]/10 text-[var(--color-error)] border-[var(--color-error)]",
       },
     },
     defaultVariants: {
@@ -38,7 +39,7 @@ const AlertTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h5
     ref={ref}
-    className={cn("mb-1 font-semibold leading-none tracking-tight", className)}
+    className={cn("mb-2 font-black uppercase tracking-wider leading-none", className)}
     {...props}
   />
 ))
@@ -50,7 +51,7 @@ const AlertDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("text-sm [&_p]:leading-relaxed", className)}
+    className={cn("text-sm font-bold [&_p]:leading-relaxed", className)}
     {...props}
   />
 ))

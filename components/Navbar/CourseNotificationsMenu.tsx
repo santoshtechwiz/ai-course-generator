@@ -22,20 +22,12 @@ interface CourseNotificationMenuProps {
   className?: string
 }
 
-/**
- * Simple Course Notifications Bell
- * Shows:
- * - Incomplete courses count
- * - Pending quizzes count
- * - Quick links to resume courses/quizzes
- */
 export function CourseNotificationsMenu({ className }: CourseNotificationMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const router = useRouter()
   const { user } = useAuth()
   const { incompleteQuizzes } = useIncompleteQuizzes()
 
-  // Get incomplete courses count from Redux
   const courseProgress = useAppSelector((state) => state.courseProgress.byCourseId)
   
   const incompleteCourses = Object.entries(courseProgress || {})
@@ -54,18 +46,18 @@ export function CourseNotificationsMenu({ className }: CourseNotificationMenuPro
           variant="ghost"
           size="icon"
           className={cn(
-            "relative rounded-full hover:bg-accent hover:text-accent-foreground transition-all duration-300",
+            "relative h-10 w-10 border-0 bg-transparent hover:bg-[var(--color-muted)]",
+            "transition-all duration-150 active:scale-95",
             className
           )}
         >
-          <Bell className="h-4 w-4" />
+          <Bell className="h-5 w-5" />
           
-          {/* Notification badge */}
           {hasNotifications && (
             <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full"
+              className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center border-4 border-[var(--color-border)] bg-[var(--color-error)] text-white text-xs font-black shadow-[2px_2px_0_var(--shadow-color)]"
             >
               {totalNotifications > 9 ? "9+" : totalNotifications}
             </motion.span>
@@ -73,12 +65,14 @@ export function CourseNotificationsMenu({ className }: CourseNotificationMenuPro
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuLabel className="flex items-center gap-2">
-          <Bell className="h-4 w-4" />
+      <DropdownMenuContent 
+        align="end" 
+        className="w-80 border-6 border-[var(--color-border)] bg-[var(--color-card)] shadow-[8px_8px_0_var(--shadow-color)] rounded-none p-0"
+      >
+        <DropdownMenuLabel className="flex items-center gap-2 p-4 border-b-6 border-[var(--color-border)] bg-[var(--color-bg)] font-black text-base uppercase tracking-wider">
+          <Bell className="h-5 w-5" />
           Learning Activity
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
 
         <AnimatePresence mode="wait">
           {!hasNotifications ? (
@@ -87,11 +81,11 @@ export function CourseNotificationsMenu({ className }: CourseNotificationMenuPro
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="p-6 text-center text-sm text-muted-foreground"
+              className="p-8 text-center"
             >
-              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
-              <p className="font-medium">All caught up! ���</p>
-              <p className="text-xs mt-1">No pending courses or quizzes</p>
+              <CheckCircle className="h-12 w-12 mx-auto mb-3 text-[var(--color-success)]" />
+              <p className="font-black text-lg mb-1">All caught up! 🎉</p>
+              <p className="text-sm text-[var(--color-text)] opacity-70">No pending courses or quizzes</p>
             </motion.div>
           ) : (
             <motion.div
@@ -101,14 +95,13 @@ export function CourseNotificationsMenu({ className }: CourseNotificationMenuPro
               exit={{ opacity: 0, y: -10 }}
               className="max-h-96 overflow-y-auto"
             >
-              {/* Incomplete Courses */}
               {incompleteCourses > 0 && (
-                <div className="px-2 py-2">
-                  <div className="flex items-center gap-2 px-2 py-2 text-xs font-semibold text-muted-foreground">
-                    <BookOpen className="h-3.5 w-3.5" />
+                <div className="p-3">
+                  <div className="flex items-center gap-2 px-3 py-2 text-xs font-black uppercase tracking-wider opacity-70">
+                    <BookOpen className="h-4 w-4" />
                     <span>Incomplete Courses ({incompleteCourses})</span>
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {Object.entries(courseProgress || {})
                       .filter(([_, progress]: [string, any]) => progress?.videoProgress && !progress.videoProgress.isCompleted)
                       .slice(0, 3)
@@ -117,19 +110,22 @@ export function CourseNotificationsMenu({ className }: CourseNotificationMenuPro
                           key={courseId}
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
-                          className="px-2 py-1.5 text-xs rounded hover:bg-accent cursor-pointer"
+                          className="p-3 border-4 border-[var(--color-border)] bg-[var(--color-bg)] shadow-[3px_3px_0_var(--shadow-color)] cursor-pointer hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_var(--shadow-color)] transition-all duration-150"
                           onClick={() => {
                             setIsOpen(false)
                             router.push(`/dashboard/course/${courseId}`)
                           }}
                         >
-                          <div className="flex items-center justify-between">
-                            <span className="truncate font-medium">Resume Lesson</span>
-                            <Badge variant="default" className="text-xs">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="truncate font-black text-sm">Resume Lesson</span>
+                            <Badge 
+                              variant="default" 
+                              className="text-xs font-black border-3 border-[var(--color-border)] bg-[var(--color-primary)] text-white shadow-[2px_2px_0_var(--shadow-color)] rounded-none px-2 py-1"
+                            >
                               {Math.round((progress.videoProgress.progress || 0) * 100)}%
                             </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          <p className="text-xs opacity-70 truncate">
                             Chapter: {progress.videoProgress.currentChapterId || "N/A"}
                           </p>
                         </motion.div>
@@ -138,34 +134,38 @@ export function CourseNotificationsMenu({ className }: CourseNotificationMenuPro
                 </div>
               )}
 
-              {/* Pending Quizzes */}
               {incompleteQuizzes && incompleteQuizzes.length > 0 && (
                 <>
-                  {incompleteCourses > 0 && <DropdownMenuSeparator />}
-                  <div className="px-2 py-2">
-                    <div className="flex items-center gap-2 px-2 py-2 text-xs font-semibold text-muted-foreground">
-                      <Play className="h-3.5 w-3.5" />
+                  {incompleteCourses > 0 && (
+                    <div className="h-0 border-t-4 border-[var(--color-border)]" />
+                  )}
+                  <div className="p-3">
+                    <div className="flex items-center gap-2 px-3 py-2 text-xs font-black uppercase tracking-wider opacity-70">
+                      <Play className="h-4 w-4" />
                       <span>Pending Quizzes ({incompleteQuizzes.length})</span>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       {incompleteQuizzes.slice(0, 3).map((quiz: any) => (
                         <motion.div
                           key={`quiz-${quiz.courseId}-${quiz.chapterId}`}
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
-                          className="px-2 py-1.5 text-xs rounded hover:bg-accent cursor-pointer"
+                          className="p-3 border-4 border-[var(--color-border)] bg-[var(--color-bg)] shadow-[3px_3px_0_var(--shadow-color)] cursor-pointer hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_var(--shadow-color)] transition-all duration-150"
                           onClick={() => {
                             setIsOpen(false)
                             router.push(`/dashboard/course/${quiz.courseId}?quiz=${quiz.chapterId}`)
                           }}
                         >
-                          <div className="flex items-center justify-between">
-                            <span className="truncate font-medium">Quiz #{quiz.chapterId}</span>
-                            <Badge variant="default" className="text-xs">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="truncate font-black text-sm">Quiz #{quiz.chapterId}</span>
+                            <Badge 
+                              variant="default" 
+                              className="text-xs font-black border-3 border-[var(--color-border)] bg-[var(--color-accent)] text-white shadow-[2px_2px_0_var(--shadow-color)] rounded-none px-2 py-1"
+                            >
                               Q{quiz.currentQuestionIndex + 1}/10
                             </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">
+                          <p className="text-xs opacity-70">
                             Progress: {Math.round((quiz.currentQuestionIndex / 10) * 100)}%
                           </p>
                         </motion.div>
@@ -178,12 +178,12 @@ export function CourseNotificationsMenu({ className }: CourseNotificationMenuPro
           )}
         </AnimatePresence>
 
-        <DropdownMenuSeparator />
-        <div className="px-2 py-2">
+        <div className="h-0 border-t-6 border-[var(--color-border)]" />
+        <div className="p-3">
           <Button
             variant="outline"
             size="sm"
-            className="w-full text-xs"
+            className="w-full text-sm font-black uppercase tracking-wider border-4 border-[var(--color-border)] bg-[var(--color-bg)] shadow-[4px_4px_0_var(--shadow-color)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_var(--shadow-color)] transition-all duration-150 rounded-none"
             onClick={() => {
               setIsOpen(false)
               router.push("/dashboard")

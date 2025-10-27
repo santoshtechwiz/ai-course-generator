@@ -70,15 +70,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
 
-      <body className="font-sans antialiased min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
+      <body className="font-sans font-bold antialiased min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] neo-typography-body">
        
           <Providers session={session}>
             {/* Skip Navigation for accessibility */}
             <a
               href="#main-content"
               className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 
-        focus:z-[60] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground 
-        focus:rounded focus:outline-none"
+        focus:z-[60] focus:px-6 focus:py-3 focus:bg-primary focus:text-background 
+        focus:border-4 focus:border-border focus:shadow-neo focus:neo-hover-lift focus:rounded-none
+        focus:font-black focus:uppercase focus:tracking-wider focus:outline-none"
             >
               Skip to main content
             </a>
@@ -88,10 +89,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <ClientGuestProvider>
                 {/* Simplified noscript message */}
                 <noscript>
-                  <div className="bg-warning/10 border-l-4 border-warning p-4 m-4">
+                  <div className="bg-warning/10 border-4 border-warning neo-shadow p-6 m-6 neo-typography-body">
                     <div className="flex">
                       <div className="ml-3">
-                        <p className="text-sm text-warning">
+                        <p className="text-warning font-bold">
                           JavaScript is required for CourseAI to work properly. Please enable JavaScript and refresh the
                           page.
                         </p>
@@ -101,9 +102,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </noscript>
 
                 <Suspense fallback={<GlobalLoader message="Loading CourseAI..." />}>
-                  <div className="relative min-h-screen flex flex-col border-l-0 border-r-0 sm:border-l-8 sm:border-r-8 border-[var(--color-border)]">
-                    {/* Main Content */}
-                    <main id="main-content" className="flex-1 w-full p-4 sm:p-6 lg:p-8 bg-[var(--color-bg)]">
+                  <div className="relative min-h-screen flex flex-col">
+                    {/* Main Content - No padding here, let individual layouts handle it */}
+                    <main id="main-content" className="flex-1 w-full bg-[var(--color-bg)]">
                       <MotionProvider>
                         {children}
                       </MotionProvider>

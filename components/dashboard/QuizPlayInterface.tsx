@@ -235,7 +235,9 @@ const QuizHeader = ({
                 aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
                 className={cn(
                   "hidden sm:flex min-h-[44px] min-w-[44px] p-3 border-4 border-border shadow-neo rounded-lg bg-card hover:bg-muted transition-all duration-200",
-                  isSidebarTransitioning && "pointer-events-none opacity-50"
+                  isSidebarTransitioning && "pointer-events-none opacity-50",
+                  // Hide on desktop since sidebar is always visible
+                  !isMobile && "lg:hidden"
                 )}
                 disabled={isSidebarTransitioning}
               >
@@ -312,7 +314,7 @@ export function QuizPlayInterface({
   // State management
   const [isFocusMode, setIsFocusMode] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile) // Always open on desktop
   const [isSidebarTransitioning, setIsSidebarTransitioning] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
   const [elapsed, setElapsed] = useState(0)
@@ -345,12 +347,14 @@ export function QuizPlayInterface({
     return () => clearInterval(interval)
   }, [isPaused, startTime])
 
-  // Sidebar toggle with transition
+  // Sidebar toggle with transition (only for mobile)
   const toggleSidebar = useCallback(() => {
-    setIsSidebarTransitioning(true)
-    setSidebarOpen(prev => !prev)
-    setTimeout(() => setIsSidebarTransitioning(false), 300)
-  }, [])
+    if (isMobile) {
+      setIsSidebarTransitioning(true)
+      setSidebarOpen(prev => !prev)
+      setTimeout(() => setIsSidebarTransitioning(false), 300)
+    }
+  }, [isMobile])
 
   // Other handlers
   const toggleFocusMode = useCallback(() => setIsFocusMode(prev => !prev), [])
@@ -453,132 +457,161 @@ export function QuizPlayInterface({
           </div>
         )}
 
-        <main
-          className={cn(
-            "mx-auto w-full transition-all duration-300 space-y-3 sm:space-y-4",
-            isFullscreen ? "px-2 sm:px-4 max-w-none py-3 sm:py-4" : "max-w-7xl px-3 sm:px-4 lg:px-8 py-3 sm:py-4",
-          )}
-        >
-          {/* Breadcrumb Navigation */}
-          {!isFullscreen && <BreadcrumbNavigation />}
+        {/* Main content area with responsive layout */}
+        <div className={cn(
+          "mx-auto w-full transition-all duration-300",
+          isFullscreen ? "px-2 sm:px-4 max-w-none py-3 sm:py-4" : "max-w-7xl px-3 sm:px-4 lg:px-8 py-3 sm:py-4",
+          // Desktop: Two-column grid, Mobile: Single column
+          !isFullscreen && !isMobile && "grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_400px] gap-4 lg:gap-6 xl:gap-8"
+        )}>
+          {/* Left column: Quiz content */}
+          <div className="space-y-3 sm:space-y-4">
+            {/* Breadcrumb Navigation */}
+            {!isFullscreen && <BreadcrumbNavigation />}
 
-          {/* Resume CTA */}
-          <AnimatePresence>
-            {canResume && !isFullscreen && (
-              <motion.div
-                initial={{ opacity: 0, y: -20, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-                className="relative overflow-hidden rounded-lg border-4 border-border bg-card shadow-neo"
-              >
-                <div className="relative p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 sm:p-2.5 rounded-lg bg-[var(--color-accent)] border-3 sm:border-4 border-border shadow-neo-sm flex-shrink-0">
-                      <Play className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--color-bg)]" aria-hidden="true" />
+            {/* Resume CTA */}
+            <AnimatePresence>
+              {canResume && !isFullscreen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.9 }}
+                  transition={{ duration: 0.3 }}
+                  className="relative overflow-hidden rounded-lg border-4 border-border bg-card shadow-neo"
+                >
+                  <div className="relative p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 sm:p-2.5 rounded-lg bg-[var(--color-accent)] border-3 sm:border-4 border-border shadow-neo-sm flex-shrink-0">
+                        <Play className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--color-bg)]" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <p className="font-black text-foreground text-sm sm:text-base">Continue where you left off</p>
+                        <p className="text-muted-foreground mt-0.5 font-bold text-xs sm:text-sm">
+                          Question {questionNumber} of {totalQuestions}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-black text-foreground text-sm sm:text-base">Continue where you left off</p>
-                      <p className="text-muted-foreground mt-0.5 font-bold text-xs sm:text-sm">
-                        Question {questionNumber} of {totalQuestions}
-                      </p>
+                    <Button
+                      onClick={() => mainRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                      className="px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-black w-full sm:w-auto border-4 border-border shadow-neo rounded-lg bg-[var(--color-accent)] text-[var(--color-bg)] hover:bg-[var(--color-accent)]/90"
+                      aria-label="Resume quiz from current question"
+                    >
+                      Resume Quiz
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Main quiz content */}
+            <div ref={mainRef}>
+              {children}
+            </div>
+          </div>
+
+          {/* Right column: Sidebar content (desktop) or overlay (mobile) */}
+          <AnimatePresence>
+            {(sidebarOpen || (!isMobile && !isFullscreen)) && (
+              <motion.div
+                className={cn(
+                  "space-y-4",
+                  // Desktop: Always visible in grid
+                  !isMobile && !isFullscreen && "block",
+                  // Mobile: Overlay
+                  isMobile && "fixed inset-0 z-40 lg:hidden"
+                )}
+                initial={isMobile ? { opacity: 0 } : { opacity: 1, x: 0 }}
+                animate={isMobile ? { opacity: 1 } : { opacity: 1, x: 0 }}
+                exit={isMobile ? { opacity: 0 } : { opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+              >
+                {/* Mobile overlay backdrop */}
+                {isMobile && (
+                  <div
+                    className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                    onClick={() => setSidebarOpen(false)}
+                    aria-hidden="true"
+                  />
+                )}
+
+                {/* Sidebar content */}
+                <motion.div
+                  className={cn(
+                    "bg-card border-4 border-border shadow-neo rounded-lg overflow-hidden",
+                    // Desktop: Normal positioning
+                    !isMobile && "sticky top-4",
+                    // Mobile: Slide in from right
+                    isMobile && "absolute right-0 top-0 h-full w-full sm:w-5/6 max-w-sm"
+                  )}
+                  initial={isMobile ? { x: "100%" } : { x: 0 }}
+                  animate={isMobile ? { x: 0 } : { x: 0 }}
+                  exit={isMobile ? { x: "100%" } : { x: 20 }}
+                  transition={isMobile ? { type: "spring", damping: 25, stiffness: 200 } : { duration: 0.2 }}
+                  ref={sidebarRef}
+                >
+                  {/* Mobile sidebar header */}
+                  {isMobile && (
+                    <div className="flex items-center justify-between p-4 border-b-4 border-border min-h-[4rem]">
+                      <h2 className="text-lg font-black text-foreground">More Quizzes</h2>
+                      <Button
+                        variant="neutral"
+                        size="sm"
+                        onClick={() => setSidebarOpen(false)}
+                        className="hover:bg-muted min-h-[44px] min-w-[44px] p-3 border-4 border-border shadow-neo rounded-lg bg-card"
+                        aria-label="Close sidebar"
+                      >
+                        <X className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Sidebar content */}
+                  <div
+                    className={cn(
+                      "overflow-y-auto p-4 space-y-4 scrollbar-hide",
+                      isMobile ? "max-h-[calc(100vh-5rem)]" : "max-h-[calc(100vh-8rem)]"
+                    )}
+                  >
+                    {/* Quiz Actions - Desktop only */}
+                    {!isMobile && (
+                      <Suspense fallback={<QuizSkeleton />}>
+                        <QuizActions
+                          quizId={quizId || ""}
+                          quizSlug={quizSlug || ""}
+                          quizType={quizType || "quiz"}
+                          title={quizData?.title || "Quiz"}
+                          isPublic={localIsPublic}
+                          isFavorite={localIsFavorite}
+                          canEdit={isOwner}
+                          canDelete={isOwner}
+                          showPdfGeneration={true}
+                          variant="compact"
+                          userId={quizData?.userId}
+                          onVisibilityChange={handleVisibilityChange}
+                          onFavoriteChange={handleFavoriteChange}
+                          onDelete={handleDelete}
+                          className="w-full"
+                        />
+                      </Suspense>
+                    )}
+
+                    {/* More Quizzes Section */}
+                    <div className="space-y-3">
+                      {!isMobile && (
+                        <h3 className="text-sm font-black text-foreground border-b-2 border-border pb-2">
+                          More Quizzes
+                        </h3>
+                      )}
+                      <Suspense fallback={<QuizSkeleton />}>
+                        <RandomQuiz autoRotate={!isMobile} />
+                      </Suspense>
                     </div>
                   </div>
-                  <Button
-                    onClick={() => mainRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                    className="px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-black w-full sm:w-auto border-4 border-border shadow-neo rounded-lg bg-[var(--color-accent)] text-[var(--color-bg)] hover:bg-[var(--color-accent)]/90"
-                    aria-label="Resume quiz from current question"
-                  >
-                    Resume Quiz
-                  </Button>
-                </div>
+                </motion.div>
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Main quiz content */}
-          <div ref={mainRef}>
-            {children}
-          </div>
-
-          {/* Related content section */}
-          {!isFullscreen && (
-            <Suspense fallback={<QuizSkeleton />}>
-              <RecommendedSection
-                title="More Quizzes"
-                className="mt-8 sm:mt-12"
-              >
-                <RandomQuiz autoRotate={!isMobile} />
-              </RecommendedSection>
-            </Suspense>
-          )}
-        </main>
-
-        {/* Sidebar */}
-        <AnimatePresence>
-          {sidebarOpen && !isFullscreen && (
-            <motion.div
-              className="fixed inset-0 z-40 lg:hidden"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={() => setSidebarOpen(false)}
-                aria-hidden="true"
-              />
-              <motion.div
-                className="absolute right-0 top-0 h-full w-full sm:w-5/6 max-w-sm bg-card border-l-4 border-border shadow-neo"
-                initial={{ x: "100%" }}
-                animate={{ x: 0 }}
-                exit={{ x: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                ref={sidebarRef}
-              >
-                <div className="flex items-center justify-between p-4 border-b-4 border-border min-h-[4rem]">
-                  <h2 className="text-lg font-black text-foreground">Quiz Panel</h2>
-                  <Button
-                    variant="neutral"
-                    size="sm"
-                    onClick={() => setSidebarOpen(false)}
-                    className="hover:bg-muted min-h-[44px] min-w-[44px] p-3 border-4 border-border shadow-neo rounded-lg bg-card"
-                    aria-label="Close sidebar"
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
-                </div>
-
-                <div className="overflow-y-auto max-h-[calc(100vh-5rem)] p-4 space-y-4">
-                  <Suspense fallback={<QuizSkeleton />}>
-                    <QuizActions
-                      quizId={quizId || ""}
-                      quizSlug={quizSlug || ""}
-                      quizType={quizType || "quiz"}
-                      title={quizData?.title || "Quiz"}
-                      isPublic={localIsPublic}
-                      isFavorite={localIsFavorite}
-                      canEdit={isOwner}
-                      canDelete={isOwner}
-                      showPdfGeneration={true}
-                      variant="compact"
-                      userId={quizData?.userId}
-                      onVisibilityChange={handleVisibilityChange}
-                      onFavoriteChange={handleFavoriteChange}
-                      onDelete={handleDelete}
-                      className="w-full"
-                    />
-                  </Suspense>
-
-                  <Suspense fallback={<QuizSkeleton />}>
-                    <RandomQuiz autoRotate={!isMobile} />
-                  </Suspense>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        </div>
       </div>
     </QuizContext.Provider>
   )

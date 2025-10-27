@@ -16,17 +16,15 @@ interface DashboardShellProps {
  */
 export function DashboardShell({ children, className }: DashboardShellProps) {
   return (
+    // Shell provides full-width background and top offset for fixed navbar.
+    // Horizontal padding and max-width centering should be applied by individual pages/components
+    // to avoid nested containers and inconsistent gaps.
     <div className={cn(
-      "min-h-screen bg-background",
-      // Responsive padding that accounts for fixed navbar
-      "pt-16 sm:pt-16 md:pt-20 lg:pt-20",
-      // Main content container
-      "px-4 sm:px-6 lg:px-8",
+      "bg-background",
+      "pt-16 w-full",
       className
     )}>
-      <div className="mx-auto max-w-screen-2xl">
-        {children}
-      </div>
+      {children}
     </div>
   )
 }

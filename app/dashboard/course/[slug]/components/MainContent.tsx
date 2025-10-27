@@ -1391,7 +1391,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             </div>
           </div>
 
-          <div className="lg:hidden border-t-2 border-black dark:border-white pt-2 pb-1.5">
+          <div className="xl:hidden border-t-2 border-black dark:border-white pt-2 pb-1.5">
             <div className="flex items-center justify-between mb-1.5 gap-2">
               <div className="flex items-center gap-1.5 text-xs font-black text-black dark:text-white">
                 <CheckCircle className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
@@ -1430,7 +1430,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
 
       {!state.isTheaterMode && (
-        <div className="lg:hidden border-b-4 border-black dark:border-white bg-gray-100 dark:bg-gray-900">
+        <div className="xl:hidden border-b-4 border-black dark:border-white bg-gray-100 dark:bg-gray-900">
           <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
             <Button
               variant="neutral"
@@ -1484,7 +1484,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
               "transition-all duration-100",
               state.sidebarCollapsed || state.isTheaterMode
                 ? "flex flex-col"
-                : "flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] xl:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] gap-2 sm:gap-3 lg:gap-4",
+                : "flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] 2xl:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] gap-2 sm:gap-3 xl:gap-4",
             )}
           >
             {/* Video and content area */}
@@ -1617,7 +1617,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             </div>
 
             {!state.sidebarCollapsed && !state.isTheaterMode && (
-              <div className="hidden lg:block space-y-2 sm:space-y-3 min-w-0 w-full">
+              <div className="hidden xl:block space-y-2 sm:space-y-3 min-w-0 w-full">
                 <div className="border-4 border-border shadow-neo bg-card h-full overflow-hidden">
                   <div className="p-0">
                     {sidebarCourse.chapters.length === 0 ? (
@@ -1692,7 +1692,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       )}
 
       {!userSubscription && !state.isTheaterMode && (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 transition-transform duration-200">
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 xl:bottom-8 xl:right-8 z-40 transition-transform duration-200">
           <Button
             size="lg"
             onClick={() => (window.location.href = "/dashboard/subscription")}
@@ -1718,7 +1718,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
       {/* Debug component */}
       {process.env.NODE_ENV !== "production" && (
-        <div className="fixed bottom-4 left-4 z-50">
+        <div className="fixed bottom-4 left-4 xl:bottom-8 xl:left-8 z-50">
           <VideoDebug
             videoId={currentVideoId || ""}
             courseId={course.id}

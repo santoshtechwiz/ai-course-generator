@@ -24,7 +24,7 @@ interface MobileNavbarProps {
  * Provides collapsible navigation drawer for mobile devices.
  * Includes main navigation items, user actions, and responsive design.
  */
-export function MobileNavbar({ isOpen, onOpenChange }: MobileNavbarProps) {
+function MobileNavbar({ isOpen, onOpenChange }: MobileNavbarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const { user, isAuthenticated } = useAuth()
@@ -105,7 +105,7 @@ export function MobileNavbar({ isOpen, onOpenChange }: MobileNavbarProps) {
                           onClick={() => handleNavigation(item.href)}
                         >
                           <item.icon className="mr-3 h-5 w-5" />
-                          {item.label}
+                          {item.name}
                         </Button>
                       </motion.div>
                     )
@@ -172,3 +172,5 @@ export function MobileNavbar({ isOpen, onOpenChange }: MobileNavbarProps) {
     </Sheet>
   )
 }
+
+export default MobileNavbar

@@ -10,81 +10,68 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Neobrutal base palette — aligned to globals.css variables
+        // Neo-Brutalism Design System — aligned to globals.css variables
         background: "var(--color-bg)",
         foreground: "var(--color-text)",
-        primary: "var(--color-primary)",
-        accent: "var(--color-primary)",
-        accentHover: "#e60076",
-        card: "var(--color-card)",
-        border: "var(--color-border)",
+        surface: "var(--color-card)",
         muted: "var(--color-muted)",
+        border: "var(--color-border)",
+        "shadow-color": "var(--shadow-color)",
+
+        // Semantic Colors
+        primary: "var(--color-primary)",
+        secondary: "var(--color-secondary)",
+        accent: "var(--color-accent)",
         success: "var(--color-success)",
         warning: "var(--color-warning)",
-        danger: "var(--color-error)",
-        dialog: {
-          background: "var(--dialog-background)",
-          text: "var(--dialog-text)",
-          border: "var(--dialog-border)",
+        error: "var(--color-error)",
+
+        // Text Colors
+        text: {
+          DEFAULT: "var(--color-text)",
+          secondary: "var(--color-muted)",
         },
+
+        // Legacy Aliases (for backward compatibility)
+        card: "var(--color-card)",
+        danger: "var(--color-error)",
       },
 
       boxShadow: {
-        neo: "var(--shadow-neo)",
-        'neo-sm': "6px 6px 0px var(--shadow-color)",
-        'neo-lg': "12px 12px 0px var(--shadow-color)",
-        'neo-xl': "16px 16px 0px var(--shadow-color)",
-        'neo-hover': "var(--shadow-neo-hover)",
-        'neo-active': "var(--shadow-neo-active)",
-        'neo-inset': "var(--shadow-neo-inset)",
+        // Neo-Brutalism Shadows
+        neo: "3px 3px 0 var(--shadow-color)",
+        'neo-hover': "4px 4px 0 var(--shadow-color)",
+        'neo-active': "1px 2px 1px 2px 0 var(--shadow-color)",
+        'neo-heavy': "8px 8px 0 var(--shadow-color)",
+        'neo-sm': "2px 2px 0 var(--shadow-color)",
+        'neo-lg': "6px 6px 0 var(--shadow-color)",
       },
 
       borderWidth: {
+        '3': '3px',
+        '4': '4px',
         '6': '6px',
-        '8': '8px',
-      },
-
-      spacing: {
-        '18': '4.5rem',
-        '88': '22rem',
-        '128': '32rem',
       },
 
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) * 0.67)",
-        sm: "calc(var(--radius) * 0.5)",
+        none: "0px", // Sharp corners for Neo-Brutalism
+      },
+
+      spacing: {
+        'xs': 'var(--spacing-xs)',
+        'sm': 'var(--spacing-sm)',
+        'md': 'var(--spacing-md)',
+        'lg': 'var(--spacing-lg)',
+        'xl': 'var(--spacing-xl)',
       },
 
       fontFamily: {
-        display: ["Poppins", "sans-serif"],
-        body: ["Inter", "sans-serif"],
-      },
-
-      fontSize: {
-        'xs': 'var(--font-size-xs)',
-        'sm': 'var(--font-size-sm)',
-        'base': 'var(--font-size-base)',
-        'lg': 'var(--font-size-lg)',
-        'xl': 'var(--font-size-xl)',
-        '2xl': 'var(--font-size-2xl)',
-        '3xl': 'var(--font-size-3xl)',
-        '4xl': 'var(--font-size-4xl)',
+        sans: ["Inter", "sans-serif"],
       },
 
       fontWeight: {
-        'base': 'var(--font-base)',
-        'heading': 'var(--font-heading)',
-      },
-
-      lineHeight: {
-        'tight': 'var(--line-height-tight)',
-        'normal': 'var(--line-height-normal)',
-        'relaxed': 'var(--line-height-relaxed)',
-      },
-
-      transitionTimingFunction: {
-        smooth: "cubic-bezier(0.16, 1, 0.3, 1)",
+        black: "900",
+        bold: "700",
       },
 
       screens: {
@@ -102,96 +89,90 @@ module.exports = {
     plugin(function (tw: any) {
       const { addComponents, addUtilities } = tw;
 
-      // Add utility classes for common Nerobrutal patterns
+      // Add Neo-Brutalism utility classes
       addUtilities({
-        '.neo-border': {
-          'border-width': '6px',
-          'border-color': 'var(--color-border)',
+        '.neo-border-primary': {
+          'border': '6px solid var(--color-border)',
+        },
+        '.neo-border-secondary': {
+          'border': '4px solid var(--color-border)',
+        },
+        '.neo-border-tertiary': {
+          'border': '3px solid var(--color-border)',
         },
         '.neo-shadow': {
-          'box-shadow': 'var(--shadow-neo)',
+          'box-shadow': '3px 3px 0 var(--shadow-color)',
         },
         '.neo-shadow-hover': {
-          'box-shadow': 'var(--shadow-neo-hover)',
+          'box-shadow': '4px 4px 0 var(--shadow-color)',
         },
         '.neo-shadow-active': {
-          'box-shadow': 'var(--shadow-neo-active)',
+          'box-shadow': '1px 2px 1px 2px 0 var(--shadow-color)',
         },
-        '.neo-transition': {
-          'transition': 'all var(--transition-normal)',
+        '.neo-shadow-heavy': {
+          'box-shadow': '8px 8px 0 var(--shadow-color)',
         },
         '.neo-hover-lift': {
-          'transition': 'transform var(--transition-normal), box-shadow var(--transition-normal)',
+          'transition': 'transform 0.2s ease, box-shadow 0.2s ease',
           '&:hover': {
-            'transform': 'translate(var(--hover-lift), var(--hover-lift))',
-            'box-shadow': 'var(--hover-shadow)',
+            'transform': 'translate(-2px, -2px)',
+            'box-shadow': '4px 4px 0 var(--shadow-color)',
           },
         },
         '.neo-press': {
-          'transition': 'transform var(--transition-fast), box-shadow var(--transition-fast)',
+          'transition': 'transform 0.1s ease, box-shadow 0.1s ease',
           '&:active': {
-            'transform': 'translate(var(--active-press), var(--active-press))',
-            'box-shadow': 'var(--active-shadow)',
+            'transform': 'translate(1px, 1px)',
+            'box-shadow': '1px 2px 1px 2px 0 var(--shadow-color)',
           },
         },
-        '.neo-focus': {
-          'transition': 'box-shadow var(--transition-fast)',
-          '&:focus-visible': {
-            'outline': 'none',
-            'box-shadow': '0 0 0 var(--focus-ring-width) var(--focus-ring-color)',
-          },
+        '.neo-typography-heading': {
+          '@apply font-black uppercase tracking-wider': {},
+        },
+        '.neo-typography-body': {
+          '@apply font-bold': {},
+        },
+        '.focus-ring': {
+          '@apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2': {},
         },
       });
 
       addComponents({
-        ".card": {
-          "@apply bg-card border-6 border-border shadow-neo p-6 sm:p-8 rounded-lg transition-transform duration-200 neo-hover-lift": {},
+        ".neo-card": {
+          "@apply bg-surface border-6 border-border neo-shadow neo-hover-lift rounded-none": {},
         },
-        ".btn": {
-          "@apply px-6 sm:px-8 py-3 sm:py-4 font-semibold border-6 border-border rounded-md transition-transform duration-200 flex items-center justify-center gap-2 neo-press neo-focus": {},
-          "&:active": {
-            transform: "translate(6px,6px)",
-            boxShadow: "none",
-          },
+        ".neo-button": {
+          "@apply inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] font-black uppercase tracking-wider border-4 border-border neo-shadow neo-hover-lift neo-press focus-ring disabled:opacity-50 disabled:cursor-not-allowed": {},
         },
-        ".btn-primary": {
-          "@apply bg-primary text-white shadow-neo neo-hover-lift": {},
-          "&:hover": {
-            "@apply bg-accent": {},
-          },
+        ".neo-button-primary": {
+          "@apply bg-primary text-background": {},
         },
-        ".btn-secondary": {
-          "@apply bg-secondary text-white shadow-neo neo-hover-lift": {},
-          "&:hover": {
-            "@apply bg-accent": {},
-          },
+        ".neo-button-secondary": {
+          "@apply bg-secondary text-background": {},
         },
-        ".btn-accent": {
-          "@apply bg-accent text-white shadow-neo neo-hover-lift": {},
-          "&:hover": {
-            "@apply bg-primary": {},
-          },
+        ".neo-button-accent": {
+          "@apply bg-accent text-background": {},
         },
-        ".btn-outline": {
-          "@apply bg-transparent text-foreground border-4 border-border shadow-neo neo-hover-lift": {},
-          "&:hover": {
-            "@apply bg-foreground text-background": {},
-          },
+        ".neo-input": {
+          "@apply bg-surface border-4 border-border neo-shadow rounded-none px-4 py-3 font-bold focus-ring placeholder:text-muted": {},
         },
-        ".input": {
-          "@apply bg-card border-6 border-border px-4 py-3 rounded-none neo-focus neo-transition": {},
-          "&::placeholder": {
-            "@apply text-muted-foreground/70": {},
-          },
+        ".neo-badge": {
+          "@apply inline-flex items-center gap-1 px-3 py-2 text-sm font-black uppercase tracking-wider rounded-none border-3 border-border neo-shadow": {},
         },
-        ".badge": {
-          "@apply inline-block px-4 py-2 border-6 border-border bg-accent text-white shadow-neo font-bold text-sm neo-hover-lift": {},
+        ".neo-modal": {
+          "@apply bg-surface border-6 border-border neo-shadow-heavy rounded-none focus-ring": {},
         },
-        ".modal": {
-          "@apply bg-card border-6 border-border shadow-neo rounded-lg neo-focus": {},
+        ".neo-alert": {
+          "@apply p-6 rounded-none border-4 neo-shadow": {},
         },
-        ".overlay": {
-          "@apply bg-black/80 backdrop-blur-none": {},
+        ".neo-alert-success": {
+          "@apply bg-success/10 border-success text-success": {},
+        },
+        ".neo-alert-warning": {
+          "@apply bg-warning/10 border-warning text-warning": {},
+        },
+        ".neo-alert-error": {
+          "@apply bg-error/10 border-error text-error": {},
         },
       });
     }),

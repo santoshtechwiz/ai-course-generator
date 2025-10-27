@@ -31,7 +31,7 @@ export function DashboardLayout({ children, userId, className }: DashboardLayout
 
       {/* Dashboard content area with proper navbar offset */}
       <main className={cn(
-        "min-h-screen pt-16 bg-[var(--color-bg)]",
+        "min-h-screen pt-16 bg-[var(--color-bg)] neo-typography-body",
         className
       )}>
         {/* Credit Guidance Banner - Shows for 0-credit users */}

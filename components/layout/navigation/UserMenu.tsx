@@ -84,7 +84,7 @@ export function UserMenu() {
   if (isAuthLoading) {
     return (
       <Button
-        variant="ghost"
+        variant="neutral"
         className={cn(
           "relative h-10 w-10 rounded-none border-3 border-[var(--color-border)]",
           "shadow-[2px_2px_0px_0px_var(--color-border)]",
@@ -124,7 +124,7 @@ export function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild suppressHydrationWarning>
         <Button
-          variant="ghost"
+          variant="neutral"
           className={cn(
             "relative h-10 w-10 rounded-none border-3 border-[var(--color-border)]",
             "shadow-[2px_2px_0px_0px_var(--color-border)]",
