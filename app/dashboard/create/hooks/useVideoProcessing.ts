@@ -5,6 +5,15 @@ import { api } from "@/lib/api-helper"
 import { useToast } from "@/hooks"
 import type { ProgressStep } from "@/components/ui/progress-stepper"
 
+// Simulation mode configuration
+const SIMULATION_MODE = process.env.NEXT_PUBLIC_SIMULATION_MODE === "true"
+console.log(`🎭 SIMULATION_MODE check: ${process.env.NEXT_PUBLIC_SIMULATION_MODE} === "true" = ${SIMULATION_MODE}`)
+
+const SIMULATION_QUOTA_LIMIT = 3
+const SIMULATION_PROGRESS_INTERVAL = 1200 // 1.2 seconds
+const SIMULATION_PROGRESS_INCREMENT_MIN = 10
+const SIMULATION_PROGRESS_INCREMENT_MAX = 25
+
 /**
  * FIXES APPLIED:
  * 1. Fixed API response parsing: API returns {data: response} but code was accessing response.data.success
@@ -40,10 +49,16 @@ interface UseVideoProcessingOptions {
 
 export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
   const { toast } = useToast()
+  console.log(`🎬 useVideoProcessing initialized, SIMULATION_MODE: ${SIMULATION_MODE}`)
+  
   const [isProcessing, setIsProcessing] = useState<Record<number, boolean>>({})
   const [statuses, setStatuses] = useState<Record<number, VideoStatus>>({})
   const [queueStatus, setQueueStatus] = useState<{ size: number; pending: number }>({ size: 0, pending: 0 })
   const [steps, setSteps] = useState<Record<number, ProgressStep[]>>({})
+  
+  // Simulation mode state
+  const [simulationCount, setSimulationCount] = useState(0)
+  const [simulationIntervals, setSimulationIntervals] = useState<Record<number, NodeJS.Timeout>>({})
   
   // Configure options with defaults
   const {
@@ -53,6 +68,138 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
     pollingInterval = 5000,
     useEnhancedService = true,
   } = options
+
+  // Simulation progress function
+  const startSimulationProgress = useCallback((chapterId: number) => {
+    console.log(`🎭 Starting simulation progress for chapter ${chapterId}`)
+    
+    let progress = 0
+    let status: "queued" | "processing" | "completed" = "queued"
+    
+    const interval = setInterval(() => {
+      // Random progress increment
+      const increment = Math.random() * (SIMULATION_PROGRESS_INCREMENT_MAX - SIMULATION_PROGRESS_INCREMENT_MIN) + SIMULATION_PROGRESS_INCREMENT_MIN
+      progress = Math.min(100, progress + increment)
+      
+      // Update status based on progress
+      if (progress < 20) {
+        status = "queued"
+      } else if (progress < 100) {
+        status = "processing"
+      } else {
+        status = "completed"
+      }
+      
+      const simulationStatus: VideoStatus = {
+        chapterId,
+        status,
+        progress: Math.round(progress),
+        message: status === "completed" ? "Video ready" : 
+                status === "processing" ? "Processing video..." : 
+                "Queued for processing...",
+        jobId: `sim-${chapterId}-${Date.now()}`
+      }
+      
+      console.log(`🎭 Simulation progress for chapter ${chapterId}: ${Math.round(progress)}% (${status})`)
+      
+      setStatuses((prev) => ({
+        ...prev,
+        [chapterId]: simulationStatus
+      }))
+      
+      // Update progress steps based on progress
+      setSteps((prev) => ({
+        ...prev,
+        [chapterId]: (prev[chapterId] || []).map(step => {
+          let stepStatus: 'pending' | 'processing' | 'completed' = 'pending'
+          let stepProgress = 0
+          
+          if (progress >= 100) {
+            stepStatus = 'completed'
+            stepProgress = 100
+          } else if (progress >= 75 && step.id === 'upload') {
+            stepStatus = 'processing'
+            stepProgress = Math.min(100, (progress - 75) * 4)
+          } else if (progress >= 50 && step.id === 'video') {
+            stepStatus = 'processing'
+            stepProgress = Math.min(100, (progress - 50) * 2)
+          } else if (progress >= 25 && step.id === 'script') {
+            stepStatus = 'processing'
+            stepProgress = Math.min(100, (progress - 25) * 4)
+          } else if (progress >= 0 && step.id === 'queue') {
+            stepStatus = 'processing'
+            stepProgress = Math.min(100, progress * 4)
+          }
+          
+          return {
+            ...step,
+            status: stepStatus,
+            progress: stepProgress
+          }
+        })
+      }))
+      
+      if (onStatusChange) {
+        onStatusChange(simulationStatus)
+      }
+      
+      // Complete simulation when progress reaches 100%
+      if (progress >= 100) {
+        console.log(`🎭 Simulation completed for chapter ${chapterId}`)
+        
+        clearInterval(interval)
+        setSimulationIntervals(prev => {
+          const newIntervals = { ...prev }
+          delete newIntervals[chapterId]
+          return newIntervals
+        })
+        
+        setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
+        
+        const completedStatus: VideoStatus = {
+          chapterId,
+          status: "completed",
+          videoId: `sim-video-${chapterId}-${Date.now()}`,
+          progress: 100,
+          message: "Video ready",
+          jobId: `sim-${chapterId}-${Date.now()}`
+        }
+        
+        setStatuses((prev) => ({
+          ...prev,
+          [chapterId]: completedStatus
+        }))
+        
+        // Update steps to show completion
+        setSteps((prev) => ({
+          ...prev,
+          [chapterId]: (prev[chapterId] || []).map(step => ({
+            ...step,
+            status: 'completed' as const,
+            progress: 100
+          }))
+        }))
+        
+        if (onComplete) {
+          onComplete(completedStatus)
+        }
+      }
+    }, SIMULATION_PROGRESS_INTERVAL)
+    
+    setSimulationIntervals(prev => ({
+      ...prev,
+      [chapterId]: interval
+    }))
+  }, [onStatusChange, onComplete])
+
+  // Cleanup simulation intervals on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(simulationIntervals).forEach(interval => {
+        clearInterval(interval)
+      })
+    }
+  }, [simulationIntervals])
     // Process a single video
   const processVideo = useCallback(async (chapterId: number) => {
     console.log(`🎬 processVideo called for chapter ${chapterId}`)
@@ -111,7 +258,51 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       if (onStatusChange) {
         onStatusChange(initialStatus)
       }
-        // Call the API - use the standard video API instead of enhanced
+
+      // Handle simulation mode
+      if (SIMULATION_MODE) {
+        console.log(`🎭 Simulation mode detected for chapter ${chapterId}`)
+        
+        // Check simulation quota
+        if (simulationCount >= SIMULATION_QUOTA_LIMIT) {
+          console.log(`🚫 Simulation quota exceeded (${simulationCount}/${SIMULATION_QUOTA_LIMIT})`)
+          
+          const quotaExceededStatus: VideoStatus = {
+            chapterId,
+            status: "error",
+            message: "Daily video generation limit reached (simulation mode)"
+          }
+          
+          setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
+          setStatuses((prev) => ({
+            ...prev,
+            [chapterId]: quotaExceededStatus
+          }))
+          
+          if (onError) {
+            onError(quotaExceededStatus)
+          }
+          
+          toast({
+            title: "Daily video generation limit reached",
+            description: "You've reached the 3 video limit in simulation mode. Try again tomorrow.",
+            variant: "destructive",
+            duration: 5000,
+          })
+          
+          return { success: false, error: "Simulation quota exceeded" }
+        }
+        
+        // Increment simulation count
+        setSimulationCount(prev => prev + 1)
+        
+        // Start simulation progress
+        startSimulationProgress(chapterId)
+        
+        return { success: true, message: "Simulation started", jobId: `sim-${chapterId}-${Date.now()}` }
+      }
+
+      // Call the API - use the standard video API instead of enhanced
       const endpoint = "/api/video"
       console.log(`🚀 Calling API ${endpoint} for chapter ${chapterId}`)
       
@@ -212,11 +403,14 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
         onError(errorStatus)
       }
       
-      toast({
-        title: "Video Processing Error",
-        description: error instanceof Error ? error.message : "Failed to process video",
-        variant: "destructive"
-      })
+      // Only show toast if not in simulation mode
+      if (!SIMULATION_MODE) {
+        toast({
+          title: "Video Processing Error",
+          description: error instanceof Error ? error.message : "Failed to process video",
+          variant: "destructive"
+        })
+      }
       
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
     }
@@ -531,6 +725,41 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
   
   // Cancel processing
   const cancelProcessing = useCallback(async (chapterId: number) => {
+    // Handle simulation mode cancellation
+    if (SIMULATION_MODE) {
+      console.log(`🎭 Cancelling simulation for chapter ${chapterId}`)
+      
+      // Clear simulation interval
+      setSimulationIntervals(prev => {
+        const interval = prev[chapterId]
+        if (interval) {
+          clearInterval(interval)
+        }
+        const newIntervals = { ...prev }
+        delete newIntervals[chapterId]
+        return newIntervals
+      })
+      
+      setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
+      
+      setStatuses((prev) => ({
+        ...prev,
+        [chapterId]: {
+          chapterId,
+          status: "error",
+          message: "Simulation cancelled"
+        }
+      }))
+      
+      toast({
+        title: "Simulation Cancelled",
+        description: `Video simulation for chapter ${chapterId} has been cancelled`,
+        variant: "default"
+      })
+      
+      return true
+    }
+
     if (!useEnhancedService) {
       toast({
         title: "Not Supported",

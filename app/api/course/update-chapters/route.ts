@@ -36,9 +36,10 @@ export async function POST(req: Request) {
 
     // Parse and validate request body
     const body = await req.json()
-
+    
+    let validatedData
     try {
-      var validatedData = updateChaptersSchema.parse(body)
+      validatedData = updateChaptersSchema.parse(body)
     } catch (validationError) {
       if (validationError instanceof z.ZodError) {
         return NextResponse.json(

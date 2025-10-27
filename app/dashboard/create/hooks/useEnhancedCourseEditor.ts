@@ -67,6 +67,9 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
         console.log(`Video completed for chapter ${status.chapterId}:`, status)
         handleChapterComplete(String(status.chapterId))
 
+        // Update chapter status for UI display
+        updateChapterStatus(status.chapterId, status)
+
         // Update course state with new video ID
         if (status.videoId) {
           setCourse((prevCourse) => {
@@ -87,6 +90,21 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
         console.error(`Video failed for chapter ${status?.chapterId}:`, status)
         console.error('Status object keys:', Object.keys(status || {}))
         console.error('Status object:', JSON.stringify(status, null, 2))
+
+        // Update chapter status for UI display
+        if (status?.chapterId) {
+          updateChapterStatus(status.chapterId, status)
+        }
+        
+        // Don't show toast in simulation mode
+        const isSimulationMode = process.env.NEXT_PUBLIC_SIMULATION_MODE === "true"
+        if (!isSimulationMode) {
+          toast({
+            title: "Video Generation Error",
+            description: status?.message || "An error occurred during video generation",
+            variant: "destructive"
+          })
+        }
       },
     })
 

@@ -14,10 +14,27 @@ export async function POST(req: Request) {
   try {
     console.log("[Video API] Received video processing request")
     
+    // Check for simulation mode
+    const isSimulationMode = process.env.NEXT_PUBLIC_SIMULATION_MODE === "true"
+    
     // Parse and validate request body
     const body = await req.json()
     const { chapterId } = bodyParser.parse(body)
 
+    if (isSimulationMode) {
+      console.log(`[Video API] Simulation mode: Mocking video processing for chapter ${chapterId}`)
+      
+      // Return mock successful response instantly
+      const response = {
+        success: true,
+        queueStatus: "queued",
+        chapterId: chapterId,
+        videoId: null,
+        jobId: `sim-job-${chapterId}-${Date.now()}`
+      }
+      return NextResponse.json({ data: response }, { status: 200 })
+    }
+    
     console.log(`[Video API] Processing video for chapter ${chapterId}`)
     
     // Process the video through the service layer

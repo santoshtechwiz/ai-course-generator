@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation"
 import { api } from "@/lib/api-helper"
 import { Chapter, Course, CourseUnit } from "@/app/types/types"
 import VideoPreview from "./VideoPreview"
+import { useToast } from "@/hooks"
 
 type CourseProps = {
   course: Course & {
@@ -268,54 +269,56 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
       </ScrollArea>
       
       {/* Footer Actions */}
-      <div className="flex-none p-4 lg:p-6 border-t-6 border-border bg-card">
+      <div className="p-4 lg:p-6 border-t-6 border-black bg-[var(--color-bg)]">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             asChild
-            className="w-full lg:w-auto font-black border-3 border-border rounded-none shadow-neo hover:shadow-neo-hover"
+            className="w-full lg:w-auto font-black border-2 border-black px-4 py-2 text-base bg-[var(--color-bg)] text-[var(--color-text)] hover:bg-[var(--color-primary)] hover:text-[var(--color-bg)] rounded-none"
           >
             <Link href="/dashboard/explore">
               <ChevronLeft className="w-4 h-4 mr-2" />
               Back
             </Link>
           </Button>
-          
+
           <ContextualHelp
             title="Save Course"
             description="Save your course structure and optionally generate videos for all chapters. You can also save without videos and generate them later from the course page."
-            side="top"
+           
           >
-            <div className="flex flex-col sm:flex-row gap-3 flex-1 lg:flex-initial">
+            <div className="flex flex-col sm:flex-row gap-3 w-full items-center justify-center flex-wrap sm:flex-nowrap">
               <Button
                 onClick={saveAndContinue}
                 disabled={isSaving || isGeneratingVideos}
                 className={cn(
-                  "flex-1 sm:flex-initial font-black border-3 border-border rounded-none shadow-neo hover:shadow-neo-hover transition-all",
-                  allChaptersCompleted 
-                    ? "bg-green-500 hover:bg-green-600 text-white" 
-                    : "bg-blue-500 hover:bg-blue-600 text-white"
+                  "w-full sm:w-auto font-black border-2 border-black px-4 py-2 text-base rounded-none transition-all min-w-[180px]",
+                  // primary color controlled by theme variables; fallbacks remain from existing logic
+                  allChaptersCompleted
+                    ? "bg-[var(--color-secondary)] text-[var(--color-text)]"
+                    : "bg-[var(--color-primary)] text-[var(--color-bg)]"
                 )}
+                style={{ minHeight: 44 }}
               >
                 {isSaving || isGeneratingVideos ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    {isSaving ? "Saving..." : "Generating..."}
+                    <span className="text-sm sm:text-base">{isSaving ? "Saving..." : "Generating..."}</span>
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
                     {allChaptersCompleted ? (
                       <>
-                        <CheckCircle className="w-4 h-4" />
-                        Save & View Course
+                        <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                        <span className="text-sm sm:text-base whitespace-nowrap">Save & View Course</span>
                       </>
                     ) : (
                       <>
-                        <Save className="w-4 h-4" />
-                        Save & Generate Videos
+                        <Save className="w-4 h-4 flex-shrink-0" />
+                        <span className="text-sm sm:text-base whitespace-nowrap">Save & Generate Videos</span>
                       </>
                     )}
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-4 h-4 flex-shrink-0" />
                   </span>
                 )}
               </Button>
@@ -325,10 +328,11 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                   onClick={() => handleGenerateAll(false)}
                   disabled={isSaving}
                   variant="outline"
-                  className="flex-1 sm:flex-initial font-black border-3 border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white rounded-none shadow-neo hover:shadow-neo-hover"
+                  className="w-full sm:w-auto font-black border-2 border-black px-4 py-2 text-base bg-[var(--color-bg)] text-[var(--color-text)] hover:bg-[var(--color-primary)] hover:text-[var(--color-bg)] rounded-none min-w-[160px]"
+                  style={{ minHeight: 44 }}
                 >
-                  <PlayCircle className="w-4 h-4 mr-2" />
-                  Generate All Videos
+                  <PlayCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span className="text-sm sm:text-base whitespace-nowrap">Generate All Videos</span>
                 </Button>
               )}
 
@@ -356,9 +360,10 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                     }
                   }}
                   disabled={isSaving || isGeneratingVideos}
-                  className="flex-1 sm:flex-initial font-black border-3 border-border rounded-none shadow-neo hover:shadow-neo-hover"
+                  className="w-full sm:w-auto font-black border-2 border-black px-4 py-2 text-base bg-[var(--color-bg)] text-[var(--color-text)] hover:bg-[var(--color-primary)] hover:text-[var(--color-bg)] rounded-none min-w-[160px]"
+                  style={{ minHeight: 44 }}
                 >
-                  Save Without Videos
+                  <span className="text-sm sm:text-base whitespace-nowrap">Save Without Videos</span>
                 </Button>
               )}
             </div>
