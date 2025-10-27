@@ -20,7 +20,6 @@ import { useToast } from "@/hooks"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api-helper"
 import { Chapter, Course, CourseUnit } from "@/app/types/types"
-import VideoPreview from "./VideoPreview"
 
 type CourseProps = {
   course: Course & {
@@ -531,7 +530,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
           <DialogHeader>
             <DialogTitle>{currentVideoTitle}</DialogTitle>
           </DialogHeader>
-          {currentVideoId && <VideoPreview videoId={currentVideoId} className="mt-2" />}
+          {currentVideoId && <VideoPlayer videoId={currentVideoId} className="mt-2" />}
         </DialogContent>
       </Dialog>
     </div>
