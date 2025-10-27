@@ -424,7 +424,7 @@ class VideoService {
    * @private
    */
   private async fetchVideoIdWithRetry(youtubeSearchQuery: string): Promise<string | null> {
-    const maxRetries = 3;
+    const maxRetries = 2;
     const baseDelay = 2000; // 2 seconds
     let lastError: Error | null = null;
 
@@ -455,7 +455,7 @@ class VideoService {
         if (error?.message?.includes('quota')) {
           console.error("[VideoService] YouTube API quota exceeded - stopping retries");
           // Disable quota to prevent further attempts
-          quotaManager.disable();
+          quotaManager.disableQuota();
           throw new Error("YouTube API quota exceeded");
         }
 

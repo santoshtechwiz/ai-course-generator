@@ -1,8 +1,9 @@
 import type { LucideIcon } from "lucide-react";
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
+  // Render a full-width wrapper by default (no horizontal padding) to match the new global layout
   return (
-    <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <div className="w-full max-w-full px-0 py-6 sm:py-8">
       {children}
     </div>
   );

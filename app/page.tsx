@@ -1,8 +1,7 @@
 import CourseAILandingPage from "@/components/landing/CourseAILandingPage"
 import { Suspense } from "react"
 import { GlobalLoader } from "@/components/ui/loader"
-import { ModuleLayout } from "@/components/layout/ModuleLayout"
-import { PageHeader } from "@/components/layout/PageWrapper"
+import { PageHeader } from "@/components/layout"
 import { generateMetadata } from "@/lib/seo"
 import { JsonLD } from "@/lib/seo"
 
@@ -33,12 +32,11 @@ export const metadata = generateMetadata({
 
 export default function HomePage() {
   return (
-    <ModuleLayout>
-      <PageHeader title={""} description={""}>
-        <Suspense fallback={<GlobalLoader message="Loading home…" />}>
-          <CourseAILandingPage />
-        </Suspense>
-      </PageHeader>
+    <div className="w-full min-h-screen bg-background py-4 sm:py-6">
+      <PageHeader title={""} description={""} />
+      <Suspense fallback={<GlobalLoader message="Loading home…" />}>
+        <CourseAILandingPage />
+      </Suspense>
 
       {/* Add structured data for better SEO */}
       <JsonLD
@@ -57,6 +55,6 @@ export default function HomePage() {
         }}
         type={""}
       />
-    </ModuleLayout>
+    </div>
   )
 }

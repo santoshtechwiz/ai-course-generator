@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { useVideoProcessing } from '@/hooks/useVideoProcessing'
+import { useVideoProcessing } from '@/app/dashboard/create/hooks/useVideoProcessing'
 
 // Mock dependencies
 vi.mock('@/lib/api', () => ({

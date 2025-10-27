@@ -18,7 +18,7 @@ export default function RecommendationsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:px-6 md:px-8">
+    <div className="w-full px-0 py-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">For You</h1>
         <p className="text-muted-foreground mt-2">

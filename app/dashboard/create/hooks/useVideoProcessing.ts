@@ -18,6 +18,8 @@ export interface VideoStatus {
   chapterId: number
   status: "idle" | "queued" | "processing" | "completed" | "error"
   videoId?: string | null
+  jobId?: string | undefined
+  queuePosition?: number | undefined
   progress?: number
   message?: string
   startTime?: number
@@ -93,14 +95,15 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
   // Check status via API (STANDARD API ONLY - no deprecated endpoints)
   const checkStatus = useCallback(async (chapterId: number): Promise<boolean | null> => {
     try {
-      const response = await api.get(`/api/video/status/${chapterId}`)
+  const response = await api.get(`/api/video/status/${chapterId}`)
       
       // Completed - has video
-      if (response.data.videoId) {
+  if (response.videoId) {
         const completedStatus: VideoStatus = {
           chapterId,
           status: 'completed',
-          videoId: response.data.videoId,
+          videoId: response.videoId,
+          jobId: response.jobId,
           message: 'Video ready',
           progress: 100,
           lastChecked: Date.now()
@@ -120,11 +123,12 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       }
       
       // Failed
-      if (response.data.videoStatus === 'error' || response.data.failed) {
+  if (response.videoStatus === 'error' || response.failed) {
         const failedStatus: VideoStatus = {
           chapterId,
           status: 'error',
-          message: response.data.error || 'Video generation failed',
+          jobId: response.jobId,
+          message: response.error || 'Video generation failed',
           progress: 0,
           lastChecked: Date.now()
         }
@@ -150,11 +154,13 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
         return false
       }
       
-      // Still processing
+      // Still processing or queued - reflect server-provided status and progress
       updateStatus(chapterId, {
-        status: 'processing',
-        message: 'Generating video...',
-        progress: 50
+        status: response.videoStatus === 'queued' ? 'queued' : 'processing',
+        jobId: response.jobId,
+        queuePosition: response.queuePending,
+        message: response.message || 'Generating video...',
+        progress: typeof response.progress === 'number' ? response.progress : 50
       })
       
       return null
@@ -230,16 +236,22 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       // Call STANDARD video API (not enhanced/optimized)
       const response = await api.post('/api/video', { chapterId })
 
-      const ok = response?.data?.success
+      const ok = response?.success
       if (!ok) {
-        throw new Error(response?.data?.error || 'Failed to start video generation')
+        throw new Error(response?.error || 'Failed to start video generation')
       }
-      
-      // Update to processing
+
+      // If the server returned a jobId/queued info, reflect that in status
+      const jobId = response?.jobId
+      const serverVideoStatus = response?.videoStatus || 'queued'
+      const queuePending = response?.queuePending
+
       updateStatus(chapterId, {
-        status: 'processing',
-        message: 'Processing video...',
-        progress: 30
+        status: serverVideoStatus === 'processing' ? 'processing' : 'queued',
+        jobId,
+        queuePosition: typeof queuePending === 'number' ? queuePending : undefined,
+        message: response?.message || (serverVideoStatus === 'processing' ? 'Processing video...' : 'Video queued'),
+        progress: serverVideoStatus === 'processing' ? 30 : 10
       })
       
       // Start polling
@@ -294,33 +306,38 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
     let processed = 0
     let failed = 0
     
-    // Process sequentially
+    // Process sequentially. Use API-driven status checks (checkStatus) to avoid stale closure
     for (const chapterId of toProcess) {
-      const result = await processVideo(chapterId)
-      
-      // Wait for completion
-      await new Promise<void>(resolve => {
-        const checkCompletion = setInterval(() => {
-          const status = statuses[chapterId]
-          if (status?.status === 'completed') {
-            processed++
-            clearInterval(checkCompletion)
-            resolve()
-          } else if (status?.status === 'error') {
-            failed++
-            clearInterval(checkCompletion)
-            resolve()
-          }
-        }, 1000)
-        
-        // Timeout after 10 minutes
-        setTimeout(() => {
-          clearInterval(checkCompletion)
+      await processVideo(chapterId)
+
+      // Wait for completion by repeatedly calling checkStatus which updates state
+      const waitStart = Date.now()
+      const timeoutMs = 10 * 60 * 1000 // 10 minutes
+
+      while (true) {
+        // Ask the server for the latest status and update local state
+        const res = await checkStatus(chapterId)
+
+        if (res === true) {
+          processed++
+          break
+        }
+
+        if (res === false) {
           failed++
-          resolve()
-        }, 10 * 60 * 1000)
-      })
-      
+          break
+        }
+
+        if (Date.now() - waitStart > timeoutMs) {
+          // Timed out waiting for completion
+          failed++
+          break
+        }
+
+        // Back off before next status check
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+
       // Small delay between videos
       await new Promise(resolve => setTimeout(resolve, 2000))
     }

@@ -22,13 +22,11 @@ class YoutubeService {
   private static YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY
   private static SUPDATA_KEY = process.env.SUPDATA_KEY
   private static SUPDATA_KEY1 = process.env.SUPDATA_KEY1
-  private static MAX_RETRIES = 3
   private static TIMEOUT = 30000 // 30 seconds
 
   private static processedVideoIds = new Set<string>()
   private static transcriptCache = new Map<string, string>()
   private static supadata: Supadata
-  private static innertubeInstance: any = null // Cache Innertube instance
   private static currentSupadataKey: string
 
   /**
@@ -44,8 +42,31 @@ class YoutubeService {
       throw new Error('Failed to load YouTube library')
     }
   }
+private static youtubeClient = {
+  get: async (endpoint: string, options: any = {}) => {
+    const baseUrl = `http://localhost:3001${endpoint}`
 
-  private static youtubeClient = {
+    const params = new URLSearchParams(options.params || {})
+
+    const response = await fetch(`${baseUrl}?${params}`, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+      }
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`[Local YouTube Service] Error ${response.status}: ${errorText}`)
+      throw new Error(`Local YouTube Service error: ${response.status} ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    return data
+  }
+}
+
+  private static youtubeClient1 = {
     get: async (endpoint: string, options: any) => {
       const url = `https://www.googleapis.com/youtube/v3${endpoint}`
       const params = new URLSearchParams({
@@ -99,11 +120,6 @@ class YoutubeService {
     })
   }
 
-  private static switchSupadataKey() {
-    this.currentSupadataKey =
-      this.currentSupadataKey === this.SUPDATA_KEY ? this.SUPDATA_KEY1 || "" : this.SUPDATA_KEY || ""
-    this.initializeSupadata()
-  }
 
   static async searchYoutube(searchQuery: string): Promise<string | null> {
     // Check if quota is disabled
@@ -186,7 +202,7 @@ class YoutubeService {
       }
     }
 
-    const { provider = this.defaultTranscriptProvider, preferOffline = false } = options;
+    const { preferOffline = false } = options;
 
     // Get list of providers to try based on preferences
     const providers = preferOffline

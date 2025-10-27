@@ -103,7 +103,7 @@ const Page = async ({
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-6 space-y-6">
+  <div className="w-full px-0 py-6 space-y-6">
         {process.env.NODE_ENV === "development" && <NavigationDebugger />}
         <JsonLD type="CreativeWork" data={creativeWorkSchema} />
         <JsonLD type="BreadcrumbList" data={breadcrumbSchema} />
