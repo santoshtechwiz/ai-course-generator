@@ -97,38 +97,46 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       
       // Completed - has video
       if (response.data.videoId) {
-        updateStatus(chapterId, {
+        const completedStatus: VideoStatus = {
+          chapterId,
           status: 'completed',
           videoId: response.data.videoId,
           message: 'Video ready',
-          progress: 100
-        })
-        
+          progress: 100,
+          lastChecked: Date.now()
+        }
+
+        // update internal state and stop polling
+        updateStatus(chapterId, completedStatus)
         setIsProcessing(prev => ({ ...prev, [chapterId]: false }))
         stopPolling(chapterId)
-        
+
+        // call onComplete with the concrete status object (avoid reading stale state)
         if (onComplete) {
-          onComplete(statuses[chapterId])
+          onComplete(completedStatus)
         }
-        
+
         return true
       }
       
       // Failed
       if (response.data.videoStatus === 'error' || response.data.failed) {
-        updateStatus(chapterId, {
+        const failedStatus: VideoStatus = {
+          chapterId,
           status: 'error',
           message: response.data.error || 'Video generation failed',
-          progress: 0
-        })
-        
+          progress: 0,
+          lastChecked: Date.now()
+        }
+
+        updateStatus(chapterId, failedStatus)
         setIsProcessing(prev => ({ ...prev, [chapterId]: false }))
         stopPolling(chapterId)
-        
+
         if (onError) {
-          onError(statuses[chapterId])
+          onError(failedStatus)
         }
-        
+
         // Auto-retry if enabled
         if (autoRetry) {
           const retries = retryCountsRef.current[chapterId] || 0
@@ -138,7 +146,7 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
             setTimeout(() => processVideo(chapterId), 5000)
           }
         }
-        
+
         return false
       }
       
@@ -221,9 +229,10 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       
       // Call STANDARD video API (not enhanced/optimized)
       const response = await api.post('/api/video', { chapterId })
-      
-      if (!response.data.success) {
-        throw new Error(response.data.error || 'Failed to start video generation')
+
+      const ok = response?.data?.success
+      if (!ok) {
+        throw new Error(response?.data?.error || 'Failed to start video generation')
       }
       
       // Update to processing
@@ -240,17 +249,21 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error'
       
-      updateStatus(chapterId, {
+      const errorStatus: VideoStatus = {
+        chapterId,
         status: 'error',
         message,
-        progress: 0
-      })
-      
+        progress: 0,
+        lastChecked: Date.now()
+      }
+
+      updateStatus(chapterId, errorStatus)
+
       setIsProcessing(prev => ({ ...prev, [chapterId]: false }))
       showToast(message, 'error')
-      
+
       if (onError) {
-        onError(statuses[chapterId])
+        onError(errorStatus)
       }
       
       return { success: false, error: message }

@@ -275,9 +275,10 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                   try {
                     const updateData = courseEditor.prepareUpdateData()
                     const saveResponse = await api.post(`/api/course/update-chapters`, updateData)
-                    
-                    if (!saveResponse.data.success) {
-                      throw new Error(saveResponse.data.error || "Failed to save")
+
+                    const saveSuccess = saveResponse?.data?.success
+                    if (!saveSuccess) {
+                      throw new Error(saveResponse?.data?.error || "Failed to save")
                     }
                     
                     toast({

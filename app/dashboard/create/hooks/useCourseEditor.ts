@@ -386,9 +386,10 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
 
       const updateData = prepareUpdateData()
       const saveResponse = await api.post(`/api/course/update-chapters`, updateData)
-      
-      if (!saveResponse.data.success) {
-        throw new Error(saveResponse.data.error || "Failed to save course structure")
+
+      const saveSuccess = saveResponse?.data?.success
+      if (!saveSuccess) {
+        throw new Error(saveResponse?.data?.error || "Failed to save course structure")
       }
 
       const chaptersNeedingVideos = allChapters.filter((chapter) => !chapter.videoId)
