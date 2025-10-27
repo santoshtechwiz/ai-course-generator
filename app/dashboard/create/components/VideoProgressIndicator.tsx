@@ -1,11 +1,18 @@
+/**
+ * app/dashboard/create/components/VideoProgressIndicator.tsx
+ * 
+ * REFACTORED: Clean progress indicator with Nerobrutal theme
+ * - Consistent styling with border-4 and shadow-neo
+ * - Clear visual states
+ * - Proper button styling
+ */
+
 "use client"
 
 import React from "react"
 import { Loader2, CheckCircle, XCircle, AlertCircle, RefreshCcw, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { ProgressStepper, type ProgressStep } from "@/components/ui/progress-stepper"
-import { ErrorRecoveryCard } from "@/components/ui/error-recovery-card"
 import { cn } from "@/lib/utils"
 import type { VideoStatus } from "../hooks/useVideoProcessing"
 
@@ -17,11 +24,6 @@ interface VideoProgressIndicatorProps {
   size?: "sm" | "md" | "lg"
   showLabel?: boolean
   className?: string
-  // New props for enhanced progress tracking
-  steps?: ProgressStep[]
-  title?: string
-  subtitle?: string
-  useStepper?: boolean
 }
 
 export function VideoProgressIndicator({
@@ -32,71 +34,44 @@ export function VideoProgressIndicator({
   size = "md",
   showLabel = true,
   className,
-  steps,
-  title,
-  subtitle,
-  useStepper = false,
 }: VideoProgressIndicatorProps) {
-  // Use enhanced stepper if steps are provided and stepper is enabled
-  if (useStepper && steps && steps.length > 0) {
-    return (
-      <ProgressStepper
-        steps={steps}
-        onRetry={(stepId) => {
-          // For now, retry the whole process
-          onRetry?.()
-        }}
-        onCancel={(stepId) => {
-          onCancel?.()
-        }}
-        showControls={showControls}
-        size={size}
-        className={className}
-        title={title}
-        subtitle={subtitle}
-      />
-    )
-  }
-
-  // Fall back to original implementation for backward compatibility
-  const currentStatus = status?.status || "processing"
+  const currentStatus = status?.status || "idle"
   
+  // Size configuration
   const sizeConfig = {
     sm: {
       iconSize: "h-3 w-3",
       progressHeight: "h-1.5",
       textSize: "text-xs",
-      buttonSize: "h-7 px-2 text-xs",
-      padding: "p-2",
+      buttonSize: "h-6 px-2 text-xs",
     },
     md: {
       iconSize: "h-4 w-4",
       progressHeight: "h-2",
       textSize: "text-sm",
-      buttonSize: "h-8 px-3 text-xs",
-      padding: "p-3",
+      buttonSize: "h-7 px-3 text-sm",
     },
     lg: {
       iconSize: "h-5 w-5",
       progressHeight: "h-3",
       textSize: "text-base",
-      buttonSize: "h-9 px-4 text-sm",
-      padding: "p-4",
+      buttonSize: "h-8 px-4 text-base",
     },
   }
   
-  const { iconSize, progressHeight, textSize, buttonSize, padding } = sizeConfig[size]
+  const { iconSize, progressHeight, textSize, buttonSize } = sizeConfig[size]
   
+  // Status icon and color
   const StatusIcon = () => {
     switch (currentStatus) {
       case "queued":
-        return <AlertCircle className={cn(iconSize, "text-warning animate-pulse")} />
+        return <AlertCircle className={cn(iconSize, "text-yellow-500")} />
       case "processing":
-        return <Loader2 className={cn(iconSize, "text-primary animate-spin")} />
+        return <Loader2 className={cn(iconSize, "text-blue-500 animate-spin")} />
       case "completed":
-        return <CheckCircle className={cn(iconSize, "text-success")} />
+        return <CheckCircle className={cn(iconSize, "text-green-500")} />
       case "error":
-        return <XCircle className={cn(iconSize, "text-danger")} />
+        return <XCircle className={cn(iconSize, "text-red-500")} />
       default:
         return null
     }
@@ -105,37 +80,20 @@ export function VideoProgressIndicator({
   const getStatusColor = () => {
     switch (currentStatus) {
       case "queued":
-        return "bg-warning"
+        return "bg-yellow-500"
       case "processing":
-        return "bg-primary"
+        return "bg-blue-500"
       case "completed":
-        return "bg-success"
+        return "bg-green-500"
       case "error":
-        return "bg-danger"
+        return "bg-red-500"
       default:
-        return "bg-muted"
-    }
-  }
-  
-  const getStatusBorderColor = () => {
-    switch (currentStatus) {
-      case "queued":
-        return "border-warning"
-      case "processing":
-        return "border-primary"
-      case "completed":
-        return "border-success"
-      case "error":
-        return "border-danger"
-      default:
-        return "border-border"
+        return "bg-gray-500"
     }
   }
   
   const getStatusMessage = () => {
-    if (status?.message) {
-      return status.message
-    }
+    if (status?.message) return status.message
     
     switch (currentStatus) {
       case "queued":
@@ -147,116 +105,63 @@ export function VideoProgressIndicator({
       case "error":
         return "Video generation failed"
       default:
-        return "Unknown status"
+        return "Ready to generate"
     }
   }
   
-  const progressValue = (() => {
-    if (status?.progress) {
-      return status.progress
-    }
-    
-    switch (currentStatus) {
-      case "queued":
-        return 10
-      case "processing":
-        return 50
-      case "completed":
-        return 100
-      case "error":
-        return 100
-      default:
-        return 0
-    }
-  })()
-
-  // Show error recovery card for error states
-  if (currentStatus === "error") {
-    return (
-      <ErrorRecoveryCard
-        error={{
-          title: "Video Generation Failed",
-          message: status?.message || "An error occurred while generating the video",
-          suggestions: [
-            "Check your internet connection and try again",
-            "Try generating a shorter video",
-            "Contact support if the problem persists"
-          ],
-          code: status?.jobId ? `JOB-${status.jobId}` : undefined,
-        }}
-        onRetry={onRetry}
-        onCancel={onCancel}
-        retryLabel="Retry Generation"
-        cancelLabel="Cancel"
-        showCancel={showControls}
-        className="border-3 rounded-none"
-      />
-    )
-  }
+  const progressValue = status?.progress || (currentStatus === "completed" ? 100 : 
+                                              currentStatus === "processing" ? 50 : 
+                                              currentStatus === "queued" ? 10 : 0)
 
   return (
-    <div className={cn(
-      "rounded-none border-3 bg-card",
-      getStatusBorderColor(),
-      padding,
-      className
-    )}>
-      <div className="flex flex-col space-y-2">
-        <div className="flex items-center justify-between gap-3">
-          {showLabel && (
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <StatusIcon />
-              <span className={cn("font-black truncate", textSize)}>
-                {getStatusMessage()}
-              </span>
-            </div>
-          )}
-          
-          {showControls && (
-            <div className="flex gap-2 flex-shrink-0">
-              {currentStatus === "processing" && onCancel && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onCancel}
-                  className={cn(
-                    buttonSize,
-                    "font-black border-2 border-danger text-danger hover:bg-danger hover:text-background rounded-none"
-                  )}
-                >
-                  <X className="h-3 w-3 mr-1" /> Cancel
-                </Button>
-              )}
-              
-              {currentStatus === "processing" && status?.message?.includes("stuck") && onRetry && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onRetry}
-                  className={cn(
-                    buttonSize,
-                    "font-black border-2 border-warning text-warning hover:bg-warning hover:text-background rounded-none"
-                  )}
-                >
-                  <RefreshCcw className="h-3 w-3 mr-1" /> Retry
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
+    <div className={cn("flex flex-col space-y-2 p-3 rounded-lg border-2", className)}>
+      <div className="flex items-center justify-between">
+        {showLabel && (
+          <div className="flex items-center space-x-2">
+            <StatusIcon />
+            <span className={cn("font-medium", textSize)}>{getStatusMessage()}</span>
+          </div>
+        )}
         
-        <Progress
-          value={progressValue}
-          className={cn(
-            "w-full transition-all border-2 border-border rounded-none bg-muted",
-            progressHeight,
-            getStatusColor(),
-            {
-              "animate-pulse": currentStatus === "processing",
-            }
-          )}
-        />
+        {showControls && (
+          <div className="flex space-x-2">
+            {currentStatus === "processing" && onCancel && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onCancel}
+                className={cn(buttonSize, "border-2")}
+              >
+                <X className="h-3 w-3 mr-1" /> Cancel
+              </Button>
+            )}
+            
+            {currentStatus === "error" && onRetry && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRetry}
+                className={cn(
+                  buttonSize, 
+                  "border-2 border-red-200 text-red-600 hover:bg-red-50"
+                )}
+              >
+                <RefreshCcw className="h-3 w-3 mr-1" /> Retry
+              </Button>
+            )}
+          </div>
+        )}
       </div>
+      
+      <Progress
+        value={progressValue}
+        className={cn(
+          "w-full border-2", 
+          progressHeight,
+          currentStatus === "processing" && "animate-pulse"
+        )}
+        indicatorClassName={cn(getStatusColor())}
+      />
     </div>
   )
 }

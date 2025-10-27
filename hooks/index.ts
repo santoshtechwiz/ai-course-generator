@@ -53,7 +53,7 @@ export * from "./use-chapter-summary"
 export * from "./useCourseActions"
 // Removed legacy useVideoProgress hook export; use Redux progress-slice instead
 export * from "./useRandomQuizzes"
-export * from "./useVideoProcessing"
+
 
 // ============================================================================
 // GUEST STATE HOOKS (Week 1 Foundation)
