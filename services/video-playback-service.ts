@@ -18,14 +18,14 @@ interface AuthenticationState {
   isFreeVideo: boolean
 }
 
-export class VideoService {
-  private static instance: VideoService
+export class VideoPlaybackService {
+  private static instance: VideoPlaybackService
 
-  static getInstance(): VideoService {
-    if (!VideoService.instance) {
-      VideoService.instance = new VideoService()
+  static getInstance(): VideoPlaybackService {
+    if (!VideoPlaybackService.instance) {
+      VideoPlaybackService.instance = new VideoPlaybackService()
     }
-    return VideoService.instance
+    return VideoPlaybackService.instance
   }
 
   /**
@@ -426,4 +426,4 @@ export class VideoService {
 }
 
 // Export singleton instance
-export const videoService = VideoService.getInstance()
+export const videoService = VideoPlaybackService.getInstance()

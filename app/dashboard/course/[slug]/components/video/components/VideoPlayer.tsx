@@ -25,7 +25,7 @@ import ChapterEndOverlay from "./ChapterEndOverlay"
 import AutoPlayNotification from "./AutoPlayNotification"
 import EnhancedMiniPlayer from "./YouTubePIP"
 import { storageManager } from "@/utils/storage-manager"
-import { videoService } from "@/services/video-service"
+import {  videoService } from "@/services/video-playback-service"
 import { useNotes } from "@/hooks/use-notes"
 
 // Memoized play button to prevent unnecessary re-renders
@@ -852,7 +852,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.JSON.stringify({
+            body: JSON.stringify({
               courseId: Number.parseInt(courseId?.toString() || "0"),
               chapterId: Number.parseInt(chapterId?.toString() || "0"),
               timestamp: time,

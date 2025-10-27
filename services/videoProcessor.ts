@@ -1,7 +1,6 @@
 import pLimit from "p-limit"
 
 import YoutubeService from "./youtubeService"
-import { MultipleChoiceQuestion } from "@/app/types/quiz-types";
 
 const limit = pLimit(1) // Limit concurrency to 1
 
