@@ -62,6 +62,20 @@
   --shadow: var(--box-shadow-x) var(--box-shadow-y) 0px 0px var(--border);
 
   --chart-active-dot: #fff;
+
+  /* === Neo-Brutalism Dark Mode Variables === */
+  --color-bg: #1a1a1a;           /* dark background */
+  --color-card: #2a2a2a;         /* dark card surfaces */
+  --color-text: #ffffff;         /* light text for dark mode */
+  --color-muted: #cccccc;        /* muted text for dark mode */
+  --color-primary: #ff007f;      /* keep accent colors same */
+  --color-secondary: #00f5ff;    /* keep accent colors same */
+  --color-accent: #ff007f;       /* keep accent colors same */
+  --color-success: #00c851;      /* keep success color same */
+  --color-warning: #ffbb33;      /* keep warning color same */
+  --color-error: #ff4444;        /* keep error color same */
+  --color-border: #ffffff;       /* light borders for dark mode */
+  --shadow-color: #ffffff;       /* light shadows for dark mode */
 }
 
 @theme inline {

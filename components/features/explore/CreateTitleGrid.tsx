@@ -382,11 +382,11 @@ function Tile({
           <Card
             className={cn(
               "h-full flex flex-col justify-between",
-              "bg-card border-6 border-border rounded-lg",
-              "shadow-neo transition-all duration-200",
+              "bg-[var(--color-card)] border-6 border-[var(--color-border)] rounded-lg",
+              "shadow-[3px_3px_0_var(--shadow-color)] transition-all duration-200",
               "hover:translate-x-1 hover:translate-y-1",
-              "hover:shadow-neo-hover cursor-pointer",
-              "neo-hover-lift overflow-hidden"
+              "hover:shadow-[5px_5px_0_var(--shadow-color)] cursor-pointer",
+              "neo-hover-lift overflow-hidden dark:bg-[var(--color-card)] dark:border-[var(--color-border)]"
             )}
             onClick={() => setIsOpen(true)}
           >
@@ -398,14 +398,13 @@ function Tile({
                 <div className="flex items-center min-w-0 flex-1">
                   {/* Brutal Icon Container */}
                   <div className={cn(
-                    "flex-shrink-0 mr-3 p-2 rounded-lg border-4",
-                    colorClasses.border,
-                    colorClasses.bg,
-                    "text-white"
+                    "flex-shrink-0 mr-3 p-2 rounded-lg border-4 border-[var(--color-border)]",
+                    "bg-[var(--color-primary)] text-[var(--color-bg)]",
+                    "shadow-[3px_3px_0_var(--shadow-color)]"
                   )}>
                     <Icon className="h-6 w-6" />
                   </div>
-                  <span className="truncate font-bold">{title}</span>
+                  <span className="truncate font-bold text-[var(--color-text)]">{title}</span>
                 </div>
 
                 {/* Badge System */}
@@ -415,20 +414,20 @@ function Tile({
                       <TooltipTrigger asChild>
                         <Badge 
                           variant="neutral" 
-                          className="text-xs bg-yellow-400 text-black border-4 border-black font-bold uppercase px-2 py-1"
+                          className="text-xs bg-yellow-400 text-black border-4 border-[var(--color-border)] font-bold uppercase px-2 py-1 shadow-[2px_2px_0_var(--shadow-color)]"
                         >
                           <Crown className="h-3 w-3 mr-1" />
                           {requiredPlanConfig.name}
                         </Badge>
                       </TooltipTrigger>
-                      <TooltipContent className="border-4 border-black shadow-neo">
+                      <TooltipContent className="border-4 border-[var(--color-border)] shadow-[3px_3px_0_var(--shadow-color)] bg-[var(--color-card)] text-[var(--color-text)]">
                         <p className="font-bold">Requires {requiredPlanConfig.name} - Click to explore!</p>
                       </TooltipContent>
                     </Tooltip>
                   ) : requiredPlan !== 'FREE' && (
                     <Badge 
                       variant="neutral" 
-                      className="text-xs bg-green-400 text-black border-4 border-black font-bold uppercase px-2 py-1"
+                      className="text-xs bg-green-400 text-black border-4 border-[var(--color-border)] font-bold uppercase px-2 py-1 shadow-[2px_2px_0_var(--shadow-color)]"
                     >
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Active
@@ -453,7 +452,7 @@ function Tile({
             </CardHeader>
 
             <CardContent className="py-2 flex-1">
-              <p className="text-sm text-muted-foreground leading-relaxed font-medium">
+              <p className="text-sm text-[var(--color-muted)] leading-relaxed font-medium">
                 {description}
               </p>
             </CardContent>
@@ -461,13 +460,11 @@ function Tile({
             <CardFooter className="pt-4">
               <Button
                 className={cn(
-                  "w-full font-bold border-4 border-black rounded-lg",
-                  "shadow-neo hover:shadow-neo-hover",
+                  "w-full font-bold border-4 border-[var(--color-border)] rounded-lg",
+                  "shadow-[3px_3px_0_var(--shadow-color)] hover:shadow-[5px_5px_0_var(--shadow-color)]",
                   "transition-all duration-200",
                   "hover:translate-x-1 hover:translate-y-1",
-                  "neo-hover-lift group",
-                  colorClasses.bg,
-                  "text-white"
+                  "neo-hover-lift group bg-[var(--color-primary)] text-[var(--color-bg)]"
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -486,8 +483,8 @@ function Tile({
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className={cn(
           "sm:max-w-4xl lg:max-w-5xl max-h-[90vh] p-0",
-          "border-6 border-black rounded-lg shadow-neo",
-          "bg-card overflow-hidden flex flex-col"
+          "border-6 border-[var(--color-border)] rounded-lg shadow-[6px_6px_0_var(--shadow-color)]",
+          "bg-[var(--color-card)] dark:bg-[var(--color-card)] overflow-hidden flex flex-col"
         )}>
           {/* Mobile Close */}
           <div className="lg:hidden absolute top-4 right-4 z-50">
@@ -495,7 +492,12 @@ function Tile({
               variant="ghost"
               size="icon"
               onClick={() => setIsOpen(false)}
-              className="h-8 w-8 rounded-lg border-4 border-black bg-white hover:bg-gray-100"
+              className={cn(
+                "h-8 w-8 rounded-lg border-4 border-[var(--color-border)]",
+                "bg-[var(--color-card)] hover:bg-[var(--color-bg)]",
+                "text-[var(--color-text)] shadow-[3px_3px_0_var(--shadow-color)]",
+                "hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0_var(--shadow-color)]"
+              )}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -504,37 +506,36 @@ function Tile({
           <div className="grid lg:grid-cols-2 flex-1 min-h-0">
             {/* Left Panel - Hero */}
             <div className={cn(
-              "p-6 lg:p-8 border-r-6 border-black",
-              "flex flex-col",
-              colorClasses.accent
+              "p-6 lg:p-8 border-r-6 border-[var(--color-border)]",
+              "flex flex-col bg-[var(--color-bg)] dark:bg-[var(--color-bg)]"
             )}>
               <DialogHeader className="space-y-4">
                 <DialogTitle className="flex items-center justify-between">
                   <div className="flex items-center text-2xl font-black">
                     <div className={cn(
-                      "p-3 rounded-lg border-4 border-black mr-4",
-                      colorClasses.bg,
-                      "text-white"
+                      "p-3 rounded-lg border-4 border-[var(--color-border)] mr-4",
+                      "bg-[var(--color-primary)] text-[var(--color-bg)]",
+                      "shadow-[3px_3px_0_var(--shadow-color)]"
                     )}>
                       <Icon className="h-8 w-8" />
                     </div>
-                    <span className="text-xl lg:text-2xl">{title}</span>
+                    <span className="text-xl lg:text-2xl text-[var(--color-text)]">{title}</span>
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {showUpgradeBadge ? (
-                      <Badge className="text-xs bg-yellow-400 text-black border-4 border-black font-bold uppercase">
+                      <Badge className="text-xs bg-yellow-400 text-black border-4 border-[var(--color-border)] font-bold uppercase shadow-[2px_2px_0_var(--shadow-color)]">
                         <Crown className="h-3 w-3 mr-1" />
                         {requiredPlanConfig.name}
                       </Badge>
                     ) : requiredPlan !== 'FREE' && (
-                      <Badge className="text-xs bg-green-400 text-black border-4 border-black font-bold uppercase">
+                      <Badge className="text-xs bg-green-400 text-black border-4 border-[var(--color-border)] font-bold uppercase shadow-[2px_2px_0_var(--shadow-color)]">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Active
                       </Badge>
                     )}
                     <Badge className={cn(
-                      "text-xs font-bold uppercase",
+                      "text-xs font-bold uppercase shadow-[2px_2px_0_var(--shadow-color)]",
                       getDifficultyBrutalStyle(difficulty!)
                     )}>
                       {difficulty}
@@ -554,11 +555,11 @@ function Tile({
                         transition={{ duration: 0.3 }}
                         className={cn(
                           "text-center py-6 rounded-lg",
-                          "border-4 border-black bg-white",
-                          "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                          "border-4 border-[var(--color-border)] bg-[var(--color-card)]",
+                          "shadow-[4px_4px_0_var(--shadow-color)]"
                         )}
                       >
-                        <p className="text-lg font-bold px-6">
+                        <p className="text-lg font-bold px-6 text-[var(--color-text)]">
                           "{taglines[currentTagline]}"
                         </p>
                         <div className="flex justify-center mt-4 space-x-2">
@@ -566,8 +567,8 @@ function Tile({
                             <div
                               key={i}
                               className={cn(
-                                "h-3 w-3 border-2 border-black transition-colors",
-                                i === currentTagline ? colorClasses.bg : 'bg-gray-300'
+                                "h-3 w-3 border-2 border-[var(--color-border)] transition-colors",
+                                i === currentTagline ? "bg-[var(--color-primary)]" : 'bg-[var(--color-muted)]'
                               )}
                             />
                           ))}
@@ -575,7 +576,7 @@ function Tile({
                       </motion.div>
                     </AnimatePresence>
 
-                    <p className="text-base text-foreground font-medium leading-relaxed text-center">
+                    <p className="text-base text-[var(--color-text)] font-medium leading-relaxed text-center">
                       {description}
                     </p>
                   </div>
@@ -584,7 +585,7 @@ function Tile({
 
               {/* Large Icon Display */}
               <div className="flex justify-center mt-8 opacity-10">
-                <Icon className={cn("h-32 w-32", colorClasses.text)} />
+                <Icon className={cn("h-32 w-32 text-[var(--color-primary)]")} />
               </div>
             </div>
 
@@ -594,27 +595,27 @@ function Tile({
                 {/* Stats Grid - Brutal */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className={cn(
-                    "text-center p-4 rounded-lg border-4 border-black",
-                    "bg-white shadow-neo"
+                    "text-center p-4 rounded-lg border-4 border-[var(--color-border)]",
+                    "bg-[var(--color-card)] shadow-[3px_3px_0_var(--shadow-color)]"
                   )}>
-                    <Target className={cn("h-8 w-8 mx-auto mb-2", colorClasses.text)} />
-                    <div className="text-base font-black">{difficulty}</div>
-                    <div className="text-sm font-bold text-muted-foreground">Level</div>
+                    <Target className={cn("h-8 w-8 mx-auto mb-2 text-[var(--color-primary)]")} />
+                    <div className="text-base font-black text-[var(--color-text)]">{difficulty}</div>
+                    <div className="text-sm font-bold text-[var(--color-muted)]">Level</div>
                   </div>
                   <div className={cn(
-                    "text-center p-4 rounded-lg border-4 border-black",
-                    "bg-white shadow-neo"
+                    "text-center p-4 rounded-lg border-4 border-[var(--color-border)]",
+                    "bg-[var(--color-card)] shadow-[3px_3px_0_var(--shadow-color)]"
                   )}>
-                    <Zap className={cn("h-8 w-8 mx-auto mb-2", colorClasses.text)} />
-                    <div className="text-base font-black">AI</div>
-                    <div className="text-sm font-bold text-muted-foreground">Powered</div>
+                    <Zap className={cn("h-8 w-8 mx-auto mb-2 text-[var(--color-primary)]")} />
+                    <div className="text-base font-black text-[var(--color-text)]">AI</div>
+                    <div className="text-sm font-bold text-[var(--color-muted)]">Powered</div>
                   </div>
                 </div>
 
                 {/* Benefits - Brutal List */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-black flex items-center">
-                    <CheckCircle className={cn("h-6 w-6 mr-3", colorClasses.text)} />
+                  <h3 className="text-lg font-black flex items-center text-[var(--color-text)]">
+                    <CheckCircle className={cn("h-6 w-6 mr-3 text-[var(--color-primary)]")} />
                     What You Get
                   </h3>
                   <div className="space-y-2">
@@ -623,68 +624,35 @@ function Tile({
                         key={i}
                         className={cn(
                           "flex items-center p-3 rounded-lg",
-                          "border-4 border-black bg-white",
-                          "shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                          "border-4 border-[var(--color-border)] bg-[var(--color-card)]",
+                          "shadow-[2px_2px_0_var(--shadow-color)]"
                         )}
                       >
-                        <CheckCircle className={cn("h-5 w-5 mr-3 flex-shrink-0", colorClasses.text)} />
-                        <span className="text-sm font-bold">{benefit}</span>
+                        <CheckCircle className={cn("h-5 w-5 mr-3 flex-shrink-0 text-[var(--color-primary)]")} />
+                        <span className="text-sm font-bold text-[var(--color-text)]">{benefit}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* How It Works - Brutal Steps */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-black flex items-center">
-                    <Sparkles className={cn("h-6 w-6 mr-3", colorClasses.text)} />
-                    How It Works
-                  </h3>
-                  <div className="space-y-2">
-                    {[
-                      "Enter your topic",
-                      "AI generates instantly",
-                      "Review & use creation"
-                    ].map((step, i) => (
-                      <div
-                        key={i}
-                        className={cn(
-                          "flex items-center p-3 rounded-lg",
-                          "border-4 border-black bg-white"
-                        )}
-                      >
-                        <div className={cn(
-                          "w-8 h-8 rounded-full border-4 border-black",
-                          "flex items-center justify-center",
-                          "text-sm font-black mr-4 flex-shrink-0",
-                          colorClasses.bg,
-                          "text-white"
-                        )}>
-                          {i + 1}
-                        </div>
-                        <span className="text-sm font-bold">{step}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+          
               </div>
             </div>
           </div>
 
           <DialogFooter className={cn(
-            "p-6 border-t-6 border-black",
-            "bg-gray-50 dark:bg-gray-900"
+            "p-6 border-t-6 border-[var(--color-border)]",
+            "bg-[var(--color-bg)] dark:bg-[var(--color-bg)]"
           )}>
             <Button
               onClick={() => router.push(url)}
               className={cn(
-                "w-full h-12 font-black text-base border-4 border-black rounded-lg",
-                "shadow-neo hover:shadow-neo-hover",
+                "w-full h-12 font-black text-base border-4 border-[var(--color-border)] rounded-lg",
+                "shadow-[3px_3px_0_var(--shadow-color)] hover:shadow-[5px_5px_0_var(--shadow-color)]",
                 "transition-all duration-200",
                 "hover:translate-x-1 hover:translate-y-1",
-                "group",
-                colorClasses.bg,
-                "text-white"
+                "group bg-[var(--color-primary)] text-[var(--color-bg)]",
+                "hover:bg-[var(--color-primary)]"
               )}
             >
               Get Started Now
@@ -710,20 +678,20 @@ export function CreateTileGrid() {
         {/* Badge */}
         <div className={cn(
           "inline-flex items-center gap-3 px-6 py-3 rounded-lg",
-          "bg-primary border-4 border-black",
-          "shadow-neo text-white font-bold"
+          "bg-[var(--color-primary)] border-4 border-[var(--color-border)]",
+          "shadow-[3px_3px_0_var(--shadow-color)] text-[var(--color-bg)] font-bold"
         )}>
           <Sparkles className="h-5 w-5" />
           <span className="text-sm uppercase tracking-wide">AI-Powered Tools</span>
         </div>
 
         {/* Title */}
-        <h1 className="text-4xl md:text-5xl font-black text-foreground">
+        <h1 className="text-4xl md:text-5xl font-black text-[var(--color-text)]">
           Create Amazing<br />Learning Content
         </h1>
 
         {/* Description */}
-        <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-bold">
+        <p className="text-xl text-[var(--color-muted)] max-w-3xl mx-auto font-bold">
           Transform your ideas into engaging educational experiences
         </p>
       </motion.div>
@@ -749,26 +717,26 @@ export function CreateTileGrid() {
         transition={{ delay: 0.4 }}
         className={cn(
           "text-center space-y-6 p-8 rounded-lg",
-          "bg-card border-6 border-black shadow-neo"
+          "bg-[var(--color-card)] border-6 border-[var(--color-border)] shadow-[3px_3px_0_var(--shadow-color)]"
         )}
       >
         <div className={cn(
           "inline-flex items-center justify-center w-16 h-16 rounded-full",
-          "bg-primary border-4 border-black text-white"
+          "bg-[var(--color-primary)] border-4 border-[var(--color-border)] text-[var(--color-bg)] shadow-[3px_3px_0_var(--shadow-color)]"
         )}>
           <Brain className="h-8 w-8" />
         </div>
 
-        <h3 className="text-xl font-black">Need Something Custom?</h3>
-        <p className="text-base text-muted-foreground font-bold max-w-md mx-auto">
+        <h3 className="text-xl font-black text-[var(--color-text)]">Need Something Custom?</h3>
+        <p className="text-base text-[var(--color-muted)] font-bold max-w-md mx-auto">
           Can't find what you're looking for? Get custom help from our team.
         </p>
 
         <Button
           size="lg"
           className={cn(
-            "bg-primary text-white font-black px-8 py-3 border-4 border-black rounded-lg",
-            "shadow-neo hover:shadow-neo-hover",
+            "bg-[var(--color-primary)] text-[var(--color-bg)] font-black px-8 py-3 border-4 border-[var(--color-border)] rounded-lg",
+            "shadow-[3px_3px_0_var(--shadow-color)] hover:shadow-[5px_5px_0_var(--shadow-color)]",
             "transition-all duration-200",
             "hover:translate-x-1 hover:translate-y-1"
           )}

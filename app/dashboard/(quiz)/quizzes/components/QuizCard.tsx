@@ -151,7 +151,8 @@ function QuizCardComponent({
       >
         <Card
           className={cn(
-            "group relative h-full min-h-[28rem] flex flex-col overflow-hidden bg-[var(--color-card)] cursor-pointer border-4 border-black transition-all duration-200",
+            "group relative h-full min-h-[28rem] flex flex-col overflow-hidden cursor-pointer border-4 border-black transition-all duration-200",
+            "bg-[var(--color-card)] dark:bg-[var(--color-card)]",
             "hover:translate-x-[-6px] hover:translate-y-[-6px] hover:shadow-[6px_6px_0_#000]",
             "active:translate-x-[0px] active:translate-y-[0px] active:shadow-none",
             "h-full flex items-center justify-center overflow-hidden",
@@ -166,7 +167,7 @@ function QuizCardComponent({
           <div className={cn("h-3 border-b-4 border-black", config.bg)} />
 
           {loading && (
-            <div className="absolute inset-0 bg-[var(--color-bg)]/90 backdrop-blur-sm flex items-center justify-center z-20 rounded-xl">
+            <div className="absolute inset-0 backdrop-blur-sm flex items-center justify-center z-20 rounded-xl bg-[var(--color-bg)]/90 dark:bg-[var(--color-bg)]/90">
               <div className="flex flex-col items-center gap-3">
                 <div className="relative">
                   <Loader2 className="h-8 w-8 animate-spin text-[var(--color-primary)]" strokeWidth={3} />
@@ -201,15 +202,15 @@ function QuizCardComponent({
 
             {/* Stats Grid */}
             <div className="grid grid-cols-3 gap-4 py-4">
-              <div className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-[var(--color-bg)] border-4 border-black shadow-[4px_4px_0_#000]">
+              <div className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-4 border-black shadow-[4px_4px_0_#000] bg-[var(--color-bg)] dark:bg-[var(--color-bg)]">
                 <Clock className="w-6 h-6 text-[var(--color-text)]" strokeWidth={2.5} aria-hidden />
                 <span className="text-sm font-black text-[var(--color-text)]">{estimatedTime}</span>
               </div>
-              <div className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-[var(--color-bg)] border-4 border-black shadow-[4px_4px_0_#000]">
+              <div className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-4 border-black shadow-[4px_4px_0_#000] bg-[var(--color-bg)] dark:bg-[var(--color-bg)]">
                 <BookOpen className="w-6 h-6 text-[var(--color-text)]" strokeWidth={2.5} aria-hidden />
                 <span className="text-sm font-black text-[var(--color-text)]">{questionCount}</span>
               </div>
-              <div className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-[var(--color-bg)] border-4 border-black shadow-[4px_4px_0_#000]">
+              <div className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-4 border-black shadow-[4px_4px_0_#000] bg-[var(--color-bg)] dark:bg-[var(--color-bg)]">
                 <Users className="w-6 h-6 text-[var(--color-text)]" strokeWidth={2.5} aria-hidden />
                 <span className="text-sm font-black text-[var(--color-text)]">{attemptCount}</span>
               </div>

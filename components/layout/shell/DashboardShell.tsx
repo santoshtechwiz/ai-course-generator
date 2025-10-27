@@ -12,7 +12,7 @@ interface DashboardShellProps {
  * DashboardShell - Responsive wrapper for dashboard pages
  *
  * Provides consistent padding and layout structure for all dashboard content.
- * Handles responsive spacing and ensures proper content flow.
+ * Handles responsive spacing and ensures proper content flow with neo-brutalism styling.
  */
 export function DashboardShell({ children, className }: DashboardShellProps) {
   return (
@@ -20,7 +20,7 @@ export function DashboardShell({ children, className }: DashboardShellProps) {
     // Horizontal padding and max-width centering should be applied by individual pages/components
     // to avoid nested containers and inconsistent gaps.
     <div className={cn(
-      "bg-background",
+      "bg-[var(--color-bg)] dark:bg-[var(--color-bg)]",
       "pt-16 w-full",
       className
     )}>

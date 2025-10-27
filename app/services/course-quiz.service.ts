@@ -15,6 +15,9 @@ interface QuizRequestData {
   videoId: string;
   chapterId: number;
   chapterName: string;
+  userId?: string;
+  subscriptionPlan?: string;
+  credits?: number;
 }
 
 /**
@@ -24,7 +27,7 @@ export class CourseQuizService {  /**
    * Get or generate quiz questions for a chapter
    */
   async getOrGenerateQuizQuestions(data: QuizRequestData) {
-    const { videoId, chapterId, chapterName } = data;
+    const { videoId, chapterId, chapterName, userId, subscriptionPlan, credits } = data;
 
     // Validate input
     if (!videoId || !chapterId || !chapterName) {
@@ -43,7 +46,7 @@ export class CourseQuizService {  /**
         const transcriptOrSummary = await this.fetchTranscriptOrSummary(chapterId, videoId);
 
         if (transcriptOrSummary) {
-          questions = await this.generateAndSaveQuestions(transcriptOrSummary, chapterId, chapterName);
+          questions = await this.generateAndSaveQuestions(transcriptOrSummary, chapterId, chapterName, userId, subscriptionPlan, credits);
         } else {
           throw new Error("Failed to fetch transcript or summary");
         }
@@ -92,10 +95,13 @@ export class CourseQuizService {  /**
     transcriptOrSummary: string,
     chapterId: number,
     chapterName: string,
+    userId?: string,
+    subscriptionPlan?: string,
+    credits?: number,
   ): Promise<any[]> {
     try {
       console.log("Generating questions for text");
-      const questions = await getQuestionsFromTranscript(transcriptOrSummary, chapterName);
+      const questions = await getQuestionsFromTranscript(transcriptOrSummary, chapterName, userId, subscriptionPlan, credits);
 
       if (questions.length > 0) {
         console.log("Saving questions to database");

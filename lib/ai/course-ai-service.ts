@@ -342,7 +342,7 @@ async function generateSummary(
 /**
  * Generate video quiz
  */
-async function generateVideoQuiz(
+ async function generateVideoQuiz(
   courseTitle: string,
   transcript: string,
   numberOfQuestions: number = 5,

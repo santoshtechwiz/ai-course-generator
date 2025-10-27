@@ -14,7 +14,7 @@ interface CourseShellProps {
  * CourseShell - Wrapper for course pages with fullscreen support
  *
  * Provides fullscreen functionality and responsive layout for course content.
- * Handles fullscreen state management and transitions.
+ * Handles fullscreen state management and transitions with neo-brutalism styling.
  */
 export function CourseShell({ children, className, onFullscreenChange }: CourseShellProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -46,14 +46,15 @@ export function CourseShell({ children, className, onFullscreenChange }: CourseS
   return (
     <div className={cn(
       "min-h-screen flex flex-col transition-all duration-300",
-      isFullscreen && "bg-black",
+      "bg-[var(--color-bg)] dark:bg-[var(--color-bg)]",
+      isFullscreen && "bg-[var(--color-bg)] dark:bg-[var(--color-bg)]",
       className
     )}>
       {/* Expose fullscreen state and toggle function via context or props */}
       <div
         className={cn(
           "flex-1 transition-all duration-300",
-          isFullscreen && "bg-black"
+          isFullscreen && "bg-[var(--color-bg)] dark:bg-[var(--color-bg)]"
         )}
         style={{
           ['--course-fullscreen' as any]: isFullscreen ? 'true' : 'false',

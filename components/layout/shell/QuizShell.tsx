@@ -15,13 +15,16 @@ interface QuizShellProps {
  * QuizShell - Wrapper for quiz pages with error boundaries
  *
  * Provides quiz-specific error handling and loading states.
- * Wraps quiz content with appropriate error boundaries.
+ * Wraps quiz content with appropriate error boundaries and neo-brutalism styling.
  */
 export function QuizShell({ children, className }: QuizShellProps) {
   return (
     <QuizErrorBoundary>
       <Suspense fallback={<GlobalLoader message="Loading quiz..." />}>
-        <div className={cn("min-h-screen", className)}>
+        <div className={cn(
+          "min-h-screen bg-[var(--color-bg)] dark:bg-[var(--color-bg)]",
+          className
+        )}>
           {children}
         </div>
       </Suspense>

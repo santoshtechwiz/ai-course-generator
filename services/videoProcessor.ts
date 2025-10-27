@@ -98,6 +98,9 @@ function extractRelevantContent(transcript: string, maxWords: number = 800): str
 export async function getQuestionsFromTranscript(
   transcript: string,
   courseTitle: string,
+  userId?: string,
+  subscriptionPlan?: string,
+  credits?: number,
 ): Promise<any[]> {
   try {
     // Preprocess transcript to remove unwanted content and focus on relevant material
@@ -108,14 +111,16 @@ export async function getQuestionsFromTranscript(
 
     // Generate questions with the improved transcript using simple AI service
     return await limit(async () => {
-      const { generateMCQ } = await import("@/lib/ai/course-ai-service");
-      
-      const quiz = await generateMCQ(
+      const { generateVideoQuiz } = await import("@/lib/ai/course-ai-service");
+
+      const quiz = await generateVideoQuiz(
         `${courseTitle}: ${relevantContent.substring(0, 200)}`,
+        relevantContent,
         5,
-        'medium',
-        undefined,
-        'FREE' as any
+    
+        userId,
+        (subscriptionPlan as any) || 'FREE',
+        credits
       );
       
       return quiz.questions || [];
@@ -129,6 +134,9 @@ export async function getQuestionsFromTranscript(
 async function processVideoAndGenerateQuestions(
   searchQuery: string,
   courseTitle: string,
+  userId?: string,
+  subscriptionPlan?: string,
+  credits?: number,
 ): Promise<any[] | null> {
   const videoId = await YoutubeService.searchYoutube(searchQuery)
   if (!videoId) {
@@ -142,5 +150,5 @@ async function processVideoAndGenerateQuestions(
     return null
   }
 
-  return getQuestionsFromTranscript(transcriptResponse.transcript, courseTitle)
+  return getQuestionsFromTranscript(transcriptResponse.transcript, courseTitle, userId, subscriptionPlan, credits)
 }
