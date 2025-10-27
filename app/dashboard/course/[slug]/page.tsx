@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 
 import { getCourseData } from "@/app/actions/getCourseData"
 import type { FullCourseType } from "@/app/types/types"
-import CourseLayout from "./components/CourseLayout"
+import CourseViewer from "@/components/dashboard/CourseViewer"
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
 import { EnhancedErrorBoundary } from "@/components/error-boundary"
 
@@ -140,7 +140,7 @@ export default async function Page({ params }: CoursePageParams) {
     return (
       <div className="min-h-screen">
         <EnhancedErrorBoundary>
-          <CourseLayout course={course as FullCourseType} />
+          <CourseViewer course={course as FullCourseType} />
         </EnhancedErrorBoundary>
       </div>
     )

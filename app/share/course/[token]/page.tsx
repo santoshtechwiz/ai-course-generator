@@ -6,7 +6,7 @@ import prisma from "@/lib/db"
 
 import { validateShareAccess } from "@/app/services/share.service"
 
-import CourseLayout from "@/app/dashboard/course/[slug]/components/CourseLayout"
+import CourseViewer from "@/components/dashboard/CourseViewer"
 import { CourseQuestion, FullChapter, FullCourseType, FullCourseUnit } from "@/app/types/course-types"
 
 type ShareCoursePageParams = {
@@ -178,8 +178,8 @@ export default async function ShareCoursePage({ params, searchParams }: ShareCou
       data: { share_views: { increment: 1 } }
     }).catch(err => console.error("Error incrementing views:", err))
 
-    // Render CourseLayout with MainContent (shows share course UI)
-    return <CourseLayout course={course} />
+    // Render CourseViewer with MainContent (shows share course UI)
+    return <CourseViewer course={course} />
   } catch (error) {
     console.error("Error in share course page:", error)
     return (

@@ -4,7 +4,7 @@ import React from 'react'
 import { use } from 'react'
 import { useRouter } from 'next/navigation'
 import QuizResultHandler from '../../../components/QuizResultHandler'
-import QuizResultLayout from '../../../components/layouts/QuizResultLayout'
+import { QuizResultInterface } from "@/components/dashboard/QuizResultInterface"
 import BlankQuizResults from '../../../blanks/components/BlankQuizResults'
 import OpenEndedQuizResults from '../../../openended/components/QuizResultsOpenEnded'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -39,7 +39,7 @@ export default function ReviewPage({ params }: Props) {
   }
 
   return (
-    <QuizResultLayout title="Review Answers" quizType={quizType as any} slug={slug}>
+    <QuizResultInterface title="Review Answers" quizType={quizType as any} slug={slug}>
       <QuizResultHandler slug={slug} quizType={quizType as any}>
         {(props: { result: any }) => {
           const { result } = props
@@ -132,6 +132,6 @@ export default function ReviewPage({ params }: Props) {
           )
         }}
       </QuizResultHandler>
-    </QuizResultLayout>
+    </QuizResultInterface>
   )
 }

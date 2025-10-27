@@ -3,7 +3,7 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription";
 import { useAuth } from "@/modules/auth";
 import CreateQuizForm from "./components/CreateQuizForm";
-import { QuizCreateLayout } from "../components/QuizCreateLayout";
+import { QuizCreateInterface } from "@/components/dashboard/QuizCreateInterface";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AppLoader } from "@/components/ui/loader"
@@ -67,7 +67,7 @@ const McqPage = () => {
   }, [draft, suggestedData]);
 
   return (
-    <QuizCreateLayout
+    <QuizCreateInterface
       title="Multiple Choice Questions"
       description="Create customized multiple choice questions or practice with our pre-built quizzes."
       quizType="mcq"
@@ -88,7 +88,7 @@ const McqPage = () => {
           params={initialParams as any}
         />
       )}
-    </QuizCreateLayout>
+    </QuizCreateInterface>
   );
 };
 

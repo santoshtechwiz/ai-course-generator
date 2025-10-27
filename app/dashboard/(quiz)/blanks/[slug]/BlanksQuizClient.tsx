@@ -12,7 +12,7 @@ import { isPrivateError } from "../../components/privateErrorUtils"
 
 // ⚡ PERFORMANCE: Lazy load heavy components with framer-motion
 const BlanksQuizWrapper = lazy(() => import("../components/BlanksQuizWrapper"))
-const QuizPlayLayout = lazy(() => import("../../components/layouts/QuizPlayLayout"))
+const QuizPlayInterface = lazy(() => import("@/components/dashboard/QuizPlayInterface").then(module => ({ default: module.QuizPlayInterface })))
 
 interface BlanksQuizClientProps {
   params: Promise<{ slug: string }>
@@ -73,7 +73,7 @@ export default function BlanksQuizClient({ params }: BlanksQuizClientProps) {
 
   return (
     <Suspense fallback={<div className="min-h-[200px] flex items-center justify-center"><div className="animate-spin h-6 w-6 border-2 border-primary border-r-transparent rounded-full" /></div>}>
-      <QuizPlayLayout
+      <QuizPlayInterface
         quizSlug={slug}
         quizType="blanks"
         quizId={slug}
@@ -82,7 +82,7 @@ export default function BlanksQuizClient({ params }: BlanksQuizClientProps) {
         quizData={quizData || null}
       >
         <BlanksQuizWrapper slug={slug} title="Fill in the Blanks Quiz" />
-      </QuizPlayLayout>
+      </QuizPlayInterface>
     </Suspense>
   )
 }

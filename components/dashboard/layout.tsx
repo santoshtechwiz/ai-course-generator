@@ -7,6 +7,7 @@ import Chatbot from "@/components/Chatbot"
 import CourseAIState from "@/components/development/CourseAIState"
 import { MainNavbar } from "@/components/layout/navigation/MainNavbar"
 import { CreditGuidanceBanner } from "@/components/shared/CreditGuidanceBanner"
+import { DashboardShell } from "@/components/layout/shell"
 import { cn } from "@/lib/utils"
 import { GlobalLoader } from "@/components/ui/loader"
 
@@ -87,20 +88,17 @@ export function DashboardLayout({
       {/* Main Navbar - Complete navigation with AI features, search, and user menu */}
       <MainNavbar />
 
-      {/* Main Content Area - Responsive padding accounts for fixed navbar */}
-      <main className={cn(
-        "min-h-[calc(100vh-4rem)] relative",
-        "pt-16 sm:pt-16 md:pt-20 lg:pt-20"
-      )}>
+      {/* Main Content Area - Use DashboardShell for consistent layout */}
+      <DashboardShell>
         {/* Credit Guidance Banner - Shows for 0-credit users */}
         <CreditGuidanceBanner />
-        
+
         <ReduxErrorBoundary>
           <Suspense fallback={<GlobalLoader message="Loading page..." />}>
             {children}
           </Suspense>
         </ReduxErrorBoundary>
-      </main>
+      </DashboardShell>
 
       {/* Global Dashboard Components */}
       {userId && <Chatbot userId={userId} />}

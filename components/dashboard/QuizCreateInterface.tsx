@@ -4,13 +4,13 @@ import type React from "react"
 import { useMemo } from "react"
 import { useMediaQuery } from "@/hooks"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { RandomQuiz } from "./layouts/RandomQuiz"
+import { RandomQuiz } from "@/app/dashboard/(quiz)/components/layouts/RandomQuiz"
 import { HelpCircle, TextQuote } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion } from "framer-motion"
 
-interface QuizCreateLayoutProps {
+interface QuizCreateInterfaceProps {
   children: React.ReactNode
   title: string
   description: string
@@ -19,7 +19,7 @@ interface QuizCreateLayoutProps {
   isLoggedIn: boolean
 }
 
-export function QuizCreateLayout({ children, title, description, helpText, isLoggedIn }: QuizCreateLayoutProps) {
+export function QuizCreateInterface({ children, title, description, helpText, isLoggedIn }: QuizCreateInterfaceProps) {
   const isMobile = useMediaQuery("(max-width: 768px)")
   const isTablet = useMediaQuery("(max-width: 1024px)")
 
@@ -53,7 +53,7 @@ export function QuizCreateLayout({ children, title, description, helpText, isLog
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="bg-[var(--color-card)] border-2 border-[var(--color-border)] h-7 w-7 sm:h-8 sm:w-8">
+                          <Button variant="neutral" size="icon" className="bg-[var(--color-card)] border-2 border-[var(--color-border)] h-7 w-7 sm:h-8 sm:w-8">
                             <HelpCircle className="h-3 w-3 sm:h-4 sm:w-4 text-[var(--color-text)]" />
                             <span className="sr-only">Help</span>
                           </Button>

@@ -36,7 +36,7 @@ import { useAuth } from "@/modules/auth";
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
 import { AppLoader } from "@/components/ui/loader";
 import { LOADER_MESSAGES } from "@/constants/loader-messages";
-import { useQuizContext } from "../../components/layouts/QuizPlayLayout";
+import { useQuizContext } from "@/components/dashboard/QuizPlayInterface";
 
 interface FlashcardQuizWrapperProps {
   slug: string;

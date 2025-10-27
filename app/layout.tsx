@@ -10,7 +10,6 @@ import { RootErrorBoundary } from "@/components/layout/RootErrorBoundary"
 import { GlobalLoader } from "@/components/ui/loader"
 import { MotionProvider } from "@/components/MotionProvider"
 import { ConditionalFooter } from "@/components/layout/ConditionalFooter"
-import { BreadcrumbWelcome } from "@/components/auth/BreadcrumbWelcome"
 import { ClientGuestProvider } from "@/components/guest/ClientGuestProvider"
 
 import "../globals.css"
@@ -85,11 +84,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </a>
 
             <RootErrorBoundary>
-              {/* Neobrutalist header - sticky with bold styling */}
-              <header className="neuro-header sticky top-0 z-[60] bg-[var(--color-bg)] text-[var(--color-text)] border-b-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] transition-all duration-200">
-                <BreadcrumbWelcome />
-              </header>
-
               {/* Guest experience provider - client-only to prevent SSR issues */}
               <ClientGuestProvider>
                 {/* Simplified noscript message */}

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import FlashcardResultHandler from "../../components/FlashcardResultHandler"
-import QuizResultLayout from "../../../components/layouts/QuizResultLayout"
+import { QuizResultInterface } from "@/components/dashboard/QuizResultInterface"
 
 interface FlashCardPageProps {
   params: Promise<{ slug?: string }>
@@ -32,7 +32,7 @@ export default function FlashCardPage({ params }: FlashCardPageProps) {
   }
 
   return (
-    <QuizResultLayout title="Flashcard Results" quizType="flashcard" slug={slug}>
+    <QuizResultInterface title="Flashcard Results" quizType="flashcard" slug={slug}>
       <FlashcardResultHandler
         slug={slug}
         title="Flashcard Results"
@@ -40,6 +40,6 @@ export default function FlashCardPage({ params }: FlashCardPageProps) {
         onReview={(cards) => router.push(`/dashboard/flashcard/${slug}?review=true&cards=${cards.join(",")}`)}
         onReviewStillLearning={(cards) => router.push(`/dashboard/flashcard/${slug}?review=true&cards=${cards.join(",")}&type=stillLearning`)}
       />
-    </QuizResultLayout>
+    </QuizResultInterface>
   )
 }

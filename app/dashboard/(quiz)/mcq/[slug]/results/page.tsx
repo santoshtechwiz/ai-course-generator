@@ -8,7 +8,7 @@ import QuizResultHandler from "../../../components/QuizResultHandler"
 
 import { use } from "react"
 import UnifiedQuizResult from "../../../components/UnifiedQuizResult"
-import QuizResultLayout from "../../../components/layouts/QuizResultLayout"
+import { QuizResultInterface } from "@/components/dashboard/QuizResultInterface"
 
 interface ResultsPageProps {
   params: Promise<{
@@ -28,7 +28,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
 
   if (!slug) {
     return (
-      <QuizResultLayout title="Results" quizType="mcq">
+      <QuizResultInterface title="Results" quizType="mcq">
         <Card>
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-bold mb-4">Error</h2>
@@ -36,12 +36,12 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
             <Button onClick={() => router.replace("/dashboard/quizzes")}>Back to Quizzes</Button>
           </CardContent>
         </Card>
-      </QuizResultLayout>
+      </QuizResultInterface>
     )
   }
 
   return (
-    <QuizResultLayout title="Results" quizType="mcq" slug={slug}>
+    <QuizResultInterface title="Results" quizType="mcq" slug={slug}>
       <QuizResultHandler
         slug={slug}
         quizType="mcq"
@@ -57,6 +57,6 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
           ) : null
         )}
       </QuizResultHandler>
-    </QuizResultLayout>
+    </QuizResultInterface>
   )
 }

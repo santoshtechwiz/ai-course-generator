@@ -2,7 +2,7 @@
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription";
 import { useAuth } from "@/modules/auth";
-import { QuizCreateLayout } from "../components/QuizCreateLayout";
+import { QuizCreateInterface } from "@/components/dashboard/QuizCreateInterface";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AppLoader } from "@/components/ui/loader"
@@ -65,7 +65,7 @@ const OrderingQuizPage = () => {
   }, [draft, suggestedData]);
 
   return (
-    <QuizCreateLayout
+    <QuizCreateInterface
       title="Ordering Quiz"
       description="Create ordering and sequencing challenges or practice with our pre-built quizzes."
       quizType="quiz"
@@ -86,7 +86,7 @@ const OrderingQuizPage = () => {
           params={initialParams as any}
         />
       )}
-    </QuizCreateLayout>
+    </QuizCreateInterface>
   );
 };
 

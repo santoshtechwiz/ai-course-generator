@@ -3,7 +3,7 @@
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription";
 import { useAuth } from "@/modules/auth";
-import { QuizCreateLayout } from "../components/QuizCreateLayout";
+import { QuizCreateInterface } from "@/components/dashboard/QuizCreateInterface";
 import OpenEndedQuizForm from "./components/OpenEndedQuizForm";
 import { AppLoader } from "@/components/ui/loader"
 import { UnifiedUpgradeTrigger } from "@/components/shared/UnifiedUpgradeTrigger";
@@ -36,7 +36,7 @@ const OpenEndedPage = () => {
   // UnifiedUpgradeTrigger will handle contextual upgrade prompts
 
   return (
-    <QuizCreateLayout
+    <QuizCreateInterface
       title="Open Ended Questions"
       description="Create customized open-ended questions or practice with our pre-built exercises."
       quizType="openended"
@@ -67,7 +67,7 @@ const OpenEndedPage = () => {
           )}
         </>
       )}
-    </QuizCreateLayout>
+    </QuizCreateInterface>
   );
 };
 

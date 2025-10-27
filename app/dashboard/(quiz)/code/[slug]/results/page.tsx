@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import UnifiedQuizResult from "../../../components/UnifiedQuizResult"
 import GenericQuizResultHandler from "../../../components/QuizResultHandler"
-import QuizResultLayout from "../../../components/layouts/QuizResultLayout"
+import { QuizResultInterface } from "@/components/dashboard/QuizResultInterface"
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }>
@@ -26,7 +26,7 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
   // If slug is missing, show error
   if (!slugString) {
     return (
-      <QuizResultLayout title="Results" quizType="code">
+      <QuizResultInterface title="Results" quizType="code">
         <Card>
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-bold mb-4">Error</h2>
@@ -34,12 +34,12 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
             <Button onClick={() => router.replace("/dashboard/quizzes")}>Back to Quizzes</Button>
           </CardContent>
         </Card>
-      </QuizResultLayout>
+      </QuizResultInterface>
     )
   }
 
   return (
-    <QuizResultLayout title="Results" quizType="code" slug={slugString}>
+    <QuizResultInterface title="Results" quizType="code" slug={slugString}>
       <GenericQuizResultHandler
         slug={slugString}
         quizType="code"
@@ -53,7 +53,7 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
           />
         )}
       </GenericQuizResultHandler>
-    </QuizResultLayout>
+    </QuizResultInterface>
   )
 }
 

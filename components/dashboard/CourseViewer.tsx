@@ -11,12 +11,12 @@ import { ErrorBoundary } from "react-error-boundary"
 import { ModuleLoadingSkeleton } from "@/components/shared/ModuleLoadingSkeleton"
 
 // Dynamically import MainContent with suspense
-const MainContent = dynamic(() => import("./MainContent"), {
+const MainContent = dynamic(() => import("@/app/dashboard/course/[slug]/components/MainContent"), {
   loading: () => <ModuleLoadingSkeleton variant="detailed" itemCount={1} />,
   ssr: false
 })
 
-interface CourseLayoutProps {
+interface CourseViewerProps {
   course: FullCourseType
   initialChapterId?: string
   breadcrumbs?: {
@@ -25,11 +25,11 @@ interface CourseLayoutProps {
   }[]
 }
 
-const CourseLayout: React.FC<CourseLayoutProps> = ({
+export function CourseViewer({
   course,
   initialChapterId,
   breadcrumbs = []
-}) => {
+}: CourseViewerProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const { buttonPrimary, buttonSecondary, cardSecondary } = getColorClasses()
 
@@ -146,5 +146,3 @@ const CourseLayout: React.FC<CourseLayoutProps> = ({
     </div>
   )
 }
-
-export default CourseLayout
