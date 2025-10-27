@@ -43,6 +43,7 @@ const buttonVariants = {
   hover: {
     scale: 1.02,
     y: -1,
+    boxShadow: "0 4px 8px rgba(var(--color-shadow), 0.15)",
     transition: { duration: 0.2 }
   },
   tap: {

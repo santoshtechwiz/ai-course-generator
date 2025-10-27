@@ -367,18 +367,24 @@ export function PricingPage({
                 <Input
                   value={promoCode}
                   placeholder="Enter promo code"
+                  aria-label="Promo code"
                   onChange={(e) => setPromoCode(e.target.value)}
                   className="border-4 border-border shadow-neo rounded-none"
                 />
                 <Button
                   onClick={handleApplyPromoCode}
-                  disabled={isPromoValid || isApplyingPromo}
-                  className="bg-primary hover:bg-primary/90 text-background font-black border-4 border-border shadow-neo neo-hover-lift"
+                  disabled={isPromoValid || isApplyingPromo || promoCode.trim() === ""}
+                  aria-disabled={isPromoValid || isApplyingPromo || promoCode.trim() === ""}
+                  aria-label={isPromoValid ? "Promo applied" : "Apply promo code"}
+                  className="bg-[var(--color-primary)] text-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-primary)]/90 hover:scale-105 hover:shadow-lg transition-all duration-200 font-black border-4 shadow-neo neo-hover-lift"
                 >
                   {isApplyingPromo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Gift className="mr-2 h-4 w-4" />}
                   {isPromoValid ? "Applied" : "Apply"}
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Promo codes apply at checkout. Enter code and click Apply — valid codes will show as "Applied" and adjust pricing.
+              </p>
             </div>
           </div>
         </div>

@@ -178,8 +178,8 @@ function FeatureComparison() {
   }, [])
 
   return (
-    <div className="w-full overflow-auto">
-      <table className="w-full border-collapse">
+    <div className="w-full overflow-x-auto toc-scrollbar">
+      <table className="w-full border-collapse min-w-[600px]">
         <thead>
           <tr className="border-b">
             <th className="text-left p-2 w-1/3">Feature</th>

@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks"
 import { useSession } from "next-auth/react"
 import { AccessControl } from "@/components/ui/access-control"
-import { AlertCircle, CheckCircle, BookOpen, Lightbulb, XCircle, Award, BarChart3, RotateCcw, Home, Download } from "lucide-react" // Added Award
+import { AlertCircle, CheckCircle, BookOpen, Lightbulb, XCircle, Award, BarChart3, RotateCcw, Home, Download, ArrowRight } from "lucide-react" // Added Award
 import { cn } from "@/lib/utils"
 // framer-motion removed for simpler CSS transitions
 import { storageManager } from "@/utils/storage-manager"
@@ -416,23 +416,27 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
         </RadioGroup>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 mt-6">
-          <Button
+        <div className="flex flex-col sm:flex-row gap-3 mt-6 items-stretch">
+          <div className="w-full sm:flex-1">
+            <Button
               onClick={submitAnswer}
-              className="flex-1 bg-foreground hover:bg-foreground/90 text-background"
+              className="bg-[var(--color-primary)] text-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-primary)]/90 hover:scale-105 hover:shadow-lg transition-all duration-200 inline-flex items-center justify-center whitespace-nowrap rounded-none font-black uppercase tracking-wider border-4 shadow-neo neo-hover-lift neo-press focus-ring gap-2 [&_svg]:pointer-events-none [&_svg]:w-4 [&_svg]:h-4 [&_svg]:shrink-0 disabled:pointer-events-none disabled:opacity-50 py-3 min-h-[44px] w-full sm:min-w-[160px] h-11 sm:h-12 px-4 sm:px-6 text-sm sm:text-base"
               disabled={!quizState.answers[String(currentQuestion.id)]}
             >
-            Submit Answer
-          </Button>
+              Submit Answer
+            </Button>
+          </div>
 
           {quizState.currentQuestionIndex < effectiveQuestions.length - 1 && quizState.answers[currentQuestion.id] && (
-            <Button
-              onClick={handleNextQuestion}
-              variant="outline"
-              className="px-6 border-muted text-foreground hover:bg-muted/10"
-            >
-              Next Question
-            </Button>
+            <div className="w-full sm:w-auto flex justify-end">
+              <Button
+                onClick={handleNextQuestion}
+                className="bg-[var(--color-primary)] text-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-primary)]/90 hover:scale-105 hover:shadow-lg transition-all duration-200 inline-flex items-center justify-center whitespace-nowrap rounded-none font-black uppercase tracking-wider border-4 shadow-neo neo-hover-lift neo-press focus-ring gap-2 [&_svg]:pointer-events-none [&_svg]:w-4 [&_svg]:h-4 [&_svg]:shrink-0 disabled:pointer-events-none disabled:opacity-50 py-3 min-h-[44px] w-full sm:min-w-[160px] h-11 sm:h-12 px-4 sm:px-6 text-sm sm:text-base"
+              >
+                Next Question
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
           )}
         </div>
       </CardContent>
