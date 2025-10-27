@@ -16,10 +16,8 @@ import {
   Target,
   CheckCircle,
   ArrowRight,
-  Star,
   Crown,
   Zap,
-  BookMarked,
   X,
 } from "lucide-react";
 import {
@@ -51,35 +49,76 @@ import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import PlanAwareButton from '@/components/quiz/PlanAwareButton';
 import type { FeatureType } from '@/lib/featureAccess';
-import { getPlanConfig, isQuizTypeAvailable } from '@/types/subscription-plans';
+import { getPlanConfig } from '@/types/subscription-plans';
 import type { SubscriptionPlanType } from '@/types/subscription';
 import { useToast } from '@/hooks/use-toast';
 
-// Use semantic color classes for better theme compatibility
-const getColorClasses = (color: string, isLocked: boolean) => {
-  // Map logical color names to semantic Tailwind classes
-  const colorMap: Record<string, { primary: string; muted: string; accent: string }> = {
-    blue: { primary: 'text-blue-600', muted: 'text-gray-400', accent: 'hover:bg-blue-50' },
-    green: { primary: 'text-green-600', muted: 'text-gray-400', accent: 'hover:bg-green-50' },
-    purple: { primary: 'text-purple-600', muted: 'text-gray-400', accent: 'hover:bg-purple-50' },
-    orange: { primary: 'text-orange-600', muted: 'text-gray-400', accent: 'hover:bg-orange-50' },
-    teal: { primary: 'text-teal-600', muted: 'text-gray-400', accent: 'hover:bg-teal-50' },
-    indigo: { primary: 'text-indigo-600', muted: 'text-gray-400', accent: 'hover:bg-indigo-50' },
-    rose: { primary: 'text-rose-600', muted: 'text-gray-400', accent: 'hover:bg-rose-50' },
+// Brutal theme color system
+const getBrutalColorClasses = (color: string, isLocked: boolean) => {
+  const colorMap: Record<string, { 
+    bg: string; 
+    border: string; 
+    text: string;
+    accent: string;
+  }> = {
+    blue: { 
+      bg: 'bg-blue-500', 
+      border: 'border-blue-500', 
+      text: 'text-blue-500',
+      accent: 'bg-blue-100 dark:bg-blue-900/20'
+    },
+    green: { 
+      bg: 'bg-green-500', 
+      border: 'border-green-500', 
+      text: 'text-green-500',
+      accent: 'bg-green-100 dark:bg-green-900/20'
+    },
+    purple: { 
+      bg: 'bg-purple-500', 
+      border: 'border-purple-500', 
+      text: 'text-purple-500',
+      accent: 'bg-purple-100 dark:bg-purple-900/20'
+    },
+    orange: { 
+      bg: 'bg-orange-500', 
+      border: 'border-orange-500', 
+      text: 'text-orange-500',
+      accent: 'bg-orange-100 dark:bg-orange-900/20'
+    },
+    teal: { 
+      bg: 'bg-teal-500', 
+      border: 'border-teal-500', 
+      text: 'text-teal-500',
+      accent: 'bg-teal-100 dark:bg-teal-900/20'
+    },
+    indigo: { 
+      bg: 'bg-indigo-500', 
+      border: 'border-indigo-500', 
+      text: 'text-indigo-500',
+      accent: 'bg-indigo-100 dark:bg-indigo-900/20'
+    },
+    rose: { 
+      bg: 'bg-rose-500', 
+      border: 'border-rose-500', 
+      text: 'text-rose-500',
+      accent: 'bg-rose-100 dark:bg-rose-900/20'
+    },
   };
 
-  const colors = colorMap[color] || colorMap.blue;
+  return colorMap[color] || colorMap.blue;
+};
 
-  const baseCard = isLocked
-    ? 'bg-card border border-border opacity-80'
-    : 'bg-card border border-border shadow-sm hover:shadow-md';
-
-  const iconClass = isLocked ? colors.muted : colors.primary;
-  const buttonClass = isLocked
-    ? 'bg-muted border border-border text-muted-foreground'
-    : `bg-primary border border-primary text-primary-foreground hover:bg-primary/90`;
-
-  return { card: baseCard, icon: iconClass, button: buttonClass };
+const getDifficultyBrutalStyle = (difficulty: string) => {
+  switch (difficulty) {
+    case 'Easy':
+      return 'bg-green-400 text-black border-4 border-black';
+    case 'Medium':
+      return 'bg-yellow-400 text-black border-4 border-black';
+    case 'Advanced':
+      return 'bg-red-500 text-white border-4 border-black';
+    default:
+      return 'bg-gray-400 text-black border-4 border-black';
+  }
 };
 
 interface CreateTileGridProps {
@@ -92,7 +131,7 @@ interface CreateTileGridProps {
   color: string;
   category: string;
   requiredPlan: SubscriptionPlanType;
-  featureType: FeatureType; // Add feature type for access control
+  featureType: FeatureType;
   benefits?: string[];
   difficulty?: "Easy" | "Medium" | "Advanced";
   quizType?: 'mcq' | 'fill-blanks' | 'open-ended' | 'code-quiz' | 'video-quiz';
@@ -277,44 +316,18 @@ const tiles = [
   },
 ];
 
-// Animation variants
+// Brutal animation variants - more direct, less floaty
 const cardVariants = {
-  hidden: { opacity: 0, y: 50, scale: 0.9 },
+  hidden: { opacity: 0, y: 20 },
   visible: (index: number) => ({
     opacity: 1,
     y: 0,
-    scale: 1,
     transition: {
-      duration: 0.6,
-      delay: index * 0.1,
-      type: "spring",
-      stiffness: 100
+      duration: 0.3,
+      delay: index * 0.05,
+      ease: "easeOut"
     }
   }),
-};
-
-const iconVariants = {
-  initial: { scale: 1, rotate: 0 },
-  hover: {
-    scale: 1.2,
-    rotate: 360,
-    transition: { duration: 0.6, type: "spring" }
-  },
-  tap: { scale: 0.9 }
-};
-
-const getDifficultyColor = (difficulty: string) => {
-  // Map difficulties to semantic color classes
-  switch (difficulty) {
-    case 'Easy':
-      return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800';
-    case 'Medium':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800';
-    case 'Advanced':
-      return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800';
-  }
 };
 
 function Tile({
@@ -333,16 +346,13 @@ function Tile({
 }: CreateTileGridProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentTagline, setCurrentTagline] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
-  // ✅ NEW: Use unified feature access with exploration support
   const { canAccess, isExplorable, reason, requiredPlan: accessRequiredPlan } = useFeatureAccess(featureType);
-
-  // All features are explorable, but actions are gated by canAccess
-  const showUpgradeBadge = !canAccess; // Show upgrade badge but keep tile interactive
+  const showUpgradeBadge = !canAccess;
   const requiredPlanConfig = getPlanConfig(accessRequiredPlan || requiredPlan);
+  const colorClasses = getBrutalColorClasses(color, false);
 
   const taglineInterval = useMemo(() => {
     if (isOpen) {
@@ -359,8 +369,6 @@ function Tile({
     };
   }, [taglineInterval]);
 
-  const colorClasses = getColorClasses(color, false); // Always show as accessible for exploration
-
   return (
     <>
       <TooltipProvider>
@@ -368,365 +376,320 @@ function Tile({
           custom={index}
           initial="hidden"
           animate="visible"
-          whileHover={{ y: -2 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
           variants={cardVariants}
-          onHoverStart={() => setIsHovered(true)}
-          onHoverEnd={() => setIsHovered(false)}
           className="h-full"
         >
           <Card
-            className={`h-full flex flex-col justify-between transition-all duration-500 border border-gray-200 rounded-lg shadow-sm hover:shadow-md group cursor-pointer`}
-            onClick={(e) => {
-              setIsOpen(true);
-            }}
+            className={cn(
+              "h-full flex flex-col justify-between",
+              "bg-card border-6 border-border rounded-lg",
+              "shadow-neo transition-all duration-200",
+              "hover:translate-x-1 hover:translate-y-1",
+              "hover:shadow-neo-hover cursor-pointer",
+              "neo-hover-lift overflow-hidden"
+            )}
+            onClick={() => setIsOpen(true)}
           >
-            {/* Floating elements background */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <motion.div
-                animate={{
-                  x: [0, 20, 0],
-                  y: [0, -15, 0],
-                  rotate: [0, 180, 360]
-                }}
-                transition={{
-                  duration: 20,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-                className="absolute top-4 right-4 opacity-5"
-              >
-                <Sparkles className="h-8 w-8" />
-              </motion.div>
+            {/* Color Strip Accent */}
+            <div className={cn("h-2", colorClasses.bg)} />
 
-              <motion.div
-                animate={{
-                  x: [0, -15, 0],
-                  y: [0, 20, 0],
-                  rotate: [0, -180, -360]
-                }}
-                transition={{
-                  duration: 25,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-                className="absolute bottom-4 left-4 opacity-5"
-              >
-                <Star className="h-6 w-6" />
-              </motion.div>
-            </div>
-
-            <CardHeader className="pb-3 relative z-10">
+            <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between text-lg font-bold">
                 <div className="flex items-center min-w-0 flex-1">
-                  <motion.div
-                    variants={iconVariants}
-                    initial="initial"
-                    animate={isHovered ? "hover" : "initial"}
-                    whileTap="tap"
-                    className={`${colorClasses.icon} flex-shrink-0 mr-3`}
-                  >
-                    <Icon className="h-7 w-7" />
-                  </motion.div>
-                  <motion.span
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
-                    className="truncate"
-                  >
-                    {title}
-                  </motion.span>
+                  {/* Brutal Icon Container */}
+                  <div className={cn(
+                    "flex-shrink-0 mr-3 p-2 rounded-lg border-4",
+                    colorClasses.border,
+                    colorClasses.bg,
+                    "text-white"
+                  )}>
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <span className="truncate font-bold">{title}</span>
                 </div>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
+                {/* Badge System */}
+                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                   {showUpgradeBadge ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <motion.div
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
+                        <Badge 
+                          variant="neutral" 
+                          className="text-xs bg-yellow-400 text-black border-4 border-black font-bold uppercase px-2 py-1"
                         >
-                          <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 shadow-sm font-semibold")}>
-                            <Crown className="h-3 w-3 mr-1" />
-                            {requiredPlanConfig.name}
-                          </Badge>
-                        </motion.div>
+                          <Crown className="h-3 w-3 mr-1" />
+                          {requiredPlanConfig.name}
+                        </Badge>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Requires {requiredPlanConfig.name} plan to use - Click to explore!</p>
+                      <TooltipContent className="border-4 border-black shadow-neo">
+                        <p className="font-bold">Requires {requiredPlanConfig.name} - Click to explore!</p>
                       </TooltipContent>
                     </Tooltip>
                   ) : requiredPlan !== 'FREE' && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800")}>
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Unlocked
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>You have access to this feature!</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <Badge 
+                      variant="neutral" 
+                      className="text-xs bg-green-400 text-black border-4 border-black font-bold uppercase px-2 py-1"
+                    >
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Active
+                    </Badge>
                   )}
                 </div>
               </CardTitle>
 
-              {/* Metadata */}
-              <div className="flex items-center gap-3 mt-2">
-                <motion.div whileHover={{ scale: 1.05 }}>
-                  <Badge variant="neutral" className={cn(neo.badge, `text-xs ${getDifficultyColor(difficulty!)}`)}>
-                    <Target className="h-3 w-3 mr-1" />
-                    {difficulty}
-                  </Badge>
-                </motion.div>
+              {/* Difficulty Badge */}
+              <div className="flex items-center gap-2 mt-3">
+                <Badge 
+                  variant="neutral" 
+                  className={cn(
+                    "text-xs font-bold uppercase px-3 py-1",
+                    getDifficultyBrutalStyle(difficulty!)
+                  )}
+                >
+                  <Target className="h-3 w-3 mr-1" />
+                  {difficulty}
+                </Badge>
               </div>
             </CardHeader>
 
             <CardContent className="py-2 flex-1">
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: index * 0.1 + 0.3 }}
-                className="text-sm text-muted-foreground leading-relaxed"
-              >
+              <p className="text-sm text-muted-foreground leading-relaxed font-medium">
                 {description}
-              </motion.p>
+              </p>
             </CardContent>
 
             <CardFooter className="pt-4">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full">
-                <PlanAwareButton
-                  label="Get Started"
-                  onClick={() => router.push(url)}
-                  requiredPlan={accessRequiredPlan || requiredPlan}
-                  allowPublicAccess={true}
-                  className={`w-full transition-all duration-300 font-semibold ${colorClasses.button} shadow-lg hover:shadow-xl group`}
-                />
-              </motion.div>
+              <Button
+                className={cn(
+                  "w-full font-bold border-4 border-black rounded-lg",
+                  "shadow-neo hover:shadow-neo-hover",
+                  "transition-all duration-200",
+                  "hover:translate-x-1 hover:translate-y-1",
+                  "neo-hover-lift group",
+                  colorClasses.bg,
+                  "text-white"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(url);
+                }}
+              >
+                Get Started
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Button>
             </CardFooter>
           </Card>
         </motion.div>
       </TooltipProvider>
 
+      {/* Brutal Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="bg-[var(--color-card)] sm:max-w-4xl lg:max-w-5xl max-h-[90vh] p-0 border border-border shadow-lg overflow-hidden flex flex-col">
-          {/* Mobile Close Button */}
+        <DialogContent className={cn(
+          "sm:max-w-4xl lg:max-w-5xl max-h-[90vh] p-0",
+          "border-6 border-black rounded-lg shadow-neo",
+          "bg-card overflow-hidden flex flex-col"
+        )}>
+          {/* Mobile Close */}
           <div className="lg:hidden absolute top-4 right-4 z-50">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsOpen(false)}
-              className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm border"
+              className="h-8 w-8 rounded-lg border-4 border-black bg-white hover:bg-gray-100"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
 
           <div className="grid lg:grid-cols-2 flex-1 min-h-0">
-            {/* Left side - Hero content */}
-            <div className="p-4 sm:p-6 lg:p-8 bg-[var(--color-bg)] border-r border-border flex flex-col">
-              <DialogHeader className="space-y-3 sm:space-y-4">
+            {/* Left Panel - Hero */}
+            <div className={cn(
+              "p-6 lg:p-8 border-r-6 border-black",
+              "flex flex-col",
+              colorClasses.accent
+            )}>
+              <DialogHeader className="space-y-4">
                 <DialogTitle className="flex items-center justify-between">
-                  <div className={`flex items-center text-2xl sm:text-3xl lg:text-4xl font-bold ${colorClasses.icon}`}>
-                    <motion.div
-                      initial={{ rotate: 0, scale: 0.8 }}
-                      animate={{ rotate: 360, scale: 1 }}
-                      transition={{ duration: 0.8, type: "spring", stiffness: 200 }}
-                    >
-                      <Icon className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mr-3 sm:mr-4" />
-                    </motion.div>
-                    <motion.span
-                      initial={{ opacity: 0, x: -30 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.6, delay: 0.2 }}
-                      className="text-lg sm:text-xl lg:text-2xl"
-                    >
-                      {title}
-                    </motion.span>
+                  <div className="flex items-center text-2xl font-black">
+                    <div className={cn(
+                      "p-3 rounded-lg border-4 border-black mr-4",
+                      colorClasses.bg,
+                      "text-white"
+                    )}>
+                      <Icon className="h-8 w-8" />
+                    </div>
+                    <span className="text-xl lg:text-2xl">{title}</span>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     {showUpgradeBadge ? (
-                      <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 shadow-sm")}>
+                      <Badge className="text-xs bg-yellow-400 text-black border-4 border-black font-bold uppercase">
                         <Crown className="h-3 w-3 mr-1" />
-                        <span className="hidden sm:inline">{requiredPlanConfig.name} Required</span>
-                        <span className="sm:hidden">{requiredPlanConfig.name}</span>
+                        {requiredPlanConfig.name}
                       </Badge>
                     ) : requiredPlan !== 'FREE' && (
-                      <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 shadow-sm")}>
+                      <Badge className="text-xs bg-green-400 text-black border-4 border-black font-bold uppercase">
                         <CheckCircle className="h-3 w-3 mr-1" />
-                        <span className="hidden sm:inline">Unlocked</span>
+                        Active
                       </Badge>
                     )}
-                    <Badge variant="neutral" className={cn(neo.badge, getDifficultyColor(difficulty!))}>
-                      <span className="hidden sm:inline">{difficulty}</span>
-                      <span className="sm:hidden">{difficulty?.charAt(0)}</span>
+                    <Badge className={cn(
+                      "text-xs font-bold uppercase",
+                      getDifficultyBrutalStyle(difficulty!)
+                    )}>
+                      {difficulty}
                     </Badge>
                   </div>
                 </DialogTitle>
 
                 <DialogDescription asChild>
-                  <div className="space-y-4 sm:space-y-6">
-                    {/* Rotating taglines */}
+                  <div className="space-y-6">
+                    {/* Rotating Taglines - Brutal Style */}
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={currentTagline}
-                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -20, scale: 1.05 }}
-                        transition={{ duration: 0.5, type: "spring" }}
-                        className="text-center py-4 sm:py-6 bg-[var(--color-card)]/60 dark:bg-[var(--color-muted)]/30 rounded-xl border backdrop-blur-sm"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.3 }}
+                        className={cn(
+                          "text-center py-6 rounded-lg",
+                          "border-4 border-black bg-white",
+                          "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                        )}
                       >
-                        <p className="text-base sm:text-lg font-medium italic px-4 sm:px-6">
+                        <p className="text-lg font-bold px-6">
                           "{taglines[currentTagline]}"
                         </p>
-                        <div className="flex justify-center mt-3 sm:mt-4 space-x-2">
+                        <div className="flex justify-center mt-4 space-x-2">
                           {taglines.map((_, i) => (
-                            <motion.div
+                            <div
                               key={i}
-                              className={`h-2 w-2 rounded-full transition-colors ${i === currentTagline ? colorClasses.icon.replace('text-', 'bg-') : 'bg-gray-300'
-                                }`}
-                              animate={{ scale: i === currentTagline ? 1.2 : 1 }}
+                              className={cn(
+                                "h-3 w-3 border-2 border-black transition-colors",
+                                i === currentTagline ? colorClasses.bg : 'bg-gray-300'
+                              )}
                             />
                           ))}
                         </div>
                       </motion.div>
                     </AnimatePresence>
 
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.5, delay: 0.4 }}
-                      className="text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed text-center"
-                    >
+                    <p className="text-base text-foreground font-medium leading-relaxed text-center">
                       {description}
-                    </motion.p>
+                    </p>
                   </div>
                 </DialogDescription>
               </DialogHeader>
 
-              {/* Decorative element */}
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 0.1 }}
-                transition={{ delay: 1, duration: 1 }}
-                className="flex justify-center mt-6 lg:mt-8"
-              >
-                <Icon className={`h-20 w-20 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${colorClasses.icon}`} />
-              </motion.div>
+              {/* Large Icon Display */}
+              <div className="flex justify-center mt-8 opacity-10">
+                <Icon className={cn("h-32 w-32", colorClasses.text)} />
+              </div>
             </div>
 
-            {/* Right side - Details */}
-            <div
-              className="p-4 sm:p-6 lg:p-8 overflow-y-auto flex-1 scrollbar-hide"
-            >
-              <div className="space-y-4 sm:space-y-6">
-                {/* Quick stats */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="grid grid-cols-2 gap-3 sm:gap-4"
-                >
-                  <div className="text-center p-3 sm:p-4 rounded-lg bg-muted/30 border">
-                    <Target className={`h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-1 sm:mb-2 ${colorClasses.icon}`} />
-                    <div className="text-sm sm:text-base font-semibold">{difficulty}</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">Difficulty</div>
+            {/* Right Panel - Details */}
+            <div className="p-6 lg:p-8 overflow-y-auto flex-1">
+              <div className="space-y-6">
+                {/* Stats Grid - Brutal */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className={cn(
+                    "text-center p-4 rounded-lg border-4 border-black",
+                    "bg-white shadow-neo"
+                  )}>
+                    <Target className={cn("h-8 w-8 mx-auto mb-2", colorClasses.text)} />
+                    <div className="text-base font-black">{difficulty}</div>
+                    <div className="text-sm font-bold text-muted-foreground">Level</div>
                   </div>
-                  <div className="text-center p-3 sm:p-4 rounded-lg bg-muted/30 border">
-                    <Zap className={`h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-1 sm:mb-2 ${colorClasses.icon}`} />
-                    <div className="text-sm sm:text-base font-semibold">AI Powered</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">Instant Generation</div>
+                  <div className={cn(
+                    "text-center p-4 rounded-lg border-4 border-black",
+                    "bg-white shadow-neo"
+                  )}>
+                    <Zap className={cn("h-8 w-8 mx-auto mb-2", colorClasses.text)} />
+                    <div className="text-base font-black">AI</div>
+                    <div className="text-sm font-bold text-muted-foreground">Powered</div>
                   </div>
-                </motion.div>
+                </div>
 
-                {/* Key Benefits */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="space-y-3 sm:space-y-4"
-                >
-                  <h3 className="text-base sm:text-lg font-bold flex items-center">
-                    <CheckCircle className={`h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3 ${colorClasses.icon}`} />
+                {/* Benefits - Brutal List */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-black flex items-center">
+                    <CheckCircle className={cn("h-6 w-6 mr-3", colorClasses.text)} />
                     What You Get
                   </h3>
-                  <div className="grid gap-2 sm:gap-3">
+                  <div className="space-y-2">
                     {benefits?.map((benefit, i) => (
-                      <motion.div
+                      <div
                         key={i}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.5 + i * 0.1 }}
-                        className="flex items-center p-2 sm:p-3 rounded-lg bg-muted/20 border hover:bg-muted/30 transition-colors"
+                        className={cn(
+                          "flex items-center p-3 rounded-lg",
+                          "border-4 border-black bg-white",
+                          "shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        )}
                       >
-                        <motion.div
-                          whileHover={{ scale: 1.2, rotate: 360 }}
-                          transition={{ duration: 0.3 }}
-                          className={`mr-3 sm:mr-4 ${colorClasses.icon}`}
-                        >
-                          <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                        </motion.div>
-                        <span className="text-sm sm:text-base font-medium">{benefit}</span>
-                      </motion.div>
+                        <CheckCircle className={cn("h-5 w-5 mr-3 flex-shrink-0", colorClasses.text)} />
+                        <span className="text-sm font-bold">{benefit}</span>
+                      </div>
                     ))}
                   </div>
-                </motion.div>
+                </div>
 
-                {/* How it works */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="space-y-3 sm:space-y-4"
-                >
-                  <h3 className="text-base sm:text-lg font-bold flex items-center">
-                    <Sparkles className={`h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3 ${colorClasses.icon}`} />
+                {/* How It Works - Brutal Steps */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-black flex items-center">
+                    <Sparkles className={cn("h-6 w-6 mr-3", colorClasses.text)} />
                     How It Works
                   </h3>
-                  <div className="grid gap-2 sm:gap-3">
+                  <div className="space-y-2">
                     {[
-                      "Enter your topic ",
-                      "AI generates questions instantly",
-                      "Review and use your creation"
+                      "Enter your topic",
+                      "AI generates instantly",
+                      "Review & use creation"
                     ].map((step, i) => (
-                      <motion.div
+                      <div
                         key={i}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.7 + i * 0.1 }}
-                        className="flex items-center p-2 sm:p-3 rounded-lg border bg-[var(--color-bg)]/50"
+                        className={cn(
+                          "flex items-center p-3 rounded-lg",
+                          "border-4 border-black bg-white"
+                        )}
                       >
-                        <motion.div
-                          whileHover={{ scale: 1.1 }}
-                          className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full ${colorClasses.button} flex items-center justify-center text-xs sm:text-sm font-bold mr-3 sm:mr-4 flex-shrink-0`}
-                        >
+                        <div className={cn(
+                          "w-8 h-8 rounded-full border-4 border-black",
+                          "flex items-center justify-center",
+                          "text-sm font-black mr-4 flex-shrink-0",
+                          colorClasses.bg,
+                          "text-white"
+                        )}>
                           {i + 1}
-                        </motion.div>
-                        <span className="text-sm sm:text-base">{step}</span>
-                      </motion.div>
+                        </div>
+                        <span className="text-sm font-bold">{step}</span>
+                      </div>
                     ))}
                   </div>
-                </motion.div>
+                </div>
               </div>
             </div>
           </div>
 
-          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-3 p-4 sm:p-6 border-t bg-muted/20 flex-shrink-0">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full"
+          <DialogFooter className={cn(
+            "p-6 border-t-6 border-black",
+            "bg-gray-50 dark:bg-gray-900"
+          )}>
+            <Button
+              onClick={() => router.push(url)}
+              className={cn(
+                "w-full h-12 font-black text-base border-4 border-black rounded-lg",
+                "shadow-neo hover:shadow-neo-hover",
+                "transition-all duration-200",
+                "hover:translate-x-1 hover:translate-y-1",
+                "group",
+                colorClasses.bg,
+                "text-white"
+              )}
             >
-              <PlanAwareButton
-                label="Get Started"
-                onClick={() => router.push(url)}
-                requiredPlan={accessRequiredPlan || requiredPlan}
-                allowPublicAccess={true}
-                className={`w-full h-10 sm:h-12 font-bold text-sm sm:text-base ${colorClasses.button} shadow-xl hover:shadow-2xl transition-all duration-300 group`}
-              />
-            </motion.div>
+              Get Started Now
+              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -735,93 +698,85 @@ function Tile({
 }
 
 export function CreateTileGrid() {
-
   return (
-    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-      {/* Enhanced Hero Section */}
+    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      {/* Brutal Hero Section */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="text-center mb-8 sm:mb-12 space-y-4 sm:space-y-6"
+        transition={{ duration: 0.4 }}
+        className="text-center mb-12 space-y-6"
       >
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-primary/10 dark:bg-primary/30 border border-primary/20 shadow-sm"
-        >
-          <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-          <span className="text-xs sm:text-sm font-medium text-primary">AI-Powered Learning Tools</span>
-        </motion.div>
+        {/* Badge */}
+        <div className={cn(
+          "inline-flex items-center gap-3 px-6 py-3 rounded-lg",
+          "bg-primary border-4 border-black",
+          "shadow-neo text-white font-bold"
+        )}>
+          <Sparkles className="h-5 w-5" />
+          <span className="text-sm uppercase tracking-wide">AI-Powered Tools</span>
+        </div>
 
-        <motion.h1
-          className="text-2xl sm:text-4xl md:text-5xl font-bold text-foreground"
-          whileHover={{ scale: 1.02 }}
-        >
+        {/* Title */}
+        <h1 className="text-4xl md:text-5xl font-black text-foreground">
           Create Amazing<br />Learning Content
-        </motion.h1>
+        </h1>
 
-        <motion.p
-          className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          Transform your ideas into engaging educational experiences with our suite of AI-powered creation tools
-        </motion.p>
+        {/* Description */}
+        <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-bold">
+          Transform your ideas into engaging educational experiences
+        </p>
       </motion.div>
 
-      {/* All Tools Grid */}
+      {/* Grid */}
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        className="mb-8 sm:mb-12"
+        transition={{ delay: 0.2 }}
+        className="mb-12"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {tiles.map((tile, index) => (
-            <Tile
-              key={tile.url}
-              {...tile}
-              index={index}
-            />
+            <Tile key={tile.url} {...tile} index={index} />
           ))}
         </div>
       </motion.div>
 
-      {/* Enhanced Footer CTA */}
+      {/* Footer CTA - Brutal */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 1.2 }}
-        className="text-center space-y-4 sm:space-y-6 p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl bg-card border border-border shadow-sm"
+        transition={{ delay: 0.4 }}
+        className={cn(
+          "text-center space-y-6 p-8 rounded-lg",
+          "bg-card border-6 border-black shadow-neo"
+        )}
       >
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          transition={{ duration: 0.2 }}
-          className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary text-primary-foreground mb-2 sm:mb-4 shadow-sm"
-        >
-          <Brain className="h-6 w-6 sm:h-8 sm:w-8" />
-        </motion.div>
+        <div className={cn(
+          "inline-flex items-center justify-center w-16 h-16 rounded-full",
+          "bg-primary border-4 border-black text-white"
+        )}>
+          <Brain className="h-8 w-8" />
+        </div>
 
-        <h3 className="text-lg sm:text-xl font-bold">Need Something Custom?</h3>
-        <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto">
-          Can't find what you're looking for? Our AI can help you create any type of educational content.
+        <h3 className="text-xl font-black">Need Something Custom?</h3>
+        <p className="text-base text-muted-foreground font-bold max-w-md mx-auto">
+          Can't find what you're looking for? Get custom help from our team.
         </p>
 
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        <Button
+          size="lg"
+          className={cn(
+            "bg-primary text-white font-black px-8 py-3 border-4 border-black rounded-lg",
+            "shadow-neo hover:shadow-neo-hover",
+            "transition-all duration-200",
+            "hover:translate-x-1 hover:translate-y-1"
+          )}
+          onClick={() => window.location.href = '/contactus'}
         >
-          <Button
-            size="lg"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 sm:px-8 py-2 sm:py-3 text-sm sm:text-base shadow-sm hover:shadow-md transition-all duration-200"
-            onClick={() => window.location.href = '/contactus'}
-          >
-            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-            Get Custom Help
-          </Button>
-        </motion.div>
+          <Sparkles className="h-5 w-5 mr-2" />
+          Get Custom Help
+        </Button>
       </motion.div>
     </section>
   );
