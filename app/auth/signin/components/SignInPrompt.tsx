@@ -65,11 +65,11 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
     if (quizType === "flashcard") {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+          <div className="text-center p-3 bg-green-50 rounded-none border border-green-200">
             <div className="text-xl sm:text-2xl font-bold text-green-700">{previewData.correctAnswers || 0}</div>
             <div className="text-xs text-green-600 font-medium">Mastered</div>
           </div>
-          <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+          <div className="text-center p-3 bg-yellow-50 rounded-none border border-yellow-200">
             <div className="text-xl sm:text-2xl font-bold text-yellow-700">{previewData.stillLearningAnswers || 0}</div>
             <div className="text-xs text-yellow-600 font-medium">Learning</div>
           </div>
@@ -79,11 +79,11 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
 
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-        <div className="text-center p-3 bg-primary/10 rounded-lg border border-primary/20">
+        <div className="text-center p-3 bg-primary/10 rounded-none border border-primary/20">
           <div className="text-xl sm:text-2xl font-bold text-primary">{previewData.percentage || 0}%</div>
           <div className="text-xs text-primary font-medium">Score</div>
         </div>
-        <div className="text-center p-3 bg-accent/10 rounded-lg border border-accent/20">
+        <div className="text-center p-3 bg-accent/10 rounded-none border border-accent/20">
           <div className="text-xl sm:text-2xl font-bold text-accent">
             {previewData.score || 0}/{previewData.maxScore || 0}
           </div>
@@ -147,7 +147,7 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
               </h3>
 
               <div className="space-y-2 sm:space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-none border border-primary/20">
                   <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
                     <Trophy className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
                   </div>
@@ -157,7 +157,7 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 bg-accent/10 rounded-lg border border-accent/20">
+                <div className="flex items-center gap-3 p-3 bg-accent/10 rounded-none border border-accent/20">
                   <div className="w-7 h-7 sm:w-8 sm:h-8 bg-accent rounded-full flex items-center justify-center flex-shrink-0">
                     <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-accent-foreground" />
                   </div>

@@ -60,7 +60,7 @@ const MessageBubble = memo(({ message, index, onCopy, copiedMessageId }: Message
         <div className="flex flex-col gap-2 min-w-0">
           <div
             className={cn(
-              "px-4 py-2.5 rounded-lg text-sm relative shadow-sm",
+              "px-4 py-2.5 rounded-none text-sm relative neo-shadow",
               message.role === "user"
                 ? "bg-primary text-primary-foreground rounded-br-sm"
                 : "bg-muted text-foreground rounded-bl-sm border border-border/50",
@@ -139,7 +139,7 @@ const markdownComponents: Partial<Components> = {
         href={href}
         target={isExternal ? '_blank' : '_self'}
         rel={isExternal ? 'noopener noreferrer' : undefined}
-        className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 font-medium transition-all duration-200 hover:bg-primary/10 px-2 py-1 rounded-md group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:bg-primary/15 active:scale-[0.98]"
+        className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 font-medium transition-all duration-200 hover:bg-primary/10 px-2 py-1 rounded-none group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:bg-primary/15 active:scale-[0.98]"
         tabIndex={0}
         aria-label={`${isExternal ? 'External link to' : 'Navigate to'} ${linkText}`}
         onKeyDown={(e) => {
@@ -198,7 +198,7 @@ const markdownComponents: Partial<Components> = {
     }
 
     return (
-      <div className={`${bgColor} ${borderColor} border rounded-lg p-3 mb-3 mt-4`}>
+      <div className={`${bgColor} ${borderColor} border rounded-none p-3 mb-3 mt-4`}>
         <h3 className={`text-sm font-semibold ${textColor} flex items-center gap-2 mb-2`} {...props}>
           <Icon className="h-4 w-4" />
           {children}
@@ -212,7 +212,7 @@ const markdownComponents: Partial<Components> = {
     // Style special paragraphs
     if (text.includes('Practice might help') || text.includes('comprehensive coverage')) {
       return (
-        <div className="bg-primary/10 dark:bg-primary/5 border border-primary/20 dark:border-primary/20 rounded-md p-2 mb-2 text-sm text-primary italic" {...props}>
+        <div className="bg-primary/10 dark:bg-primary/5 border border-primary/20 dark:border-primary/20 rounded-none p-2 mb-2 text-sm text-primary italic" {...props}>
           💡 {children}
         </div>
       )
@@ -354,7 +354,7 @@ export const MessageList = memo(({
               </div>
               <AvatarFallback>AI</AvatarFallback>
             </Avatar>
-            <div className="px-3 py-2 rounded-lg bg-muted rounded-bl-sm">
+            <div className="px-3 py-2 rounded-none bg-muted rounded-bl-sm">
               <div className="flex items-center gap-2">
                 <div className="flex space-x-1">
                   <motion.div

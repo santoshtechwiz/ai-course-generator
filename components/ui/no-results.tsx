@@ -77,7 +77,7 @@ export function NoResults({
   return (
     <motion.div 
       className={cn(
-        "rounded-md overflow-hidden border-4 border-black",
+        "rounded-none overflow-hidden border-4 border-black",
         isLeftPlacement ? 
           "sm:flex items-center sm:gap-6 gap-4 flex-col sm:flex-row" : 
           "text-center",
@@ -99,7 +99,7 @@ export function NoResults({
       >
         <motion.div
           className={cn(
-            "rounded-md flex items-center justify-center border-4 border-black",
+            "rounded-none flex items-center justify-center border-4 border-black",
             minimal ? "text-[var(--color-text)]/70" : "bg-[var(--color-bg)] text-[var(--color-text)]",
             isLeftPlacement ? 
               "sm:h-16 sm:w-16 h-14 w-14" : 

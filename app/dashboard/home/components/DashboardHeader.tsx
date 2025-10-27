@@ -74,7 +74,7 @@ const DashboardHeader = memo(function DashboardHeader({ userData, toggleSidebar 
             className={cn(
               "hidden sm:flex items-center gap-2 px-4 py-2",
               "bg-background text-foreground",
-              "border-3 border-border rounded-lg",
+              "border-3 border-border rounded-none",
               "shadow-[3px_3px_0px_0px_hsl(var(--border))]",
               "font-bold"
             )}
@@ -132,7 +132,7 @@ const DashboardHeader = memo(function DashboardHeader({ userData, toggleSidebar 
                   <Link 
                     href="/dashboard/account"
                     className={cn(
-                      "flex items-center p-3 font-bold rounded-md m-1",
+                      "flex items-center p-3 font-bold rounded-none m-1",
                       "border-2 border-transparent",
                       "hover:border-border hover:bg-secondary-background",
                       "hover:shadow-[2px_2px_0px_0px_hsl(var(--border))]",
@@ -147,7 +147,7 @@ const DashboardHeader = memo(function DashboardHeader({ userData, toggleSidebar 
                 <DropdownMenuItem 
                   onClick={() => signOut()}
                   className={cn(
-                    "cursor-pointer p-3 font-bold rounded-md m-1",
+                    "cursor-pointer p-3 font-bold rounded-none m-1",
                     "border-2 border-transparent",
                     "hover:border-destructive hover:bg-destructive/10",
                     "hover:shadow-[2px_2px_0px_0px_hsl(var(--destructive))]",

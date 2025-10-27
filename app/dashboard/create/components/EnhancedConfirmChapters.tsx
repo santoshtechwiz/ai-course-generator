@@ -112,7 +112,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
       <div className="flex-none p-6 border-b-4 border-border bg-card shadow-neo">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10 border-2 border-primary/20">
+            <div className="p-2 rounded-none bg-primary/10 border-2 border-primary/20">
               <BookOpen className="w-6 h-6 text-primary" />
             </div>
             {course.title}

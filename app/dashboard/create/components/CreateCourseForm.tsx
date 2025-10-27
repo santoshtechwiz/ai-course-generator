@@ -148,7 +148,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="p-1.5 md:p-2 rounded-lg bg-yellow-400 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                  <div className="p-1.5 md:p-2 rounded-none bg-yellow-400 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                     <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-black" />
                   </div>
                   <CardTitle className="text-lg md:text-xl lg:text-2xl font-black text-black">

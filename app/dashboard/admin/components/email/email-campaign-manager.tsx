@@ -507,7 +507,7 @@ export default function EmailCampaignManager() {
                             control={form.control}
                             name="testEmail"
                             render={({ field }) => (
-                              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-none border p-4">
                                 <FormControl>
                                   <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                 </FormControl>
@@ -521,7 +521,7 @@ export default function EmailCampaignManager() {
                         </div>
                       </div>
 
-                      <div className="w-full md:w-2/3 border rounded-md p-4">
+                      <div className="w-full md:w-2/3 border rounded-none p-4">
                         <div className="flex items-center justify-between mb-4">
                           <h3 className="text-lg font-medium flex items-center gap-2">
                             <Users className="h-5 w-5 text-primary" />
@@ -562,7 +562,7 @@ export default function EmailCampaignManager() {
                           </div>
                         ) : (
                           <>
-                            <div className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded-md mb-2 transition-all duration-200 hover:shadow-sm">
+                            <div className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded-none mb-2 transition-all duration-200 hover:neo-shadow">
                               <Checkbox
                                 checked={selectedUserIds.length === filteredUsers.length && filteredUsers.length > 0}
                                 onCheckedChange={() => {
@@ -586,7 +586,7 @@ export default function EmailCampaignManager() {
                                   return (
                                     <div
                                       key={user.id}
-                                      className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-all duration-200"
+                                      className="flex items-center gap-3 p-2 rounded-none hover:bg-muted/50 transition-all duration-200"
                                     >
                                       <Checkbox
                                         checked={isSelected}
@@ -700,7 +700,7 @@ export default function EmailCampaignManager() {
                           control={form.control}
                           name="scheduleForLater"
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-none border p-4">
                               <FormControl>
                                 <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                               </FormControl>
@@ -729,7 +729,7 @@ export default function EmailCampaignManager() {
                         )}
                       </div>
 
-                      <div className="border rounded-md p-4">
+                      <div className="border rounded-none p-4">
                         <Label className="mb-2 block">Template Preview</Label>
                         {!selectedTemplateType ? (
                           <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -738,7 +738,7 @@ export default function EmailCampaignManager() {
                             <p className="text-muted-foreground">Select a template to preview its content</p>
                           </div>
                         ) : (
-                          <div className="border rounded-md p-4 bg-white max-h-[400px] overflow-auto">
+                          <div className="border rounded-none p-4 bg-white max-h-[400px] overflow-auto">
                             {renderTemplate()}
                           </div>
                         )}
@@ -756,7 +756,7 @@ export default function EmailCampaignManager() {
                   </TabsContent>
 
                   <TabsContent value="preview" className="space-y-6">
-                    <div className="border rounded-md p-6">
+                    <div className="border rounded-none p-6">
                       <h3 className="text-xl font-medium mb-4">Campaign Summary</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
@@ -827,7 +827,7 @@ export default function EmailCampaignManager() {
                       </div>
                     </div>
 
-                    <div className="border rounded-md p-4">
+                    <div className="border rounded-none p-4">
                       <Label className="mb-2 block">Email Preview</Label>
                       {!selectedTemplateType ? (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -841,7 +841,7 @@ export default function EmailCampaignManager() {
                           </Button>
                         </div>
                       ) : (
-                        <div className="border rounded-md p-4 bg-white max-h-[400px] overflow-auto">
+                        <div className="border rounded-none p-4 bg-white max-h-[400px] overflow-auto">
                           {renderTemplate()}
                         </div>
                       )}

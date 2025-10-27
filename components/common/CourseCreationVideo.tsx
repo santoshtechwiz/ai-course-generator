@@ -285,7 +285,7 @@ const CourseCreationVideo = () => {
                         />
                       )}
                     </div>
-                    <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-3 rounded-none border border-blue-200 dark:border-blue-800">
                       <div className="flex items-center gap-2 mb-1">
                         <Sparkles className="w-3 h-3 text-blue-600" />
                         <span className="font-medium">AI Assistant</span>

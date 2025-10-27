@@ -109,7 +109,7 @@ export default function AdaptiveSuggestionsCard({
         <CardContent>
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 rounded-lg bg-muted animate-pulse" />
+              <div key={i} className="h-24 rounded-none bg-muted animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -142,7 +142,7 @@ export default function AdaptiveSuggestionsCard({
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3 flex-1">
-                    <div className="p-2 rounded-lg bg-white dark:bg-gray-800">
+                    <div className="p-2 rounded-none bg-white dark:bg-gray-800">
                       {typeIcons[suggestion.type]}
                     </div>
                     <div className="flex-1">

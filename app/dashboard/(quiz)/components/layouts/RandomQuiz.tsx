@@ -150,14 +150,14 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
       className="w-full"
     >
       <Card className={cn(
-        "bg-card border shadow-sm rounded-lg transition-all duration-200",
-        isActive && "ring-1 ring-primary/20"
+        "bg-card border neo-shadow rounded-none transition-all duration-200",
+        isActive && "ring-2 ring-primary border-primary/50 neo-hover-lift"
       )}>
         <CardContent className="p-4">
           {/* Header */}
           <div className="flex items-start gap-3 mb-3">
             <div className={cn(
-              "p-2 bg-primary text-primary-foreground rounded-lg flex-shrink-0"
+              "p-2 bg-primary text-primary-foreground rounded-none flex-shrink-0"
             )}>
               <QuizIcon type={quiz.quizType} className="w-4 h-4" />
             </div>
@@ -215,10 +215,10 @@ const QuizCard = memo(({ quiz, isActive }: { quiz: Quiz; isActive: boolean }) =>
 QuizCard.displayName = "QuizCard"
 
 const LoadingCard = memo(() => (
-  <Card className="border bg-card rounded-lg">
+  <Card className="border bg-card neo-shadow rounded-none">
     <CardContent className="p-4">
       <div className="flex items-center gap-3 mb-3">
-        <Skeleton className="w-8 h-8 rounded-lg" />
+        <Skeleton className="w-8 h-8 rounded-none" />
         <div className="flex-1">
           <Skeleton className="h-3 w-16 mb-2 rounded" />
           <Skeleton className="h-4 w-40 rounded" />
@@ -243,9 +243,9 @@ const EmptyState = memo(() => (
     animate={{ opacity: 1 }}
     transition={{ duration: 0.3 }}
   >
-    <Card className="border bg-card rounded-lg">
+    <Card className="border bg-card neo-shadow rounded-none">
       <CardContent className="p-6 text-center">
-        <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 text-primary rounded-lg flex items-center justify-center">
+        <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 text-primary rounded-none flex items-center justify-center">
           <Zap className="w-6 h-6" />
         </div>
         
@@ -278,9 +278,9 @@ const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
     animate={{ opacity: 1 }}
     transition={{ duration: 0.3 }}
   >
-    <Card className="border bg-card rounded-lg">
+    <Card className="border bg-card neo-shadow rounded-none">
       <CardContent className="p-6 text-center">
-        <div className="w-12 h-12 mx-auto mb-3 bg-destructive/10 text-destructive rounded-lg flex items-center justify-center">
+        <div className="w-12 h-12 mx-auto mb-3 bg-destructive/10 text-destructive rounded-none flex items-center justify-center">
           <Zap className="w-6 h-6" />
         </div>
         
@@ -410,7 +410,7 @@ export const RandomQuiz = memo(({
 
   return (
     <motion.div
-      className={cn("w-full max-w-2xl mx-auto border bg-card shadow-sm rounded-lg", className)}
+      className={cn("w-full max-w-2xl mx-auto border bg-card neo-shadow rounded-none", className)}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -418,7 +418,7 @@ export const RandomQuiz = memo(({
       {/* Header */}
       <div className={cn("px-4 py-3 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2")}>
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary text-primary-foreground rounded-lg">
+          <div className="p-2 bg-primary text-primary-foreground rounded-none">
             <Zap className="w-4 h-4" />
           </div>
           <div>
@@ -435,13 +435,21 @@ export const RandomQuiz = memo(({
       {/* Content */}
       <div className="p-4">
         <div className="space-y-3">
-          {/* Quiz Card */}
+          {/* Quiz Cards - responsive grid */}
           <div className="w-full">
-            <AnimatePresence mode="wait">
-              {currentQuiz && (
-                <QuizCard key={currentQuiz.id} quiz={currentQuiz} isActive={true} />
-              )}
-            </AnimatePresence>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {displayQuizzes.map((q, idx) => (
+                <div
+                  key={q.id}
+                  className={cn(
+                    "w-full",
+                    idx === currentIndex ? "order-first" : ""
+                  )}
+                >
+                  <QuizCard quiz={q} isActive={idx === currentIndex} />
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Progress Indicators */}

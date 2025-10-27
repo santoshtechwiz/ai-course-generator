@@ -54,7 +54,7 @@ function UserListSkeleton() {
         <Skeleton className="h-10 w-[100px]" />
       </div>
 
-      <div className="border rounded-md overflow-hidden">
+      <div className="border rounded-none overflow-hidden">
         {/* Header skeleton */}
         <div className="grid grid-cols-4 gap-4 border-b p-4 bg-muted/30">
           <Skeleton className="h-8 w-full" />
@@ -88,7 +88,7 @@ function UserListSkeleton() {
             {Array(5)
               .fill(0)
               .map((_, i) => (
-                <Skeleton key={i} className="h-8 w-8 rounded-md" />
+                <Skeleton key={i} className="h-8 w-8 rounded-none" />
               ))}
           </div>
         </div>

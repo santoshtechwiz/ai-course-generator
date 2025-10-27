@@ -137,7 +137,7 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
 
             {/* Video Ready */}
             {chapter.videoId && (
-              <div className="flex items-center justify-between p-2 rounded-lg bg-success/10 border-2 border-success/20">
+              <div className="flex items-center justify-between p-2 rounded-none bg-success/10 border-2 border-success/20">
                 <div className="flex items-center space-x-2">
                   <Video className="h-4 w-4 text-success" />
                   <span className="text-sm font-medium text-success">Video Ready</span>
@@ -184,7 +184,7 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
         {/* Video Preview Modal */}
         {showVideo && chapter.videoId && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-card rounded-lg w-full max-w-3xl p-6 border-6 border-border shadow-neo">
+            <div className="bg-card rounded-none w-full max-w-3xl p-6 border-6 border-border shadow-neo">
               <h3 className="font-bold text-lg mb-4">{chapter.title}</h3>
               <VideoPlayer videoId={chapter.videoId} />
               <div className="mt-4 flex justify-end">

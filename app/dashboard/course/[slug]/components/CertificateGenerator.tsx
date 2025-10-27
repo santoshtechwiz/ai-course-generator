@@ -268,7 +268,7 @@ const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
   // Error display
   if (error) {
     return (
-      <div className="flex flex-col items-center space-y-4 p-6 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
+      <div className="flex flex-col items-center space-y-4 p-6 bg-red-50 dark:bg-red-950/30 rounded-none border border-red-200 dark:border-red-800">
         <div className="text-center">
           <h3 className="text-lg font-semibold mb-2 text-red-800 dark:text-red-200">
             Something went wrong
@@ -291,7 +291,7 @@ const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
 
   if (!isEligible) {
     return (
-      <div className="flex flex-col items-center space-y-4 p-6 bg-muted/30 rounded-lg border border-muted">
+      <div className="flex flex-col items-center space-y-4 p-6 bg-muted/30 rounded-none border border-muted">
         <div className="text-center">
           <h3 className="text-lg font-semibold mb-2">Certificate Not Available Yet</h3>
           <p className="text-sm text-muted-foreground mb-4">
@@ -327,7 +327,7 @@ const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
   }
 
   return (
-    <div className="flex flex-col items-center space-y-4 p-6 bg-primary/5 rounded-lg border border-primary/20">
+    <div className="flex flex-col items-center space-y-4 p-6 bg-primary/5 rounded-none border border-primary/20">
       <div className="text-center mb-4">
         <h3 className="text-xl font-semibold mb-2">Course Completed!</h3>
         <p className="text-sm text-muted-foreground">
@@ -340,7 +340,7 @@ const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 px-4 py-2 rounded-md text-sm flex items-center mb-2 w-full"
+          className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 px-4 py-2 rounded-none text-sm flex items-center mb-2 w-full"
         >
           <CheckCircle className="h-4 w-4 mr-2" />
           Certificate downloaded successfully!

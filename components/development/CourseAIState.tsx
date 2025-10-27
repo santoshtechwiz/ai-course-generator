@@ -79,7 +79,7 @@ export default function CourseAIState() {
         maxWidth: 480,
         fontSize: 13,
       }}
-      className="bg-background border border-primary/30 rounded-lg shadow-lg"
+      className="bg-background border border-primary/30 rounded-none shadow-lg"
     >
       <button
         onClick={() => setOpen((v) => !v)}

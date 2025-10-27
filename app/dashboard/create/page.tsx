@@ -121,7 +121,7 @@ const Page = async ({
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-accent/10 border border-accent/20">
+                      <div className="p-2 rounded-none bg-accent/10 border border-accent/20">
                         <BookOpen className="h-5 w-5 text-accent" />
                       </div>
                       <div>
@@ -148,10 +148,10 @@ const Page = async ({
                 {/* Enhanced form wrapper with visual feedback */}
                 <div className="relative">
                   {/* Form background with subtle pattern */}
-                  <div className="absolute inset-0 bg-card rounded-lg pointer-events-none" />
+                  <div className="absolute inset-0 bg-card rounded-none pointer-events-none" />
 
                   {/* Form container with enhanced styling */}
-                  <div className="relative bg-background/50 backdrop-blur-sm border border-border/50 rounded-lg p-6 shadow-sm">
+                  <div className="relative bg-background/50 backdrop-blur-sm border border-border/50 rounded-none p-6 neo-shadow">
                     <QuizCourseWrapper
                       type="course"
                       queryParams={{
@@ -165,7 +165,7 @@ const Page = async ({
 
                 {/* Feature highlights */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-border/30">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/5 border border-accent/10">
+                  <div className="flex items-center gap-3 p-3 rounded-none bg-accent/5 border border-accent/10">
                     <div className="p-2 rounded-full bg-accent/10">
                       <Target className="h-4 w-4 text-accent" />
                     </div>
@@ -175,7 +175,7 @@ const Page = async ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/10 dark:bg-accent/5 border border-accent/20 dark:border-accent/20">
+                  <div className="flex items-center gap-3 p-3 rounded-none bg-accent/10 dark:bg-accent/5 border border-accent/20 dark:border-accent/20">
                     <div className="p-2 rounded-full bg-accent/20 dark:bg-accent/10">
                       <Clock className="h-4 w-4 text-accent" />
                     </div>
@@ -185,7 +185,7 @@ const Page = async ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/10 dark:bg-accent/5 border border-accent/20 dark:border-accent/20">
+                  <div className="flex items-center gap-3 p-3 rounded-none bg-accent/10 dark:bg-accent/5 border border-accent/20 dark:border-accent/20">
                     <div className="p-2 rounded-full bg-accent/20 dark:bg-accent/10">
                       <Users className="h-4 w-4 text-accent" />
                     </div>
@@ -207,7 +207,7 @@ const Page = async ({
               <CardHeader className="relative pb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-accent/10 border border-accent/20">
+                    <div className="p-2 rounded-none bg-accent/10 border border-accent/20">
                       <TrendingUp className="h-4 w-4 text-accent" />
                     </div>
                     <div>
@@ -226,7 +226,7 @@ const Page = async ({
 
                 {/* Enhanced CTA Section */}
                 <div className="border-t border-border/30 pt-4 mt-6">
-                  <div className="relative overflow-hidden rounded-lg bg-accent/10 border-4 border-accent p-4">
+                  <div className="relative overflow-hidden rounded-none bg-accent/10 border-4 border-accent p-4">
                     {/* Clean design */}
 
                     <div className="relative flex items-start gap-3">

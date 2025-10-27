@@ -54,7 +54,7 @@ export default function AdminNav({ user }: AdminNavProps) {
           <Link
             key={link.href}
             href={link.href}
-            className={`group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors ${
+            className={`group flex items-center rounded-none px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors ${
               pathname === link.href ? "bg-accent text-accent-foreground" : "transparent"
             }`}
           >

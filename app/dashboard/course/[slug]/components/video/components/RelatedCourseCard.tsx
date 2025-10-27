@@ -117,7 +117,7 @@ const RelatedCourseCard: React.FC<RelatedCourseCardProps> = ({ course, index, on
           {/* Category badge */}
           {course.category && (
             <div className="absolute top-3 left-3 flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-white/95 backdrop-blur-sm shadow-sm">
+              <div className="p-1.5 rounded-none bg-white/95 backdrop-blur-sm neo-shadow">
                 <CategoryIcon
                   categoryId={
                     typeof course.category === "object"
@@ -134,7 +134,7 @@ const RelatedCourseCard: React.FC<RelatedCourseCardProps> = ({ course, index, on
 
           {/* Favorite button */}
           <motion.button
-            className={`absolute top-3 right-3 p-1.5 rounded-full backdrop-blur-sm shadow-sm transition-all duration-300 ${
+            className={`absolute top-3 right-3 p-1.5 rounded-full backdrop-blur-sm neo-shadow transition-all duration-300 ${
               isFavorited ? "bg-red-500/95 text-white" : "bg-white/95 text-gray-700 hover:bg-red-50 hover:text-red-500"
             }`}
             onClick={handleFavoriteClick}

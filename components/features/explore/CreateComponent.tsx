@@ -27,7 +27,7 @@ class ExploreErrorBoundary extends React.Component<{ children: React.ReactNode }
           <p className="text-xs text-muted-foreground mb-4">{this.state.error?.message || 'Unknown error'}</p>
           <button
             onClick={() => this.setState({ hasError: false, error: undefined })}
-            className="text-xs px-3 py-1.5 rounded-md border bg-background hover:bg-muted transition-colors"
+            className="text-xs px-3 py-1.5 rounded-none border bg-background hover:bg-muted transition-colors"
           >Retry</button>
         </div>
       )

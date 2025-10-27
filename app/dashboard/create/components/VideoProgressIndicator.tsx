@@ -114,7 +114,7 @@ export function VideoProgressIndicator({
                                               currentStatus === "queued" ? 10 : 0)
 
   return (
-    <div className={cn("flex flex-col space-y-2 p-3 rounded-lg border-2", className)}>
+    <div className={cn("flex flex-col space-y-2 p-3 rounded-none border-2", className)}>
       <div className="flex items-center justify-between">
         {showLabel && (
           <div className="flex items-center space-x-2">

@@ -36,7 +36,7 @@ const AddChapterForm: React.FC<AddChapterFormProps> = ({
   }, [youtubeId, extractYoutubeIdFromUrl])
 
   return (
-    <div className="mt-4 border-4 border-border rounded-lg p-3 sm:p-4 space-y-3 bg-card shadow-neo">
+    <div className="mt-4 border-4 border-border rounded-none p-3 sm:p-4 space-y-3 bg-card shadow-neo">
       <h4 className="font-black uppercase text-foreground text-sm sm:text-base">Add New Chapter</h4>
       <div className="space-y-2">
         <Input
@@ -68,14 +68,14 @@ const AddChapterForm: React.FC<AddChapterFormProps> = ({
             </p>
           )}
           {validatedId && (
-            <div className="mt-2 border-4 border-border rounded-lg p-2 bg-card">
+            <div className="mt-2 border-4 border-border rounded-none p-2 bg-card">
               <p className="text-xs text-accent mb-2 font-medium">Video ID validated: {validatedId}</p>
-              <div className="relative aspect-video bg-muted rounded-lg border-4 border-border overflow-hidden">
+              <div className="relative aspect-video bg-muted rounded-none border-4 border-border overflow-hidden">
                 <Image
                   src={getYouTubeThumbnailUrl(validatedId, "hqdefault") || "/placeholder.svg"}
                   alt="Video thumbnail"
                   fill
-                  className="object-cover rounded-lg"
+                  className="object-cover rounded-none"
                   sizes="100vw"
                   onError={createThumbnailErrorHandler(validatedId)}
                 />

@@ -21,7 +21,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
       {/* Engaging intro card */}
       <div className="bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 border-4 border-black rounded-xl p-4 md:p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
         <div className="flex items-start gap-3">
-          <div className="p-2 md:p-3 bg-white border-3 border-black rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+          <div className="p-2 md:p-3 bg-white border-3 border-black rounded-none shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
             <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-black" />
           </div>
           <div>
@@ -36,7 +36,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
       {/* Course Title */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 md:p-2 bg-blue-400 border-3 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+          <div className="p-1.5 md:p-2 bg-blue-400 border-3 border-black rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-black" />
           </div>
           <Label htmlFor="title" className="text-sm md:text-base font-black text-black">
@@ -55,7 +55,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
                 id="title" 
                 placeholder="e.g., Master Web Development in 30 Days" 
                 className={cn(
-                  "border-3 md:border-4 border-black rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] transition-all duration-200 font-bold text-sm md:text-base h-11 md:h-12 px-4",
+                  "border-3 md:border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] transition-all duration-200 font-bold text-sm md:text-base h-11 md:h-12 px-4",
                   errors.title 
                     ? "bg-red-100 border-red-500" 
                     : "bg-white hover:bg-blue-50"
@@ -73,7 +73,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
         />
         
         {errors.title && (
-          <div className="flex items-center gap-2 bg-red-100 border-3 border-red-500 rounded-lg p-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+          <div className="flex items-center gap-2 bg-red-100 border-3 border-red-500 rounded-none p-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
             <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
             <p className="text-xs md:text-sm text-red-700 font-bold">{errors.title.message}</p>
           </div>
@@ -88,7 +88,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
       {/* Course Description */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 md:p-2 bg-purple-400 border-3 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+          <div className="p-1.5 md:p-2 bg-purple-400 border-3 border-black rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <FileText className="h-4 w-4 md:h-5 md:w-5 text-black" />
           </div>
           <Label htmlFor="description" className="text-sm md:text-base font-black text-black">
@@ -106,7 +106,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
                 id="description"
                 placeholder="Describe what students will learn, who it's for, and what makes your course unique..."
                 className={cn(
-                  "min-h-[120px] md:min-h-[140px] border-3 md:border-4 border-black rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] transition-all duration-200 font-bold text-sm md:text-base p-4 resize-none",
+                  "min-h-[120px] md:min-h-[140px] border-3 md:border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] transition-all duration-200 font-bold text-sm md:text-base p-4 resize-none",
                   errors.description 
                     ? "bg-red-100 border-red-500" 
                     : "bg-white hover:bg-purple-50"
@@ -120,13 +120,13 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
         />
         
         {errors.description && (
-          <div className="flex items-center gap-2 bg-red-100 border-3 border-red-500 rounded-lg p-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+          <div className="flex items-center gap-2 bg-red-100 border-3 border-red-500 rounded-none p-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
             <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
             <p className="text-xs md:text-sm text-red-700 font-bold">{errors.description.message}</p>
           </div>
         )}
         
-        <div className="bg-blue-50 border-3 border-blue-400 rounded-lg p-3 md:p-4">
+        <div className="bg-blue-50 border-3 border-blue-400 rounded-none p-3 md:p-4">
           <p className="text-xs md:text-sm font-bold text-blue-900 mb-2">💡 Pro Tips:</p>
           <ul className="space-y-1 text-xs md:text-sm text-blue-800 font-medium">
             <li className="flex items-start gap-2">
@@ -148,7 +148,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
       {/* Category */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 md:p-2 bg-green-400 border-3 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+          <div className="p-1.5 md:p-2 bg-green-400 border-3 border-black rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <Tag className="h-4 w-4 md:h-5 md:w-5 text-black" />
           </div>
           <Label htmlFor="category" className="text-sm md:text-base font-black text-black">
@@ -167,7 +167,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
                 id="category" 
                 placeholder="e.g., Programming, Design, Marketing, Business" 
                 className={cn(
-                  "border-3 md:border-4 border-black rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] transition-all duration-200 font-bold text-sm md:text-base h-11 md:h-12 px-4",
+                  "border-3 md:border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] transition-all duration-200 font-bold text-sm md:text-base h-11 md:h-12 px-4",
                   errors.category 
                     ? "bg-red-100 border-red-500" 
                     : "bg-white hover:bg-green-50"
@@ -185,7 +185,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
         />
         
         {errors.category && (
-          <div className="flex items-center gap-2 bg-red-100 border-3 border-red-500 rounded-lg p-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+          <div className="flex items-center gap-2 bg-red-100 border-3 border-red-500 rounded-none p-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
             <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
             <p className="text-xs md:text-sm text-red-700 font-bold">{errors.category.message}</p>
           </div>

@@ -76,7 +76,7 @@ export function DeleteNoteDialog({
           </AlertDialogTitle>
           <AlertDialogDescription>
             <span className="block mb-3">Are you sure you want to delete this note? This action cannot be undone.</span>
-            <span className="inline-block bg-muted/50 rounded-lg p-3 border-l-4 border-destructive/30 w-full">
+            <span className="inline-block bg-muted/50 rounded-none p-3 border-l-4 border-destructive/30 w-full">
               <span className="block text-sm font-medium text-muted-foreground mb-1">Note content:</span>
               <span className="block text-sm text-foreground line-clamp-3">
                 {noteContent.length > 100

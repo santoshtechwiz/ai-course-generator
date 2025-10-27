@@ -45,7 +45,7 @@ export default function CoursesPage() {
             Manage and continue your learning journey
           </p>
         </div>
-        <Button asChild className="shadow-sm w-fit">
+        <Button asChild className="neo-shadow w-fit">
           <Link href="/dashboard/create">
             <PlusCircle className="mr-2 h-4 w-4" />
             Create Course

@@ -83,7 +83,7 @@ export function FileUpload({ onFileSelect, maxSizeInMB = 0.5 }: FileUploadProps)
       </div>
 
       <Card
-        className="border-dashed border-2 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
+        className="border-dashed border-2 rounded-none p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >

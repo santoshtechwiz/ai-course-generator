@@ -114,7 +114,7 @@ export default function SignOutPage() {  const [isLoading, setIsLoading] = useSt
   }, [callbackUrl])
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-      <div className="p-8 bg-card rounded-lg shadow-lg text-center border border-border">
+      <div className="p-8 bg-card rounded-none shadow-lg text-center border border-border">
         {isComplete ? (
           <>
             <CheckCircle className="h-8 w-8 mb-4 mx-auto text-green-500" />

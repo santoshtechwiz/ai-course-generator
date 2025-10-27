@@ -93,7 +93,7 @@ const EnhancedUnitCard = React.memo<EnhancedUnitCardProps>(
                 {...provided.droppableProps}
                 ref={provided.innerRef}
                 className={cn(
-                  "space-y-3 p-3 rounded-lg transition-all",
+                  "space-y-3 p-3 rounded-none transition-all",
                   snapshot.isDraggingOver && "bg-primary/10 border-4 border-dashed border-primary"
                 )}
               >
@@ -125,7 +125,7 @@ const EnhancedUnitCard = React.memo<EnhancedUnitCardProps>(
                                 onCancel={onCancelEditingChapter}
                               />
                             ) : (
-                              <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border-2 border-border">
+                              <div className="flex items-center gap-2 p-2 rounded-none bg-muted/30 border-2 border-border">
                                 <h4 className="font-semibold text-sm flex-1">{chapter.title}</h4>
                                 
                                 <div className="flex items-center gap-1">

@@ -150,7 +150,7 @@ export function ContextualSignInPrompt({
     <Card className={`bg-blue-50 border-blue-200 ${className}`}>
       <CardContent className="p-4">
         <div className="flex items-start space-x-3">
-          <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+          <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-none flex items-center justify-center">
             {content.icon}
           </div>
           <div className="flex-grow min-w-0">

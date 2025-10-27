@@ -45,7 +45,7 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
         "You can easily change the order of chapters by dragging and dropping them. Just click and hold the drag handle, then move the chapter to its new position.",
       icon: <DragHandleDots2Icon className="h-5 w-5 md:h-6 md:w-6 text-purple-600" />,
       image: (
-        <div className="border-4 border-black rounded-lg p-3 md:p-4 bg-yellow-50 my-3 md:my-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="border-4 border-black rounded-none p-3 md:p-4 bg-yellow-50 my-3 md:my-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <div className="flex items-center gap-2 mb-2">
             <DragHandleDots2Icon className="h-4 w-4 md:h-5 md:w-5 text-purple-600 animate-pulse" />
             <div className="h-5 md:h-6 w-32 md:w-40 bg-blue-200 rounded border-2 border-black"></div>
@@ -76,7 +76,7 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
         "You can add your own custom chapters to any unit. Click the 'Add Chapter' button at the bottom of a unit to create a new chapter.",
       icon: <Plus className="h-5 w-5 md:h-6 md:w-6 text-green-600" />,
       image: (
-        <div className="border-4 border-black rounded-lg p-3 md:p-4 bg-green-50 my-3 md:my-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="border-4 border-black rounded-none p-3 md:p-4 bg-green-50 my-3 md:my-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <div className="h-16 md:h-20 w-full bg-blue-200 rounded border-2 border-black mb-3"></div>
           <motion.div
             animate={{
@@ -117,7 +117,7 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
         "After adding a chapter, you can customize its title and add a YouTube video. You can either let our AI generate a video or add your own YouTube video ID.",
       icon: <Edit className="h-5 w-5 md:h-6 md:w-6 text-orange-600" />,
       image: (
-        <div className="border-4 border-black rounded-lg p-3 md:p-4 bg-blue-50 my-3 md:my-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="border-4 border-black rounded-none p-3 md:p-4 bg-blue-50 my-3 md:my-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <div className="flex items-center gap-2 mb-3">
             <div className="h-5 md:h-6 w-32 md:w-40 bg-purple-200 rounded border-2 border-black"></div>
             <Edit className="h-3 w-3 md:h-4 md:w-4 text-orange-600 animate-pulse" />
@@ -140,7 +140,7 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
         "You can generate videos for your chapters automatically. Click the 'Generate' button on a chapter to create a video based on the chapter title.",
       icon: <Video className="h-5 w-5 md:h-6 md:w-6 text-red-600" />,
       image: (
-        <div className="border-4 border-black rounded-lg p-3 md:p-4 bg-purple-50 my-3 md:my-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="border-4 border-black rounded-none p-3 md:p-4 bg-purple-50 my-3 md:my-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <div className="h-16 md:h-20 w-full bg-green-200 rounded border-2 border-black mb-3"></div>
           <motion.div
             animate={{

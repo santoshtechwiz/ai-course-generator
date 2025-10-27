@@ -180,7 +180,7 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
           {/* Enhanced View Mode Toggle */}
           <div
             className={cn(
-              "flex items-center gap-1 rounded-lg border-2 border-border p-1 bg-background",
+              "flex items-center gap-1 rounded-none border-2 border-border p-1 bg-background",
               "shadow-[2px_2px_0px_0px_hsl(var(--border))]"
             )}
             role="group"
@@ -191,7 +191,7 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
               size="sm"
               onClick={() => setViewMode("grid")}
               className={cn(
-                "h-9 w-9 p-0 rounded-md transition-all duration-100",
+                "h-9 w-9 p-0 rounded-none transition-all duration-100",
                 viewMode === "grid" && "bg-main text-main-foreground shadow-[2px_2px_0px_0px_hsl(var(--border))]"
               )}
               aria-label="Grid view"
@@ -204,7 +204,7 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
               size="sm"
               onClick={() => setViewMode("list")}
               className={cn(
-                "h-9 w-9 p-0 rounded-md transition-all duration-100",
+                "h-9 w-9 p-0 rounded-none transition-all duration-100",
                 viewMode === "list" && "bg-main text-main-foreground shadow-[2px_2px_0px_0px_hsl(var(--border))]"
               )}
               aria-label="List view"
@@ -226,7 +226,7 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
           <TabsList
             className={cn(
               "grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4",
-              "bg-secondary/50 p-1.5 rounded-lg",
+              "bg-secondary/50 p-1.5 rounded-none",
               "border-2 border-border",
               "shadow-[2px_2px_0px_0px_hsl(var(--border))]"
             )}
@@ -235,7 +235,7 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
             <TabsTrigger
               value="all"
               className={cn(
-                "flex items-center gap-2 rounded-md transition-all duration-100 font-bold",
+                "flex items-center gap-2 rounded-none transition-all duration-100 font-bold",
                 "data-[state=active]:bg-background data-[state=active]:text-foreground",
                 "data-[state=active]:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
               )}
@@ -256,7 +256,7 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
             <TabsTrigger
               value="in-progress"
               className={cn(
-                "flex items-center gap-2 rounded-lg transition-all duration-100 font-bold",
+                "flex items-center gap-2 rounded-none transition-all duration-100 font-bold",
                 "data-[state=active]:bg-main data-[state=active]:text-main-foreground",
                 "data-[state=active]:border-2 data-[state=active]:border-border",
                 "data-[state=active]:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
@@ -278,7 +278,7 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
             <TabsTrigger
               value="completed"
               className={cn(
-                "flex items-center gap-2 rounded-lg transition-all duration-100 font-bold",
+                "flex items-center gap-2 rounded-none transition-all duration-100 font-bold",
                 "data-[state=active]:bg-main data-[state=active]:text-main-foreground",
                 "data-[state=active]:border-2 data-[state=active]:border-border",
                 "data-[state=active]:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
@@ -300,7 +300,7 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
             <TabsTrigger
               value="favorites"
               className={cn(
-                "flex items-center gap-2 rounded-lg transition-all duration-100 font-bold",
+                "flex items-center gap-2 rounded-none transition-all duration-100 font-bold",
                 "data-[state=active]:bg-main data-[state=active]:text-main-foreground",
                 "data-[state=active]:border-2 data-[state=active]:border-border",
                 "data-[state=active]:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
@@ -495,7 +495,7 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
                   <span className="font-black text-foreground">{Math.round(progress)}%</span>
                 </div>
                 <div className="relative">
-                  <div className="h-3 bg-background border-3 border-border rounded-md overflow-hidden">
+                  <div className="h-3 bg-background border-3 border-border rounded-none overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${progress}%` }}
@@ -549,7 +549,7 @@ function CourseListItem({ course, progress, isLoading, onClick }: CourseCardProp
       onClick={onClick}
     >
       <CardContent className="flex items-center gap-4 p-4">
-        <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary/10 text-primary">
+        <div className="flex items-center justify-center w-10 h-10 rounded-none bg-primary/10 text-primary">
           {course.category ? (
             (() => {
               const cat = typeof course.category === 'object' && course.category?.name ? String(course.category.name) : String(course.category)
@@ -611,7 +611,7 @@ function EmptyState({ showProgress }: { showProgress: boolean }) {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
-          <Button asChild size="lg" className="shadow-sm">
+          <Button asChild size="lg" className="neo-shadow">
             <Link href="/dashboard/explore" className="gap-2">
               <Search className="h-4 w-4" />
               {showProgress ? "Browse Courses" : "Explore Courses"}

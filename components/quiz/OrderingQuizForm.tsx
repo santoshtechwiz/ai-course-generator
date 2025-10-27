@@ -182,7 +182,7 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
           {/* Subscription Notice */}
           <div
             className={cn(
-              "p-3 rounded-lg border-l-4 flex items-start gap-3",
+              "p-3 rounded-none border-l-4 flex items-start gap-3",
               canGenerate
                 ? "bg-blue-900/20 border-blue-600"
                 : "bg-red-900/20 border-red-600"
@@ -246,7 +246,7 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full left-0 right-0 mt-1 bg-[var(--color-card)] border-4 border-[var(--color-border)] rounded-lg z-10 max-h-40 overflow-y-auto shadow-[var(--shadow-neo)]"
+                    className="absolute top-full left-0 right-0 mt-1 bg-[var(--color-card)] border-4 border-[var(--color-border)] rounded-none z-10 max-h-40 overflow-y-auto shadow-[var(--shadow-neo)]"
                   >
                     {suggestedTopics.map((topic, idx) => (
                       <button
@@ -294,7 +294,7 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
                     }
                     disabled={!canGenerate || isLoading}
                     className={cn(
-                      "h-14 w-full font-black text-base flex flex-col items-center justify-center gap-2 rounded-md border-4 transition-all duration-200",
+                      "h-14 w-full font-black text-base flex flex-col items-center justify-center gap-2 rounded-none border-4 transition-all duration-200",
                       formData.difficulty === option.value
                         ? cn(diff.color, diff.textColor, 'shadow-[4px_4px_0px_0px_hsl(var(--border))]')
                         : 'bg-[var(--color-card)] text-[var(--color-text)] border-[var(--color-border)] hover:bg-[var(--color-muted)] shadow-[2px_2px_0px_0px_hsl(var(--border))]'
@@ -324,9 +324,9 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
                   value={formData.numberOfSteps}
                   onChange={handleStepChange}
                   disabled={!canGenerate || isLoading}
-                  className="flex-1 h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-amber-600"
+                  className="flex-1 h-2 bg-white/20 rounded-none appearance-none cursor-pointer accent-amber-600"
                 />
-                <div className="min-w-fit px-3 py-1 bg-amber-600/20 border-2 border-amber-600 rounded-lg text-white font-bold font-mono">
+                <div className="min-w-fit px-3 py-1 bg-amber-600/20 border-2 border-amber-600 rounded-none text-white font-bold font-mono">
                   {formData.numberOfSteps} steps
                 </div>
               </div>
@@ -337,7 +337,7 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-3 bg-red-900/20 border-2 border-red-600 rounded-lg flex items-start gap-2"
+                className="p-3 bg-red-900/20 border-2 border-red-600 rounded-none flex items-start gap-2"
               >
                 <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-red-300">{error}</p>
@@ -384,7 +384,7 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
           </form>
 
           {/* Info Box */}
-          <div className="p-4 bg-[var(--color-card)] border-l-4 border-[var(--color-primary)] rounded-lg space-y-2 shadow-[var(--shadow-neo)]">
+          <div className="p-4 bg-[var(--color-card)] border-l-4 border-[var(--color-primary)] rounded-none space-y-2 shadow-[var(--shadow-neo)]">
             <p className="text-sm font-bold text-[var(--color-primary)] uppercase">💡 TIP</p>
             <p className="text-sm text-[var(--color-text)]/70">
               Be specific with your topic for better quiz generation. For example:

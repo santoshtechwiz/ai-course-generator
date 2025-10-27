@@ -65,7 +65,7 @@ async function CancelledPageContent({ userId }: { userId: string | undefined }) 
           </Alert>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            <div className="bg-card p-4 rounded-lg border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]">
+            <div className="bg-card p-4 rounded-none border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]">
               <h3 className="font-medium mb-2 flex items-center">
                 <RefreshCw className="h-5 w-5 mr-2 text-primary" /> Try Again
               </h3>
@@ -81,7 +81,7 @@ async function CancelledPageContent({ userId }: { userId: string | undefined }) 
               </Button>
             </div>
 
-            <div className="bg-card p-4 rounded-lg border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]">
+            <div className="bg-card p-4 rounded-none border-2 border-border shadow-[2px_2px_0px_0px_var(--border)]">
               <h3 className="font-medium mb-2 flex items-center">
                 <CreditCard className="h-5 w-5 mr-2 text-success" /> Payment Methods
               </h3>

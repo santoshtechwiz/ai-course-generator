@@ -250,7 +250,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                 </CardTitle>
 
                 {question.description && (
-                  <div className="bg-muted/80 rounded-lg p-4 border-l-4 border-primary shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.05)]">
+                  <div className="bg-muted/80 rounded-none p-4 border-l-4 border-primary shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.05)]">
                     <p className="text-sm leading-relaxed text-foreground font-medium">
                       {question.description}
                     </p>
@@ -307,7 +307,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
               <h3 className="text-xl font-black text-foreground uppercase tracking-tight">
                 Arrange the steps in the correct order
               </h3>
-              <div className="text-sm font-bold text-[var(--color-text)] bg-[var(--color-muted)] px-3 py-1 rounded-lg border-6 border-[var(--color-border)]">
+              <div className="text-sm font-bold text-[var(--color-text)] bg-[var(--color-muted)] px-3 py-1 rounded-none border-6 border-[var(--color-border)]">
                 {currentSteps.length} steps
               </div>
             </div>
@@ -377,7 +377,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                       >
                         <div
                           className={cn(
-                            "flex-shrink-0 pt-1 transition-all duration-200 rounded-lg px-2 py-1",
+                            "flex-shrink-0 pt-1 transition-all duration-200 rounded-none px-2 py-1",
                             !showResult && "hover:bg-primary/10",
                             isDragging && "bg-blue-600 text-white scale-125 animate-pulse shadow-lg",
                             !isDragging &&
@@ -477,7 +477,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 48 }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="bg-green-400 rounded-lg border-4 border-green-500 shadow-[4px_4px_0px_0px_hsl(var(--border))] flex items-center justify-center"
+                            className="bg-green-400 rounded-none border-4 border-green-500 shadow-[4px_4px_0px_0px_hsl(var(--border))] flex items-center justify-center"
                           >
                             <span className="text-white font-semibold text-sm">Drop Here</span>
                           </motion.div>
@@ -492,7 +492,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-center bg-muted/50 rounded-lg p-4 border border-dashed border-muted-foreground/30"
+                className="text-center bg-muted/50 rounded-none p-4 border border-dashed border-muted-foreground/30"
               >
                 <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
                   <Hand className="h-4 w-4" />
@@ -519,7 +519,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                className="text-center bg-blue-100 dark:bg-blue-950/50 rounded-lg p-3 border border-blue-300 dark:border-blue-800"
+                className="text-center bg-blue-100 dark:bg-blue-950/50 rounded-none p-3 border border-blue-300 dark:border-blue-800"
               >
                 <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
                   Drag to the desired position and release to drop

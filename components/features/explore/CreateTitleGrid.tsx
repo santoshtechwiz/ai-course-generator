@@ -382,7 +382,7 @@ function Tile({
           <Card
             className={cn(
               "h-full flex flex-col justify-between",
-              "bg-[var(--color-card)] border-6 border-[var(--color-border)] rounded-lg",
+              "bg-[var(--color-card)] border-6 border-[var(--color-border)] rounded-none",
               "shadow-[3px_3px_0_var(--shadow-color)] transition-all duration-200",
               "hover:translate-x-1 hover:translate-y-1",
               "hover:shadow-[5px_5px_0_var(--shadow-color)] cursor-pointer",
@@ -398,7 +398,7 @@ function Tile({
                 <div className="flex items-center min-w-0 flex-1">
                   {/* Brutal Icon Container */}
                   <div className={cn(
-                    "flex-shrink-0 mr-3 p-2 rounded-lg border-4 border-[var(--color-border)]",
+                    "flex-shrink-0 mr-3 p-2 rounded-none border-4 border-[var(--color-border)]",
                     "bg-[var(--color-primary)] text-[var(--color-bg)]",
                     "shadow-[3px_3px_0_var(--shadow-color)]"
                   )}>
@@ -460,7 +460,7 @@ function Tile({
             <CardFooter className="pt-4">
               <Button
                 className={cn(
-                  "w-full font-bold border-4 border-[var(--color-border)] rounded-lg",
+                  "w-full font-bold border-4 border-[var(--color-border)] rounded-none",
                   "shadow-[3px_3px_0_var(--shadow-color)] hover:shadow-[5px_5px_0_var(--shadow-color)]",
                   "transition-all duration-200",
                   "hover:translate-x-1 hover:translate-y-1",
@@ -483,7 +483,7 @@ function Tile({
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className={cn(
           "sm:max-w-4xl lg:max-w-5xl max-h-[90vh] p-0",
-          "border-6 border-[var(--color-border)] rounded-lg shadow-[6px_6px_0_var(--shadow-color)]",
+          "border-6 border-[var(--color-border)] rounded-none shadow-[6px_6px_0_var(--shadow-color)]",
           "bg-[var(--color-card)] dark:bg-[var(--color-card)] overflow-hidden flex flex-col"
         )}>
           {/* Mobile Close */}
@@ -493,7 +493,7 @@ function Tile({
               size="icon"
               onClick={() => setIsOpen(false)}
               className={cn(
-                "h-8 w-8 rounded-lg border-4 border-[var(--color-border)]",
+                "h-8 w-8 rounded-none border-4 border-[var(--color-border)]",
                 "bg-[var(--color-card)] hover:bg-[var(--color-bg)]",
                 "text-[var(--color-text)] shadow-[3px_3px_0_var(--shadow-color)]",
                 "hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0_var(--shadow-color)]"
@@ -513,7 +513,7 @@ function Tile({
                 <DialogTitle className="flex items-center justify-between">
                   <div className="flex items-center text-2xl font-black">
                     <div className={cn(
-                      "p-3 rounded-lg border-4 border-[var(--color-border)] mr-4",
+                      "p-3 rounded-none border-4 border-[var(--color-border)] mr-4",
                       "bg-[var(--color-primary)] text-[var(--color-bg)]",
                       "shadow-[3px_3px_0_var(--shadow-color)]"
                     )}>
@@ -554,7 +554,7 @@ function Tile({
                         exit={{ opacity: 0, x: 20 }}
                         transition={{ duration: 0.3 }}
                         className={cn(
-                          "text-center py-6 rounded-lg",
+                          "text-center py-6 rounded-none",
                           "border-4 border-[var(--color-border)] bg-[var(--color-card)]",
                           "shadow-[4px_4px_0_var(--shadow-color)]"
                         )}
@@ -595,7 +595,7 @@ function Tile({
                 {/* Stats Grid - Brutal */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className={cn(
-                    "text-center p-4 rounded-lg border-4 border-[var(--color-border)]",
+                    "text-center p-4 rounded-none border-4 border-[var(--color-border)]",
                     "bg-[var(--color-card)] shadow-[3px_3px_0_var(--shadow-color)]"
                   )}>
                     <Target className={cn("h-8 w-8 mx-auto mb-2 text-[var(--color-primary)]")} />
@@ -603,7 +603,7 @@ function Tile({
                     <div className="text-sm font-bold text-[var(--color-muted)]">Level</div>
                   </div>
                   <div className={cn(
-                    "text-center p-4 rounded-lg border-4 border-[var(--color-border)]",
+                    "text-center p-4 rounded-none border-4 border-[var(--color-border)]",
                     "bg-[var(--color-card)] shadow-[3px_3px_0_var(--shadow-color)]"
                   )}>
                     <Zap className={cn("h-8 w-8 mx-auto mb-2 text-[var(--color-primary)]")} />
@@ -623,7 +623,7 @@ function Tile({
                       <div
                         key={i}
                         className={cn(
-                          "flex items-center p-3 rounded-lg",
+                          "flex items-center p-3 rounded-none",
                           "border-4 border-[var(--color-border)] bg-[var(--color-card)]",
                           "shadow-[2px_2px_0_var(--shadow-color)]"
                         )}
@@ -647,7 +647,7 @@ function Tile({
             <Button
               onClick={() => router.push(url)}
               className={cn(
-                "w-full h-12 font-black text-base border-4 border-[var(--color-border)] rounded-lg",
+                "w-full h-12 font-black text-base border-4 border-[var(--color-border)] rounded-none",
                 "shadow-[3px_3px_0_var(--shadow-color)] hover:shadow-[5px_5px_0_var(--shadow-color)]",
                 "transition-all duration-200",
                 "hover:translate-x-1 hover:translate-y-1",
@@ -677,7 +677,7 @@ export function CreateTileGrid() {
       >
         {/* Badge */}
         <div className={cn(
-          "inline-flex items-center gap-3 px-6 py-3 rounded-lg",
+          "inline-flex items-center gap-3 px-6 py-3 rounded-none",
           "bg-[var(--color-primary)] border-4 border-[var(--color-border)]",
           "shadow-[3px_3px_0_var(--shadow-color)] text-[var(--color-bg)] font-bold"
         )}>
@@ -716,7 +716,7 @@ export function CreateTileGrid() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
         className={cn(
-          "text-center space-y-6 p-8 rounded-lg",
+          "text-center space-y-6 p-8 rounded-none",
           "bg-[var(--color-card)] border-6 border-[var(--color-border)] shadow-[3px_3px_0_var(--shadow-color)]"
         )}
       >
@@ -735,7 +735,7 @@ export function CreateTileGrid() {
         <Button
           size="lg"
           className={cn(
-            "bg-[var(--color-primary)] text-[var(--color-bg)] font-black px-8 py-3 border-4 border-[var(--color-border)] rounded-lg",
+            "bg-[var(--color-primary)] text-[var(--color-bg)] font-black px-8 py-3 border-4 border-[var(--color-border)] rounded-none",
             "shadow-[3px_3px_0_var(--shadow-color)] hover:shadow-[5px_5px_0_var(--shadow-color)]",
             "transition-all duration-200",
             "hover:translate-x-1 hover:translate-y-1"

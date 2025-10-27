@@ -93,7 +93,7 @@ const quizTypeIcons: Record<string, React.ComponentType<any>> = {
 
 const QuizSkeleton = () => (
   <motion.div
-    className="w-full p-3 sm:p-4 space-y-2 sm:space-y-3 bg-card border-4 border-border rounded-lg shadow-neo"
+    className="w-full p-3 sm:p-4 space-y-2 sm:space-y-3 bg-card border-4 border-border rounded-none shadow-neo"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3 }}
@@ -101,15 +101,15 @@ const QuizSkeleton = () => (
     aria-label="Loading quiz content"
   >
     <div className="flex justify-between items-center">
-      <Skeleton className="h-5 sm:h-6 w-32 sm:w-40 rounded-lg bg-muted" />
-      <Skeleton className="h-4 sm:h-5 w-16 sm:w-20 rounded-lg bg-muted" />
+      <Skeleton className="h-5 sm:h-6 w-32 sm:w-40 rounded-none bg-muted" />
+      <Skeleton className="h-4 sm:h-5 w-16 sm:w-20 rounded-none bg-muted" />
     </div>
-    <Skeleton className="h-3 sm:h-4 w-full rounded-lg bg-muted" />
-    <Skeleton className="h-3 sm:h-4 w-3/4 rounded-lg bg-muted" />
-    <Skeleton className="h-40 sm:h-48 w-full rounded-lg bg-muted" />
+    <Skeleton className="h-3 sm:h-4 w-full rounded-none bg-muted" />
+    <Skeleton className="h-3 sm:h-4 w-3/4 rounded-none bg-muted" />
+    <Skeleton className="h-40 sm:h-48 w-full rounded-none bg-muted" />
     <div className="flex gap-2">
-      <Skeleton className="h-9 sm:h-10 flex-1 rounded-lg bg-muted" />
-      <Skeleton className="h-9 sm:h-10 w-24 sm:w-28 rounded-lg bg-muted" />
+      <Skeleton className="h-9 sm:h-10 flex-1 rounded-none bg-muted" />
+      <Skeleton className="h-9 sm:h-10 w-24 sm:w-28 rounded-none bg-muted" />
     </div>
   </motion.div>
 )
@@ -127,7 +127,7 @@ const Timer = ({ seconds, isPaused }: { seconds: number; isPaused?: boolean }) =
   return (
     <motion.div
       className={cn(
-        "inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-black transition-all duration-100 border-3 sm:border-4 border-border shadow-neo-sm",
+        "inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-none text-xs font-black transition-all duration-100 border-3 sm:border-4 border-border shadow-neo-sm",
         isPaused ? "bg-muted text-muted-foreground" : "bg-[var(--color-accent)] text-[var(--color-bg)]",
       )}
       whileHover={{ scale: 1.05, y: -2 }}
@@ -185,7 +185,7 @@ const QuizHeader = ({
             transition={{ delay: 0.2 }}
           >
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <div className="p-2 sm:p-2.5 rounded-lg bg-[var(--color-accent)] border-3 sm:border-4 border-border text-[var(--color-bg)] shadow-neo-sm sm:shadow-neo flex-shrink-0">
+              <div className="p-2 sm:p-2.5 rounded-none bg-[var(--color-accent)] border-3 sm:border-4 border-border text-[var(--color-bg)] shadow-neo-sm sm:shadow-neo flex-shrink-0">
                 <QuizTypeIcon className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
               </div>
               <div className="min-w-0 flex-1">
@@ -198,7 +198,7 @@ const QuizHeader = ({
                 <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                   <Badge
                     variant="neutral"
-                    className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-black bg-[var(--color-accent)] text-[var(--color-bg)] border-2 sm:border-4 border-border shadow-neo-sm rounded-md sm:rounded-lg"
+                    className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-black bg-[var(--color-accent)] text-[var(--color-bg)] border-2 sm:border-4 border-border shadow-neo-sm rounded-none sm:rounded-none"
                   >
                     {quizTypeLabel[quizType] || "Quiz"}
                   </Badge>
@@ -234,7 +234,7 @@ const QuizHeader = ({
                 onClick={onToggleSidebar}
                 aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
                 className={cn(
-                  "hidden sm:flex min-h-[44px] min-w-[44px] p-3 border-4 border-border shadow-neo rounded-lg bg-card hover:bg-muted transition-all duration-200",
+                  "hidden sm:flex min-h-[44px] min-w-[44px] p-3 border-4 border-border shadow-neo rounded-none bg-card hover:bg-muted transition-all duration-200",
                   isSidebarTransitioning && "pointer-events-none opacity-50",
                   // Hide on desktop since sidebar is always visible
                   !isMobile && "lg:hidden"
@@ -250,7 +250,7 @@ const QuizHeader = ({
               size="sm"
               onClick={onToggleFullscreen}
               aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-              className="min-h-[44px] min-w-[44px] p-3 border-4 border-border shadow-neo rounded-lg bg-card hover:bg-muted"
+              className="min-h-[44px] min-w-[44px] p-3 border-4 border-border shadow-neo rounded-none bg-card hover:bg-muted"
             >
               {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
             </Button>
@@ -260,7 +260,7 @@ const QuizHeader = ({
               size="sm"
               onClick={onGoHome}
               aria-label="Return to quizzes dashboard"
-              className="min-h-[44px] min-w-[44px] p-3 border-4 border-border shadow-neo rounded-lg bg-card hover:bg-muted"
+              className="min-h-[44px] min-w-[44px] p-3 border-4 border-border shadow-neo rounded-none bg-card hover:bg-muted"
             >
               <Home className="w-5 h-5" />
             </Button>
@@ -395,7 +395,7 @@ export function QuizPlayInterface({
         transition={{ duration: 0.5 }}
       >
         <div className="text-center space-y-4 max-w-md">
-          <div className="p-4 rounded-lg bg-muted border-4 border-border shadow-neo">
+          <div className="p-4 rounded-none bg-muted border-4 border-border shadow-neo">
             <Lock className="w-12 h-12 mx-auto text-muted-foreground mb-4" aria-hidden="true" />
           </div>
           <h1 className="text-lg sm:text-xl lg:text-2xl font-black text-foreground mb-2">Private Quiz</h1>
@@ -405,7 +405,7 @@ export function QuizPlayInterface({
           {!authUser && <p className="text-sm text-muted-foreground mb-4">Please log in to access private quizzes.</p>}
           <Button
             onClick={goHome}
-            className="mt-4 border-4 border-border shadow-neo bg-[var(--color-accent)] text-[var(--color-bg)] hover:bg-[var(--color-accent)]/90 font-black rounded-lg px-4 sm:px-6 py-2 sm:py-2.5"
+            className="mt-4 border-4 border-border shadow-neo bg-[var(--color-accent)] text-[var(--color-bg)] hover:bg-[var(--color-accent)]/90 font-black rounded-none px-4 sm:px-6 py-2 sm:py-2.5"
             aria-label="Return to quizzes dashboard"
           >
             Return to Dashboard
@@ -450,7 +450,7 @@ export function QuizPlayInterface({
               size="sm"
               onClick={toggleSidebar}
               aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-              className="h-12 w-12 p-0 border-4 border-border shadow-neo rounded-lg bg-card hover:bg-muted"
+              className="h-12 w-12 p-0 border-4 border-border shadow-neo rounded-none bg-card hover:bg-muted"
             >
               {sidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
             </Button>
@@ -477,11 +477,11 @@ export function QuizPlayInterface({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -20, scale: 0.9 }}
                   transition={{ duration: 0.3 }}
-                  className="relative overflow-hidden rounded-lg border-4 border-border bg-card shadow-neo"
+                  className="relative overflow-hidden rounded-none border-4 border-border bg-card shadow-neo"
                 >
                   <div className="relative p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 sm:p-2.5 rounded-lg bg-[var(--color-accent)] border-3 sm:border-4 border-border shadow-neo-sm flex-shrink-0">
+                      <div className="p-2 sm:p-2.5 rounded-none bg-[var(--color-accent)] border-3 sm:border-4 border-border shadow-neo-sm flex-shrink-0">
                         <Play className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--color-bg)]" aria-hidden="true" />
                       </div>
                       <div>
@@ -493,7 +493,7 @@ export function QuizPlayInterface({
                     </div>
                     <Button
                       onClick={() => mainRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                      className="px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-black w-full sm:w-auto border-4 border-border shadow-neo rounded-lg bg-[var(--color-accent)] text-[var(--color-bg)] hover:bg-[var(--color-accent)]/90"
+                      className="px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-black w-full sm:w-auto border-4 border-border shadow-neo rounded-none bg-[var(--color-accent)] text-[var(--color-bg)] hover:bg-[var(--color-accent)]/90"
                       aria-label="Resume quiz from current question"
                     >
                       Resume Quiz
@@ -537,7 +537,7 @@ export function QuizPlayInterface({
                 {/* Sidebar content */}
                 <motion.div
                   className={cn(
-                    "bg-card border-4 border-border shadow-neo rounded-lg overflow-hidden",
+                    "bg-card border-4 border-border shadow-neo rounded-none overflow-hidden",
                     // Desktop: Normal positioning
                     !isMobile && "sticky top-4",
                     // Mobile: Slide in from right
@@ -557,7 +557,7 @@ export function QuizPlayInterface({
                         variant="neutral"
                         size="sm"
                         onClick={() => setSidebarOpen(false)}
-                        className="hover:bg-muted min-h-[44px] min-w-[44px] p-3 border-4 border-border shadow-neo rounded-lg bg-card"
+                        className="hover:bg-muted min-h-[44px] min-w-[44px] p-3 border-4 border-border shadow-neo rounded-none bg-card"
                         aria-label="Close sidebar"
                       >
                         <X className="h-5 w-5" />

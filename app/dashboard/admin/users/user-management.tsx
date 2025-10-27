@@ -376,7 +376,7 @@ export const UserManagement = () => {
 
     return (
       <div className="space-y-4">
-        <div className="border rounded-md overflow-hidden">
+        <div className="border rounded-none overflow-hidden">
           {/* Table Header */}
           <div className="grid grid-cols-12 gap-2 p-3 bg-muted/30 border-b text-sm font-medium">
             <div className="col-span-1 flex items-center justify-center">
@@ -662,7 +662,7 @@ export const UserManagement = () => {
       {/* Delete Confirmation Dialog */}
       {deletingUserId && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-background border rounded-lg shadow-lg p-6 max-w-md w-full">
+          <div className="bg-background border rounded-none shadow-lg p-6 max-w-md w-full">
             <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
             <p className="mb-6">Are you sure you want to delete this user? This action cannot be undone.</p>
             <div className="flex justify-end gap-2">

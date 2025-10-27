@@ -217,7 +217,7 @@ export function LoginModal({
                 handleProviderSignIn(provider.id)
               }}
               disabled={isAuthenticating}
-              className={`w-full flex items-center justify-center h-12 px-6 text-base font-medium transition-all duration-300 ${style.bgColor} ${style.textColor} border-2 ${style.borderColor} rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed hover:shadow-md active:scale-[0.98]`}
+              className={`w-full flex items-center justify-center h-12 px-6 text-base font-medium transition-all duration-300 ${style.bgColor} ${style.textColor} border-2 ${style.borderColor} rounded-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed hover:shadow-md active:scale-[0.98]`}
             >
               {isAuthenticating ? (
                 <>

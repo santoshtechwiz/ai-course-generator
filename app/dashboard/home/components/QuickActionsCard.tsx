@@ -112,7 +112,7 @@ export default function QuickActionsCard({
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className={cn(
-                        "p-2.5 rounded-lg",
+                        "p-2.5 rounded-none",
                         action.variant === "default" 
                           ? "bg-white/20 dark:bg-black/20" 
                           : "bg-white/20"

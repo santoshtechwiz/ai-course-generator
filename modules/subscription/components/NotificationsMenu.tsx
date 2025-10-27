@@ -129,7 +129,7 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
       
       <DropdownMenuContent
         className={cn(
-          "w-72 p-0 rounded-lg",
+          "w-72 p-0 rounded-none",
           "modal",
           "z-[var(--z-index-modal)]",
         )}

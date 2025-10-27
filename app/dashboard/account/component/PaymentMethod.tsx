@@ -137,7 +137,7 @@ function PaymentMethodFormContent({ onSuccess }: PaymentMethodFormProps) {
               </label>
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </div>
-            <div className="border border-input rounded-lg p-3 sm:p-4 bg-card">
+            <div className="border border-input rounded-none p-3 sm:p-4 bg-card">
               <CardElement
                 id="card-element"
                 options={{
@@ -160,7 +160,7 @@ function PaymentMethodFormContent({ onSuccess }: PaymentMethodFormProps) {
               />
             </div>
             {error && (
-              <div className="text-sm text-destructive bg-destructive/10 p-2 rounded-md border border-destructive/20">
+              <div className="text-sm text-destructive bg-destructive/10 p-2 rounded-none border border-destructive/20">
                 {error}
               </div>
             )}

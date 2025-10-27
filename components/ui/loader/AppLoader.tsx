@@ -23,7 +23,7 @@ export const AppLoader = React.memo(function AppLoader({
 
   return (
     <div
-      className={cn("flex flex-col items-center justify-center space-y-4 p-6 bg-[var(--color-card)] border-4 border-black rounded-md shadow-[4px_4px_0_#000]", className)}
+      className={cn("flex flex-col items-center justify-center space-y-4 p-6 bg-[var(--color-card)] border-4 border-black rounded-none shadow-[4px_4px_0_#000]", className)}
       role="status"
       aria-live="polite"
       aria-label={message}

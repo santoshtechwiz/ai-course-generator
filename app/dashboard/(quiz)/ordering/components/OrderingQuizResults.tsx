@@ -73,7 +73,7 @@ export default function OrderingQuizResults({
                   </p>
                 </div>
               </div>
-              <div className={`${performance.color} ${performance.bg} border-2 rounded-md text-lg px-4 py-2 font-semibold`}>
+              <div className={`${performance.color} ${performance.bg} border-2 rounded-none text-lg px-4 py-2 font-semibold`}>
                 {percentage}%
               </div>
             </div>
@@ -144,7 +144,7 @@ export default function OrderingQuizResults({
                           Q{idx + 1}: {question?.title || q?.questionId || 'Ordering Question'}
                         </div>
                       </div>
-                      <div className={`ml-2 text-xs px-2 py-1 rounded-md font-semibold ${
+                      <div className={`ml-2 text-xs px-2 py-1 rounded-none font-semibold ${
                         isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                       }`}>
                         {isCorrect ? 'Correct' : 'Incorrect'}
@@ -164,9 +164,9 @@ export default function OrderingQuizResults({
                         <div>
                           <div className="font-medium text-sm mb-2 flex items-center gap-2">
                             <span>Your Order</span>
-                            {!isCorrect && <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-md font-semibold">Incorrect</span>}
+                            {!isCorrect && <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-none font-semibold">Incorrect</span>}
                           </div>
-                          <div className={`p-3 rounded-lg border-2 ${
+                          <div className={`p-3 rounded-none border-2 ${
                             isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
                           }`}>
                             <div className="space-y-2 text-sm">
@@ -188,11 +188,11 @@ export default function OrderingQuizResults({
                         <div>
                           <div className="font-medium text-sm mb-2 flex items-center gap-2">
                             <span>Correct Order</span>
-                            <span className="text-xs px-2 py-1 bg-green-50 text-green-600 border border-green-200 rounded-md font-semibold">
+                            <span className="text-xs px-2 py-1 bg-green-50 text-green-600 border border-green-200 rounded-none font-semibold">
                               Reference
                             </span>
                           </div>
-                          <div className="p-3 bg-green-50 border-2 border-green-200 rounded-lg">
+                          <div className="p-3 bg-green-50 border-2 border-green-200 rounded-none">
                             <div className="space-y-2 text-sm">
                               {Array.isArray(correctOrder) && correctOrder.length > 0 ? (
                                 correctOrder.map((stepId: any, stepIdx: number) => (

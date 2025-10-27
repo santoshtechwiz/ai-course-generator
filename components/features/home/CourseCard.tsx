@@ -180,7 +180,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
     <Card
       onClick={handleCardClick}
       className={cn(
-        "group relative overflow-hidden bg-[var(--color-card)] cursor-pointer border border-gray-200 rounded-lg shadow-sm transition-all duration-200",
+        "group relative overflow-hidden bg-[var(--color-card)] cursor-pointer border border-gray-200 rounded-none neo-shadow transition-all duration-200",
         "hover:shadow-md hover:-translate-y-1",
         isNavigating && "opacity-75",
         variant === "list" && "flex flex-col sm:flex-row",
@@ -337,7 +337,7 @@ export const CourseCard = React.memo((props: CourseCardProps) => {
 
         {/* Progress Section (if enrolled) */}
         {isEnrolled && (
-          <div className="p-3 border border-border bg-muted/50 shadow-sm">
+          <div className="p-3 border border-border bg-muted/50 neo-shadow">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-black">
                 {progressPercentage > 0 ? `${progressPercentage}% COMPLETE` : "NOT STARTED"}

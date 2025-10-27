@@ -193,7 +193,7 @@ export default function OrderingQuizDemo() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="p-6 border-2 border-red-600 bg-red-900/20 rounded-lg flex items-start gap-4"
+              className="p-6 border-2 border-red-600 bg-red-900/20 rounded-none flex items-start gap-4"
             >
               <AlertCircle className="h-6 w-6 text-red-400 flex-shrink-0 mt-1" />
               <div className="flex-1">
@@ -201,7 +201,7 @@ export default function OrderingQuizDemo() {
                 <p className="text-red-300/80 mb-4">{pageData.error}</p>
                 <button
                   onClick={handleRetryQuiz}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-none transition-colors"
                 >
                   Try Again
                 </button>

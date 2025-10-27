@@ -129,7 +129,7 @@ function DashboardQuickLink({ className }: { className?: string }) {
     <Link
       href="/dashboard"
       className={cn(
-        "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg",
+        "inline-flex items-center gap-2 px-3 py-1.5 rounded-none",
         "bg-primary/10 text-primary hover:bg-primary/20",
         "transition-colors text-sm font-medium",
         className
@@ -151,7 +151,7 @@ export function LearningDashboardLink({ className }: { className?: string }) {
     <Link
       href="/dashboard/learn"
       className={cn(
-        "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg",
+        "inline-flex items-center gap-2 px-3 py-1.5 rounded-none",
         "bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20",
         "transition-colors text-sm font-medium",
         className

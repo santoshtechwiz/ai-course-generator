@@ -293,7 +293,7 @@ const QuestionEditor = ({
                 {question.options.map((option, optionIndex) => (
                   <div
                     key={optionIndex}
-                    className={`p-3 rounded-lg border-2 transition-all ${
+                    className={`p-3 rounded-none border-2 transition-all ${
                       optionIndex === question.correctAnswer
                         ? "border-green-500 bg-green-50 dark:bg-green-900/20"
                         : "border-gray-200 dark:border-gray-700"

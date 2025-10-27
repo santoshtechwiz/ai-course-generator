@@ -225,7 +225,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
                   control={form.control}
                   name="isAdmin"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm space-y-0">
+                    <FormItem className="flex flex-row items-center justify-between rounded-none border p-3 neo-shadow space-y-0">
                       <div>
                         <FormLabel>Administrator</FormLabel>
                         <FormDescription>Grant admin privileges to this user</FormDescription>
@@ -241,7 +241,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
                   control={form.control}
                   name="sendWelcomeEmail"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm space-y-0">
+                    <FormItem className="flex flex-row items-center justify-between rounded-none border p-3 neo-shadow space-y-0">
                       <div>
                         <FormLabel>Welcome Email</FormLabel>
                         <FormDescription>Send a welcome email to the new user</FormDescription>

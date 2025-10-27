@@ -35,7 +35,7 @@ export default async function LoginPage({
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
-      <div className="flex flex-col lg:flex-row bg-card border-3 border-border shadow-[8px_8px_0px_0px_var(--border)] rounded-lg overflow-hidden w-full max-w-6xl">
+      <div className="flex flex-col lg:flex-row bg-card border-3 border-border shadow-[8px_8px_0px_0px_var(--border)] rounded-none overflow-hidden w-full max-w-6xl">
         <div className="flex-1 p-10 md:p-14">
           <div className="text-4xl font-bold text-center mb-10">Log in to Course AI</div>
 

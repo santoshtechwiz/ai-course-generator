@@ -297,7 +297,7 @@ export function HintSystem({
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className="p-4 rounded-lg shadow-sm bg-muted border border-border text-foreground"
+                className="p-4 rounded-none neo-shadow bg-muted border border-border text-foreground"
               >
                 <div className="flex items-start gap-3">
                   <Info className="h-5 w-5 flex-shrink-0 mt-0.5 text-primary" />
@@ -322,7 +322,7 @@ export function HintSystem({
                   animate="visible"
                   exit="exit"
                   className={cn(
-                    "p-4 rounded-lg shadow-sm border flex flex-col gap-3",
+                    "p-4 rounded-none neo-shadow border flex flex-col gap-3",
                     getColor(hint)
                   )}
                 >
@@ -379,7 +379,7 @@ export function HintSystem({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
-              className="bg-primary/10 border border-primary/20 rounded-lg p-4"
+              className="bg-primary/10 border border-primary/20 rounded-none p-4"
             >
               <div className="flex items-center gap-3">
                 <div className="flex-shrink-0">

@@ -111,7 +111,7 @@ export function NotesPanel({
               className="text-center py-8 space-y-3"
             >
               <div className="flex justify-center">
-                <div className="p-3 bg-green-500/10 rounded-lg">
+                <div className="p-3 bg-green-500/10 rounded-none">
                   <StickyNote className="h-8 w-8 text-green-400/50" />
                 </div>
               </div>
@@ -132,7 +132,7 @@ export function NotesPanel({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ delay: index * 0.1 }}
-                  className="group bg-white/5 rounded-lg p-3 border border-white/10 hover:bg-white/10 transition-colors"
+                  className="group bg-white/5 rounded-none p-3 border border-white/10 hover:bg-white/10 transition-colors"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2 text-xs text-white/60">

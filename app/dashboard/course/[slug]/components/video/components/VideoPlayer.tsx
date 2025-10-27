@@ -54,7 +54,7 @@ const TheaterModeButton = React.memo(
     onToggle: () => void
   }) => (
     <button
-      className="absolute z-30 rounded-md p-2 transition-all duration-100 bg-black/70 hover:bg-black/90 backdrop-blur-sm text-white top-4 right-4"
+      className="absolute z-30 rounded-none p-2 transition-all duration-100 bg-black/70 hover:bg-black/90 backdrop-blur-sm text-white top-4 right-4"
       onClick={onToggle}
       aria-label={isTheater ? "Exit theater mode" : "Enter theater mode"}
       title={isTheater ? "Exit theater mode (ESC or T)" : "Enter theater mode (T)"}

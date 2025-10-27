@@ -135,11 +135,11 @@ export function DashboardSidebar({ userData, userStats }: DashboardSidebarProps)
   }
 
   return (
-    <aside className="hidden lg:fixed lg:left-0 lg:top-0 lg:z-30 lg:h-screen lg:w-64 lg:flex lg:flex-col border-r bg-card shadow-sm">
+    <aside className="hidden lg:fixed lg:left-0 lg:top-0 lg:z-30 lg:h-screen lg:w-64 lg:flex lg:flex-col border-r bg-card neo-shadow">
       {/* Logo/Brand */}
       <div className="flex h-16 items-center border-b px-6 flex-shrink-0">
         <Link href="/dashboard/home" className="flex items-center space-x-2 group">
-          <div className="h-8 w-8 bg-[var(--color-primary)] rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
+          <div className="h-8 w-8 bg-[var(--color-primary)] rounded-none flex items-center justify-center group-hover:scale-105 transition-transform">
             <GraduationCap className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="text-lg font-bold text-[var(--color-primary)]">
@@ -162,15 +162,15 @@ export function DashboardSidebar({ userData, userStats }: DashboardSidebarProps)
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all group",
+                  "flex items-center gap-3 rounded-none px-3 py-2.5 text-sm font-medium transition-all group",
                   "hover:bg-accent hover:text-accent-foreground",
                   active 
-                    ? "bg-primary/10 text-primary border border-primary/20 shadow-sm" 
+                    ? "bg-primary/10 text-primary border border-primary/20 neo-shadow" 
                     : "text-muted-foreground hover:translate-x-0.5"
                 )}
               >
                 <div className={cn(
-                  "h-8 w-8 rounded-md flex items-center justify-center transition-colors",
+                  "h-8 w-8 rounded-none flex items-center justify-center transition-colors",
                   active ? "bg-primary/10" : "bg-muted/50 group-hover:bg-accent"
                 )}>
                   <Icon className="h-4 w-4 flex-shrink-0" />
@@ -217,7 +217,7 @@ export function DashboardSidebar({ userData, userStats }: DashboardSidebarProps)
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all group",
+                  "flex items-center gap-3 rounded-none px-3 py-2 text-sm font-medium transition-all group",
                   "hover:bg-accent hover:text-accent-foreground",
                   active 
                     ? "bg-primary/10 text-primary border border-primary/20" 
@@ -245,7 +245,7 @@ export function DashboardSidebar({ userData, userStats }: DashboardSidebarProps)
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all group",
+                  "flex items-center gap-3 rounded-none px-3 py-2 text-sm font-medium transition-all group",
                   "hover:bg-accent hover:text-accent-foreground",
                   active 
                     ? "bg-primary/10 text-primary border border-primary/20" 

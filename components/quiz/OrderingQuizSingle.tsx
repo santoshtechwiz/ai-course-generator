@@ -255,7 +255,7 @@ function StepItem({
         <div className="flex items-center gap-2 flex-shrink-0">
           <motion.div
             className={cn(
-              "relative p-3 rounded-lg transition-all duration-200 flex flex-col items-center justify-center gap-0.5 border-2 cursor-grab active:cursor-grabbing",
+              "relative p-3 rounded-none transition-all duration-200 flex flex-col items-center justify-center gap-0.5 border-2 cursor-grab active:cursor-grabbing",
               isDragged
                 ? "bg-blue-500 text-white border-blue-600 shadow-xl shadow-blue-500/50"
                 : "bg-primary/20 text-primary border-4 border-primary shadow-[4px_4px_0px_0px_hsl(var(--border))] group-hover:bg-primary/30 group-hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]",
@@ -310,7 +310,7 @@ function StepItem({
             <div className={cn("font-semibold text-sm", textColor)}>{step.description}</div>
             <div
               className={cn(
-                "text-xs font-bold px-3 py-1.5 rounded-full transition-all duration-200 min-w-20 text-center shadow-sm",
+                "text-xs font-bold px-3 py-1.5 rounded-full transition-all duration-200 min-w-20 text-center neo-shadow",
                 isDragged
                   ? "bg-blue-500 text-white shadow-lg shadow-blue-500/50 scale-110"
                   : isDropTarget

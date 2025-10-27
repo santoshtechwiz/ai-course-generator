@@ -158,7 +158,7 @@ export default async function ShareCoursePage({ params, searchParams }: ShareCou
             </p>
             <a
               href="/"
-              className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:shadow-lg transition-all"
+              className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-none font-semibold hover:shadow-lg transition-all"
             >
               Return Home
             </a>
@@ -187,7 +187,7 @@ export default async function ShareCoursePage({ params, searchParams }: ShareCou
         <div className="text-center">
           <h1 className="text-xl font-bold mb-4">Error</h1>
           <p className="text-muted-foreground mb-6">Failed to load the shared course.</p>
-          <a href="/" className="inline-block px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold">
+          <a href="/" className="inline-block px-4 py-2 bg-primary text-primary-foreground rounded-none font-semibold">
             Go Home
           </a>
         </div>

@@ -88,7 +88,7 @@ export function ReviewStats({ userId }: ReviewStatsProps) {
         </div>
 
         {/* Total Reviews */}
-        <div className="mt-6 p-4 rounded-lg bg-muted/50 text-center">
+        <div className="mt-6 p-4 rounded-none bg-muted/50 text-center">
           <p className="text-sm text-muted-foreground mb-1">Total Reviews Completed</p>
           <p className="text-2xl font-bold text-foreground">{stats.totalReviews}</p>
         </div>

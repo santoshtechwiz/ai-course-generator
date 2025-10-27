@@ -114,7 +114,7 @@ const DraggablePiPPlayer: React.FC<DraggablePiPPlayerProps> = ({
       transition={{ duration: 0.2 }}
       ref={dragRef}
       className={cn(
-        "fixed z-50 rounded-lg overflow-hidden shadow-2xl",
+        "fixed z-50 rounded-none overflow-hidden shadow-2xl",
         "bg-black border-2 border-white/30 backdrop-blur-sm",
         isDragging && "cursor-grabbing shadow-2xl",
         !isDragging && "cursor-grab"
@@ -137,7 +137,7 @@ const DraggablePiPPlayer: React.FC<DraggablePiPPlayerProps> = ({
         <div className="flex items-center gap-1">
           <Button
             size="icon"
-            className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-all"
+            className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/10 rounded-none transition-all"
             onClick={onPlayPause}
             data-no-drag
           >
@@ -149,7 +149,7 @@ const DraggablePiPPlayer: React.FC<DraggablePiPPlayerProps> = ({
           </Button>
           <Button
             size="icon"
-            className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-all"
+            className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/10 rounded-none transition-all"
             onClick={onMaximize}
             data-no-drag
             title="Maximize"
@@ -158,7 +158,7 @@ const DraggablePiPPlayer: React.FC<DraggablePiPPlayerProps> = ({
           </Button>
           <Button
             size="icon"
-            className="h-7 w-7 text-white/70 hover:text-red-400 hover:bg-red-500/20 rounded-md transition-all"
+            className="h-7 w-7 text-white/70 hover:text-red-400 hover:bg-red-500/20 rounded-none transition-all"
             onClick={onClose}
             data-no-drag
             title="Close"

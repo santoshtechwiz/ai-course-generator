@@ -255,13 +255,13 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+                  <div className="bg-white dark:bg-slate-800 rounded-none p-4 neo-shadow border border-slate-200 dark:border-slate-700">
                     <div className="text-sm text-muted-foreground mb-1">Status</div>
                     <div className="font-medium flex items-center gap-2">
                       <StatusBadge status={subscriptionStatus} />
                     </div>
                   </div>
-                  <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+                  <div className="bg-white dark:bg-slate-800 rounded-none p-4 neo-shadow border border-slate-200 dark:border-slate-700">
                     <div className="text-sm text-muted-foreground mb-1">Current Period Ends</div>
                     <div className="font-medium flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -273,7 +273,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
 
               <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
                 {!isFree && isActive && (
-                  <div className="text-sm text-muted-foreground bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <div className="text-sm text-muted-foreground bg-slate-50 dark:bg-slate-800 p-3 rounded-none border border-slate-200 dark:border-slate-700">
                     To cancel your subscription, please contact our support team.
                   </div>
                 )}
@@ -314,7 +314,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
           </TabsContent>
 
           <TabsContent value="features" className="space-y-6">
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 neo-shadow">
               <h3 className="text-xl font-bold mb-4">Plan Features</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -372,7 +372,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
           </TabsContent>
 
           <TabsContent value="payment" className="space-y-6">
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 neo-shadow">
               <h3 className="text-xl font-bold mb-4">Payment Methods</h3>
 
               {paymentMethods.length === 0 ? (
@@ -417,10 +417,10 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
                   {paymentMethods.map((method, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900"
+                      className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-none bg-slate-50 dark:bg-slate-900"
                     >
                       <div className="flex items-center">
-                        <div className="bg-white dark:bg-slate-800 p-2 rounded-md border border-slate-200 dark:border-slate-700 mr-4">
+                        <div className="bg-white dark:bg-slate-800 p-2 rounded-none border border-slate-200 dark:border-slate-700 mr-4">
                           <CreditCard className="h-6 w-6 text-blue-500" />
                         </div>
                         <div>

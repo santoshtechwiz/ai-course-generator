@@ -62,7 +62,7 @@ const MobileMenu = () => {
               >
                 <Button
                   variant={pathname === item.href ? "default" : "ghost"}
-                  className={`w-full justify-start rounded-lg transition-all duration-300 ${
+                  className={`w-full justify-start rounded-none transition-all duration-300 ${
                     pathname === item.href
                       ? "bg-primary text-primary-foreground"
                       : "hover:bg-muted/80 hover:translate-x-1"

@@ -134,7 +134,7 @@ export function CreditGuidanceBanner() {
               {/* Close button */}
               <button
                 onClick={handleDismiss}
-                className="flex-shrink-0 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 transition-colors p-1 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                className="flex-shrink-0 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 transition-colors p-1 rounded-none hover:bg-amber-100 dark:hover:bg-amber-900/30"
                 aria-label="Dismiss banner"
               >
                 <X className="w-5 h-5" />

@@ -498,14 +498,14 @@ export function renderCourseDashboard(course: FullCourseType, authPromptOverlay,
 
     {/* Add a description for guest users to encourage signing in */}
     {!user && (
-      <div className="bg-blue-100 border border-blue-300 p-4 rounded-md text-center">
+      <div className="bg-blue-100 border border-blue-300 p-4 rounded-none text-center">
         <h2 className="text-lg font-bold text-blue-800">Sign in to unlock more features!</h2>
         <p className="text-sm text-blue-700 mt-2">
           By signing in, you can save your progress, access premium content, and enjoy a personalized learning experience.
         </p>
         <button
           onClick={() => router.push('/auth/signin')}
-          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-none hover:bg-blue-600"
         >
           Sign In Now
         </button>

@@ -200,14 +200,14 @@ export default function ImprovedContactForm() {
                             type="button"
                             onClick={() => handleIssueSelect(issue.value)}
                             className={cn(
-                              "flex items-start p-4 rounded-lg border-6 text-left transition-all duration-300 hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-primary)]/5 hover:shadow-[var(--shadow-neo)]",
+                              "flex items-start p-4 rounded-none border-6 text-left transition-all duration-300 hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-primary)]/5 hover:shadow-[var(--shadow-neo)]",
                               selectedIssueType === issue.value ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5" : "border-[var(--color-muted)]",
                               "group focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2",
                             )}
                             aria-pressed={selectedIssueType === issue.value}
                           >
                             <div className="mr-4 mt-0.5">
-                              <div className="p-2 rounded-md bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                              <div className="p-2 rounded-none bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
                                 <Icon className="h-5 w-5" />
                               </div>
                             </div>
@@ -227,7 +227,7 @@ export default function ImprovedContactForm() {
                     onSubmit={handleSubmit(onSubmit)}
                     className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-5 duration-300"
                   >
-                    <div className="flex items-center mb-6 bg-muted/30 p-3 rounded-lg">
+                    <div className="flex items-center mb-6 bg-muted/30 p-3 rounded-none">
                       <button
                         type="button"
                         onClick={() => setCurrentStep(1)}
@@ -314,7 +314,7 @@ export default function ImprovedContactForm() {
                             <Label
                               htmlFor={`priority-${priority.value}`}
                               className={cn(
-                                "flex flex-col items-center justify-between rounded-md border-6 border-[var(--color-muted)] p-4 hover:bg-[var(--color-primary)]/5 hover:border-[var(--color-primary)]/50 [&:has([data-state=checked])]:border-[var(--color-primary)] [&:has([data-state=checked])]:bg-[var(--color-primary)]/5",
+                                "flex flex-col items-center justify-between rounded-none border-6 border-[var(--color-muted)] p-4 hover:bg-[var(--color-primary)]/5 hover:border-[var(--color-primary)]/50 [&:has([data-state=checked])]:border-[var(--color-primary)] [&:has([data-state=checked])]:bg-[var(--color-primary)]/5",
                                 priority.value === "high" &&
                                   "[&:has([data-state=checked])]:border-[var(--color-error)] [&:has([data-state=checked])]:bg-[var(--color-error)]/10 dark:[&:has([data-state=checked])]:bg-[var(--color-error)]/10",
                                 "transition-all cursor-pointer focus-within:ring-2 focus-within:ring-[var(--color-primary)] focus-within:ring-offset-2",

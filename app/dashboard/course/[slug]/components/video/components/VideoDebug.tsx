@@ -81,7 +81,7 @@ export function VideoDebug({
 
   return (
     <div className="fixed bottom-4 right-4 z-50 max-w-md text-white">
-      <div className="bg-black/80 rounded-lg shadow-lg overflow-hidden">
+      <div className="bg-black/80 rounded-none shadow-lg overflow-hidden">
         <button 
           onClick={() => setIsOpen(prev => !prev)}
           className="w-full flex items-center justify-between px-4 py-2 text-sm bg-blue-900/80 hover:bg-blue-800/80"

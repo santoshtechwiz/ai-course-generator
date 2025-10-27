@@ -89,7 +89,7 @@ const AutoPlayNotification: React.FC<AutoPlayNotificationProps> = ({
                   <Button
                     size="sm"
                     onClick={onContinue}
-                    className="h-8 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-xs font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                    className="h-8 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-xs font-medium rounded-none shadow-lg hover:shadow-xl transition-all duration-200"
                   >
                     <Play className="h-3 w-3 mr-1" />
                     Continue
@@ -98,7 +98,7 @@ const AutoPlayNotification: React.FC<AutoPlayNotificationProps> = ({
                     size="sm"
                     variant="ghost"
                     onClick={onCancel}
-                    className="h-8 px-4 text-white/70 hover:text-white hover:bg-white/10 text-xs font-medium rounded-lg transition-all duration-200"
+                    className="h-8 px-4 text-white/70 hover:text-white hover:bg-white/10 text-xs font-medium rounded-none transition-all duration-200"
                   >
                     Stay here
                   </Button>

@@ -12,7 +12,7 @@ export function StripeSecureCheckout() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.5 }}
     >
-      <Card className="border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow duration-300">
+      <Card className="border border-slate-200 dark:border-slate-700 neo-shadow hover:shadow-md transition-shadow duration-300">
         <CardContent className="p-4">
           <div className="flex flex-col items-center text-center space-y-2">
             <div className="flex items-center space-x-2">

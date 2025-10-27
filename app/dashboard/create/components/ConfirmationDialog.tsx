@@ -64,7 +64,7 @@ export function ConfirmationDialog({ open, onOpenChange, onConfirm, formData, is
             </div>
           </div>
 
-          <div className="flex items-start gap-3 p-3 bg-accent/10 rounded-lg border border-accent/30">
+          <div className="flex items-start gap-3 p-3 bg-accent/10 rounded-none border border-accent/30">
             <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-accent flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <p className="text-xs sm:text-sm font-semibold text-card-foreground">Credit Deduction</p>

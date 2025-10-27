@@ -159,7 +159,7 @@ function CrossSellItem({ item, index, onClick }: CrossSellItemProps) {
             <div className="flex items-start gap-3">
               {/* Icon */}
               <div className={cn(
-                "flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center",
+                "flex-shrink-0 w-10 h-10 rounded-none flex items-center justify-center",
                 item.type === "course" 
                   ? "bg-primary/10 text-primary" 
                   : "bg-purple-500/10 text-purple-500"

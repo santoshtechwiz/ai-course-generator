@@ -92,12 +92,12 @@ export function AppDialog({
 
                 <div className="flex items-center gap-3">
                   {showUpgradeBadge ? (
-                    <div className={cn(neo.badge, "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 shadow-sm flex items-center px-2 py-1 rounded")}>
+                    <div className={cn(neo.badge, "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 neo-shadow flex items-center px-2 py-1 rounded")}>
                       <Crown className="h-3 w-3 mr-1" />
                       {requiredPlanConfig?.name} Required
                     </div>
                   ) : requiredPlan !== "FREE" ? (
-                    <div className={cn(neo.badge, "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 shadow-sm flex items-center px-2 py-1 rounded")}>
+                    <div className={cn(neo.badge, "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 neo-shadow flex items-center px-2 py-1 rounded")}>
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Unlocked
                     </div>

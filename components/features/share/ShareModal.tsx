@@ -169,7 +169,7 @@ export function ShareModal({
                   </div>
                   <button
                     onClick={handleClose}
-                    className="p-1 hover:bg-muted rounded-lg transition-colors"
+                    className="p-1 hover:bg-muted rounded-none transition-colors"
                     aria-label="Close modal"
                   >
                     <X className="h-5 w-5" />
@@ -186,7 +186,7 @@ export function ShareModal({
 
                 {/* Error state */}
                 {error && !isLoading && (
-                  <div className="mb-6 p-4 bg-destructive/10 border-2 border-destructive rounded-lg flex gap-3">
+                  <div className="mb-6 p-4 bg-destructive/10 border-2 border-destructive rounded-none flex gap-3">
                     <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium text-destructive">{error}</p>
@@ -201,7 +201,7 @@ export function ShareModal({
                 {!isLoading && !shareData && !error && (
                   <div className="space-y-4">
                     {/* Access Key Toggle */}
-                    <div className="border-2 border-border rounded-lg p-4 bg-muted/30">
+                    <div className="border-2 border-border rounded-none p-4 bg-muted/30">
                       <div className="flex items-center justify-between">
                         <div>
                           <label className="text-sm font-semibold block">
@@ -233,7 +233,7 @@ export function ShareModal({
                     </div>
 
                     {/* Expiry Option */}
-                    <div className="border-2 border-border rounded-lg p-4 bg-muted/30">
+                    <div className="border-2 border-border rounded-none p-4 bg-muted/30">
                       <label className="text-sm font-semibold block mb-3">
                         Link Expiry
                       </label>
@@ -243,7 +243,7 @@ export function ShareModal({
                             key={days ?? 'never'}
                             onClick={() => setExpiryDays(days)}
                             className={cn(
-                              'px-3 py-2 rounded-lg text-sm font-medium transition-all border-2',
+                              'px-3 py-2 rounded-none text-sm font-medium transition-all border-2',
                               expiryDays === days
                                 ? 'bg-primary text-primary-foreground border-primary'
                                 : 'bg-background border-border hover:border-primary/50'
@@ -261,7 +261,7 @@ export function ShareModal({
                     </div>
 
                     {/* Visibility Option */}
-                    <div className="border-2 border-border rounded-lg p-4 bg-muted/30">
+                    <div className="border-2 border-border rounded-none p-4 bg-muted/30">
                       <label className="text-sm font-semibold block mb-3">
                         Link Visibility
                       </label>
@@ -271,7 +271,7 @@ export function ShareModal({
                             key={vis}
                             onClick={() => setVisibility(vis as 'link-only' | 'public')}
                             className={cn(
-                              'flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all border-2',
+                              'flex-1 px-3 py-2 rounded-none text-sm font-medium transition-all border-2',
                               visibility === vis
                                 ? 'bg-primary text-primary-foreground border-primary'
                                 : 'bg-background border-border hover:border-primary/50'
@@ -303,7 +303,7 @@ export function ShareModal({
                 {/* Results screen (after generation) */}
                 {!isLoading && shareData && !error && (
                   <div className="space-y-4">
-                    <div className="p-4 bg-green-50 dark:bg-green-950 border-2 border-green-200 dark:border-green-800 rounded-lg">
+                    <div className="p-4 bg-green-50 dark:bg-green-950 border-2 border-green-200 dark:border-green-800 rounded-none">
                       <p className="text-sm font-semibold text-green-900 dark:text-green-100">
                         ✓ Share link created!
                       </p>
@@ -317,7 +317,7 @@ export function ShareModal({
                           type="text"
                           value={shareData.shareUrl || ''}
                           readOnly
-                          className="flex-1 px-3 py-2 border-2 border-border rounded-lg bg-muted text-sm font-mono"
+                          className="flex-1 px-3 py-2 border-2 border-border rounded-none bg-muted text-sm font-mono"
                         />
                         <Button
                           onClick={() => copyToClipboard(shareData.shareUrl, 'url')}
@@ -342,7 +342,7 @@ export function ShareModal({
                             type={showKey ? 'text' : 'password'}
                             value={shareData.accessKey}
                             readOnly
-                            className="flex-1 px-3 py-2 border-2 border-border rounded-lg bg-muted text-sm font-mono"
+                            className="flex-1 px-3 py-2 border-2 border-border rounded-none bg-muted text-sm font-mono"
                           />
                           <Button
                             onClick={() => setShowKey(!showKey)}
@@ -371,7 +371,7 @@ export function ShareModal({
                     )}
 
                     {/* Info */}
-                    <div className="p-3 bg-blue-50 dark:bg-blue-950 border-2 border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950 border-2 border-blue-200 dark:border-blue-800 rounded-none">
                       <p className="text-xs text-blue-900 dark:text-blue-100">
                         💡 Recipients will see read-only content and need to sign in to save progress.
                       </p>

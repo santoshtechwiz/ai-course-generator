@@ -272,7 +272,7 @@ export default function FlashCardQuiz({
   if (!cards || cards.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-center p-4">
-        <div className="space-y-4 p-6 sm:p-8 bg-card border-4 border-border shadow-neo rounded-lg max-w-md mx-auto">
+        <div className="space-y-4 p-6 sm:p-8 bg-card border-4 border-border shadow-neo rounded-none max-w-md mx-auto">
           <div className="text-5xl sm:text-6xl">📚</div>
           <h3 className="text-lg sm:text-xl font-black text-foreground">No flashcards available</h3>
           <p className="text-sm sm:text-base text-muted-foreground">Please check back later or create your own flashcards</p>
@@ -302,7 +302,7 @@ export default function FlashCardQuiz({
         : "w-full px-3 sm:px-4 lg:px-6"
     )}>
         <div className="text-center hidden">
-            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-[var(--color-accent)] text-[var(--color-bg)] border-3 sm:border-4 border-border shadow-neo mb-3 sm:mb-4 font-black text-xs sm:text-sm rounded-md">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-[var(--color-accent)] text-[var(--color-bg)] border-3 sm:border-4 border-border shadow-neo mb-3 sm:mb-4 font-black text-xs sm:text-sm rounded-none">
               <Brain className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Flashcard Quiz</span>
             </div>
@@ -422,7 +422,7 @@ export default function FlashCardQuiz({
           >
             <motion.div
                 className={cn(
-                  "px-6 sm:px-8 py-4 sm:py-6 rounded-lg font-black text-lg sm:text-xl shadow-neo border-4 border-border max-w-sm w-full",
+                  "px-6 sm:px-8 py-4 sm:py-6 rounded-none font-black text-lg sm:text-xl shadow-neo border-4 border-border max-w-sm w-full",
                   ratingAnimation === "correct" && "bg-[var(--color-success)] text-[var(--color-bg)]",
                   ratingAnimation === "still_learning" && "bg-[var(--color-accent)] text-[var(--color-bg)]",
                   ratingAnimation === "incorrect" && "bg-[var(--color-error)] text-[var(--color-bg)]"

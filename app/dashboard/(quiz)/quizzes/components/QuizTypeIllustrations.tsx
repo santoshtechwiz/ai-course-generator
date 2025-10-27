@@ -21,7 +21,7 @@ export function QuizTypeIllustration({ type }: { type: QuizType }) {
       whileHover={{ scale: 1.06, y: -2 }}
       transition={{ type: "spring", stiffness: 220, damping: 20 }}
       className={cn(
-        "w-20 h-20 mx-auto p-2 rounded-lg flex items-center justify-center",
+        "w-20 h-20 mx-auto p-2 rounded-none flex items-center justify-center",
         // neobrutal framing
         "border-4 shadow-[4px_4px_0_#000]",
         // per-type theme classes (bg, border)

@@ -105,7 +105,7 @@ const MobilePlaylistOverlay: React.FC<MobilePlaylistOverlayProps> = ({
                     initial={{ width: 0 }}
                     animate={{ width: `${courseStats.progressPercentage}%` }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="bg-gradient-to-r from-primary via-primary/80 to-secondary h-3 rounded-full shadow-sm"
+                    className="bg-gradient-to-r from-primary via-primary/80 to-secondary h-3 rounded-full neo-shadow"
                   />
                 </div>
               </div>

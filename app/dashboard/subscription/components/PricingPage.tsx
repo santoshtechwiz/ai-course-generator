@@ -425,7 +425,7 @@ export function PricingPage({
             const price = getDiscountedPrice(option.price)
             const planConfig = getPlanConfig(plan.id as SubscriptionPlanType)
             return (
-              <div key={plan.id} className="p-4 border rounded-xl shadow-sm">
+              <div key={plan.id} className="p-4 border rounded-xl neo-shadow">
                 <h3 className="font-semibold text-lg">{planConfig.name}</h3>
                 <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
                 <div className="text-2xl font-bold mt-2">${price}</div>
@@ -544,7 +544,7 @@ export function PricingPage({
           Frequently Asked Questions
         </h2>
         <Accordion type="single" collapsible className="w-full space-y-4">
-          <AccordionItem value="item-0" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+          <AccordionItem value="item-0" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden neo-shadow">
             <AccordionTrigger className="text-left text-base font-medium px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
               What payment methods do you accept?
             </AccordionTrigger>
@@ -552,7 +552,7 @@ export function PricingPage({
               We accept all major credit cards (Visa, MasterCard, American Express) and PayPal for your convenience.
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="item-1" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+          <AccordionItem value="item-1" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden neo-shadow">
             <AccordionTrigger className="text-left text-base font-medium px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
               Can I cancel my subscription at any time?
             </AccordionTrigger>
@@ -560,7 +560,7 @@ export function PricingPage({
               Yes, you can cancel your subscription at any time. Your access will continue until the end of your current billing period.
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="item-2" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+          <AccordionItem value="item-2" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden neo-shadow">
             <AccordionTrigger className="text-left text-base font-medium px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
               What happens to my data if I cancel?
             </AccordionTrigger>
@@ -568,7 +568,7 @@ export function PricingPage({
               Your data remains accessible for 30 days after cancellation. After that, it will be permanently deleted.
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="item-3" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+          <AccordionItem value="item-3" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden neo-shadow">
             <AccordionTrigger className="text-left text-base font-medium px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
               Do you offer refunds?
             </AccordionTrigger>
@@ -576,7 +576,7 @@ export function PricingPage({
               We offer a 14-day money-back guarantee on all paid plans. Contact support for a full refund within this period.
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="item-4" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+          <AccordionItem value="item-4" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden neo-shadow">
             <AccordionTrigger className="text-left text-base font-medium px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
               Can I upgrade or downgrade my plan?
             </AccordionTrigger>

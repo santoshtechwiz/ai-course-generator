@@ -88,7 +88,7 @@ export default function QuizResultsDialog({ attempt, open, onClose }: QuizResult
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 my-4">
-          <div className="bg-muted/50 rounded-lg p-3 flex items-center gap-3">
+          <div className="bg-muted/50 rounded-none p-3 flex items-center gap-3">
             <div className="p-2 rounded-full bg-primary/10">
               <BarChart3 className="h-5 w-5 text-primary" />
             </div>
@@ -98,7 +98,7 @@ export default function QuizResultsDialog({ attempt, open, onClose }: QuizResult
             </div>
           </div>
 
-          <div className="bg-muted/50 rounded-lg p-3 flex items-center gap-3">
+          <div className="bg-muted/50 rounded-none p-3 flex items-center gap-3">
             <div className="p-2 rounded-full bg-primary/10">
               <CheckCircle className="h-5 w-5 text-primary" />
             </div>
@@ -108,7 +108,7 @@ export default function QuizResultsDialog({ attempt, open, onClose }: QuizResult
             </div>
           </div>
 
-          <div className="bg-muted/50 rounded-lg p-3 flex items-center gap-3">
+          <div className="bg-muted/50 rounded-none p-3 flex items-center gap-3">
             <div className="p-2 rounded-full bg-primary/10">
               <Clock className="h-5 w-5 text-primary" />
             </div>
@@ -120,7 +120,7 @@ export default function QuizResultsDialog({ attempt, open, onClose }: QuizResult
             </div>
           </div>
 
-          <div className="bg-muted/50 rounded-lg p-3 flex items-center gap-3">
+          <div className="bg-muted/50 rounded-none p-3 flex items-center gap-3">
             <div className="p-2 rounded-full bg-primary/10">
               <CheckCircle className="h-5 w-5 text-primary" />
             </div>

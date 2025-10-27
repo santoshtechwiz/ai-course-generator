@@ -161,7 +161,7 @@ export function ConfirmDialog({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-4 space-y-3"
+              className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-none p-4 space-y-3"
             >
               <div className="flex items-center gap-2">
                 {getQuizIcon(quizInfo.type)}
@@ -244,7 +244,7 @@ export function ConfirmDialog({
               </div>
 
               {creditUsage.remaining < 5 && (
-                <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-950/20 rounded-md">
+                <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-950/20 rounded-none">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <span className="text-xs text-amber-800 dark:text-amber-200">
                     Low credits remaining. Consider upgrading your plan.
@@ -253,7 +253,7 @@ export function ConfirmDialog({
               )}
 
               {hasInsufficientCredits && (
-                <div className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-950/20 rounded-md">
+                <div className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-950/20 rounded-none">
                   <XCircle className="h-4 w-4 text-red-600" />
                   <span className="text-xs text-red-800 dark:text-red-200">
                     Insufficient credits for this action. You need {quizInfo?.estimatedCredits} credit{(quizInfo?.estimatedCredits || 0) > 1 ? 's' : ''} but have {creditUsage.remaining} remaining.
@@ -279,7 +279,7 @@ export function ConfirmDialog({
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.3 }}
-                className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3"
+                className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-none p-3"
               >
                 <div className="flex items-start gap-2">
                   <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
@@ -309,7 +309,7 @@ export function ConfirmDialog({
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.3 }}
-                className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3"
+                className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-none p-3"
               >
                 <div className="flex items-center gap-3">
                   <Loader2 className="h-4 w-4 animate-spin text-blue-500" />

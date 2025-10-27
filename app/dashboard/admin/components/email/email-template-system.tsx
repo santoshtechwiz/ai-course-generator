@@ -225,7 +225,7 @@ export default function EmailTemplateSystem() {
               </div>
             </div>
 
-            <div className="border rounded-md p-4 bg-white">
+            <div className="border rounded-none p-4 bg-white">
               <div className="border-b pb-2 mb-4">
                 <div className="text-sm text-muted-foreground">From: Your Company &lt;noreply@yourcompany.com&gt;</div>
                 <div className="text-sm text-muted-foreground">

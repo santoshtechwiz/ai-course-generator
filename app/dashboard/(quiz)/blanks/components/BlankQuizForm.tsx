@@ -240,7 +240,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
           <AlertDescription>{submitError}</AlertDescription>
         </Alert>
       )}
-      <Card className="bg-background border border-border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+      <Card className="bg-background border border-border neo-shadow hover:shadow-md transition-all duration-300 overflow-hidden">
         <CardContent className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 md:space-y-8">
             <motion.div
@@ -250,7 +250,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
               transition={{ delay: 0.2 }}
             >
               <Label htmlFor="title" className="text-base font-medium text-foreground flex items-center gap-2">
-                <div className="p-1.5 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] rounded-lg">
+                <div className="p-1.5 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] rounded-none">
                   <Sparkles className="w-3.5 h-3.5 text-white" />
                 </div>
                 Title *
@@ -292,7 +292,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                   aria-invalid={errors.title ? "true" : "false"}
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="p-1.5 bg-gradient-to-r from-[hsl(var(--primary))]/10 to-[hsl(var(--accent))]/10 rounded-lg group-focus-within:from-[hsl(var(--primary))]/20 group-focus-within:to-[hsl(var(--accent))]/20 transition-all duration-300">
+                  <div className="p-1.5 bg-gradient-to-r from-[hsl(var(--primary))]/10 to-[hsl(var(--accent))]/10 rounded-none group-focus-within:from-[hsl(var(--primary))]/20 group-focus-within:to-[hsl(var(--accent))]/20 transition-all duration-300">
                     <Sparkles className="h-4 w-4 text-blue-500 group-focus-within:text-blue-600" />
                   </div>
                 </div>
@@ -436,7 +436,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
             </motion.div>
 
             <motion.div
-              className="bg-[var(--color-card)] border-4 border-[var(--color-border)] rounded-lg p-4 lg:p-6 space-y-3 lg:space-y-4"
+              className="bg-[var(--color-card)] border-4 border-[var(--color-border)] rounded-none p-4 lg:p-6 space-y-3 lg:space-y-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
