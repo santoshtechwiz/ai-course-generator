@@ -161,7 +161,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     // Show error if loading timed out
     if (timedOut) {
       return (
-        <Alert variant="destructive" className="mb-6 animate-in fade-in slide-in-from-top-5 duration-300">
+        <Alert variant="error" className="mb-6 animate-in fade-in slide-in-from-top-5 duration-300">
           <AlertTriangle className="h-5 w-5" />
           <AlertTitle>Subscription service unavailable</AlertTitle>
           <AlertDescription className="flex flex-col gap-2">
@@ -176,7 +176,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     // Show error if subscription fetch failed
     if (error) {
       return (
-        <Alert variant="destructive" className="mb-6 animate-in fade-in slide-in-from-top-5 duration-300">
+        <Alert variant="error" className="mb-6 animate-in fade-in slide-in-from-top-5 duration-300">
           <AlertTriangle className="h-5 w-5" />
           <AlertTitle>Error loading subscription data</AlertTitle>
           <AlertDescription className="flex flex-col gap-2">
@@ -191,7 +191,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
 
     return (
       <div className="space-y-8">        {error && (
-          <Alert variant="destructive" className="mb-6 animate-in fade-in slide-in-from-top-5 duration-300">
+          <Alert variant="default" className="mb-6 animate-in fade-in slide-in-from-top-5 duration-300">
             <AlertTriangle className="h-5 w-5" />
             <AlertTitle>Error loading subscription data</AlertTitle>
             <AlertDescription className="flex flex-col gap-2">
@@ -208,10 +208,10 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         )}
 
   {pendingSubscriptionData && (
-          <Alert className="mb-6 bg-gray-50 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-in fade-in slide-in-from-top-5 duration-300">
-            <Info className="h-5 w-5 text-black" />
-            <AlertTitle className="font-black text-black">Pending Subscription</AlertTitle>
-            <AlertDescription className="text-gray-700 font-bold">
+          <Alert className="mb-6 shadow-neo neo-hover-lift animate-in fade-in slide-in-from-top-5 duration-300">
+            <Info className="h-5 w-5" />
+            <AlertTitle className="font-black uppercase tracking-wider">Pending Subscription</AlertTitle>
+            <AlertDescription className="font-bold">
               You have a pending subscription to the {pendingSubscriptionData.planName} plan. It will be processed
               automatically.
             </AlertDescription>
@@ -219,16 +219,16 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         )}
 
   {isAuthenticated && (
-          <Alert className="mb-6 bg-gray-50 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-in fade-in slide-in-from-top-5 duration-300">
-            <Info className="h-5 w-5 text-black" />
-            <AlertTitle className="font-black text-black">Manage Your Subscription</AlertTitle>
+          <Alert className="mb-6 shadow-neo neo-hover-lift animate-in fade-in slide-in-from-top-5 duration-300">
+            <Info className="h-5 w-5" />
+            <AlertTitle className="font-black uppercase tracking-wider">Manage Your Subscription</AlertTitle>
             <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <p className="text-gray-700 font-bold">You can view and manage your current subscription details in your account page.</p>
+              <p className="font-bold">You can view and manage your current subscription details in your account page.</p>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => router.push("/dashboard/account")}
-                className="border-2 border-black font-bold hover:bg-black hover:text-white"
+                className="border-4 border-border shadow-neo neo-hover-lift font-black uppercase tracking-wider"
               >
                 Go to Account <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

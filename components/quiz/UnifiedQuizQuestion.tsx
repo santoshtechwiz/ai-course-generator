@@ -141,10 +141,10 @@ const MCQOption = memo(({
         htmlFor={`option-${option.id}`}
         className={cn(
           "relative flex items-center gap-4 p-4 w-full cursor-pointer transition-all duration-100 overflow-hidden",
-          "bg-[var(--color-card)] border-4 border-[var(--color-border)] rounded-none",
+          "bg-card border-4 border-border rounded-none",
           isSelected
-            ? "bg-[var(--color-accent)] text-[var(--color-text)] shadow-[var(--shadow-neo)]"
-            : "bg-[var(--color-card)] text-[var(--color-text)] shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000] hover:bg-[var(--color-muted)]",
+            ? "bg-accent text-background shadow-neo"
+            : "bg-card text-foreground shadow-neo hover:shadow-neo-hover hover:bg-muted",
           isDisabled && "opacity-60 cursor-not-allowed"
         )}
         onClick={() => !isDisabled && onSelect(option.id)}
