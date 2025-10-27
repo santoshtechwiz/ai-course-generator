@@ -1,19 +1,19 @@
-import RandomQuote from "@/components/RandomQuote";
-import { BookOpen, Lightbulb, TrendingUp, ArrowRight, Sparkles, Target, Users, Clock } from "lucide-react";
-import { getCourseDetails } from "@/app/actions/getCourseDetails";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
-import type { QueryParams } from "@/app/types/types";
-import PopularCourses from "@/app/dashboard/course/components/PopularCourses";
-import QuizCourseWrapper from "../(quiz)/components/QuizCourseWrapper";
+import RandomQuote from "@/components/RandomQuote"
+import { BookOpen, Lightbulb, TrendingUp, ArrowRight, Sparkles, Target, Users, Clock } from "lucide-react"
+import { getCourseDetails } from "@/app/actions/getCourseDetails"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
+import type { QueryParams } from "@/app/types/types"
+import PopularCourses from "@/app/dashboard/course/components/PopularCourses"
+import QuizCourseWrapper from "../(quiz)/components/QuizCourseWrapper"
 
-import NavigationDebugger from "@/components/debug/NavigationDebugger";
-import { JsonLD } from "@/lib/seo";
-import { generateMetadata } from "@/lib/seo";
+import NavigationDebugger from "@/components/debug/NavigationDebugger"
+import { JsonLD } from "@/lib/seo"
+import { generateMetadata } from "@/lib/seo"
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
 
 // Removed force-dynamic to allow static optimization / caching where possible
 
@@ -23,7 +23,7 @@ export const metadata = generateMetadata({
     "Design and build your own interactive course with our intuitive course creation tools. Share your expertise and engage learners effectively.",
   keywords: [
     "course creation",
-    "build online course", 
+    "build online course",
     "teaching platform",
     "educational content",
     "course design",
@@ -32,57 +32,54 @@ export const metadata = generateMetadata({
   ],
   type: "website",
   image: "/og-image-create-course.jpg",
-});
+})
 
 const Page = async ({
   params,
   searchParams: searchParamsPromise,
 }: {
-  params: QueryParams;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  params: QueryParams
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) => {
-  let title = "";
-  let category = "";
-  let difficulty = "";
-  let courseData = [];
+  let title = ""
+  let category = ""
+  let difficulty = ""
+  let courseData = []
 
   try {
-    const searchParams = await searchParamsPromise;
+    const searchParams = await searchParamsPromise
 
-    title = Array.isArray(params?.title)
-      ? params.title[0]
-      : params?.title || "";
+    title = Array.isArray(params?.title) ? params.title[0] : params?.title || ""
 
     category =
       typeof params?.categoryAttachment === "string"
         ? params.categoryAttachment
         : Array.isArray(searchParams?.category)
-        ? searchParams.category[0]
-        : searchParams?.category || "";
+          ? searchParams.category[0]
+          : searchParams?.category || ""
 
     difficulty = Array.isArray(searchParams?.difficulty)
       ? searchParams.difficulty[0]
       : typeof searchParams?.difficulty === "string"
-      ? searchParams.difficulty
-      : "";
+        ? searchParams.difficulty
+        : ""
 
-    courseData = await getCourseDetails();
-    console.log("Fetched course data:", courseData);
+    courseData = await getCourseDetails()
+    console.log("Fetched course data:", courseData)
   } catch (error) {
-    console.warn("Failed to fetch course details:", error);
+    console.warn("Failed to fetch course details:", error)
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   const creativeWorkSchema = {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
     name: "Course Creation Tool",
-    description:
-      "Design and build your own interactive course with our intuitive course creation tools.",
+    description: "Design and build your own interactive course with our intuitive course creation tools.",
     creator: { "@type": "Organization", name: "Course AI" },
     url: `${baseUrl}/dashboard/explore`,
-  };
+  }
 
   const breadcrumbSchema = {
     "@context": "https://schema.org",
@@ -102,12 +99,12 @@ const Page = async ({
         item: `${baseUrl}/dashboard/explore`,
       },
     ],
-  };
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-6 space-y-6">
-        {process.env.NODE_ENV === 'development' && <NavigationDebugger />}
+  <div className="w-full px-0 py-6 space-y-6">
+        {process.env.NODE_ENV === "development" && <NavigationDebugger />}
         <JsonLD type="CreativeWork" data={creativeWorkSchema} />
         <JsonLD type="BreadcrumbList" data={breadcrumbSchema} />
 
@@ -117,34 +114,30 @@ const Page = async ({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Enhanced Left Section - Course Creation Form */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="relative overflow-hidden border-6 border-border shadow-neo bg-card">
+            <Card className="relative overflow-hidden border-4 border-border shadow-neo bg-card">
               {/* Clean Nerobrutal design - no decorative gradients */}
-              
+
               <CardHeader className="relative">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
-                        <BookOpen className="h-5 w-5 text-primary" />
+                      <div className="p-2 rounded-none bg-accent/10 border border-accent/20">
+                        <BookOpen className="h-5 w-5 text-accent" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg font-bold text-foreground">
-                          Create Your Course
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          Transform your knowledge into engaging content
-                        </p>
+                        <CardTitle className="text-lg font-bold text-foreground">Create Your Course</CardTitle>
+                        <p className="text-sm text-muted-foreground">Transform your knowledge into engaging content</p>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
-                    <Badge variant="neutral" className="bg-primary/10 text-primary border-primary/20">
-                      <Sparkles className="h-3 w-3 mr-1" />
+                    <Badge variant="neutral" className="bg-accent/10 text-accent border-accent/20">
+                      <Sparkles className="h-3 w-3 mr-1 text-accent" />
                       AI Powered
                     </Badge>
                     <div className="flex items-center text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full border">
-                      <Lightbulb className="h-3 w-3 mr-1.5 text-warning" />
+                      <Lightbulb className="h-3 w-3 mr-1.5 text-accent" />
                       Be specific with your topic
                     </div>
                   </div>
@@ -155,10 +148,10 @@ const Page = async ({
                 {/* Enhanced form wrapper with visual feedback */}
                 <div className="relative">
                   {/* Form background with subtle pattern */}
-                  <div className="absolute inset-0 bg-card rounded-lg border-6 border-border" />
-                  
+                  <div className="absolute inset-0 bg-card rounded-none pointer-events-none" />
+
                   {/* Form container with enhanced styling */}
-                  <div className="relative bg-background/50 backdrop-blur-sm border border-border/50 rounded-lg p-6 shadow-sm">
+                  <div className="relative bg-background/50 backdrop-blur-sm border border-border/50 rounded-none p-6 neo-shadow">
                     <QuizCourseWrapper
                       type="course"
                       queryParams={{
@@ -172,29 +165,29 @@ const Page = async ({
 
                 {/* Feature highlights */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-border/30">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
-                    <div className="p-2 rounded-full bg-primary/10">
-                      <Target className="h-4 w-4 text-primary" />
+                  <div className="flex items-center gap-3 p-3 rounded-none bg-accent/5 border border-accent/10">
+                    <div className="p-2 rounded-full bg-accent/10">
+                      <Target className="h-4 w-4 text-accent" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">Smart Structure</p>
                       <p className="text-xs text-muted-foreground">AI-generated course outline</p>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-success/10 dark:bg-success/5 border border-success/20 dark:border-success/20">
-                    <div className="p-2 rounded-full bg-success/20 dark:bg-success/10">
-                      <Clock className="h-4 w-4 text-success" />
+
+                  <div className="flex items-center gap-3 p-3 rounded-none bg-accent/10 dark:bg-accent/5 border border-accent/20 dark:border-accent/20">
+                    <div className="p-2 rounded-full bg-accent/20 dark:bg-accent/10">
+                      <Clock className="h-4 w-4 text-accent" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">Quick Setup</p>
                       <p className="text-xs text-muted-foreground">Ready in minutes</p>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 dark:bg-primary/5 border border-primary/20 dark:border-primary/20">
-                    <div className="p-2 rounded-full bg-primary/20 dark:bg-primary/10">
-                      <Users className="h-4 w-4 text-primary" />
+
+                  <div className="flex items-center gap-3 p-3 rounded-none bg-accent/10 dark:bg-accent/5 border border-accent/20 dark:border-accent/20">
+                    <div className="p-2 rounded-full bg-accent/20 dark:bg-accent/10">
+                      <Users className="h-4 w-4 text-accent" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">Engage Learners</p>
@@ -208,14 +201,14 @@ const Page = async ({
 
           {/* Enhanced Right Section - Popular Courses */}
           <div className="space-y-6">
-            <Card className="relative overflow-hidden border-6 border-border shadow-neo bg-card">
+            <Card className="relative overflow-hidden border-4 border-border shadow-neo bg-card">
               {/* Clean Nerobrutal design */}
-              
+
               <CardHeader className="relative pb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
-                      <TrendingUp className="h-4 w-4 text-primary" />
+                    <div className="p-2 rounded-none bg-accent/10 border border-accent/20">
+                      <TrendingUp className="h-4 w-4 text-accent" />
                     </div>
                     <div>
                       <CardTitle className="text-base font-semibold">Popular Courses</CardTitle>
@@ -233,17 +226,15 @@ const Page = async ({
 
                 {/* Enhanced CTA Section */}
                 <div className="border-t border-border/30 pt-4 mt-6">
-                  <div className="relative overflow-hidden rounded-lg bg-primary/10 border-6 border-primary p-4">
+                  <div className="relative overflow-hidden rounded-none bg-accent/10 border-4 border-accent p-4">
                     {/* Clean design */}
-                    
+
                     <div className="relative flex items-start gap-3">
-                      <div className="p-2 rounded-full bg-primary/20 border border-primary/30">
-                        <BookOpen className="h-4 w-4 text-primary" />
+                      <div className="p-2 rounded-full bg-accent/20 border border-accent/30">
+                        <BookOpen className="h-4 w-4 text-accent" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-semibold text-sm text-foreground mb-1">
-                          Ready to share your knowledge?
-                        </h4>
+                        <h4 className="font-semibold text-sm text-foreground mb-1">Ready to share your knowledge?</h4>
                         <p className="text-xs text-muted-foreground mb-3">
                           Join thousands of creators building amazing courses
                         </p>
@@ -260,15 +251,13 @@ const Page = async ({
                 </div>
 
                 {/* Quick Stats */}
-              
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Page;
-
+export default Page

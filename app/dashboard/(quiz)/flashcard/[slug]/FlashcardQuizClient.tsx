@@ -15,7 +15,7 @@ import { useAuth } from "@/hooks"
 
 // ⚡ PERFORMANCE: Lazy load heavy components with framer-motion
 const FlashcardQuizWrapper = lazy(() => import("../components/FlashcardQuizWrapper"))
-const QuizPlayLayout = lazy(() => import("../../components/layouts/QuizPlayLayout"))
+const QuizPlayInterface = lazy(() => import("@/components/dashboard/QuizPlayInterface").then(module => ({ default: module.QuizPlayInterface })))
 
 interface FlashcardQuizClientProps {
   params: Promise<{ slug: string }>
@@ -86,7 +86,7 @@ export default function FlashcardQuizClient({ params }: FlashcardQuizClientProps
 
   return (
     <Suspense fallback={<div className="min-h-[200px] flex items-center justify-center"><div className="animate-spin h-6 w-6 border-2 border-primary border-r-transparent rounded-full" /></div>}>
-      <QuizPlayLayout
+      <QuizPlayInterface
         quizSlug={slug}
         quizType="flashcard"
         quizId={slug}
@@ -98,7 +98,7 @@ export default function FlashcardQuizClient({ params }: FlashcardQuizClientProps
           slug={slug}
           title={quizTitle}
         />
-      </QuizPlayLayout>
+      </QuizPlayInterface>
     </Suspense>
   )
 }

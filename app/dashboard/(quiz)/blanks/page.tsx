@@ -1,7 +1,7 @@
 'use client'
 
 import BlankQuizForm from "./components/BlankQuizForm"
-import { QuizCreateLayout } from "../components/QuizCreateLayout"
+import { QuizCreateInterface } from "@/components/dashboard/QuizCreateInterface"
 import { useFeatureAccess } from "@/hooks/useFeatureAccess"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { AppLoader } from "@/components/ui/loader"
@@ -36,7 +36,7 @@ const BlankPage = () => {
   // UnifiedUpgradeTrigger will handle contextual upgrade prompts
   
   return (
-    <QuizCreateLayout
+    <QuizCreateInterface
       title="Fill in the Blanks"
       description="Create customized fill-in-the-blank exercises or practice with our pre-built quizzes."
       quizType="blanks"
@@ -67,7 +67,7 @@ const BlankPage = () => {
           )}
         </>
       )}
-    </QuizCreateLayout>
+    </QuizCreateInterface>
   )
 }
 

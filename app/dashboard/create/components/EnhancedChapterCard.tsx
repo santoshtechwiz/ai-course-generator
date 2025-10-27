@@ -1,32 +1,36 @@
+/**
+ * app/dashboard/create/components/EnhancedChapterCard.tsx
+ * 
+ * REFACTORED: Simplified chapter card with stable state management
+ * - Removed redundant useEffect hooks
+ * - Single source of truth from parent hook
+ * - Consistent Nerobrutal theme styling
+ * - Clear progress indicators
+ */
+
 "use client"
 
 import { cn } from "@/lib/utils"
-import React, { useEffect, useState, useMemo } from "react"
-import { Loader2, CheckCircle, PlayCircle, Video, Eye } from "lucide-react"
+import React, { useState, useMemo } from "react"
+import { Loader2, CheckCircle, PlayCircle, Video, Eye, XCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { useVideoProcessing, type VideoStatus } from "../hooks/useVideoProcessing"
-import { useToast } from "@/hooks"
+import type { VideoStatus } from "../hooks/useVideoProcessing"
 import VideoPlayer from "../../course/[slug]/components/video/components/VideoPlayer"
 import { VideoProgressIndicator } from "./VideoProgressIndicator"
-import type { ChapterGenerationStatus } from "../hooks/useCourseEditor"
 import { Chapter } from "@/app/types/course-types"
 
 type Props = {
   chapter: Chapter
   chapterIndex: number
-  onChapterComplete: (chapterId: string) => void
-  isCompleted: boolean
-  isGenerating: boolean
-  onVideoChange?: (unitId: number, chapterId: number, videoId: string) => void
+  videoStatus?: VideoStatus
+  isProcessing: boolean
+  onGenerateVideo?: () => Promise<void>
+  onCancelProcessing?: () => Promise<void>
+  onRetryVideo?: () => Promise<void>
   onPreviewVideo?: (videoId: string, title: string) => void
-  onRemove?: (unitId: number, chapterId: number) => void
-  unitId?: number
-  hideVideoControls?: boolean
-  generationStatus?: ChapterGenerationStatus
-  onGenerateVideo?: (chapter: Chapter) => Promise<boolean>
   isFree?: boolean
 }
 
@@ -39,153 +43,47 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
     {
       chapter,
       chapterIndex,
-      onChapterComplete,
-      isCompleted,
-      isGenerating,
-      onVideoChange,
-      onPreviewVideo,
-      onRemove,
-      unitId,
-      hideVideoControls = false,
-      generationStatus,
+      videoStatus,
+      isProcessing,
       onGenerateVideo,
+      onCancelProcessing,
+      onRetryVideo,
+      onPreviewVideo,
       isFree = false,
     },
     ref,
   ) => {
-    const { toast } = useToast()
     const [showVideo, setShowVideo] = useState(false)
-    const [userInitiatedGeneration, setUserInitiatedGeneration] = useState(false)
 
-    // Use our enhanced video processing hook
-    const { processVideo, cancelProcessing, retryVideo, statuses, isProcessing, initializeChapterStatus } =
-      useVideoProcessing({
-        useEnhancedService: false, // Use standard API instead of enhanced
-        onComplete: (status) => {
-          console.log(`Video for chapter ${chapter.id} completed:`, status)
-
-          if (status.videoId) {
-            if (onVideoChange && unitId) {
-              onVideoChange(unitId, chapter.id, status.videoId)
-            }
-            onChapterComplete(String(chapter.id))
-
-            toast({
-              title: "Video Generated",
-              description: "Video has been successfully generated",
-              variant: "default",
-            })
-          }
-          setUserInitiatedGeneration(false)
-        },
-        onError: (status) => {
-          console.error(`Video for chapter ${chapter.id} failed:`, status)
-
-          toast({
-            title: "Video Generation Failed",
-            description: status.message || "Failed to generate video",
-            variant: "destructive",
-          })
-          setUserInitiatedGeneration(false)
-        },
-        pollingInterval: 3000, // Start with a shorter polling interval
-      })
-
-    // Convert from old status format to new if needed
-    const videoStatus: VideoStatus | undefined = useMemo(() => {
-      // First, check if we have a status from the hook
-      const existingStatus = statuses[chapter.id]
-
-      if (existingStatus) {
-        console.log(`Chapter ${chapter.id} using hook status:`, existingStatus.status)
-        return existingStatus
-      }
-
-      // If chapter has videoId, it should be completed
-      if (chapter.videoId) {
-        console.log(`Chapter ${chapter.id} has videoId ${chapter.videoId}, should be completed`)
-        return {
-          chapterId: chapter.id,
-          status: "completed",
-          videoId: chapter.videoId,
-          message: "Video already exists",
-        }
-      }
-
-      // Fall back to generation status if provided
-      if (generationStatus) {
-        console.log(`Chapter ${chapter.id} using generation status:`, generationStatus.status)
-        return {
-          chapterId: chapter.id,
-          status: generationStatus.status as "processing" | "completed" | "error" | "queued",
-          videoId: chapter.videoId || undefined,
-          message: generationStatus.message,
-        }
-      }
-
-      return undefined
-    }, [statuses, chapter.id, chapter.videoId, generationStatus])
-
-    // Auto-set userInitiatedGeneration when video status indicates processing has started
-    useEffect(() => {
-        if (videoStatus && (videoStatus.status === "queued" || videoStatus.status === "processing")) {
-            setUserInitiatedGeneration(true)
-        } else if (videoStatus && videoStatus.status === "completed") {
-            // Keep it true if completed to show the video
-            setUserInitiatedGeneration(true)
-        } else if (videoStatus && videoStatus.status === "error") {
-            // Keep it true if error to show retry option
-            setUserInitiatedGeneration(true)
-        }
-    }, [videoStatus?.status])
-
-    // Implementation of the ref's trigger method
+    // Implement ref handler
     React.useImperativeHandle(ref, () => ({
       triggerLoad: async () => {
-        if (chapter.videoId) {
-          // Already has video
-          onChapterComplete(String(chapter.id))
-          return
+        if (!chapter.videoId && onGenerateVideo) {
+          await onGenerateVideo()
         }
-
-        // Only generate if user explicitly requested it
-        console.log(`🎬 User explicitly requested video generation for chapter: ${chapter.title}`)
-        setUserInitiatedGeneration(true)
-        await handleGenerateVideo()
       },
     }))
 
-    // Generate video - only when user explicitly requests it
-    const handleGenerateVideo = async () => {
-      if (isProcessing[chapter.id] || isGenerating) {
-        toast({
-          title: "Already Processing",
-          description: "Video generation is already in progress",
-          variant: "default",
-        })
-        return
-      }
+    // Determine current status
+    const currentStatus = useMemo(() => {
+      if (videoStatus) return videoStatus.status
+      if (chapter.videoId) return "completed"
+      return "idle"
+    }, [videoStatus, chapter.videoId])
 
-      try {
-        console.log(`🎬 Starting user-initiated video generation for chapter: ${chapter.title}`)
-        setUserInitiatedGeneration(true)
-
-        // If the component has an onGenerateVideo prop, use that
-        if (onGenerateVideo) {
-          await onGenerateVideo(chapter)
-          return
-        }
-
-        // Otherwise use our enhanced video processing
-        await processVideo(chapter.id)
-      } catch (error) {
-        console.error(`Error in handleGenerateVideo for chapter ${chapter.id}:`, error)
-        toast({
-          title: "Generation Failed",
-          description: error instanceof Error ? error.message : "Unknown error occurred",
-          variant: "destructive",
-        })
-        setUserInitiatedGeneration(false)
+    // Status icon
+    const StatusIcon = () => {
+      switch (currentStatus) {
+        case "queued":
+          return <Loader2 className="h-4 w-4 text-yellow-500 animate-spin" />
+        case "processing":
+          return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+        case "completed":
+          return <CheckCircle className="h-4 w-4 text-green-500" />
+        case "error":
+          return <XCircle className="h-4 w-4 text-red-500" />
+        default:
+          return <PlayCircle className="h-4 w-4 text-muted-foreground" />
       }
     }
 
@@ -200,110 +98,94 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
       }
     }
 
-    // Handle cancel
-    const handleCancelProcessing = async () => {
-      await cancelProcessing(chapter.id)
-      setUserInitiatedGeneration(false)
-    }
-
-    // Initialize status for chapters that already have videos - but don't auto-process
-    useEffect(() => {
-      console.log(`Chapter ${chapter.id} mount check:`, {
-        hasVideoId: !!chapter.videoId,
-        videoId: chapter.videoId,
-        hasStatus: !!statuses[chapter.id],
-        currentStatus: statuses[chapter.id]?.status,
-        generationStatus: generationStatus?.status,
-        isProcessingCurrent: isProcessing[chapter.id],
-      })
-
-      if (chapter.videoId) {
-        // If chapter has videoId, it should definitely be marked as completed
-        const currentStatus = statuses[chapter.id]
-
-        if (!currentStatus || currentStatus.status !== "completed") {
-          console.log(`🔧 Force-initializing status for chapter ${chapter.id} with existing video: ${chapter.videoId}`)
-          initializeChapterStatus(chapter.id, chapter.videoId)
-        }
-      }
-    }, [chapter.id, chapter.videoId, statuses, initializeChapterStatus, generationStatus, isProcessing])
-
-    // Remove automatic retry logic - only retry when user explicitly requests it
-
     return (
-      <Card className={cn("transition-all duration-200", isFree && "border-primary border-2")}>
-        <CardHeader className="p-4">
-          <CardTitle className="text-base font-medium flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span>Chapter {chapterIndex + 1}</span>
-              {isFree && <Badge className="ml-2">Free Preview</Badge>}
-              {isCompleted && <CheckCircle className="h-4 w-4 text-green-500 ml-2" />}
-            </div>
-          </CardTitle>
-        </CardHeader>        <CardContent className="px-4 py-2 space-y-3">
-          {/* Video Generation Status - show progress if video exists, user initiated, or chapter is being processed */}
-          {userInitiatedGeneration || chapter.videoId || (videoStatus && (videoStatus.status === "queued" || videoStatus.status === "processing")) ? (
-            <VideoProgressIndicator
-              status={videoStatus}
-              onRetry={() => {
-                setUserInitiatedGeneration(true)
-                retryVideo(chapter.id)
-              }}
-              onCancel={handleCancelProcessing}
-              showControls={!hideVideoControls}
-            />
-          ) : (
-            <div className="flex items-center space-x-2">
-              <PlayCircle className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Ready to generate video</span>
-            </div>
+      <>
+        <Card 
+          className={cn(
+            "transition-all duration-200 border-4",
+            isFree && "border-primary bg-primary/5"
           )}
-
-          {/* Video preview when available */}
-          {chapter.videoId && (
-            <div className="flex items-center justify-between">
+        >
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-base font-medium flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Video className="h-4 w-4 text-blue-500" />
-                <span className="text-sm">Video Ready</span>
+                <span className="font-bold">Chapter {chapterIndex + 1}</span>
+                {isFree && (
+                  <Badge className="ml-2 bg-primary text-primary-foreground">
+                    Free Preview
+                  </Badge>
+                )}
               </div>
+              <StatusIcon />
+            </CardTitle>
+          </CardHeader>
 
-              {!hideVideoControls && (
-                <Button variant="ghost" size="sm" onClick={handlePreviewVideo} className="h-7 px-2 flex items-center">
+          <CardContent className="px-4 py-2 space-y-3">
+            {/* Title */}
+            <p className="text-sm font-medium text-foreground">{chapter.title}</p>
+
+            {/* Progress Indicator */}
+            {(currentStatus !== "idle" || chapter.videoId) && (
+              <VideoProgressIndicator
+                status={videoStatus}
+                onRetry={onRetryVideo}
+                onCancel={onCancelProcessing}
+                showControls={true}
+                size="sm"
+              />
+            )}
+
+            {/* Video Ready */}
+            {chapter.videoId && (
+              <div className="flex items-center justify-between p-2 rounded-none bg-success/10 border-2 border-success/20">
+                <div className="flex items-center space-x-2">
+                  <Video className="h-4 w-4 text-success" />
+                  <span className="text-sm font-medium text-success">Video Ready</span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handlePreviewVideo}
+                  className="h-7 px-2"
+                >
                   <Eye className="h-3 w-3 mr-1" /> Preview
                 </Button>
-              )}
-            </div>
-          )}
-        </CardContent>
+              </div>
+            )}
+          </CardContent>
 
-        <CardFooter className="p-4 pt-0">
-          <div className="w-full flex justify-between items-center">
-            <div className="text-sm">{chapter.title}</div>
-
-            {!hideVideoControls && !chapter.videoId && !isProcessing[chapter.id] && (
+          <CardFooter className="p-4 pt-2">
+            {!chapter.videoId && !isProcessing && currentStatus === "idle" && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleGenerateVideo}
-                disabled={isGenerating}
-                className="ml-auto flex items-center h-7 px-2 bg-transparent"
+                onClick={onGenerateVideo}
+                className="w-full border-2"
               >
-                {isGenerating ? (
-                  <Loader2 className="h-3 w-3 mr-1" />
-                ) : (
-                  <PlayCircle className="h-3 w-3 mr-1" />
-                )}
+                <PlayCircle className="h-3 w-3 mr-2" />
                 Generate Video
               </Button>
             )}
-          </div>
-        </CardFooter>
 
-        {/* Video preview modal */}
+            {currentStatus === "error" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRetryVideo}
+                className="w-full border-2 border-red-200 text-red-600 hover:bg-red-50"
+              >
+                <PlayCircle className="h-3 w-3 mr-2" />
+                Retry Generation
+              </Button>
+            )}
+          </CardFooter>
+        </Card>
+
+        {/* Video Preview Modal */}
         {showVideo && chapter.videoId && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-3xl p-4">
-              <h3 className="font-medium mb-2">{chapter.title}</h3>
+            <div className="bg-card rounded-none w-full max-w-3xl p-6 border-6 border-border shadow-neo">
+              <h3 className="font-bold text-lg mb-4">{chapter.title}</h3>
               <VideoPlayer videoId={chapter.videoId} />
               <div className="mt-4 flex justify-end">
                 <Button onClick={() => setShowVideo(false)}>Close</Button>
@@ -311,7 +193,7 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
             </div>
           </div>
         )}
-      </Card>
+      </>
     )
   },
 )

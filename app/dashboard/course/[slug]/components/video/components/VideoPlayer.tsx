@@ -25,7 +25,7 @@ import ChapterEndOverlay from "./ChapterEndOverlay"
 import AutoPlayNotification from "./AutoPlayNotification"
 import EnhancedMiniPlayer from "./YouTubePIP"
 import { storageManager } from "@/utils/storage-manager"
-import { videoService } from "@/services/video-service"
+import {  videoService } from "@/services/video-playback-service"
 import { useNotes } from "@/hooks/use-notes"
 
 // Memoized play button to prevent unnecessary re-renders
@@ -54,7 +54,7 @@ const TheaterModeButton = React.memo(
     onToggle: () => void
   }) => (
     <button
-      className="absolute z-30 rounded-md p-2 transition-all duration-100 bg-black/70 hover:bg-black/90 backdrop-blur-sm text-white top-4 right-4"
+      className="absolute z-30 rounded-none p-2 transition-all duration-100 bg-black/70 hover:bg-black/90 backdrop-blur-sm text-white top-4 right-4"
       onClick={onToggle}
       aria-label={isTheater ? "Exit theater mode" : "Enter theater mode"}
       title={isTheater ? "Exit theater mode (ESC or T)" : "Enter theater mode (T)"}
@@ -852,7 +852,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.JSON.stringify({
+            body: JSON.stringify({
               courseId: Number.parseInt(courseId?.toString() || "0"),
               chapterId: Number.parseInt(chapterId?.toString() || "0"),
               timestamp: time,

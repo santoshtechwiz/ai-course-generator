@@ -38,7 +38,7 @@ export function QuizErrorBoundary({ children }: QuizErrorBoundaryProps) {
           
           {/* COMMIT: Show error details in development mode */}
           {process.env.NODE_ENV === "development" && error.stack && (
-            <details className="mb-6 text-left bg-muted p-4 rounded-lg max-w-lg mx-auto">
+            <details className="mb-6 text-left bg-muted p-4 rounded-none max-w-lg mx-auto">
               <summary className="cursor-pointer font-semibold mb-2">
                 Error Details (Dev Only)
               </summary>

@@ -1,6 +1,6 @@
 import type React from "react"
-import { getAuthSession } from "@/lib/auth"
 import type { Metadata } from "next"
+import { getAuthSession } from "@/lib/auth"
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
 import { DashboardLayout } from "@/components/dashboard/layout"
 

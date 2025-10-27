@@ -290,7 +290,7 @@ export default function ContactManagement() {
                       {filteredSubmissions.map((submission) => (
                         <div
                           key={submission.id}
-                          className={`p-3 rounded-md border cursor-pointer transition-colors ${
+                          className={`p-3 rounded-none border cursor-pointer transition-colors ${
                             selectedSubmission?.id === submission.id ? "bg-muted border-primary" : "hover:bg-muted/50"
                           }`}
                           onClick={() => handleSelectSubmission(submission)}
@@ -321,7 +321,7 @@ export default function ContactManagement() {
                       {filteredSubmissions.map((submission) => (
                         <div
                           key={submission.id}
-                          className={`p-3 rounded-md border cursor-pointer transition-colors ${
+                          className={`p-3 rounded-none border cursor-pointer transition-colors ${
                             selectedSubmission?.id === submission.id ? "bg-muted border-primary" : "hover:bg-muted/50"
                           }`}
                           onClick={() => handleSelectSubmission(submission)}
@@ -352,7 +352,7 @@ export default function ContactManagement() {
                       {filteredSubmissions.map((submission) => (
                         <div
                           key={submission.id}
-                          className={`p-3 rounded-md border cursor-pointer transition-colors ${
+                          className={`p-3 rounded-none border cursor-pointer transition-colors ${
                             selectedSubmission?.id === submission.id ? "bg-muted border-primary" : "hover:bg-muted/50"
                           }`}
                           onClick={() => handleSelectSubmission(submission)}
@@ -393,7 +393,7 @@ export default function ContactManagement() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <div className="p-4 bg-muted rounded-md">
+                  <div className="p-4 bg-muted rounded-none">
                     <h3 className="font-medium mb-2">Original Message:</h3>
                     <p className="whitespace-pre-line">{selectedSubmission.message}</p>
                     <div className="mt-2 text-sm text-muted-foreground">

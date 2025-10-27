@@ -114,7 +114,7 @@ export default function QuickNavigation() {
                     )}
                   >
                     <div className={cn(
-                      "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+                      "w-10 h-10 rounded-none flex items-center justify-center transition-colors",
                       item.color,
                       "group-hover:scale-110"
                     )}>

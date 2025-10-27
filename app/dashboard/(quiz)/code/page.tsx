@@ -1,7 +1,7 @@
 'use client'
 
 import CodeQuizForm from "./components/CodeQuizForm"
-import { QuizCreateLayout } from "../components/QuizCreateLayout"
+import { QuizCreateInterface } from "@/components/dashboard/QuizCreateInterface"
 import { useFeatureAccess } from "@/hooks/useFeatureAccess"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { AppLoader } from "@/components/ui/loader"
@@ -36,7 +36,7 @@ const CodePage = () => {
   // UnifiedUpgradeTrigger will handle contextual upgrade prompts
 
   return (
-    <QuizCreateLayout
+    <QuizCreateInterface
       title="Code Quiz"
       description="Create programming challenges or learn with our pre-built coding exercises."
       quizType="code"
@@ -67,7 +67,7 @@ const CodePage = () => {
           )}
         </>
       )}
-    </QuizCreateLayout>
+    </QuizCreateInterface>
   )
 }
 

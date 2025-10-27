@@ -7,7 +7,6 @@ import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 
 import { navItems } from "@/constants/navItems"
-import neo from "@/components/neo/tokens"
 import { ThemeToggle } from "@/components/layout/navigation/ThemeToggle"
 import { UserMenu } from "@/components/layout/navigation/UserMenu"
 import { Button } from "@/components/ui/button"
@@ -15,30 +14,17 @@ import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 import { useAuth } from "@/modules/auth"
-import { cn, getColorClasses } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import Logo from "@/components/shared/Logo"
-import { CreditsDisplay } from "./CreditsDisplay"
-import { UserAvatar } from "./UserAvatar"
 import { CreditCounter } from "@/components/shared/CreditCounter"
 
-// ⚡ PERFORMANCE: Lazy load heavy components to reduce initial bundle
 const SearchModal = lazy(() => import("@/components/layout/navigation/SearchModal"))
 const NotificationsMenu = lazy(() => import("@/components/Navbar/NotificationsMenu"))
-// const CourseNotificationsMenu = lazy(() => import("@/components/Navbar/CourseNotificationsMenu")) // DISABLED: Causing UI freeze
 
-/**
- * Enhanced MainNavbar with improved UX following neobrutalism principles
- * 
- * ✅ Enhanced visual feedback and micro-interactions
- * ✅ Better performance with optimized re-renders
- * ✅ Improved accessibility
- * ✅ Consistent neobrutalism design language
- */
 export function MainNavbar() {
   const pathname = usePathname()
   const router = useRouter()
   
-  // ✅ Single source of truth - useAuth provides everything
   const {
     user,
     isAuthenticated,
@@ -49,11 +35,9 @@ export function MainNavbar() {
     isLoading,
   } = useAuth()
 
-  // Compute available credits (already computed in useAuth, but keeping for compatibility)
   const totalTokens = credits || 0
   const subscriptionPlan = plan || "FREE"
   
-  // Debug logging once on mount or when key values change (not on every render)
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       console.log('[MainNavbar] Auth state changed:', {
@@ -64,14 +48,13 @@ export function MainNavbar() {
         isAuthenticated,
       })
     }
-  }, [isAuthenticated, subscriptionPlan]) // Only log when these change
+  }, [isAuthenticated, subscriptionPlan])
 
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [isHoveringLogo, setIsHoveringLogo] = useState(false)
 
-  // Optimized scroll handler with throttling
   useEffect(() => {
     let ticking = false
     const handleScroll = () => {
@@ -87,7 +70,6 @@ export function MainNavbar() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // Use pre-computed remainingCredits from useAuth (already memoized)
   const availableCredits = remainingCredits ?? 0
 
   const userInitials = useMemo(() => {
@@ -114,10 +96,6 @@ export function MainNavbar() {
     [router],
   )
 
-  // Get Neobrutalism utility classes
-  const { buttonPrimary, buttonIcon, badgeCount } = getColorClasses()
-
-  // Memoized navigation items to prevent unnecessary re-renders
   const desktopNavItems = useMemo(() => 
     navItems.map((item) => {
       const active = pathname === item.href
@@ -126,22 +104,16 @@ export function MainNavbar() {
           key={item.name}
           href={item.href}
           className={cn(
-            "relative px-4 py-2 text-sm font-black transition-all duration-150",
-            "border-4 border-transparent rounded-none transform hover:scale-105",
-            "active:scale-95 active:translate-y-1",
+            "relative px-5 py-2.5 text-sm font-black uppercase tracking-wider transition-all duration-150",
+            "border-6 rounded-none",
             active 
-              ? "border-[var(--color-border)] bg-[var(--color-primary)] text-white shadow-[4px_4px_0_#000]" 
-              : "hover:border-[var(--color-border)] hover:bg-[var(--color-muted)] hover:shadow-[3px_3px_0_#000]",
+              ? "border-[var(--color-border)] bg-[var(--color-primary)] text-white shadow-[4px_4px_0_var(--shadow-color)]" 
+              : "border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-muted)] hover:shadow-[3px_3px_0_var(--shadow-color)]",
+            "hover:translate-x-[-1px] hover:translate-y-[-1px]",
+            "active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_var(--shadow-color)]"
           )}
         >
           {item.name}
-          {active && (
-            <motion.div
-              className="absolute bottom-0 left-0 right-0 h-1 bg-current"
-              layoutId="navbar-indicator"
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            />
-          )}
         </Link>
       )
     }),
@@ -157,11 +129,13 @@ export function MainNavbar() {
           href={item.href}
           onClick={() => setIsMobileMenuOpen(false)}
           className={cn(
-            "block px-4 py-3 min-h-[48px] flex items-center font-black border-4 rounded-none",
-            "transition-all duration-150 active:scale-95 active:translate-y-1",
+            "block px-5 py-4 min-h-[56px] flex items-center font-black uppercase tracking-wider border-6 rounded-none",
+            "transition-all duration-150",
             active 
-              ? "bg-[var(--color-primary)] text-white border-[var(--color-border)] shadow-[4px_4px_0_#000]" 
-              : "border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-muted)] hover:shadow-[3px_3px_0_#000]",
+              ? "bg-[var(--color-primary)] text-white border-[var(--color-border)] shadow-[4px_4px_0_var(--shadow-color)]" 
+              : "border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-muted)] hover:shadow-[3px_3px_0_var(--shadow-color)]",
+            "hover:translate-x-[-1px] hover:translate-y-[-1px]",
+            "active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_var(--shadow-color)]"
           )}
         >
           {item.name}
@@ -176,8 +150,8 @@ export function MainNavbar() {
       <motion.header
         className={cn(
           "fixed top-0 left-0 right-0 z-[60]",
-          "bg-[var(--color-bg)] border-b-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]",
-          "transition-all duration-200"
+          "bg-[var(--color-bg)] border-b-6 border-[var(--color-border)] shadow-neo",
+          "transition-all duration-200 neo-typography-body"
         )}
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -188,8 +162,8 @@ export function MainNavbar() {
           duration: 0.3
         }}
       >
-        <div className="container flex h-16 items-center justify-between px-3 sm:px-4 lg:px-6 max-w-7xl mx-auto">
-          {/* Enhanced Logo with hover animation */}
+        <div className="container flex h-16 items-center justify-between px-4 lg:px-6 max-w-7xl mx-auto">
+          {/* Logo */}
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -203,7 +177,7 @@ export function MainNavbar() {
               onMouseLeave={() => setIsHoveringLogo(false)}
             >
               <motion.div
-                animate={{ rotate: isHoveringLogo ? [-1, 1, -1, 1, 0] : 0 }}
+                animate={{ rotate: isHoveringLogo ? [-2, 2, -2, 2, 0] : 0 }}
                 transition={{ duration: 0.5 }}
               >
                 <Logo />
@@ -211,34 +185,33 @@ export function MainNavbar() {
             </Link>
           </motion.div>
 
-          {/* Desktop Nav - Enhanced neobrutalism with animations */}
-          <nav className="hidden md:flex items-center space-x-2">
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-2">
             {desktopNavItems}
           </nav>
 
-          {/* Right side - Enhanced neobrutalism interactions */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            {/* Enhanced credit counter with pulsing animation when low */}
+          {/* Right side */}
+          <div className="flex items-center gap-2">
+            {/* Credit counter */}
             {isAuthenticated && !isLoading && (
               <motion.div 
-                className="hidden sm:flex"
+                className="hidden sm:flex items-center gap-1"
                 whileHover={{ scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
                 <CreditCounter />
                 {availableCredits < 100 && availableCredits > 0 && (
                   <motion.div
-                    animate={{ scale: [1, 1.1, 1] }}
+                    animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
-                    className="ml-1"
                   >
-                    <Sparkles className="h-4 w-4 text-yellow-500" />
+                    <Sparkles className="h-4 w-4 text-[var(--color-warning)]" />
                   </motion.div>
                 )}
               </motion.div>
             )}
 
-            {/* Enhanced Search Button */}
+            {/* Search Button */}
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -249,18 +222,13 @@ export function MainNavbar() {
                 size="icon"
                 aria-label="Search"
                 onClick={() => setIsSearchModalOpen(true)}
-                className={cn(
-                  buttonIcon,
-                  "border-3 border-[var(--color-border)] hover:border-[var(--color-border)]",
-                  "hover:shadow-[3px_3px_0px_0px_var(--color-border)] transition-all duration-150",
-                  "bg-[var(--color-bg)]"
-                )}
+                className="h-10 w-10 border-6 border-[var(--color-border)] bg-[var(--color-bg)] rounded-none shadow-[3px_3px_0_var(--shadow-color)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_var(--shadow-color)] transition-all duration-150"
               >
-                <Search className="h-4 w-4" />
+                <Search className="h-5 w-5" />
               </Button>
             </motion.div>
 
-            {/* Theme Toggle with enhanced interaction */}
+            {/* Theme Toggle */}
             <motion.div
               className="hidden sm:block"
               whileHover={{ scale: 1.05 }}
@@ -271,16 +239,15 @@ export function MainNavbar() {
 
             {/* Auth Section */}
             {isAuthenticated ? (
-              <div className="hidden md:flex items-center gap-1">
+              <div className="hidden md:flex items-center gap-2">
                 <Suspense fallback={
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   >
-                    <Loader2 className="h-5 w-5 text-muted-foreground" />
+                    <Loader2 className="h-5 w-5" />
                   </motion.div>
                 }>
-                  {/* <CourseNotificationsMenu /> */}
                   <NotificationsMenu />
                 </Suspense>
                 <UserMenu />
@@ -293,13 +260,7 @@ export function MainNavbar() {
               >
                 <Button
                   onClick={handleSignIn}
-                  className={cn(
-                    "hidden sm:flex font-black",
-                    buttonPrimary,
-                    "min-h-[40px] border-4 shadow-[4px_4px_0_#000]",
-                    "hover:shadow-[6px_6px_0_#000] active:shadow-[2px_2px_0_#000]",
-                    "active:translate-y-1 transition-all duration-150 rounded-none"
-                  )}
+                  className="hidden sm:flex font-black uppercase tracking-wider min-h-[40px] px-6 border-6 border-[var(--color-border)] bg-[var(--color-primary)] text-white shadow-[4px_4px_0_var(--shadow-color)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_var(--shadow-color)] transition-all duration-150 rounded-none"
                   size="sm"
                 >
                   Sign in
@@ -307,7 +268,7 @@ export function MainNavbar() {
               </motion.div>
             )}
 
-            {/* Enhanced Mobile Menu */}
+            {/* Mobile Menu */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild suppressHydrationWarning>
                 <motion.div
@@ -317,18 +278,12 @@ export function MainNavbar() {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className={cn(
-                      "md:hidden",
-                      buttonIcon,
-                      "border-3 border-[var(--color-border)] hover:border-[var(--color-border)]",
-                      "hover:shadow-[3px_3px_0px_0px_var(--color-border)] transition-all duration-150",
-                      "bg-[var(--color-bg)]"
-                    )}
+                    className="md:hidden h-10 w-10 border-6 border-[var(--color-border)] bg-[var(--color-bg)] rounded-none shadow-[3px_3px_0_var(--shadow-color)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_var(--shadow-color)] transition-all duration-150"
                     suppressHydrationWarning
                     aria-label="Toggle menu"
                   >
                     <motion.div
-                      animate={{ rotate: isMobileMenuOpen ? 180 : 0 }}
+                      animate={{ rotate: isMobileMenuOpen ? 90 : 0 }}
                       transition={{ duration: 0.2 }}
                     >
                       {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -336,56 +291,53 @@ export function MainNavbar() {
                   </Button>
                 </motion.div>
               </SheetTrigger>
-              {/* Slide in from left on mobile to align with neobrutalism left-docked nav in mock */}
-              <SheetContent side="left" className="w-[85vw] max-w-sm p-0 bg-[var(--color-bg)] border-r-4 border-[var(--color-border)] shadow-[4px_0px_0px_0px_var(--color-border)]">
+              <SheetContent 
+                side="left" 
+                className="w-[85vw] max-w-sm p-0 bg-[var(--color-bg)] border-r-6 border-[var(--color-border)] shadow-[6px_0px_0px_0px_var(--shadow-color)] rounded-none"
+              >
                 <motion.div 
                   className="h-full flex flex-col"
-                  initial={{ x: 300 }}
+                  initial={{ x: -300 }}
                   animate={{ x: 0 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 >
-                  {/* Enhanced Header */}
-                  <div className="p-4 border-b-4 border-[var(--color-border)] flex items-center justify-between bg-[var(--color-bg)]">
+                  {/* Header */}
+                  <div className="p-4 border-b-6 border-[var(--color-border)] flex items-center justify-between bg-[var(--color-bg)]">
                     <motion.div whileHover={{ scale: 1.05 }}>
                       <Logo />
                     </motion.div>
-                    <div className="flex items-center gap-2">
-                      <motion.div whileHover={{ scale: 1.1 }}>
-                        <ThemeToggle />
-                      </motion.div>
-                    </div>
+                    <motion.div whileHover={{ scale: 1.1 }}>
+                      <ThemeToggle />
+                    </motion.div>
                   </div>
                   
-                  {/* Enhanced Navigation */}
-                  <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+                  {/* Navigation */}
+                  <nav className="flex-1 p-4 space-y-3 overflow-y-auto">
                     {mobileNavItems}
                   </nav>
                   
-                  {/* Enhanced Footer */}
-                  <div className="p-4 border-t-4 border-[var(--color-border)] space-y-3 bg-[var(--color-bg)]">
+                  {/* Footer */}
+                  <div className="p-4 border-t-6 border-[var(--color-border)] space-y-3 bg-[var(--color-bg)]">
                     {isAuthenticated ? (
                       <>
                         {availableCredits !== null && (
                           <motion.div 
-                            className="flex items-center justify-between p-3 bg-[var(--color-bg)] border-3 border-[var(--color-border)] rounded-none shadow-[4px_4px_0_#000]"
+                            className="flex items-center justify-between p-4 bg-[var(--color-card)] border-6 border-[var(--color-border)] rounded-none shadow-[4px_4px_0_var(--shadow-color)]"
                             whileHover={{ scale: 1.02 }}
                             transition={{ type: "spring", stiffness: 400, damping: 17 }}
                           >
                             <div className="flex items-center space-x-2">
-                              <CreditCard className="h-4 w-4" />
-                              <span className="text-sm font-black">Credits</span>
+                              <CreditCard className="h-5 w-5" />
+                              <span className="text-sm font-black uppercase">Credits</span>
                             </div>
                             <div className="flex items-center space-x-2">
-                              <span className="text-sm font-black tabular-nums">
+                              <span className="text-base font-black tabular-nums">
                                 {availableCredits.toLocaleString()}
                               </span>
                               {subscriptionPlan !== "FREE" && (
                                 <Badge 
                                   variant="secondary" 
-                                  className={cn(
-                                    "text-xs px-1.5 py-0.5 border-2 border-[var(--color-border)] font-black",
-                                    "shadow-[2px_2px_0_#000] rounded-none"
-                                  )}
+                                  className="text-xs px-2 py-1 border-3 border-[var(--color-border)] font-black shadow-[2px_2px_0_var(--shadow-color)] rounded-none uppercase"
                                 >
                                   {subscriptionPlan}
                                 </Badge>
@@ -399,10 +351,9 @@ export function MainNavbar() {
                               animate={{ rotate: 360 }}
                               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                             >
-                              <Loader2 className="h-5 w-5 text-muted-foreground" />
+                              <Loader2 className="h-5 w-5" />
                             </motion.div>
                           }>
-                            {/* <CourseNotificationsMenu /> */}
                             <NotificationsMenu />
                           </Suspense>
                         </div>
@@ -413,13 +364,7 @@ export function MainNavbar() {
                         whileTap={{ scale: 0.98 }}
                       >
                         <Button 
-                          className={cn(
-                            "w-full min-h-[48px] font-black border-4 rounded-none",
-                            buttonPrimary,
-                            "shadow-[4px_4px_0_#000]",
-                            "hover:shadow-[6px_6px_0_#000]",
-                            "active:shadow-[2px_2px_0_#000] active:translate-y-1"
-                          )}
+                          className="w-full min-h-[56px] font-black uppercase tracking-wider border-6 border-[var(--color-border)] bg-[var(--color-primary)] text-white shadow-[4px_4px_0_var(--shadow-color)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_var(--shadow-color)] transition-all duration-150 rounded-none"
                           onClick={() => {
                             handleSignIn()
                             setIsMobileMenuOpen(false)

@@ -163,7 +163,7 @@ const FaqAccordion = () => {
 									transition={{ duration: 0.2, ease: APPLE_EASING }}
 									className="flex-shrink-0 mt-1"
 								>
-									<div className="w-6 h-6 rounded-lg bg-[var(--color-primary)]/10 border-2 border-[var(--color-primary)]/20 flex items-center justify-center">
+									<div className="w-6 h-6 rounded-none bg-[var(--color-primary)]/10 border-2 border-[var(--color-primary)]/20 flex items-center justify-center">
 										{openItem === faq.id ? (
 											<Minus className="h-4 w-4 text-[var(--color-primary)]" />
 										) : (

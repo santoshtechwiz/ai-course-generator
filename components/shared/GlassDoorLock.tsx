@@ -82,7 +82,7 @@ export default function GlassDoorLock({
             {onAction && (
               <button
                 onClick={onAction}
-                className="px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-semibold shadow-md hover:brightness-95 transition"
+                className="px-5 py-2.5 rounded-none bg-primary text-primary-foreground text-sm font-semibold shadow-md hover:brightness-95 transition"
               >
                 {actionLabel}
               </button>

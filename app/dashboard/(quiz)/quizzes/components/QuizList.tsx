@@ -339,7 +339,7 @@ function QuizListComponent({
           {...fadeInUp(0.1)}
           className="grid grid-cols-1 sm:grid-cols-3 gap-4"
         >
-          <div className="bg-[var(--color-card)] border-4 border-black p-6 rounded-lg shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000] transition-shadow">
+          <div className="bg-[var(--color-card)] border-4 border-black p-6 rounded-none shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000] transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-bold text-[var(--color-text)]/70">Total Quizzes</p>
@@ -348,7 +348,7 @@ function QuizListComponent({
               <QuizTypeIcons.total className="h-8 w-8 text-[var(--color-primary)]" />
             </div>
           </div>
-          <div className="bg-[var(--color-card)] border-4 border-black p-6 rounded-lg shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000] transition-shadow">
+          <div className="bg-[var(--color-card)] border-4 border-black p-6 rounded-none shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000] transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-bold text-[var(--color-text)]/70">MCQ Quizzes</p>
@@ -357,7 +357,7 @@ function QuizListComponent({
               <QuizTypeIcons.mcq className="h-8 w-8 text-[var(--color-primary)]" />
             </div>
           </div>
-          <div className="bg-[var(--color-card)] border-4 border-black p-6 rounded-lg shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000] transition-shadow">
+          <div className="bg-[var(--color-card)] border-4 border-black p-6 rounded-none shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000] transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-bold text-[var(--color-text)]/70">Coding Challenges</p>
@@ -386,7 +386,7 @@ function QuizListComponent({
               type="search"
               placeholder="Search quizzes..."
               className={cn(
-                "flex h-11 w-full rounded-lg border-4 border-black bg-[var(--color-bg)] px-11 py-3 text-sm font-bold shadow-[4px_4px_0_#000] transition-all placeholder:text-[var(--color-text)]/50 focus:shadow-[6px_6px_0_#000] focus:outline-none",
+                "flex h-11 w-full rounded-none border-4 border-black bg-[var(--color-bg)] px-11 py-3 text-sm font-bold shadow-[4px_4px_0_#000] transition-all placeholder:text-[var(--color-text)]/50 focus:shadow-[6px_6px_0_#000] focus:outline-none",
               )}
               value={localSearch}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -411,14 +411,14 @@ function QuizListComponent({
               <DropdownMenuContent align="end" className="w-56 rounded-xl border-4 border-black shadow-[4px_4px_0_#000] z-[100] bg-[var(--color-card)]">
                 <DropdownMenuItem
                   onClick={() => setSortBy("default")}
-                  className={cn(sortBy === "default" && "bg-[var(--color-accent)] text-white border-black font-black", "text-sm font-bold rounded-lg")}
+                  className={cn(sortBy === "default" && "bg-[var(--color-accent)] text-white border-black font-black", "text-sm font-bold rounded-none")}
                 >
                   <Star className="mr-3 h-5 w-5" strokeWidth={2.5} />
                   Default Order
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setSortBy("title")}
-                  className={cn(sortBy === "title" && "bg-[var(--color-accent)] text-white border-black font-black", "text-sm font-bold rounded-lg")}
+                  className={cn(sortBy === "title" && "bg-[var(--color-accent)] text-white border-black font-black", "text-sm font-bold rounded-none")}
                 >
                   <BookOpen className="mr-3 h-5 w-5" strokeWidth={2.5} />
                   Alphabetical (A-Z)

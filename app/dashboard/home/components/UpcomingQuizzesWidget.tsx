@@ -132,7 +132,7 @@ export default function UpcomingQuizzesWidget({
               <div className="group space-y-3">
                 {/* Quiz Header */}
                 <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-primary/10 p-2 group-hover:bg-primary/20 transition-colors">
+                  <div className="rounded-none bg-primary/10 p-2 group-hover:bg-primary/20 transition-colors">
                     <TypeIcon className="h-4 w-4 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">

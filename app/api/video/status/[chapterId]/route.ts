@@ -12,6 +12,23 @@ export async function GET(req: Request, props: { params: Promise<{ chapterId: st
     return NextResponse.json({ success: false, error: "Invalid chapter ID" }, { status: 400 })
   }
 
+  // Check for simulation mode
+  const isSimulationMode = process.env.NEXT_PUBLIC_SIMULATION_MODE === "true"
+  
+  if (isSimulationMode) {
+    console.log(`[Video Status API] Simulation mode: Returning mock status for chapter ${chapterId}`)
+    
+    // Return mock status - in simulation mode, videos complete instantly in the frontend
+    return NextResponse.json({
+      success: true,
+      videoId: `sim-video-${chapterId}-${Date.now()}`,
+      videoStatus: "completed",
+      isReady: true,
+      jobId: `sim-job-${chapterId}-${Date.now()}`,
+      timestamp: new Date().toISOString()
+    })
+  }
+
   try {
     // Get status through service layer
     const status = await videoService.getChapterVideoStatus(chapterId)

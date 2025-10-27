@@ -37,8 +37,8 @@ export function GlobalLoader({
       >
         {/* Neobrutalist loader container */}
         <div className="relative">
-          <div className="absolute inset-0 rounded-lg bg-yellow-200 border-4 border-black shadow-[4px_4px_0_#000] transform rotate-3" />
-          <div className="relative bg-[var(--color-card)] border-4 border-black rounded-lg shadow-[4px_4px_0_#000] p-8">
+          <div className="absolute inset-0 rounded-none bg-yellow-200 border-4 border-black shadow-[4px_4px_0_#000] transform rotate-3" />
+          <div className="relative bg-[var(--color-card)] border-4 border-black rounded-none shadow-[4px_4px_0_#000] p-8">
             <Loader2 className="h-12 w-12 animate-spin text-[var(--color-primary)] mx-auto" />
           </div>
         </div>

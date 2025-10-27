@@ -63,7 +63,7 @@ export function GuestProgressIndicator({
           </div>
           
           {summary.completedCourses > 0 && (
-            <div className="mt-3 p-2 bg-green-100 rounded-md">
+            <div className="mt-3 p-2 bg-green-100 rounded-none">
               <p className="text-xs text-green-800">
                 🎉 You've completed {summary.completedCourses} course{summary.completedCourses > 1 ? 's' : ''}!
                 <span className="block mt-1 text-green-600">
@@ -112,7 +112,7 @@ export function GuestProgressIndicator({
         </div>
         
         {stats.progressPercentage > 10 && (
-          <div className="mt-2 p-2 bg-blue-100 rounded-md">
+          <div className="mt-2 p-2 bg-blue-100 rounded-none">
             <p className="text-xs text-blue-800">
               💡 Sign in to save your progress and earn certificates!
             </p>

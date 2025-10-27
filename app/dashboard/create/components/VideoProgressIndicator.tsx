@@ -1,7 +1,16 @@
+/**
+ * app/dashboard/create/components/VideoProgressIndicator.tsx
+ * 
+ * REFACTORED: Clean progress indicator with Nerobrutal theme
+ * - Consistent styling with border-4 and shadow-neo
+ * - Clear visual states
+ * - Proper button styling
+ */
+
 "use client"
 
 import React from "react"
-import { Loader2, CheckCircle, XCircle, AlertCircle, RefreshCcw } from "lucide-react"
+import { Loader2, CheckCircle, XCircle, AlertCircle, RefreshCcw, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
@@ -26,14 +35,13 @@ export function VideoProgressIndicator({
   showLabel = true,
   className,
 }: VideoProgressIndicatorProps) {
-  // Default to processing if no status provided
-  const currentStatus = status?.status || "processing"
+  const currentStatus = status?.status || "idle"
   
   // Size configuration
   const sizeConfig = {
     sm: {
       iconSize: "h-3 w-3",
-      progressHeight: "h-1",
+      progressHeight: "h-1.5",
       textSize: "text-xs",
       buttonSize: "h-6 px-2 text-xs",
     },
@@ -41,23 +49,23 @@ export function VideoProgressIndicator({
       iconSize: "h-4 w-4",
       progressHeight: "h-2",
       textSize: "text-sm",
-      buttonSize: "h-7 px-2 text-xs",
+      buttonSize: "h-7 px-3 text-sm",
     },
     lg: {
       iconSize: "h-5 w-5",
       progressHeight: "h-3",
       textSize: "text-base",
-      buttonSize: "h-8 px-3 text-sm",
+      buttonSize: "h-8 px-4 text-base",
     },
   }
   
   const { iconSize, progressHeight, textSize, buttonSize } = sizeConfig[size]
   
-  // Status icon
+  // Status icon and color
   const StatusIcon = () => {
     switch (currentStatus) {
       case "queued":
-        return <AlertCircle className={cn(iconSize, "text-yellow-500 animate-pulse")} />
+        return <AlertCircle className={cn(iconSize, "text-yellow-500")} />
       case "processing":
         return <Loader2 className={cn(iconSize, "text-blue-500 animate-spin")} />
       case "completed":
@@ -69,7 +77,6 @@ export function VideoProgressIndicator({
     }
   }
   
-  // Status color
   const getStatusColor = () => {
     switch (currentStatus) {
       case "queued":
@@ -85,11 +92,8 @@ export function VideoProgressIndicator({
     }
   }
   
-  // Status message
   const getStatusMessage = () => {
-    if (status?.message) {
-      return status.message
-    }
+    if (status?.message) return status.message
     
     switch (currentStatus) {
       case "queued":
@@ -101,31 +105,16 @@ export function VideoProgressIndicator({
       case "error":
         return "Video generation failed"
       default:
-        return "Unknown status"
+        return "Ready to generate"
     }
   }
   
-  // Progress value
-  const progressValue = (() => {
-    if (status?.progress) {
-      return status.progress
-    }
-    
-    switch (currentStatus) {
-      case "queued":
-        return 10
-      case "processing":
-        return 50
-      case "completed":
-        return 100
-      case "error":
-        return 100
-      default:
-        return 0
-    }
-  })()
-    return (
-    <div className={cn("flex flex-col space-y-1", className)}>
+  const progressValue = status?.progress || (currentStatus === "completed" ? 100 : 
+                                              currentStatus === "processing" ? 50 : 
+                                              currentStatus === "queued" ? 10 : 0)
+
+  return (
+    <div className={cn("flex flex-col space-y-2 p-3 rounded-none border-2", className)}>
       <div className="flex items-center justify-between">
         {showLabel && (
           <div className="flex items-center space-x-2">
@@ -135,14 +124,15 @@ export function VideoProgressIndicator({
         )}
         
         {showControls && (
-          <div className="flex space-x-2">            {currentStatus === "processing" && onCancel && (
+          <div className="flex space-x-2">
+            {currentStatus === "processing" && onCancel && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={onCancel}
-                className={buttonSize}
+                className={cn(buttonSize, "border-2")}
               >
-                Cancel
+                <X className="h-3 w-3 mr-1" /> Cancel
               </Button>
             )}
             
@@ -151,21 +141,12 @@ export function VideoProgressIndicator({
                 variant="outline"
                 size="sm"
                 onClick={onRetry}
-                className={cn(buttonSize, "text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600")}
+                className={cn(
+                  buttonSize, 
+                  "border-2 border-red-200 text-red-600 hover:bg-red-50"
+                )}
               >
                 <RefreshCcw className="h-3 w-3 mr-1" /> Retry
-              </Button>
-            )}
-            
-            {/* Allow retrying even for stuck "processing" videos if they've been in that state for too long */}
-            {currentStatus === "processing" && status?.message?.includes("stuck") && onRetry && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onRetry}
-                className={cn(buttonSize, "text-yellow-500 border-yellow-200 hover:bg-yellow-50 hover:text-yellow-600")}
-              >
-                <RefreshCcw className="h-3 w-3 mr-1" /> Retry Stuck
               </Button>
             )}
           </div>
@@ -175,11 +156,10 @@ export function VideoProgressIndicator({
       <Progress
         value={progressValue}
         className={cn(
-          "w-full transition-all", 
+          "w-full border-2", 
           progressHeight,
-          {
-            "animate-pulse": currentStatus === "processing",
-          }        )}
+          currentStatus === "processing" && "animate-pulse"
+        )}
         indicatorClassName={cn(getStatusColor())}
       />
     </div>

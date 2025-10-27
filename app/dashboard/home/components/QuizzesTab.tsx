@@ -583,7 +583,7 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
 
                       {/* Score display */}
                       {quiz.bestScore !== null && quiz.bestScore !== undefined ? (
-                        <div className="bg-gradient-to-br from-background to-success/10 rounded-lg p-3 border border-success/20">
+                        <div className="bg-gradient-to-br from-background to-success/10 rounded-none p-3 border border-success/20">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                               {getScoreIcon(quiz.bestScore)}
@@ -603,7 +603,7 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
                           />
                         </div>
                       ) : (
-                        <div className="bg-muted/30 rounded-lg p-3 border border-dashed">
+                        <div className="bg-muted/30 rounded-none p-3 border border-dashed">
                           <Badge variant="outline" className="text-xs">
                             No Score Available
                           </Badge>

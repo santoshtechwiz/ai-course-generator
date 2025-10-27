@@ -48,7 +48,7 @@ export function NewsletterForm() {
         <Input
           type="email"
           placeholder="Your email address"
-          className="pl-10 rounded-md border-border"
+          className="pl-10 rounded-none border-border"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={status === "loading" || status === "success"}

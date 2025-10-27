@@ -366,11 +366,11 @@ export function QuizPlayer({ quizId }: { quizId: string }) {
                 transition={{ delay: 0.6 }}
                 className="grid grid-cols-2 gap-4 text-sm"
               >
-                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-none">
                   <div className="font-semibold text-green-700 dark:text-green-300">Correct</div>
                   <div className="text-2xl font-bold text-green-600">{score}</div>
                 </div>
-                <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-none">
                   <div className="font-semibold text-red-700 dark:text-red-300">Incorrect</div>
                   <div className="text-2xl font-bold text-red-600">{quiz.questions.length - score}</div>
                 </div>
@@ -459,7 +459,7 @@ export function QuizPlayer({ quizId }: { quizId: string }) {
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="text-center p-4 bg-muted/50 rounded-lg"
+                    className="text-center p-4 bg-muted/50 rounded-none"
                   >
                     <Pause className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                     <p className="text-muted-foreground">Quiz is paused. Click resume to continue.</p>

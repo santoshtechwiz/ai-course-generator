@@ -10,7 +10,7 @@ import { LOADER_MESSAGES } from '@/constants/loader-messages'
 import OrderingQuizSingle from '@/components/quiz/OrderingQuizSingle'
 import { QuizStateProvider } from '@/components/quiz/QuizStateProvider'
 import { QuizFooter } from '@/components/quiz/QuizFooter'
-import QuizPlayLayout from '../../../components/layouts/QuizPlayLayout'
+import { QuizPlayInterface } from '@/components/dashboard/QuizPlayInterface'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -259,7 +259,7 @@ export default function OrderingQuizWrapper({ slug }: OrderingQuizWrapperProps) 
 
   // Render the quiz wrapped in QuizPlayLayout for consistent UI
   return (
-    <QuizPlayLayout 
+    <QuizPlayInterface 
       quizSlug={slug} 
       quizType="ordering"
       quizData={formattedQuizData}
@@ -311,6 +311,6 @@ export default function OrderingQuizWrapper({ slug }: OrderingQuizWrapperProps) 
           </div>
         )}
       </QuizStateProvider>
-    </QuizPlayLayout>
+    </QuizPlayInterface>
   )
 }

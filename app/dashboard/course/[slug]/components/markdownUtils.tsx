@@ -22,13 +22,13 @@ const markdownStyles = {
   li: "mb-1",
   blockquote: "border-l-4 border-muted pl-4 italic my-4",
   hr: "my-6 border-t border-muted",
-  img: "max-w-full h-auto rounded-md my-4",
+  img: "max-w-full h-auto rounded-none my-4",
   table: "min-w-full divide-y divide-gray-200 my-4",
   th: "px-3 py-2 bg-muted/50 text-left text-xs font-medium uppercase tracking-wider",
   td: "px-3 py-2 whitespace-normal border-b text-sm",
-  pre: "my-4 p-4 bg-slate-900 text-slate-50 overflow-x-auto rounded-md font-mono text-sm",
-  code: "bg-secondary px-1.5 py-0.5 rounded-md font-mono text-sm",
-  inlineCode: "bg-secondary px-1.5 py-0.5 rounded-md font-mono text-sm",
+  pre: "my-4 p-4 bg-slate-900 text-slate-50 overflow-x-auto rounded-none font-mono text-sm",
+  code: "bg-secondary px-1.5 py-0.5 rounded-none font-mono text-sm",
+  inlineCode: "bg-secondary px-1.5 py-0.5 rounded-none font-mono text-sm",
 }
 
 const MarkdownComponents = {

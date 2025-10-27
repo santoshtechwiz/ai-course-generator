@@ -16,10 +16,9 @@ import {
   Target,
   CheckCircle,
   ArrowRight,
-  Star,
   Crown,
   Zap,
-  BookMarked,
+  X,
 } from "lucide-react";
 import {
   Card,
@@ -50,35 +49,76 @@ import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import PlanAwareButton from '@/components/quiz/PlanAwareButton';
 import type { FeatureType } from '@/lib/featureAccess';
-import { getPlanConfig, isQuizTypeAvailable } from '@/types/subscription-plans';
+import { getPlanConfig } from '@/types/subscription-plans';
 import type { SubscriptionPlanType } from '@/types/subscription';
 import { useToast } from '@/hooks/use-toast';
 
-// Use centralized Nerobrutal theme tokens for colors (visual-only changes)
-const getColorClasses = (color: string, isLocked: boolean) => {
-  // Map logical color names to theme variables used in the design system
-  const mapToVar: Record<string, string> = {
-    blue: 'primary',
-    green: 'success',
-    purple: 'secondary',
-    orange: 'accent',
-    teal: 'success',
-    indigo: 'primary',
-    rose: 'error',
+// Brutal theme color system
+const getBrutalColorClasses = (color: string, isLocked: boolean) => {
+  const colorMap: Record<string, { 
+    bg: string; 
+    border: string; 
+    text: string;
+    accent: string;
+  }> = {
+    blue: { 
+      bg: 'bg-blue-500', 
+      border: 'border-blue-500', 
+      text: 'text-blue-500',
+      accent: 'bg-blue-100 dark:bg-blue-900/20'
+    },
+    green: { 
+      bg: 'bg-green-500', 
+      border: 'border-green-500', 
+      text: 'text-green-500',
+      accent: 'bg-green-100 dark:bg-green-900/20'
+    },
+    purple: { 
+      bg: 'bg-purple-500', 
+      border: 'border-purple-500', 
+      text: 'text-purple-500',
+      accent: 'bg-purple-100 dark:bg-purple-900/20'
+    },
+    orange: { 
+      bg: 'bg-orange-500', 
+      border: 'border-orange-500', 
+      text: 'text-orange-500',
+      accent: 'bg-orange-100 dark:bg-orange-900/20'
+    },
+    teal: { 
+      bg: 'bg-teal-500', 
+      border: 'border-teal-500', 
+      text: 'text-teal-500',
+      accent: 'bg-teal-100 dark:bg-teal-900/20'
+    },
+    indigo: { 
+      bg: 'bg-indigo-500', 
+      border: 'border-indigo-500', 
+      text: 'text-indigo-500',
+      accent: 'bg-indigo-100 dark:bg-indigo-900/20'
+    },
+    rose: { 
+      bg: 'bg-rose-500', 
+      border: 'border-rose-500', 
+      text: 'text-rose-500',
+      accent: 'bg-rose-100 dark:bg-rose-900/20'
+    },
   };
 
-  const token = mapToVar[color] || 'primary';
+  return colorMap[color] || colorMap.blue;
+};
 
-  const baseCard = isLocked
-    ? 'bg-[var(--color-card)] border-4 border-[var(--color-border)] opacity-80'
-    : 'bg-[var(--color-card)] border-4 border-[var(--color-border)] shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]';
-
-  const iconClass = isLocked ? 'text-gray-400 dark:text-gray-600' : `text-[var(--color-${token})]`;
-  const buttonClass = isLocked
-    ? 'bg-[var(--color-muted)] border-4 border-[var(--color-border)] text-[var(--color-text)] shadow-[4px_4px_0px_0px_hsl(var(--border))]'
-    : `bg-[var(--color-${token})] border-4 border-[var(--color-border)] text-[var(--color-bg)] hover:bg-[var(--color-accent)]`;
-
-  return { card: baseCard, icon: iconClass, button: buttonClass };
+const getDifficultyBrutalStyle = (difficulty: string) => {
+  switch (difficulty) {
+    case 'Easy':
+      return 'bg-green-400 text-black border-4 border-black';
+    case 'Medium':
+      return 'bg-yellow-400 text-black border-4 border-black';
+    case 'Advanced':
+      return 'bg-red-500 text-white border-4 border-black';
+    default:
+      return 'bg-gray-400 text-black border-4 border-black';
+  }
 };
 
 interface CreateTileGridProps {
@@ -91,7 +131,7 @@ interface CreateTileGridProps {
   color: string;
   category: string;
   requiredPlan: SubscriptionPlanType;
-  featureType: FeatureType; // Add feature type for access control
+  featureType: FeatureType;
   benefits?: string[];
   difficulty?: "Easy" | "Medium" | "Advanced";
   quizType?: 'mcq' | 'fill-blanks' | 'open-ended' | 'code-quiz' | 'video-quiz';
@@ -276,53 +316,18 @@ const tiles = [
   },
 ];
 
-// Animation variants
+// Brutal animation variants - more direct, less floaty
 const cardVariants = {
-  hidden: { opacity: 0, y: 50, scale: 0.9 },
+  hidden: { opacity: 0, y: 20 },
   visible: (index: number) => ({
     opacity: 1,
     y: 0,
-    scale: 1,
-    transition: {
-      duration: 0.6,
-      delay: index * 0.1,
-      type: "spring",
-      stiffness: 100
-    }
-  }),
-  hover: {
-    y: -8,
-    scale: 1.02,
     transition: {
       duration: 0.3,
-      type: "spring",
-      stiffness: 300
+      delay: index * 0.05,
+      ease: "easeOut"
     }
-  }
-};
-
-const iconVariants = {
-  initial: { scale: 1, rotate: 0 },
-  hover: { 
-    scale: 1.2, 
-    rotate: 360,
-    transition: { duration: 0.6, type: "spring" }
-  },
-  tap: { scale: 0.9 }
-};
-
-const getDifficultyColor = (difficulty: string) => {
-  // Map difficulties to Nerobrutal semantic tokens
-  switch (difficulty) {
-    case 'Easy':
-      return 'bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/50';
-    case 'Medium':
-      return 'bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/50';
-    case 'Advanced':
-      return 'bg-[var(--color-error)]/20 text-[var(--color-error)] border-[var(--color-error)]/50';
-    default:
-      return 'bg-[var(--color-muted)]/20 text-[var(--color-text)] border-[var(--color-border)]/50';
-  }
+  }),
 };
 
 function Tile({
@@ -341,16 +346,13 @@ function Tile({
 }: CreateTileGridProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentTagline, setCurrentTagline] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  
-  // ✅ NEW: Use unified feature access with exploration support
+
   const { canAccess, isExplorable, reason, requiredPlan: accessRequiredPlan } = useFeatureAccess(featureType);
-  
-  // All features are explorable, but actions are gated by canAccess
-  const showUpgradeBadge = !canAccess; // Show upgrade badge but keep tile interactive
+  const showUpgradeBadge = !canAccess;
   const requiredPlanConfig = getPlanConfig(accessRequiredPlan || requiredPlan);
+  const colorClasses = getBrutalColorClasses(color, false);
 
   const taglineInterval = useMemo(() => {
     if (isOpen) {
@@ -367,8 +369,6 @@ function Tile({
     };
   }, [taglineInterval]);
 
-  const colorClasses = getColorClasses(color, false); // Always show as accessible for exploration
-
   return (
     <>
       <TooltipProvider>
@@ -376,184 +376,168 @@ function Tile({
           custom={index}
           initial="hidden"
           animate="visible"
-          whileHover="hover"
           variants={cardVariants}
-          onHoverStart={() => setIsHovered(true)}
-          onHoverEnd={() => setIsHovered(false)}
           className="h-full"
         >
           <Card
-            className={`h-full flex flex-col justify-between transition-all duration-500 border-2 ${colorClasses.card} cursor-pointer hover:shadow-2xl hover:shadow-black/10 relative overflow-hidden group`}
-            onClick={(e) => {
-              // Always allow exploration - open details modal
-              setIsOpen(true);
-            }}
+            className={cn(
+              "h-full flex flex-col justify-between",
+              "bg-[var(--color-card)] border-6 border-[var(--color-border)] rounded-none",
+              "shadow-[3px_3px_0_var(--shadow-color)] transition-all duration-200",
+              "hover:translate-x-1 hover:translate-y-1",
+              "hover:shadow-[5px_5px_0_var(--shadow-color)] cursor-pointer",
+              "neo-hover-lift overflow-hidden dark:bg-[var(--color-card)] dark:border-[var(--color-border)]"
+            )}
+            onClick={() => setIsOpen(true)}
           >
-            {/* Floating elements background */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <motion.div
-                animate={{ 
-                  x: [0, 20, 0],
-                  y: [0, -15, 0],
-                  rotate: [0, 180, 360]
-                }}
-                transition={{ 
-                  duration: 20,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-                className="absolute top-4 right-4 opacity-5"
-              >
-                <Sparkles className="h-8 w-8" />
-              </motion.div>
-              
-              <motion.div
-                animate={{ 
-                  x: [0, -15, 0],
-                  y: [0, 20, 0],
-                  rotate: [0, -180, -360]
-                }}
-                transition={{ 
-                  duration: 25,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-                className="absolute bottom-4 left-4 opacity-5"
-              >
-                <Star className="h-6 w-6" />
-              </motion.div>
-            </div>
+            {/* Color Strip Accent */}
+            <div className={cn("h-2", colorClasses.bg)} />
 
-            <CardHeader className="pb-3 relative z-10">
+            <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between text-lg font-bold">
                 <div className="flex items-center min-w-0 flex-1">
-                  <motion.div
-                    variants={iconVariants}
-                    initial="initial"
-                    animate={isHovered ? "hover" : "initial"}
-                    whileTap="tap"
-                    className={`${colorClasses.icon} flex-shrink-0 mr-3`}
-                  >
-                    <Icon className="h-7 w-7" />
-                  </motion.div>
-                  <motion.span
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
-                    className="truncate"
-                  >
-                    {title}
-                  </motion.span>
+                  {/* Brutal Icon Container */}
+                  <div className={cn(
+                    "flex-shrink-0 mr-3 p-2 rounded-none border-4 border-[var(--color-border)]",
+                    "bg-[var(--color-primary)] text-[var(--color-bg)]",
+                    "shadow-[3px_3px_0_var(--shadow-color)]"
+                  )}>
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <span className="truncate font-bold text-[var(--color-text)]">{title}</span>
                 </div>
-                
-                <div className="flex items-center gap-2 flex-shrink-0">
+
+                {/* Badge System */}
+                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                   {showUpgradeBadge ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <motion.div
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
+                        <Badge 
+                          variant="neutral" 
+                          className="text-xs bg-yellow-400 text-black border-4 border-[var(--color-border)] font-bold uppercase px-2 py-1 shadow-[2px_2px_0_var(--shadow-color)]"
                         >
-                          <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))] font-semibold")}>
-                            <Crown className="h-3 w-3 mr-1" />
-                            {requiredPlanConfig.name}
-                          </Badge>
-                        </motion.div>
+                          <Crown className="h-3 w-3 mr-1" />
+                          {requiredPlanConfig.name}
+                        </Badge>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Requires {requiredPlanConfig.name} plan to use - Click to explore!</p>
+                      <TooltipContent className="border-4 border-[var(--color-border)] shadow-[3px_3px_0_var(--shadow-color)] bg-[var(--color-card)] text-[var(--color-text)]">
+                        <p className="font-bold">Requires {requiredPlanConfig.name} - Click to explore!</p>
                       </TooltipContent>
                     </Tooltip>
                   ) : requiredPlan !== 'FREE' && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge variant="neutral" className={cn(neo.badge, "text-xs bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]/40")}>
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Unlocked
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>You have access to this feature!</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <Badge 
+                      variant="neutral" 
+                      className="text-xs bg-green-400 text-black border-4 border-[var(--color-border)] font-bold uppercase px-2 py-1 shadow-[2px_2px_0_var(--shadow-color)]"
+                    >
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Active
+                    </Badge>
                   )}
                 </div>
               </CardTitle>
-              
-              {/* Metadata */}
-              <div className="flex items-center gap-3 mt-2">
-                <motion.div whileHover={{ scale: 1.05 }}>
-                  <Badge variant="neutral" className={cn(neo.badge, `text-xs ${getDifficultyColor(difficulty!)}`)}>
-                    <Target className="h-3 w-3 mr-1" />
-                    {difficulty}
-                  </Badge>
-                </motion.div>
+
+              {/* Difficulty Badge */}
+              <div className="flex items-center gap-2 mt-3">
+                <Badge 
+                  variant="neutral" 
+                  className={cn(
+                    "text-xs font-bold uppercase px-3 py-1",
+                    getDifficultyBrutalStyle(difficulty!)
+                  )}
+                >
+                  <Target className="h-3 w-3 mr-1" />
+                  {difficulty}
+                </Badge>
               </div>
             </CardHeader>
 
             <CardContent className="py-2 flex-1">
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: index * 0.1 + 0.3 }}
-                className="text-sm text-muted-foreground leading-relaxed"
-              >
+              <p className="text-sm text-[var(--color-muted)] leading-relaxed font-medium">
                 {description}
-              </motion.p>
+              </p>
             </CardContent>
 
             <CardFooter className="pt-4">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full">
-                <PlanAwareButton
-                  label="Get Started"
-                  onClick={() => router.push(url)}
-                  requiredPlan={accessRequiredPlan || requiredPlan}
-                  allowPublicAccess={true}
-                  className={`w-full transition-all duration-300 font-semibold ${colorClasses.button} text-white shadow-lg hover:shadow-xl group`}
-                />
-              </motion.div>
+              <Button
+                className={cn(
+                  "w-full font-bold border-4 border-[var(--color-border)] rounded-none",
+                  "shadow-[3px_3px_0_var(--shadow-color)] hover:shadow-[5px_5px_0_var(--shadow-color)]",
+                  "transition-all duration-200",
+                  "hover:translate-x-1 hover:translate-y-1",
+                  "neo-hover-lift group bg-[var(--color-primary)] text-[var(--color-bg)]"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(url);
+                }}
+              >
+                Get Started
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Button>
             </CardFooter>
           </Card>
         </motion.div>
       </TooltipProvider>
-      
+
+      {/* Brutal Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-4xl lg:max-w-5xl max-h-[90vh] p-0 border-4 border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-neo)] overflow-hidden flex flex-col">
+        <DialogContent className={cn(
+          "sm:max-w-4xl lg:max-w-5xl max-h-[90vh] p-0",
+          "border-6 border-[var(--color-border)] rounded-none shadow-[6px_6px_0_var(--shadow-color)]",
+          "bg-[var(--color-card)] dark:bg-[var(--color-card)] overflow-hidden flex flex-col"
+        )}>
+          {/* Mobile Close */}
+          <div className="lg:hidden absolute top-4 right-4 z-50">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsOpen(false)}
+              className={cn(
+                "h-8 w-8 rounded-none border-4 border-[var(--color-border)]",
+                "bg-[var(--color-card)] hover:bg-[var(--color-bg)]",
+                "text-[var(--color-text)] shadow-[3px_3px_0_var(--shadow-color)]",
+                "hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0_var(--shadow-color)]"
+              )}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
           <div className="grid lg:grid-cols-2 flex-1 min-h-0">
-            {/* Left side - Hero content */}
-            <div className="p-6 lg:p-8 bg-[var(--color-bg)] border-r-4 border-[var(--color-border)] flex flex-col">
-              <DialogHeader className="space-y-4 sm:space-y-6">
+            {/* Left Panel - Hero */}
+            <div className={cn(
+              "p-6 lg:p-8 border-r-6 border-[var(--color-border)]",
+              "flex flex-col bg-[var(--color-bg)] dark:bg-[var(--color-bg)]"
+            )}>
+              <DialogHeader className="space-y-4">
                 <DialogTitle className="flex items-center justify-between">
-                  <div className={`flex items-center text-4xl font-bold ${colorClasses.icon}`}>
-                    <motion.div
-                      initial={{ rotate: 0, scale: 0.8 }}
-                      animate={{ rotate: 360, scale: 1 }}
-                      transition={{ duration: 0.8, type: "spring", stiffness: 200 }}
-                    >
-                      <Icon className="h-12 w-12 mr-4" />
-                    </motion.div>
-                    <motion.span
-                      initial={{ opacity: 0, x: -30 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.6, delay: 0.2 }}
-                    >
-                      {title}
-                    </motion.span>
+                  <div className="flex items-center text-2xl font-black">
+                    <div className={cn(
+                      "p-3 rounded-none border-4 border-[var(--color-border)] mr-4",
+                      "bg-[var(--color-primary)] text-[var(--color-bg)]",
+                      "shadow-[3px_3px_0_var(--shadow-color)]"
+                    )}>
+                      <Icon className="h-8 w-8" />
+                    </div>
+                    <span className="text-xl lg:text-2xl text-[var(--color-text)]">{title}</span>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     {showUpgradeBadge ? (
-                      <Badge variant="neutral" className={cn(neo.badge, "bg-[var(--color-warning)]/20 text-[var(--color-warning)] border-[var(--color-warning)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))]")}> 
+                      <Badge className="text-xs bg-yellow-400 text-black border-4 border-[var(--color-border)] font-bold uppercase shadow-[2px_2px_0_var(--shadow-color)]">
                         <Crown className="h-3 w-3 mr-1" />
-                        {requiredPlanConfig.name} Required
+                        {requiredPlanConfig.name}
                       </Badge>
                     ) : requiredPlan !== 'FREE' && (
-                      <Badge variant="neutral" className={cn(neo.badge, "bg-[var(--color-success)]/20 dark:bg-[var(--color-success)]/10 text-[var(--color-success)] dark:text-[var(--color-success)] border-[var(--color-success)]/40 shadow-[4px_4px_0px_0px_hsl(var(--border))]")}> 
+                      <Badge className="text-xs bg-green-400 text-black border-4 border-[var(--color-border)] font-bold uppercase shadow-[2px_2px_0_var(--shadow-color)]">
                         <CheckCircle className="h-3 w-3 mr-1" />
-                        Unlocked
+                        Active
                       </Badge>
                     )}
-                    <Badge variant="neutral" className={cn(neo.badge, getDifficultyColor(difficulty!))}>
+                    <Badge className={cn(
+                      "text-xs font-bold uppercase shadow-[2px_2px_0_var(--shadow-color)]",
+                      getDifficultyBrutalStyle(difficulty!)
+                    )}>
                       {difficulty}
                     </Badge>
                   </div>
@@ -561,164 +545,119 @@ function Tile({
 
                 <DialogDescription asChild>
                   <div className="space-y-6">
-                    {/* Rotating taglines */}
+                    {/* Rotating Taglines - Brutal Style */}
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={currentTagline}
-                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -20, scale: 1.05 }}
-                        transition={{ duration: 0.5, type: "spring" }}
-                        className="text-center py-6 bg-white/50 dark:bg-gray-800/50 rounded-xl border backdrop-blur-sm"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.3 }}
+                        className={cn(
+                          "text-center py-6 rounded-none",
+                          "border-4 border-[var(--color-border)] bg-[var(--color-card)]",
+                          "shadow-[4px_4px_0_var(--shadow-color)]"
+                        )}
                       >
-                        <p className="text-lg font-medium italic px-6">
+                        <p className="text-lg font-bold px-6 text-[var(--color-text)]">
                           "{taglines[currentTagline]}"
                         </p>
                         <div className="flex justify-center mt-4 space-x-2">
                           {taglines.map((_, i) => (
-                            <motion.div
+                            <div
                               key={i}
-                              className={`h-2 w-2 rounded-full transition-colors ${
-                                i === currentTagline ? colorClasses.icon.replace('text-', 'bg-') : 'bg-gray-300'
-                              }`}
-                              animate={{ scale: i === currentTagline ? 1.2 : 1 }}
+                              className={cn(
+                                "h-3 w-3 border-2 border-[var(--color-border)] transition-colors",
+                                i === currentTagline ? "bg-[var(--color-primary)]" : 'bg-[var(--color-muted)]'
+                              )}
                             />
                           ))}
                         </div>
                       </motion.div>
                     </AnimatePresence>
 
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.5, delay: 0.4 }}
-                      className="text-lg text-muted-foreground leading-relaxed text-center"
-                    >
+                    <p className="text-base text-[var(--color-text)] font-medium leading-relaxed text-center">
                       {description}
-                    </motion.p>
+                    </p>
                   </div>
                 </DialogDescription>
               </DialogHeader>
 
-              {/* Decorative element */}
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 0.1 }}
-                transition={{ delay: 1, duration: 1 }}
-                className="flex justify-center mt-8"
-              >
-                <Icon className={`h-32 w-32 ${colorClasses.icon}`} />
-              </motion.div>
+              {/* Large Icon Display */}
+              <div className="flex justify-center mt-8 opacity-10">
+                <Icon className={cn("h-32 w-32 text-[var(--color-primary)]")} />
+              </div>
             </div>
 
-            {/* Right side - Details */}
-            <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto flex-1">
-              <div className="space-y-6 sm:space-y-8">
-                {/* Quick stats */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                >
-                  <div className="text-center p-4 rounded-lg bg-muted/30 border">
-                    <Target className={`h-8 w-8 mx-auto mb-2 ${colorClasses.icon}`} />
-                    <div className="font-semibold">{difficulty}</div>
-                    <div className="text-sm text-muted-foreground">Difficulty</div>
+            {/* Right Panel - Details */}
+            <div className="p-6 lg:p-8 overflow-y-auto flex-1">
+              <div className="space-y-6">
+                {/* Stats Grid - Brutal */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className={cn(
+                    "text-center p-4 rounded-none border-4 border-[var(--color-border)]",
+                    "bg-[var(--color-card)] shadow-[3px_3px_0_var(--shadow-color)]"
+                  )}>
+                    <Target className={cn("h-8 w-8 mx-auto mb-2 text-[var(--color-primary)]")} />
+                    <div className="text-base font-black text-[var(--color-text)]">{difficulty}</div>
+                    <div className="text-sm font-bold text-[var(--color-muted)]">Level</div>
                   </div>
-                  <div className="text-center p-4 rounded-lg bg-muted/30 border">
-                    <Zap className={`h-8 w-8 mx-auto mb-2 ${colorClasses.icon}`} />
-                    <div className="font-semibold">AI Powered</div>
-                    <div className="text-sm text-muted-foreground">Instant Generation</div>
+                  <div className={cn(
+                    "text-center p-4 rounded-none border-4 border-[var(--color-border)]",
+                    "bg-[var(--color-card)] shadow-[3px_3px_0_var(--shadow-color)]"
+                  )}>
+                    <Zap className={cn("h-8 w-8 mx-auto mb-2 text-[var(--color-primary)]")} />
+                    <div className="text-base font-black text-[var(--color-text)]">AI</div>
+                    <div className="text-sm font-bold text-[var(--color-muted)]">Powered</div>
                   </div>
-                </motion.div>
+                </div>
 
-                {/* Key Benefits */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="space-y-4"
-                >
-                  <h3 className="text-lg font-bold flex items-center">
-                    <CheckCircle className={`h-6 w-6 mr-3 ${colorClasses.icon}`} />
+                {/* Benefits - Brutal List */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-black flex items-center text-[var(--color-text)]">
+                    <CheckCircle className={cn("h-6 w-6 mr-3 text-[var(--color-primary)]")} />
                     What You Get
                   </h3>
-                  <div className="grid gap-4">
+                  <div className="space-y-2">
                     {benefits?.map((benefit, i) => (
-                      <motion.div
+                      <div
                         key={i}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.5 + i * 0.1 }}
-                        className="flex items-center p-4 rounded-lg bg-muted/20 border hover:bg-muted/30 transition-colors"
+                        className={cn(
+                          "flex items-center p-3 rounded-none",
+                          "border-4 border-[var(--color-border)] bg-[var(--color-card)]",
+                          "shadow-[2px_2px_0_var(--shadow-color)]"
+                        )}
                       >
-                        <motion.div
-                          whileHover={{ scale: 1.2, rotate: 360 }}
-                          transition={{ duration: 0.3 }}
-                          className={`mr-4 ${colorClasses.icon}`}
-                        >
-                          <CheckCircle className="h-5 w-5" />
-                        </motion.div>
-                        <span className="font-medium">{benefit}</span>
-                      </motion.div>
+                        <CheckCircle className={cn("h-5 w-5 mr-3 flex-shrink-0 text-[var(--color-primary)]")} />
+                        <span className="text-sm font-bold text-[var(--color-text)]">{benefit}</span>
+                      </div>
                     ))}
                   </div>
-                </motion.div>
+                </div>
 
-                {/* How it works */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="space-y-4"
-                >
-                  <h3 className="text-lg font-bold flex items-center">
-                    <Sparkles className={`h-6 w-6 mr-3 ${colorClasses.icon}`} />
-                    How It Works
-                  </h3>
-                  <div className="grid gap-4">
-                    {[
-                      "Enter your topic ",
-                      "AI generates questions instantly",
-                      "Review and use your creation"
-                    ].map((step, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.7 + i * 0.1 }}
-                        className="flex items-center p-3 rounded-lg border bg-background/50"
-                      >
-                        <motion.div
-                          whileHover={{ scale: 1.1 }}
-                          className={`w-8 h-8 rounded-full ${colorClasses.button} text-white flex items-center justify-center font-bold mr-4 flex-shrink-0`}
-                        >
-                          {i + 1}
-                        </motion.div>
-                        <span>{step}</span>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
+          
               </div>
             </div>
           </div>
 
-          <DialogFooter className="flex-col sm:flex-row gap-3 p-6 border-t bg-muted/20 flex-shrink-0">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full"
+          <DialogFooter className={cn(
+            "p-6 border-t-6 border-[var(--color-border)]",
+            "bg-[var(--color-bg)] dark:bg-[var(--color-bg)]"
+          )}>
+            <Button
+              onClick={() => router.push(url)}
+              className={cn(
+                "w-full h-12 font-black text-base border-4 border-[var(--color-border)] rounded-none",
+                "shadow-[3px_3px_0_var(--shadow-color)] hover:shadow-[5px_5px_0_var(--shadow-color)]",
+                "transition-all duration-200",
+                "hover:translate-x-1 hover:translate-y-1",
+                "group bg-[var(--color-primary)] text-[var(--color-bg)]",
+                "hover:bg-[var(--color-primary)]"
+              )}
             >
-              <PlanAwareButton
-                label="Get Started"
-                onClick={() => router.push(url)}
-                requiredPlan={accessRequiredPlan || requiredPlan}
-                allowPublicAccess={true}
-                className={`w-full h-12 font-bold text-base ${colorClasses.button} text-white shadow-xl hover:shadow-2xl transition-all duration-300 group`}
-              />
-            </motion.div>
+              Get Started Now
+              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -727,135 +666,85 @@ function Tile({
 }
 
 export function CreateTileGrid() {
-  // Group tiles by category
-  const categories = {
-    assessment: {
-      title: "Assessment Tools",
-      description: "Create quizzes and tests to evaluate learning",
-      tiles: tiles.filter(tile => tile.category === "assessment")
-    },
-    creation: {
-      title: "Content Creation",
-      description: "Build courses and coding challenges",
-      tiles: tiles.filter(tile => tile.category === "creation")
-    },
-    study: {
-      title: "Study Aids",
-      description: "Enhance learning with smart study tools",
-      tiles: tiles.filter(tile => tile.category === "study")
-    }
-  };
-
   return (
-    <section className="w-full max-w-7xl mx-auto px-4 py-8">
-      {/* Enhanced Hero Section */}
+    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      {/* Brutal Hero Section */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="text-center mb-16 space-y-6"
+        transition={{ duration: 0.4 }}
+        className="text-center mb-12 space-y-6"
       >
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[var(--color-primary)]/10 dark:bg-[var(--color-primary)]/30 border-4 border-[var(--color-primary)]/20 shadow-[4px_4px_0px_0px_hsl(var(--border))]"
-        >
-          <Sparkles className="h-5 w-5 text-[var(--color-primary)]" />
-          <span className="text-sm font-medium text-[var(--color-primary)]">AI-Powered Learning Tools</span>
-        </motion.div>
+        {/* Badge */}
+        <div className={cn(
+          "inline-flex items-center gap-3 px-6 py-3 rounded-none",
+          "bg-[var(--color-primary)] border-4 border-[var(--color-border)]",
+          "shadow-[3px_3px_0_var(--shadow-color)] text-[var(--color-bg)] font-bold"
+        )}>
+          <Sparkles className="h-5 w-5" />
+          <span className="text-sm uppercase tracking-wide">AI-Powered Tools</span>
+        </div>
 
-        <motion.h1
-          className="text-4xl md:text-5xl font-bold text-foreground"
-          whileHover={{ scale: 1.05 }}
-        >
+        {/* Title */}
+        <h1 className="text-4xl md:text-5xl font-black text-[var(--color-text)]">
           Create Amazing<br />Learning Content
-        </motion.h1>
+        </h1>
 
-        <motion.p
-          className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          Transform your ideas into engaging educational experiences with our suite of AI-powered creation tools
-        </motion.p>
+        {/* Description */}
+        <p className="text-xl text-[var(--color-muted)] max-w-3xl mx-auto font-bold">
+          Transform your ideas into engaging educational experiences
+        </p>
       </motion.div>
 
-      {/* Quick Action Buttons */}
+      {/* Grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="mb-12"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {tiles.map((tile, index) => (
+            <Tile key={tile.url} {...tile} index={index} />
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Footer CTA - Brutal */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="flex flex-wrap justify-center gap-4 mb-16"
+        className={cn(
+          "text-center space-y-6 p-8 rounded-none",
+          "bg-[var(--color-card)] border-6 border-[var(--color-border)] shadow-[3px_3px_0_var(--shadow-color)]"
+        )}
       >
-        <Button variant="outline" size="sm" className="hover:bg-blue-50 hover:border-blue-300">
-          <BookMarked className="h-4 w-4 mr-2" />
-          By Category
-        </Button>
-      </motion.div>
-
-      {/* Category-based Grid */}
-      {Object.entries(categories).map(([key, category], categoryIndex) => (
-        <motion.div
-          key={key}
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 + categoryIndex * 0.2 }}
-          className="mb-16"
-        >
-          <motion.div
-            className="text-center mb-8"
-            whileHover={{ scale: 1.02 }}
-          >
-            <h2 className="text-2xl font-bold mb-2">{category.title}</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">{category.description}</p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-            {category.tiles.map((tile, index) => (
-              <Tile
-                key={`${key}-${index}`}
-                {...tile}
-                index={categoryIndex * 10 + index}
-              />
-            ))}
-          </div>
-        </motion.div>
-      ))}
-
-      {/* Enhanced Footer CTA */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 1.2 }}
-        className="text-center space-y-6 p-8 rounded-2xl bg-card border-6 border-border shadow-neo"
-      >
-        <motion.div
-          whileHover={{ scale: 1.1, rotate: 360 }}
-          transition={{ duration: 0.6 }}
-          className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary text-white mb-4 border-6 border-primary-foreground shadow-neo"
-        >
+        <div className={cn(
+          "inline-flex items-center justify-center w-16 h-16 rounded-full",
+          "bg-[var(--color-primary)] border-4 border-[var(--color-border)] text-[var(--color-bg)] shadow-[3px_3px_0_var(--shadow-color)]"
+        )}>
           <Brain className="h-8 w-8" />
-        </motion.div>
+        </div>
 
-        <h3 className="text-xl font-bold">Need Something Custom?</h3>
-        <p className="text-muted-foreground max-w-md mx-auto">
-          Can't find what you're looking for? Our AI can help you create any type of educational content.
+        <h3 className="text-xl font-black text-[var(--color-text)]">Need Something Custom?</h3>
+        <p className="text-base text-[var(--color-muted)] font-bold max-w-md mx-auto">
+          Can't find what you're looking for? Get custom help from our team.
         </p>
 
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <Button
+          size="lg"
+          className={cn(
+            "bg-[var(--color-primary)] text-[var(--color-bg)] font-black px-8 py-3 border-4 border-[var(--color-border)] rounded-none",
+            "shadow-[3px_3px_0_var(--shadow-color)] hover:shadow-[5px_5px_0_var(--shadow-color)]",
+            "transition-all duration-200",
+            "hover:translate-x-1 hover:translate-y-1"
+          )}
+          onClick={() => window.location.href = '/contactus'}
         >
-          <Button
-            size="lg"
-            className="bg-primary hover:bg-accent text-white font-semibold px-8 py-3 border-6 border-primary-foreground shadow-neo hover:shadow-neo-hover neo-hover-lift"
-            onClick={() => window.location.href = '/contactus'}
-          >
-            <Sparkles className="h-5 w-5 mr-2" />
-            Get Custom Help
-          </Button>
-        </motion.div>
+          <Sparkles className="h-5 w-5 mr-2" />
+          Get Custom Help
+        </Button>
       </motion.div>
     </section>
   );

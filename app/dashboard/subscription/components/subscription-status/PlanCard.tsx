@@ -187,10 +187,10 @@ export default function PlanCards({
             custom={index}
           >
             <Card
-              className={`flex flex-col h-full transition-all duration-500 border-4 border-neo-border bg-neo-background hover:shadow-2xl hover:shadow-black/20 relative overflow-hidden group rounded-xl ${
+              className={`flex flex-col h-full transition-all duration-500 neo-hover-lift ${
                 cardHighlightClass
               } ${isPlanDisabled ? "opacity-75" : ""} ${
-                isBestValue ? "shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]" : "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                isBestValue ? "shadow-neo-hover" : "shadow-neo"
               }`}
             >
               {statusConfig.bannerText && (
@@ -238,7 +238,7 @@ export default function PlanCards({
               <CardContent className="flex-grow">
                 <div className="mb-4">
                   <p className="text-lg font-semibold text-center sm:text-left">{plan.tokens} tokens</p>
-                  <div className="relative h-2 w-full bg-gray-200 border-2 border-black rounded-full overflow-hidden mt-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                  <div className="relative h-2 w-full bg-muted border-2 border-border rounded-none overflow-hidden mt-2 shadow-neo">
                     <motion.div
                       className={`absolute top-0 left-0 h-full rounded-full ${
                         plan.id === "FREE"

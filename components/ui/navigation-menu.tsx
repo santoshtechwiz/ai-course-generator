@@ -41,7 +41,7 @@ NavigationMenuList.displayName = NavigationMenuPrimitive.List.displayName
 const NavigationMenuItem = NavigationMenuPrimitive.Item
 
 const navigationMenuTriggerStyle = cva(
-  "group inline-flex h-10 w-max items-center justify-center rounded-md bg-[var(--color-bg)] px-4 py-2 text-sm font-medium border-4 border-transparent hover:border-black hover:bg-[var(--color-primary)] focus:bg-[var(--color-primary)] focus:text-[var(--color-text)] focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-[var(--color-primary)]/50 data-[state=open]:bg-[var(--color-primary)]/50 transition-all shadow-[2px_2px_0_#000] hover:shadow-[4px_4px_0_#000]"
+  "group inline-flex h-10 w-max items-center justify-center rounded-none bg-[var(--color-bg)] px-4 py-2 text-sm font-medium border-4 border-transparent hover:border-black hover:bg-[var(--color-primary)] focus:bg-[var(--color-primary)] focus:text-[var(--color-text)] focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-[var(--color-primary)]/50 data-[state=open]:bg-[var(--color-primary)]/50 transition-all shadow-[2px_2px_0_#000] hover:shadow-[4px_4px_0_#000]"
 )
 
 const NavigationMenuTrigger = React.forwardRef<
@@ -86,7 +86,7 @@ const NavigationMenuViewport = React.forwardRef<
   <div className={cn("absolute left-0 top-full flex justify-center")}>
     <NavigationMenuPrimitive.Viewport
       className={cn(
-        "origin-top-center relative mt-1.5 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-md border-4 border-black bg-[var(--color-card)] text-[var(--color-text)] shadow-[4px_4px_0_#000] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-90 md:w-[var(--radix-navigation-menu-viewport-width)]",
+        "origin-top-center relative mt-1.5 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-none border-4 border-black bg-[var(--color-card)] text-[var(--color-text)] shadow-[4px_4px_0_#000] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-90 md:w-[var(--radix-navigation-menu-viewport-width)]",
         className
       )}
       ref={ref}

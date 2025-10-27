@@ -111,7 +111,7 @@ export default function AuthError() {
           <CardDescription>{errorDescription}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-md p-4">
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-none p-4">
             <p className="text-sm text-amber-700 dark:text-amber-400">
               If you continue to experience issues, please contact our support team with the following error details:
               <br />

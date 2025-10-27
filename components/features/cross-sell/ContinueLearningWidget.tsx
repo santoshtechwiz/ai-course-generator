@@ -56,7 +56,7 @@ export function ContinueLearningWidget({
       {...fadeInUp(0.2)}
       className={cn("w-full", className)}
     >
-      <Card className="border-border/50 shadow-sm">
+      <Card className="border-border/50 neo-shadow">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -138,7 +138,7 @@ function ContinueLearningCard({ item, index, onClick }: ContinueLearningCardProp
               <div className="flex items-start gap-4">
                 {/* Icon/Thumbnail */}
                 <div className={cn(
-                  "flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center",
+                  "flex-shrink-0 w-12 h-12 rounded-none flex items-center justify-center",
                   item.type === "course"
                     ? "bg-primary/10 text-primary border-4 border-primary shadow-[4px_4px_0px_0px_hsl(var(--border))]"
                     : "bg-purple-500/10 text-purple-500 border-4 border-purple-500 shadow-[4px_4px_0px_0px_hsl(var(--border))]"

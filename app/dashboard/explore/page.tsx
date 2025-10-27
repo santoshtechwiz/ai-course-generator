@@ -24,82 +24,19 @@ import {
 function ExploreLoadingState() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3 }}
       className="min-h-[60vh] flex flex-col items-center justify-center w-full"
       aria-busy="true"
       aria-live="polite"
       role="status"
     >
-      <div className="text-center space-y-6">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{
-            duration: 0.5,
-            delay: 0.1,
-            type: "spring",
-            stiffness: 200,
-            damping: 20,
-          }}
-          className="relative"
-        >
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/20 to-purple-600/20 blur-xl animate-pulse" />
-          <AppLoader
-            size="large"
-            className="relative z-10"
-          />
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.3 }}
-          className="text-center space-y-2 max-w-md"
-        >
-          <motion.h3
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.5 }}
-            className="text-lg font-semibold text-foreground"
-          >
-            Preparing AI Tools
-          </motion.h3>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.7 }}
-            className="text-sm text-muted-foreground"
-          >
-            Setting up intelligent content creation tools for your learning journey
-          </motion.p>
-        </motion.div>
-
-        {/* Animated progress dots */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.9 }}
-          className="flex space-x-2"
-        >
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="w-2 h-2 bg-primary rounded-full"
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.5, 1, 0.5],
-              }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                delay: i * 0.2,
-              }}
-            />
-          ))}
-        </motion.div>
+      <div className="text-center space-y-4">
+        <AppLoader
+          size="large"
+          className="mb-4"
+        />
+        <p className="text-sm text-muted-foreground">Loading AI tools...</p>
       </div>
     </motion.div>
   );

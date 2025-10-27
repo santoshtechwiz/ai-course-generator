@@ -310,13 +310,13 @@ export default function CoursesClient({
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Skeleton className="h-10 w-32 rounded-lg" />
-              <Skeleton className="h-10 w-32 rounded-lg" />
-              <Skeleton className="h-10 w-32 rounded-lg" />
+              <Skeleton className="h-10 w-32 rounded-none" />
+              <Skeleton className="h-10 w-32 rounded-none" />
+              <Skeleton className="h-10 w-32 rounded-none" />
             </div>
             <div className="flex items-center gap-2 ml-auto">
-              <Skeleton className="h-9 w-9 rounded-lg" />
-              <Skeleton className="h-9 w-9 rounded-lg" />
+              <Skeleton className="h-9 w-9 rounded-none" />
+              <Skeleton className="h-9 w-9 rounded-none" />
             </div>
           </div>
         </div>
@@ -429,7 +429,7 @@ export default function CoursesClient({
 
   const FilterSidebar = () => (
     <div className="space-y-6">
-      <div className="p-5 bg-[hsl(var(--card))] border-4 border-[hsl(var(--border))] rounded-2xl shadow-[4px_4px_0_0_rgba(0,0,0,0.9)]">
+      <div className="p-4 bg-card border border-border rounded-none neo-shadow">
         <div className="flex items-center justify-between mb-4">
           <h4 className="text-base font-black flex items-center gap-2 text-[hsl(var(--foreground))]">
             <Filter className="w-4 h-4 text-[hsl(var(--primary))]" />
@@ -443,7 +443,7 @@ export default function CoursesClient({
                 setCategoryFilter(null)
                 setLevelFilter(null)
               }}
-              className="h-7 px-2 text-xs hover:bg-[hsl(var(--destructive))]/10 hover:text-[hsl(var(--destructive))] border-2 border-[hsl(var(--border))] rounded-lg"
+              className="h-7 px-2 text-xs hover:bg-[hsl(var(--destructive))]/10 hover:text-[hsl(var(--destructive))] border-2 border-[hsl(var(--border))] rounded-none"
             >
               Clear
             </Button>
@@ -459,7 +459,7 @@ export default function CoursesClient({
               id="category-filter"
               value={categoryFilter ?? ""}
               onChange={(e) => setCategoryFilter(e.target.value ? (e.target.value as CategoryId) : null)}
-              className="w-full p-2.5 rounded-lg border-4 bg-[hsl(var(--background))] border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] focus:outline-none transition-all text-sm shadow-[2px_2px_0_0_rgba(0,0,0,0.9)]"
+              className="w-full p-2.5 rounded-none border-4 bg-[hsl(var(--background))] border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] focus:outline-none transition-all text-sm shadow-[2px_2px_0_0_rgba(0,0,0,0.9)]"
               aria-label="Filter by category"
             >
               <option value="">All Categories</option>
@@ -479,7 +479,7 @@ export default function CoursesClient({
               id="level-filter"
               value={levelFilter ?? ""}
               onChange={(e) => setLevelFilter(e.target.value || null)}
-              className="w-full p-2.5 rounded-lg border-4 bg-[hsl(var(--background))] border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] focus:outline-none transition-all text-sm shadow-[2px_2px_0_0_rgba(0,0,0,0.9)]"
+              className="w-full p-2.5 rounded-none border-4 bg-[hsl(var(--background))] border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] focus:outline-none transition-all text-sm shadow-[2px_2px_0_0_rgba(0,0,0,0.9)]"
               aria-label="Filter by level"
             >
               <option value="">All Levels</option>
@@ -491,7 +491,7 @@ export default function CoursesClient({
         </div>
       </div>
 
-      <div className="p-5 bg-[hsl(var(--card))] border-4 border-[hsl(var(--border))] rounded-2xl shadow-[4px_4px_0_0_rgba(0,0,0,0.9)]">
+      <div className="p-4 bg-card border border-border rounded-none neo-shadow">
         <h4 className="text-base font-black mb-4 flex items-center gap-2 text-[hsl(var(--foreground))]">
           <ChevronDown className="w-4 h-4 text-[hsl(var(--primary))]" />
           Sort By
@@ -505,7 +505,7 @@ export default function CoursesClient({
             <label
               key={option.value}
               className={cn(
-                "flex items-center gap-3 cursor-pointer p-3 rounded-lg border-4 transition-all shadow-[2px_2px_0_0_rgba(0,0,0,0.9)]",
+                "flex items-center gap-3 cursor-pointer p-3 rounded-none border-4 transition-all shadow-[2px_2px_0_0_rgba(0,0,0,0.9)]",
                 sortFilter === option.value
                   ? "bg-[hsl(var(--primary))]/10 border-[hsl(var(--primary))] text-[hsl(var(--primary))] font-black"
                   : "bg-[hsl(var(--background))] border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]/50 hover:bg-[hsl(var(--primary))]/5 hover:shadow-[4px_4px_0_0_rgba(0,0,0,0.9)]",
@@ -625,7 +625,7 @@ export default function CoursesClient({
           {/* Background loading indicator */}
           {isFetching && coursesData?.pages?.length && (
             <div
-              className="fixed top-4 right-4 z-50 bg-[hsl(var(--background))]/80 backdrop-blur-sm border-4 border-[hsl(var(--border))] rounded-lg px-3 py-2 shadow-[4px_4px_0_0_rgba(0,0,0,0.9)]"
+              className="fixed top-4 right-4 z-50 bg-[hsl(var(--background))]/80 backdrop-blur-sm border-4 border-[hsl(var(--border))] rounded-none px-3 py-2 shadow-[4px_4px_0_0_rgba(0,0,0,0.9)]"
               role="status"
               aria-live="polite"
             >
@@ -662,7 +662,7 @@ export default function CoursesClient({
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "px-4 h-9 transition-all duration-200 rounded-lg",
+                  "px-4 h-9 transition-all duration-200 rounded-none",
                   viewMode === "grid"
                     ? "bg-[hsl(var(--background))] shadow-[2px_2px_0_0_rgba(0,0,0,0.9)] text-[hsl(var(--foreground))] font-semibold"
                     : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--background))]/50",
@@ -678,7 +678,7 @@ export default function CoursesClient({
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "px-4 h-9 transition-all duration-200 rounded-lg",
+                  "px-4 h-9 transition-all duration-200 rounded-none",
                   viewMode === "list"
                     ? "bg-[hsl(var(--background))] shadow-[2px_2px_0_0_rgba(0,0,0,0.9)] text-[hsl(var(--foreground))] font-semibold"
                     : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--background))]/50",

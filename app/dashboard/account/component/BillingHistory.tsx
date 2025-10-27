@@ -202,7 +202,7 @@ export function BillingHistory({ userId }: { userId: string }) {
           {data.map((item) => (
             <div 
               key={item.id}
-              className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-accent/5 transition-colors"
+              className="flex items-center justify-between p-4 rounded-none border border-border bg-card hover:bg-accent/5 transition-colors"
             >
               <div className="flex items-center space-x-4">
                 <div className="flex-shrink-0">

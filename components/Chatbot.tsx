@@ -186,7 +186,7 @@ function Chatbot({ userId }: ChatbotProps) {
             variants={chatContainerVariants}
             className="relative"
           >
-            <Card className="w-[350px] sm:w-[400px] h-[500px] flex flex-col border-3 border-border shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.1)] rounded-lg overflow-hidden">
+            <Card className="w-[350px] sm:w-[400px] h-[500px] flex flex-col border-3 border-border shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.1)] rounded-none overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b px-4 py-3">
                 <div className="flex items-center gap-2">
                   <motion.div

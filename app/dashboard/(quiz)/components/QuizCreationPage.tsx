@@ -77,12 +77,12 @@ export default function QuizCreationPage({
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6 lg:gap-8">
           <motion.div className="lg:col-span-2 relative group" variants={itemVariants}>
-            <div className="absolute inset-0 bg-[var(--color-border)] border-4 border-[var(--color-border)] rounded-lg -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2 shadow-[var(--shadow-neo)]" />
-            <div className="relative bg-[var(--color-card)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] rounded-lg overflow-hidden h-full">
+            <div className="absolute inset-0 bg-[var(--color-border)] border-4 border-[var(--color-border)] rounded-none -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2 shadow-[var(--shadow-neo)]" />
+            <div className="relative bg-[var(--color-card)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] rounded-none overflow-hidden h-full">
               <div className="pb-3 md:pb-4 border-b-4 border-[var(--color-border)] bg-[var(--color-primary)] p-4 md:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
                   <div className="flex items-center gap-2">
-                    <div className="bg-[var(--color-bg)] border-2 border-[var(--color-border)] p-2 rounded-lg shadow-[var(--shadow-neo)]">
+                    <div className="bg-[var(--color-bg)] border-2 border-[var(--color-border)] p-2 rounded-none shadow-[var(--shadow-neo)]">
                       <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-[var(--color-text)]" />
                     </div>
                     <h2 className="text-xl md:text-2xl font-black text-[var(--color-bg)]">Create a New {title}</h2>
@@ -119,11 +119,11 @@ export default function QuizCreationPage({
           </motion.div>
 
           <motion.div className="relative group" variants={itemVariants}>
-            <div className="absolute inset-0 bg-[var(--color-border)] border-4 border-[var(--color-border)] rounded-lg -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2 shadow-[var(--shadow-neo)]" />
-            <div className="relative bg-[var(--color-card)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] rounded-lg overflow-hidden h-full">
+            <div className="absolute inset-0 bg-[var(--color-border)] border-4 border-[var(--color-border)] rounded-none -m-1 transition-all duration-300 group-hover:scale-[1.01] group-hover:-m-2 shadow-[var(--shadow-neo)]" />
+            <div className="relative bg-[var(--color-card)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] rounded-none overflow-hidden h-full">
               <div className="pb-3 border-b-4 border-[var(--color-border)] bg-[var(--color-primary)] p-4 md:p-5">
                 <div className="flex items-center gap-2">
-                  <div className="bg-[var(--color-bg)] border-2 border-[var(--color-border)] p-2 rounded-lg shadow-[var(--shadow-neo)]">
+                  <div className="bg-[var(--color-bg)] border-2 border-[var(--color-border)] p-2 rounded-none shadow-[var(--shadow-neo)]">
                     <Brain className="h-4 w-4 md:h-5 md:w-5 text-[var(--color-text)]" />
                   </div>
                   <h3 className="text-base md:text-lg font-black text-[var(--color-bg)]">Discover Quizzes</h3>

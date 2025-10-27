@@ -3,8 +3,7 @@ import { YtTranscript } from "yt-transcript"
 import { Supadata, type TranscriptChunk } from "@supadata/js"
 import pRetry from "p-retry"
 import pTimeout from "p-timeout"
-// Lazy import for youtubei.js to avoid Turbopack circular dependency issues
-// import { Innertube } from "youtubei.js"
+import { quotaManager } from './quotaManager'
 
 interface YoutubeSearchResponse {
   items: Array<{
@@ -23,13 +22,11 @@ class YoutubeService {
   private static YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY
   private static SUPDATA_KEY = process.env.SUPDATA_KEY
   private static SUPDATA_KEY1 = process.env.SUPDATA_KEY1
-  private static MAX_RETRIES = 3
   private static TIMEOUT = 30000 // 30 seconds
 
   private static processedVideoIds = new Set<string>()
   private static transcriptCache = new Map<string, string>()
   private static supadata: Supadata
-  private static innertubeInstance: any = null // Cache Innertube instance
   private static currentSupadataKey: string
 
   /**
@@ -45,8 +42,31 @@ class YoutubeService {
       throw new Error('Failed to load YouTube library')
     }
   }
+private static youtubeClient = {
+  get: async (endpoint: string, options: any = {}) => {
+    const baseUrl = `http://localhost:3001${endpoint}`
 
-  private static youtubeClient = {
+    const params = new URLSearchParams(options.params || {})
+
+    const response = await fetch(`${baseUrl}?${params}`, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+      }
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`[Local YouTube Service] Error ${response.status}: ${errorText}`)
+      throw new Error(`Local YouTube Service error: ${response.status} ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    return data
+  }
+}
+
+  private static youtubeClient1 = {
     get: async (endpoint: string, options: any) => {
       const url = `https://www.googleapis.com/youtube/v3${endpoint}`
       const params = new URLSearchParams({
@@ -100,14 +120,31 @@ class YoutubeService {
     })
   }
 
-  private static switchSupadataKey() {
-    this.currentSupadataKey =
-      this.currentSupadataKey === this.SUPDATA_KEY ? this.SUPDATA_KEY1 || "" : this.SUPDATA_KEY || ""
-    this.initializeSupadata()
-  }
 
   static async searchYoutube(searchQuery: string): Promise<string | null> {
+    // Check if quota is disabled
+    if (quotaManager.isDisabled()) {
+      console.warn('[YouTube Search] Quota disabled - skipping search')
+      return null
+    }
+
+    // Check cache first
+    const cachedResult = quotaManager.getCacheEntry(searchQuery)
+    if (cachedResult) {
+      console.log(`[YouTube Search] Cache hit for "${searchQuery}"`)
+      return cachedResult
+    }
+
+    // Check if we're in soft limit mode
+    if (quotaManager.isSoftLimitMode()) {
+      console.warn('[YouTube Search] Soft limit mode - using cache only')
+      return null
+    }
+
     try {
+      // Record the request
+      quotaManager.recordRequest()
+
       const response = await pTimeout(
         this.youtubeClient.get("/search", {
           params: {
@@ -134,14 +171,23 @@ class YoutubeService {
         const videoId = item.id.videoId
         if (videoId && !this.processedVideoIds.has(videoId)) {
           this.processedVideoIds.add(videoId)
+          // Cache the result
+          quotaManager.setCacheEntry(searchQuery, videoId)
           return videoId
         }
       }
 
       console.warn(`[YouTube Search] All suitable videos already used for "${searchQuery}"`)
       return null
-    } catch (error) {
+    } catch (error: any) {
       console.error(`[YouTube Search] Error searching for "${searchQuery}":`, error)
+
+      // Check for quota exceeded error
+      if (error?.message?.includes('quota') || error?.message?.includes('403')) {
+        quotaManager.disableQuota()
+        throw new Error('YouTube API quota exceeded')
+      }
+
       return null
     }
   }
@@ -156,7 +202,7 @@ class YoutubeService {
       }
     }
 
-    const { provider = this.defaultTranscriptProvider, preferOffline = false } = options;
+    const { preferOffline = false } = options;
 
     // Get list of providers to try based on preferences
     const providers = preferOffline

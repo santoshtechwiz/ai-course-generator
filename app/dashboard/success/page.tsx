@@ -10,5 +10,5 @@ export default function SuccessPage({
     redirect("/dashboard/subscription")
   }
 
-  return <div className="container mx-auto py-12 px-4">Payment success — verifying in background.</div>
+  return <div className="w-full py-12 px-0">Payment success — verifying in background.</div>
 }

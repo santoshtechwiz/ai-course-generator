@@ -4,7 +4,7 @@ import { use, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import QuizPlayLayout from "../../../components/layouts/QuizPlayLayout"
+import { QuizPlayInterface } from "@/components/dashboard/QuizPlayInterface"
 
 interface FlashCardReviewPageProps {
   params: Promise<{ slug?: string }>
@@ -39,7 +39,7 @@ export default function FlashCardReviewPage({ params }: FlashCardReviewPageProps
 
   if (!slug) {
     return (
-      <QuizPlayLayout quizSlug={slug} quizType="flashcard">
+      <QuizPlayInterface quizSlug={slug} quizType="flashcard">
         <div className="container max-w-4xl py-6">
           <Card>
             <CardContent className="p-6 text-center">
@@ -49,13 +49,13 @@ export default function FlashCardReviewPage({ params }: FlashCardReviewPageProps
             </CardContent>
           </Card>
         </div>
-      </QuizPlayLayout>
+      </QuizPlayInterface>
     )
   }
 
   if (!cardsParam) {
     return (
-      <QuizPlayLayout quizSlug={slug} quizType="flashcard">
+      <QuizPlayInterface quizSlug={slug} quizType="flashcard">
         <div className="container max-w-4xl py-6">
           <Card>
             <CardContent className="p-6 text-center">
@@ -69,17 +69,17 @@ export default function FlashCardReviewPage({ params }: FlashCardReviewPageProps
             </CardContent>
           </Card>
         </div>
-      </QuizPlayLayout>
+      </QuizPlayInterface>
     )
   }
 
   // Show loading state while redirecting
   return (
-    <QuizPlayLayout quizSlug={slug} quizType="flashcard">
+    <QuizPlayInterface quizSlug={slug} quizType="flashcard">
       <div className="container max-w-4xl py-6 flex items-center justify-center min-h-[300px]">
   <span className="h-6 w-6 inline-block rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
         <span className="ml-2 text-muted-foreground">Loading review...</span>
       </div>
-    </QuizPlayLayout>
+    </QuizPlayInterface>
   )
 }

@@ -6,27 +6,33 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-base ring-offset-white transition-all gap-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border-4 border-black shadow-[4px_4px_0_#000]",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-none text-sm font-black uppercase tracking-wider border-4 border-border shadow-neo neo-hover-lift neo-press focus-ring gap-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 disabled:pointer-events-none disabled:opacity-50 transition-all duration-200",
   {
     variants: {
       variant: {
         default:
-          "bg-[var(--color-primary)] text-[var(--color-bg)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#000]",
+          "text-background bg-primary border-border",
+        primary:
+          "text-background bg-primary border-border",
+        secondary:
+          "text-background bg-secondary border-border",
+        accent:
+          "text-background bg-accent border-border",
         outline:
-          "bg-[var(--color-bg)] text-[var(--color-text)] border-4 border-black hover:bg-[var(--color-muted)]",
+          "text-foreground bg-transparent border-border hover:bg-muted",
         ghost:
-          "bg-transparent text-[var(--color-text)] border-0 hover:bg-[var(--color-muted)] shadow-none",
-        noShadow: "bg-[var(--color-primary)] text-[var(--color-bg)] border-4 border-black shadow-none",
+          "text-foreground bg-transparent border-transparent hover:bg-muted",
         neutral:
-          "bg-[var(--color-muted)] text-[var(--color-text)] border-4 border-black hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#000]",
+          "text-foreground bg-surface border-border",
         reverse:
-          "bg-[var(--color-accent)] text-[var(--color-bg)] border-4 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_#000]",
+          "text-background bg-primary border-border hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow",
+        noShadow: "text-background bg-primary border-border shadow-none",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 px-3",
-        lg: "h-11 px-8",
-        icon: "size-10",
+        default: "h-11 px-6 py-3 min-h-[44px]",
+        sm: "h-9 px-4 min-h-[36px]",
+        lg: "h-12 px-8 min-h-[48px]",
+        icon: "size-11 min-h-[44px]",
       },
     },
     defaultVariants: {
@@ -58,8 +64,3 @@ function Button({
 }
 
 export { Button, buttonVariants }
-
-export type ButtonProps = React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-  }

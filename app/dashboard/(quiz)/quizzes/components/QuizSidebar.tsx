@@ -149,7 +149,7 @@ function QuizSidebarComponent({
               variant="ghost"
               size="sm"
               onClick={() => selectedTypes.forEach(toggleQuizType)}
-              className="h-8 px-3 text-xs font-black text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-3 border-transparent hover:border-destructive/30 rounded-lg transition-all"
+              className="h-8 px-3 text-xs font-black text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-3 border-transparent hover:border-destructive/30 rounded-none transition-all"
             >
               Clear
             </Button>
@@ -171,7 +171,7 @@ function QuizSidebarComponent({
                 )}
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className={cn("p-2.5 rounded-lg border-3 flex-shrink-0 neo-shadow", type.bg, type.border)}>
+                  <div className={cn("p-2.5 rounded-none border-3 flex-shrink-0 neo-shadow", type.bg, type.border)}>
                     <TypeIcon className={cn("h-5 w-5", type.color)} strokeWidth={2.5} />
                   </div>
                   <span className="text-sm font-black text-foreground group-hover:text-primary transition-colors truncate">

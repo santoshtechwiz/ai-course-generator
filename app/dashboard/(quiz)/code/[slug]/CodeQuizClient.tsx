@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import CodeQuizWrapper from "../components/CodeQuizWrapper"
 
-import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import { QuizPlayInterface } from "@/components/dashboard/QuizPlayInterface"
 import { useSelector } from "react-redux"
 
 interface CodeQuizClientProps {
@@ -35,7 +35,7 @@ export default function CodeQuizClient({ slug }: CodeQuizClientProps) {
   }
 
   return (
-    <QuizPlayLayout
+    <QuizPlayInterface
       quizSlug={slug}
       quizType="code"
       quizId={slug}
@@ -44,6 +44,6 @@ export default function CodeQuizClient({ slug }: CodeQuizClientProps) {
       quizData={quizData || null}
     >
       <CodeQuizWrapper slug={slug} />
-    </QuizPlayLayout>
+    </QuizPlayInterface>
   );
 }

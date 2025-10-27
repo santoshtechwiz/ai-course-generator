@@ -7,7 +7,7 @@ import { useMutation } from "@tanstack/react-query"
 import { useForm, type SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { api } from "@/lib/api-helper"
-import { Pencil, FileText, Eye } from "lucide-react"
+import { Pencil, FileText, Eye, Sparkles, Zap, CheckCircle2, ArrowRight, Star } from "lucide-react"
 
 import { BasicInfoStep } from "./BasicInfoStep"
 import { ContentStep } from "./ContentStep"
@@ -75,16 +75,14 @@ export default function CourseCreationForm({ maxQuestions, params }: {
     },
     onSuccess: async (data) => {
       console.log("Course creation success with data:", data)
-      console.log("Data type:", typeof data)
-      console.log("Data keys:", data ? Object.keys(data) : "data is null/undefined")
       toast({
-        title: "Success",
+        title: "Success!",
         description: "Course created successfully",
       })
-  try { await forceSubRefresh() } catch {/* ignore */}
-  try { await refreshUserData?.() } catch {/* ignore */}
+      
+      try { await forceSubRefresh() } catch {/* ignore */}
+      try { await refreshUserData?.() } catch {/* ignore */}
 
-      // Extract slug from response
       const slug = data?.slug
       if (slug) {
         console.log("Redirecting to course:", slug)
@@ -96,7 +94,6 @@ export default function CourseCreationForm({ maxQuestions, params }: {
           description: "Course created but redirect failed. Please refresh the page.",
           variant: "destructive",
         })
-        // Fallback: redirect to courses list
         router.push("/dashboard/explore")
       }
     },
@@ -137,128 +134,146 @@ export default function CourseCreationForm({ maxQuestions, params }: {
     showConfirmDialog
 
   const steps = [
-    { icon: <Pencil className="h-5 w-5" />, label: "Basic Info" },
-    { icon: <FileText className="h-5 w-5" />, label: "Content" },
-    { icon: <Eye className="h-5 w-5" />, label: "Preview" },
+    { icon: <Pencil className="h-4 w-4 md:h-5 md:w-5" />, label: "Basic Info", color: "bg-blue-400" },
+    { icon: <FileText className="h-4 w-4 md:h-5 md:w-5" />, label: "Content", color: "bg-purple-400" },
+    { icon: <Eye className="h-4 w-4 md:h-5 md:w-5" />, label: "Preview", color: "bg-green-400" },
   ]
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)]">
-      <div className="container mx-auto px-4 py-6 md:py-8 lg:py-10 max-w-3xl">
-        <Card className="rounded-xl shadow-lg overflow-hidden border-0">
-          <CardHeader className="bg-[var(--color-primary)] text-[var(--color-text)]">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <CardTitle className="text-xl sm:text-2xl font-bold">
-                  Create a New Course
-                </CardTitle>
-                <p className="text-blue-100 mt-2">
-                  Fill in the details for your new course. Progress is automatically saved.
+    <div className="w-full h-full">
+      <Card className="h-full flex flex-col border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white overflow-hidden">
+        {/* Header with gradient accent */}
+        <CardHeader className="bg-gradient-to-r from-blue-400 to-purple-400 border-b-4 border-black flex-shrink-0 p-4 md:p-6">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="p-1.5 md:p-2 rounded-none bg-yellow-400 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-black" />
+                  </div>
+                  <CardTitle className="text-lg md:text-xl lg:text-2xl font-black text-black">
+                    Create Your Course
+                  </CardTitle>
+                </div>
+                <p className="text-xs md:text-sm text-black/80 font-bold">
+                  Transform your knowledge into engaging content
                 </p>
               </div>
               
-              <div className="flex items-center gap-2 bg-blue-500/20 backdrop-blur-sm px-3 py-2 rounded-lg">
-                <span className="text-sm">Available Credits:</span>
-                <Badge variant="secondary" className="text-base px-3 py-1 bg-white text-blue-600">
-                  {availableCredits}
+              <div className="flex flex-col items-end gap-2">
+                <Badge className="bg-yellow-400 text-black border-2 border-black font-black text-xs md:text-sm px-2 md:px-3 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                  <Star className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                  {availableCredits} Credits
                 </Badge>
               </div>
             </div>
-          </CardHeader>
 
-          <Separator />
-
-          <CardContent className="p-4 sm:p-6">
-            {/* Step Indicators */}
-            <div className="relative mb-6 md:mb-8">
-              <div className="flex justify-between items-center relative z-10">
+            {/* Step Progress Indicator */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
                 {steps.map((s, i) => (
                   <div
                     key={i}
                     className={cn(
-                      "flex flex-col items-center relative group",
-                      i + 1 === step ? "text-primary" : "text-muted-foreground",
+                      "flex-1 flex flex-col items-center gap-1.5 md:gap-2 transition-all duration-300",
+                      i + 1 === step ? "scale-105" : "opacity-60"
                     )}
                   >
                     <div
                       className={cn(
-                        "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center mb-2 transition-all",
+                        "w-full aspect-square max-w-[50px] md:max-w-[60px] rounded-xl flex items-center justify-center border-3 md:border-4 border-black transition-all duration-300",
                         i + 1 === step 
-                          ? "bg-primary/10 border-2 border-primary text-primary shadow-md" 
-                          : "bg-muted text-muted-foreground border border-gray-200",
-                        i + 1 <= step ? "ring-2 ring-offset-2 ring-blue-300" : ""
+                          ? `${s.color} shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]` 
+                          : "bg-gray-200 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+                        i + 1 < step && "bg-green-400"
                       )}
                     >
-                      {s.icon}
+                      {i + 1 < step ? (
+                        <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6 text-black" />
+                      ) : (
+                        s.icon
+                      )}
                     </div>
-                    <span className="text-xs sm:text-sm font-medium">{s.label}</span>
-                    
-                    {/* Step number badge */}
                     <span className={cn(
-                      "absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-                      i + 1 === step 
-                        ? "bg-primary text-white" 
-                        : "bg-gray-200 text-gray-700"
+                      "text-[10px] md:text-xs font-black text-center leading-tight",
+                      i + 1 === step ? "text-black" : "text-black/60"
                     )}>
-                      {i + 1}
+                      {s.label}
                     </span>
                   </div>
                 ))}
               </div>
 
               {/* Progress Bar */}
-              <div className="mt-6 sm:mt-8">
-                <div className="flex justify-between text-sm text-gray-500 mb-1">
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[10px] md:text-xs font-bold text-black/80">
                   <span>Step {step} of {totalSteps}</span>
                   <span>{Math.round(((step - 1) / (totalSteps - 1)) * 100)}% Complete</span>
                 </div>
-                <Progress 
-                  value={((step - 1) / (totalSteps - 1)) * 100} 
-                  className="h-3 transition-all duration-300 bg-gray-200" 
-                  indicatorClassName="bg-[var(--color-primary)]"
-                />
+                <div className="relative h-3 md:h-4 bg-gray-200 border-2 border-black rounded-full overflow-hidden">
+                  <Progress 
+                    value={((step - 1) / (totalSteps - 1)) * 100} 
+                    className="h-full bg-transparent"
+                    indicatorClassName="bg-gradient-to-r from-green-400 to-green-500 border-r-2 border-black transition-all duration-500"
+                  />
+                </div>
               </div>
             </div>
+          </div>
+        </CardHeader>
 
-            {/* Form Content */}
-            <div className="mt-6 md:mt-8 space-y-8">
-              {step === 1 && <BasicInfoStep control={control} errors={errors} params={params} />}
-              {step === 2 && <ContentStep control={control} errors={errors} watch={watch} setValue={setValue} />}
-              {step === 3 && <PreviewStep watch={watch} />}
-            </div>
+        <Separator className="h-1 bg-black" />
 
-            {/* Navigation Buttons */}
-            <div className="flex flex-col-reverse sm:flex-row justify-between gap-4 mt-8 pt-6 border-t border-gray-100">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBack}
-                disabled={step === 1}
-                className="w-full sm:w-auto px-6 py-3 shadow-sm"
-              >
-                Back
-              </Button>
+        {/* Form Content - Scrollable */}
+        <CardContent className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="space-y-6 md:space-y-8">
+            {step === 1 && <BasicInfoStep control={control} errors={errors} params={params} />}
+            {step === 2 && <ContentStep control={control} errors={errors} watch={watch} setValue={setValue} />}
+            {step === 3 && <PreviewStep watch={watch} />}
+          </div>
+        </CardContent>
 
-              <div className="flex flex-col items-end gap-3">
-                {step < totalSteps ? (
+        {/* Footer Navigation */}
+        <div className="border-t-4 border-black bg-gradient-to-r from-gray-50 to-gray-100 p-3 md:p-4 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row justify-between gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleBack}
+              disabled={step === 1}
+              className="order-2 sm:order-1 border-3 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] bg-white hover:bg-gray-100 font-bold disabled:opacity-40 disabled:cursor-not-allowed text-sm md:text-base h-10 md:h-12"
+            >
+              <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
+              Back
+            </Button>
+
+            <div className="flex flex-col items-stretch sm:items-end gap-2 order-1 sm:order-2 flex-1 sm:flex-initial">
+              {step < totalSteps ? (
+                <>
                   <Button
                     type="button"
                     onClick={handleNext}
                     disabled={!isStepValid() || maxQuestions === 0}
-                    className="w-full sm:w-auto px-6 py-3 bg-[var(--color-primary)] hover:bg-[var(--color-accent)] text-[var(--color-text)] shadow-neo hover:shadow-neo-hover neo-hover-lift transition-all"
+                    className="w-full sm:w-auto border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-black font-black disabled:opacity-40 disabled:cursor-not-allowed text-sm md:text-base h-10 md:h-12 px-6 md:px-8"
                   >
-                    Continue to {steps[step].label} <span className="ml-2">→</span>
+                    Continue
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                ) : (
+                  <p className="text-[10px] md:text-xs text-gray-600 text-center sm:text-right font-bold">
+                    Next: {steps[step].label}
+                  </p>
+                </>
+              ) : (
+                <>
                   <PlanAwareButton
                     type="submit"
                     onClick={handleSubmit(onSubmit)}
-                    label={isSubmitting || createCourseMutation.status === "pending" ? "Creating Course..." : "Create Course"}
+                    label={isSubmitting || createCourseMutation.status === "pending" ? "Creating..." : "Create Course"}
                     isLoading={isSubmitting || createCourseMutation.status === "pending"}
                     isEnabled={step === 3 && !showConfirmDialog}
                     creditsRequired={1}
                     requiredPlan="FREE"
-                    className="w-full sm:w-auto px-6 py-3 shadow-neo neo-hover-lift bg-[var(--color-success)] hover:bg-[var(--color-accent)] text-[var(--color-text)]"
+                    className="w-full sm:w-auto border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-black font-black text-sm md:text-base h-10 md:h-12 px-6 md:px-8"
                     loadingLabel="Creating Course..."
                     customStates={{
                       noCredits: {
@@ -267,18 +282,20 @@ export default function CourseCreationForm({ maxQuestions, params }: {
                       }
                     }}
                   />
-                )}
-
-                {availableCredits > 0 && !isSubscribed && (
-                  <p className="text-xs text-muted-foreground text-right max-w-xs">
-                    This action will deduct <Badge variant="outline" className="mx-1">1 credit</Badge> from your account
-                  </p>
-                )}
-              </div>
+                  {availableCredits > 0 && !isSubscribed && (
+                    <div className="flex items-center justify-center sm:justify-end gap-1.5 text-[10px] md:text-xs font-bold">
+                      <div className="px-2 py-1 bg-yellow-400 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <Zap className="h-3 w-3 md:h-4 md:w-4 inline mr-1" />
+                        1 credit will be used
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
+      </Card>
 
       <ConfirmationDialog
         open={showConfirmDialog}

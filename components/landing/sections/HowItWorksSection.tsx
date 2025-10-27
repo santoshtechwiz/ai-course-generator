@@ -120,8 +120,8 @@ const HowItWorksSection = () => {
             className="space-y-4"
           >
             <div className="font-medium text-lg">Enter a course title</div>
-            <div className="bg-card p-4 rounded-lg border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]">
-              <div className="flex items-center justify-center h-20 border-2 border-dashed border-border rounded-lg">
+            <div className="bg-card p-4 rounded-none border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))]">
+              <div className="flex items-center justify-center h-20 border-2 border-dashed border-border rounded-none">
                 <motion.div
                   animate={{ opacity: [0.6, 1, 0.6] }}
                   transition={{
@@ -172,7 +172,7 @@ const HowItWorksSection = () => {
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: i * 0.1 }}
                   className={cn(
-                    "bg-[var(--color-card)] p-4 rounded-lg border-3 border-[var(--color-border)] flex items-center transition-all duration-200",
+                    "bg-[var(--color-card)] p-4 rounded-none border-3 border-[var(--color-border)] flex items-center transition-all duration-200",
                     i === Math.floor(progress / 25) 
                       ? "shadow-[4px_4px_0px_0px_var(--color-primary)] border-[var(--color-primary)]/50" 
                       : "shadow-[4px_4px_0px_0px_var(--color-border)]"
@@ -233,7 +233,7 @@ const HowItWorksSection = () => {
                 </motion.div>
               ))}
             </div>
-            <div className="mt-6 p-1 bg-[var(--color-card)] rounded-lg border-3 border-[var(--color-border)] shadow-[4px_4px_0px_0px_var(--color-border)]">
+            <div className="mt-6 p-1 bg-[var(--color-card)] rounded-none border-3 border-[var(--color-border)] shadow-[4px_4px_0px_0px_var(--color-border)]">
               <div className="h-3 rounded-full bg-[var(--color-muted)] overflow-hidden">
                 <motion.div 
                   className="h-full bg-[var(--color-primary)] rounded-full"
@@ -261,7 +261,7 @@ const HowItWorksSection = () => {
               {progress < 50 ? "Setting up your course..." : "Course Ready to Share!"}
             </div>
             
-            <div className="p-1 bg-[var(--color-card)] rounded-lg border-3 border-[var(--color-border)] shadow-[4px_4px_0px_0px_var(--color-border)] max-w-xs mx-auto">
+            <div className="p-1 bg-[var(--color-card)] rounded-none border-3 border-[var(--color-border)] shadow-[4px_4px_0px_0px_var(--color-border)] max-w-xs mx-auto">
               <div className="h-4 rounded-full bg-[var(--color-muted)] overflow-hidden">
                 <motion.div 
                   className="h-full bg-[var(--color-primary)] rounded-full"
@@ -284,7 +284,7 @@ const HowItWorksSection = () => {
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: i * 0.1 }}
-                      className="px-4 py-2 rounded-lg bg-card border-3 border-border text-sm font-medium cursor-pointer shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:shadow-[4px_4px_0px_0px_hsl(var(--primary))] hover:border-primary/50 transition-all duration-200"
+                      className="px-4 py-2 rounded-none bg-card border-3 border-border text-sm font-medium cursor-pointer shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:shadow-[4px_4px_0px_0px_hsl(var(--primary))] hover:border-primary/50 transition-all duration-200"
                     >
                       {platform}
                     </motion.div>
@@ -472,7 +472,7 @@ const HowItWorksSection = () => {
                       <div className="w-3 h-3 rounded-full bg-[var(--color-warning)] border-2 border-[var(--color-border)]"></div>
                       <div className="w-3 h-3 rounded-full bg-[var(--color-success)] border-2 border-[var(--color-border)]"></div>
                     </div>
-                    <div className="px-4 py-2 rounded-lg bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-black border-2 border-[var(--color-primary)]/20">
+                    <div className="px-4 py-2 rounded-none bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-black border-2 border-[var(--color-primary)]/20">
                       Step {activeStep + 1} of {steps.length}
                     </div>
                   </div>

@@ -328,19 +328,19 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
             </div>
 
             <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="p-3 bg-muted/50 rounded-lg text-center">
+                <div className="p-3 bg-muted/50 rounded-none text-center">
                   <div className="text-lg font-bold">{metrics.correctAnswers}</div>
                   <div className="text-xs text-muted-foreground">Correct</div>
                 </div>
-                <div className="p-3 bg-muted/50 rounded-lg text-center">
+                <div className="p-3 bg-muted/50 rounded-none text-center">
                   <div className="text-lg font-bold">{metrics.totalQuestions}</div>
                   <div className="text-xs text-muted-foreground">Total</div>
                 </div>
-                <div className="p-3 bg-muted/50 rounded-lg text-center">
+                <div className="p-3 bg-muted/50 rounded-none text-center">
                   <div className="text-lg font-bold">{Math.round(metrics.accuracy)}%</div>
                   <div className="text-xs text-muted-foreground">Accuracy</div>
                 </div>
-                <div className="p-3 bg-muted/50 rounded-lg text-center">
+                <div className="p-3 bg-muted/50 rounded-none text-center">
                   <div className="text-lg font-bold">{metrics.timeSpent ? formatTime(metrics.timeSpent) : '-'}</div>
                   <div className="text-xs text-muted-foreground">Time</div>
                 </div>
@@ -454,7 +454,7 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
                 <CardTitle className="text-sm font-bold text-[var(--color-text)]">Key Takeaways</CardTitle>
               </CardHeader>
               <CardContent className="p-0 mt-2">
-                <div className="p-4 bg-[var(--color-bg)] rounded-lg border-2 border-black">
+                <div className="p-4 bg-[var(--color-bg)] rounded-none border-2 border-black">
                   <ul className="space-y-2">
                     {(result?.takeaways || generateTakeawaysFromResult(result)).map((t: any, i: number) => (
                       <li key={i} className="flex items-start gap-3">
@@ -474,8 +474,8 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
               <CardContent className="p-3">
                 <div className="space-y-3">
                   {(result?.recommendations || generateRecommendations(result)).map((rec: any, i: number) => (
-                    <div key={i} className="p-3 bg-[var(--color-bg)] rounded-lg flex items-start gap-3 border-2 border-black">
-                      <div className="p-2 rounded-md bg-[var(--color-primary)] text-white"><BookOpen className="w-5 h-5" /></div>
+                    <div key={i} className="p-3 bg-[var(--color-bg)] rounded-none flex items-start gap-3 border-2 border-black">
+                      <div className="p-2 rounded-none bg-[var(--color-primary)] text-white"><BookOpen className="w-5 h-5" /></div>
                       <div>
                         <div className="font-bold text-[var(--color-text)]">{rec.title}</div>
                         <div className="text-sm text-[var(--color-text)]/70">{rec.description}</div>
@@ -497,7 +497,7 @@ export default function UnifiedQuizResult({ result, slug, quizType = "mcq", onRe
                     </Button>
                   ) : (
                     <div className="flex items-center justify-center">
-                      <span className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-muted/20 text-sm text-muted-foreground">
+                      <span className="inline-flex items-center gap-2 px-3 py-2 rounded-none bg-muted/20 text-sm text-muted-foreground">
                         <CheckCircle2 className="w-4 h-4 text-green-600" /> Reviewed
                       </span>
                     </div>

@@ -53,7 +53,7 @@ const BookmarkListItem = React.memo(
           transition={{ duration: 0.3, ease: "easeOut" }}
           key={bookmark.id || `${bookmark.videoId}-${bookmark.time}`}
           className={cn(
-            "flex items-center gap-2 p-3 rounded-lg bg-black/30 hover:bg-black/40 border group relative overflow-hidden mb-2 last:mb-0 transition-all",
+            "flex items-center gap-2 p-3 rounded-none bg-black/30 hover:bg-black/40 border group relative overflow-hidden mb-2 last:mb-0 transition-all",
             isSelected 
               ? "border-amber-400/60 bg-black/40 shadow-lg" 
               : "border-white/20 hover:border-amber-400/50"
@@ -64,7 +64,7 @@ const BookmarkListItem = React.memo(
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="absolute inset-0 bg-gradient-to-r from-amber-500/20 to-transparent rounded-lg"
+              className="absolute inset-0 bg-gradient-to-r from-amber-500/20 to-transparent rounded-none"
             />
           )}
 
@@ -121,7 +121,7 @@ const BookmarkListItem = React.memo(
               onClick={() => setShowDeleteConfirm(false)}
             >
               <motion.div
-                className="bg-background rounded-lg p-4 max-w-sm w-full mx-4"
+                className="bg-background rounded-none p-4 max-w-sm w-full mx-4"
                 onClick={(e) => e.stopPropagation()}
                 initial={{ y: 20 }}
                 animate={{ y: 0 }}
@@ -306,7 +306,7 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     >
       <div className="p-4 border-b border-white/10 flex-shrink-0">
         <h3 className="text-base font-bold flex items-center gap-2 text-white">
-          <div className="p-2 bg-gradient-to-br from-amber-500/30 to-orange-500/20 rounded-lg border border-amber-500/50">
+          <div className="p-2 bg-gradient-to-br from-amber-500/30 to-orange-500/20 rounded-none border border-amber-500/50">
             <Bookmark className="h-5 w-5 text-amber-400" aria-hidden="true" />
           </div>
           <span>Bookmarks</span>
@@ -328,7 +328,7 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({
               placeholder="Search bookmarks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 bg-black/30 border border-white/20 rounded-lg focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/30 text-sm text-white placeholder:text-white/40"
+              className="pl-9 h-9 bg-black/30 border border-white/20 rounded-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/30 text-sm text-white placeholder:text-white/40"
               aria-label="Search bookmarks"
             />
           </div>
@@ -362,7 +362,7 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
-          <div className="text-sm font-bold text-white/80 px-3 py-2 bg-black/40 border border-amber-400/30 rounded-lg min-w-[60px] text-center">
+          <div className="text-sm font-bold text-white/80 px-3 py-2 bg-black/40 border border-amber-400/30 rounded-none min-w-[60px] text-center">
             <span className="text-amber-400">
               {selectedBookmarkTime ? (sortedBookmarks.findIndex(b => b.time === selectedBookmarkTime) + 1) : '-'}
             </span>
@@ -384,7 +384,7 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({
 
       {/* Add Bookmark Form */}
       <motion.div
-        className="mx-4 mb-3 flex items-center gap-2 p-3 rounded-lg bg-black/30 border border-amber-500/40 flex-shrink-0"
+        className="mx-4 mb-3 flex items-center gap-2 p-3 rounded-none bg-black/30 border border-amber-500/40 flex-shrink-0"
         whileHover={{ borderColor: "hsl(var(--primary) / 0.6)", backgroundColor: "rgb(0 0 0 / 0.35)" }}
         transition={{ duration: 0.2 }}
       >
@@ -405,7 +405,7 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({
           />
         </div>
         <span
-          className="text-xs font-mono whitespace-nowrap px-2.5 py-1.5 bg-black/40 border border-white/20 rounded-lg text-white/70"
+          className="text-xs font-mono whitespace-nowrap px-2.5 py-1.5 bg-black/40 border border-white/20 rounded-none text-white/70"
           aria-label={`Current time: ${formattedCurrentTime}`}
         >
           {formattedCurrentTime}
@@ -473,7 +473,7 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({
               className="text-center p-8 space-y-3"
             >
               <div className="flex justify-center">
-                <div className="p-3 bg-amber-500/20 rounded-lg border border-amber-500/30">
+                <div className="p-3 bg-amber-500/20 rounded-none border border-amber-500/30">
                   <Bookmark className="h-8 w-8 text-amber-400" />
                 </div>
               </div>
@@ -515,7 +515,7 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({
             onClick={() => setShowDeleteConfirm(null)}
           >
             <motion.div
-              className="bg-background rounded-lg p-4 max-w-sm w-full mx-4"
+              className="bg-background rounded-none p-4 max-w-sm w-full mx-4"
               onClick={(e) => e.stopPropagation()}
               initial={{ y: 20 }}
               animate={{ y: 0 }}

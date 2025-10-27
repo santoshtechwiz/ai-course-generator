@@ -207,7 +207,7 @@ function RecommendationsSkeleton() {
       <CardContent>
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex items-start gap-3 p-3 rounded-lg border">
+            <div key={i} className="flex items-start gap-3 p-3 rounded-none border">
               <Skeleton className="h-5 w-5 mt-1" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-4 w-3/4" />

@@ -94,7 +94,7 @@ export function BestGuess({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: animationDelay }}
-    className={cn("rounded-lg border p-4 mb-4", borderColor, bgColor, className)}
+    className={cn("rounded-none border p-4 mb-4", borderColor, bgColor, className)}
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center">

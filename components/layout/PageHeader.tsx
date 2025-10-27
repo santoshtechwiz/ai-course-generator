@@ -10,6 +10,7 @@ interface PageHeaderProps {
   className?: string
   variant?: 'default' | 'hero' | 'compact'
   icon?: ReactNode
+  sticky?: boolean
 }
 
 const PageHeader = ({
@@ -18,7 +19,8 @@ const PageHeader = ({
   breadcrumbs,
   className,
   variant = 'default',
-  icon
+  icon,
+  sticky = false
 }: PageHeaderProps) => {
   // Transform breadcrumbs to match Breadcrumb component's expected format
   const breadcrumbPaths = breadcrumbs?.map(item => ({
@@ -32,7 +34,7 @@ const PageHeader = ({
     compact: "space-y-2 pb-6"
   }
 
-  return (
+  const headerNode = (
     <header className={cn(variantStyles[variant], className)} role="banner">
       {breadcrumbPaths && (
         <div className="mb-4">
@@ -57,5 +59,15 @@ const PageHeader = ({
       </div>
     </header>
   )
+
+  if (sticky) {
+    return (
+      <div className="sticky top-16 z-30 bg-[var(--color-bg)]">{headerNode}</div>
+    )
+  }
+
+  return headerNode
 }
+
+export { PageHeader }
 

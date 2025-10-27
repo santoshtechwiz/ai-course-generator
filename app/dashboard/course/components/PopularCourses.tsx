@@ -259,7 +259,7 @@ export default function PopularCourseSpotlight({ courseDetails }: Props) {
               className={cn(
                 "transition-all duration-300 rounded-full",
                 index === dotIndex
-                  ? "w-8 h-2 bg-primary shadow-sm"
+                  ? "w-8 h-2 bg-primary neo-shadow"
                   : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50 hover:scale-125"
               )}
             />

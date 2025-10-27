@@ -38,6 +38,9 @@ export async function POST(req: Request) {
       videoId,
       chapterId,
       chapterName,
+      userId: session.user.id,
+      subscriptionPlan: session.user.subscriptionPlan || 'FREE',
+      credits: session.user.credits || 0,
     })
     console.log(questions);
 

@@ -845,7 +845,7 @@ const QuizActions = memo(
     // Default variant
     return (
       <motion.div
-        className={cn("flex flex-col gap-4 bg-card border border-border rounded-lg p-4", className)}
+        className={cn("flex flex-col gap-4 bg-card border border-border rounded-none p-4", className)}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
@@ -853,7 +853,7 @@ const QuizActions = memo(
         {/* Quiz Type Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <div className={cn("p-2 rounded-lg text-white", config.color)}>
+            <div className={cn("p-2 rounded-none text-white", config.color)}>
               {config.icon}
             </div>
             <h3 className="font-semibold text-lg">{config.label} Actions</h3>

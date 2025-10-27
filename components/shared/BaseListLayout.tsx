@@ -52,7 +52,7 @@ export function BaseListLayout({
   return (
     <div className={cn("relative min-h-screen bg-[hsl(var(--background))]", className)}>
       {/* Header Section */}
-      <div className="border-b-4 border-[hsl(var(--border))] bg-[hsl(var(--background))] p-6 md:p-8">
+      <div className="border-b border-border bg-background p-6 md:p-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             {/* Title and Description */}

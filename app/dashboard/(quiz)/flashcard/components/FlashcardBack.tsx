@@ -62,7 +62,7 @@ export function FlashcardBack({
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div
-        className="w-full bg-card border-4 border-border rounded-lg shadow-neo p-1 sm:p-3 flex flex-col relative cursor-pointer hover:shadow-neo-lg transition-all duration-200"
+        className="w-full bg-card border-4 border-border rounded-none shadow-neo p-1 sm:p-3 flex flex-col relative cursor-pointer hover:shadow-neo-lg transition-all duration-200"
         onClick={onFlip}
         role="button"
         aria-label="Flip card to see question"
@@ -76,7 +76,7 @@ export function FlashcardBack({
       >
           <motion.button
             className={cn(
-              "absolute top-3 right-3 sm:top-5 sm:right-5 z-10 w-9 h-9 sm:w-10 sm:h-10 border-2 sm:border-3 border-border transition-all duration-150 rounded-lg",
+              "absolute top-3 right-3 sm:top-5 sm:right-5 z-10 w-9 h-9 sm:w-10 sm:h-10 border-2 sm:border-3 border-border transition-all duration-150 rounded-none",
                 isSaved
                   ? "bg-[var(--color-error)] shadow-neo-sm translate-x-[2px] translate-y-[2px]"
                   : "bg-[var(--color-card)] shadow-neo hover:shadow-neo-sm hover:translate-x-[1px] hover:translate-y-[1px]"
@@ -97,7 +97,7 @@ export function FlashcardBack({
 
   {/* Header */}
   <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-          <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-[var(--color-accent)] text-[var(--color-bg)] border-3 sm:border-4 border-border shadow-neo-sm font-black rounded-md hidden">
+          <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-[var(--color-accent)] text-[var(--color-bg)] border-3 sm:border-4 border-border shadow-neo-sm font-black rounded-none hidden">
             <span className="text-xs sm:text-sm tracking-wide">ANSWER</span>
           </div>
         </div>
@@ -117,7 +117,7 @@ export function FlashcardBack({
 
           {/* Explanation */}
           {explanation && (
-            <div className="bg-muted border-2 sm:border-3 border-border shadow-neo p-3 sm:p-4 mx-2 sm:mx-3 rounded-lg">
+            <div className="bg-muted border-2 sm:border-3 border-border shadow-neo p-3 sm:p-4 mx-2 sm:mx-3 rounded-none">
               <div className="flex items-center gap-2 mb-3">
                   <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[var(--color-accent)] border-2 border-border flex items-center justify-center shadow-neo-sm rounded-sm">
                     <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--color-bg)]" />
@@ -132,7 +132,7 @@ export function FlashcardBack({
   {/* Rating Section */}
   <div className="space-y-2 sm:space-y-3 pt-1.5 sm:pt-2 border-t border-border">
           <div className="text-center">
-            <span className="inline-block px-4 sm:px-6 py-1.5 sm:py-2 bg-[var(--color-accent)] text-[var(--color-bg)] border-3 sm:border-4 border-border shadow-neo-sm text-xs sm:text-sm font-black rounded-md">
+            <span className="inline-block px-4 sm:px-6 py-1.5 sm:py-2 bg-[var(--color-accent)] text-[var(--color-bg)] border-3 sm:border-4 border-border shadow-neo-sm text-xs sm:text-sm font-black rounded-none">
               How well did you know this?
             </span>
           </div>
@@ -148,7 +148,7 @@ export function FlashcardBack({
                     onSelfRating(button.id as "correct" | "incorrect" | "still_learning")
                   }}
                   className={cn(
-                      "w-full h-12 sm:h-14 border-2 sm:border-3 border-border font-black text-[var(--color-bg)] shadow-neo transition-all duration-200 rounded-lg",
+                      "w-full h-12 sm:h-14 border-2 sm:border-3 border-border font-black text-[var(--color-bg)] shadow-neo transition-all duration-200 rounded-none",
                     button.bg,
                     button.hover,
                     "hover:shadow-neo-sm hover:translate-x-[1px] hover:translate-y-[1px]"
@@ -168,7 +168,7 @@ export function FlashcardBack({
 
           {/* Keyboard shortcuts */}
           <div className="text-center px-2">
-            <div className="inline-flex flex-wrap items-center justify-center gap-2 sm:gap-4 px-4 sm:px-6 py-2 sm:py-3 bg-[var(--color-card)] border-3 sm:border-4 border-[var(--color-border)] shadow-neo-sm rounded-lg">
+            <div className="inline-flex flex-wrap items-center justify-center gap-2 sm:gap-4 px-4 sm:px-6 py-2 sm:py-3 bg-[var(--color-card)] border-3 sm:border-4 border-[var(--color-border)] shadow-neo-sm rounded-none">
               {[
                 { key: "1", label: "Known", emoji: "🎉" },
                 { key: "2", label: "Learning", emoji: "📚" },

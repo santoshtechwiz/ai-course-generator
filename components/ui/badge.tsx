@@ -6,12 +6,16 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-md border-4 border-black px-2.5 py-0.5 text-xs font-base w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-black focus-visible:ring-black/50 focus-visible:ring-[3px] overflow-hidden shadow-[2px_2px_0_#000]",
+  "inline-flex items-center justify-center rounded-none border-3 border-border px-3 text-sm font-black uppercase tracking-wider shadow-neo h-9 w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] overflow-hidden",
   {
     variants: {
       variant: {
-        default: "bg-[var(--color-primary)] text-[var(--color-bg)]",
-        neutral: "bg-[var(--color-muted)] text-[var(--color-text)]",
+        default: "bg-primary text-background",
+        neutral: "bg-secondary text-foreground",
+        accent: "bg-accent text-background",
+        destructive: "bg-error text-background",
+        outline: "bg-transparent text-foreground",
+        secondary: "bg-secondary text-foreground",
       },
     },
     defaultVariants: {
@@ -40,4 +44,4 @@ function Badge({
   )
 }
 
-export { Badge,  }
+export { Badge, badgeVariants }

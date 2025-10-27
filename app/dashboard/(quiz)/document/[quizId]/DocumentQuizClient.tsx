@@ -84,7 +84,7 @@ export default function DocumentQuizClient({ params }: DocumentQuizClientProps) 
 
       {/* Quiz Content */}
       <div className="flex-1 w-full p-1 sm:p-2">
-        <div className="bg-card rounded-lg border p-3 sm:p-4 h-full">
+        <div className="bg-card rounded-none border p-3 sm:p-4 h-full">
           <QuizPlayer quizId={quizId} />
         </div>
       </div>

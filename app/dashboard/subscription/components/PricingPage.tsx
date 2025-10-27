@@ -337,7 +337,7 @@ export function PricingPage({
       {!isProd && <DevModeBanner />}
       
       {subscriptionError && (
-        <Alert variant="destructive">
+        <Alert variant="error">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Subscription Error</AlertTitle>
           <AlertDescription>{subscriptionError}</AlertDescription>
@@ -345,7 +345,7 @@ export function PricingPage({
       )}
 
       {showPromotion && (
-        <div className="relative bg-neo-background p-6 rounded-xl border-4 border-neo-border shadow-[4px_4px_0px_0px_var(--neo-border)]">
+        <div className="relative bg-card border-6 border-border shadow-neo neo-hover-lift p-6 rounded-none">
           <Button
             variant="ghost"
             size="icon"
@@ -355,25 +355,25 @@ export function PricingPage({
             <X className="h-4 w-4" />
           </Button>
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="h-14 w-14 rounded-xl bg-black border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-              <Sparkles className="text-white h-7 w-7" />
+            <div className="h-14 w-14 rounded-none bg-primary border-4 border-border flex items-center justify-center shadow-neo">
+              <Sparkles className="text-background h-7 w-7" />
             </div>
             <div className="flex-1">
-              <h3 className="font-black text-xl text-black">Limited Time Offer</h3>
-              <p className="text-gray-700 font-bold">
-                Use <span className="bg-gray-100 text-black px-2 py-0.5 rounded font-mono font-black border-2 border-black">AILAUNCH20</span> for 20% off
+              <h3 className="font-black text-xl text-foreground uppercase tracking-wider">Limited Time Offer</h3>
+              <p className="text-muted-foreground font-bold">
+                Use <span className="bg-muted text-foreground px-2 py-0.5 rounded-none font-mono font-black border-2 border-border shadow-neo">AILAUNCH20</span> for 20% off
               </p>
               <div className="flex flex-col sm:flex-row gap-2 mt-3">
                 <Input
                   value={promoCode}
                   placeholder="Enter promo code"
                   onChange={(e) => setPromoCode(e.target.value)}
-                  className="border-2 border-black"
+                  className="border-4 border-border shadow-neo rounded-none"
                 />
                 <Button
                   onClick={handleApplyPromoCode}
                   disabled={isPromoValid || isApplyingPromo}
-                  className="bg-black hover:bg-gray-800 text-white font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                  className="bg-primary hover:bg-primary/90 text-background font-black border-4 border-border shadow-neo neo-hover-lift"
                 >
                   {isApplyingPromo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Gift className="mr-2 h-4 w-4" />}
                   {isPromoValid ? "Applied" : "Apply"}
@@ -386,7 +386,7 @@ export function PricingPage({
 
       <div className="text-center">
         <motion.h2
-          className="text-4xl sm:text-5xl font-black text-black leading-tight"
+          className="text-4xl sm:text-5xl font-black text-foreground leading-tight uppercase tracking-wider"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -394,7 +394,7 @@ export function PricingPage({
           Choose Your Plan
         </motion.h2>
         <motion.p
-          className="text-muted-foreground mt-4 text-lg max-w-2xl mx-auto"
+          className="text-muted-foreground mt-4 text-lg max-w-2xl mx-auto font-bold"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
@@ -425,7 +425,7 @@ export function PricingPage({
             const price = getDiscountedPrice(option.price)
             const planConfig = getPlanConfig(plan.id as SubscriptionPlanType)
             return (
-              <div key={plan.id} className="p-4 border rounded-xl shadow-sm">
+              <div key={plan.id} className="p-4 border rounded-xl neo-shadow">
                 <h3 className="font-semibold text-lg">{planConfig.name}</h3>
                 <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
                 <div className="text-2xl font-bold mt-2">${price}</div>
@@ -492,44 +492,44 @@ export function PricingPage({
       )}
 
       <motion.div
-        className="mt-12 p-8 bg-neo-background border-4 border-neo-border rounded-xl shadow-[4px_4px_0px_0px_var(--neo-border)]"
+        className="mt-12 p-8 bg-card border-6 border-border shadow-neo neo-hover-lift rounded-none"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true, margin: "-100px" }}
       >
         <div className="flex flex-col md:flex-row gap-6 items-center">
           <div className="md:w-1/4 flex justify-center">
-            <div className="bg-primary p-6 rounded-full border-4 border-primary-foreground shadow-[6px_6px_0px_0px_hsl(var(--border))] transform hover:scale-105 transition-transform duration-300">
-              <Zap className="h-12 w-12 text-white" />
+            <div className="bg-primary p-6 rounded-none border-4 border-border shadow-neo neo-hover-lift transform hover:scale-105 transition-transform duration-300">
+              <Zap className="h-12 w-12 text-background" />
             </div>
           </div>
           <div className="md:w-3/4 text-left">
-            <h3 className="text-2xl font-bold mb-4 text-primary">
+            <h3 className="text-2xl font-black mb-4 text-foreground uppercase tracking-wider">
               Understanding Token Usage
             </h3>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 font-bold">
               Tokens are used to generate quizzes and access various features on our platform. Each quiz you generate
               consumes a certain number of tokens based on the complexity and type of questions.
             </p>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 font-bold">
               Tokens are used to generate quizzes and access various features on our platform. Each quiz you generate
               consumes a certain number of tokens based on the complexity and type of questions.
             </p>
             <ul className="space-y-2 mb-4">
               <li className="flex items-start">
-                <Check className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                <span>Generating multiple-choice quizzes consumes fewer tokens</span>
+                <Check className="h-5 w-5 text-success mr-2 mt-0.5" />
+                <span className="font-bold">Generating multiple-choice quizzes consumes fewer tokens</span>
               </li>
               <li className="flex items-start">
-                <Check className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                <span>Creating open-ended or code-based quizzes may require more tokens</span>
+                <Check className="h-5 w-5 text-success mr-2 mt-0.5" />
+                <span className="font-bold">Creating open-ended or code-based quizzes may require more tokens</span>
               </li>
               <li className="flex items-start">
-                <Check className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                <span>Downloading quizzes in PDF format also consumes tokens</span>
+                <Check className="h-5 w-5 text-success mr-2 mt-0.5" />
+                <span className="font-bold">Downloading quizzes in PDF format also consumes tokens</span>
               </li>
             </ul>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground font-bold">
               You can purchase additional tokens at any time to continue using our services.
             </p>
           </div>
@@ -540,47 +540,47 @@ export function PricingPage({
 
       {/* FAQ Section - Inline */}
       <div className="mt-12">
-        <h2 className="text-2xl font-bold mb-6 text-center text-blue-600 dark:text-blue-400">
+        <h2 className="text-2xl font-black mb-6 text-center text-foreground uppercase tracking-wider">
           Frequently Asked Questions
         </h2>
         <Accordion type="single" collapsible className="w-full space-y-4">
-          <AccordionItem value="item-0" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
-            <AccordionTrigger className="text-left text-base font-medium px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
+          <AccordionItem value="item-0" className="border-4 border-border shadow-neo neo-hover-lift rounded-none overflow-hidden">
+            <AccordionTrigger className="text-left text-base font-bold px-4 py-4 hover:bg-muted transition-all duration-300 uppercase tracking-wider">
               What payment methods do you accept?
             </AccordionTrigger>
-            <AccordionContent className="text-sm text-muted-foreground px-4 pb-4 pt-2 bg-slate-50/50 dark:bg-slate-800/50">
+            <AccordionContent className="text-sm text-muted-foreground px-4 pb-4 pt-2 bg-muted/50 font-bold">
               We accept all major credit cards (Visa, MasterCard, American Express) and PayPal for your convenience.
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="item-1" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
-            <AccordionTrigger className="text-left text-base font-medium px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
+          <AccordionItem value="item-1" className="border-4 border-border shadow-neo neo-hover-lift rounded-none overflow-hidden">
+            <AccordionTrigger className="text-left text-base font-bold px-4 py-4 hover:bg-muted transition-all duration-300 uppercase tracking-wider">
               Can I cancel my subscription at any time?
             </AccordionTrigger>
-            <AccordionContent className="text-sm text-muted-foreground px-4 pb-4 pt-2 bg-slate-50/50 dark:bg-slate-800/50">
+            <AccordionContent className="text-sm text-muted-foreground px-4 pb-4 pt-2 bg-muted/50 font-bold">
               Yes, you can cancel your subscription at any time. Your access will continue until the end of your current billing period.
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="item-2" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
-            <AccordionTrigger className="text-left text-base font-medium px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
+          <AccordionItem value="item-2" className="border-4 border-border shadow-neo neo-hover-lift rounded-none overflow-hidden">
+            <AccordionTrigger className="text-left text-base font-bold px-4 py-4 hover:bg-muted transition-all duration-300 uppercase tracking-wider">
               What happens to my data if I cancel?
             </AccordionTrigger>
-            <AccordionContent className="text-sm text-muted-foreground px-4 pb-4 pt-2 bg-slate-50/50 dark:bg-slate-800/50">
+            <AccordionContent className="text-sm text-muted-foreground px-4 pb-4 pt-2 bg-muted/50 font-bold">
               Your data remains accessible for 30 days after cancellation. After that, it will be permanently deleted.
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="item-3" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
-            <AccordionTrigger className="text-left text-base font-medium px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
+          <AccordionItem value="item-3" className="border-4 border-border shadow-neo neo-hover-lift rounded-none overflow-hidden">
+            <AccordionTrigger className="text-left text-base font-bold px-4 py-4 hover:bg-muted transition-all duration-300 uppercase tracking-wider">
               Do you offer refunds?
             </AccordionTrigger>
-            <AccordionContent className="text-sm text-muted-foreground px-4 pb-4 pt-2 bg-slate-50/50 dark:bg-slate-800/50">
+            <AccordionContent className="text-sm text-muted-foreground px-4 pb-4 pt-2 bg-muted/50 font-bold">
               We offer a 14-day money-back guarantee on all paid plans. Contact support for a full refund within this period.
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="item-4" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
-            <AccordionTrigger className="text-left text-base font-medium px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
+          <AccordionItem value="item-4" className="border-4 border-border shadow-neo neo-hover-lift rounded-none overflow-hidden">
+            <AccordionTrigger className="text-left text-base font-bold px-4 py-4 hover:bg-muted transition-all duration-300 uppercase tracking-wider">
               Can I upgrade or downgrade my plan?
             </AccordionTrigger>
-            <AccordionContent className="text-sm text-muted-foreground px-4 pb-4 pt-2 bg-slate-50/50 dark:bg-slate-800/50">
+            <AccordionContent className="text-sm text-muted-foreground px-4 pb-4 pt-2 bg-muted/50 font-bold">
               Yes, you can upgrade at any time. Downgrades take effect at the end of your current billing period.
             </AccordionContent>
           </AccordionItem>
@@ -589,7 +589,7 @@ export function PricingPage({
           <Button
             variant="outline"
             onClick={() => (window.location.href = "/contact")}
-            className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300"
+            className="border-4 border-border shadow-neo neo-hover-lift font-black uppercase tracking-wider"
           >
             Contact Support
           </Button>

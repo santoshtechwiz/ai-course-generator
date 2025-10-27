@@ -6,3 +6,26 @@ node_modules/
 dist/
 archive/
 coverage/
+
+# Exclude non-JS/TS files
+*.md
+*.svg
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.woff
+*.woff2
+*.ttf
+*.eot
+
+# Exclude specific directories
+public/
+.git/
+.github/
+scripts/
+prisma/
+docker/
+__tests__/
+unused-report/

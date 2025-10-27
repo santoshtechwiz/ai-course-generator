@@ -15,7 +15,7 @@ interface ErrorFallbackProps {
 function ErrorFallback({ error, resetErrorBoundary, errorInfo }: ErrorFallbackProps) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg)] px-4">
-      <div className="max-w-md w-full bg-[var(--color-card)] rounded-md border-4 border-black shadow-[4px_4px_0_#000] p-6">
+      <div className="max-w-md w-full bg-[var(--color-card)] rounded-none border-4 border-black shadow-[4px_4px_0_#000] p-6">
         <div className="flex items-center mb-4">
           <div className="flex-shrink-0">
             <svg className="h-8 w-8 text-[var(--color-destructive)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -34,7 +34,7 @@ function ErrorFallback({ error, resetErrorBoundary, errorInfo }: ErrorFallbackPr
         {process.env.NODE_ENV === 'development' && errorInfo && (
           <details className="mb-4">
             <summary className="text-sm text-[var(--color-text)]/50 cursor-pointer">Error Details</summary>
-            <pre className="mt-2 text-xs text-[var(--color-text)]/40 overflow-auto max-h-32 bg-[var(--color-bg)] border-2 border-black p-2 rounded-md">
+            <pre className="mt-2 text-xs text-[var(--color-text)]/40 overflow-auto max-h-32 bg-[var(--color-bg)] border-2 border-black p-2 rounded-none">
               {errorInfo}
             </pre>
           </details>
@@ -43,13 +43,13 @@ function ErrorFallback({ error, resetErrorBoundary, errorInfo }: ErrorFallbackPr
         <div className="flex space-x-3">
           <button
             onClick={resetErrorBoundary}
-            className="flex-1 bg-[var(--color-primary)] text-[var(--color-text)] px-4 py-2 rounded-md text-sm font-medium border-4 border-black shadow-[4px_4px_0_#000] hover:shadow-[2px_2px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+            className="flex-1 bg-[var(--color-primary)] text-[var(--color-text)] px-4 py-2 rounded-none text-sm font-medium border-4 border-black shadow-[4px_4px_0_#000] hover:shadow-[2px_2px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
           >
             Try Again
           </button>
           <button
             onClick={() => window.location.reload()}
-            className="flex-1 bg-[var(--color-bg)] text-[var(--color-text)] px-4 py-2 rounded-md text-sm font-medium border-4 border-black shadow-[4px_4px_0_#000] hover:shadow-[2px_2px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+            className="flex-1 bg-[var(--color-bg)] text-[var(--color-text)] px-4 py-2 rounded-none text-sm font-medium border-4 border-black shadow-[4px_4px_0_#000] hover:shadow-[2px_2px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
           >
             Refresh Page
           </button>
@@ -109,9 +109,9 @@ interface QuizErrorFallbackProps extends ErrorFallbackProps {
 
 function QuizErrorFallback({ error, resetErrorBoundary, quizType, slug }: QuizErrorFallbackProps) {
   return (
-    <div className="flex items-center justify-center min-h-[200px] sm:min-h-[240px] md:min-h-[280px] bg-[var(--color-bg)] rounded-md border-4 border-black shadow-[4px_4px_0_#000] p-4">
+    <div className="flex items-center justify-center min-h-[200px] sm:min-h-[240px] md:min-h-[280px] bg-[var(--color-bg)] rounded-none border-4 border-black shadow-[4px_4px_0_#000] p-4">
       <div className="text-center p-6">
-        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-md bg-[var(--color-destructive)] border-4 border-black shadow-[4px_4px_0_#000] mb-4">
+        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-none bg-[var(--color-destructive)] border-4 border-black shadow-[4px_4px_0_#000] mb-4">
           <svg className="h-6 w-6 text-[var(--color-text)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01" />
           </svg>
@@ -124,7 +124,7 @@ function QuizErrorFallback({ error, resetErrorBoundary, quizType, slug }: QuizEr
         </p>
         <button
           onClick={resetErrorBoundary}
-          className="bg-[var(--color-primary)] text-[var(--color-text)] px-4 py-2 rounded-md text-sm font-medium border-4 border-black shadow-[4px_4px_0_#000] hover:shadow-[2px_2px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+          className="bg-[var(--color-primary)] text-[var(--color-text)] px-4 py-2 rounded-none text-sm font-medium border-4 border-black shadow-[4px_4px_0_#000] hover:shadow-[2px_2px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
         >
           Retry Loading
         </button>

@@ -6,7 +6,7 @@ function Skeleton({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("animate-pulse rounded-md bg-[var(--color-bg)] border-2 border-black", className)}
+      className={cn("animate-pulse rounded-none bg-[var(--color-bg)] border-2 border-black", className)}
       {...props}
     />
   )
@@ -23,7 +23,7 @@ function QuizSkeleton() {
       </div>
       
       {/* Question */}
-      <div className="bg-[var(--color-card)] rounded-md border-4 border-black shadow-[4px_4px_0_#000] p-6 space-y-4">
+      <div className="bg-[var(--color-card)] rounded-none border-4 border-black shadow-[4px_4px_0_#000] p-6 space-y-4">
         <Skeleton className="h-6 w-full" />
         <Skeleton className="h-4 w-5/6" />
         
@@ -63,7 +63,7 @@ function FlashcardSkeleton() {
       </div>
       
       {/* Card */}
-      <div className="bg-[var(--color-card)] rounded-md border-4 border-black shadow-[4px_4px_0_#000] p-4 sm:p-6 md:p-8 min-h-[200px] sm:min-h-[240px] md:min-h-[280px] space-y-4 sm:space-y-6">
+      <div className="bg-[var(--color-card)] rounded-none border-4 border-black shadow-[4px_4px_0_#000] p-4 sm:p-6 md:p-8 min-h-[200px] sm:min-h-[240px] md:min-h-[280px] space-y-4 sm:space-y-6">
         <Skeleton className="h-6 w-full" />
         <Skeleton className="h-4 w-5/6" />
         <Skeleton className="h-4 w-4/6" />
@@ -88,7 +88,7 @@ function FlashcardSkeleton() {
 
 function CardSkeleton() {
   return (
-    <div className="bg-[var(--color-card)] rounded-md border-4 border-black shadow-[4px_4px_0_#000] p-6 space-y-4">
+    <div className="bg-[var(--color-card)] rounded-none border-4 border-black shadow-[4px_4px_0_#000] p-6 space-y-4">
       <Skeleton className="h-6 w-3/4" />
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-5/6" />

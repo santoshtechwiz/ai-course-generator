@@ -293,7 +293,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
               id="title"
               {...register("title")}
               placeholder="Enter your quiz topic (e.g., The impact of technology on education)"
-              className="w-full h-12 md:h-14 text-sm md:text-base p-3 md:p-4 rounded-lg transition-all duration-300 focus:ring-2 focus:ring-primary border border-input"
+              className="w-full h-12 md:h-14 text-sm md:text-base p-3 md:p-4 rounded-none transition-all duration-300 focus:ring-2 focus:ring-primary border border-input"
               aria-label="Quiz title or topic"
               autoFocus
             />
@@ -341,7 +341,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
           </motion.div>
 
           <motion.div
-            className="bg-card/50 p-4 md:p-6 rounded-lg border"
+            className="bg-card/50 p-4 md:p-6 rounded-none border"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
@@ -363,7 +363,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
           </motion.div>
 
           <motion.div
-            className="cursor-pointer transition-colors rounded-lg overflow-hidden border border-border hover:bg-muted/50"
+            className="cursor-pointer transition-colors rounded-none overflow-hidden border border-border hover:bg-muted/50"
             onClick={() => setOpenInfo(!openInfo)}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

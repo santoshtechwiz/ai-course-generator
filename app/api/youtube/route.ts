@@ -1,4 +1,3 @@
-import type { Question } from "@/app/types/types"
 import Semaphore from "@/lib/semaphore"
 
 import { getQuestionsFromTranscript } from "@/services/videoProcessor"
@@ -8,6 +7,13 @@ import { NextResponse } from "next/server"
 
 export async function POST(req: Request): Promise<Response> {
   try {
+    // Get user session
+    const { getAuthSession } = await import("@/lib/auth")
+    const session = await getAuthSession()
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const body = await req.json()
     const { videoId, chapterId, chapterName } = body
 
@@ -15,7 +21,10 @@ export async function POST(req: Request): Promise<Response> {
     const questions = await courseQuizService.getOrGenerateQuizQuestions({
       videoId,
       chapterId,
-      chapterName
+      chapterName,
+      userId: session.user.id,
+      subscriptionPlan: session.user.subscriptionPlan || 'FREE',
+      credits: session.user.credits || 0,
     })
 
     return NextResponse.json({ questions })

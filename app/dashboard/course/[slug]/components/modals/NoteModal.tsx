@@ -169,11 +169,13 @@ export function NoteModal({
   )
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <div>
+
+        <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || defaultTrigger}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="sm:max-w-[525px] bg-gray-200 z-100">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <StickyNote className="h-5 w-5 text-primary" />
@@ -234,5 +236,6 @@ export function NoteModal({
         </form>
       </DialogContent>
     </Dialog>
+    </div>
   )
 }

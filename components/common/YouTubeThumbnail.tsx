@@ -9,7 +9,7 @@ import React, { useState, useCallback } from 'react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { Video, Loader2 } from 'lucide-react'
-import { createThumbnailErrorHandler, getThumbnailWithFallback } from '@/utils/youtube-thumbnails'
+import { createThumbnailErrorHandler } from '@/utils/youtube-thumbnails'
 
 interface YouTubeThumbnailProps {
   videoId: string

@@ -7,7 +7,7 @@ export default function CourseLoading() {
 				{/* Video area skeleton */}
 				<div className="grid gap-4 sm:gap-5 md:gap-6 lg:gap-7 xl:gap-8 2xl:gap-10 xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
 					<div className="space-y-4">
-						<Skeleton className="w-full aspect-video rounded-lg" />
+						<Skeleton className="w-full aspect-video rounded-none" />
 						<div className="flex items-center justify-between">
 							<Skeleton className="h-5 w-48" />
 							<Skeleton className="h-5 w-24" />
@@ -45,7 +45,7 @@ export default function CourseLoading() {
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 						{Array(6).fill(0).map((_, i) => (
 							<div key={i} className="space-y-3">
-								<Skeleton className="h-40 w-full rounded-lg" />
+								<Skeleton className="h-40 w-full rounded-none" />
 								<Skeleton className="h-4 w-2/3" />
 								<Skeleton className="h-3 w-1/2" />
 							</div>

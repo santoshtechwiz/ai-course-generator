@@ -723,7 +723,7 @@ export default function DocumentQuizPage() {
                                     {question.options.map((option, optionIndex) => (
                                       <div
                                         key={optionIndex}
-                                        className={`p-4 rounded-lg border-2 transition-all ${
+                                        className={`p-4 rounded-none border-2 transition-all ${
                                           optionIndex === question.correctAnswer
                                             ? "border-green-500 bg-green-50 dark:bg-green-900/20"
                                             : "border-gray-200 dark:border-gray-700"
@@ -826,7 +826,7 @@ export default function DocumentQuizPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
                 /* Force this row to span the available width so the right-side icon doesn't overflow */
-                className="w-full flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
+                className="w-full flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-none border border-green-200 dark:border-green-800"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
@@ -960,7 +960,7 @@ export default function DocumentQuizPage() {
         }}
       >
         <div className="py-4 space-y-3">
-          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-none">
             <FileText className="h-5 w-5 text-primary" />
             <div>
               <p className="font-medium">{file?.name}</p>

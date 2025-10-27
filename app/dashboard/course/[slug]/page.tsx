@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 
 import { getCourseData } from "@/app/actions/getCourseData"
 import type { FullCourseType } from "@/app/types/types"
-import CourseLayout from "./components/CourseLayout"
+import {CourseViewer} from "@/components/dashboard/CourseViewer"
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
 import { EnhancedErrorBoundary } from "@/components/error-boundary"
 
@@ -74,7 +74,7 @@ export default async function Page({ params }: CoursePageParams) {
             <p className="text-gray-600 mb-6">The course URL appears to be malformed.</p>
             <a
               href="/dashboard/explore"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-none text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
             >
               Browse Courses
             </a>
@@ -102,13 +102,13 @@ export default async function Page({ params }: CoursePageParams) {
             <div className="space-y-3">
               <a
                 href="/dashboard/explore"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 mr-3"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-none text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 mr-3"
               >
                 Browse All Courses
               </a>
               <a
                 href="/dashboard/create"
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-none text-gray-700 bg-white hover:bg-gray-50"
               >
                 Create New Course
               </a>
@@ -128,7 +128,7 @@ export default async function Page({ params }: CoursePageParams) {
             <p className="text-gray-600 mb-6">This course appears to have incomplete data.</p>
             <a
               href="/dashboard/explore"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-none text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
             >
               Browse Courses
             </a>
@@ -140,7 +140,7 @@ export default async function Page({ params }: CoursePageParams) {
     return (
       <div className="min-h-screen">
         <EnhancedErrorBoundary>
-          <CourseLayout course={course as FullCourseType} />
+          <CourseViewer course={course as FullCourseType} />
         </EnhancedErrorBoundary>
       </div>
     )
@@ -159,7 +159,7 @@ export default async function Page({ params }: CoursePageParams) {
           <p className="text-gray-600 mb-6">We encountered an error while loading this course.</p>
           <a
             href="/dashboard/explore"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-none text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
           >
             Browse Courses
           </a>

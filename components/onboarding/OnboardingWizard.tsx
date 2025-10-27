@@ -100,7 +100,7 @@ function WelcomeStep({ onNext, onSkip }: StepProps) {
       <div className="grid sm:grid-cols-3 gap-4 max-w-2xl mx-auto text-left">
         <Card className="border-2">
           <CardContent className="p-4 space-y-2">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-none bg-primary/10 flex items-center justify-center">
               <Brain className="w-5 h-5 text-primary" />
             </div>
             <h3 className="font-semibold">AI-Powered</h3>
@@ -112,7 +112,7 @@ function WelcomeStep({ onNext, onSkip }: StepProps) {
 
         <Card className="border-2">
           <CardContent className="p-4 space-y-2">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-none bg-primary/10 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-primary" />
             </div>
             <h3 className="font-semibold">Adaptive</h3>
@@ -124,7 +124,7 @@ function WelcomeStep({ onNext, onSkip }: StepProps) {
 
         <Card className="border-2">
           <CardContent className="p-4 space-y-2">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-none bg-primary/10 flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-primary" />
             </div>
             <h3 className="font-semibold">Track Progress</h3>

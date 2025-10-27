@@ -143,7 +143,7 @@ export function QuizFooter({
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg",
+              "flex items-center gap-2 px-4 py-2 rounded-none",
               "bg-success/10 dark:bg-success/5",
               "border-2 border-success/20",
               "shadow-[2px_2px_0px_0px_hsl(var(--success)/0.2)]"

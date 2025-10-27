@@ -7,16 +7,10 @@ import { selectCourseProgressById } from "@/store/slices/courseProgress-slice"
 import { markChapterCompleted } from "@/store/slices/courseProgress-slice"
 import { setPiPActive, setPiPVideoData } from "@/store/slices/course-slice"
 import { useToast } from "@/components/ui/use-toast"
-import { Button } from "@/components/ui/button"
-import { Play, CheckCircle, Menu, X, BookOpen, Zap, Loader2, Clock, Star } from "lucide-react"
 import { setCurrentVideoApi } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
-import CourseDetailsTabs from "./CourseDetailsTabs"
 import { formatDuration } from "../utils/formatUtils"
-import { VideoDebug } from "./video/components/VideoDebug"
 import { useAuth } from "@/modules/auth"
-import ActionButtons from "./ActionButtons"
-import ReviewsSection from "./ReviewsSection"
 import { getColorClasses } from "@/lib/utils"
 import type { BookmarkData } from "./video/types"
 import { useCourseProgressSync } from "@/hooks/useCourseProgressSync"
@@ -24,40 +18,16 @@ import { useVideoState } from "./video/hooks/useVideoState"
 import { useProgressMutation, flushProgress } from "@/services/enhanced-progress/client_progress_queue"
 import { SignInPrompt } from "@/components/shared"
 import { migratedStorage } from "@/lib/storage"
-import VideoGenerationSection from "./VideoGenerationSection"
-import MobilePlaylistCount from "@/components/course/MobilePlaylistCount"
 import { setVideoProgress } from "@/store/slices/courseProgress-slice"
 import { useGuestProgress } from "@/hooks/useGuestProgress"
-import { GuestProgressIndicator, ContextualSignInPrompt } from "@/components/guest"
 import { useSession } from "next-auth/react"
-import VideoPlayer from "./video/components/VideoPlayer"
-import { cn } from "@/lib/utils"
-import CertificateModal from "./CertificateModal"
-import VideoNavigationSidebar from "./ChapterPlaylist"
-import MobilePlaylistOverlay from "./MobilePlaylistOverlay"
 import { storageManager } from "@/utils/storage-manager"
 import { useBookmarks } from "@/hooks/use-bookmarks"
+import { renderCourseDashboard } from "./renderCourseDashboard"
 
-const CourseStatBadge = ({ icon: Icon, value, label }: { icon: any; value: string; label: string }) => (
-  <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
-    <Icon className="h-4 w-4 text-black flex-shrink-0" />
-    <div className="flex flex-col leading-tight">
-      <span className="text-xs font-black text-black">{value}</span>
-      <span className="text-[10px] font-bold text-gray-700 uppercase">{label}</span>
-    </div>
-  </div>
-)
 
-// Simple stat badge component - compact design
-const CourseStatBadge_original = ({ icon: Icon, value, label }: { icon: any; value: string; label: string }) => (
-  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-    <Icon className="h-3.5 w-3.5 text-black flex-shrink-0" />
-    <div className="flex flex-col leading-tight">
-      <span className="text-xs font-black text-black">{value}</span>
-      <span className="text-[10px] font-bold text-gray-600 uppercase">{label}</span>
-    </div>
-  </div>
-)
+
+
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -136,29 +106,18 @@ function stateReducer(state: ComponentState, action: ComponentAction): Component
   }
 }
 
-// Enhanced loading skeleton with neo-brutalist styling
-const VideoSkeleton = () => (
-  <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-20 rounded-lg border-4 border-black">
-    <div className="flex flex-col items-center gap-4 text-white">
-      <div className="w-16 h-16 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-black" />
-      </div>
-      <span className="text-sm font-black uppercase tracking-wide">Loading Video...</span>
-    </div>
-  </div>
-)
+
 
 // Helper function to validate chapter
 function validateChapter(chapter: any): boolean {
   return Boolean(
     chapter &&
-      typeof chapter === "object" &&
-      chapter.id &&
-      (typeof chapter.id === "string" || typeof chapter.id === "number"),
+    typeof chapter === "object" &&
+    chapter.id &&
+    (typeof chapter.id === "string" || typeof chapter.id === "number"),
   )
 }
 
-const MemoizedCourseDetailsTabs = React.memo(CourseDetailsTabs)
 
 const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId, isFullscreen = false }) => {
   const router = useRouter()
@@ -334,10 +293,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
           .filter((chapter) => {
             const isValid = Boolean(
               chapter &&
-                typeof chapter === "object" &&
-                chapter.id &&
-                chapter.videoId &&
-                typeof chapter.videoId === "string",
+              typeof chapter === "object" &&
+              chapter.id &&
+              chapter.videoId &&
+              typeof chapter.videoId === "string",
             )
 
             if (!isValid && chapter) {
@@ -795,7 +754,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
   const handleChapterComplete = useCallback(
     (chapterId: string) => {
-      ;(async () => {
+      ; (async () => {
         console.log(`[ChapterPlaylist Callback] Chapter completed: ${chapterId}`)
 
         const chapterIdNum = Number(chapterId)
@@ -1227,12 +1186,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
   const sidebarCurrentChapter = currentChapter
     ? {
-        id: String(currentChapter.id),
-        title: currentChapter.title,
-        videoId: currentChapter.videoId || undefined,
-        duration: typeof currentChapter.duration === "number" ? currentChapter.duration : undefined,
-        isFree: currentChapter.isFree,
-      }
+      id: String(currentChapter.id),
+      title: currentChapter.title,
+      videoId: currentChapter.videoId || undefined,
+      duration: typeof currentChapter.duration === "number" ? currentChapter.duration : undefined,
+      isFree: currentChapter.isFree,
+    }
     : null
 
   // Auth prompt overlay
@@ -1268,434 +1227,19 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     }
   }, [videoPlaylist.length, completedChapters.length, totalCourseDuration])
 
-  return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-200 dark:bg-background dark:text-foreground">
-      {/* Share course notice banner */}
-      {course.isShared && (
-        <div className="bg-blue-300 dark:bg-blue-900 border-b-4 border-black dark:border-white p-3 sm:p-4 transition-colors">
-          <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-6">
-            <p className="text-xs sm:text-sm font-black text-black dark:text-white uppercase tracking-tight">
-              📚 Shared Course Preview — Watch all videos • Take quiz • Save bookmarks (local only)
-            </p>
-          </div>
-        </div>
-      )}
-
-      {authPromptOverlay}
-
-      <header
-        className={cn(
-          "sticky top-0 z-50 bg-background dark:bg-background border-b-4 border-black dark:border-white shadow-[0_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[0_4px_0px_0px_rgba(255,255,255,1)] transition-all duration-300",
-          state.headerCompact && "py-2",
-        )}
-      >
-        <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-6">
-          <div className="flex items-center justify-between gap-2 sm:gap-3 lg:gap-4 py-2 sm:py-3">
-            {/* Left: Course title and progress */}
-            <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3 lg:gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-400 dark:bg-yellow-500 border-2 border-black dark:border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] flex items-center justify-center">
-                  <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-black dark:text-white" />
-                </div>
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <h1
-                  className={cn(
-                    "font-black uppercase tracking-tight truncate text-black dark:text-white",
-                    state.headerCompact ? "text-base sm:text-lg" : "text-lg sm:text-xl lg:text-2xl",
-                  )}
-                >
-                  {course.title}
-                </h1>
-                <div className="flex items-center gap-2 mt-0.5 text-xs sm:text-sm font-black text-gray-700 dark:text-gray-300 flex-wrap">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    <span>{enhancedCourseStats.totalDuration}</span>
-                  </div>
-                  <div className="hidden sm:flex items-center gap-1">
-                    <Play className="h-3 w-3" />
-                    <span>{enhancedCourseStats.totalVideos} videos</span>
-                  </div>
-                  {state.headerCompact && (
-                    <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                      <CheckCircle className="h-3 w-3" />
-                      <span>
-                        {enhancedCourseStats.completedVideos}/{enhancedCourseStats.totalVideos}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Center: Enhanced Progress - Hidden on mobile */}
-            {!state.headerCompact && (
-              <div className="hidden lg:flex items-center gap-2 xl:gap-3">
-                <div className="flex items-center gap-2 bg-background dark:bg-background border-2 border-black dark:border-white px-3 py-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                    <span className="font-black text-xs">
-                      {enhancedCourseStats.completedVideos}/{enhancedCourseStats.totalVideos}
-                    </span>
-                  </div>
-                  <div className="w-24 h-2 bg-gray-300 dark:bg-gray-600 border border-black dark:border-white">
-                    <div
-                      className="h-full bg-green-600 dark:bg-green-500 transition-all duration-300"
-                      style={{ width: `${enhancedCourseStats.progressPercentage}%` }}
-                    />
-                  </div>
-                  <div className="font-black text-xs min-w-[35px] text-center">
-                    {enhancedCourseStats.progressPercentage}%
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Right: Action buttons */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => dispatch2({ type: "SET_SIDEBAR_COLLAPSED", payload: !state.sidebarCollapsed })}
-                className="hidden xl:flex bg-blue-400 dark:bg-blue-600 hover:bg-blue-500 dark:hover:bg-blue-700 text-black dark:text-white font-black border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[1px_1px_0px_0px_rgba(255,255,255,1)] transition-all uppercase text-xs"
-              >
-                {state.sidebarCollapsed ? (
-                  <>
-                    <Menu className="h-3.5 w-3.5 mr-1" />
-                    <span className="hidden sm:inline">Show</span>
-                  </>
-                ) : (
-                  <>
-                    <X className="h-3.5 w-3.5 mr-1" />
-                    <span className="hidden sm:inline">Hide</span>
-                  </>
-                )}
-              </Button>
-              <ActionButtons
-                slug={course.slug}
-                isOwner={isOwner}
-                variant="compact"
-                title={course.title}
-                courseId={course.id}
-              />
-            </div>
-          </div>
-
-          <div className="lg:hidden border-t-2 border-black dark:border-white pt-2 pb-1.5">
-            <div className="flex items-center justify-between mb-1.5 gap-2">
-              <div className="flex items-center gap-1.5 text-xs font-black text-black dark:text-white">
-                <CheckCircle className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-                <span>
-                  {enhancedCourseStats.completedVideos}/{enhancedCourseStats.totalVideos}
-                </span>
-              </div>
-              <div className="bg-background dark:bg-background border-2 border-black dark:border-white px-2 py-0.5 font-black text-xs text-black dark:text-white">
-                {enhancedCourseStats.progressPercentage}%
-              </div>
-            </div>
-            <div className="h-2 bg-gray-300 dark:bg-gray-600 border border-black dark:border-white">
-              <div
-                className="h-full bg-green-600 dark:bg-green-500 transition-all duration-300"
-                style={{ width: `${enhancedCourseStats.progressPercentage}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Video generation section for owners */}
-      {(isOwner || user?.isAdmin) && (
-        <div className="bg-yellow-100 dark:bg-yellow-900 border-b-4 border-black dark:border-white transition-all overflow-hidden">
-          <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-            <VideoGenerationSection
-              course={course}
-              onVideoGenerated={(chapterId, videoId) => {
-                if (videoId) {
-                  dispatch(setCurrentVideoApi(videoId))
-                }
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {!state.isTheaterMode && (
-        <div className="lg:hidden border-b-4 border-black dark:border-white bg-gray-100 dark:bg-gray-900">
-          <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
-            <Button
-              variant="neutral"
-              onClick={() => dispatch2({ type: "SET_MOBILE_PLAYLIST_OPEN", payload: !state.mobilePlaylistOpen })}
-              className="w-full justify-between h-12 sm:h-14 bg-background dark:bg-background border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[1px_1px_0px_0px_rgba(255,255,255,1)] transition-all font-black text-xs sm:text-sm"
-            >
-              <div className="flex items-center gap-2 sm:gap-3">
-                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                <div className="text-left">
-                  <div className="font-black uppercase text-xs sm:text-sm">Content</div>
-                  <div className="text-xs font-bold text-gray-600 dark:text-gray-400 line-clamp-1">
-                    {currentChapter?.title || "Select chapter"}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <MobilePlaylistCount
-                  currentIndex={currentIndex}
-                  hasCurrentChapter={Boolean(currentChapter)}
-                  total={videoPlaylist.length}
-                />
-                <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full"></div>
-              </div>
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <main className={cn("transition-all duration-100", state.isTheaterMode && "bg-black")}>
-        {!state.isTheaterMode && <div className="h-12 sm:h-16" />}
-
-        <div
-          className={cn(
-            "mx-auto transition-all duration-100",
-            state.isTheaterMode ? "max-w-none px-0" : "max-w-[1600px] px-3 sm:px-4 lg:px-6 py-3 sm:py-4",
-          )}
-        >
-          {!state.isTheaterMode && (
-            <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
-              <CourseStatBadge icon={Play} value={videoPlaylist.length.toString()} label="Videos" />
-              <CourseStatBadge icon={Clock} value={formatDuration(totalCourseDuration)} label="Duration" />
-              <CourseStatBadge icon={CheckCircle} value={`${enhancedCourseStats.progressPercentage}%`} label="Done" />
-              {course.rating && <CourseStatBadge icon={Star} value={course.rating.toString()} label="Rating" />}
-            </div>
-          )}
-
-          <div
-            className={cn(
-              "transition-all duration-100",
-              state.sidebarCollapsed || state.isTheaterMode
-                ? "flex flex-col"
-                : "flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] xl:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] gap-2 sm:gap-3 lg:gap-4",
-            )}
-          >
-            {/* Video and content area */}
-            <div className="space-y-2 sm:space-y-3 min-w-0">
-              {/* Guest Progress Indicator */}
-              {!user && (
-                <div className="mb-2 sm:mb-3 transition-transform duration-100">
-                  <GuestProgressIndicator courseId={course.id} />
-                </div>
-              )}
-
-              <div className="relative">
-                {isPiPActive ? (
-                  <div className="bg-gray-100 dark:bg-gray-900 border-4 border-black dark:border-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] overflow-hidden">
-                    <div className="aspect-video bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
-                      <div className="text-center p-4 sm:p-8">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 bg-blue-400 dark:bg-blue-600 border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] flex items-center justify-center">
-                          <Play className="h-8 w-8 sm:h-10 sm:w-10 text-black dark:text-white" />
-                        </div>
-                        <h3 className="text-base sm:text-xl font-black mb-1 sm:mb-2 uppercase tracking-tight text-black dark:text-white">
-                          Picture-in-Picture
-                        </h3>
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-bold">
-                          Video playing in separate window
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full aspect-video bg-black overflow-hidden border-4 border-black dark:border-white">
-                    <VideoPlayer
-                      youtubeVideoId={currentVideoId || ""}
-                      chapterId={currentChapter?.id ? String(currentChapter.id) : ""}
-                      chapterTitle={currentChapter?.title || ""}
-                      bookmarks={bookmarkItems}
-                      onProgress={handleVideoProgress}
-                      onEnded={handleVideoEnded}
-                      onVideoLoad={handleVideoLoad}
-                      onPlayerReady={handlePlayerReady}
-                      onPictureInPictureToggle={handlePIPToggle}
-                      isPiPActive={isPiPActive}
-                      onTheaterModeToggle={handleTheaterModeToggle}
-                      isTheaterMode={state.isTheaterMode}
-                      isLoading={state.isVideoLoading}
-                      initialSeekSeconds={(() => {
-                        try {
-                          if (
-                            courseProgress?.videoProgress?.playedSeconds &&
-                            String(courseProgress.videoProgress.currentChapterId) === String(currentChapter?.id)
-                          ) {
-                            const ts = Number(courseProgress.videoProgress.playedSeconds)
-                            if (!isNaN(ts) && ts > 0) return ts
-                          }
-                        } catch {}
-                        return undefined
-                      })()}
-                      courseId={course.id}
-                      courseName={course.title}
-                      autoPlay={state.autoplayMode}
-                      onToggleAutoPlay={handleAutoplayToggle}
-                      onNextVideo={handleNextVideo}
-                      nextVideoId={nextVideoId || undefined}
-                      nextVideoTitle={nextVideoTitle}
-                      hasNextVideo={hasNextVideo}
-                      autoAdvanceNext={state.autoplayMode}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {!state.isTheaterMode && currentChapter && (
-                <div className="bg-background dark:bg-background border border-border shadow-neo p-2.5 sm:p-3">
-                  <div className="flex items-center justify-between gap-2 sm:gap-3">
-                    <div className="min-w-0 flex-1">
-                      <h2 className="font-black text-sm sm:text-base lg:text-lg uppercase tracking-tight truncate text-black dark:text-white">
-                        {currentChapter.title}
-                      </h2>
-                      {currentChapter.description && (
-                        <p className="text-gray-600 dark:text-gray-400 font-bold text-xs sm:text-sm mt-0.5 line-clamp-1">
-                          {currentChapter.description}
-                        </p>
-                      )}
-                    </div>
-                    {videoDurations[currentVideoId || ""] && (
-                      <div className="bg-[var(--color-warning)] border-2 border-black dark:border-white px-2 py-1 font-black text-xs whitespace-nowrap flex-shrink-0">
-                        {formatDuration(videoDurations[currentVideoId || ""])}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Contextual Sign-In Prompt */}
-              {!user && (
-                <div className="bg-[var(--color-info)]/20 dark:bg-[var(--color-info)]/10 border-4 border-black dark:border-white p-2.5 sm:p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
-                  <ContextualSignInPrompt action="continue_course" courseId={String(course.id)} />
-                </div>
-              )}
-
-              {!state.isTheaterMode && (
-                <div className="transition-all duration-100">
-                  <div className="border-4 border-border shadow-neo bg-card">
-                    <div className="p-2.5 sm:p-3">
-                      <MemoizedCourseDetailsTabs
-                        course={course}
-                        currentChapter={currentChapter}
-                        onSeekToBookmark={handleSeekToBookmark}
-                        completedChapters={completedChapters}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {!state.isTheaterMode && (
-                <div className="transition-all duration-100">
-                  <div className="border-4 border-border shadow-neo bg-card">
-                    <div className="p-2.5 sm:p-3">
-                      <ReviewsSection slug={course.slug} />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {!state.sidebarCollapsed && !state.isTheaterMode && (
-              <div className="hidden lg:block space-y-2 sm:space-y-3 min-w-0 w-full">
-                <div className="border-4 border-border shadow-neo bg-card h-full overflow-hidden">
-                  <div className="p-0">
-                    {sidebarCourse.chapters.length === 0 ? (
-                      <div className="p-6 sm:p-8 text-center">
-                        <BookOpen className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-3 sm:mb-4 text-black dark:text-white" />
-                        <h3 className="font-black text-base sm:text-lg mb-2 uppercase text-black dark:text-white">
-                          No Videos
-                        </h3>
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-bold">
-                          This course doesn't have video content yet.
-                        </p>
-                      </div>
-                    ) : (
-                      <VideoNavigationSidebar
-                        course={sidebarCourse}
-                        currentChapter={sidebarCurrentChapter}
-                        courseId={course.id.toString()}
-                        currentVideoId={currentVideoId || ""}
-                        isAuthenticated={!!user}
-                        userSubscription={userSubscription || null}
-                        completedChapters={completedChapters.map(String)}
-                        formatDuration={formatDuration}
-                        videoDurations={videoDurations}
-                        courseStats={courseStats}
-                        onChapterSelect={handleChapterSelect}
-                        progress={progressByVideoId}
-                        onProgressUpdate={handleProgressUpdate}
-                        onChapterComplete={handleChapterComplete}
-                        isProgressLoading={progressLoading}
-                        lastPositions={chapterLastPositions}
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-
-      {/* Mobile playlist overlay */}
-      {!state.isTheaterMode && (
-        <MobilePlaylistOverlay
-          isOpen={state.mobilePlaylistOpen}
-          onClose={() => dispatch2({ type: "SET_MOBILE_PLAYLIST_OPEN", payload: false })}
-          course={sidebarCourse}
-          currentChapter={sidebarCurrentChapter}
-          courseId={course.id.toString()}
-          currentVideoId={currentVideoId || ""}
-          isAuthenticated={!!user}
-          userSubscription={userSubscription || null}
-          completedChapters={completedChapters.map(String)}
-          formatDuration={formatDuration}
-          videoDurations={videoDurations}
-          courseStats={courseStats}
-          onChapterSelect={handleChapterSelect}
-        />
-      )}
-
-      {!userSubscription && !state.isTheaterMode && (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 transition-transform duration-200">
-          <Button
-            size="lg"
-            onClick={() => (window.location.href = "/dashboard/subscription")}
-            className="bg-[var(--color-warning)] hover:bg-[var(--color-warning)]/90 text-black dark:text-white font-black border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[1px_1px_0px_0px_rgba(255,255,255,1)] transition-all uppercase px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm"
-          >
-            <Zap className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" />
-            <span className="hidden sm:inline">Unlock All</span>
-            <span className="sm:hidden">Unlock</span>
-          </Button>
-        </div>
-      )}
-
-      {/* Certificate modal */}
-      <CertificateModal
-        show={state.showCertificate}
-        onClose={() => dispatch2({ type: "SET_CERTIFICATE_VISIBLE", payload: false })}
-        courseId={course.id}
-        courseTitle={course.title}
-        userName={user?.name || null}
-        totalLessons={videoPlaylist.length}
+  // Add progress bar for each chapter in the sidebar
+  const ChapterProgressBar = ({ progress }: { progress: number }) => (
+    <div className="w-full h-2 bg-gray-300 rounded">
+      <div
+        className="h-full bg-green-500 rounded"
+        style={{ width: `${progress}%` }}
+        aria-label={`Chapter progress: ${progress}%`}
       />
-
-      {/* Debug component */}
-      {process.env.NODE_ENV !== "production" && (
-        <div className="fixed bottom-4 left-4 z-50">
-          <VideoDebug
-            videoId={currentVideoId || ""}
-            courseId={course.id}
-            chapterId={currentChapter?.id ? String(currentChapter.id) : ""}
-          />
-        </div>
-      )}
     </div>
   )
+
+  return renderCourseDashboard(course, authPromptOverlay, state, enhancedCourseStats, dispatch2, isOwner, user, dispatch, currentChapter, currentIndex, videoPlaylist, totalCourseDuration, isPiPActive, currentVideoId, bookmarkItems, handleVideoProgress, handleVideoEnded, handleVideoLoad, handlePlayerReady, handlePIPToggle, handleTheaterModeToggle, courseProgress, handleAutoplayToggle, handleNextVideo, nextVideoId, nextVideoTitle, hasNextVideo, videoDurations, handleSeekToBookmark, completedChapters, sidebarCourse, sidebarCurrentChapter, userSubscription, courseStats, handleChapterSelect, progressByVideoId, handleProgressUpdate, handleChapterComplete, progressLoading, chapterLastPositions, ChapterProgressBar, router)
 }
 
 export default React.memo(MainContent)
+

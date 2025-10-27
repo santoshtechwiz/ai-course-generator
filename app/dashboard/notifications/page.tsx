@@ -148,7 +148,7 @@ function NotificationCard({
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           <div className={cn(
-            "p-2 rounded-lg",
+            "p-2 rounded-none",
             type === "course" && "bg-primary/10 text-primary",
             type === "flashcard" && "bg-secondary/10 text-secondary",
             type === "achievement" && "bg-success/10 text-success"

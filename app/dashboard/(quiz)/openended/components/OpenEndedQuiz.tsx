@@ -379,7 +379,7 @@ export default function OpenEndedQuiz({
                 <div className="w-full space-y-6">
                   {/* Header Section */}
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
+                    <div className="w-12 h-12 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] rounded-none flex items-center justify-center shadow-md flex-shrink-0">
                       <BookOpen className="w-6 h-6 text-primary-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -437,7 +437,7 @@ export default function OpenEndedQuiz({
               placeholder="Share your understanding and reasoning..."
               className={cn(
                 "w-full min-h-[120px] sm:min-h-[140px] md:min-h-[160px] resize-y transition-all border-2 bg-background text-sm sm:text-base md:text-lg",
-                "focus:outline-none focus:ring-0 p-4 sm:p-6 rounded-lg", // Larger padding on mobile
+                "focus:outline-none focus:ring-0 p-4 sm:p-6 rounded-none", // Larger padding on mobile
                 "min-h-[3rem]", // Ensure minimum touch target when focused
                 isAnswered
                   ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300"
@@ -455,7 +455,7 @@ export default function OpenEndedQuiz({
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-center gap-2 text-sm text-red-600 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800"
+                className="flex items-center justify-center gap-2 text-sm text-red-600 p-3 bg-red-50 dark:bg-red-950/20 rounded-none border border-red-200 dark:border-red-800"
                 role="alert"
                 aria-live="polite"
               >

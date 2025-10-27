@@ -6,7 +6,7 @@ import prisma from "@/lib/db"
 
 import { validateShareAccess } from "@/app/services/share.service"
 
-import CourseLayout from "@/app/dashboard/course/[slug]/components/CourseLayout"
+import CourseViewer from "@/components/dashboard/CourseViewer"
 import { CourseQuestion, FullChapter, FullCourseType, FullCourseUnit } from "@/app/types/course-types"
 
 type ShareCoursePageParams = {
@@ -158,7 +158,7 @@ export default async function ShareCoursePage({ params, searchParams }: ShareCou
             </p>
             <a
               href="/"
-              className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:shadow-lg transition-all"
+              className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-none font-semibold hover:shadow-lg transition-all"
             >
               Return Home
             </a>
@@ -178,8 +178,8 @@ export default async function ShareCoursePage({ params, searchParams }: ShareCou
       data: { share_views: { increment: 1 } }
     }).catch(err => console.error("Error incrementing views:", err))
 
-    // Render CourseLayout with MainContent (shows share course UI)
-    return <CourseLayout course={course} />
+    // Render CourseViewer with MainContent (shows share course UI)
+    return <CourseViewer course={course} />
   } catch (error) {
     console.error("Error in share course page:", error)
     return (
@@ -187,7 +187,7 @@ export default async function ShareCoursePage({ params, searchParams }: ShareCou
         <div className="text-center">
           <h1 className="text-xl font-bold mb-4">Error</h1>
           <p className="text-muted-foreground mb-6">Failed to load the shared course.</p>
-          <a href="/" className="inline-block px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold">
+          <a href="/" className="inline-block px-4 py-2 bg-primary text-primary-foreground rounded-none font-semibold">
             Go Home
           </a>
         </div>

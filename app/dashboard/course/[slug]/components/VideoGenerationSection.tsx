@@ -25,10 +25,14 @@ import type { FullCourseType, FullChapterType } from "@/app/types/types"
 
 interface VideoGenerationSectionProps {
   course: FullCourseType
+  isOwner:boolean
+  isAdmin:boolean
   onVideoGenerated?: (chapterId: string, videoId: string) => void
 }
 
-export default function VideoGenerationSection({ course, onVideoGenerated }: VideoGenerationSectionProps) {
+export default function VideoGenerationSection({ course,isOwner,isAdmin, onVideoGenerated }: VideoGenerationSectionProps) {
+ 
+  if(!isOwner || !isAdmin) return null;
   const { toast } = useToast()
   const [isGenerating, setIsGenerating] = useState(false)
   // Get chapters that need videos
@@ -66,7 +70,7 @@ export default function VideoGenerationSection({ course, onVideoGenerated }: Vid
     statuses,
     queueStatus,
   } = useVideoProcessing({
-    useEnhancedService: false,
+   
     onComplete: (status) => {
       console.log(`Video completed for chapter ${status.chapterId}:`, status)
       if (status.videoId && onVideoGenerated) {
@@ -158,7 +162,7 @@ export default function VideoGenerationSection({ course, onVideoGenerated }: Vid
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-500 rounded-lg">
+              <div className="p-2 bg-orange-500 rounded-none">
                 <Video className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -206,7 +210,46 @@ export default function VideoGenerationSection({ course, onVideoGenerated }: Vid
                   key={chapter.id}
                   className="flex items-center justify-between p-2 bg-white/60 dark:bg-gray-800/60 rounded border text-sm"
                 >
-                  <span className="truncate">{chapter.title}</span>                  <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+                  <div className="flex-1 min-w-0">
+                    <div className="truncate flex items-center gap-2">
+                      <span className="truncate">{chapter.title}</span>
+                      {statuses[chapter.id]?.status && (
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "text-xs font-semibold px-2 py-0.5 rounded-full",
+                              statuses[chapter.id]?.status === 'completed' ? 'bg-green-600 text-white' :
+                              statuses[chapter.id]?.status === 'processing' ? 'bg-blue-600 text-white' :
+                              statuses[chapter.id]?.status === 'queued' ? 'bg-amber-500 text-black' :
+                              statuses[chapter.id]?.status === 'error' ? 'bg-red-600 text-white' : 'bg-gray-200 text-black'
+                            )}
+                          >
+                            {String(statuses[chapter.id]?.status).toUpperCase()}
+                          </span>
+                          {typeof statuses[chapter.id]?.progress === 'number' && (
+                            <span className="text-xs text-muted-foreground">{Math.round(statuses[chapter.id]?.progress ?? 0)}%</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {/* Show queued job info if available */}
+                    {statuses[chapter.id]?.status === 'queued' && (
+                      <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {statuses[chapter.id]?.jobId ? (
+                          <>
+                            Job <span className="font-mono">{String(statuses[chapter.id]?.jobId).slice(0,8)}</span>
+                            {typeof statuses[chapter.id]?.queuePosition === 'number' && (
+                              <> • position: {statuses[chapter.id]?.queuePosition}</>
+                            )}
+                          </>
+                        ) : (
+                          <>Queued</>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                     {isProcessing[chapter.id] ? (
                       <Loader2 className="h-3 w-3 text-orange-500" />
                     ) : statuses[chapter.id]?.status === "completed" ? (

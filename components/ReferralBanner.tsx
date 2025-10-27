@@ -24,7 +24,7 @@ export function ReferralBanner({ referralCode, onDismiss }: ReferralBannerProps)
   }
 
   return (
-    <Alert className="mb-6 bg-success/10 dark:bg-success/5 border-success/20 dark:border-success/20 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-5 duration-300">
+    <Alert className="mb-6 bg-success/10 dark:bg-success/5 border-success/20 dark:border-success/20 rounded-xl neo-shadow animate-in fade-in slide-in-from-top-5 duration-300">
       <Gift className="h-5 w-5 text-success" />
       <AlertTitle className="text-success font-semibold">Referral Code Applied!</AlertTitle>
       <AlertDescription className="text-success/80 dark:text-success/90 flex items-center justify-between">

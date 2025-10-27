@@ -37,8 +37,9 @@ export async function POST(req: Request) {
     // Parse and validate request body
     const body = await req.json()
 
+    let validatedData
     try {
-      var validatedData = updateChaptersSchema.parse(body)
+      validatedData = updateChaptersSchema.parse(body)
     } catch (validationError) {
       if (validationError instanceof z.ZodError) {
         return NextResponse.json(
@@ -60,11 +61,13 @@ export async function POST(req: Request) {
     // Use service to update course chapters
     try {
       const result = await courseService.updateCourseChapters(validatedData, session.user.id)
-      
+
       return NextResponse.json({
-        success: true,
-        message: "Course chapters updated successfully",
-        slug: validatedData.slug,
+        data: {
+          success: true,
+          message: "Course chapters updated successfully",
+          slug: validatedData.slug,
+        }
       })
     } catch (serviceError) {
       if ((serviceError as Error).message === "Unauthorized access to this course") {

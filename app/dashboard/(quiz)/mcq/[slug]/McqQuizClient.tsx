@@ -11,7 +11,7 @@ import { useSelector } from "react-redux"
 
 // ⚡ PERFORMANCE: Lazy load heavy components with framer-motion
 const McqQuizWrapper = lazy(() => import("../components/McqQuizWrapper"))
-const QuizPlayLayout = lazy(() => import("../../components/layouts/QuizPlayLayout"))
+const QuizPlayInterface = lazy(() => import("@/components/dashboard/QuizPlayInterface").then(module => ({ default: module.QuizPlayInterface })))
 
 interface McqQuizClientProps {
   params: Promise<{ slug: string }>
@@ -43,7 +43,7 @@ export default function McqQuizClient({ params }: McqQuizClientProps) {
 
   return (
     <Suspense fallback={<div className="min-h-[200px] flex items-center justify-center"><div className="animate-spin h-6 w-6 border-2 border-primary border-r-transparent rounded-full" /></div>}>
-      <QuizPlayLayout
+      <QuizPlayInterface
         quizSlug={slug}
         quizType="mcq"
         quizId={slug}
@@ -52,7 +52,7 @@ export default function McqQuizClient({ params }: McqQuizClientProps) {
         quizData={quizData || null}
       >
         <McqQuizWrapper slug={slug} />
-      </QuizPlayLayout>
+      </QuizPlayInterface>
     </Suspense>
   )
 }

@@ -356,7 +356,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                 initial="initial"
                 animate="animate"
                 transition={{ delay: 0.6 }}
-                className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md font-mono"
+                className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-none font-mono"
               >
                 <div className="flex items-center gap-2 mb-1">
                   <Bug className="h-3 w-3" />
@@ -373,7 +373,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               initial="initial"
               animate="animate"
               transition={{ delay: 0.7 }}
-              className="bg-muted/30 rounded-lg p-4 space-y-3"
+              className="bg-muted/30 rounded-none p-4 space-y-3"
             >
               <h3 className="font-semibold text-sm flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />

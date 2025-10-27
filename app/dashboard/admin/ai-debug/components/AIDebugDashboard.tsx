@@ -271,17 +271,17 @@ export default function AIDebugDashboard() {
           <CardContent className="space-y-4">
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-center p-4 bg-muted rounded-none">
                 <Clock className="w-5 h-5 mx-auto mb-2 text-blue-500" />
                 <div className="text-2xl font-bold">{result.data.duration}ms</div>
                 <div className="text-xs text-muted-foreground">Duration</div>
               </div>
-              <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-center p-4 bg-muted rounded-none">
                 <div className="text-2xl font-bold">{result.data.status}</div>
                 <div className="text-xs text-muted-foreground">HTTP Status</div>
               </div>
               {result.data.data?.creditsRemaining !== undefined && (
-                <div className="text-center p-4 bg-muted rounded-lg">
+                <div className="text-center p-4 bg-muted rounded-none">
                   <div className="text-2xl font-bold">{result.data.data.creditsRemaining}</div>
                   <div className="text-xs text-muted-foreground">Credits Remaining</div>
                 </div>
@@ -291,7 +291,7 @@ export default function AIDebugDashboard() {
             {/* Request */}
             <div>
               <h4 className="font-semibold mb-2">Request Payload:</h4>
-              <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-xs">
+              <pre className="bg-muted p-4 rounded-none overflow-x-auto text-xs">
                 {JSON.stringify(testConfigs[result.type].payload, null, 2)}
               </pre>
             </div>
@@ -300,7 +300,7 @@ export default function AIDebugDashboard() {
             {result.data.success ? (
               <div>
                 <h4 className="font-semibold mb-2">Response Data:</h4>
-                <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-xs max-h-96">
+                <pre className="bg-muted p-4 rounded-none overflow-x-auto text-xs max-h-96">
                   {JSON.stringify(result.data.data, null, 2)}
                 </pre>
               </div>

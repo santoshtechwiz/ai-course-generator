@@ -344,7 +344,7 @@ export default function BlanksQuiz(props: any) {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-center"
+          className="mb-4 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-none text-center"
           role="alert"
           aria-live="polite"
         >
@@ -364,7 +364,7 @@ export default function BlanksQuiz(props: any) {
         <motion.div className="text-center space-y-4">
           {/* Quiz Type Badge */}
           <div className="flex justify-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-none">
               <FileText className="w-4 h-4 text-primary" aria-hidden="true" />
               <span className="text-sm font-medium text-primary">Fill in the Blank</span>
             </div>
@@ -374,7 +374,7 @@ export default function BlanksQuiz(props: any) {
         {/* Question Content - Simplified */}
         <motion.div
           variants={itemVariants}
-          className="w-full max-w-3xl mx-auto p-6 bg-card rounded-lg border border-border shadow-sm"
+          className="w-full max-w-3xl mx-auto p-6 bg-card rounded-none border border-border neo-shadow"
           role="main"
           aria-label="Quiz question"
         >
@@ -400,7 +400,7 @@ export default function BlanksQuiz(props: any) {
                   placeholder="Your answer"
                   disabled={isQuizCompleted}
                   className={cn(
-                    "text-center font-semibold border-2 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md",
+                    "text-center font-semibold border-2 rounded-xl transition-all duration-300 neo-shadow hover:shadow-md",
                     "text-base sm:text-lg py-4 px-6 focus:ring-0 focus:ring-offset-0",
                     "bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50",
                     "min-h-[3rem]",
@@ -456,7 +456,7 @@ export default function BlanksQuiz(props: any) {
                   placeholder="Enter your answer"
                   disabled={isQuizCompleted}
                   className={cn(
-                    "text-center font-medium border-2 rounded-lg transition-all duration-200",
+                    "text-center font-medium border-2 rounded-none transition-all duration-200",
                     "text-base py-3 px-4",
                     isAnswered
                       ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300"

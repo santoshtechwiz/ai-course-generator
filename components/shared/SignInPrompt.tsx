@@ -339,7 +339,7 @@ export default function SignInPrompt({
       case 'inline':
       default:
         return (
-          <div className={`w-full p-6 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 ${className}`}>
+          <div className={`w-full p-6 bg-white dark:bg-gray-900 rounded-none border border-gray-200 dark:border-gray-800 ${className}`}>
             {content}
           </div>
         )

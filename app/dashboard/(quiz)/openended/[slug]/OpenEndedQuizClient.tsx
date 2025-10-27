@@ -9,7 +9,7 @@ import { AppLoader } from "@/components/ui/loader"
 
 // ⚡ PERFORMANCE: Lazy load heavy components with framer-motion
 const OpenEndedQuizWrapper = lazy(() => import("../components/OpenEndedQuizWrapper"))
-const QuizPlayLayout = lazy(() => import("../../components/layouts/QuizPlayLayout"))
+const QuizPlayInterface = lazy(() => import("@/components/dashboard/QuizPlayInterface").then(module => ({ default: module.QuizPlayInterface })))
 
 interface OpenEndedQuizClientProps {
   params: Promise<{ slug: string }>
@@ -41,7 +41,7 @@ export default function OpenEndedQuizClient({ params }: OpenEndedQuizClientProps
 
   return (
     <Suspense fallback={<div className="min-h-[200px] flex items-center justify-center"><div className="animate-spin h-6 w-6 border-2 border-primary border-r-transparent rounded-full" /></div>}>
-      <QuizPlayLayout
+      <QuizPlayInterface
         quizSlug={slug}
         quizType="openended"
         quizData={quizData || null}
@@ -50,7 +50,7 @@ export default function OpenEndedQuizClient({ params }: OpenEndedQuizClientProps
         isFavorite={false}
       >
         <OpenEndedQuizWrapper slug={slug} />
-      </QuizPlayLayout>
+      </QuizPlayInterface>
     </Suspense>
   );
 }

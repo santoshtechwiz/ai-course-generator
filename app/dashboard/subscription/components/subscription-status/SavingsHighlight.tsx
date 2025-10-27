@@ -14,7 +14,7 @@ export default function SavingsHighlight({
   if (duration === 1 || plan.name === "FREE" || savings <= 0) return null
 
   return (
-    <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-md border-4 border-green-100 dark:border-green-800 shadow-[4px_4px_0px_0px_hsl(var(--border))]">
+    <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-none border-4 border-green-100 dark:border-green-800 shadow-[4px_4px_0px_0px_hsl(var(--border))]">
       <div className="text-sm text-green-700 dark:text-green-400 font-semibold flex items-center">
         <Sparkles className="h-4 w-4 mr-1 text-green-500" />
         Save {savings}% with bi-annual plan!

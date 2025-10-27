@@ -4,18 +4,18 @@ import React from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
-import { 
-  ArrowLeft, 
-  Trophy, 
-  BookOpen, 
-  Brain, 
+import {
+  ArrowLeft,
+  Trophy,
+  BookOpen,
+  Brain,
   Code,
   FileText,
   Award
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-interface QuizResultLayoutProps {
+interface QuizResultInterfaceProps {
   children: React.ReactNode
   title?: string
   quizType?: "mcq" | "code" | "blanks" | "openended" | "flashcard" | "ordering" | "quiz" | "others"
@@ -25,7 +25,7 @@ interface QuizResultLayoutProps {
 
 const quizTypeLabels: Record<string, string> = {
   mcq: "Multiple Choice",
-  code: "Code Quiz", 
+  code: "Code Quiz",
   blanks: "Fill Blanks",
   openended: "Open Ended",
   flashcard: "Flashcards",
@@ -54,18 +54,18 @@ const getDifficultyColor = (difficulty: string) => {
   }
 }
 
-export default function QuizResultLayout({ 
-  children, 
-  title = "Quiz Results", 
-  quizType = "quiz", 
+export function QuizResultInterface({
+  children,
+  title = "Quiz Results",
+  quizType = "quiz",
   slug,
   difficulty = "medium"
-}: QuizResultLayoutProps) {
+}: QuizResultInterfaceProps) {
   const QuizIcon = quizTypeIcons[quizType] || Award
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
-      <motion.header 
+      <motion.header
         className="sticky top-0 z-30 bg-[var(--color-card)] border-b-4 border-[var(--color-border)] shadow-[var(--shadow-neo)]"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -73,7 +73,7 @@ export default function QuizResultLayout({
       >
         <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <motion.div 
+            <motion.div
               className="flex items-center gap-4 w-full sm:w-auto"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -87,14 +87,14 @@ export default function QuizResultLayout({
                   {title}
                 </h1>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
-                  <Badge 
-                    variant="neutral" 
+                  <Badge
+                    variant="neutral"
                     className="bg-[var(--color-muted)] text-[var(--color-text)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] font-bold"
                   >
                     {quizTypeLabels[quizType] || "Quiz"}
                   </Badge>
                   {difficulty && (
-                    <Badge 
+                    <Badge
                       className={cn(
                         "border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] font-black",
                         getDifficultyColor(difficulty)
@@ -118,7 +118,7 @@ export default function QuizResultLayout({
               transition={{ delay: 0.3 }}
               className="w-full sm:w-auto"
             >
-              <Button 
+              <Button
                 onClick={() => window.history.back()}
                 variant="neutral"
                 className="flex items-center gap-2 hover:scale-105 transition-transform w-full sm:w-auto justify-center bg-[var(--color-primary)] text-[var(--color-text)] border-4 border-[var(--color-border)] shadow-[var(--shadow-neo)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none font-bold"

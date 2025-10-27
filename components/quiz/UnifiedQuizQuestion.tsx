@@ -94,7 +94,6 @@ const MCQOption = memo(({
   onSelect: (id: string) => void
   quizType?: QuizQuestionType
 }) => {
-  const styles = getColorClasses(quizType) // Dynamic color based on quiz type
   const isDisabled = isAnswering || isSubmitting
 
   // Color mappings for different quiz types using theme colors
@@ -142,10 +141,10 @@ const MCQOption = memo(({
         htmlFor={`option-${option.id}`}
         className={cn(
           "relative flex items-center gap-4 p-4 w-full cursor-pointer transition-all duration-100 overflow-hidden",
-          "bg-[var(--color-card)] border-4 border-[var(--color-border)] rounded-[var(--radius)]",
+          "bg-card border-4 border-border rounded-none",
           isSelected
-            ? "bg-[var(--color-accent)] text-[var(--color-text)] shadow-[var(--shadow-neo)]"
-            : "bg-[var(--color-card)] text-[var(--color-text)] shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#000] hover:bg-[var(--color-muted)]",
+            ? "bg-accent text-background shadow-neo"
+            : "bg-card text-foreground shadow-neo hover:shadow-neo-hover hover:bg-muted",
           isDisabled && "opacity-60 cursor-not-allowed"
         )}
         onClick={() => !isDisabled && onSelect(option.id)}
@@ -156,7 +155,7 @@ const MCQOption = memo(({
         <AnimatePresence>
           {isSelected && (
             <motion.div
-              className="absolute inset-0 rounded-[var(--radius)] bg-[var(--color-accent)] opacity-20"
+              className="absolute inset-0 rounded-none bg-[var(--color-accent)] opacity-20"
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 0.2 }}
               exit={{ scale: 0, opacity: 0 }}
@@ -178,7 +177,7 @@ const MCQOption = memo(({
 
         <motion.div
           className={cn(
-            "flex items-center justify-center w-10 h-10 rounded-md font-black text-base transition-all duration-100 border-2 border-[var(--color-border)] relative z-10 uppercase",
+            "flex items-center justify-center w-10 h-10 rounded-none font-black text-base transition-all duration-100 border-2 border-[var(--color-border)] relative z-10 uppercase",
             isSelected
               ? "bg-[var(--color-text)] text-[var(--color-bg)] shadow-[2px_2px_0_#000]"
               : "bg-[var(--color-muted)] text-[var(--color-text)] hover:bg-[var(--color-accent)] hover:text-[var(--color-text)]"
@@ -260,7 +259,7 @@ const MCQOption = memo(({
               className="relative z-10"
             >
               <div className={cn(
-                "p-1 border-2 border-border rounded-full shadow-[2px_2px_0px_0px_hsl(var(--border))]",
+                "p-1 border-2 border-border rounded-none shadow-[2px_2px_0px_0px_hsl(var(--border))]",
                 colors.bg
               )}>
                 <CheckCircle2 className="w-4 h-4 text-white" />
@@ -277,7 +276,7 @@ const MCQOption = memo(({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className={cn(
-                "absolute inset-0 rounded-lg flex items-center justify-center z-20 border-4 border-border",
+                "absolute inset-0 rounded-none flex items-center justify-center z-20 border-4 border-border",
                 `${colors.light}`
               )}
             >
@@ -449,7 +448,7 @@ function UnifiedQuizQuestionComponent({
 
   const renderBlanksContent = useCallback(() => {
     const blanksQuestion = question as BlanksQuestion
-    const styles = getColorClasses('blanks')
+    const styles = getColorClasses()
 
     return (
       <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 px-2 sm:px-4">
@@ -512,7 +511,7 @@ function UnifiedQuizQuestionComponent({
     const wordCount = selectedAnswer.trim().split(/\s+/).filter(word => word.length > 0).length
     const minWords = openEndedQuestion.minWords || 10
     const maxWords = openEndedQuestion.maxWords || 200
-    const styles = getColorClasses('openended')
+    const styles = getColorClasses()
 
     return (
       <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 px-2 sm:px-4">
@@ -578,7 +577,7 @@ function UnifiedQuizQuestionComponent({
 
   const renderCodeContent = useCallback(() => {
     const codeQuestion = question as CodeQuestion
-    const styles = getColorClasses('code') // Code uses green accent (#10B981)
+    const styles = getColorClasses() // Code uses green accent (#10B981)
 
     return (
       <div className="w-full max-w-5xl mx-auto space-y-4 sm:space-y-6 px-2 sm:px-4">
@@ -591,7 +590,7 @@ function UnifiedQuizQuestionComponent({
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className={cn(
-                  "p-2 bg-[var(--color-success)] border-2 border-border rounded-md shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+                  "p-2 bg-[var(--color-success)] border-2 border-border rounded-none neo-shadow"
                 )}>
                   <BookOpen className="w-5 h-5 text-[var(--color-bg)]" />
                 </div>
@@ -602,14 +601,14 @@ function UnifiedQuizQuestionComponent({
               <span className={cn(
                 getColorClasses().badge,
                 "text-xs font-mono font-black",
-                "bg-[var(--color-success)] text-[var(--color-bg)] px-3 py-1 rounded-lg border-4 border-black shadow-[3px_3px_0_#000]"
+                "bg-[var(--color-success)] text-[var(--color-bg)] px-3 py-1 rounded-none border-4 border-black shadow-[3px_3px_0_#000]"
               )}>
                 {codeQuestion.language || 'JAVASCRIPT'}
               </span>
             </div>
             
             {/* Code editor with toned-down Neobrutalism border */}
-            <div className="rounded-lg overflow-hidden border-3 border-border shadow-[6px_6px_0px_0px_hsl(var(--border))]">
+            <div className="rounded-none overflow-hidden border-3 border-border shadow-[6px_6px_0px_0px_hsl(var(--border))]">
               <SyntaxHighlighter
                 language={codeQuestion.language || 'javascript'}
                 style={atomOneDark}
@@ -676,7 +675,7 @@ function UnifiedQuizQuestionComponent({
 
         {/* Quiz Type Indicator with Dynamic Colors */}
         <div className="flex items-center justify-center">
-          <div className={cn("flex items-center gap-2 px-3 py-1 rounded-xl", neo.inner, "bg-secondary/50")}>
+          <div className={cn("flex items-center gap-2 px-3 py-1 rounded-none", neo.inner, "bg-secondary/50")}>
             <CheckCircle2 className="w-4 h-4 text-[var(--color-primary)]" />
             <span className="text-sm font-bold text-foreground uppercase">
               {question.type === 'mcq' && 'Multiple Choice'}

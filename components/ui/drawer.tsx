@@ -28,7 +28,7 @@ const DrawerClose = React.forwardRef<
   <DrawerPrimitive.Close
     ref={ref}
     className={cn(
-      "absolute right-4 top-4 rounded-md border-4 border-black bg-[var(--color-bg)] p-2 shadow-[4px_4px_0_#000] transition-colors hover:bg-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+      "absolute right-4 top-4 rounded-none border-4 border-black bg-[var(--color-bg)] p-2 shadow-[4px_4px_0_#000] transition-colors hover:bg-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
       className
     )}
     {...props}

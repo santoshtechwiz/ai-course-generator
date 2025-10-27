@@ -195,7 +195,7 @@ export const PaymentMethodsView = ({ userId }: PaymentMethodProps) => {
             {paymentMethods.map((method) => (
               <div 
                 key={method.id}
-                className="flex items-center justify-between p-4 rounded-lg border border-border"
+                className="flex items-center justify-between p-4 rounded-none border border-border"
               >
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-14 flex items-center justify-center rounded bg-accent/10">
@@ -252,7 +252,7 @@ export const PaymentMethodsView = ({ userId }: PaymentMethodProps) => {
         
         {/* Card addition modal */}
         {showAddCard && (
-          <div className="mt-6 p-6 border rounded-lg bg-card">
+          <div className="mt-6 p-6 border rounded-none bg-card">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">Add Payment Method</h3>
               <Button
@@ -280,7 +280,7 @@ export const PaymentMethodsView = ({ userId }: PaymentMethodProps) => {
             </div>
             
             <div className="space-y-4">
-              <div className="flex items-center justify-center p-8 border-2 border-dashed rounded-md border-muted">
+              <div className="flex items-center justify-center p-8 border-2 border-dashed rounded-none border-muted">
                 <div className="text-center space-y-2">
                   <CreditCard className="h-10 w-10 text-muted-foreground mx-auto" />
                   <h3 className="font-medium">Stripe integration coming soon</h3>

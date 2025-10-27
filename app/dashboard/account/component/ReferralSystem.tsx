@@ -127,11 +127,11 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
         <CardContent className="pt-6 space-y-4">
           <div className="grid grid-cols-3 gap-4 mb-6">
             {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-20 rounded-lg" />
+              <Skeleton key={i} className="h-20 rounded-none" />
             ))}
           </div>
-          <Skeleton className="h-10 rounded-lg" />
-          <Skeleton className="h-10 rounded-lg" />
+          <Skeleton className="h-10 rounded-none" />
+          <Skeleton className="h-10 rounded-none" />
         </CardContent>
       </Card>
     )
@@ -220,7 +220,7 @@ export function ReferralSystem({ userId }: ReferralSystemProps) {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg text-center">
+    <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-none text-center">
       <p className="text-sm text-muted-foreground mb-1">{label}</p>
       <p className="text-2xl font-bold">{value}</p>
     </div>

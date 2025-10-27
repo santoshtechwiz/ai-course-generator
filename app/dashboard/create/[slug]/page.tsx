@@ -19,9 +19,17 @@ export default async function CreateChapters({ params }: { params: Promise<{ slu
   const session = await getAuthSession()
   if (!session?.user) {
     return redirect("/dashboard")
-  }  const course = await getCourses(slug)
+  }
+  
+  const course = await getCourses(slug)
 
   if (!course) {
+    return redirect("/dashboard")
+  }
+
+  // Verify course ownership - user can only edit their own courses
+  if (course.userId !== session.user.id) {
+    console.error(`Access denied: User ${session.user.id} tried to access course ${course.id} owned by ${course.userId}`)
     return redirect("/dashboard")
   }
 
@@ -43,8 +51,9 @@ export default async function CreateChapters({ params }: { params: Promise<{ slu
 
 
   return (
-    <div className="flex flex-col min-h-screen bg-shadcn-primary-50">
-      <div className="flex flex-col flex-grow p-4 md:flex-row md:space-x-4">        <div className="w-full md:w-2/3 bg-shadcn-white rounded-lg shadow-md p-4 mb-4 md:mb-0">
+    <div className="flex flex-col min-h-screen bg-background">
+      <div className="flex flex-col flex-grow p-2 sm:p-4 md:flex-row md:space-x-4">
+        <div className="w-full md:w-2/3 bg-card rounded-none border-4 border-border shadow-neo p-2 sm:p-4 mb-4 md:mb-0">
           <EnhancedConfirmChapters course={finalCourse} />
         </div>
         <div className="w-full md:w-1/3">

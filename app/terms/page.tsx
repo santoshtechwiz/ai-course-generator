@@ -45,7 +45,7 @@ export default function TermsOfService() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="w-full px-0 py-8">
       <JsonLD type="webPage" data={termsSchema} />
 
       <h1 className="text-2xl font-bold mb-6 text-foreground">Terms of Service</h1>

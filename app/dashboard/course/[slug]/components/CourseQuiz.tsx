@@ -107,10 +107,10 @@ const QuizSkeleton = () => (
     <CardContent className="p-8 space-y-6">
       <Skeleton className="h-6 w-48" />
       {Array.from({ length: 4 }).map((_, i) => (
-        <Skeleton key={i} className="h-10 w-full rounded-md" />
+        <Skeleton key={i} className="h-10 w-full rounded-none" />
       ))}
       <div className="flex justify-end">
-        <Skeleton className="h-10 w-24 rounded-md" />
+        <Skeleton className="h-10 w-24 rounded-none" />
       </div>
     </CardContent>
   </Card>
@@ -405,7 +405,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
           {Array.isArray(currentQuestion.options) && currentQuestion.options.map((opt: string, idx: number) => (
             <div
               key={idx}
-              className="flex items-center space-x-3 p-4 border border-muted rounded-lg bg-white hover:bg-muted/10 transition-all duration-200 cursor-pointer"
+              className="flex items-center space-x-3 p-4 border border-muted rounded-none bg-white hover:bg-muted/10 transition-all duration-200 cursor-pointer"
             >
               <RadioGroupItem value={opt} id={`option-${idx}`} className="text-foreground" />
               <Label htmlFor={`option-${idx}`} className="cursor-pointer text-base flex-1">
@@ -453,7 +453,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
           </div>
 
           {/* Score Display */}
-          <div className="bg-white/80 rounded-xl p-6 border border-muted/50 shadow-sm">
+          <div className="bg-white/80 rounded-xl p-6 border border-muted/50 neo-shadow">
             <div className="text-2xl font-bold text-foreground mb-2">
               {quizState.score} out of {effectiveQuestions.length}
             </div>
@@ -499,7 +499,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
               <div
                 key={q.id}
                 className={cn(
-                  "p-6 rounded-xl border-2 shadow-sm transition-all duration-200",
+                  "p-6 rounded-xl border-2 neo-shadow transition-all duration-200",
                   isCorrect
                     ? "border-green-300 bg-green-50/80 dark:bg-green-900/20 dark:border-green-700"
                     : "border-red-300 bg-red-50/80 dark:bg-red-900/20 dark:border-red-700",
@@ -559,7 +559,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
             onClick={() => window.location.reload()}
             variant="outline"
             size="lg"
-            className="flex-1 sm:flex-none min-w-[200px] border-muted text-foreground hover:bg-muted/10 shadow-sm hover:shadow-md transition-all duration-200"
+            className="flex-1 sm:flex-none min-w-[200px] border-muted text-foreground hover:bg-muted/10 neo-shadow hover:shadow-md transition-all duration-200"
           >
             <Home className="h-4 w-4 mr-2" />
             Back to Course
@@ -569,7 +569,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
             onClick={() => window.print()}
             variant="outline"
             size="lg"
-            className="flex-1 sm:flex-none min-w-[200px] border-muted text-foreground hover:bg-muted/10 shadow-sm hover:shadow-md transition-all duration-200"
+            className="flex-1 sm:flex-none min-w-[200px] border-muted text-foreground hover:bg-muted/10 neo-shadow hover:shadow-md transition-all duration-200"
           >
             <Download className="h-4 w-4 mr-2" />
             Print Results
@@ -579,15 +579,15 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
         {/* Additional Stats */}
         <div className="mt-6 pt-6 border-t border-muted/50">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-            <div className="bg-white/80 rounded-lg p-4 border border-muted/30">
+            <div className="bg-white/80 rounded-none p-4 border border-muted/30">
               <div className="text-2xl font-bold text-foreground">{effectiveQuestions.length}</div>
               <div className="text-sm text-muted-foreground">Total Questions</div>
             </div>
-            <div className="bg-white/80 rounded-lg p-4 border border-muted/30">
+            <div className="bg-white/80 rounded-none p-4 border border-muted/30">
               <div className="text-2xl font-bold text-green-600 dark:text-green-400">{quizState.score}</div>
               <div className="text-sm text-muted-foreground">Correct Answers</div>
             </div>
-            <div className="bg-white/80 rounded-lg p-4 border border-muted/30">
+            <div className="bg-white/80 rounded-none p-4 border border-muted/30">
               <div className="text-2xl font-bold text-foreground">
                 {Math.round((quizState.score / effectiveQuestions.length) * 100)}%
               </div>

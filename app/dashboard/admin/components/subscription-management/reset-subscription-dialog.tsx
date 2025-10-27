@@ -108,7 +108,7 @@ export function ResetSubscriptionDialog({ userId, open, onOpenChange, onSuccess 
 
         {isComplete ? (
           <div className="py-6 flex flex-col items-center justify-center text-center">
-            <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3 mb-4 shadow-sm">
+            <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3 mb-4 neo-shadow">
               <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
             <h3 className="text-lg font-medium mb-2 text-foreground">Subscription Reset Complete</h3>
@@ -154,7 +154,7 @@ export function ResetSubscriptionDialog({ userId, open, onOpenChange, onSuccess 
               </RadioGroup>
             </div>
 
-            <div className="bg-amber-50 dark:bg-amber-950/20 p-3 rounded-md flex gap-3 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/30 shadow-sm">
+            <div className="bg-amber-50 dark:bg-amber-950/20 p-3 rounded-none flex gap-3 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/30 neo-shadow">
               <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
               <div className="text-sm">
                 <p className="font-medium">Important:</p>
@@ -177,7 +177,7 @@ export function ResetSubscriptionDialog({ userId, open, onOpenChange, onSuccess 
               <Button
                 onClick={handleReset}
                 disabled={isResetting}
-                className="shadow-sm hover:shadow-md transition-all duration-200"
+                className="neo-shadow hover:shadow-md transition-all duration-200"
               >
                 {isResetting ? (
                   <>

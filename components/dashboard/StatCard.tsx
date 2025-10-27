@@ -100,7 +100,7 @@ export function StatCard({
           {Icon && (
             <div
               className={cn(
-                "h-12 w-12 rounded-lg flex items-center justify-center",
+                "h-12 w-12 rounded-none flex items-center justify-center",
                 styles.icon
               )}
             >

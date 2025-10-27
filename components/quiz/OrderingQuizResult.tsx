@@ -170,7 +170,7 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
             {/* Key Metrics */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {/* Accuracy */}
-              <div className="p-3 border-6 border-[var(--color-accent)]/50 rounded-lg bg-[var(--color-accent)]/20">
+              <div className="p-3 border-6 border-[var(--color-accent)]/50 rounded-none bg-[var(--color-accent)]/20">
                 <div className="flex items-center gap-2 mb-1">
                   <Target className="h-4 w-4 text-[var(--color-accent)]" />
                   <span className="text-xs font-bold text-[var(--color-accent)] uppercase">Accuracy</span>
@@ -182,7 +182,7 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
               </div>
 
               {/* Time */}
-              <div className="p-3 border-6 border-[var(--color-secondary)]/50 rounded-lg bg-[var(--color-secondary)]/20">
+              <div className="p-3 border-6 border-[var(--color-secondary)]/50 rounded-none bg-[var(--color-secondary)]/20">
                 <div className="flex items-center gap-2 mb-1">
                   <Clock className="h-4 w-4 text-[var(--color-secondary)]" />
                   <span className="text-xs font-bold text-[var(--color-secondary)] uppercase">Time</span>
@@ -194,7 +194,7 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
               </div>
 
               {/* Speed Rating */}
-              <div className="p-3 border-6 border-[var(--color-warning)]/50 rounded-lg bg-[var(--color-warning)]/20">
+              <div className="p-3 border-6 border-[var(--color-warning)]/50 rounded-none bg-[var(--color-warning)]/20">
                 <div className="flex items-center gap-2 mb-1">
                   <Zap className="h-4 w-4 text-[var(--color-warning)]" />
                   <span className="text-xs font-bold text-[var(--color-warning)] uppercase">Speed</span>
@@ -206,7 +206,7 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
               </div>
 
               {/* Status */}
-              <div className="p-3 border-6 border-[var(--color-success)]/50 rounded-lg bg-[var(--color-success)]/20">
+              <div className="p-3 border-6 border-[var(--color-success)]/50 rounded-none bg-[var(--color-success)]/20">
                 <div className="flex items-center gap-2 mb-1">
                   <Trophy className="h-4 w-4 text-[var(--color-success)]" />
                   <span className="text-xs font-bold text-[var(--color-success)] uppercase">Status</span>
@@ -222,7 +222,7 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
 
             {/* User Comparison (if stats provided) */}
             {userStats && (
-              <div className="p-4 border-l-4 border-cyan-600 bg-cyan-900/20 rounded-lg">
+              <div className="p-4 border-l-4 border-cyan-600 bg-cyan-900/20 rounded-none">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="h-4 w-4 text-cyan-400" />
                   <span className="text-sm font-bold text-cyan-300">YOUR PROGRESS</span>
@@ -264,7 +264,7 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
                     <button
                       onClick={() => toggleStepExpand(step.stepNumber)}
                       className={cn(
-                        "w-full p-3 rounded-lg border-6 text-left transition-colors",
+                        "w-full p-3 rounded-none border-6 text-left transition-colors",
                         step.isCorrect
                           ? "border-[var(--color-success)]/50 bg-[var(--color-success)]/20 hover:bg-[var(--color-success)]/30"
                           : "border-[var(--color-error)]/50 bg-[var(--color-error)]/20 hover:bg-[var(--color-error)]/30"
@@ -320,7 +320,7 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
 
             {/* Improvement Suggestions */}
             {!metrics.isCorrect && (
-              <div className="p-4 border-l-4 border-orange-600 bg-orange-900/20 rounded-lg space-y-2">
+              <div className="p-4 border-l-4 border-orange-600 bg-orange-900/20 rounded-none space-y-2">
                 <h4 className="text-sm font-bold text-orange-300 uppercase">💡 SUGGESTIONS</h4>
                 <ul className="space-y-1">
                   {suggestions.map((suggestion, idx) => (
@@ -338,7 +338,7 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-3 bg-[var(--color-success)]/20 border-6 border-[var(--color-success)] rounded-lg text-center text-[var(--color-success)] font-bold"
+                className="p-3 bg-[var(--color-success)]/20 border-6 border-[var(--color-success)] rounded-none text-center text-[var(--color-success)] font-bold"
               >
                 {shareMessage}
               </motion.div>
@@ -365,7 +365,7 @@ export const OrderingQuizResult: React.FC<OrderingQuizResultProps> = ({
             </div>
 
             {/* Quiz Info */}
-            <div className="p-3 bg-black/40 border-l-4 border-white/20 rounded-lg text-xs text-white/70 space-y-1">
+            <div className="p-3 bg-black/40 border-l-4 border-white/20 rounded-none text-xs text-white/70 space-y-1">
               <div>
                 <strong className="text-white">Topic:</strong> {topic}
               </div>

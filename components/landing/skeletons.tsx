@@ -59,7 +59,7 @@ export function FeaturesSkeleton() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="text-center space-y-4">
-              <Skeleton className="h-12 w-12 mx-auto rounded-lg" />
+              <Skeleton className="h-12 w-12 mx-auto rounded-none" />
               <Skeleton className="h-6 w-32 mx-auto" />
               <div className="space-y-2">
                 <Skeleton className="h-4 w-full" />
@@ -136,7 +136,7 @@ export function FAQSkeleton() {
         {/* FAQ Items */}
         <div className="space-y-4">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="bg-card rounded-lg p-6 border border-border">
+            <div key={i} className="bg-card rounded-none p-6 border border-border">
               <div className="flex items-center justify-between">
                 <Skeleton className="h-6 flex-1 mr-4" />
                 <Skeleton className="h-5 w-5 rounded-sm" />

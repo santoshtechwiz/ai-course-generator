@@ -103,7 +103,7 @@ export function UpgradePrompt({ resource, onClose }: UpgradePromptProps) {
           </div>
 
           {/* Upgrade CTA */}
-          <div className="bg-primary/10 p-4 rounded-lg border-4 border-primary/20 shadow-neo">
+          <div className="bg-primary/10 p-4 rounded-none border-4 border-primary/20 shadow-neo">
             <div className="flex items-start gap-3">
               <Crown className="h-6 w-6 text-purple-600 flex-shrink-0 mt-1" />
               <div className="flex-1">

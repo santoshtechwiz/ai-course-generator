@@ -54,7 +54,7 @@ export function RelatedQuizSuggestions({
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {quizzes.slice(0, 3).map((q) => (
-          <Link key={q.id} href={`/dashboard/${q.quizType}/${q.slug}`} className="group rounded-lg border bg-card p-3 hover:border-primary/50 transition-colors">
+          <Link key={q.id} href={`/dashboard/${q.quizType}/${q.slug}`} className="group rounded-none border bg-card p-3 hover:border-primary/50 transition-colors">
             <div className="text-sm font-medium line-clamp-1 group-hover:text-primary">{q.title}</div>
               <div className="mt-1 text-xs text-muted-foreground flex items-center gap-2">
               <Badge variant="neutral" className={cn(neo.badge, "text-[10px]")}>{q.quizType}</Badge>

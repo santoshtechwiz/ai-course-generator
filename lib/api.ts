@@ -3,7 +3,6 @@
  */
 
 import { toast } from "@/components/ui/use-toast"
-import { HTTP_STATUS } from "@/constants/global"
 
 // Types
 interface ApiResponse<T = any> {

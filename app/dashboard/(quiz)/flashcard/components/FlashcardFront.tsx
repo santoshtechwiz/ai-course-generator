@@ -41,7 +41,7 @@ export function FlashcardFront({
       exit={{ opacity: 0, rotateY: -90 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
-  <div className="w-full bg-card border-4 border-border rounded-lg shadow-neo p-1 sm:p-1.5 hover:shadow-neo-lg transition-all duration-200">
+  <div className="w-full bg-card border-4 border-border rounded-none shadow-neo p-1 sm:p-1.5 hover:shadow-neo-lg transition-all duration-200">
         {/* Header with Icon Badge */}
         <div className="flex items-center justify-between flex-wrap gap-2 sm:gap-3 mb-2 sm:mb-3">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -51,12 +51,12 @@ export function FlashcardFront({
             </div>
             
             {/* Type Badge */}
-            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-[var(--color-accent)] text-[var(--color-bg)] border-3 sm:border-4 border-border shadow-neo-sm font-black rounded-md hidden">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-[var(--color-accent)] text-[var(--color-bg)] border-3 sm:border-4 border-border shadow-neo-sm font-black rounded-none hidden">
               <span className="text-xs sm:text-sm tracking-wide">FLASHCARD</span>
             </div>
             
             {type === 'code' && (
-              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-[var(--color-success)] text-[var(--color-bg)] border-3 sm:border-4 border-border shadow-neo-sm font-black rounded-md">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-[var(--color-success)] text-[var(--color-bg)] border-3 sm:border-4 border-border shadow-neo-sm font-black rounded-none">
                 <Code2 className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="text-xs">Code</span>
               </div>
@@ -78,7 +78,7 @@ export function FlashcardFront({
           </div>
 
           {type === 'code' && codeSnippet && (
-            <div className="border-3 border-border shadow-neo overflow-hidden rounded-md">
+            <div className="border-3 border-border shadow-neo overflow-hidden rounded-none">
               <div className="bg-[var(--color-card)] px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between border-b-3 sm:border-b-4 border-border">
                 <div className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 bg-[var(--color-success)] text-[var(--color-bg)] border-2 border-border shadow-neo-sm font-bold rounded-sm">
                   <Code2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />

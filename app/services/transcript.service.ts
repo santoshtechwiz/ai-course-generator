@@ -1,11 +1,12 @@
 import { TranscriptProvider } from '@/app/types/transcript';
 import { TranscriptResult } from '@/app/types/transcript';
+import YoutubeService from '@/services/youtubeService';
 
 // // Helper functions for fetching from different providers
 // export async function getVoskTranscript(videoId: string, videoUrl: string): Promise<TranscriptResult> {
 //   try {
 //     const result = await voskService.transcribeVideo(videoUrl);
-    
+
 //     if (result.status === 'failed') {
 //       return {
 //         status: 500,
@@ -33,11 +34,8 @@ export async function getTranscriptWithProvider(
   videoUrl: string,
   provider: TranscriptProvider
 ): Promise<TranscriptResult> {
-  switch (provider) {
-    case 'vosk':
-      return getVoskTranscript(videoId, videoUrl);
-      
-    default:
-      throw new Error(`Unsupported transcript provider: ${provider}`);
-  }
+
+  return YoutubeService.fetchTranscript(videoId);
 }
+
+

@@ -39,7 +39,7 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+        "fixed inset-0 z-[70] bg-overlay data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         className,
       )}
       {...props}
@@ -58,15 +58,13 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 border-4 border-[var(--color-border)] bg-[var(--color-card)] p-4 sm:p-6 shadow-[var(--shadow-neo)] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 overflow-hidden",
+          "bg-[var(--color-card)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-[75] grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 border-6 border-[var(--color-border)] neo-shadow-heavy rounded-none p-6 shadow-[8px_8px_0_var(--shadow-color)] duration-200 sm:max-w-lg",
           className,
         )}
         {...props}
       >
-        <div className="overflow-y-auto max-h-full">
-          {children}
-        </div>
-        <DialogPrimitive.Close className="absolute right-3 top-3 z-10 rounded-none border-2 border-[var(--color-border)] bg-[var(--color-bg)] p-1 shadow-[2px_2px_0_var(--color-border)] hover:bg-[var(--color-card)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg)] disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 text-[var(--color-text)]">
+        {children}
+        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-none opacity-100 ring-offset-white focus:outline-hidden focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 border-4 border-[var(--color-border)] bg-[var(--color-bg)] neo-shadow hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_var(--shadow-color)] transition-all duration-150 p-1">
           <X />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
@@ -106,7 +104,7 @@ function DialogTitle({
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        "text-xl font-black text-[var(--color-text)] leading-tight tracking-tight",
+        "text-lg font-heading leading-none tracking-tight",
         className,
       )}
       {...props}
@@ -121,7 +119,7 @@ function DialogDescription({
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn("text-sm text-[var(--color-text)]/70 leading-relaxed", className)}
+      className={cn("text-sm font-base text-[var(--color-muted)]", className)}
       {...props}
     />
   )
@@ -129,8 +127,8 @@ function DialogDescription({
 
 export {
   Dialog,
-  
-  
+  DialogPortal,
+  DialogOverlay,
   DialogClose,
   DialogTrigger,
   DialogContent,

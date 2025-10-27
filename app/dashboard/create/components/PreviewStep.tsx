@@ -14,34 +14,37 @@ export function PreviewStep({ watch }: PreviewStepProps) {
   const units = watch("units")
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold">Course Preview</h3>
-        <p className="text-sm text-muted-foreground">This is how your course will appear to students.</p>
+        <h3 className="text-base sm:text-lg font-bold text-foreground">Course Preview</h3>
+        <p className="text-xs sm:text-sm text-muted-foreground">This is how your course will appear to students.</p>
       </div>
 
-      <div className="space-y-4 p-6 bg-muted rounded-lg">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">{title || "Course Title"}</h2>
+      <div className="space-y-4 p-4 sm:p-6 bg-card rounded-none border-4 border-border shadow-neo">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground break-words">{title || "Course Title"}</h2>
           {category && (
-            <Badge variant="secondary" className="text-xs font-medium">
+            <Badge
+              variant="secondary"
+              className="text-xs sm:text-sm font-medium border-4 border-border whitespace-nowrap"
+            >
               {category}
             </Badge>
           )}
         </div>
-        <p className="text-muted-foreground">{description || "Course Description"}</p>
+        <p className="text-sm sm:text-base text-muted-foreground break-words">{description || "Course Description"}</p>
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold flex items-center">
-            <BookOpen className="mr-2 h-5 w-5" />
+          <h3 className="text-base sm:text-lg font-bold flex items-center gap-2 text-foreground">
+            <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-accent flex-shrink-0" />
             Course Content
           </h3>
           <div className="space-y-2">
             {units.map((unit, index) => (
-              <div key={index} className="flex items-center space-x-3">
-                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-medium text-sm">
+              <div key={index} className="flex items-center gap-3">
+                <span className="flex items-center justify-center w-8 h-8 rounded-none bg-accent text-background font-medium text-xs sm:text-sm font-black border-4 border-border flex-shrink-0">
                   {index + 1}
                 </span>
-                <span className="text-base">{unit || `Unit ${index + 1}`}</span>
+                <span className="text-sm sm:text-base text-foreground break-words">{unit || `Unit ${index + 1}`}</span>
               </div>
             ))}
           </div>
