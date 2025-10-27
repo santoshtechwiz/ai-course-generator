@@ -286,10 +286,10 @@ class VideoService {
     let lastError: Error | null = null
 
     // Check if quota is disabled before attempting any searches
-    if (quotaManager.isDisabled()) {
-      console.error("[VideoService] YouTube API quota disabled - cannot search for videos")
-      throw new Error("quota_exceeded")
-    }
+    // if (quotaManager.isDisabled()) {
+    //   console.error("[VideoService] YouTube API quota disabled - cannot search for videos")
+    //   throw new Error("quota_exceeded")
+    // }
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
