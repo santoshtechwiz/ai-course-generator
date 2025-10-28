@@ -1,16 +1,16 @@
 /**
  * app/dashboard/create/components/VideoProgressIndicator.tsx
  * 
- * REFACTORED: Clean progress indicator with Nerobrutal theme
- * - Consistent styling with border-4 and shadow-neo
- * - Clear visual states
- * - Proper button styling
+ * OPTIMIZED: Instant progress updates with smooth animations
+ * - Memoized for performance
+ * - Smooth progress transitions
+ * - Real-time status reflection
  */
 
 "use client"
 
-import React from "react"
-import { Loader2, CheckCircle, XCircle, AlertCircle, RefreshCcw, X } from "lucide-react"
+import React, { memo, useMemo } from "react"
+import { Loader2, CheckCircle, XCircle, AlertCircle, RefreshCcw, X, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
@@ -26,7 +26,7 @@ interface VideoProgressIndicatorProps {
   className?: string
 }
 
-export function VideoProgressIndicator({
+const VideoProgressIndicator = memo<VideoProgressIndicatorProps>(({
   status,
   onRetry,
   onCancel,
@@ -34,11 +34,11 @@ export function VideoProgressIndicator({
   size = "md",
   showLabel = true,
   className,
-}: VideoProgressIndicatorProps) {
+}) => {
   const currentStatus = status?.status || "idle"
   
-  // Size configuration
-  const sizeConfig = {
+  // Size configuration - memoized
+  const sizeConfig = useMemo(() => ({
     sm: {
       iconSize: "h-3 w-3",
       progressHeight: "h-1.5",
@@ -57,74 +57,76 @@ export function VideoProgressIndicator({
       textSize: "text-base",
       buttonSize: "h-8 px-4 text-base",
     },
-  }
+  }), [])
   
   const { iconSize, progressHeight, textSize, buttonSize } = sizeConfig[size]
   
-  // Status icon and color
-  const StatusIcon = () => {
-    switch (currentStatus) {
-      case "queued":
-        return <AlertCircle className={cn(iconSize, "text-yellow-500")} />
-      case "processing":
-        return <Loader2 className={cn(iconSize, "text-blue-500 animate-spin")} />
-      case "completed":
-        return <CheckCircle className={cn(iconSize, "text-green-500")} />
-      case "error":
-        return <XCircle className={cn(iconSize, "text-red-500")} />
-      default:
-        return null
+  // Memoize status icon
+  const StatusIcon = useMemo(() => {
+    const icons = {
+      queued: <Clock className={cn(iconSize, "text-yellow-500 animate-pulse")} />,
+      processing: <Loader2 className={cn(iconSize, "text-blue-500 animate-spin")} />,
+      completed: <CheckCircle className={cn(iconSize, "text-green-500")} />,
+      error: <XCircle className={cn(iconSize, "text-red-500")} />,
+      idle: <AlertCircle className={cn(iconSize, "text-gray-400")} />
     }
-  }
+    return icons[currentStatus] || icons.idle
+  }, [currentStatus, iconSize])
   
-  const getStatusColor = () => {
-    switch (currentStatus) {
-      case "queued":
-        return "bg-yellow-500"
-      case "processing":
-        return "bg-blue-500"
-      case "completed":
-        return "bg-green-500"
-      case "error":
-        return "bg-red-500"
-      default:
-        return "bg-gray-500"
+  // Memoize status color
+  const statusColor = useMemo(() => {
+    const colors = {
+      queued: "bg-yellow-500",
+      processing: "bg-blue-500",
+      completed: "bg-green-500",
+      error: "bg-red-500",
+      idle: "bg-gray-500"
     }
-  }
+    return colors[currentStatus] || colors.idle
+  }, [currentStatus])
   
-  const getStatusMessage = () => {
+  // Memoize status message
+  const statusMessage = useMemo(() => {
     if (status?.message) return status.message
     
-    switch (currentStatus) {
-      case "queued":
-        return "Queued for processing..."
-      case "processing":
-        return "Processing video..."
-      case "completed":
-        return "Video ready"
-      case "error":
-        return "Video generation failed"
-      default:
-        return "Ready to generate"
+    const messages = {
+      queued: status?.queuePosition 
+        ? `In queue (position ${status.queuePosition})` 
+        : "Queued for processing...",
+      processing: "Processing video...",
+      completed: "Video ready",
+      error: "Video generation failed",
+      idle: "Ready to generate"
     }
-  }
+    return messages[currentStatus] || messages.idle
+  }, [currentStatus, status?.message, status?.queuePosition])
   
-  const progressValue = status?.progress || (currentStatus === "completed" ? 100 : 
-                                              currentStatus === "processing" ? 50 : 
-                                              currentStatus === "queued" ? 10 : 0)
+  // Memoize progress value with smooth transitions
+  const progressValue = useMemo(() => {
+    if (status?.progress !== undefined) return status.progress
+    
+    const defaults = {
+      completed: 100,
+      processing: 50,
+      queued: 10,
+      error: 0,
+      idle: 0
+    }
+    return defaults[currentStatus] || 0
+  }, [status?.progress, currentStatus])
 
   return (
     <div className={cn("flex flex-col space-y-2 p-3 rounded-none border-2", className)}>
       <div className="flex items-center justify-between">
         {showLabel && (
-          <div className="flex items-center space-x-2">
-            <StatusIcon />
-            <span className={cn("font-medium", textSize)}>{getStatusMessage()}</span>
+          <div className="flex items-center space-x-2 min-w-0 flex-1">
+            {StatusIcon}
+            <span className={cn("font-medium truncate", textSize)}>{statusMessage}</span>
           </div>
         )}
         
         {showControls && (
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 flex-shrink-0">
             {currentStatus === "processing" && onCancel && (
               <Button
                 variant="outline"
@@ -153,15 +155,32 @@ export function VideoProgressIndicator({
         )}
       </div>
       
-      <Progress
-        value={progressValue}
-        className={cn(
-          "w-full border-2", 
-          progressHeight,
-          currentStatus === "processing" && "animate-pulse"
+      {/* Progress bar with smooth transitions */}
+      <div className="relative">
+        <Progress
+          value={progressValue}
+          className={cn(
+            "w-full border-2 transition-all duration-300", 
+            progressHeight,
+            currentStatus === "processing" && "animate-pulse"
+          )}
+          indicatorClassName={cn(
+            statusColor,
+            "transition-all duration-500 ease-out"
+          )}
+        />
+        
+        {/* Show percentage for processing state */}
+        {currentStatus === "processing" && progressValue > 0 && (
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-white mix-blend-difference">
+            {Math.round(progressValue)}%
+          </span>
         )}
-        indicatorClassName={cn(getStatusColor())}
-      />
+      </div>
     </div>
   )
-}
+})
+
+VideoProgressIndicator.displayName = "VideoProgressIndicator"
+
+export { VideoProgressIndicator }

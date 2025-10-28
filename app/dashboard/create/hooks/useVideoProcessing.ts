@@ -1,16 +1,16 @@
 /**
  * app/dashboard/create/hooks/useVideoProcessing.ts
  * 
- * REFACTORED: Unified video processing hook with stable state management
- * - Single polling mechanism with exponential backoff
- * - Consolidated toast notifications
- * - Clean API integration (deprecated endpoints removed)
- * - Reliable state synchronization
+ * FIXED: Stable video processing with instant UI updates
+ * - Fixed stale closure issues with refs
+ * - Atomic state updates prevent race conditions
+ * - Optimized re-renders with stable references
+ * - Real-time progress synchronization
  */
 
 "use client"
 
-import { useState, useCallback, useEffect, useRef } from "react"
+import { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { api } from "@/lib/api-helper"
 import { useToast } from "@/hooks"
 
@@ -45,7 +45,11 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
   const { toast } = useToast()
   const { onComplete, onError, autoRetry = false, maxRetries = 2 } = options
   
-  // Core state - single source of truth
+  // Use refs for state that needs to be accessed in callbacks without stale closures
+  const statusesRef = useRef<Record<number, VideoStatus>>({})
+  const isProcessingRef = useRef<Record<number, boolean>>({})
+  
+  // React state for UI updates - synced from refs
   const [statuses, setStatuses] = useState<Record<number, VideoStatus>>({})
   const [isProcessing, setIsProcessing] = useState<Record<number, boolean>>({})
   
@@ -53,8 +57,14 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
   const pollTimersRef = useRef<Record<number, NodeJS.Timeout>>({})
   const retryCountsRef = useRef<Record<number, number>>({})
   const lastToastRef = useRef<Record<string, number>>({})
+  const callbacksRef = useRef({ onComplete, onError })
   
-  // Throttled toast to prevent spam (max 1 per 3 seconds per message type)
+  // Keep callbacks fresh without re-creating functions
+  useEffect(() => {
+    callbacksRef.current = { onComplete, onError }
+  }, [onComplete, onError])
+  
+  // Throttled toast to prevent spam
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const now = Date.now()
     const key = `${type}-${message}`
@@ -71,16 +81,38 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
     })
   }, [toast])
 
-  // Update status with state sync
+  // Atomic update - updates both ref and state in sync
   const updateStatus = useCallback((chapterId: number, update: Partial<VideoStatus>) => {
+    const newStatus = {
+      ...statusesRef.current[chapterId],
+      chapterId,
+      lastChecked: Date.now(),
+      ...update
+    }
+    
+    // Update ref immediately (for callbacks)
+    statusesRef.current = {
+      ...statusesRef.current,
+      [chapterId]: newStatus
+    }
+    
+    // Update state (for UI) - batched by React
     setStatuses(prev => ({
       ...prev,
-      [chapterId]: {
-        ...prev[chapterId],
-        chapterId,
-        lastChecked: Date.now(),
-        ...update
-      }
+      [chapterId]: newStatus
+    }))
+  }, [])
+  
+  // Atomic processing state update
+  const setProcessingState = useCallback((chapterId: number, processing: boolean) => {
+    isProcessingRef.current = {
+      ...isProcessingRef.current,
+      [chapterId]: processing
+    }
+    
+    setIsProcessing(prev => ({
+      ...prev,
+      [chapterId]: processing
     }))
   }, [])
 
@@ -92,13 +124,13 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
     }
   }, [])
 
-  // Check status via API (STANDARD API ONLY - no deprecated endpoints)
+  // Check status via API - uses refs to avoid stale closures
   const checkStatus = useCallback(async (chapterId: number): Promise<boolean | null> => {
     try {
-  const response = await api.get(`/api/video/status/${chapterId}`)
+      const response = await api.get(`/api/video/status/${chapterId}`)
       
       // Completed - has video
-  if (response.videoId) {
+      if (response.videoId) {
         const completedStatus: VideoStatus = {
           chapterId,
           status: 'completed',
@@ -109,21 +141,20 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
           lastChecked: Date.now()
         }
 
-        // update internal state and stop polling
         updateStatus(chapterId, completedStatus)
-        setIsProcessing(prev => ({ ...prev, [chapterId]: false }))
+        setProcessingState(chapterId, false)
         stopPolling(chapterId)
 
-        // call onComplete with the concrete status object (avoid reading stale state)
-        if (onComplete) {
-          onComplete(completedStatus)
+        // Use ref to get fresh callback
+        if (callbacksRef.current.onComplete) {
+          callbacksRef.current.onComplete(completedStatus)
         }
 
         return true
       }
       
       // Failed
-  if (response.videoStatus === 'error' || response.failed) {
+      if (response.videoStatus === 'error' || response.failed) {
         const failedStatus: VideoStatus = {
           chapterId,
           status: 'error',
@@ -134,11 +165,11 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
         }
 
         updateStatus(chapterId, failedStatus)
-        setIsProcessing(prev => ({ ...prev, [chapterId]: false }))
+        setProcessingState(chapterId, false)
         stopPolling(chapterId)
 
-        if (onError) {
-          onError(failedStatus)
+        if (callbacksRef.current.onError) {
+          callbacksRef.current.onError(failedStatus)
         }
 
         // Auto-retry if enabled
@@ -154,13 +185,16 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
         return false
       }
       
-      // Still processing or queued - reflect server-provided status and progress
+      // Still processing or queued - update progress in real-time
+      const currentProgress = typeof response.progress === 'number' ? response.progress : 
+                             response.videoStatus === 'processing' ? 50 : 10
+      
       updateStatus(chapterId, {
         status: response.videoStatus === 'queued' ? 'queued' : 'processing',
         jobId: response.jobId,
         queuePosition: response.queuePending,
-        message: response.message || 'Generating video...',
-        progress: typeof response.progress === 'number' ? response.progress : 50
+        message: response.message || (response.videoStatus === 'queued' ? 'In queue...' : 'Generating video...'),
+        progress: currentProgress
       })
       
       return null
@@ -168,9 +202,9 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       console.error(`Status check error for chapter ${chapterId}:`, error)
       return null
     }
-  }, [updateStatus, stopPolling, onComplete, onError, autoRetry, maxRetries, showToast, statuses])
+  }, [updateStatus, setProcessingState, stopPolling, autoRetry, maxRetries, showToast])
 
-  // Smart polling with exponential backoff
+  // Smart polling with exponential backoff - uses refs to avoid stale closures
   const startPolling = useCallback((chapterId: number) => {
     stopPolling(chapterId)
     
@@ -187,7 +221,7 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
           message: 'Generation timed out',
           progress: 0
         })
-        setIsProcessing(prev => ({ ...prev, [chapterId]: false }))
+        setProcessingState(chapterId, false)
         showToast(`Chapter ${chapterId} timed out`, 'error')
         return
       }
@@ -199,7 +233,7 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
           message: 'Max polling attempts reached',
           progress: 0
         })
-        setIsProcessing(prev => ({ ...prev, [chapterId]: false }))
+        setProcessingState(chapterId, false)
         return
       }
       
@@ -217,15 +251,15 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       pollTimersRef.current[chapterId] = setTimeout(poll, delay)
     }
     
-    // Start polling
+    // Start polling immediately
     poll()
-  }, [checkStatus, updateStatus, stopPolling, showToast])
+  }, [checkStatus, updateStatus, setProcessingState, stopPolling, showToast])
 
-  // Process single video (PRIMARY API CALL)
+  // Process single video - memoized to prevent recreating
   const processVideo = useCallback(async (chapterId: number) => {
     try {
       // Initialize state
-      setIsProcessing(prev => ({ ...prev, [chapterId]: true }))
+      setProcessingState(chapterId, true)
       updateStatus(chapterId, {
         status: 'queued',
         message: 'Queuing video generation...',
@@ -233,7 +267,7 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
         startTime: Date.now()
       })
       
-      // Call STANDARD video API (not enhanced/optimized)
+      // Call STANDARD video API
       const response = await api.post('/api/video', { chapterId })
 
       const ok = response?.success
@@ -241,7 +275,6 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
         throw new Error(response?.error || 'Failed to start video generation')
       }
 
-      // If the server returned a jobId/queued info, reflect that in status
       const jobId = response?.jobId
       const serverVideoStatus = response?.videoStatus || 'queued'
       const queuePending = response?.queuePending
@@ -270,19 +303,18 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       }
 
       updateStatus(chapterId, errorStatus)
-
-      setIsProcessing(prev => ({ ...prev, [chapterId]: false }))
+      setProcessingState(chapterId, false)
       showToast(message, 'error')
 
-      if (onError) {
-        onError(errorStatus)
+      if (callbacksRef.current.onError) {
+        callbacksRef.current.onError(errorStatus)
       }
       
       return { success: false, error: message }
     }
-  }, [updateStatus, startPolling, showToast, onError, statuses])
+  }, [updateStatus, setProcessingState, startPolling, showToast])
 
-  // Process multiple videos sequentially
+  // Process multiple videos with real-time status updates
   const processMultipleVideos = useCallback(async (
     chapterIds: number[],
     options: { retryFailed?: boolean } = {}
@@ -291,9 +323,12 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       return { success: true, processed: 0, failed: 0, total: 0 }
     }
     
+    // Use ref to get current statuses
+    const currentStatuses = statusesRef.current
+    
     // Filter chapters if retrying failed only
     const toProcess = options.retryFailed
-      ? chapterIds.filter(id => statuses[id]?.status === 'error')
+      ? chapterIds.filter(id => currentStatuses[id]?.status === 'error')
       : chapterIds
     
     if (toProcess.length === 0) {
@@ -306,41 +341,44 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
     let processed = 0
     let failed = 0
     
-    // Process sequentially. Use API-driven status checks (checkStatus) to avoid stale closure
-    for (const chapterId of toProcess) {
-      await processVideo(chapterId)
+    // Process all videos concurrently for better UX
+    const results = await Promise.allSettled(
+      toProcess.map(async (chapterId) => {
+        await processVideo(chapterId)
 
-      // Wait for completion by repeatedly calling checkStatus which updates state
-      const waitStart = Date.now()
-      const timeoutMs = 10 * 60 * 1000 // 10 minutes
+        // Wait for completion using ref-based status checks
+        const waitStart = Date.now()
+        const timeoutMs = 10 * 60 * 1000 // 10 minutes
 
-      while (true) {
-        // Ask the server for the latest status and update local state
-        const res = await checkStatus(chapterId)
+        while (true) {
+          const res = await checkStatus(chapterId)
 
-        if (res === true) {
-          processed++
-          break
+          if (res === true) {
+            return { success: true, chapterId }
+          }
+
+          if (res === false) {
+            return { success: false, chapterId }
+          }
+
+          if (Date.now() - waitStart > timeoutMs) {
+            return { success: false, chapterId }
+          }
+
+          // Check more frequently for better progress updates
+          await new Promise(resolve => setTimeout(resolve, 1500))
         }
-
-        if (res === false) {
-          failed++
-          break
-        }
-
-        if (Date.now() - waitStart > timeoutMs) {
-          // Timed out waiting for completion
-          failed++
-          break
-        }
-
-        // Back off before next status check
-        await new Promise(resolve => setTimeout(resolve, 1000))
+      })
+    )
+    
+    // Count results
+    results.forEach(result => {
+      if (result.status === 'fulfilled' && result.value.success) {
+        processed++
+      } else {
+        failed++
       }
-
-      // Small delay between videos
-      await new Promise(resolve => setTimeout(resolve, 2000))
-    }
+    })
     
     const successRate = processed / toProcess.length
     if (successRate === 1) {
@@ -357,12 +395,12 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       failed,
       total: toProcess.length
     }
-  }, [processVideo, statuses, showToast])
+  }, [processVideo, checkStatus, showToast])
 
   // Cancel processing
   const cancelProcessing = useCallback(async (chapterId: number) => {
     stopPolling(chapterId)
-    setIsProcessing(prev => ({ ...prev, [chapterId]: false }))
+    setProcessingState(chapterId, false)
     updateStatus(chapterId, {
       status: 'error',
       message: 'Cancelled by user',
@@ -370,7 +408,7 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
     })
     showToast(`Chapter ${chapterId} cancelled`, 'info')
     return true
-  }, [stopPolling, updateStatus, showToast])
+  }, [stopPolling, setProcessingState, updateStatus, showToast])
 
   // Retry video
   const retryVideo = useCallback(async (chapterId: number) => {
@@ -383,7 +421,7 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
     await processVideo(chapterId)
   }, [updateStatus, processVideo])
 
-  // Initialize chapter status (for chapters with existing videos)
+  // Initialize chapter status
   const initializeChapterStatus = useCallback((chapterId: number, videoId?: string | null) => {
     if (videoId) {
       updateStatus(chapterId, {
@@ -392,9 +430,9 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
         message: 'Video ready',
         progress: 100
       })
-      setIsProcessing(prev => ({ ...prev, [chapterId]: false }))
+      setProcessingState(chapterId, false)
     }
-  }, [updateStatus])
+  }, [updateStatus, setProcessingState])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -405,14 +443,14 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
     }
   }, [stopPolling])
 
-  // Queue status (derived from state)
-  const queueStatus = {
+  // Queue status - memoized to prevent recalculation
+  const queueStatus = useMemo(() => ({
     size: Object.values(statuses).filter(s => s.status === 'queued').length,
     pending: Object.values(isProcessing).filter(Boolean).length,
     activeProcesses: Object.entries(isProcessing)
       .filter(([_, processing]) => processing)
       .map(([id]) => Number(id))
-  }
+  }), [statuses, isProcessing])
 
   return {
     processVideo,
