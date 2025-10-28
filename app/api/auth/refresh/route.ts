@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerAuthSession } from "@/lib/server-auth"
 import { SubscriptionService } from '@/services/subscription-services'
+import { SUBSCRIPTION_PLAN_IDS } from '@/types/subscription-plans'
 
 /**
  * Refresh API endpoint that returns updated user and subscription data
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
     if (!subscriptionData) {
       subscriptionData = {
         userId: session.user.id,
-        subscriptionPlan: session.user.subscriptionPlan || "FREE",
+        subscriptionPlan: session.user.subscriptionPlan || SUBSCRIPTION_PLAN_IDS.FREE,
         credits: session.user.credits || 3,
         tokensUsed: session.user.creditsUsed || 0,
         subscriptionId: null,
