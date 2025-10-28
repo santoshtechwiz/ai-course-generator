@@ -45,7 +45,7 @@ export default function VideoPreview({ videoId, title = "Preview Video" }: Video
           />
           {/* Play Button Overlay */}
           <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-all duration-300">
-            <div className="p-3 md:p-4 rounded-none bg-red-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-4 border-black group-hover:scale-110 transition-transform">
+            <div className="p-3 md:p-4 rounded-none bg-error text-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-4 border-border group-hover:scale-110 transition-transform">
               <Play className="h-6 w-6 md:h-8 md:w-8 fill-current" />
             </div>
           </div>
@@ -74,14 +74,14 @@ export default function VideoPreview({ videoId, title = "Preview Video" }: Video
             <button
               onClick={() => setOpen(false)}
               aria-label="Close video preview"
-              className="absolute -top-3 -right-3 md:-top-4 md:-right-4 bg-red-500 text-white border-4 border-black p-2 md:p-3 rounded-none hover:bg-red-600 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all z-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              className="absolute -top-3 -right-3 md:-top-4 md:-right-4 bg-error text-foreground border-4 border-border p-2 md:p-3 rounded-none hover:bg-error hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all z-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             >
               <X className="h-5 w-5 md:h-6 md:w-6 font-bold" strokeWidth={3} />
             </button>
 
             {/* Title Bar - NEOBRUTAL */}
-            <div className="mb-4 pb-4 border-b-4 border-black bg-yellow-400 -mx-4 md:-mx-6 -mt-4 md:-mt-6 px-4 md:px-6 pt-4 md:pt-6">
-              <h2 className="text-lg md:text-2xl font-black text-black uppercase pr-8 md:pr-12">
+            <div className="mb-4 pb-4 border-b-4 border-border bg-warning -mx-4 md:-mx-6 -mt-4 md:-mt-6 px-4 md:px-6 pt-4 md:pt-6">
+              <h2 className="text-lg md:text-2xl font-black text-foreground uppercase pr-8 md:pr-12">
                 {title}
               </h2>
             </div>
@@ -98,9 +98,9 @@ export default function VideoPreview({ videoId, title = "Preview Video" }: Video
             </div>
 
             {/* Footer - NEOBRUTAL */}
-            <div className="mt-4 p-3 md:p-4 bg-blue-400 border-4 border-black rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="mt-4 p-3 md:p-4 bg-primary border-4 border-border rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
-                <p className="text-xs md:text-sm font-bold text-black">
+                <p className="text-xs md:text-sm font-bold text-foreground">
                   <kbd className="px-2 py-1 bg-white border-2 border-black rounded-none font-mono text-xs">ESC</kbd>
                   <span className="ml-2">Press ESC to close</span>
                 </p>

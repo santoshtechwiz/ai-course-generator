@@ -134,22 +134,22 @@ export default function CourseCreationForm({ maxQuestions, params }: {
     showConfirmDialog
 
   const steps = [
-    { icon: <Pencil className="h-4 w-4 md:h-5 md:w-5" />, label: "Basic Info", color: "bg-blue-400" },
-    { icon: <FileText className="h-4 w-4 md:h-5 md:w-5" />, label: "Content", color: "bg-purple-400" },
-    { icon: <Eye className="h-4 w-4 md:h-5 md:w-5" />, label: "Preview", color: "bg-green-400" },
+    { icon: <Pencil className="h-4 w-4 md:h-5 md:w-5" />, label: "Basic Info", color: "bg-primary" },
+    { icon: <FileText className="h-4 w-4 md:h-5 md:w-5" />, label: "Content", color: "bg-secondary" },
+    { icon: <Eye className="h-4 w-4 md:h-5 md:w-5" />, label: "Preview", color: "bg-success" },
   ]
 
   return (
     <div className="w-full h-full">
       <Card className="h-full flex flex-col border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white overflow-hidden">
         {/* Header with gradient accent */}
-        <CardHeader className="bg-gradient-to-r from-blue-400 to-purple-400 border-b-4 border-black flex-shrink-0 p-4 md:p-6">
+        <CardHeader className="bg-gradient-to-r from-primary to-secondary border-b-4 border-border flex-shrink-0 p-4 md:p-6">
           <div className="flex flex-col gap-3">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="p-1.5 md:p-2 rounded-none bg-yellow-400 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                    <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-black" />
+                  <div className="p-1.5 md:p-2 rounded-none bg-warning border-2 border-border shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-foreground" />
                   </div>
                   <CardTitle className="text-lg md:text-xl lg:text-2xl font-black text-black">
                     Create Your Course
@@ -161,7 +161,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
               </div>
               
               <div className="flex flex-col items-end gap-2">
-                <Badge className="bg-yellow-400 text-black border-2 border-black font-black text-xs md:text-sm px-2 md:px-3 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <Badge className="bg-warning text-foreground border-2 border-border font-black text-xs md:text-sm px-2 md:px-3 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                   <Star className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                   {availableCredits} Credits
                 </Badge>
@@ -185,7 +185,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
                         i + 1 === step 
                           ? `${s.color} shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]` 
                           : "bg-gray-200 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
-                        i + 1 < step && "bg-green-400"
+                        i + 1 < step && "bg-success"
                       )}
                     >
                       {i + 1 < step ? (
@@ -214,7 +214,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
                   <Progress 
                     value={((step - 1) / (totalSteps - 1)) * 100} 
                     className="h-full bg-transparent"
-                    indicatorClassName="bg-gradient-to-r from-green-400 to-green-500 border-r-2 border-black transition-all duration-500"
+                    indicatorClassName="bg-gradient-to-r from-success to-success border-r-2 border-border transition-all duration-500"
                   />
                 </div>
               </div>
@@ -254,7 +254,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
                     type="button"
                     onClick={handleNext}
                     disabled={!isStepValid() || maxQuestions === 0}
-                    className="w-full sm:w-auto border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-black font-black disabled:opacity-40 disabled:cursor-not-allowed text-sm md:text-base h-10 md:h-12 px-6 md:px-8"
+                    className="w-full sm:w-auto border-3 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] bg-gradient-to-r from-primary to-primary hover:from-primary hover:to-primary text-foreground font-black disabled:opacity-40 disabled:cursor-not-allowed text-sm md:text-base h-10 md:h-12 px-6 md:px-8"
                   >
                     Continue
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -273,7 +273,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
                     isEnabled={step === 3 && !showConfirmDialog}
                     creditsRequired={1}
                     requiredPlan="FREE"
-                    className="w-full sm:w-auto border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-black font-black text-sm md:text-base h-10 md:h-12 px-6 md:px-8"
+                    className="w-full sm:w-auto border-3 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] bg-gradient-to-r from-success to-success hover:from-success hover:to-success text-foreground font-black text-sm md:text-base h-10 md:h-12 px-6 md:px-8"
                     loadingLabel="Creating Course..."
                     customStates={{
                       noCredits: {
@@ -284,7 +284,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
                   />
                   {availableCredits > 0 && !isSubscribed && (
                     <div className="flex items-center justify-center sm:justify-end gap-1.5 text-[10px] md:text-xs font-bold">
-                      <div className="px-2 py-1 bg-yellow-400 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                      <div className="px-2 py-1 bg-warning border-2 border-border rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                         <Zap className="h-3 w-3 md:h-4 md:w-4 inline mr-1" />
                         1 credit will be used
                       </div>
