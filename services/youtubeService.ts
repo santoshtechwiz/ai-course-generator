@@ -42,7 +42,7 @@ class YoutubeService {
       throw new Error('Failed to load YouTube library')
     }
   }
-private static youtubeClient = {
+private static youtubeClient_local = {
   get: async (endpoint: string, options: any = {}) => {
     const baseUrl = `http://localhost:3001${endpoint}`
 
@@ -66,7 +66,7 @@ private static youtubeClient = {
   }
 }
 
-  private static youtubeClient1 = {
+  private static youtubeClient = {
     get: async (endpoint: string, options: any) => {
       const url = `https://www.googleapis.com/youtube/v3${endpoint}`
       const params = new URLSearchParams({
@@ -144,7 +144,7 @@ private static youtubeClient = {
     try {
       // Record the request
       quotaManager.recordRequest()
-
+      
       const response = await pTimeout(
         this.youtubeClient.get("/search", {
           params: {

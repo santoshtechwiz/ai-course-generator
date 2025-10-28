@@ -16,13 +16,20 @@ export const metadata: Metadata = generateMetadata({
     "course access",
     "educational plans",
   ],
-  ogImage: { url: "/og-image-subscription.jpg" },
+
 })
 
 const Page = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) => {
   const referralCode = (await searchParams).ref ?? null
 
-  return <SubscriptionPageClient refCode={referralCode} />
+  return ((
+    <div className="min-h-screen flex flex-col items-center justify-center px-2 py-8">
+      <div className="w-full  space-y-8">
+        <SubscriptionPageClient refCode={referralCode} />
+      </div>
+    </div>
+  ))
+
 }
 
 export default Page
