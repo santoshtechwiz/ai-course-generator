@@ -161,7 +161,7 @@ export function renderCourseDashboard(
                 >
                   {course.title}
                 </h1>
-                <div className="flex items-center gap-3 mt-1 text-xs sm:text-sm font-bold text-gray-600 dark:text-gray-400 flex-wrap">
+                {/* <div className="flex items-center gap-3 mt-1 text-xs sm:text-sm font-bold text-gray-600 dark:text-gray-400 flex-wrap">
                   <div className="flex items-center gap-1.5">
                     <Clock className="h-3.5 w-3.5 flex-shrink-0" />
                     <span>{enhancedCourseStats.totalDuration}</span>
@@ -178,7 +178,7 @@ export function renderCourseDashboard(
                       </span>
                     </div>
                   )}
-                </div>
+                </div> */}
               </div>
             </div>
 

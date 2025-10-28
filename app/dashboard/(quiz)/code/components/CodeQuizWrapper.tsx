@@ -15,6 +15,7 @@ import {
   selectQuizUserId,
   selectRequiresAuth,
   selectRedirectAfterLogin,
+  selectQuizSliceError,
   setCurrentQuestionIndex,
   saveAnswer,
   resetQuiz,
@@ -24,6 +25,7 @@ import {
 
 import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
+import { QuizError } from "@/components/quiz/QuizError"
 import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "@/components/quiz/QuizActions"
@@ -51,6 +53,7 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const isCompleted = useSelector(selectIsQuizComplete)
   const requiresAuth = useSelector(selectRequiresAuth)
   const redirectAfterLogin = useSelector(selectRedirectAfterLogin)
+  const quizError = useSelector(selectQuizSliceError)
 
   const quizId = useSelector((state: any) => state.quiz.quizId) // Assuming quizId is stored in quiz slice
   const quizOwnerId = useSelector(selectQuizUserId) // Get the actual quiz owner ID
@@ -99,25 +102,6 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
             isSerializedError: errorObj && typeof errorObj === 'object' && !errorObj.message && !errorObj.code,
             stringified: JSON.stringify(err)
           });
-
-          // Provide more specific error messages based on error type
-          let errorMessage = "Failed to load quiz. Please try again.";
-
-          // Handle empty error objects
-          if (!errorObj || (typeof errorObj === 'object' && Object.keys(errorObj).length === 0)) {
-            console.warn("Received empty error object, this may indicate a serialization issue");
-            errorMessage = "Unable to load quiz. The quiz may not exist or there may be a connection issue.";
-          } else if (errorObj?.code === 'NOT_FOUND') {
-            errorMessage = "Quiz not found. It may have been deleted or the URL is incorrect.";
-          } else if (errorObj?.code === 'NETWORK_ERROR') {
-            errorMessage = "Network error. Please check your internet connection.";
-          } else if (errorObj?.code === 'SERVER_ERROR') {
-            errorMessage = "Server error. Please try again in a few moments.";
-          } else if (errorObj?.code === 'CANCELLED') {
-            errorMessage = "Request was cancelled. Please try again.";
-          }
-
-          toast.error(errorMessage);
         }
       }
     }
@@ -207,7 +191,7 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
 
 
   const isLoading = quizStatus === "loading" || quizStatus === "idle"
-  const hasError = quizStatus === "failed"
+  const hasError = quizStatus === "failed" || quizStatus === "not-found" || quizStatus === "requires-auth"
   const isQuizSubmitting = quizStatus === "submitting"
   const formattedQuestion = useMemo(() => {
     if (!currentQuestion) return null
@@ -290,16 +274,25 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       />
     )
   }
-  if (hasError) {
+  if (hasError && quizError) {
     return (
-      <NoResults
-        variant="error"
-        title="Error Loading Quiz"
-        description="We couldn't load this quiz. Please try again later or contact support if the problem persists."
-        action={{
-          label: "Return to Dashboard",
-          onClick: () => router.push("/dashboard"),
+      <QuizError
+        errorType={quizError.code as any}
+        message={quizError.message}
+        onRetry={() => {
+          dispatch(resetQuiz())
+          dispatch(fetchQuiz({ slug, quizType: "code" }))
         }}
+        onGoBack={() => router.back()}
+        onReportIssue={() => {
+          // Could open a support dialog or navigate to contact
+          window.open('mailto:support@courseai.io?subject=Quiz Loading Error&body=' + encodeURIComponent(
+            `Error loading quiz: ${slug}\nError: ${quizError.message}\nCode: ${quizError.code}`
+          ), '_blank')
+        }}
+        onGoHome={() => router.push("/dashboard")}
+        quizType="code"
+        quizSlug={slug}
       />
     )
   }

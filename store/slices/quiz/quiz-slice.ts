@@ -66,7 +66,7 @@ export const fetchQuiz = createAsyncThunk<
     { rejectWithValue, signal, getState }
   ) => {
     if (!payload) {
-      return rejectWithValue({ error: 'No payload provided', code: 'INVALID_PAYLOAD' })
+      return rejectWithValue({ status: 400, code: 'INVALID_PAYLOAD', message: 'No payload provided' })
     }
 
     const slug = payload.slug?.trim() || ""
@@ -79,7 +79,7 @@ export const fetchQuiz = createAsyncThunk<
     try {
       // Check if request was already cancelled
       if (signal?.aborted) {
-        return rejectWithValue({ error: 'Request was cancelled', code: 'CANCELLED' })
+        return rejectWithValue({ status: 499, code: 'CANCELLED', message: 'Request was cancelled' })
       }
 
       // Create new abort controller
@@ -125,8 +125,9 @@ export const fetchQuiz = createAsyncThunk<
       // Validate required parameters
       if (!slug || !type) {
         return rejectWithValue({
-          error: "Missing required parameters: slug and quizType are required",
-          code: 'MISSING_PARAMS'
+          status: 400,
+          code: 'MISSING_PARAMS',
+          message: "Missing required parameters: slug and quizType are required"
         })
       }
 
@@ -137,8 +138,9 @@ export const fetchQuiz = createAsyncThunk<
         const endpoint = API_ENDPOINTS[type as keyof typeof API_ENDPOINTS]
         if (!endpoint) {
           return rejectWithValue({
-            error: `Invalid quiz type: ${type}`,
-            code: 'INVALID_QUIZ_TYPE'
+            status: 400,
+            code: 'INVALID_QUIZ_TYPE',
+            message: `Invalid quiz type: ${type}`
           })
         }
         url = `${endpoint}/${slug}`
@@ -146,7 +148,7 @@ export const fetchQuiz = createAsyncThunk<
 
       // Check if request is still valid before making API call
       if (combinedSignal.aborted) {
-        return rejectWithValue({ error: 'Request was cancelled', code: 'CANCELLED' })
+        return rejectWithValue({ status: 499, code: 'CANCELLED', message: 'Request was cancelled' })
       }
 
       // Make API request with timeout
@@ -176,35 +178,35 @@ export const fetchQuiz = createAsyncThunk<
           errorData = { error: errorText }
         }
 
-        // Handle specific HTTP status codes
+      // Handle specific HTTP status codes
         if (response.status === 404) {
           return rejectWithValue({
-            error: errorData.error || 'Quiz not found',
+            status: response.status,
             code: 'NOT_FOUND',
-            status: response.status
+            message: errorData.error || 'Quiz not found'
           })
         }
 
         if (response.status === 403 || errorData.code === 'PRIVATE_QUIZ') {
           return rejectWithValue({
-            error: errorData.error || errorData.message || 'Access denied to this quiz',
+            status: response.status,
             code: 'PRIVATE_QUIZ',
-            status: response.status
+            message: errorData.error || errorData.message || 'Access denied to this quiz'
           })
         }
 
         if (response.status >= 500) {
           return rejectWithValue({
-            error: 'Server error. Please try again later.',
+            status: response.status,
             code: 'SERVER_ERROR',
-            status: response.status
+            message: 'Server error. Please try again later.'
           })
         }
 
         return rejectWithValue({
-          error: errorData.error || errorText || `HTTP ${response.status}: ${response.statusText}`,
+          status: response.status,
           code: 'HTTP_ERROR',
-          status: response.status
+          message: errorData.error || errorText || `HTTP ${response.status}: ${response.statusText}`
         })
       }
 
@@ -223,15 +225,17 @@ export const fetchQuiz = createAsyncThunk<
       // Validate response data
       if (!data || typeof data !== 'object') {
         return rejectWithValue({
-          error: 'Invalid response format',
-          code: 'INVALID_RESPONSE'
+          status: 500,
+          code: 'INVALID_RESPONSE',
+          message: 'Invalid response format'
         })
       }
 
       if (!Array.isArray(data.questions)) {
         return rejectWithValue({
-          error: 'Invalid quiz data: questions array is required',
-          code: 'INVALID_QUIZ_DATA'
+          status: 500,
+          code: 'INVALID_QUIZ_DATA',
+          message: 'Invalid quiz data: questions array is required'
         })
       }
 
@@ -267,19 +271,21 @@ export const fetchQuiz = createAsyncThunk<
       })
 
       if (error.name === 'AbortError' || error.message?.includes('aborted')) {
-        return rejectWithValue({ error: 'Request was cancelled', code: 'CANCELLED' })
+        return rejectWithValue({ status: 499, code: 'CANCELLED', message: 'Request was cancelled' })
       }
 
       if (error.message?.includes('fetch')) {
         return rejectWithValue({
-          error: 'Network error. Please check your connection.',
-          code: 'NETWORK_ERROR'
+          status: 0,
+          code: 'NETWORK_ERROR',
+          message: 'Network error. Please check your connection.'
         })
       }
 
       return rejectWithValue({
-        error: error.message || 'An unexpected error occurred',
-        code: 'UNKNOWN_ERROR'
+        status: 500,
+        code: 'UNKNOWN_ERROR',
+        message: error.message || 'An unexpected error occurred'
       })
     }
   }
@@ -1170,27 +1176,36 @@ const quizSlice = createSlice({
       })
       .addCase(fetchQuiz.rejected, (state: QuizState, action) => {
         const payload = action.payload as any
-        const errorCode = payload?.code || ''
-        const errorMessage = payload?.error || action.error.message || 'Failed to load quiz'
+        const errorCode = payload?.code || 'UNKNOWN_ERROR'
+        const errorMessage = payload?.message || action.error.message || 'Failed to load quiz'
+        const errorStatus = payload?.status || 500
         
         // Enhanced error logging with structured information
         console.error('fetchQuiz.rejected - error details:', {
           code: errorCode,
           message: errorMessage,
-          status: payload?.status,
+          status: errorStatus,
           payload
         });
 
-        // Check for specific error types
-        if (errorCode === 'PRIVATE_QUIZ' || payload?.status === 403 || errorMessage.toLowerCase().includes('private')) {
+        // Store detailed error information
+        state.error = {
+          code: errorCode,
+          message: errorMessage,
+          status: errorStatus,
+          timestamp: Date.now()
+        }
+
+        // Set status based on error type
+        if (errorCode === 'NOT_FOUND') {
           state.status = 'not-found'
-          state.error = 'This quiz is private and not accessible.'
-        } else if (payload?.status === 404 || errorMessage.toLowerCase().includes('not found')) {
-          state.status = 'not-found'
-          state.error = 'Quiz not found.'
+        } else if (errorCode === 'PRIVATE_QUIZ') {
+          state.status = 'requires-auth'
+        } else if (errorCode === 'CANCELLED') {
+          state.status = 'idle' // Don't show error for cancelled requests
+          state.error = null // Clear error for cancelled requests
         } else {
           state.status = 'failed'
-          state.error = errorMessage
         }
         
         state.isInitialized = true
@@ -1323,7 +1338,7 @@ const selectIsQuizCompleted = createSelector(
   (quiz: QuizState) => quiz.isCompleted
 )
 
-const selectQuizError = createSelector(
+export const selectQuizSliceError = createSelector(
   (state: RootState) => state.quiz,
   (quiz: QuizState) => quiz.error
 )

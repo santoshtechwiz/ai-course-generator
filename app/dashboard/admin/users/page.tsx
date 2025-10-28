@@ -33,15 +33,21 @@ export default async function UsersPage() {
     redirect("/")
   }
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-        <p className="text-muted-foreground mt-2">Manage users, credits, and subscriptions</p>
+    <div className="space-y-4">
+      <div className="text-center border-b-8 border-black pb-4">
+        <h1 className="text-5xl font-black uppercase tracking-wider text-black mb-4">
+          USER MANAGEMENT
+        </h1>
+        <p className="text-xl font-bold text-gray-600 uppercase tracking-wide">
+          Control Your User Base
+        </p>
       </div>
 
-      <Suspense fallback={<UserListSkeleton />}>
-        <UserManagement />
-      </Suspense>
+      <div className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-4">
+        <Suspense fallback={<UserListSkeleton />}>
+          <UserManagement />
+        </Suspense>
+      </div>
     </div>
   )
 }

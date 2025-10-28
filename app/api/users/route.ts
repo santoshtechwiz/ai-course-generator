@@ -128,7 +128,7 @@ export const POST = withAdminAuth(async (req: NextRequest) => {
     }
 
     // Validate userType if provided
-    const validUserTypes = ['FREE', 'PREMIUM', 'ADMIN']
+    const validUserTypes = ['FREE', 'BASIC', 'PREMIUM', 'ULTIMATE']
     if (userType && !validUserTypes.includes(userType)) {
       return ApiResponseHandler.validationError(`Invalid user type. Must be one of: ${validUserTypes.join(', ')}`)
     }

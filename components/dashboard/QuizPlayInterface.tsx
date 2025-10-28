@@ -546,7 +546,7 @@ export function QuizPlayInterface({
                 {/* Sidebar content */}
                 <motion.div
                   className={cn(
-                    "bg-card border-4 border-border shadow-neo rounded-none overflow-hidden",
+                    "bg-card border-4 max-h-min border-border shadow-neo rounded-none overflow-hidden",
                     // Desktop: Normal positioning
                     !isMobile && "sticky top-4",
                     // Mobile: Slide in from right
@@ -575,12 +575,13 @@ export function QuizPlayInterface({
                   )}
 
                   {/* Sidebar content */}
-                  <div
-                    className={cn(
-                      "overflow-y-auto p-4 space-y-4 scrollbar-hide",
-                      isMobile ? "max-h-[calc(100vh-5rem)]" : "max-h-[calc(100vh-8rem)]"
-                    )}
-                  >
+                 <div
+  className={cn(
+    "flex flex-col overflow-y-auto scrollbar-none p-4 space-y-4",
+    "h-screen max-h-screen",
+    isMobile ? "pt-20" : "pt-24"
+  )}
+>
                     {/* Quiz Actions - Desktop only */}
                     {!isMobile && (
                       <Suspense fallback={<QuizSkeleton />}>

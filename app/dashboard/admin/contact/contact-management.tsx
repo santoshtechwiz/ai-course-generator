@@ -238,15 +238,26 @@ export default function ContactManagement() {
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-6">Contact Management</h1>
+    <div className="container mx-auto py-4">
+      <div className="text-center border-b-8 border-black pb-4 mb-4">
+        <h1 className="text-5xl font-black uppercase tracking-wider text-black mb-4">
+          CONTACT MANAGEMENT
+        </h1>
+        <p className="text-xl font-bold text-gray-600 uppercase tracking-wide">
+          Handle User Inquiries Like A Pro
+        </p>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Inquiries</CardTitle>
-              <CardDescription>Manage user contact submissions</CardDescription>
+          <Card className="bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+            <CardHeader className="bg-red-400 p-6">
+              <CardTitle className="text-2xl font-black uppercase text-white">
+                Inquiries
+              </CardTitle>
+              <CardDescription className="text-white font-bold text-lg mt-4">
+                Manage user contact submissions
+              </CardDescription>
 
               <div className="mt-2">
                 <div className="relative">
@@ -376,11 +387,13 @@ export default function ContactManagement() {
         </div>
 
         <div className="md:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>{selectedSubmission ? "Respond to Inquiry" : "Select an inquiry to respond"}</CardTitle>
+          <Card className="bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+            <CardHeader className="bg-blue-400 p-6">
+              <CardTitle className="text-2xl font-black uppercase text-white">
+                {selectedSubmission ? "Respond to Inquiry" : "Select an inquiry to respond"}
+              </CardTitle>
               {selectedSubmission && (
-                <CardDescription>
+                <CardDescription className="text-white font-bold text-lg mt-4">
                   From {selectedSubmission.name} ({selectedSubmission.email})
                 </CardDescription>
               )}

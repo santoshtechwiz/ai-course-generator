@@ -6,7 +6,7 @@ import prisma from "@/lib/db"
 
 import { validateShareAccess } from "@/app/services/share.service"
 
-import CourseViewer from "@/components/dashboard/CourseViewer"
+import { CourseViewer } from "@/components/dashboard/CourseViewer"
 import { CourseQuestion, FullChapter, FullCourseType, FullCourseUnit } from "@/app/types/course-types"
 
 type ShareCoursePageParams = {
