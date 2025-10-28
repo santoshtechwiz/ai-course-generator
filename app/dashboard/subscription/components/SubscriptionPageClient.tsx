@@ -258,7 +258,6 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   }
   return (
     <>
-
       {/* Only show login modal if user is definitely unauthenticated */}
   {!isAuthenticated && (
         <LoginModal
@@ -269,7 +268,9 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         />
       )}
 
-      {renderContent()}
+      <div className="container max-w-6xl mx-auto px-4 sm:px-6 animate-in fade-in duration-500">
+        {renderContent()}
+      </div>
 
   {!subscription && isAuthenticated && userId && (
         <div className="fixed bottom-4 right-4 bg-background border rounded-full shadow-lg px-3 py-2 text-xs text-muted-foreground">

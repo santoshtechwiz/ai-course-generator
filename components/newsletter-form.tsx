@@ -7,6 +7,7 @@ import { Mail, ArrowRight, CheckCircle, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { subscribeToNewsletter } from "@/app/actions/newsletter"
+import { motion } from "framer-motion"
 
 
 export function NewsletterForm() {
@@ -42,13 +43,13 @@ export function NewsletterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="relative">
-        <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--color-text)]/60 z-10" />
         <Input
           type="email"
           placeholder="Your email address"
-          className="pl-10 rounded-none border-border"
+          className="pl-12 pr-4 py-3 h-12 neo-input bg-[var(--color-bg)] border-4 border-border neo-shadow font-bold text-[var(--color-text)] placeholder:text-[var(--color-text)]/40 rounded-none"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={status === "loading" || status === "success"}
@@ -56,7 +57,11 @@ export function NewsletterForm() {
         />
       </div>
 
-      <Button type="submit" className="w-full group" disabled={status === "loading" || status === "success"}>
+      <Button
+        type="submit"
+        className="w-full h-12 bg-[var(--color-primary)] text-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-primary)]/90 hover:scale-105 hover:shadow-lg transition-all duration-200 font-black uppercase tracking-wider group"
+        disabled={status === "loading" || status === "success"}
+      >
         {status === "loading" ? (
           <>
             <span className="mr-2" aria-hidden></span>
@@ -64,26 +69,34 @@ export function NewsletterForm() {
           </>
         ) : status === "success" ? (
           <>
-            <CheckCircle className="mr-2 h-4 w-4" />
+            <CheckCircle className="mr-2 h-5 w-5" />
             Subscribed
           </>
         ) : (
           <>
             Subscribe
-            <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </>
         )}
       </Button>
 
       {message && (
-        <div className={`text-sm flex items-center ${status === "error" ? "text-destructive" : "text-primary"}`}>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`neo-card p-3 text-sm font-bold flex items-center ${
+            status === "error"
+              ? "bg-[var(--color-error)]/10 border-[var(--color-error)] text-[var(--color-error)]"
+              : "bg-[var(--color-success)]/10 border-[var(--color-success)] text-[var(--color-success)]"
+          }`}
+        >
           {status === "error" ? (
-            <AlertCircle className="mr-2 h-4 w-4" />
+            <AlertCircle className="mr-2 h-5 w-5 flex-shrink-0" />
           ) : status === "success" ? (
-            <CheckCircle className="mr-2 h-4 w-4" />
+            <CheckCircle className="mr-2 h-5 w-5 flex-shrink-0" />
           ) : null}
           {message}
-        </div>
+        </motion.div>
       )}
     </form>
   )

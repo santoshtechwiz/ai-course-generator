@@ -507,6 +507,15 @@ export function QuizPlayInterface({
             <div ref={mainRef}>
               {children}
             </div>
+
+            {/* Mobile RandomQuiz Details - Show below main content on mobile */}
+            {isMobile && (
+              <div className="mt-4">
+                <Suspense fallback={<QuizSkeleton />}>
+                  <RandomQuiz autoRotate={false} showControls={false} maxQuizzes={1} />
+                </Suspense>
+              </div>
+            )}
           </div>
 
           {/* Right column: Sidebar content (desktop) or overlay (mobile) */}

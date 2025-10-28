@@ -101,15 +101,15 @@ const getAIModelFromConfig = (userType: string): string => {
  */
 export function getColorClasses() {
   return {
-    buttonPrimary: "btn btn-primary",
-    buttonSecondary: "btn btn-secondary",
-    buttonAccent: "btn btn-accent",
-    buttonIcon: "btn btn-ghost hover-lift",
-    cardPrimary: "card",
-    cardSecondary: "card bg-muted",
-    cardAccent: "card border-primary/20 bg-primary/5",
-    badge: "badge badge-primary",
-    input: "input focus-ring",
+    buttonPrimary: "bg-[var(--color-primary)] text-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-primary)]/90 hover:scale-105 hover:shadow-lg transition-all duration-200",
+    buttonSecondary: "bg-[var(--color-secondary)] text-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-secondary)]/90 hover:scale-105 hover:shadow-lg transition-all duration-200",
+    buttonAccent: "bg-[var(--color-accent)] text-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-accent)]/90 hover:scale-105 hover:shadow-lg transition-all duration-200",
+    buttonIcon: "bg-[var(--color-secondary)] text-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-secondary)]/90 hover:scale-105 hover:shadow-lg transition-all duration-200",
+    cardPrimary: "bg-[var(--color-card)] border-[var(--color-border)] text-[var(--color-text)]",
+    cardSecondary: "bg-[var(--color-muted)] border-[var(--color-border)] text-[var(--color-text)]",
+    cardAccent: "bg-[var(--color-card)] border-[var(--color-primary)]/20 text-[var(--color-text)]",
+    badge: "bg-[var(--color-primary)] text-[var(--color-bg)] border-[var(--color-border)]",
+    input: "bg-[var(--color-input)] border-[var(--color-border)] text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)]",
   }
 }
 

@@ -1,16 +1,15 @@
 /**
  * app/dashboard/create/components/EnhancedConfirmChapters.tsx
  * 
- * REFACTORED: Main course editor component with stable state
- * - Simplified state management
- * - Clean Nerobrutal theme
- * - Consolidated notifications
- * - Better UX with clear progress
+ * UX FIXED: Responsive footer with Neobrutal theme colors
+ * - Mobile-first responsive design
+ * - Bold Neobrutal button styling
+ * - Clear visual hierarchy
  */
 
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, BookOpen, CheckCircle, AlertCircle, PlayCircle, Save, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -30,6 +29,8 @@ import { useRouter } from "next/navigation"
 import { api } from "@/lib/api-helper"
 import { Chapter, Course, CourseUnit } from "@/app/types/types"
 import { useEnhancedCourseEditor } from "../hooks/useCourseEditor"
+import VideoPreview from "./VideoPreview"
+import ChapterFooter from "./ChapterFooter"
 
 type CourseProps = {
   course: Course & {
@@ -38,6 +39,9 @@ type CourseProps = {
     })[]
   }
 }
+
+
+
 
 const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
   const router = useRouter()
@@ -80,24 +84,31 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
     retryVideoProcessing,
     isProcessing,
   } = courseEditor
-  
+
   const { toast } = useToast()
   const { showHelp, openHelp, closeHelp, dismissPermanently } = useGuidedHelp()
 
-  // Initialize on mount
+  // Initialize on mount - run once
   useEffect(() => {
     const allChapters = course.units.flatMap((unit) => unit.chapters)
-    
+
     if (allChapters.length === 0) {
       toast({
         title: "Welcome to Course Creation",
         description: "Add chapters to your course units to get started.",
       })
     }
-  }, []) // Run once on mount
+  }, [])
 
-  // Count chapters with errors
-  const chaptersWithErrors = Object.values(videoStatuses).filter((status) => status.status === "error").length
+  // Memoize error count to prevent recalculation
+  const chaptersWithErrors = useMemo(() => {
+    return Object.values(videoStatuses).filter((status) => status.status === "error").length
+  }, [videoStatuses])
+
+  // Memoize processing count
+  const processingCount = useMemo(() => {
+    return Object.values(isProcessing).filter(Boolean).length
+  }, [isProcessing])
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -109,13 +120,13 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
       )}
 
       {/* Header Section */}
-      <div className="flex-none p-6 border-b-4 border-border bg-card shadow-neo">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold flex items-center gap-3">
+      <div className="flex-none p-4 md:p-6 border-b-4 border-border bg-card shadow-neo">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+          <h1 className="text-xl md:text-2xl font-bold flex items-center gap-3">
             <div className="p-2 rounded-none bg-primary/10 border-2 border-primary/20">
-              <BookOpen className="w-6 h-6 text-primary" />
+              <BookOpen className="w-5 h-5 md:w-6 md:h-6 text-primary" />
             </div>
-            {course.title}
+            <span className="line-clamp-1">{course.title}</span>
           </h1>
           <GuidedHelpButton onClick={openHelp} />
         </div>
@@ -128,14 +139,15 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
               {completedChapters.size} / {totalChaptersCount} chapters
             </span>
           </div>
-          
+
           <Progress
             value={progress}
             className={cn(
-              "w-full h-3 border-2 border-border",
+              "w-full h-3 border-2 border-border transition-all duration-500",
               allChaptersCompleted && "bg-success/20"
             )}
             indicatorClassName={cn(
+              "transition-all duration-500 ease-out",
               allChaptersCompleted ? "bg-success" : "bg-primary"
             )}
           />
@@ -155,7 +167,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
             <AlertTitle>Generating Videos</AlertTitle>
             <AlertDescription>
               <div className="space-y-2">
-                <p>Processing {queueStatus.pending} videos. This may take a few minutes.</p>
+                <p>Processing {processingCount} {processingCount === 1 ? 'video' : 'videos'}. This may take a few minutes.</p>
                 <p className="text-xs text-muted-foreground">
                   You can continue editing while videos generate. Progress is saved automatically.
                 </p>
@@ -173,13 +185,13 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                 <p>
                   {chaptersWithErrors} {chaptersWithErrors === 1 ? "chapter" : "chapters"} failed to generate videos.
                 </p>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleGenerateAll(true)}
                     disabled={isSaving || isGeneratingVideos}
-                    className="border-2"
+                    className="border-2 w-full sm:w-auto"
                   >
                     Retry Failed Videos
                   </Button>
@@ -188,7 +200,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                     variant="outline"
                     onClick={() => handleGenerateAll(false)}
                     disabled={isSaving || isGeneratingVideos}
-                    className="border-2"
+                    className="border-2 w-full sm:w-auto"
                   >
                     Regenerate All
                   </Button>
@@ -202,7 +214,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
       {/* Content Section */}
       <ScrollArea className="flex-grow">
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="p-6 space-y-6">
+          <div className="p-4 md:p-6 space-y-6">
             {course.units.flatMap((unit) => unit.chapters).length === 0 && (
               <Alert className="border-2 border-warning bg-warning/5">
                 <AlertCircle className="h-4 w-4" />
@@ -245,97 +257,9 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
         </DragDropContext>
       </ScrollArea>
 
-      {/* Footer Actions */}
-      <div className="flex-none p-6 border-t-4 border-border bg-card shadow-neo">
-        <div className="flex items-center justify-between gap-4">
-          <Button variant="outline" asChild className="border-2">
-            <Link href="/dashboard/explore">
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              Back to Explore
-            </Link>
-          </Button>
+      {/* Footer Actions - NEOBRUTAL STYLED */}
+      <ChapterFooter router={router} courseEditor={courseEditor} course={course} isSaving={isSaving} isGeneratingVideos={isGeneratingVideos} totalChaptersCount={totalChaptersCount} allChaptersCompleted={allChaptersCompleted} handleGenerateAll={handleGenerateAll} saveAndContinue={saveAndContinue} toast={toast}></ChapterFooter>
 
-          <div className="flex gap-3">
-            {!allChaptersCompleted && !isGeneratingVideos && totalChaptersCount > 0 && (
-              <Button
-                onClick={() => handleGenerateAll(false)}
-                disabled={isSaving}
-                variant="outline"
-                className="border-2"
-              >
-                <PlayCircle className="w-4 h-4 mr-2" />
-                Generate All Videos
-              </Button>
-            )}
-
-            {totalChaptersCount > 0 && (
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  try {
-                    const updateData = courseEditor.prepareUpdateData()
-                    const saveResponse = await api.post(`/api/course/update-chapters`, updateData)
-
-                    const saveSuccess = saveResponse?.data?.success
-                    if (!saveSuccess) {
-                      throw new Error(saveResponse?.data?.error || "Failed to save")
-                    }
-                    
-                    toast({
-                      title: "Saved",
-                      description: "Course saved. You can generate videos later.",
-                    })
-                    
-                    router.push(`/dashboard/course/${course.slug}`)
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: error instanceof Error ? error.message : "Failed to save",
-                      variant: "destructive",
-                    })
-                  }
-                }}
-                disabled={isSaving || isGeneratingVideos}
-                className="border-2"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Save Without Videos
-              </Button>
-            )}
-
-            <Button
-              onClick={saveAndContinue}
-              disabled={isSaving || isGeneratingVideos || totalChaptersCount === 0}
-              className={cn(
-                "border-2 shadow-neo transition-all",
-                allChaptersCompleted && "bg-success hover:bg-success/90"
-              )}
-            >
-              {isSaving || isGeneratingVideos ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {isSaving ? "Saving..." : "Generating..."}
-                </>
-              ) : (
-                <>
-                  {allChaptersCompleted ? (
-                    <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      View Course
-                    </>
-                  ) : (
-                    <>
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      Save & Generate
-                    </>
-                  )}
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </div>
 
       {/* Video Preview Dialog */}
       <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
@@ -343,7 +267,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
           <DialogHeader>
             <DialogTitle className="text-lg font-bold">{currentVideoTitle}</DialogTitle>
           </DialogHeader>
-          {currentVideoId && <VideoPlayer videoId={currentVideoId} className="mt-4" />}
+          {currentVideoId && <VideoPreview videoId={currentVideoId}  />}
         </DialogContent>
       </Dialog>
     </div>

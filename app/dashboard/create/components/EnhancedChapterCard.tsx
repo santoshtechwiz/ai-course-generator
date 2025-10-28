@@ -1,18 +1,17 @@
 /**
  * app/dashboard/create/components/EnhancedChapterCard.tsx
  * 
- * REFACTORED: Simplified chapter card with stable state management
- * - Removed redundant useEffect hooks
- * - Single source of truth from parent hook
- * - Consistent Nerobrutal theme styling
- * - Clear progress indicators
+ * OPTIMIZED: Stable chapter card with instant progress updates
+ * - Memoized to prevent unnecessary re-renders
+ * - Stable refs for callbacks
+ * - Real-time progress visualization
  */
 
 "use client"
 
 import { cn } from "@/lib/utils"
-import React, { useState, useMemo } from "react"
-import { Loader2, CheckCircle, PlayCircle, Video, Eye, XCircle } from "lucide-react"
+import React, { useState, useMemo, memo } from "react"
+import { Loader2, CheckCircle, PlayCircle, Video, Eye, XCircle, Clock } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,6 +20,7 @@ import type { VideoStatus } from "../hooks/useVideoProcessing"
 import VideoPlayer from "../../course/[slug]/components/video/components/VideoPlayer"
 import { VideoProgressIndicator } from "./VideoProgressIndicator"
 import { Chapter } from "@/app/types/course-types"
+import VideoPreview from "./VideoPreview"
 
 type Props = {
   chapter: Chapter
@@ -55,40 +55,54 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
   ) => {
     const [showVideo, setShowVideo] = useState(false)
 
-    // Implement ref handler
+    // Implement ref handler - memoized
     React.useImperativeHandle(ref, () => ({
       triggerLoad: async () => {
         if (!chapter.videoId && onGenerateVideo) {
           await onGenerateVideo()
         }
       },
-    }))
+    }), [chapter.videoId, onGenerateVideo])
 
-    // Determine current status
+    // Memoize current status to prevent recalculation
     const currentStatus = useMemo(() => {
       if (videoStatus) return videoStatus.status
       if (chapter.videoId) return "completed"
       return "idle"
-    }, [videoStatus, chapter.videoId])
+    }, [videoStatus?.status, chapter.videoId])
+    
+    // Memoize progress value
+    const progressValue = useMemo(() => {
+      return videoStatus?.progress ?? 0
+    }, [videoStatus?.progress])
 
-    // Status icon
-    const StatusIcon = () => {
-      switch (currentStatus) {
-        case "queued":
-          return <Loader2 className="h-4 w-4 text-yellow-500 animate-spin" />
-        case "processing":
-          return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
-        case "completed":
-          return <CheckCircle className="h-4 w-4 text-green-500" />
-        case "error":
-          return <XCircle className="h-4 w-4 text-red-500" />
-        default:
-          return <PlayCircle className="h-4 w-4 text-muted-foreground" />
+    // Memoize status display
+    const statusDisplay = useMemo(() => {
+      const icons = {
+        queued: <Clock className="h-4 w-4 text-yellow-500 animate-pulse" />,
+        processing: <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />,
+        completed: <CheckCircle className="h-4 w-4 text-green-500" />,
+        error: <XCircle className="h-4 w-4 text-red-500" />,
+        idle: <PlayCircle className="h-4 w-4 text-muted-foreground" />
       }
-    }
+      
+      const messages = {
+        queued: videoStatus?.message || 'Queued',
+        processing: videoStatus?.message || 'Processing',
+        completed: 'Ready',
+        error: videoStatus?.message || 'Failed',
+        idle: 'Not started'
+      }
+      
+      return {
+        icon: icons[currentStatus],
+        message: messages[currentStatus],
+        progress: progressValue
+      }
+    }, [currentStatus, videoStatus?.message, progressValue])
 
-    // Handle video preview
-    const handlePreviewVideo = () => {
+    // Stable callback for preview
+    const handlePreviewVideo = React.useCallback(() => {
       if (chapter.videoId) {
         if (onPreviewVideo) {
           onPreviewVideo(chapter.videoId, chapter.title)
@@ -96,7 +110,7 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
           setShowVideo(true)
         }
       }
-    }
+    }, [chapter.videoId, chapter.title, onPreviewVideo])
 
     return (
       <>
@@ -116,7 +130,7 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
                   </Badge>
                 )}
               </div>
-              <StatusIcon />
+              {statusDisplay.icon}
             </CardTitle>
           </CardHeader>
 
@@ -124,7 +138,7 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
             {/* Title */}
             <p className="text-sm font-medium text-foreground">{chapter.title}</p>
 
-            {/* Progress Indicator */}
+            {/* Real-time Progress Indicator */}
             {(currentStatus !== "idle" || chapter.videoId) && (
               <VideoProgressIndicator
                 status={videoStatus}
@@ -135,7 +149,7 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
               />
             )}
 
-            {/* Video Ready */}
+            {/* Video Ready State */}
             {chapter.videoId && (
               <div className="flex items-center justify-between p-2 rounded-none bg-success/10 border-2 border-success/20">
                 <div className="flex items-center space-x-2">
@@ -186,7 +200,7 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-card rounded-none w-full max-w-3xl p-6 border-6 border-border shadow-neo">
               <h3 className="font-bold text-lg mb-4">{chapter.title}</h3>
-              <VideoPlayer videoId={chapter.videoId} />
+              <VideoPreview videoId={chapter.videoId} />
               <div className="mt-4 flex justify-end">
                 <Button onClick={() => setShowVideo(false)}>Close</Button>
               </div>
@@ -200,4 +214,17 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
 
 EnhancedChapterCard.displayName = "EnhancedChapterCard"
 
-export default EnhancedChapterCard
+// Memoize component to prevent unnecessary re-renders
+export default memo(EnhancedChapterCard, (prev, next) => {
+  // Only re-render if these specific props change
+  return (
+    prev.chapter.id === next.chapter.id &&
+    prev.chapter.videoId === next.chapter.videoId &&
+    prev.chapter.title === next.chapter.title &&
+    prev.videoStatus?.status === next.videoStatus?.status &&
+    prev.videoStatus?.progress === next.videoStatus?.progress &&
+    prev.videoStatus?.message === next.videoStatus?.message &&
+    prev.isProcessing === next.isProcessing &&
+    prev.isFree === next.isFree
+  )
+})

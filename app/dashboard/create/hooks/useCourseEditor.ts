@@ -1,11 +1,10 @@
 /**
- * app/dashboard/create/hooks/useEnhancedCourseEditor.ts
+ * app/dashboard/create/hooks/useCourseEditor.ts
  * 
- * REFACTORED: Simplified course editor with stable video processing
- * - Single video processing hook
- * - Consolidated toast notifications
- * - Clean state management
- * - Proper error handling
+ * OPTIMIZED: Stable course editor with instant UI updates
+ * - Stable callback references
+ * - Optimized state updates
+ * - Better video status synchronization
  */
 
 "use client"
@@ -39,39 +38,69 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
   const [addingToUnitId, setAddingToUnitId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
-  // Refs for chapter components
+  // Refs for chapter components and callbacks
   const chapterRefs = useRef<Record<string, React.RefObject<ChapterCardHandler>>>({})
+  const toastShownRef = useRef<Set<string>>(new Set())
   
-  // Use unified video processing hook
+  // Stable callback wrapper to prevent recreating toast notifications
+  const showToastOnce = useCallback((key: string, message: string, type: 'success' | 'error' = 'success') => {
+    if (toastShownRef.current.has(key)) return
+    
+    toastShownRef.current.add(key)
+    toast({
+      title: type === 'success' ? 'Success' : 'Error',
+      description: message,
+      variant: type === 'error' ? 'destructive' : 'default'
+    })
+    
+    // Clear after 3 seconds
+    setTimeout(() => {
+      toastShownRef.current.delete(key)
+    }, 3000)
+  }, [toast])
+  
+  // Use unified video processing hook with stable callbacks
   const videoProcessing = useVideoProcessing({
-    onComplete: (status) => {
+    onComplete: useCallback((status) => {
       handleChapterComplete(String(status.chapterId))
       
       // Update course state with new video ID
       if (status.videoId) {
         setCourse((prevCourse) => {
-          const newCourse = JSON.parse(JSON.stringify(prevCourse))
-          for (const unit of newCourse.units) {
-            const chapterIndex = unit.chapters.findIndex((ch: Chapter) => ch.id === status.chapterId)
-            if (chapterIndex !== -1) {
-              unit.chapters[chapterIndex].videoId = status.videoId
-              unit.chapters[chapterIndex].videoStatus = "completed"
-              break
-            }
-          }
+          const newCourse = { ...prevCourse }
+          newCourse.units = newCourse.units.map(unit => ({
+            ...unit,
+            chapters: unit.chapters.map(ch => 
+              ch.id === status.chapterId 
+                ? { ...ch, videoId: status.videoId, videoStatus: "completed" }
+                : ch
+            )
+          }))
           return newCourse
         })
+        
+        showToastOnce(`complete-${status.chapterId}`, 'Video generated successfully!', 'success')
       }
-    },
-    onError: (status) => {
+    }, []),
+    onError: useCallback((status) => {
       console.error(`Video failed for chapter ${status.chapterId}:`, status.message)
-    },
+      showToastOnce(`error-${status.chapterId}`, status.message || 'Video generation failed', 'error')
+    }, []),
     autoRetry: false,
   })
 
-  const { processVideo, processMultipleVideos, cancelProcessing, retryVideo, initializeChapterStatus, isProcessing, statuses, queueStatus } = videoProcessing
+  const { 
+    processVideo, 
+    processMultipleVideos, 
+    cancelProcessing, 
+    retryVideo, 
+    initializeChapterStatus, 
+    isProcessing, 
+    statuses, 
+    queueStatus 
+  } = videoProcessing
 
-  // Computed values
+  // Memoized computed values
   const totalChaptersCount = useMemo(() => {
     return course.units.reduce((acc, unit) => acc + unit.chapters.length, 0)
   }, [course.units])
@@ -102,20 +131,20 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
         }
       })
     })
-  }, [course])
+  }, [course.units])
 
-  // Initialize chapters with existing videos
+  // Initialize chapters with existing videos - run once
   React.useEffect(() => {
     const allChapters = course.units.flatMap((unit) => unit.chapters)
     const chaptersWithVideos = allChapters.filter((chapter) => chapter.videoId)
     
     chaptersWithVideos.forEach((chapter) => {
       initializeChapterStatus(chapter.id, chapter.videoId)
-      handleChapterComplete(String(chapter.id))
+      setCompletedChapters(prev => new Set(prev).add(String(chapter.id)))
     })
   }, []) // Run once on mount
 
-  // Utility function to extract YouTube ID from URL or direct ID
+  // Stable utility function
   const extractYoutubeIdFromUrl = useCallback((url: string): string | null => {
     try {
       if (url.includes("youtube.com/watch")) {
@@ -139,9 +168,13 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
     }
   }, [])
 
-  // Handler functions
+  // Stable handler functions
   const handleChapterComplete = useCallback((chapterId: string) => {
-    setCompletedChapters((prev) => new Set(prev).add(chapterId))
+    setCompletedChapters((prev) => {
+      const newSet = new Set(prev)
+      newSet.add(chapterId)
+      return newSet
+    })
   }, [])
 
   const handleGenerateAll = useCallback(
@@ -168,11 +201,8 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
           description: retryFailed ? "No chapters need retry" : "All chapters already have videos",
         })
         
-        const newCompletedChapters = new Set(completedChapters)
-        allChapters.forEach((chapter) => {
-          newCompletedChapters.add(String(chapter.id))
-        })
-        setCompletedChapters(newCompletedChapters)
+        // Mark all as completed
+        setCompletedChapters(new Set(allChapters.map(ch => String(ch.id))))
         return true
       }
 
@@ -181,7 +211,7 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
 
       return result.success
     },
-    [course.units, completedChapters, processMultipleVideos, statuses, toast],
+    [course.units, processMultipleVideos, statuses, toast],
   )
 
   const generateVideoForChapter = useCallback(
@@ -205,20 +235,21 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
   const saveChapterTitle = useCallback(() => {
     if (!editingChapterId) return
 
-    const newCourse = JSON.parse(JSON.stringify(course))
+    setCourse(prevCourse => {
+      const newCourse = { ...prevCourse }
+      newCourse.units = newCourse.units.map(unit => ({
+        ...unit,
+        chapters: unit.chapters.map(ch => 
+          String(ch.id) === editingChapterId
+            ? { ...ch, title: editingChapterTitle, youtubeSearchQuery: editingChapterTitle }
+            : ch
+        )
+      }))
+      return newCourse
+    })
 
-    for (const unit of newCourse.units) {
-      const chapterIndex = unit.chapters.findIndex((ch: Chapter) => String(ch.id) === editingChapterId)
-      if (chapterIndex !== -1) {
-        unit.chapters[chapterIndex].title = editingChapterTitle
-        unit.chapters[chapterIndex].youtubeSearchQuery = editingChapterTitle
-        break
-      }
-    }
-
-    setCourse(newCourse)
     setEditingChapterId(null)
-  }, [course, editingChapterId, editingChapterTitle])
+  }, [editingChapterId, editingChapterTitle])
 
   const cancelEditingChapter = useCallback(() => {
     setEditingChapterId(null)
@@ -273,37 +304,39 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
       }
     }
 
-    const newCourseData = JSON.parse(JSON.stringify(course))
-    const unitIndex = newCourseData.units.findIndex((unit: CourseUnit) => String(unit.id) === addingToUnitId)
-
-    if (unitIndex !== -1) {
-      const newChapterId = `new-${Date.now()}`
-      const newChapterObj = {
-        id: newChapterId,
-        title: newChapter.title,
-        unitId: addingToUnitId,
-        content: "",
-        youtubeSearchQuery: newChapter.title,
-        videoId: youtubeId,
-        videoStatus: youtubeId ? "completed" : null,
-      }
-
-      newCourseData.units[unitIndex].chapters.push(newChapterObj)
-      setCourse(newCourseData)
-
-      if (youtubeId) {
-        handleChapterComplete(newChapterId)
-      }
-
-      setAddingToUnitId(null)
-      setNewChapter({ title: "", youtubeId: "" })
-
-      toast({
-        title: "Chapter Added",
-        description: `${newChapter.title} has been added to the unit`,
-      })
+    const newChapterId = `new-${Date.now()}`
+    const newChapterObj = {
+      id: newChapterId as any,
+      title: newChapter.title,
+      unitId: addingToUnitId as any,
+      content: "",
+      youtubeSearchQuery: newChapter.title,
+      videoId: youtubeId,
+      videoStatus: youtubeId ? "completed" as any : null,
     }
-  }, [course, addingToUnitId, newChapter, extractYoutubeIdFromUrl, handleChapterComplete, toast])
+
+    setCourse(prevCourse => {
+      const newCourse = { ...prevCourse }
+      newCourse.units = newCourse.units.map(unit => 
+        String(unit.id) === addingToUnitId
+          ? { ...unit, chapters: [...unit.chapters, newChapterObj as any] }
+          : unit
+      )
+      return newCourse
+    })
+
+    if (youtubeId) {
+      handleChapterComplete(newChapterId)
+    }
+
+    setAddingToUnitId(null)
+    setNewChapter({ title: "", youtubeId: "" })
+
+    toast({
+      title: "Chapter Added",
+      description: `${newChapter.title} has been added to the unit`,
+    })
+  }, [addingToUnitId, newChapter, extractYoutubeIdFromUrl, handleChapterComplete, toast])
 
   const cancelAddingChapter = useCallback(() => {
     setAddingToUnitId(null)
@@ -316,35 +349,47 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
       if (!destination) return
       if (destination.droppableId === source.droppableId && destination.index === source.index) return
 
-      const newCourse = JSON.parse(JSON.stringify(course))
-
       const sourceUnitId = source.droppableId.replace("unit-", "")
       const destUnitId = destination.droppableId.replace("unit-", "")
 
-      const sourceUnitIndex = newCourse.units.findIndex((u: CourseUnit) => String(u.id) === sourceUnitId)
-      const destUnitIndex = newCourse.units.findIndex((u: CourseUnit) => String(u.id) === destUnitId)
+      setCourse(prevCourse => {
+        const newCourse = { ...prevCourse }
+        
+        const sourceUnitIndex = newCourse.units.findIndex((u) => String(u.id) === sourceUnitId)
+        const destUnitIndex = newCourse.units.findIndex((u) => String(u.id) === destUnitId)
 
-      if (sourceUnitIndex === -1 || destUnitIndex === -1) return
+        if (sourceUnitIndex === -1 || destUnitIndex === -1) return prevCourse
 
-      const sourceChapters = newCourse.units[sourceUnitIndex].chapters
-      const destChapters = sourceUnitIndex === destUnitIndex ? sourceChapters : newCourse.units[destUnitIndex].chapters
+        const sourceChapters = [...newCourse.units[sourceUnitIndex].chapters]
+        const destChapters = sourceUnitIndex === destUnitIndex ? sourceChapters : [...newCourse.units[destUnitIndex].chapters]
 
-      const [removed] = sourceChapters.splice(source.index, 1)
+        const [removed] = sourceChapters.splice(source.index, 1)
 
-      if (sourceUnitId !== destUnitId) {
-        removed.unitId = destUnitId
-      }
+        if (sourceUnitId !== destUnitId) {
+          removed.unitId = destUnitId as any
+        }
 
-      destChapters.splice(destination.index, 0, removed)
+        destChapters.splice(destination.index, 0, removed)
 
-      setCourse(newCourse)
+        newCourse.units = newCourse.units.map((unit, idx) => {
+          if (idx === sourceUnitIndex) {
+            return { ...unit, chapters: sourceChapters }
+          }
+          if (idx === destUnitIndex && sourceUnitIndex !== destUnitIndex) {
+            return { ...unit, chapters: destChapters }
+          }
+          return unit
+        })
+
+        return newCourse
+      })
 
       toast({
         title: "Chapter Moved",
-        description: `${removed.title} has been moved successfully`,
+        description: "Chapter has been moved successfully",
       })
     },
-    [course, toast],
+    [toast],
   )
 
   const prepareUpdateData = useCallback(() => {
