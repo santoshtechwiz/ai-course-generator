@@ -30,14 +30,14 @@ import {
 } from "lucide-react"
 
 import { RandomQuiz } from "@/app/dashboard/(quiz)/components/layouts/RandomQuiz"
-import { useRelatedQuizzes } from "@/hooks/useRelatedQuizzes"
 import { motion, AnimatePresence } from "framer-motion"
-import RecommendedSection from "@/components/shared/RecommendedSection"
 import { cn } from "@/lib/utils"
 
 import { useAuth } from "@/modules/auth"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { QuizActions } from "@/components/quiz/QuizActions"
+import { QuizCreationModal } from "@/components/quiz/QuizCreationModal"
+import { hasPremiumFeatures } from "@/types/subscription-plans"
 
 interface QuizContextType {
   isFocusMode: boolean
@@ -319,6 +319,7 @@ export function QuizPlayInterface({
   const [isPaused, setIsPaused] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [startTime] = useState(Date.now())
+  const [showCreationModal, setShowCreationModal] = useState(false)
 
   const mainRef = useRef<HTMLDivElement>(null)
   const sidebarRef = useRef<HTMLDivElement>(null)
@@ -336,6 +337,38 @@ export function QuizPlayInterface({
   const title = quizData?.title || "Quiz"
   const difficulty = quizData?.difficulty
 
+  // Check if user should see creation modal (unsubscribed users and non-logged-in users)
+  const shouldShowCreationModal = useMemo(() => {
+    // Show modal for non-premium users who are not the quiz owner, OR for unauthenticated users
+    const isSubscribed = hasPremiumFeatures(plan)
+    return !isOwner && (!isSubscribed || !authUser)
+  }, [plan, isOwner, authUser])
+
+  // Modal handlers
+  const handleCreateQuiz = useCallback(() => {
+    if (!authUser) {
+      // Redirect to login for unauthenticated users
+      window.location.href = "/auth/signin?callbackUrl=" + encodeURIComponent(window.location.pathname)
+    } else {
+      // Navigate to quiz creation page for authenticated users
+      window.location.href = "/dashboard/create-quiz"
+    }
+  }, [authUser])
+
+  const handleSubscribe = useCallback(() => {
+    if (!authUser) {
+      // Redirect to login for unauthenticated users
+      window.location.href = "/auth/signin?callbackUrl=" + encodeURIComponent(window.location.pathname)
+    } else {
+      // Navigate to subscription page for authenticated users
+      window.location.href = "/dashboard/subscription"
+    }
+  }, [authUser])
+
+  const handleCloseModal = useCallback(() => {
+    setShowCreationModal(false)
+  }, [])
+
   // Timer effect
   useEffect(() => {
     if (isPaused) return
@@ -346,6 +379,18 @@ export function QuizPlayInterface({
 
     return () => clearInterval(interval)
   }, [isPaused, startTime])
+
+  // Show creation modal for unsubscribed users and unauthenticated users
+  useEffect(() => {
+    if (shouldShowCreationModal && !showCreationModal) {
+      // Show immediately for unauthenticated users, delay for authenticated unsubscribed users
+      const delay = authUser ? 1000 : 0
+      const timer = setTimeout(() => {
+        setShowCreationModal(true)
+      }, delay)
+      return () => clearTimeout(timer)
+    }
+  }, [shouldShowCreationModal, showCreationModal, authUser])
 
   // Sidebar toggle with transition (only for mobile)
   const toggleSidebar = useCallback(() => {
@@ -623,6 +668,16 @@ export function QuizPlayInterface({
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Quiz Creation Modal for unsubscribed users and unauthenticated users */}
+      <QuizCreationModal
+        isOpen={showCreationModal}
+        onClose={handleCloseModal}
+        onSubscribe={handleSubscribe}
+        onCreateQuiz={handleCreateQuiz}
+        mode="block"
+        isAuthenticated={!!authUser}
+      />
     </QuizContext.Provider>
   )
 }

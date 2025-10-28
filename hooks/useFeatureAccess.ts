@@ -3,8 +3,7 @@
 import { useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { useUnifiedSubscription } from './useUnifiedSubscription'
-import type { SubscriptionPlanType } from '@/types/subscription'
-import { SUBSCRIPTION_PLANS, isQuizTypeAvailable } from '@/types/subscription-plans'
+import { SubscriptionPlanType, isQuizTypeAvailable } from '@/types/subscription-plans'
 import { checkFeatureAccess, type FeatureType, type AccessDenialReason, type FeatureRequirement, type FeatureAccess, FEATURE_REQUIREMENTS } from '@/lib/featureAccess'
 
 

@@ -27,7 +27,7 @@ import {
   
   // Constants
   DEFAULT_FREE_SUBSCRIPTION,
-  SUBSCRIPTION_PLANS,
+  SubscriptionPlanType,
   SUBSCRIPTION_CACHE_CONFIG
 } from '@/types/subscription'
 
@@ -110,10 +110,10 @@ describe('Subscription System - Production Tests', () => {
   
   describe('Plan Configuration', () => {
     it('should have valid plan configurations', () => {
-      expect(SUBSCRIPTION_PLANS).toBeDefined()
-      expect(Object.keys(SUBSCRIPTION_PLANS)).toEqual(['FREE', 'BASIC', 'PREMIUM', 'ENTERPRISE'])
+      expect(SubscriptionPlanType).toBeDefined()
+      expect(Object.keys(SubscriptionPlanType)).toEqual(['FREE', 'BASIC', 'PREMIUM', 'ENTERPRISE'])
       
-      Object.values(SUBSCRIPTION_PLANS).forEach(plan => {
+      Object.values(SubscriptionPlanType).forEach(plan => {
         expect(plan.features.credits).toBeGreaterThan(0)
         expect(plan.price).toBeGreaterThanOrEqual(0)
         expect(plan.name).toBeTruthy()
@@ -121,7 +121,7 @@ describe('Subscription System - Production Tests', () => {
     })
     
     it('should have increasing credit limits', () => {
-      const plans = Object.values(SUBSCRIPTION_PLANS)
+      const plans = Object.values(SubscriptionPlanType)
       const credits = plans.map(plan => plan.features.credits)
       
       expect(credits[0]).toBeLessThan(credits[1]) // FREE < BASIC

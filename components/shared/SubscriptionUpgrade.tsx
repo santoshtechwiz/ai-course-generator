@@ -14,8 +14,7 @@ import {
   X
 } from 'lucide-react'
 import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
-import type { SubscriptionPlanType } from '@/types/subscription'
-import { getPlanConfig, SUBSCRIPTION_PLANS } from '@/types/subscription-plans'
+import { getPlanConfig, SubscriptionPlanType } from '@/types/subscription-plans'
 import { buildFeatureList } from '@/utils/subscription-ui-helpers'
 
 // ============= Types =============

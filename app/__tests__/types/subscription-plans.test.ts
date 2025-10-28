@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, it, expect } from 'vitest'
-import SUBSCRIPTION_PLANS, { 
+import SubscriptionPlanType, { 
   getPlansArray, 
   findPlanById,
   getMaxQuestions,
@@ -11,14 +11,14 @@ import SUBSCRIPTION_PLANS, {
   type PlanConfig 
 } from '@/types/subscription-plans'
 
-describe('SUBSCRIPTION_PLANS', () => {
+describe('SubscriptionPlanType', () => {
   it('should export a Record with all plan types', () => {
-    expect(SUBSCRIPTION_PLANS).toBeDefined()
-    expect(typeof SUBSCRIPTION_PLANS).toBe('object')
-    expect(SUBSCRIPTION_PLANS.FREE).toBeDefined()
-    expect(SUBSCRIPTION_PLANS.BASIC).toBeDefined()
-    expect(SUBSCRIPTION_PLANS.PREMIUM).toBeDefined()
-    expect(SUBSCRIPTION_PLANS.ENTERPRISE).toBeDefined()
+    expect(SubscriptionPlanType).toBeDefined()
+    expect(typeof SubscriptionPlanType).toBe('object')
+    expect(SubscriptionPlanType.FREE).toBeDefined()
+    expect(SubscriptionPlanType.BASIC).toBeDefined()
+    expect(SubscriptionPlanType.PREMIUM).toBeDefined()
+    expect(SubscriptionPlanType.ENTERPRISE).toBeDefined()
   })
 
   it('should have correct structure for each plan', () => {
@@ -28,7 +28,7 @@ describe('SUBSCRIPTION_PLANS', () => {
       'contentCreation', 'mcqGenerator', 'prioritySupport', 'aiAccuracy'
     ]
 
-    Object.values(SUBSCRIPTION_PLANS).forEach((plan) => {
+    Object.values(SubscriptionPlanType).forEach((plan) => {
       requiredKeys.forEach((key) => {
         expect(plan).toHaveProperty(key)
       })
@@ -36,10 +36,10 @@ describe('SUBSCRIPTION_PLANS', () => {
   })
 
   it('should have correct plan hierarchy prices', () => {
-    expect(SUBSCRIPTION_PLANS.FREE.price).toBe(0)
-    expect(SUBSCRIPTION_PLANS.BASIC.price).toBeGreaterThan(0)
-    expect(SUBSCRIPTION_PLANS.PREMIUM.price).toBeGreaterThan(SUBSCRIPTION_PLANS.BASIC.price)
-    expect(SUBSCRIPTION_PLANS.ENTERPRISE.price).toBeGreaterThan(SUBSCRIPTION_PLANS.PREMIUM.price)
+    expect(SubscriptionPlanType.FREE.price).toBe(0)
+    expect(SubscriptionPlanType.BASIC.price).toBeGreaterThan(0)
+    expect(SubscriptionPlanType.PREMIUM.price).toBeGreaterThan(SubscriptionPlanType.BASIC.price)
+    expect(SubscriptionPlanType.ENTERPRISE.price).toBeGreaterThan(SubscriptionPlanType.PREMIUM.price)
   })
 })
 
@@ -85,23 +85,23 @@ describe('findPlanById', () => {
 
 describe('Direct plan access', () => {
   it('should access plan config directly from Record', () => {
-    const config = SUBSCRIPTION_PLANS.PREMIUM
+    const config = SubscriptionPlanType.PREMIUM
     expect(config).toBeDefined()
     expect(config.id).toBe('PREMIUM')
     expect(config.mcqGenerator).toBe(true)
   })
 
   it('should access all plans via Record', () => {
-    expect(SUBSCRIPTION_PLANS.FREE).toBeDefined()
-    expect(SUBSCRIPTION_PLANS.BASIC).toBeDefined()
-    expect(SUBSCRIPTION_PLANS.PREMIUM).toBeDefined()
-    expect(SUBSCRIPTION_PLANS.ENTERPRISE).toBeDefined()
+    expect(SubscriptionPlanType.FREE).toBeDefined()
+    expect(SubscriptionPlanType.BASIC).toBeDefined()
+    expect(SubscriptionPlanType.PREMIUM).toBeDefined()
+    expect(SubscriptionPlanType.ENTERPRISE).toBeDefined()
   })
 })
 
 describe('Plan hierarchy via Object.keys', () => {
   it('should have all plan types as keys', () => {
-    const keys = Object.keys(SUBSCRIPTION_PLANS) as SubscriptionPlanType[]
+    const keys = Object.keys(SubscriptionPlanType) as SubscriptionPlanType[]
     expect(keys).toContain('FREE')
     expect(keys).toContain('BASIC')
     expect(keys).toContain('PREMIUM')
@@ -109,34 +109,34 @@ describe('Plan hierarchy via Object.keys', () => {
   })
 
   it('should have 4 plan types', () => {
-    const keys = Object.keys(SUBSCRIPTION_PLANS)
+    const keys = Object.keys(SubscriptionPlanType)
     expect(keys.length).toBe(4)
   })
 })
 
 describe('Plan comparison via price', () => {
   it('should have increasing prices', () => {
-    expect(SUBSCRIPTION_PLANS.FREE.price).toBeLessThan(SUBSCRIPTION_PLANS.BASIC.price)
-    expect(SUBSCRIPTION_PLANS.BASIC.price).toBeLessThan(SUBSCRIPTION_PLANS.PREMIUM.price)
-    expect(SUBSCRIPTION_PLANS.PREMIUM.price).toBeLessThan(SUBSCRIPTION_PLANS.ENTERPRISE.price)
+    expect(SubscriptionPlanType.FREE.price).toBeLessThan(SubscriptionPlanType.BASIC.price)
+    expect(SubscriptionPlanType.BASIC.price).toBeLessThan(SubscriptionPlanType.PREMIUM.price)
+    expect(SubscriptionPlanType.PREMIUM.price).toBeLessThan(SubscriptionPlanType.ENTERPRISE.price)
   })
 
   it('should allow price-based comparison', () => {
-    const premiumPrice = SUBSCRIPTION_PLANS.PREMIUM.price
-    const basicPrice = SUBSCRIPTION_PLANS.BASIC.price
+    const premiumPrice = SubscriptionPlanType.PREMIUM.price
+    const basicPrice = SubscriptionPlanType.BASIC.price
     expect(premiumPrice > basicPrice).toBe(true)
   })
 
   it('should have FREE at price 0', () => {
-    expect(SUBSCRIPTION_PLANS.FREE.price).toBe(0)
+    expect(SubscriptionPlanType.FREE.price).toBe(0)
   })
 })
 
 describe('getMaxQuestions', () => {
   it('should return correct maxQuestionsPerQuiz for each plan', () => {
-    expect(getMaxQuestions('FREE')).toBe(SUBSCRIPTION_PLANS.FREE.maxQuestionsPerQuiz)
-    expect(getMaxQuestions('BASIC')).toBe(SUBSCRIPTION_PLANS.BASIC.maxQuestionsPerQuiz)
-    expect(getMaxQuestions('PREMIUM')).toBe(SUBSCRIPTION_PLANS.PREMIUM.maxQuestionsPerQuiz)
+    expect(getMaxQuestions('FREE')).toBe(SubscriptionPlanType.FREE.maxQuestionsPerQuiz)
+    expect(getMaxQuestions('BASIC')).toBe(SubscriptionPlanType.BASIC.maxQuestionsPerQuiz)
+    expect(getMaxQuestions('PREMIUM')).toBe(SubscriptionPlanType.PREMIUM.maxQuestionsPerQuiz)
   })
 
   it('should return correct max questions for ENTERPRISE plan', () => {
@@ -159,20 +159,20 @@ describe('hasReachedQuestionLimit', () => {
   })
 
   it('should return true when current questions >= max', () => {
-    const freeMax = SUBSCRIPTION_PLANS.FREE.maxQuestionsPerQuiz as number
+    const freeMax = SubscriptionPlanType.FREE.maxQuestionsPerQuiz as number
     expect(hasReachedQuestionLimit('FREE', freeMax)).toBe(true)
     expect(hasReachedQuestionLimit('FREE', freeMax + 1)).toBe(true)
   })
 
   it('should return false when current questions < max', () => {
-    const freeMax = SUBSCRIPTION_PLANS.FREE.maxQuestionsPerQuiz as number
+    const freeMax = SubscriptionPlanType.FREE.maxQuestionsPerQuiz as number
     expect(hasReachedQuestionLimit('FREE', freeMax - 1)).toBe(false)
     expect(hasReachedQuestionLimit('FREE', 0)).toBe(false)
   })
 
   it('should handle BASIC and PREMIUM plans correctly', () => {
-    const basicMax = SUBSCRIPTION_PLANS.BASIC.maxQuestionsPerQuiz as number
-    const premiumMax = SUBSCRIPTION_PLANS.PREMIUM.maxQuestionsPerQuiz as number
+    const basicMax = SubscriptionPlanType.BASIC.maxQuestionsPerQuiz as number
+    const premiumMax = SubscriptionPlanType.PREMIUM.maxQuestionsPerQuiz as number
 
     expect(hasReachedQuestionLimit('BASIC', basicMax - 1)).toBe(false)
     expect(hasReachedQuestionLimit('BASIC', basicMax)).toBe(true)
@@ -184,7 +184,7 @@ describe('hasReachedQuestionLimit', () => {
 
 describe('plan feature flags', () => {
   it('should grant all features to higher tier plans', () => {
-    const enterprise = SUBSCRIPTION_PLANS.ENTERPRISE
+    const enterprise = SubscriptionPlanType.ENTERPRISE
     expect(enterprise.mcqGenerator).toBe(true)
     expect(enterprise.courseCreation).toBe(true)
     expect(enterprise.pdfDownloads).toBe(true)
@@ -193,19 +193,19 @@ describe('plan feature flags', () => {
   })
 
   it('should have appropriate feature restrictions for FREE plan', () => {
-    const free = SUBSCRIPTION_PLANS.FREE
+    const free = SubscriptionPlanType.FREE
     expect(free.mcqGenerator).toBe(true) // Basic feature
     expect(free.pdfDownloads).toBe(false) // Restricted
     expect(typeof free.maxQuestionsPerQuiz).toBe('number')
-    expect(free.maxQuestionsPerQuiz).toBeLessThan(SUBSCRIPTION_PLANS.BASIC.maxQuestionsPerQuiz as number)
+    expect(free.maxQuestionsPerQuiz).toBeLessThan(SubscriptionPlanType.BASIC.maxQuestionsPerQuiz as number)
   })
 
   it('should have increasing monthly credits with plan tier', () => {
-    expect(SUBSCRIPTION_PLANS.FREE.monthlyCredits).toBeLessThan(
-      SUBSCRIPTION_PLANS.BASIC.monthlyCredits as number
+    expect(SubscriptionPlanType.FREE.monthlyCredits).toBeLessThan(
+      SubscriptionPlanType.BASIC.monthlyCredits as number
     )
-    expect(SUBSCRIPTION_PLANS.BASIC.monthlyCredits).toBeLessThan(
-      SUBSCRIPTION_PLANS.PREMIUM.monthlyCredits as number
+    expect(SubscriptionPlanType.BASIC.monthlyCredits).toBeLessThan(
+      SubscriptionPlanType.PREMIUM.monthlyCredits as number
     )
   })
 })
@@ -215,12 +215,12 @@ describe('type safety', () => {
     // This is a compile-time test - if it compiles, the types are correct
     const validPlans: SubscriptionPlanType[] = ['FREE', 'BASIC', 'PREMIUM', 'ENTERPRISE']
     validPlans.forEach((plan) => {
-      expect(SUBSCRIPTION_PLANS[plan]).toBeDefined()
+      expect(SubscriptionPlanType[plan]).toBeDefined()
     })
   })
 
   it('should have correct PlanConfig structure', () => {
-    const planConfig: PlanConfig = SUBSCRIPTION_PLANS.PREMIUM
+    const planConfig: PlanConfig = SubscriptionPlanType.PREMIUM
     
     // These should not throw type errors
     expect(typeof planConfig.id).toBe('string')

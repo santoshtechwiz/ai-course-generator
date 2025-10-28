@@ -149,7 +149,7 @@ export const HTTP_STATUS = {
 };
 
 // Subscription Plans
-const SUBSCRIPTION_PLANS = {
+const SubscriptionPlanType = {
   FREE: "FREE",
   BASIC: "BASIC",
   PREMIUM: "PREMIUM",
