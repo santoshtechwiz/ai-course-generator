@@ -5,7 +5,6 @@
  * for cost-effective AI generation.
  */
 
-import type { SubscriptionPlanType } from '@/types/subscription'
 import { AIBaseService, type AIServiceContext, type AIServiceResult } from './AIBaseService'
 import { buildMCQPromptWithSchema } from '@/lib/ai/prompts/mcq.prompt'
 import { buildFlashcardPrompt, getFlashcardFunctionSchema } from '@/lib/ai/prompts/flashcard.prompt'
@@ -14,6 +13,7 @@ import { buildBlanksPromptWithSchema } from '@/lib/ai/prompts/blanks.prompt'
 import { buildVideoQuizPromptWithSchema } from '@/lib/ai/prompts/video.prompt'
 import { truncateTranscript, estimateTokenCount, buildSummaryPromptWithSchema } from '@/lib/ai/prompts/summary.prompt'
 import { buildCoursePromptWithSchema } from '@/lib/ai/prompts/course.prompt'
+import SubscriptionPlanType from '@/types/subscription-plans'
 
 export class BasicAIService extends AIBaseService {
   constructor(context: AIServiceContext) {

@@ -266,15 +266,33 @@ private static youtubeClient_local = {
     try {
       // Dynamically import YoutubeLoader to avoid build-time resolution errors
       const { YoutubeLoader } = await import('@langchain/community/document_loaders/web/youtube')
+
+      if (!YoutubeLoader || !YoutubeLoader.createFromUrl) {
+        console.warn('LangChain YoutubeLoader not available')
+        return null
+      }
+
       const loader = YoutubeLoader.createFromUrl(`https://youtu.be/${videoId}`, {
         language: 'en',
         addVideoInfo: false,
       })
 
+      if (!loader || typeof loader.load !== 'function') {
+        console.warn('LangChain YoutubeLoader failed to create loader instance')
+        return null
+      }
+
       const docs = await loader.load()
+
+      if (!docs || !Array.isArray(docs) || docs.length === 0) {
+        console.warn('LangChain YoutubeLoader returned no documents')
+        return null
+      }
+
       return docs.map((doc: any) => doc.pageContent).join(' ')
     } catch (err) {
-      console.warn('LangChain YoutubeLoader unavailable or failed to load:', err)
+      console.warn('LangChain YoutubeLoader unavailable or failed to load:', err instanceof Error ? err.message : err)
+      // Don't throw error, just return null so other methods can be tried
       return null
     }
   }

@@ -5,7 +5,8 @@
  * This module can be safely imported anywhere without initialization issues.
  */
 
-import type { SubscriptionPlanType } from '@/types/subscription'
+import SubscriptionPlanType from '@/types/subscription-plans';
+
 
 // Simple context type
 interface SimpleAIContext {
@@ -342,10 +343,10 @@ async function generateSummary(
 /**
  * Generate video quiz
  */
- async function generateVideoQuiz(
+export async function generateVideoQuiz(
   courseTitle: string,
   transcript: string,
-  numberOfQuestions: number = 5,
+  numberOfQuestions: number,
   userId?: string,
   subscriptionPlan: SubscriptionPlanType = 'FREE',
   credits?: number

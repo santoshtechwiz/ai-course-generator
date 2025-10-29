@@ -36,6 +36,7 @@ export interface IntentResult {
   intent: ChatIntent
   confidence: number
   entities: {
+    quantity: number
     courseNames?: string[]
     quizTypes?: string[]
     topics?: string[]
@@ -46,6 +47,7 @@ export interface IntentResult {
 export interface UserContext {
   userId?: string
   isSubscribed?: boolean
+  subscriptionTier?: string
   enrolledCourses?: string[]
   recentTopics?: string[]
 }

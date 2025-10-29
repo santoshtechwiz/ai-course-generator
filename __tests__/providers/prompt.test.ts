@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { OpenAIProvider } from "@/lib/ai/providers/openai-provider";
-import dotenv from "dotenv";
-dotenv.config();
+import { buildMCQPrompt, getMCQFunctionSchema, buildMCQPromptWithSchema } from "@/lib/ai/prompts/mcq.prompt";
 
 describe("AI Prompt - Coding MCQ Generation", () => {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -204,5 +203,118 @@ describe("AI Prompt - Coding MCQ Generation", () => {
       },
       90000
     );
+  });
+});
+
+describe("MCQ Prompt Functions", () => {
+  describe("buildMCQPrompt", () => {
+    it("should build basic MCQ prompt for free users", () => {
+      const options = {
+        topic: "JavaScript Arrays",
+        numberOfQuestions: 5,
+        difficulty: "easy" as const,
+        isPremium: false,
+      };
+
+      const messages = buildMCQPrompt(options);
+
+      expect(Array.isArray(messages)).toBe(true);
+      expect(messages.length).toBe(2);
+
+      const [systemMessage, userMessage] = messages;
+
+      expect(systemMessage.role).toBe("system");
+      expect(systemMessage.content).toContain("educational multiple choice questions");
+
+      expect(userMessage.role).toBe("user");
+      expect(userMessage.content).toContain("Generate 5 multiple choice questions");
+      expect(userMessage.content).toContain("JavaScript Arrays");
+      expect(userMessage.content).toContain("easy difficulty level");
+    });
+
+    it("should build premium MCQ prompt with detailed explanations", () => {
+      const options = {
+        topic: "React Hooks",
+        numberOfQuestions: 3,
+        difficulty: "hard" as const,
+        isPremium: true,
+      };
+
+      const messages = buildMCQPrompt(options);
+
+      expect(Array.isArray(messages)).toBe(true);
+      expect(messages.length).toBe(2);
+
+      const [systemMessage, userMessage] = messages;
+
+      expect(systemMessage.role).toBe("system");
+      expect(systemMessage.content).toContain("high-quality educational multiple choice questions");
+      expect(systemMessage.content).toContain("detailed explanations");
+
+      expect(userMessage.role).toBe("user");
+      expect(userMessage.content).toContain("Generate 3 advanced multiple choice questions");
+      expect(userMessage.content).toContain("React Hooks");
+      expect(userMessage.content).toContain("hard difficulty level");
+      expect(userMessage.content).toContain("detailed explanation");
+    });
+  });
+
+  describe("getMCQFunctionSchema", () => {
+    it("should return correct function schema with string correctAnswer", () => {
+      const schema = getMCQFunctionSchema();
+
+      expect(schema).toHaveProperty("name", "generate_mcq_quiz");
+      expect(schema).toHaveProperty("description");
+      expect(schema).toHaveProperty("parameters");
+
+      const parameters = schema.parameters;
+      expect(parameters.type).toBe("object");
+      expect(parameters).toHaveProperty("properties.questions");
+
+      const questionSchema = parameters.properties.questions.items;
+      expect(questionSchema).toHaveProperty("properties");
+
+      const { question, options, correctAnswer, explanation } = questionSchema.properties;
+
+      expect(question.type).toBe("string");
+      expect(options.type).toBe("array");
+      expect(options.minItems).toBe(4);
+      expect(options.maxItems).toBe(4);
+
+      // This is the key test - correctAnswer should be string, not number
+      expect(correctAnswer.type).toBe("string");
+      expect(correctAnswer.description).toBe("The correct answer text");
+
+      expect(explanation.type).toBe("string");
+    });
+
+    it("should require question, options, and correctAnswer fields", () => {
+      const schema = getMCQFunctionSchema();
+      const questionSchema = schema.parameters.properties.questions.items;
+
+      expect(questionSchema.required).toEqual(["question", "options", "correctAnswer"]);
+    });
+  });
+
+  describe("buildMCQPromptWithSchema", () => {
+    it("should return prompt with function schema and function call", () => {
+      const options = {
+        topic: "TypeScript",
+        numberOfQuestions: 2,
+        difficulty: "medium" as const,
+        isPremium: true,
+      };
+
+      const result = buildMCQPromptWithSchema(options);
+
+      expect(result).toHaveProperty("messages");
+      expect(result).toHaveProperty("functions");
+      expect(result).toHaveProperty("functionCall");
+
+      expect(Array.isArray(result.messages)).toBe(true);
+      expect(Array.isArray(result.functions)).toBe(true);
+      expect(result.functions.length).toBe(1);
+      expect(result.functionCall).toEqual({ name: "generate_mcq_quiz" });
+    });
   });
 });

@@ -17,7 +17,7 @@ interface VideoPromptOptions {
 /**
  * Build video quiz generation prompt
  */
-export function buildVideoQuizPrompt(options: VideoPromptOptions): AIMessage[] {
+function buildVideoQuizPrompt(options: VideoPromptOptions): AIMessage[] {
   const { courseTitle, transcript, numberOfQuestions, difficulty = 'medium', quizType = 'mcq' } = options
   
   const systemMessage: AIMessage = {
@@ -101,44 +101,6 @@ export function getVideoQuizMCQFunctionSchema() {
   }
 }
 
-/**
- * Video quiz function schema for open-ended format
- */
-function getVideoQuizOpenEndedFunctionSchema() {
-  return {
-    name: 'generate_video_quiz_openended',
-    description: 'Generates open-ended questions from video transcript',
-    parameters: {
-      type: 'object',
-      properties: {
-        questions: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              question: { type: 'string' },
-              sampleAnswer: { 
-                type: 'string',
-                description: 'Comprehensive sample answer'
-              },
-              keyPoints: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Key points that should be in the answer'
-              },
-              timestampReference: {
-                type: 'string',
-                description: 'Approximate timestamp in video (optional)'
-              }
-            },
-            required: ['question', 'sampleAnswer', 'keyPoints'],
-          },
-        },
-      },
-      required: ['questions'],
-    },
-  }
-}
 
 /**
  * Build video quiz prompt with function schema included (MCQ format)

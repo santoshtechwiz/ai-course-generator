@@ -1,38 +1,38 @@
 /**
- * Intent Classifier Service
+ * Intent Classifier Service - FIXED
  * Classifies user chat messages into specific intents for smart routing
  */
 
 import OpenAI from 'openai'
-import { ChatIntent, IntentResult, UserContext } from '@/types/chat.types'
+import { NlpIntentClassifier } from './NlpIntentClassifier'
+import { ChatIntent, IntentResult, UserContext } from '../../../types/chat.types'
 
 export class IntentClassifier {
   private openai: OpenAI
+  private nlpClassifier: NlpIntentClassifier
   private patterns: Record<ChatIntent, RegExp[]> = {} as Record<ChatIntent, RegExp[]>
 
   constructor() {
     this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    this.nlpClassifier = new NlpIntentClassifier('./models/chat-intents.nlp')
     this.initializePatterns()
+    // Initialize NLP classifier asynchronously
+    this.initializeNlpClassifier().catch(error => {
+      console.warn('[IntentClassifier] Failed to initialize NLP classifier:', error)
+    })
   }
 
   private initializePatterns(): void {
     this.patterns = {
       [ChatIntent.NAVIGATE_COURSE]: [
-        // Direct course requests
         /\b(show|find|where|see|view|list|browse|get|display)\s+(me\s+)?(the\s+)?(all\s+)?courses?\b/i,
         /\bcourses?\s+(on|about|for|related to|regarding|covering)\s+/i,
         /\bwhat courses?\s+(do you have|are available|can i take|are there|exist)/i,
         /\b(available|existing|all)\s+courses?\b/i,
-        
-        // Natural "help me find/learn" patterns
         /\b(help|find|looking for|search|need|want|interested in)\s+(me\s+)?(find\s+|with\s+)?.*?(tutorial|course|lesson|learning|study|class|training)/i,
         /\bi\s+(want|need|would like)\s+to\s+(learn|study|understand|master)\b/i,
-        
-        // Learning intent with tech topics
         /\b(learn|study|understand|master|get into)\s+(about\s+)?.*?\b(javascript|python|react|node|java|c\+\+|ruby|go|rust|swift|kotlin|typescript|angular|vue|php|sql|html|css|docker|kubernetes)\b/i,
         /\b(tutorial|course|lesson|guide|learning path)\s+(on|about|for|regarding)\b/i,
-        
-        // "Where can I learn" patterns
         /\bwhere\s+(can|do)\s+(i|we)\s+(learn|study|find|get)\b/i,
         /\bhow\s+(can|do)\s+(i|we)\s+(learn|study|start learning)\b/i,
       ],
@@ -58,77 +58,44 @@ export class IntentClassifier {
         /\bi\s+(want|need|would like)\s+(to\s+)?(create|make|build)\s+(a\s+)?course/i,
       ],
       [ChatIntent.EXPLAIN_CONCEPT]: [
-        // What/Explain patterns
         /\b(what|explain|teach|tell me|describe|clarify|define)\s+(is|are|does|means?)\s+/i,
         /\bcan you (explain|tell me|describe|clarify|teach me)\b/i,
-        
-        // How questions
         /\bhow\s+(does|do|did|is|are)\s+.*?\s+(work|function|operate|happen)/i,
         /\bhow\s+to\s+(understand|use|implement|apply)\b/i,
-        
-        // Confusion/understanding
         /\bi\s+(don't|dont|do not|didn't|didnt|can't|cant|cannot)\s+(understand|get|know|see)/i,
         /\b(confused|unclear|unsure)\s+(about|regarding|on)\b/i,
-        
-        // Comparison/difference
         /\bwhat\s+(is|are)\s+the\s+(difference|relationship|connection)\s+between/i,
         /\b(compare|contrast|difference between)\b/i,
-        
-        // Why questions
         /\bwhy\s+(is|are|does|do|did|would|should)\b/i,
       ],
       [ChatIntent.TROUBLESHOOT]: [
-        // Problem indicators
         /\b(problem|issue|error|bug|trouble|difficulty|struggle|stuck)\b/i,
         /\b(not working|doesn't work|dont work|isn't working|broken|failing|failed)/i,
-        
-        // Can't/unable patterns
         /\b(why|can't|cant|cannot|unable to|won't|wont)\s+/i,
-        
-        // Fix/solve requests
         /\bhow\s+(do i|to|can i)\s+(fix|solve|resolve|repair|correct|debug)/i,
         /\b(help|assist)\s+(me\s+)?(with\s+)?(fixing|solving|resolving)\b/i,
-        
-        // Error messages
         /\b(getting|received|seeing)\s+(an\s+)?(error|exception|warning)/i,
       ],
       [ChatIntent.SUBSCRIPTION_INFO]: [
-        // Plan/pricing questions
         /\b(upgrade|subscription|plan|pricing|cost|price|pay|payment|billing|charge)/i,
         /\b(free|pro|premium|basic|advanced|tier)\s+(plan|account|version|subscription)/i,
         /\bhow much\s+(does it cost|is|are|to|for)/i,
-        
-        // Features/benefits
         /\b(features?|benefits?|limits?|limitations?|perks?|advantages?)\s+(of|for|in|with)\s+(the\s+)?(plan|subscription|account)/i,
         /\bwhat\s+(do|does)\s+(i|we)\s+get\s+(with|in|from)\b/i,
-        
-        // Comparison
         /\b(difference|compare|comparison)\s+between\s+(plans?|tiers?|subscriptions?)/i,
       ],
       [ChatIntent.GENERAL_HELP]: [
-        // Getting started
         /\b(getting started|get started|start|begin|onboarding|new here|first time)/i,
         /\bhow\s+(do i|to|can i)\s+(use|start|begin|get started with)\s+(this|the platform|courseai)/i,
-        
-        // Capabilities
         /\bwhat\s+(can|could)\s+(you|i|this|the platform)\s+do\b/i,
         /\bshow me\s+(around|what you can do|the features)/i,
-        
-        // General help
         /\b(help|support|guide|assist|tutorial)\s+(me\s+)?(with|using|understanding|navigating)\s+(the\s+)?(platform|website|app|interface|features|site)/i,
         /\bhow\s+does\s+(this|the platform|courseai)\s+work/i,
-        
-        // Feature requests
         /\bwhat\s+(are|is)\s+(the|your)\s+(features?|capabilities?|functions?)/i,
       ],
       [ChatIntent.OFF_TOPIC]: [
-        // Completely off-topic
         /\b(weather|joke|story|recipe|movie|film|music|song|sport|game|news|politics|celebrity|fashion|shopping|restaurant)\b/i,
-        
-        // Simple greetings (handled separately for better detection)
         /\b(hello|hi|hey|greetings|good morning|good afternoon|good evening|howdy)\b/i,
-        
-        // Personal questions
         /\b(who are you|what are you|your name|introduce yourself)/i,
         /\b(how are you|how's it going|what's up|wassup)/i,
       ],
@@ -136,7 +103,30 @@ export class IntentClassifier {
   }
 
   /**
+   * Initialize NLP classifier with default intents
+   */
+  private async initializeNlpClassifier(): Promise<void> {
+    try {
+      // Add intents from config
+      const { DEFAULT_INTENTS } = await import('../../../config/intent-config')
+
+      for (const [intentName, config] of Object.entries(DEFAULT_INTENTS)) {
+        this.nlpClassifier.addIntent(intentName, (config as any).utterances, (config as any).responses)
+      }
+
+      // Train if not already trained
+      if (!this.nlpClassifier.isTrained()) {
+        await this.nlpClassifier.train()
+        console.log('[IntentClassifier] NLP model trained successfully')
+      }
+    } catch (error) {
+      console.warn('[IntentClassifier] Failed to initialize NLP classifier:', error)
+    }
+  }
+
+  /**
    * Classify user message intent
+   * FIX #2: Properly validates off-topic before tech topic routing
    */
   async classify(message: string, context?: UserContext): Promise<IntentResult> {
     const normalizedMessage = message.trim().toLowerCase()
@@ -147,22 +137,33 @@ export class IntentClassifier {
       return {
         intent: ChatIntent.OFF_TOPIC,
         confidence: 0.95,
-        entities: {},
+        entities: {
+          quantity: 0,
+        },
       }
     }
 
     // 2. Extract entities early (helps with context)
     const entities = this.extractEntities(message, context)
 
-    // 3. Detect clearly off-topic queries (but allow technical topics)
-    const offTopicKeywords = /\b(weather|joke|story|recipe|movie|film|music|song|sport|game|news|politics|celebrity|fashion|shopping|restaurant)\b/i
+    // 3. Detect clearly off-topic queries BEFORE tech routing
+    // FIX: Check explicit off-topic keywords even if tech content found
+    const offTopicKeywords = /\b(weather|joke|story|recipe|movie|film|music|song|sport|game|celebrity|fashion|shopping|restaurant)\b/i
     const hasTechContent = entities.topics && entities.topics.length > 0
     
-    if (offTopicKeywords.test(normalizedMessage) && !hasTechContent) {
-      return {
-        intent: ChatIntent.OFF_TOPIC,
-        confidence: 0.90,
-        entities: {},
+    if (offTopicKeywords.test(normalizedMessage)) {
+      // Off-topic keyword found - check if it's actually about tech
+      // e.g., "python weather module" should be NAVIGATE_COURSE, not OFF_TOPIC
+      const isTechRelated = /\b(library|module|framework|package|tool|language|framework|api|programming|code|develop)\b/i.test(message)
+      
+      if (!isTechRelated) {
+        return {
+          intent: ChatIntent.OFF_TOPIC,
+          confidence: 0.90,
+          entities: {
+            quantity: 0,
+          },
+        }
       }
     }
 
@@ -177,12 +178,20 @@ export class IntentClassifier {
       const hasCoursePattern = patternMatches.some(m => m.intent === ChatIntent.NAVIGATE_COURSE)
       const hasQuizPattern = patternMatches.some(m => m.intent === ChatIntent.NAVIGATE_QUIZ)
       const hasCreateQuizPattern = patternMatches.some(m => m.intent === ChatIntent.CREATE_QUIZ)
+      const hasCreateCoursePattern = patternMatches.some(m => m.intent === ChatIntent.CREATE_COURSE)
       const hasExplainPattern = patternMatches.some(m => m.intent === ChatIntent.EXPLAIN_CONCEPT)
       
       if (hasCoursePattern) {
         console.log(`[IntentClassifier] Topic + course pattern → navigate_course (0.95)`)
         return {
           intent: ChatIntent.NAVIGATE_COURSE,
+          confidence: 0.95,
+          entities,
+        }
+      } else if (hasCreateCoursePattern) {
+        console.log(`[IntentClassifier] Topic + create course pattern → create_course (0.95)`)
+        return {
+          intent: ChatIntent.CREATE_COURSE,
           confidence: 0.95,
           entities,
         }
@@ -229,9 +238,44 @@ export class IntentClassifier {
       }
     }
 
-    // 6. Use AI for ambiguous cases without clear patterns or entities
+    // 6. Use NLP classifier for ambiguous cases, fallback to AI
     if (patternMatches.length === 0 || patternMatches[0].confidence < 0.65) {
-      console.log(`[IntentClassifier] Low confidence, using AI classification`)
+      console.log(`[IntentClassifier] Low confidence, trying NLP classification`)
+
+      try {
+        const nlpResult = await this.nlpClassifier.predict(message)
+
+        // Convert NLP intent to ChatIntent enum
+        const intentMap: Record<string, ChatIntent> = {
+          'greeting': ChatIntent.OFF_TOPIC,
+          'course.search': ChatIntent.NAVIGATE_COURSE,
+          'quiz.start': ChatIntent.NAVIGATE_QUIZ,
+          'course.create': ChatIntent.CREATE_COURSE,
+          'help.general': ChatIntent.GENERAL_HELP,
+          'unknown': ChatIntent.GENERAL_HELP, // Map unknown to general help
+        }
+
+        const mappedIntent = intentMap[nlpResult.intent] || ChatIntent.GENERAL_HELP
+
+        // If NLP gives high confidence, use it
+        if (nlpResult.score >= 0.7) {
+          console.log(`[IntentClassifier] NLP classified as: ${mappedIntent} (confidence: ${nlpResult.score})`)
+          return {
+            intent: mappedIntent,
+            confidence: nlpResult.score,
+            entities: {
+              quantity: 0,
+              topics: [], // Could extract from NLP if needed
+            },
+          }
+        }
+
+        console.log(`[IntentClassifier] NLP confidence too low (${nlpResult.score}), using AI classification`)
+      } catch (error) {
+        console.warn('[IntentClassifier] NLP classification failed:', error)
+      }
+
+      // Fallback to OpenAI classification
       return await this.classifyWithAI(message, context)
     }
 
@@ -257,10 +301,8 @@ export class IntentClassifier {
 
       for (const pattern of patterns) {
         if (pattern.test(message)) {
-          // Base confidence
           let confidence = 0.75
           
-          // Boost confidence based on intent-specific keywords
           if (intent === ChatIntent.NAVIGATE_COURSE) {
             if (/\b(find|show|search|looking for|need|want|help.*find|interested in)\b/i.test(message)) {
               confidence += 0.10
@@ -278,7 +320,6 @@ export class IntentClassifier {
             }
           }
           
-          // Boost for longer, more specific patterns
           if (pattern.source.length > 70) {
             confidence += 0.08
           } else if (pattern.source.length > 50) {
@@ -294,7 +335,6 @@ export class IntentClassifier {
       }
     }
 
-    // Sort by confidence (highest first)
     return results.sort((a, b) => b.confidence - a.confidence)
   }
 
@@ -305,7 +345,9 @@ export class IntentClassifier {
     message: string,
     context?: UserContext
   ): IntentResult['entities'] {
-    const entities: IntentResult['entities'] = {}
+    const entities: IntentResult['entities'] = {
+      quantity: 0, // Default value
+    }
     const normalizedMessage = message.toLowerCase()
 
     // Extract quiz types
@@ -339,7 +381,7 @@ export class IntentClassifier {
       }
     }
 
-    // Extract topics from context (after "on", "about", "for", etc.)
+    // Extract topics from context
     const topicPatterns = [
       /\b(on|about|for|regarding|related to|covering)\s+([a-zA-Z0-9\s\+\-#]+?)(?=\?|$|\.|,|\s+and\s+|\s+or\s+)/i,
       /\b(learn|study|understand|master)\s+([a-zA-Z0-9\s\+\-#]+?)(?=\?|$|\.|,)/i,
@@ -349,7 +391,7 @@ export class IntentClassifier {
       const match = message.match(pattern)
       if (match && match[2]) {
         const topic = match[2].trim()
-        if (topic.length > 2) { // Avoid single letters
+        if (topic.length > 2) {
           entities.topics = entities.topics || []
           if (!entities.topics.includes(topic)) {
             entities.topics.push(topic)
@@ -378,7 +420,6 @@ export class IntentClassifier {
       const regex = new RegExp(`\\b${keyword}\\b`, 'i')
       if (regex.test(message)) {
         entities.topics = entities.topics || []
-        // Clean up the keyword for display
         const cleanKeyword = keyword
           .replace('\\+\\+', '++')
           .replace('\\b', '')
@@ -388,7 +429,7 @@ export class IntentClassifier {
       }
     }
 
-    // Extract quantity/number (for quiz generation)
+    // Extract quantity/number
     const numberMatch = message.match(/\b(\d+)\s*(questions?|items?|quizz?es?)\b/i)
     if (numberMatch) {
       entities.quantity = parseInt(numberMatch[1], 10)
@@ -416,6 +457,7 @@ Guidelines:
 - If the user mentions wanting to learn, find tutorials, or asks about a technology topic → navigate_course
 - If they want to test their knowledge or take a quiz → navigate_quiz  
 - If they want to create/generate a quiz → create_quiz
+- If they want to create/generate a course → create_course
 - If they're asking "what is" or "how does X work" → explain_concept
 - If they're reporting a problem or error → troubleshoot
 - If they're asking about pricing or plans → subscription_info
@@ -424,7 +466,7 @@ Guidelines:
 
 Extract any relevant entities like programming languages, technologies, quiz types, difficulty levels.
 
-Respond with JSON only in the format specified by the function.`,
+Respond with JSON only.`,
           },
           {
             role: 'user',
@@ -445,7 +487,6 @@ Respond with JSON only in the format specified by the function.`,
                   type: 'number',
                   minimum: 0,
                   maximum: 1,
-                  description: 'Confidence score between 0 and 1'
                 },
                 entities: {
                   type: 'object',
@@ -453,26 +494,21 @@ Respond with JSON only in the format specified by the function.`,
                     courseNames: { 
                       type: 'array', 
                       items: { type: 'string' },
-                      description: 'Specific course names mentioned'
                     },
                     quizTypes: { 
                       type: 'array', 
                       items: { type: 'string' },
-                      description: 'Types of quizzes (mcq, code, openended, etc.)'
                     },
                     topics: { 
                       type: 'array', 
                       items: { type: 'string' },
-                      description: 'Technologies, programming languages, or subjects mentioned'
                     },
                     difficulty: { 
                       type: 'string',
                       enum: ['easy', 'medium', 'hard'],
-                      description: 'Difficulty level if specified'
                     },
                     quantity: {
                       type: 'number',
-                      description: 'Number of questions/items if specified'
                     },
                   },
                 },
@@ -508,7 +544,9 @@ Respond with JSON only in the format specified by the function.`,
     return {
       intent: ChatIntent.GENERAL_HELP,
       confidence: 0.50,
-      entities: {},
+      entities: {
+        quantity: 0,
+      },
     }
   }
 

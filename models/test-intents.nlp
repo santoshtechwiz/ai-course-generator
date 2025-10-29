@@ -1,0 +1,525 @@
+{
+  "settings": {
+    "languages": [
+      "en"
+    ],
+    "forceNER": true,
+    "nlu": {
+      "log": false
+    },
+    "autoSave": false,
+    "autoLoad": false,
+    "tag": "nlp",
+    "threshold": 0.5,
+    "modelFileName": "model.nlp",
+    "executeActionsBeforeAnswers": false,
+    "calculateSentiment": true
+  },
+  "nluManager": {
+    "settings": {
+      "tag": "nlu-manager",
+      "log": false
+    },
+    "locales": [
+      "en"
+    ],
+    "languageNames": {},
+    "domainManagers": {
+      "en": {
+        "settings": {
+          "locale": "en",
+          "trainByDomain": false,
+          "tag": "domain-manager-en",
+          "nluByDomain": {
+            "default": {
+              "className": "NeuralNlu",
+              "settings": {}
+            }
+          },
+          "useStemDict": true
+        },
+        "stemDict": {
+          "hello": {
+            "intent": "greeting",
+            "domain": "default"
+          },
+          "hi": {
+            "intent": "greeting",
+            "domain": "default"
+          },
+          "hey": {
+            "intent": "greeting",
+            "domain": "default"
+          },
+          "greet": {
+            "intent": "greeting",
+            "domain": "default"
+          },
+          "good,morn": {
+            "intent": "greeting",
+            "domain": "default"
+          },
+          "i,javascript,learn,to,want": {
+            "intent": "course.search",
+            "domain": "default"
+          },
+          "cours,me,python,show": {
+            "intent": "course.search",
+            "domain": "default"
+          },
+          "find,react,tutori": {
+            "intent": "course.search",
+            "domain": "default"
+          },
+          "a,quiz,take": {
+            "intent": "quiz.start",
+            "domain": "default"
+          },
+          "quiz,start": {
+            "intent": "quiz.start",
+            "domain": "default"
+          },
+          "knowledg,my,test": {
+            "intent": "quiz.start",
+            "domain": "default"
+          }
+        },
+        "intentDict": {
+          "greeting": "default",
+          "course.search": "default",
+          "quiz.start": "default"
+        },
+        "sentences": [
+          {
+            "domain": "default",
+            "utterance": "hello",
+            "intent": "greeting"
+          },
+          {
+            "domain": "default",
+            "utterance": "hi",
+            "intent": "greeting"
+          },
+          {
+            "domain": "default",
+            "utterance": "hey",
+            "intent": "greeting"
+          },
+          {
+            "domain": "default",
+            "utterance": "greetings",
+            "intent": "greeting"
+          },
+          {
+            "domain": "default",
+            "utterance": "good morning",
+            "intent": "greeting"
+          },
+          {
+            "domain": "default",
+            "utterance": "I want to learn JavaScript",
+            "intent": "course.search"
+          },
+          {
+            "domain": "default",
+            "utterance": "show me Python courses",
+            "intent": "course.search"
+          },
+          {
+            "domain": "default",
+            "utterance": "find React tutorials",
+            "intent": "course.search"
+          },
+          {
+            "domain": "default",
+            "utterance": "take a quiz",
+            "intent": "quiz.start"
+          },
+          {
+            "domain": "default",
+            "utterance": "start quiz",
+            "intent": "quiz.start"
+          },
+          {
+            "domain": "default",
+            "utterance": "test my knowledge",
+            "intent": "quiz.start"
+          }
+        ],
+        "domains": {
+          "master_domain": {
+            "settings": {
+              "locale": "en",
+              "tag": "nlu-en",
+              "keepStopwords": true,
+              "nonefeatureValue": 1,
+              "nonedeltaMultiplier": 1.2,
+              "spellCheck": false,
+              "spellCheckDistance": 1,
+              "filterZeros": true,
+              "log": true
+            },
+            "features": {
+              "hello": 1,
+              "hi": 1,
+              "hey": 1,
+              "greet": 1,
+              "good": 1,
+              "morn": 1,
+              "i": 1,
+              "want": 1,
+              "to": 1,
+              "learn": 1,
+              "javascript": 1,
+              "show": 1,
+              "me": 1,
+              "python": 1,
+              "cours": 1,
+              "find": 1,
+              "react": 1,
+              "tutori": 1,
+              "take": 1,
+              "a": 1,
+              "quiz": 1,
+              "start": 1,
+              "test": 1,
+              "my": 1,
+              "knowledg": 1
+            },
+            "intents": {
+              "greeting": 1,
+              "course.search": 1,
+              "quiz.start": 1
+            },
+            "intentFeatures": {
+              "greeting": {
+                "hello": 1,
+                "hi": 1,
+                "hey": 1,
+                "greet": 1,
+                "good": 1,
+                "morn": 1
+              },
+              "course.search": {
+                "i": 1,
+                "want": 1,
+                "to": 1,
+                "learn": 1,
+                "javascript": 1,
+                "show": 1,
+                "me": 1,
+                "python": 1,
+                "cours": 1,
+                "find": 1,
+                "react": 1,
+                "tutori": 1
+              },
+              "quiz.start": {
+                "take": 1,
+                "a": 1,
+                "quiz": 1,
+                "start": 1,
+                "test": 1,
+                "my": 1,
+                "knowledg": 1
+              }
+            },
+            "featuresToIntent": {
+              "hello": [
+                "greeting"
+              ],
+              "hi": [
+                "greeting"
+              ],
+              "hey": [
+                "greeting"
+              ],
+              "greet": [
+                "greeting"
+              ],
+              "good": [
+                "greeting"
+              ],
+              "morn": [
+                "greeting"
+              ],
+              "i": [
+                "course.search"
+              ],
+              "want": [
+                "course.search"
+              ],
+              "to": [
+                "course.search"
+              ],
+              "learn": [
+                "course.search"
+              ],
+              "javascript": [
+                "course.search"
+              ],
+              "show": [
+                "course.search"
+              ],
+              "me": [
+                "course.search"
+              ],
+              "python": [
+                "course.search"
+              ],
+              "cours": [
+                "course.search"
+              ],
+              "find": [
+                "course.search"
+              ],
+              "react": [
+                "course.search"
+              ],
+              "tutori": [
+                "course.search"
+              ],
+              "take": [
+                "quiz.start"
+              ],
+              "a": [
+                "quiz.start"
+              ],
+              "quiz": [
+                "quiz.start"
+              ],
+              "start": [
+                "quiz.start"
+              ],
+              "test": [
+                "quiz.start"
+              ],
+              "my": [
+                "quiz.start"
+              ],
+              "knowledg": [
+                "quiz.start"
+              ]
+            },
+            "neuralNetwork": {
+              "settings": {
+                "locale": "en",
+                "tag": "nlu-en",
+                "keepStopwords": true,
+                "nonefeatureValue": 1,
+                "nonedeltaMultiplier": 1.2,
+                "spellCheck": false,
+                "spellCheckDistance": 1,
+                "filterZeros": true
+              },
+              "features": [
+                "hello",
+                "hi",
+                "hey",
+                "greet",
+                "good",
+                "morn",
+                "i",
+                "want",
+                "to",
+                "learn",
+                "javascript",
+                "show",
+                "me",
+                "python",
+                "cours",
+                "find",
+                "react",
+                "tutori",
+                "take",
+                "a",
+                "quiz",
+                "start",
+                "test",
+                "my",
+                "knowledg"
+              ],
+              "intents": [
+                "greeting",
+                "course.search",
+                "quiz.start"
+              ],
+              "perceptrons": [
+                [
+                  6.3534698486328125,
+                  6.428555011749268,
+                  6.371669292449951,
+                  6.313311576843262,
+                  3.3090898990631104,
+                  3.3090898990631104,
+                  -1.5510317087173462,
+                  -1.5510317087173462,
+                  -1.5510317087173462,
+                  -1.5510317087173462,
+                  -1.5510317087173462,
+                  -1.9363818168640137,
+                  -1.9363818168640137,
+                  -1.9363818168640137,
+                  -1.9363818168640137,
+                  -2.5762147903442383,
+                  -2.5762147903442383,
+                  -2.5762147903442383,
+                  -1.7055509090423584,
+                  -1.7055509090423584,
+                  -4.667478084564209,
+                  -2.9461681842803955,
+                  -2.570775270462036,
+                  -2.570775270462036,
+                  -2.570775270462036,
+                  7.751051921688027
+                ],
+                [
+                  -1.2560869455337524,
+                  -1.2449681758880615,
+                  -1.2332699298858643,
+                  -1.2212729454040527,
+                  -0.7375226020812988,
+                  -0.7375226020812988,
+                  2.607572317123413,
+                  2.607572317123413,
+                  2.607572317123413,
+                  2.607572317123413,
+                  2.607572317123413,
+                  3.258753538131714,
+                  3.258753538131714,
+                  3.258753538131714,
+                  3.258753538131714,
+                  4.34373140335083,
+                  4.34373140335083,
+                  4.34373140335083,
+                  -0.5621315240859985,
+                  -0.5621315240859985,
+                  -1.2501832246780396,
+                  -0.6281638741493225,
+                  -0.6685039401054382,
+                  -0.6685039401054382,
+                  -0.6685039401054382,
+                  1.2485461930122592
+                ],
+                [
+                  -1.5500675439834595,
+                  -1.534582495689392,
+                  -1.5187616348266602,
+                  -1.5026320219039917,
+                  -0.8665971159934998,
+                  -0.8665971159934998,
+                  -0.4480506479740143,
+                  -0.4480506479740143,
+                  -0.4480506479740143,
+                  -0.4480506479740143,
+                  -0.4480506479740143,
+                  -0.5245223641395569,
+                  -0.5245223641395569,
+                  -0.5245223641395569,
+                  -0.5245223641395569,
+                  -0.6308810710906982,
+                  -0.6308810710906982,
+                  -0.6308810710906982,
+                  2.604989767074585,
+                  2.604989767074585,
+                  7.596224308013916,
+                  4.990444183349609,
+                  4.237464904785156,
+                  4.237464904785156,
+                  4.237464904785156,
+                  1.5625067125546723
+                ]
+              ]
+            }
+          }
+        }
+      }
+    },
+    "intentDomains": {},
+    "extraSentences": [
+      [
+        "en",
+        "hello"
+      ],
+      [
+        "en",
+        "hi"
+      ],
+      [
+        "en",
+        "hey"
+      ],
+      [
+        "en",
+        "greetings"
+      ],
+      [
+        "en",
+        "good morning"
+      ],
+      [
+        "en",
+        "I want to learn JavaScript"
+      ],
+      [
+        "en",
+        "show me Python courses"
+      ],
+      [
+        "en",
+        "find React tutorials"
+      ],
+      [
+        "en",
+        "take a quiz"
+      ],
+      [
+        "en",
+        "start quiz"
+      ],
+      [
+        "en",
+        "test my knowledge"
+      ]
+    ]
+  },
+  "ner": {
+    "settings": {
+      "tag": "ner",
+      "entityPreffix": "%",
+      "entitySuffix": "%"
+    },
+    "rules": {}
+  },
+  "nlgManager": {
+    "settings": {
+      "tag": "nlg-manager"
+    },
+    "responses": {
+      "en": {
+        "greeting": [
+          {
+            "answer": "Hello! How can I help you?"
+          }
+        ],
+        "course.search": [
+          {
+            "answer": "I can help you find courses!"
+          }
+        ],
+        "quiz.start": [
+          {
+            "answer": "Let's start a quiz!"
+          }
+        ]
+      }
+    }
+  },
+  "actionManager": {
+    "settings": {
+      "tag": "action-manager"
+    },
+    "actions": {}
+  },
+  "slotManager": {}
+}
