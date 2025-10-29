@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useMediaQuery } from "@/hooks"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Suspense, useEffect, useState, useRef, useMemo, useCallback, createContext, useContext } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -34,10 +34,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 import { useAuth } from "@/modules/auth"
-import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { QuizActions } from "@/components/quiz/QuizActions"
-import { QuizCreationModal } from "@/components/quiz/QuizCreationModal"
-import { hasPremiumFeatures } from "@/types/subscription-plans"
+import UnsubscribedQuizModal from "./UnsubscribedQuizModal"
 
 interface QuizContextType {
   isFocusMode: boolean
@@ -236,7 +234,6 @@ const QuizHeader = ({
                 className={cn(
                   "hidden sm:flex min-h-[44px] min-w-[44px] p-3 border-4 border-border shadow-neo rounded-none bg-card hover:bg-muted transition-all duration-200",
                   isSidebarTransitioning && "pointer-events-none opacity-50",
-                  // Hide on desktop since sidebar is always visible
                   !isMobile && "lg:hidden"
                 )}
                 disabled={isSidebarTransitioning}
@@ -307,8 +304,9 @@ export function QuizPlayInterface({
   timeSpent,
 }: QuizPlayInterfaceProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const { user: authUser } = useAuth()
-  const { plan } = useUnifiedSubscription()
+  const {plan} = useAuth()
   const isMobile = useMediaQuery("(max-width: 768px)")
 
   // State management
@@ -319,7 +317,7 @@ export function QuizPlayInterface({
   const [isPaused, setIsPaused] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [startTime] = useState(Date.now())
-  const [showCreationModal, setShowCreationModal] = useState(false)
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
 
   const mainRef = useRef<HTMLDivElement>(null)
   const sidebarRef = useRef<HTMLDivElement>(null)
@@ -337,38 +335,6 @@ export function QuizPlayInterface({
   const title = quizData?.title || "Quiz"
   const difficulty = quizData?.difficulty
 
-  // Check if user should see creation modal (unsubscribed users and non-logged-in users)
-  const shouldShowCreationModal = useMemo(() => {
-    // Show modal for non-premium users who are not the quiz owner, OR for unauthenticated users
-    const isSubscribed = hasPremiumFeatures(plan)
-    return !isOwner && (!isSubscribed || !authUser)
-  }, [plan, isOwner, authUser])
-
-  // Modal handlers
-  const handleCreateQuiz = useCallback(() => {
-    if (!authUser) {
-      // Redirect to login for unauthenticated users
-      window.location.href = "/auth/signin?callbackUrl=" + encodeURIComponent(window.location.pathname)
-    } else {
-      // Navigate to quiz creation page for authenticated users
-      window.location.href = "/dashboard/create-quiz"
-    }
-  }, [authUser])
-
-  const handleSubscribe = useCallback(() => {
-    if (!authUser) {
-      // Redirect to login for unauthenticated users
-      window.location.href = "/auth/signin?callbackUrl=" + encodeURIComponent(window.location.pathname)
-    } else {
-      // Navigate to subscription page for authenticated users
-      window.location.href = "/dashboard/subscription"
-    }
-  }, [authUser])
-
-  const handleCloseModal = useCallback(() => {
-    setShowCreationModal(false)
-  }, [])
-
   // Timer effect
   useEffect(() => {
     if (isPaused) return
@@ -380,17 +346,24 @@ export function QuizPlayInterface({
     return () => clearInterval(interval)
   }, [isPaused, startTime])
 
-  // Show creation modal for unsubscribed users and unauthenticated users
+  // Modal effect - Show subscription modal for unsubscribed users
   useEffect(() => {
-    if (shouldShowCreationModal && !showCreationModal) {
-      // Show immediately for unauthenticated users, delay for authenticated unsubscribed users
-      const delay = authUser ? 1000 : 0
-      const timer = setTimeout(() => {
-        setShowCreationModal(true)
-      }, delay)
-      return () => clearTimeout(timer)
+    // Determine if modal should show
+    const shouldShowModal = 
+      !authUser || // User is not logged in
+      (plan ) || // User is on free plan
+      !plan // No subscription data found
+
+    // Show modal only once per session
+    const hasSeenModal = typeof window !== "undefined" ? sessionStorage.getItem("quizSubscriptionModalShown") : null
+    
+    if (shouldShowModal && !hasSeenModal && !isPublic) {
+      setShowSubscriptionModal(true)
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("quizSubscriptionModalShown", "true")
+      }
     }
-  }, [shouldShowCreationModal, showCreationModal, authUser])
+  }, [authUser, plan, isPublic])
 
   // Sidebar toggle with transition (only for mobile)
   const toggleSidebar = useCallback(() => {
@@ -406,6 +379,21 @@ export function QuizPlayInterface({
   const toggleFullscreen = useCallback(() => setIsFullscreen(prev => !prev), [])
   const togglePause = useCallback(() => setIsPaused(prev => !prev), [])
   const goHome = useCallback(() => window.location.href = "/dashboard/quizzes", [])
+
+  // Subscription modal handlers
+  const handleCloseSubscriptionModal = useCallback(() => {
+    setShowSubscriptionModal(false)
+  }, [])
+
+  const handleCreateQuiz = useCallback(() => {
+    setShowSubscriptionModal(false)
+    router.push("/dashboard/quizzes/create")
+  }, [router])
+
+  const handleSubscribe = useCallback(() => {
+    setShowSubscriptionModal(false)
+    router.push("/pricing")
+  }, [router])
 
   // Event handlers
   const handleVisibilityChange = useCallback((isPublic: boolean) => {
@@ -464,6 +452,16 @@ export function QuizPlayInterface({
 
   return (
     <QuizContext.Provider value={contextValue}>
+      {/* Subscription Modal */}
+      <UnsubscribedQuizModal
+        isOpen={showSubscriptionModal}
+        onClose={handleCloseSubscriptionModal}
+        onCreateQuiz={handleCreateQuiz}
+        onSubscribe={handleSubscribe}
+        variant="dismiss"
+        quizTitle={title}
+      />
+
       <div className={cn("min-h-screen bg-background relative overflow-x-hidden", isFullscreen && "overflow-hidden")}>
         {/* Top spacer for MainNavbar */}
 
@@ -591,7 +589,7 @@ export function QuizPlayInterface({
                 {/* Sidebar content */}
                 <motion.div
                   className={cn(
-                    "bg-card border-4 max-h-min border-border shadow-neo rounded-none overflow-hidden",
+                    "bg-card border-4 border-border shadow-neo rounded-none overflow-hidden",
                     // Desktop: Normal positioning
                     !isMobile && "sticky top-4",
                     // Mobile: Slide in from right
@@ -620,13 +618,12 @@ export function QuizPlayInterface({
                   )}
 
                   {/* Sidebar content */}
-                 <div
-  className={cn(
-    "flex flex-col overflow-y-auto scrollbar-none p-4 space-y-4",
-    "h-screen max-h-screen",
-    isMobile ? "pt-20" : "pt-24"
-  )}
->
+                  <div
+                    className={cn(
+                      "overflow-y-auto p-4 space-y-4 scrollbar-hide",
+                      isMobile ? "max-h-[calc(100vh-5rem)]" : "max-h-[calc(100vh-8rem)]"
+                    )}
+                  >
                     {/* Quiz Actions - Desktop only */}
                     {!isMobile && (
                       <Suspense fallback={<QuizSkeleton />}>
@@ -668,16 +665,6 @@ export function QuizPlayInterface({
           </AnimatePresence>
         </div>
       </div>
-
-      {/* Quiz Creation Modal for unsubscribed users and unauthenticated users */}
-      <QuizCreationModal
-        isOpen={showCreationModal}
-        onClose={handleCloseModal}
-        onSubscribe={handleSubscribe}
-        onCreateQuiz={handleCreateQuiz}
-        mode="block"
-        isAuthenticated={!!authUser}
-      />
     </QuizContext.Provider>
   )
 }

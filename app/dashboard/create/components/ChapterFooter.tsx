@@ -40,11 +40,11 @@ function ChapterFooter(props: ChapterFooterProps) {
       className={cn(
         "w-full flex",
         // core neo-brutal surface
-        "bg-[color:var(--nb-bg,#0f1724)] text-[color:var(--nb-fg,#ffffff)]",
+        "bg-[color:var(--nb-bg)] text-[color:var(--nb-fg)]",
         // border & inset
-        "border-t-[6px] border-[color:var(--nb-border,#0b1220)]",
-        // inner padding responsive
-        "p-4 md:p-6",
+        "border-t-[6px] border-[color:var(--nb-border)]",
+        // inner padding responsive - reduced for smaller footer
+        "p-3 md:p-4",
         // keep stacking context strong to avoid overlap
         "z-10"
       )}
@@ -52,15 +52,15 @@ function ChapterFooter(props: ChapterFooterProps) {
       {/* Container: mobile stacked; desktop flex layout */}
       <div className="max-w-[1200px] mx-auto">
         {/* Mobile layout */}
-        <div className="lg:hidden flex flex-col gap-3">
+        <div className="md:hidden flex flex-col gap-3">
           {/* Back */}
           <Button
             variant="outline"
             asChild
             className={cn(
-              "w-full h-12 border-4 shadow-[6px_6px_0_rgba(0,0,0,1)]",
+              "w-full h-10 border-4 shadow-[6px_6px_0_rgba(0,0,0,1)]",
               // neo-brutal white inset
-              "bg-[color:var(--nb-btn-bg,#fff)] text-[color:var(--nb-btn-fg,#0b1220)]",
+              "bg-[color:var(--nb-btn-bg)] text-[color:var(--nb-btn-fg)]",
               "font-black text-sm",
               "hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all duration-150"
             )}
@@ -77,8 +77,8 @@ function ChapterFooter(props: ChapterFooterProps) {
               onClick={() => props.handleGenerateAll(false)}
               disabled={props.isSaving}
               className={cn(
-                "w-full h-12 border-4 shadow-[6px_6px_0_rgba(0,0,0,1)] font-black text-sm",
-                "bg-[color:var(--nb-accent,#84c5ff)] text-[color:var(--nb-accent-fg,#071023)]",
+                "w-full h-10 border-4 shadow-[6px_6px_0_rgba(0,0,0,1)] font-black text-sm",
+                "bg-[color:var(--nb-accent)] text-[color:var(--nb-accent-fg)]",
                 "hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
               )}
             >
@@ -117,8 +117,8 @@ function ChapterFooter(props: ChapterFooterProps) {
               }}
               disabled={props.isSaving || props.isGeneratingVideos}
               className={cn(
-                "w-full h-12 border-4 shadow-[6px_6px_0_rgba(0,0,0,1)] font-black text-sm",
-                "bg-[color:var(--nb-btn-bg,#fff)] text-[color:var(--nb-btn-fg,#0b1220)]",
+                "w-full h-10 border-4 shadow-[6px_6px_0_rgba(0,0,0,1)] font-black text-sm",
+                "bg-[color:var(--nb-btn-bg)] text-[color:var(--nb-btn-fg)]",
                 "hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
               )}
             >
@@ -134,10 +134,10 @@ function ChapterFooter(props: ChapterFooterProps) {
             onClick={props.saveAndContinue}
             disabled={props.isSaving || props.isGeneratingVideos || props.totalChaptersCount === 0}
             className={cn(
-              "w-full h-14 border-6 shadow-[8px_8px_0_rgba(0,0,0,1)] font-black text-lg transition-all",
+              "w-full h-12 border-6 shadow-[8px_8px_0_rgba(0,0,0,1)] font-black text-lg transition-all",
               props.allChaptersCompleted
-                ? "bg-[color:var(--nb-success,#8cf29a)] text-[color:var(--nb-btn-fg,#0b1220)] hover:bg-[color:var(--nb-success-hover,#6de77f)]"
-                : "bg-[color:var(--nb-primary,#ff7ab6)] text-[color:var(--nb-btn-fg,#0b1220)] hover:bg-[color:var(--nb-primary-hover,#ff5fa0)]",
+                ? "bg-[color:var(--nb-success)] text-[color:var(--nb-btn-fg)] hover:bg-[color:var(--nb-success-hover)]"
+                : "bg-[color:var(--nb-primary)] text-[color:var(--nb-btn-fg)] hover:bg-[color:var(--nb-primary-hover)]",
               "hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-[4px_4px_0_rgba(0,0,0,1)] disabled:opacity-50 disabled:cursor-not-allowed"
             )}
           >
@@ -164,15 +164,15 @@ function ChapterFooter(props: ChapterFooterProps) {
         </div>
 
         {/* Desktop layout */}
-        <div className="hidden lg:flex items-center justify-between gap-6">
+        <div className="hidden md:flex items-center justify-between gap-2 md:gap-4">
           {/* Left: Back */}
           <div className="flex-shrink-0">
             <Button
               variant="outline"
               asChild
               className={cn(
-                "h-12 px-6 border-4 shadow-[6px_6px_0_rgba(0,0,0,1)] font-black text-sm",
-                "bg-[color:var(--nb-btn-bg,#fff)] text-[color:var(--nb-btn-fg,#0b1220)]",
+                "h-10 px-4 md:px-6 border-4 shadow-[6px_6px_0_rgba(0,0,0,1)] font-black text-sm",
+                "bg-[color:var(--nb-btn-bg)] text-[color:var(--nb-btn-fg)]",
                 "hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all duration-150"
               )}
             >
@@ -184,14 +184,14 @@ function ChapterFooter(props: ChapterFooterProps) {
           </div>
 
           {/* Middle: action group */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             {!props.allChaptersCompleted && !props.isGeneratingVideos && props.totalChaptersCount > 0 && (
               <Button
                 onClick={() => props.handleGenerateAll(false)}
                 disabled={props.isSaving}
                 className={cn(
-                  "h-12 px-6 border-4 shadow-[6px_6px_0_rgba(0,0,0,1)] font-black text-sm",
-                  "bg-[color:var(--nb-accent,#84c5ff)] text-[color:var(--nb-accent-fg,#071023)]",
+                  "h-10 px-4 md:px-6 border-4 shadow-[6px_6px_0_rgba(0,0,0,1)] font-black text-sm",
+                  "bg-[color:var(--nb-accent)] text-[color:var(--nb-accent-fg)]",
                   "hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                 )}
               >
@@ -229,8 +229,8 @@ function ChapterFooter(props: ChapterFooterProps) {
                 }}
                 disabled={props.isSaving || props.isGeneratingVideos}
                 className={cn(
-                  "h-12 px-6 border-4 shadow-[6px_6px_0_rgba(0,0,0,1)] font-black text-sm",
-                  "bg-[color:var(--nb-btn-bg,#fff)] text-[color:var(--nb-btn-fg,#0b1220)]",
+                  "h-10 px-4 md:px-6 border-4 shadow-[6px_6px_0_rgba(0,0,0,1)] font-black text-sm",
+                  "bg-[color:var(--nb-btn-bg)] text-[color:var(--nb-btn-fg)]",
                   "hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                 )}
               >
@@ -248,10 +248,10 @@ function ChapterFooter(props: ChapterFooterProps) {
               onClick={props.saveAndContinue}
               disabled={props.isSaving || props.isGeneratingVideos || props.totalChaptersCount === 0}
               className={cn(
-                "h-12 px-8 border-6 shadow-[10px_10px_0_rgba(0,0,0,1)] font-black text-base transition-all",
+                "h-10 px-6 md:px-8 border-6 shadow-[10px_10px_0_rgba(0,0,0,1)] font-black text-base transition-all",
                 props.allChaptersCompleted
-                  ? "bg-[color:var(--nb-success,#8cf29a)] text-[color:var(--nb-btn-fg,#0b1220)] hover:bg-[color:var(--nb-success-hover,#6de77f)]"
-                  : "bg-[color:var(--nb-primary,#ff7ab6)] text-[color:var(--nb-btn-fg,#0b1220)] hover:bg-[color:var(--nb-primary-hover,#ff5fa0)]",
+                  ? "bg-[color:var(--nb-success)] text-[color:var(--nb-btn-fg)] hover:bg-[color:var(--nb-success-hover)]"
+                  : "bg-[color:var(--nb-primary)] text-[color:var(--nb-btn-fg)] hover:bg-[color:var(--nb-primary-hover)]",
                 "hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-[5px_5px_0_rgba(0,0,0,1)] disabled:opacity-50 disabled:cursor-not-allowed"
               )}
             >
