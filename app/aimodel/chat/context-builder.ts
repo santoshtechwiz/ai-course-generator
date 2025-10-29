@@ -8,7 +8,6 @@
  * - Providing contextual recommendations
  */
 
-import { EmbeddingDocument } from "../core/embedding-manager"
 import { prisma } from "@/lib/db"
 import { logger } from "@/lib/logger"
 

@@ -582,3 +582,8 @@ export async function generateCodingMCQs(
   const provider = new OpenAIProvider();
   return provider.generateCodingMCQs(language, title, difficulty, amount, userType);
 }
+
+export async function generateMCQQuiz(params: QuizGenerationParams): Promise<any[]> {
+  const provider = new OpenAIProvider();
+  return provider.generateMCQQuiz(params);
+}

@@ -65,7 +65,7 @@ export function getMCQFunctionSchema() {
                 minItems: 4,
                 maxItems: 4,
               },
-              correctAnswer: { type: 'number', description: 'Index of correct option (0-3)' },
+              correctAnswer: { type: 'string', description: 'The correct answer text' },
               explanation: { type: 'string', description: 'Explanation of the correct answer' },
             },
             required: ['question', 'options', 'correctAnswer'],

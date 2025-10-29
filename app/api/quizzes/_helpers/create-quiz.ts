@@ -233,7 +233,8 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
         title,
         count,
         userId,
-        'FREE' as any
+        'FREE' as any,
+        999 // Pass sufficient credits since deduction already happened atomically above
       );
       
       const cards = flashcardsQuiz.flashcards.map((card: any, index: number) => ({

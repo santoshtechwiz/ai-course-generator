@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Send, Loader2, Sparkles, BookOpen, Target, Plus, Search, Brain } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { logger } from "@/lib/logger"
 
 interface ChatInputProps {
   input: string
@@ -27,8 +28,8 @@ const ChatInput = memo(({
   onSuggestionClick
 }: ChatInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
-  // Focus input when component mounts or when chat becomes available
   useEffect(() => {
     if (canUseChat && inputRef.current) {
       const timer = setTimeout(() => {
@@ -44,12 +45,28 @@ const ChatInput = memo(({
     onSubmit(e)
   }, [canUseChat, input, isLoading, onSubmit])
 
+  /**
+   * FIX #12: Suggestion click now submits the form automatically
+   */
   const handleSuggestionClick = useCallback((suggestion: string) => {
     setInput(suggestion)
+    
+    // Auto-submit after a tick to let input update
+    setTimeout(() => {
+      if (formRef.current) {
+        try {
+          const event = new Event('submit', { bubbles: true, cancelable: true })
+          formRef.current.dispatchEvent(event)
+          logger.info('[ChatInput] Suggestion auto-submitted:', suggestion)
+        } catch (error) {
+          logger.error('[ChatInput] Failed to auto-submit suggestion:', error)
+        }
+      }
+    }, 0)
+    
     onSuggestionClick(suggestion)
   }, [setInput, onSuggestionClick])
 
-  // Dynamic contextual suggestions based on conversation
   const suggestions = useMemo(() => {
     const lastMessage = messages[messages.length - 1]
     const hasCourseMention = lastMessage?.content?.toLowerCase().includes('course')
@@ -117,6 +134,8 @@ const ChatInput = memo(({
                 )}
                 onClick={() => handleSuggestionClick(suggestion.text)}
                 disabled={!canUseChat}
+                type="button"
+                aria-label={`Suggest: ${suggestion.text}`}
               >
                 <suggestion.icon className={cn("mr-2 h-3 w-3 flex-shrink-0", suggestion.color)} />
                 <span className="truncate">{suggestion.text}</span>
@@ -127,7 +146,7 @@ const ChatInput = memo(({
       )}
 
       {/* Input Form */}
-      <form onSubmit={handleSubmit} className="flex w-full items-center space-x-2">
+      <form ref={formRef} onSubmit={handleSubmit} className="flex w-full items-center space-x-2">
         <Input
           ref={inputRef}
           value={input}

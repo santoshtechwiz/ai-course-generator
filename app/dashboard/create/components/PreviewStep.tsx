@@ -41,7 +41,7 @@ export function PreviewStep({ watch }: PreviewStepProps) {
           <div className="space-y-2">
             {units.map((unit, index) => (
               <div key={index} className="flex items-center gap-3">
-                <span className="flex items-center justify-center w-8 h-8 rounded-none bg-accent text-background font-medium text-xs sm:text-sm font-black border-4 border-border flex-shrink-0">
+                <span className="flex items-center justify-center w-8 h-8 rounded-none bg-accent text-background text-xs sm:text-sm font-black border-4 border-border flex-shrink-0">
                   {index + 1}
                 </span>
                 <span className="text-sm sm:text-base text-foreground break-words">{unit || `Unit ${index + 1}`}</span>

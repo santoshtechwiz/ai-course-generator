@@ -1,33 +1,41 @@
 /**
- * Cache Manager Service
+ * Cache Manager Service - FIXED
  * Manages response caching with TTL and intelligent key generation
+ * FIX #3: Proper unique key generation per user to prevent cache collision
  */
 
 import { ChatResponse } from '@/types/chat.types'
 import { CHAT_CONFIG } from '@/config/chat.config'
+import { logger } from '@/lib/logger'
 
 interface CacheEntry {
   value: ChatResponse
   expiresAt: number
   hits: number
+  userId?: string // Track which user's data this is
 }
 
 export class CacheManager {
   private cache: Map<string, CacheEntry> = new Map()
-  private maxSize: number = 1000 // Maximum cache entries
+  private maxSize: number = 1000
 
   constructor() {
-    // Clean expired entries every 5 minutes
     setInterval(() => this.cleanExpired(), 5 * 60 * 1000)
   }
 
   /**
-   * Get cached response
+   * Get cached response with user isolation
    */
-  async get(key: string): Promise<ChatResponse | null> {
+  async get(key: string, userId?: string): Promise<ChatResponse | null> {
     const entry = this.cache.get(key)
     
     if (!entry) {
+      return null
+    }
+
+    // FIX #3: Verify userId matches to prevent cross-user cache access
+    if (userId && entry.userId && entry.userId !== userId) {
+      logger.warn('[CacheManager] Cache key accessed by different user, denying')
       return null
     }
 
@@ -37,10 +45,8 @@ export class CacheManager {
       return null
     }
 
-    // Increment hit counter
     entry.hits++
 
-    // Mark as cached
     return {
       ...entry.value,
       cached: true,
@@ -48,15 +54,19 @@ export class CacheManager {
   }
 
   /**
-   * Set cache entry
+   * Set cache entry with user isolation
    */
-  async set(key: string, value: ChatResponse, ttlSeconds?: number): Promise<void> {
-    // Don't cache if disabled
+  async set(key: string, value: ChatResponse, ttlSeconds?: number, userId?: string): Promise<void> {
     if (!CHAT_CONFIG.cacheEnabled) {
       return
     }
 
-    // Evict oldest entries if cache is full
+    // Validate response before caching
+    if (!value.content || value.content.trim().length < 10) {
+      logger.warn('[CacheManager] Skipping cache for minimal response')
+      return
+    }
+
     if (this.cache.size >= this.maxSize) {
       this.evictOldest()
     }
@@ -67,22 +77,24 @@ export class CacheManager {
       value,
       expiresAt: Date.now() + ttl * 1000,
       hits: 0,
+      userId, // FIX #3: Store userId for isolation
     })
+
+    logger.debug('[CacheManager] Entry cached:', { key, ttl, userId })
   }
 
   /**
    * Generate cache key from message
+   * FIX #3: Full userId hash instead of truncated version
    */
   generateKey(message: string, userId?: string, intent?: string): string {
-    // Normalize message to catch similar questions
     const normalized = this.normalizeMessage(message)
-    
-    // Generate hash
     const hash = this.simpleHash(normalized)
     
-    // Include userId and intent for context-specific caching
-    const parts = [hash]
-    if (userId) parts.push(userId.slice(0, 8)) // First 8 chars of userId
+    // FIX: Hash full userId to avoid collisions
+    const userHash = userId ? this.simpleHash(userId).slice(0, 16) : 'anon'
+    
+    const parts = [hash, userHash]
     if (intent) parts.push(intent)
     
     return parts.join(':')
@@ -95,21 +107,21 @@ export class CacheManager {
     return message
       .toLowerCase()
       .trim()
-      .replace(/[?!.,]/g, '') // Remove punctuation
-      .replace(/\s+/g, ' ') // Normalize whitespace
-      .replace(/\b(a|an|the|is|are|was|were|be|been|being)\b/g, '') // Remove common words
+      .replace(/[?!.,]/g, '')
+      .replace(/\s+/g, ' ')
+      .replace(/\b(a|an|the|is|are|was|were|be|been|being)\b/g, '')
       .trim()
   }
 
   /**
-   * Simple hash function
+   * Simple hash function for consistent key generation
    */
   private simpleHash(str: string): string {
     let hash = 0
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i)
       hash = (hash << 5) - hash + char
-      hash = hash & hash // Convert to 32-bit integer
+      hash = hash & hash
     }
     return Math.abs(hash).toString(36)
   }
@@ -119,10 +131,17 @@ export class CacheManager {
    */
   private cleanExpired(): void {
     const now = Date.now()
+    let cleanedCount = 0
+
     for (const [key, entry] of this.cache.entries()) {
       if (now > entry.expiresAt) {
         this.cache.delete(key)
+        cleanedCount++
       }
+    }
+
+    if (cleanedCount > 0) {
+      logger.debug('[CacheManager] Cleaned expired entries:', { count: cleanedCount })
     }
   }
 
@@ -130,12 +149,10 @@ export class CacheManager {
    * Evict oldest/least-used entries using LRU strategy
    */
   private evictOldest(): void {
-    // Find entry with lowest hits and oldest expiry
     let oldestKey: string | null = null
     let lowestScore = Infinity
 
     for (const [key, entry] of this.cache.entries()) {
-      // Score = hits - (time until expiry)
       const timeUntilExpiry = (entry.expiresAt - Date.now()) / 1000
       const score = entry.hits - timeUntilExpiry / 3600
       
@@ -147,6 +164,25 @@ export class CacheManager {
 
     if (oldestKey) {
       this.cache.delete(oldestKey)
+      logger.debug('[CacheManager] Evicted entry:', { key: oldestKey })
+    }
+  }
+
+  /**
+   * Clear cache for specific user
+   */
+  clearUserCache(userId: string): void {
+    let clearedCount = 0
+    
+    for (const [key, entry] of this.cache.entries()) {
+      if (entry.userId === userId) {
+        this.cache.delete(key)
+        clearedCount++
+      }
+    }
+
+    if (clearedCount > 0) {
+      logger.info('[CacheManager] Cleared user cache:', { userId, count: clearedCount })
     }
   }
 
@@ -154,7 +190,9 @@ export class CacheManager {
    * Clear all cache
    */
   clear(): void {
+    const size = this.cache.size
     this.cache.clear()
+    logger.info('[CacheManager] Cache cleared:', { entriesCleared: size })
   }
 
   /**
@@ -166,7 +204,7 @@ export class CacheManager {
 
     for (const entry of this.cache.values()) {
       totalHits += entry.hits
-      totalRequests += entry.hits + 1 // +1 for the initial set
+      totalRequests += entry.hits + 1
     }
 
     return {

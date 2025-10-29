@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { ActionButtons } from "./ActionButtons"
 import { ChatAction, ChatMessage } from "@/types/chat.types"
+import { logger } from "@/lib/logger"
 
 interface MessageBubbleProps {
   message: ChatMessage
@@ -19,12 +20,26 @@ interface MessageBubbleProps {
   copiedMessageId: string | null
 }
 
-// Memoized message bubble component with copy functionality
+/**
+ * FIX #11: Implement proper copy-to-clipboard functionality
+ */
 const MessageBubble = memo(({ message, index, onCopy, copiedMessageId }: MessageBubbleProps) => {
   const isCopied = copiedMessageId === message.id
 
-  const handleCopy = useCallback(() => {
-    onCopy(message.content, message.id)
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(message.content)
+      toast.success('Copied to clipboard')
+      onCopy(message.content, message.id)
+      
+      // Auto-reset copy indicator after 2 seconds
+      setTimeout(() => {
+        onCopy('', '')
+      }, 2000)
+    } catch (error) {
+      logger.error('[MessageList] Copy failed:', error)
+      toast.error('Failed to copy')
+    }
   }, [message.content, message.id, onCopy])
 
   return (
@@ -105,7 +120,7 @@ const MessageBubble = memo(({ message, index, onCopy, copiedMessageId }: Message
               <ActionButtons 
                 actions={message.actions}
                 onActionClick={(action) => {
-                  console.log('[MessageList] Action clicked:', action)
+                  logger.info('[MessageList] Action clicked:', action)
                 }}
               />
             </div>
@@ -118,14 +133,12 @@ const MessageBubble = memo(({ message, index, onCopy, copiedMessageId }: Message
 
 MessageBubble.displayName = 'MessageBubble'
 
-// Enhanced ReactMarkdown components with colors and icons - Memoized outside component for performance
 const markdownComponents: Partial<Components> = {
   a: ({ node, href, children, ...props }) => {
     if (!href) return <span>{children}</span>
     const isExternal = href.startsWith('http') && typeof window !== 'undefined' && !href.includes(window.location.hostname)
     const linkText = String(children)
 
-    // Determine icon based on link content
     let Icon = ExternalLink
     if (linkText.includes('Quiz') || linkText.includes('Take Quiz')) Icon = Target
     else if (linkText.includes('Course') || linkText.includes('View Course')) Icon = BookOpen
@@ -209,7 +222,6 @@ const markdownComponents: Partial<Components> = {
   p: ({ node, children, ...props }) => {
     const text = String(children)
 
-    // Style special paragraphs
     if (text.includes('Practice might help') || text.includes('comprehensive coverage')) {
       return (
         <div className="bg-primary/10 dark:bg-primary/5 border border-primary/20 dark:border-primary/20 rounded-none p-2 mb-2 text-sm text-primary italic" {...props}>
@@ -234,7 +246,6 @@ const markdownComponents: Partial<Components> = {
     let bulletColor = 'text-primary'
     let bullet = '•'
 
-    // Different bullets and colors based on content
     if (text.includes('Quiz') || text.includes('Take Quiz')) {
       bullet = '🎯'
       bulletColor = 'text-accent'
@@ -297,7 +308,6 @@ interface MessageListProps {
   copiedMessageId: string | null
 }
 
-// Animation variants for messages
 const messageVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: (i: number) => ({
@@ -312,7 +322,6 @@ const messageVariants = {
   exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
 }
 
-// Import icons that are used in markdown components
 import { Crown, ExternalLink, Target, BookOpen, Plus, Code2, Search, Brain, ChevronRight, Sparkles } from "lucide-react"
 
 export const MessageList = memo(({
