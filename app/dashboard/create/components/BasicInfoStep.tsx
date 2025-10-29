@@ -1,6 +1,6 @@
 "use client"
 
-import { type Control, Controller, type FieldErrors } from "react-hook-form"
+import { type Control, Controller, type FieldErrors, type UseFormSetValue } from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -13,9 +13,10 @@ interface BasicInfoStepProps {
   control: Control<CreateCourseInput>
   errors: FieldErrors<CreateCourseInput>
   params?: QueryParams
+  setValue?: UseFormSetValue<CreateCourseInput>
 }
 
-export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
+export function BasicInfoStep({ control, errors, params, setValue }: BasicInfoStepProps) {
   return (
     <div className="space-y-6 md:space-y-8 max-w-2xl mx-auto">
       {/* Engaging intro card */}
@@ -159,7 +160,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
         <Controller
           name="category"
           control={control}
-          defaultValue={params?.category || ""}
+          defaultValue={Array.isArray(params?.category) ? params.category[0] : params?.category || ""}
           render={({ field }) => (
             <div className="relative">
               <Input 
@@ -197,7 +198,7 @@ export function BasicInfoStep({ control, errors, params }: BasicInfoStepProps) {
             <button
               key={cat}
               type="button"
-              onClick={() => control._formValues.category !== cat && control._setValue('category', cat)}
+              onClick={() => setValue && setValue('category', cat)}
               className="px-3 py-1 text-xs font-bold bg-white border-2 border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-200"
             >
               {cat}

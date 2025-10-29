@@ -227,7 +227,7 @@ export default function CourseCreationForm({ maxQuestions, params }: {
         {/* Form Content - Scrollable */}
         <CardContent className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="space-y-6 md:space-y-8">
-            {step === 1 && <BasicInfoStep control={control} errors={errors} params={params} />}
+            {step === 1 && <BasicInfoStep control={control} errors={errors} params={params} setValue={setValue} />}
             {step === 2 && <ContentStep control={control} errors={errors} watch={watch} setValue={setValue} />}
             {step === 3 && <PreviewStep watch={watch} />}
           </div>
