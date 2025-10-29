@@ -622,7 +622,7 @@ export class PaymentWebhookHandler {
    */
   private static async handleStripeInvoicePaid(invoice: any): Promise<void> {
     const { prisma } = await import("@/lib/db")
-    const SUBSCRIPTION_PLANS = (await import("@/types/subscription-plans")).default
+    const SubscriptionPlanType = (await import("@/types/subscription-plans")).default
 
     if (!invoice.subscription || !invoice.customer) {
       return

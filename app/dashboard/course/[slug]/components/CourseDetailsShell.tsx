@@ -22,47 +22,51 @@ import CourseDetailsTabs from "./CourseDetailsTabs";
 
 const MemoizedCourseDetailsTabs = React.memo(CourseDetailsTabs)
 
-// Improved stat badge with brutal design
+// ===== IMPROVED STAT BADGE WITH BETTER VISUAL HIERARCHY =====
 export const CourseStatBadge = ({ icon: Icon, value, label }: { icon: any; value: string; label: string }) => (
-  <div className="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-900 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all">
-    <Icon className="h-5 w-5 text-black dark:text-white flex-shrink-0" />
+  <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-white dark:bg-gray-900 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.5)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] transition-all duration-200 rounded-none group">
+    <div className="p-1.5 bg-yellow-300 dark:bg-yellow-400 border-2 border-black dark:border-white group-hover:scale-110 transition-transform duration-200">
+      <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-black dark:text-black flex-shrink-0" />
+    </div>
     <div className="flex flex-col leading-tight">
       <span className="text-sm sm:text-base font-black text-black dark:text-white">{value}</span>
-      <span className="text-[10px] sm:text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{label}</span>
+      <span className="text-[10px] sm:text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">{label}</span>
     </div>
   </div>
 )
 
-// Progress ring component
+// ===== IMPROVED PROGRESS RING WITH ANIMATED STROKE =====
 const ProgressRing = ({ percentage, size = 48 }: { percentage: number; size?: number }) => {
   const radius = (size - 8) / 2
   const circumference = radius * 2 * Math.PI
   const offset = circumference - (percentage / 100) * circumference
 
   return (
-    <svg width={size} height={size} className="transform -rotate-90">
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        stroke="currentColor"
-        strokeWidth="4"
-        fill="none"
-        className="text-gray-300 dark:text-gray-700"
-      />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        stroke="currentColor"
-        strokeWidth="4"
-        fill="none"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        className="text-green-600 dark:text-green-500 transition-all duration-500"
-        strokeLinecap="round"
-      />
-    </svg>
+    <div className="relative inline-flex items-center justify-center">
+      <svg width={size} height={size} className="transform -rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="currentColor"
+          strokeWidth="3"
+          fill="none"
+          className="text-gray-300 dark:text-gray-700"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="currentColor"
+          strokeWidth="3"
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="text-lime-500 dark:text-lime-400 transition-all duration-700 ease-out"
+          strokeLinecap="round"
+        />
+      </svg>
+    </div>
   )
 }
 
@@ -112,20 +116,20 @@ export function renderCourseDashboard(
 ): React.ReactNode {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-foreground transition-colors duration-200">
-      {/* Shared course banner - improved */}
+      {/* ===== IMPROVED SHARED COURSE BANNER WITH BETTER CONTRAST ===== */}
       {course.isShared && (
-        <div className="bg-blue-400 dark:bg-blue-600 border-b-4 border-black dark:border-white shadow-[0_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[0_4px_0px_0px_rgba(255,255,255,1)]">
-          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white dark:bg-gray-900 border-4 border-black dark:border-white flex items-center justify-center flex-shrink-0">
-                <BookOpen className="h-5 w-5 text-black dark:text-white" />
+        <div className="bg-gradient-to-r from-cyan-400 to-blue-500 dark:from-cyan-600 dark:to-blue-700 border-b-4 border-black dark:border-white shadow-[0_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[0_6px_0px_0px_rgba(255,255,255,1)]">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white dark:bg-gray-900 border-4 border-black dark:border-white flex items-center justify-center flex-shrink-0 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)]">
+                <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-black dark:text-white" />
               </div>
               <div>
                 <p className="text-sm sm:text-base font-black text-black dark:text-white uppercase tracking-tight">
-                  Shared Course Preview
+                  🌟 Shared Course Preview
                 </p>
-                <p className="text-xs font-bold text-black/70 dark:text-white/70">
-                  Full access • Save bookmarks locally • Take quizzes
+                <p className="text-xs sm:text-sm font-bold text-black/70 dark:text-white/70 mt-0.5">
+                  Save bookmarks • Take quizzes • Track progress
                 </p>
               </div>
             </div>
@@ -135,20 +139,20 @@ export function renderCourseDashboard(
 
       {authPromptOverlay}
 
-      {/* Improved sticky header */}
+      {/* ===== IMPROVED STICKY HEADER WITH BETTER RESPONSIVE DESIGN ===== */}
       <header
         className={cn(
-          "sticky top-0 z-50 bg-white dark:bg-gray-900 border-b-4 border-black dark:border-white shadow-[0_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[0_4px_0px_0px_rgba(255,255,255,1)] transition-all duration-300",
+          "sticky top-0 z-50 bg-white dark:bg-gray-900 border-b-4 border-black dark:border-white shadow-[0_6px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[0_6px_0px_0px_rgba(255,255,255,0.3)] transition-all duration-300",
           state.headerCompact && "py-2"
         )}
       >
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-3 py-3 sm:py-4">
-            {/* Left: Course info */}
-            <div className="flex-1 min-w-0 flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-3 py-3 sm:py-4">
+            {/* Left: Course info with better icon styling */}
+            <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-yellow-400 dark:bg-yellow-500 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] flex items-center justify-center">
-                  <BookOpen className="h-6 w-6 sm:h-7 sm:w-7 text-black dark:text-white" />
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-yellow-300 to-yellow-400 dark:from-yellow-400 dark:to-yellow-500 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] flex items-center justify-center group hover:scale-105 transition-transform">
+                  <BookOpen className="h-6 w-6 sm:h-7 sm:w-7 text-black dark:text-black group-hover:rotate-6 transition-transform" />
                 </div>
               </div>
 
@@ -156,24 +160,25 @@ export function renderCourseDashboard(
                 <h1
                   className={cn(
                     "font-black uppercase tracking-tight truncate text-black dark:text-white",
-                    state.headerCompact ? "text-base sm:text-lg" : "text-xl sm:text-2xl"
+                    state.headerCompact ? "text-base sm:text-lg" : "text-lg sm:text-2xl"
                   )}
+                  title={course.title}
                 >
                   {course.title}
                 </h1>
-                <div className="flex items-center gap-3 mt-1 text-xs sm:text-sm font-bold text-gray-600 dark:text-gray-400 flex-wrap">
-                  <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2 sm:gap-3 mt-1 text-xs sm:text-sm font-bold text-gray-600 dark:text-gray-400 flex-wrap">
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-700 rounded-none">
                     <Clock className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span>{enhancedCourseStats.totalDuration}</span>
+                    <span className="tabular-nums">{enhancedCourseStats.totalDuration}</span>
                   </div>
-                  <div className="hidden sm:flex items-center gap-1.5">
+                  <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-700 rounded-none">
                     <Play className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span>{enhancedCourseStats.totalVideos} videos</span>
+                    <span className="tabular-nums">{enhancedCourseStats.totalVideos} Videos</span>
                   </div>
                   {state.headerCompact && (
-                    <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
-                      <CheckCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                      <span className="font-black">
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-lime-100 dark:bg-lime-900/30 border-2 border-lime-400 dark:border-lime-500 rounded-none">
+                      <CheckCircle className="h-3.5 w-3.5 flex-shrink-0 text-lime-600 dark:text-lime-400" />
+                      <span className="font-black text-lime-700 dark:text-lime-400">
                         {enhancedCourseStats.completedVideos}/{enhancedCourseStats.totalVideos}
                       </span>
                     </div>
@@ -182,43 +187,37 @@ export function renderCourseDashboard(
               </div>
             </div>
 
-            {/* Center: Progress indicator (desktop) */}
+            {/* Center: Progress indicator (desktop only) */}
             {!state.headerCompact && (
-              <div className="hidden lg:flex items-center gap-3">
-                <div className="relative">
-                  <ProgressRing percentage={enhancedCourseStats.progressPercentage} size={56} />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs font-black text-black dark:text-white">
-                      {enhancedCourseStats.progressPercentage}%
-                    </span>
+              <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-none">
+                <ProgressRing percentage={enhancedCourseStats.progressPercentage} size={56} />
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">Progress</span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-lg font-black text-black dark:text-white">{enhancedCourseStats.progressPercentage}%</span>
+                    <span className="text-xs font-bold text-gray-500 dark:text-gray-500">({enhancedCourseStats.completedVideos} / {enhancedCourseStats.totalVideos})</span>
                   </div>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">Progress</span>
-                  <span className="text-sm font-black text-black dark:text-white">
-                    {enhancedCourseStats.completedVideos} / {enhancedCourseStats.totalVideos}
-                  </span>
                 </div>
               </div>
             )}
 
-            {/* Right: Actions */}
-            <div className="flex items-center gap-2">
+            {/* Right: Action buttons with better spacing */}
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
               <Button
                 variant="default"
                 size="sm"
                 onClick={() => dispatch2({ type: "SET_SIDEBAR_COLLAPSED", payload: !state.sidebarCollapsed })}
-                className="hidden xl:flex bg-blue-400 dark:bg-blue-600 hover:bg-blue-500 dark:hover:bg-blue-700 text-black dark:text-white font-black border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all uppercase text-xs h-10"
+                className="hidden xl:flex bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-600 dark:hover:bg-cyan-700 text-black dark:text-white font-black border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[5px_5px_0px_0px_rgba(255,255,255,0.5)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all uppercase text-xs h-10 rounded-none gap-1.5"
               >
                 {state.sidebarCollapsed ? (
                   <>
-                    <Menu className="h-4 w-4 mr-1.5" />
-                    <span>Playlist</span>
+                    <Menu className="h-4 w-4" />
+                    <span className="hidden sm:inline">Playlist</span>
                   </>
                 ) : (
                   <>
-                    <X className="h-4 w-4 mr-1.5" />
-                    <span>Hide</span>
+                    <X className="h-4 w-4" />
+                    <span className="hidden sm:inline">Hide</span>
                   </>
                 )}
               </Button>
@@ -232,24 +231,21 @@ export function renderCourseDashboard(
             </div>
           </div>
 
-          {/* Mobile progress bar */}
-          <div className="xl:hidden border-t-4 border-black dark:border-white pt-3 pb-2">
-            <div className="flex items-center justify-between mb-2 gap-3">
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <ProgressRing percentage={enhancedCourseStats.progressPercentage} size={40} />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-[10px] font-black text-black dark:text-white">
-                      {enhancedCourseStats.progressPercentage}%
-                    </span>
-                  </div>
-                </div>
+          {/* Mobile progress bar with better styling */}
+          <div className="xl:hidden border-t-4 border-black dark:border-white pt-2 pb-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <ProgressRing percentage={enhancedCourseStats.progressPercentage} size={44} />
                 <div>
-                  <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">Course Progress</p>
+                  <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">Progress</p>
                   <p className="text-sm font-black text-black dark:text-white">
-                    {enhancedCourseStats.completedVideos} / {enhancedCourseStats.totalVideos} completed
+                    {enhancedCourseStats.completedVideos} / {enhancedCourseStats.totalVideos}
                   </p>
                 </div>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-black text-lime-600 dark:text-lime-400">{enhancedCourseStats.progressPercentage}%</p>
+                <p className="text-xs font-bold text-gray-600 dark:text-gray-400">Complete</p>
               </div>
             </div>
           </div>
@@ -268,17 +264,17 @@ export function renderCourseDashboard(
         }}
       />
 
-      {/* Mobile playlist toggle */}
+      {/* ===== IMPROVED MOBILE PLAYLIST TOGGLE ===== */}
       {!state.isTheaterMode && (
         <div className="xl:hidden border-b-4 border-black dark:border-white bg-white dark:bg-gray-900">
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <Button
               variant="neutral"
               onClick={() => dispatch2({ type: "SET_MOBILE_PLAYLIST_OPEN", payload: !state.mobilePlaylistOpen })}
-              className="w-full justify-between h-14 sm:h-16 bg-gray-50 dark:bg-gray-800 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all font-black"
+              className="w-full justify-between h-14 sm:h-16 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-gray-800 dark:to-gray-800 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.5)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all font-black rounded-none group"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-400 dark:bg-blue-600 border-4 border-black dark:border-white flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-cyan-500 dark:bg-cyan-600 border-4 border-black dark:border-white flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
                   <BookOpen className="h-5 w-5 text-black dark:text-white" />
                 </div>
                 <div className="text-left">
@@ -295,7 +291,7 @@ export function renderCourseDashboard(
                   total={videoPlaylist.length}
                 />
                 <ChevronDown className={cn(
-                  "h-5 w-5 text-black dark:text-white transition-transform",
+                  "h-5 w-5 text-black dark:text-white transition-transform duration-200",
                   state.mobilePlaylistOpen && "rotate-180"
                 )} />
               </div>
@@ -311,17 +307,23 @@ export function renderCourseDashboard(
             state.isTheaterMode ? "max-w-none px-0" : "max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6"
           )}
         >
-          {/* Course stats badges */}
+          {/* ===== IMPROVED COURSE STATS BADGES WITH BETTER LAYOUT ===== */}
           {!state.isTheaterMode && (
-            <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <div className="flex flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-8">
               <CourseStatBadge icon={Play} value={videoPlaylist.length.toString()} label="Videos" />
               <CourseStatBadge icon={Clock} value={formatDuration(totalCourseDuration)} label="Duration" />
               <CourseStatBadge 
                 icon={TrendingUp} 
                 value={`${enhancedCourseStats.progressPercentage}%`} 
-                label="Complete" 
+                label="Progress" 
               />
-              {course.rating && <CourseStatBadge icon={Star} value={course.rating.toString()} label="Rating" />}
+              {course.rating && (
+                <CourseStatBadge 
+                  icon={Star} 
+                  value={course.rating.toFixed(1)} 
+                  label={`${course.rating >= 4 ? "⭐" : "Rating"}`} 
+                />
+              )}
             </div>
           )}
 
@@ -337,31 +339,31 @@ export function renderCourseDashboard(
             <div className="space-y-4 sm:space-y-6 min-w-0">
               {/* Guest progress indicator */}
               {!user && !state.isTheaterMode && (
-                <div className="transition-transform duration-200">
+                <div className="transition-transform duration-200 hover:scale-[1.02]">
                   <GuestProgressIndicator courseId={course.id} />
                 </div>
               )}
 
-              {/* Video player */}
-              <div className="relative">
+              {/* ===== IMPROVED VIDEO PLAYER CONTAINER ===== */}
+              <div className="relative group">
                 {isPiPActive ? (
-                  <div className="bg-gray-100 dark:bg-gray-800 border-4 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] overflow-hidden">
-                    <div className="aspect-video bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                  <div className="bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border-6 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.3)] overflow-hidden">
+                    <div className="aspect-video bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
                       <div className="text-center p-8">
-                        <div className="w-20 h-20 mx-auto mb-4 bg-blue-400 dark:bg-blue-600 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] flex items-center justify-center">
-                          <Play className="h-10 w-10 text-black dark:text-white" />
+                        <div className="w-20 h-20 mx-auto mb-4 bg-cyan-500 dark:bg-cyan-600 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Play className="h-10 w-10 text-black dark:text-white fill-black dark:fill-white" />
                         </div>
                         <h3 className="text-xl font-black mb-2 uppercase tracking-tight text-black dark:text-white">
                           Picture-in-Picture Active
                         </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 font-bold">
-                          Video is playing in a separate window
+                        <p className="text-sm text-gray-700 dark:text-gray-300 font-bold">
+                          Video playing in separate window
                         </p>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full aspect-video bg-black overflow-hidden border-4 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
+                  <div className="w-full aspect-video bg-black border-6 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.3)] overflow-hidden">
                     <VideoPlayer
                       youtubeVideoId={currentVideoId || ""}
                       chapterId={currentChapter?.id ? String(currentChapter.id) : ""}
@@ -408,23 +410,23 @@ export function renderCourseDashboard(
                 )}
               </div>
 
-              {/* Chapter info */}
+              {/* ===== IMPROVED CHAPTER INFO CARD ===== */}
               {!state.isTheaterMode && currentChapter && (
-                <div className="bg-white dark:bg-gray-900 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] p-4 sm:p-5">
-                  <div className="flex items-start justify-between gap-3">
+                <div className="bg-white dark:bg-gray-900 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] p-4 sm:p-6 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.5)] transition-shadow duration-200 rounded-none">
+                  <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
-                      <h2 className="font-black text-lg sm:text-xl uppercase tracking-tight text-black dark:text-white mb-1">
+                      <h2 className="font-black text-lg sm:text-xl uppercase tracking-tight text-black dark:text-white mb-2">
                         {currentChapter.title}
                       </h2>
                       {currentChapter.description && (
-                        <p className="text-gray-600 dark:text-gray-400 font-bold text-sm line-clamp-2">
+                        <p className="text-gray-700 dark:text-gray-300 font-bold text-sm line-clamp-3 leading-relaxed">
                           {currentChapter.description}
                         </p>
                       )}
                     </div>
                     {videoDurations[currentVideoId || ""] && (
-                      <div className="bg-yellow-400 dark:bg-yellow-500 border-4 border-black dark:border-white px-3 py-2 font-black text-sm whitespace-nowrap flex-shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
-                        {formatDuration(videoDurations[currentVideoId || ""])}
+                      <div className="bg-gradient-to-br from-yellow-300 to-yellow-400 dark:from-yellow-400 dark:to-yellow-500 border-4 border-black dark:border-white px-4 py-3 font-black text-sm sm:text-base whitespace-nowrap flex-shrink-0 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] transition-shadow rounded-none">
+                        <div className="text-black dark:text-black">{formatDuration(videoDurations[currentVideoId || ""])}</div>
                       </div>
                     )}
                   </div>
@@ -433,15 +435,15 @@ export function renderCourseDashboard(
 
               {/* Sign-in prompt for guests */}
               {!user && !state.isTheaterMode && (
-                <div className="bg-blue-100 dark:bg-blue-900/30 border-4 border-black dark:border-white p-4 sm:p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-4 border-blue-300 dark:border-blue-600 p-4 sm:p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)] rounded-none hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.5)] transition-shadow duration-200">
                   <ContextualSignInPrompt action="continue_course" courseId={String(course.id)} />
                 </div>
               )}
 
               {/* Course details tabs */}
               {!state.isTheaterMode && (
-                <div className="bg-white dark:bg-gray-900 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
-                  <div className="p-4 sm:p-5">
+                <div className="bg-white dark:bg-gray-900 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.5)] transition-shadow duration-200 rounded-none overflow-hidden">
+                  <div className="p-4 sm:p-6">
                     <MemoizedCourseDetailsTabs
                       course={course}
                       currentChapter={currentChapter}
@@ -454,21 +456,21 @@ export function renderCourseDashboard(
 
               {/* Reviews section */}
               {!state.isTheaterMode && (
-                <div className="bg-white dark:bg-gray-900 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
-                  <div className="p-4 sm:p-5">
+                <div className="bg-white dark:bg-gray-900 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.5)] transition-shadow duration-200 rounded-none overflow-hidden">
+                  <div className="p-4 sm:p-6">
                     <ReviewsSection slug={course.slug} />
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Desktop sidebar */}
+            {/* Desktop sidebar with improved styling */}
             {!state.sidebarCollapsed && !state.isTheaterMode && (
               <div className="hidden xl:block space-y-4 min-w-0">
-                <div className="bg-white dark:bg-gray-900 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] overflow-hidden sticky top-24">
+                <div className="bg-white dark:bg-gray-900 border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] overflow-hidden sticky top-24 rounded-none hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.5)] transition-shadow duration-200">
                   {sidebarCourse.chapters.length === 0 ? (
                     <div className="p-8 text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 dark:bg-gray-800 border-4 border-black dark:border-white flex items-center justify-center">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 border-4 border-black dark:border-white flex items-center justify-center rounded-none shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)]">
                         <BookOpen className="h-8 w-8 text-gray-400 dark:text-gray-600" />
                       </div>
                       <h3 className="font-black text-lg mb-2 uppercase text-black dark:text-white">No Videos Yet</h3>
@@ -527,7 +529,7 @@ export function renderCourseDashboard(
           onChapterSelect={handleChapterSelect}
           closeButton={
             <button
-              className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white p-3 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all font-black uppercase text-xs"
+              className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white p-3 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.5)] hover:translate-x-[-1px] hover:translate-y-[-1px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] transition-all font-black uppercase text-xs rounded-none"
               onClick={() => dispatch2({ type: "SET_MOBILE_PLAYLIST_OPEN", payload: false })}
               aria-label="Close playlist"
             >
@@ -538,15 +540,15 @@ export function renderCourseDashboard(
         />
       )}
 
-      {/* Unlock premium CTA - improved */}
+      {/* ===== IMPROVED UNLOCK PREMIUM CTA WITH BETTER VISIBILITY ===== */}
       {!userSubscription && !state.isTheaterMode && (
-        <div className="fixed bottom-6 right-6 z-40 transition-transform duration-200 hover:scale-105">
+        <div className="fixed bottom-6 right-6 z-40 transition-all duration-200 hover:scale-110 hover:-translate-y-1">
           <Button
             size="lg"
             onClick={() => (window.location.href = "/dashboard/subscription")}
-            className="bg-yellow-400 hover:bg-yellow-500 text-black font-black border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] active:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] transition-all uppercase px-6 py-3 text-sm sm:text-base"
+            className="bg-gradient-to-br from-yellow-300 to-yellow-400 hover:from-yellow-400 hover:to-yellow-500 text-black font-black border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] transition-all uppercase px-6 py-3 text-sm sm:text-base rounded-none group"
           >
-            <Zap className="h-5 w-5 mr-2 fill-black" />
+            <Zap className="h-5 w-5 mr-2 fill-black text-black group-hover:scale-110 transition-transform" />
             <span className="hidden sm:inline">Unlock All Content</span>
             <span className="sm:hidden">Unlock</span>
           </Button>
@@ -563,23 +565,23 @@ export function renderCourseDashboard(
         totalLessons={videoPlaylist.length}
       />
 
-      {/* Autoplay indicator - improved */}
+      {/* ===== IMPROVED AUTOPLAY INDICATOR ===== */}
       {!state.isTheaterMode && (
-        <div className="fixed bottom-6 left-6 z-40">
+        <div className="fixed bottom-6 left-6 z-40 transition-all duration-200">
           <button
             onClick={handleAutoplayToggle}
             className={cn(
-              "px-4 py-2 font-black text-xs uppercase border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all",
+              "px-4 sm:px-5 py-2 sm:py-2.5 font-black text-xs uppercase border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] transition-all rounded-none font-black tracking-wider",
               state.autoplayMode
-                ? "bg-green-400 hover:bg-green-500 text-black"
-                : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                ? "bg-lime-400 hover:bg-lime-500 text-black dark:text-black border-black"
+                : "bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 dark:border-white"
             )}
             aria-label={state.autoplayMode ? "Disable autoplay" : "Enable autoplay"}
           >
             <div className="flex items-center gap-2">
               <div className={cn(
-                "w-2 h-2 rounded-full",
-                state.autoplayMode ? "bg-black" : "bg-gray-500"
+                "w-2.5 h-2.5 rounded-full transition-all",
+                state.autoplayMode ? "bg-black animate-pulse" : "bg-gray-500"
               )} />
               <span>Autoplay: {state.autoplayMode ? "ON" : "OFF"}</span>
             </div>
@@ -587,29 +589,30 @@ export function renderCourseDashboard(
         </div>
       )}
 
-      {/* Theater mode exit button - improved */}
+      {/* ===== IMPROVED THEATER MODE EXIT BUTTON ===== */}
       {state.isTheaterMode && (
         <button
           onClick={() => dispatch2({ type: "SET_THEATER_MODE", payload: false })}
-          className="fixed top-4 right-4 z-50 bg-red-500 hover:bg-red-600 text-white px-4 py-3 border-4 border-white shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all font-black uppercase text-sm"
+          className="fixed top-4 right-4 z-50 bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-3 sm:py-4 border-4 border-white shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] hover:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] transition-all font-black uppercase text-sm rounded-none group"
           aria-label="Exit Theater Mode"
         >
           <div className="flex items-center gap-2">
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5 group-hover:rotate-90 transition-transform" />
             <span className="hidden sm:inline">Exit Theater</span>
+            <span className="sm:hidden">Exit</span>
           </div>
         </button>
       )}
 
-      {/* Completion celebration banner */}
+      {/* ===== IMPROVED COMPLETION CELEBRATION BANNER ===== */}
       {enhancedCourseStats.progressPercentage === 100 && !state.isTheaterMode && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 animate-bounce">
-          <div className="bg-yellow-400 border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] px-6 py-4">
-            <div className="flex items-center gap-3">
-              <Award className="h-8 w-8 text-black" />
+          <div className="bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-300 border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] px-6 sm:px-8 py-4 sm:py-5 rounded-none">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <Award className="h-8 w-8 sm:h-10 sm:w-10 text-black animate-spin" />
               <div>
-                <p className="font-black text-lg uppercase text-black">Course Complete!</p>
-                <p className="text-xs font-bold text-black/70">Congratulations on finishing</p>
+                <p className="font-black text-lg sm:text-xl uppercase text-black tracking-tight">🎉 Course Complete!</p>
+                <p className="text-xs sm:text-sm font-bold text-black/80">You've mastered this course</p>
               </div>
             </div>
           </div>

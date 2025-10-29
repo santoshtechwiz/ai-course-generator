@@ -30,13 +30,15 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="w-full">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] lg:grid-cols-[240px_1fr] gap-6 lg:gap-8">
+    <div className="w-full bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+      <div className="max-w-7xl mx-auto p-4">
+        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] gap-6">
           <aside className="hidden md:block">
             <AdminNav user={{ isAdmin: true }} />
           </aside>
-          <main className="min-w-0">{children}</main>
+          <main className="min-w-0 bg-yellow-50 p-4">
+            {children}
+          </main>
         </div>
       </div>
     </div>

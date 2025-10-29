@@ -5,6 +5,7 @@ import { streakService } from "@/services/streak.service"
 import { badgeService } from "@/services/badge.service"
 import { usageLimitService } from "@/services/usage-limit.service"
 import { emailService } from "@/services/email.service"
+import { SUBSCRIPTION_PLAN_IDS, isFreePlan } from '@/types/subscription-plans'
 
 /**
  * POST /api/flashcards/review
@@ -30,8 +31,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Check usage limits for free users only (optimization)
-    const userType = (session.user as any).userType || 'FREE'
-    if (userType === 'FREE') {
+    const userType = (session.user as any).userType || SUBSCRIPTION_PLAN_IDS.FREE
+    if (isFreePlan(userType)) {
       const canReview = await usageLimitService.canUseResource(
         session.user.id,
         'flashcard_reviews',

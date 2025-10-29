@@ -56,6 +56,13 @@ export interface QuizResults {
   accuracy?: number
 }
 
+export interface QuizError {
+  code: string
+  message: string
+  status?: number
+  timestamp?: number
+}
+
 export interface QuizState {
   slug: string | null
   quizType: QuizType | null
@@ -66,7 +73,7 @@ export interface QuizState {
   results: QuizResults | null
   isCompleted: boolean
   status: 'idle' | 'loading' | 'submitting' | 'succeeded' | 'failed' | 'not-found' | 'requires-auth'
-  error: string | null
+  error: QuizError | null
   requiresAuth: boolean
   redirectAfterLogin: string | null
   userId: string | null

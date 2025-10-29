@@ -72,34 +72,34 @@ export function ContextualHelp({
             type="button"
             variant="ghost"
             size="icon"
-            className="h-6 w-6 absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-yellow-400 hover:bg-yellow-500 rounded-md shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] border-2 border-black z-10"
+            className="h-6 w-6 absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-[color:var(--nb-warning)] hover:bg-[color:var(--nb-warning-hover)] rounded-none shadow-[2px_2px_0_rgba(0,0,0,1)] hover:shadow-[1px_1px_0_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] border-2 border-[color:var(--nb-border)] z-10"
             onClick={handleButtonClick}
             aria-label="Show help"
           >
-            <HelpCircle className="h-3.5 w-3.5 text-black" />
+            <HelpCircle className="h-3.5 w-3.5 text-[color:var(--nb-fg)]" />
           </Button>
         </div>
       </PopoverTrigger>
       <PopoverContent 
         side={side} 
         align={align} 
-        className="w-80 border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-0"
+        className="w-80 border-4 border-[color:var(--nb-border)] bg-[color:var(--nb-bg)] shadow-[4px_4px_0_rgba(0,0,0,1)] p-0"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
         <div className="space-y-3 p-4">
           {/* Title with accent background */}
-          <div className="bg-blue-400 border-2 border-black px-3 py-2 -mx-4 -mt-4 mb-3">
-            <h4 className="font-bold text-black text-base">{title}</h4>
+          <div className="bg-[color:var(--nb-primary)] border-2 border-[color:var(--nb-border)] px-3 py-2 -mx-4 -mt-4 mb-3">
+            <h4 className="font-bold text-[color:var(--nb-fg)] text-base">{title}</h4>
           </div>
           
           {/* Description */}
-          <p className="text-sm text-gray-800 leading-relaxed">
+          <p className="text-sm text-[color:var(--nb-fg)] leading-relaxed">
             {description}
           </p>
           
           {/* Decorative bottom border */}
-          <div className="h-1 bg-yellow-400 border-t-2 border-black -mx-4 -mb-4 mt-4" />
+          <div className="h-1 bg-[color:var(--nb-warning)] border-t-2 border-[color:var(--nb-border)] -mx-4 -mb-4 mt-4" />
         </div>
       </PopoverContent>
     </Popover>

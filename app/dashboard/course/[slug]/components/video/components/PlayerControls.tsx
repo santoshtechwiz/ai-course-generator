@@ -239,7 +239,7 @@ const PlayerControls = (props: any) => {
       return (
         <div
           key={index}
-          className="absolute top-0 w-1 h-full bg-yellow-400 transform -translate-x-1/2 cursor-pointer z-20 hover:w-2 transition-all duration-150 border-x-2 border-black"
+          className="absolute top-0 w-1 h-full bg-yellow-400 dark:bg-yellow-500 transform -translate-x-1/2 cursor-pointer z-20 hover:w-2 transition-all duration-150 border-x-2 border-black"
           style={{ left: `${position}%` }}
           onClick={(e) => {
             e.stopPropagation()
@@ -277,14 +277,14 @@ const PlayerControls = (props: any) => {
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Stronger gradient overlay for better visibility */}
-      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black via-black/70 to-transparent pointer-events-none" />
+      {/* Enhanced gradient overlay - better dark/light mode support */}
+      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black via-black/80 to-transparent dark:from-black dark:via-black/85 dark:to-transparent pointer-events-none" />
 
-      {/* Enhanced Progress Bar - ALWAYS VISIBLE with brutal design */}
+      {/* Enhanced Progress Bar - BRUTAL DESIGN with high contrast */}
       <div className="relative px-3 sm:px-6 mb-3 sm:mb-4">
         <div
           ref={progressBarRef}
-          className="relative h-3 sm:h-4 bg-gray-800 border-2 border-white cursor-pointer group hover:h-4 sm:hover:h-5 transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+          className="relative h-3 sm:h-4 bg-gray-900 dark:bg-gray-950 border-3 border-white dark:border-white cursor-pointer group hover:h-4 sm:hover:h-5 transition-all duration-200 shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
           onClick={handleSeek}
           onMouseMove={handleProgressHover}
           onMouseDown={handleMouseDown}
@@ -299,28 +299,28 @@ const PlayerControls = (props: any) => {
           aria-valuenow={duration * played}
           tabIndex={0}
         >
-          {/* Buffered progress - lighter background */}
+          {/* Buffered progress */}
           <div
-            className="absolute left-0 top-0 h-full bg-gray-600 transition-all duration-300"
+            className="absolute left-0 top-0 h-full bg-gray-700 dark:bg-gray-800 transition-all duration-300"
             style={{ width: `${loaded * 100}%` }}
           />
 
-          {/* Played progress - bright red with brutal border */}
+          {/* Played progress - Magenta/Pink */}
           <div
-            className="absolute left-0 top-0 h-full bg-red-600 border-r-2 border-white transition-all duration-150"
+            className="absolute left-0 top-0 h-full bg-pink-500 dark:bg-pink-600 border-r-3 border-white transition-all duration-150"
             style={{ width: `${played * 100}%` }}
           />
 
           {renderBookmarkIndicators}
 
-          {/* Enhanced hover time tooltip with brutal design */}
+          {/* Enhanced hover time tooltip - high contrast */}
           {hoverPosition !== null && hoveredTime !== null && !isDragging && (
             <motion.div
               initial={{ opacity: 0, y: 8, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.9 }}
               transition={{ duration: 0.15 }}
-              className="absolute bottom-full mb-3 bg-white text-black px-3 py-2 text-xs sm:text-sm font-black uppercase tracking-wide pointer-events-none -translate-x-1/2 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              className="absolute bottom-full mb-3 bg-white dark:bg-gray-100 text-black px-3 py-2 text-xs sm:text-sm font-black uppercase tracking-wide pointer-events-none -translate-x-1/2 border-3 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
               style={{ left: `${hoverPosition * 100}%` }}
             >
               {formatTime(hoveredTime)}
@@ -328,11 +328,11 @@ const PlayerControls = (props: any) => {
             </motion.div>
           )}
 
-          {/* Enhanced seek handle - larger and more visible */}
+          {/* Enhanced seek handle */}
           <div
             className={cn(
-              "absolute top-1/2 w-4 h-4 sm:w-5 sm:h-5 bg-white border-2 border-black transform -translate-y-1/2 -translate-x-1/2 cursor-grab shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] opacity-0 group-hover:opacity-100 transition-all duration-200",
-              isDragging && "opacity-100 scale-150 cursor-grabbing shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
+              "absolute top-1/2 w-5 h-5 sm:w-6 sm:h-6 bg-white dark:bg-gray-100 border-3 border-black transform -translate-y-1/2 -translate-x-1/2 cursor-grab shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] opacity-0 group-hover:opacity-100 transition-all duration-200",
+              isDragging && "opacity-100 scale-150 cursor-grabbing shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]",
             )}
             style={{ left: `${played * 100}%`, pointerEvents: "auto" }}
             onMouseDown={handleMouseDown}
@@ -341,25 +341,25 @@ const PlayerControls = (props: any) => {
             aria-label="Seek position"
           />
 
-          {/* Progress percentage indicator on hover */}
+          {/* Progress indicator on hover */}
           {hoverPosition !== null && (
             <div
-              className="absolute top-0 h-full w-0.5 bg-white/50 pointer-events-none"
+              className="absolute top-0 h-full w-1 bg-white/60 dark:bg-white/70 pointer-events-none"
               style={{ left: `${hoverPosition * 100}%` }}
             />
           )}
         </div>
       </div>
 
-      {/* Enhanced Control Bar - Brutal design */}
-      <div className="flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-6 py-3 sm:py-4 bg-black border-t-4 border-white mx-0 mb-0">
+      {/* Enhanced Control Bar - Brutal design with dark mode */}
+      <div className="flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-6 py-3 sm:py-4 bg-black/95 dark:bg-black border-t-4 border-white mx-0 mb-0 backdrop-blur-sm">
         <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
-          {/* Play/Pause - Enhanced */}
+          {/* Play/Pause Button */}
           <Button
             variant="ghost"
             size="icon"
             onClick={onPlayPause}
-            className="h-10 w-10 sm:h-12 sm:w-12 bg-white hover:bg-gray-200 text-black transition-all border-2 border-black shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none rounded-none"
+            className="h-10 w-10 sm:h-12 sm:w-12 bg-white dark:bg-white hover:bg-gray-100 dark:hover:bg-gray-50 text-black transition-all border-3 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] rounded-none"
             aria-label={playing ? "Pause" : "Play"}
           >
             {isBuffering ? (
@@ -375,36 +375,36 @@ const PlayerControls = (props: any) => {
             )}
           </Button>
 
-          {/* Rewind - Enhanced */}
+          {/* Rewind */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onSeekChange(Math.max(0, duration * played - 10))}
-            className="h-9 w-9 sm:h-10 sm:w-10 bg-gray-800 hover:bg-gray-700 text-white transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
+            className="h-9 w-9 sm:h-10 sm:w-10 bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
             aria-label="Rewind 10 seconds"
           >
             <RewindIcon className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
 
-          {/* Fast Forward - Enhanced */}
+          {/* Fast Forward */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onSeekChange(Math.min(duration, duration * played + 10))}
-            className="h-9 w-9 sm:h-10 sm:w-10 bg-gray-800 hover:bg-gray-700 text-white transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
+            className="h-9 w-9 sm:h-10 sm:w-10 bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
             aria-label="Forward 10 seconds"
           >
             <FastForwardIcon className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
 
-          {/* Volume - Enhanced */}
+          {/* Volume */}
           <div ref={volumeSliderRef} className="relative flex items-center">
             <Button
               variant="ghost"
               size="icon"
               onClick={onMute}
               onMouseEnter={() => setShowVolumeSlider(true)}
-              className="h-9 w-9 sm:h-10 sm:w-10 bg-gray-800 hover:bg-gray-700 text-white transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
+              className="h-9 w-9 sm:h-10 sm:w-10 bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
               aria-label={muted ? "Unmute" : "Mute"}
             >
               {React.createElement(getVolumeIcon, { className: "h-4 w-4 sm:h-5 sm:w-5" })}
@@ -417,7 +417,7 @@ const PlayerControls = (props: any) => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.9 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute bottom-full mb-3 left-0 bg-black border-2 border-white p-4 shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
+                  className="absolute bottom-full mb-3 left-0 bg-black dark:bg-gray-900 border-3 border-white p-4 shadow-[6px_6px_0px_0px_rgba(255,255,255,1)]"
                   onMouseEnter={() => setShowVolumeSlider(true)}
                   onMouseLeave={() => setShowVolumeSlider(false)}
                 >
@@ -437,19 +437,18 @@ const PlayerControls = (props: any) => {
             </AnimatePresence>
           </div>
 
-          {/* Time display - Enhanced */}
-          <div className="text-xs sm:text-sm text-white font-black tabular-nums px-2 sm:px-3 py-1 bg-gray-800 border-2 border-white hidden sm:block shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)]">
+          {/* Time Display */}
+          <div className="text-xs sm:text-sm text-white font-black tabular-nums px-2 sm:px-3 py-1 bg-gray-900 dark:bg-gray-950 border-2 border-white hidden sm:block shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)]">
             <span>{formatTime(duration * played)}</span>
             <span className="mx-1.5 text-gray-400">/</span>
             <span className="text-gray-300">{formatTime(duration)}</span>
           </div>
         </div>
 
-        {/* Center controls - Auto toggles with brutal design */}
+        {/* Center Controls - Auto toggles */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Auto-play video toggle */}
           {onToggleAutoPlayVideo && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-purple-600 border-2 border-white text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)] transition-all">
+            <div className="flex items-center gap-2 px-3 py-2 bg-cyan-500 dark:bg-cyan-600 border-2 border-white text-black dark:text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.4)] hover:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.4)] transition-all">
               <Zap className="h-4 w-4 flex-shrink-0" />
               <span className="text-xs font-black uppercase tracking-wider hidden sm:inline">Auto</span>
               <Switch
@@ -461,9 +460,8 @@ const PlayerControls = (props: any) => {
             </div>
           )}
 
-          {/* Autoplay next toggle */}
           {hasNextVideo && onToggleAutoPlayNext && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-blue-600 border-2 border-white text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)] transition-all">
+            <div className="flex items-center gap-2 px-3 py-2 bg-amber-500 dark:bg-amber-600 border-2 border-white text-black dark:text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.4)] hover:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.4)] transition-all">
               <SkipForward className="h-4 w-4 flex-shrink-0" />
               <span className="text-xs font-black uppercase tracking-wider hidden sm:inline">Next</span>
               <Switch
@@ -476,14 +474,13 @@ const PlayerControls = (props: any) => {
           )}
         </div>
 
-        {/* Right controls - Enhanced */}
+        {/* Right Controls - Enhanced buttons */}
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          {/* Next video button */}
           {hasNextVideo && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 sm:h-10 sm:w-10 bg-blue-600 hover:bg-blue-700 text-white transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] disabled:opacity-50 disabled:cursor-not-allowed rounded-none"
+              className="h-9 w-9 sm:h-10 sm:w-10 bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-600 dark:hover:bg-cyan-700 text-black dark:text-white transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] disabled:opacity-50 disabled:cursor-not-allowed rounded-none font-black"
               onClick={onNextVideo}
               disabled={!canAccessNextVideo}
               title={nextVideoTitle}
@@ -493,13 +490,13 @@ const PlayerControls = (props: any) => {
             </Button>
           )}
 
-          {/* Settings with brutal dropdown */}
+          {/* Settings */}
           <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 sm:h-10 sm:w-10 bg-gray-800 hover:bg-gray-700 text-white transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
+                className="h-9 w-9 sm:h-10 sm:w-10 bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
                 aria-label="Playback speed"
               >
                 <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -507,7 +504,7 @@ const PlayerControls = (props: any) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-40 bg-black border-4 border-white text-white shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] p-0"
+              className="w-40 bg-black dark:bg-gray-900 border-4 border-white text-white shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] p-0"
             >
               <div className="px-4 py-3 text-xs font-black border-b-4 border-white uppercase tracking-wider">
                 Speed
@@ -535,7 +532,7 @@ const PlayerControls = (props: any) => {
               onClick={onToggleNotesPanel}
               className={cn(
                 "h-9 w-9 sm:h-10 sm:w-10 transition-all border-2 border-white relative hidden sm:flex shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none",
-                notesPanelOpen ? "bg-green-600 text-white" : "bg-gray-800 hover:bg-gray-700 text-white",
+                notesPanelOpen ? "bg-lime-500 dark:bg-lime-600 text-black dark:text-white" : "bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white",
               )}
               aria-label="Notes"
             >
@@ -544,7 +541,7 @@ const PlayerControls = (props: any) => {
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-[10px] text-white font-black flex items-center justify-center border-2 border-black"
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 dark:bg-red-700 text-[10px] text-white font-black flex items-center justify-center border-2 border-black"
                 >
                   {notesCount > 9 ? "9+" : notesCount}
                 </motion.div>
@@ -560,7 +557,7 @@ const PlayerControls = (props: any) => {
               onClick={onToggleBookmarkPanel}
               className={cn(
                 "h-9 w-9 sm:h-10 sm:w-10 transition-all border-2 border-white hidden sm:flex shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none",
-                bookmarkPanelOpen ? "bg-yellow-500 text-black" : "bg-gray-800 hover:bg-gray-700 text-white",
+                bookmarkPanelOpen ? "bg-yellow-400 dark:bg-yellow-500 text-black" : "bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white",
               )}
               aria-label="Bookmarks"
             >
@@ -576,7 +573,7 @@ const PlayerControls = (props: any) => {
               onClick={onPictureInPicture}
               className={cn(
                 "h-9 w-9 sm:h-10 sm:w-10 transition-all border-2 border-white hidden sm:flex shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none",
-                isPiPActive ? "bg-blue-600 text-white" : "bg-gray-800 hover:bg-gray-700 text-white",
+                isPiPActive ? "bg-fuchsia-500 dark:bg-fuchsia-600 text-black dark:text-white" : "bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white",
               )}
               aria-label="Picture-in-Picture"
             >
@@ -584,7 +581,7 @@ const PlayerControls = (props: any) => {
             </Button>
           )}
 
-          {/* Theater mode */}
+          {/* Theater Mode */}
           {onToggleTheaterMode && (
             <Button
               variant="ghost"
@@ -592,7 +589,7 @@ const PlayerControls = (props: any) => {
               onClick={onToggleTheaterMode}
               className={cn(
                 "h-9 w-9 sm:h-10 sm:w-10 transition-all border-2 border-white hidden sm:flex shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none",
-                isTheaterMode ? "bg-purple-600 text-white" : "bg-gray-800 hover:bg-gray-700 text-white",
+                isTheaterMode ? "bg-purple-600 dark:bg-purple-700 text-white" : "bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white",
               )}
               aria-label="Theater mode"
             >
@@ -607,7 +604,7 @@ const PlayerControls = (props: any) => {
             onClick={onToggleFullscreen}
             className={cn(
               "h-9 w-9 sm:h-10 sm:w-10 transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none",
-              isFullscreen ? "bg-white text-black" : "bg-gray-800 hover:bg-gray-700 text-white",
+              isFullscreen ? "bg-white dark:bg-gray-100 text-black" : "bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white",
             )}
             aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
           >

@@ -64,11 +64,11 @@ const VideoProgressIndicator = memo<VideoProgressIndicatorProps>(({
   // Memoize status icon
   const StatusIcon = useMemo(() => {
     const icons = {
-      queued: <Clock className={cn(iconSize, "text-yellow-500 animate-pulse")} />,
-      processing: <Loader2 className={cn(iconSize, "text-blue-500 animate-spin")} />,
-      completed: <CheckCircle className={cn(iconSize, "text-green-500")} />,
-      error: <XCircle className={cn(iconSize, "text-red-500")} />,
-      idle: <AlertCircle className={cn(iconSize, "text-gray-400")} />
+      queued: <Clock className={cn(iconSize, "text-warning animate-pulse")} />,
+      processing: <Loader2 className={cn(iconSize, "text-primary animate-spin")} />,
+      completed: <CheckCircle className={cn(iconSize, "text-success")} />,
+      error: <XCircle className={cn(iconSize, "text-error")} />,
+      idle: <AlertCircle className={cn(iconSize, "text-muted-foreground")} />
     }
     return icons[currentStatus] || icons.idle
   }, [currentStatus, iconSize])
@@ -76,11 +76,11 @@ const VideoProgressIndicator = memo<VideoProgressIndicatorProps>(({
   // Memoize status color
   const statusColor = useMemo(() => {
     const colors = {
-      queued: "bg-yellow-500",
-      processing: "bg-blue-500",
-      completed: "bg-green-500",
-      error: "bg-red-500",
-      idle: "bg-gray-500"
+      queued: "bg-warning",
+      processing: "bg-primary",
+      completed: "bg-success",
+      error: "bg-error",
+      idle: "bg-muted"
     }
     return colors[currentStatus] || colors.idle
   }, [currentStatus])
@@ -145,7 +145,7 @@ const VideoProgressIndicator = memo<VideoProgressIndicatorProps>(({
                 onClick={onRetry}
                 className={cn(
                   buttonSize, 
-                  "border-2 border-red-200 text-red-600 hover:bg-red-50"
+                  "border-2 border-error/50 text-error hover:bg-error/10"
                 )}
               >
                 <RefreshCcw className="h-3 w-3 mr-1" /> Retry

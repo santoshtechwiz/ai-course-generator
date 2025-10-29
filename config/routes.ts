@@ -6,6 +6,7 @@ export const routeConfig = {
     { from: "/mcq/:id", to: "/mcq/:slug" },
     { from: "/dashboard/profile", to: "/dashboard/account" },
     { from: "/dashboard/settings", to: "/dashboard/account" },
+    { from: "/dashboard/create-quiz", to: "/dashboard/explore" },
   ],
   authRedirects: {
     signIn: "/api/auth/signin",

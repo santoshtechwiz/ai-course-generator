@@ -148,7 +148,8 @@ export const UserManagement = () => {
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
 
   // Fetch users (server-side pagination + filtering)
-  const { data, isLoading, isError, refetch, error } = useQuery<{ users: UserInterface[]; totalCount: number }, Error>({
+  const { data, isLoading, isError, refetch, error } = 
+  useQuery<{ users: UserInterface[]; totalCount: number }, Error>({
     queryKey: [
       "users",
       {
@@ -161,19 +162,6 @@ export const UserManagement = () => {
     ],
     queryFn: async () => {
       console.log('[UserManagement] Fetching users...')
-
-      // Don't fetch if component not mounted (prevent SSR fetch)
-      if (!isMounted) {
-        throw new Error('Component not mounted')
-      }
-
-        if (status === 'loading') {
-          throw new Error('Session still loading')
-        }
-
-        if (status === 'unauthenticated') {
-          throw new Error('User not authenticated')
-        }
 
       // Build query params
       const params = new URLSearchParams()
@@ -214,13 +202,13 @@ export const UserManagement = () => {
       console.log('[UserManagement] Fetched users successfully:', result.users?.length || 0, 'users')
       return result
     },
-  enabled: isMounted && status === 'authenticated',
+  enabled: status === 'authenticated',
     retry: 2,
     retryDelay: 1000,
   })
-
-  const users = data?.users || []
-  const totalCount = data?.totalCount || 0
+  
+  const users = data?.data?.users || []
+  const totalCount = data?.data?.totalCount || 0
 
   // Reset selected users when users or filters change
   useEffect(() => {
@@ -375,10 +363,10 @@ export const UserManagement = () => {
   if (users.length === 0) return <EmptyState onCreate={() => setIsCreateDialogOpen(true)} />
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-2">
         <div className="border rounded-none overflow-hidden">
           {/* Table Header */}
-          <div className="grid grid-cols-12 gap-2 p-3 bg-muted/30 border-b text-sm font-medium">
+          <div className="grid grid-cols-12 gap-1 p-4 bg-black text-white text-lg font-black uppercase tracking-wide">
             <div className="col-span-1 flex items-center justify-center">
               <Checkbox
                 checked={selectedUsers.length > 0 && selectedUsers.length === users.length}
@@ -394,11 +382,11 @@ export const UserManagement = () => {
           </div>
 
           {/* Table Rows */}
-          <div className="divide-y">
+          <div className="divide-y-4 divide-black">
             {users.map((user) => (
               <div
                 key={user.id}
-                className="grid grid-cols-12 gap-2 p-3 items-center hover:bg-muted/20 transition-colors"
+                className="grid grid-cols-12 gap-1 p-4 bg-white hover:bg-yellow-50 transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1"
               >
                 <div className="col-span-1 flex items-center justify-center">
                   <Checkbox
@@ -418,7 +406,7 @@ export const UserManagement = () => {
                   </div>
                 </div>
                 <div className="col-span-3 sm:col-span-2 text-xs sm:text-sm">
-                  <Badge variant="outline" className="font-normal">
+                  <Badge className="bg-green-400 text-black font-black text-sm uppercase px-3 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                     {USER_TYPES.find((type) => type.value === user.userType)?.label || "Free"}
                   </Badge>
                 </div>
@@ -545,9 +533,9 @@ export const UserManagement = () => {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
-              <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                New User
+              <Button className="bg-red-500 text-white font-black text-lg uppercase tracking-wide px-6 py-3 hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]" onClick={() => setIsCreateDialogOpen(true)}>
+                <Plus className="h-5 w-5 mr-2" />
+                CREATE USER
               </Button>
             </div>
           </div>

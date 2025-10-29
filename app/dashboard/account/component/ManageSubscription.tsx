@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import SUBSCRIPTION_PLANS, { findPlanById } from "@/types/subscription-plans"
+import SubscriptionPlanType, { findPlanById } from "@/types/subscription-plans"
 import { buildFeatureList } from "@/utils/subscription-ui-helpers"
 
 import { useSession } from "next-auth/react"
@@ -73,7 +73,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
 
   // Memoize plan details to avoid recalculation on every render
   const planDetails = useMemo(() => {
-    return findPlanById(currentPlan) || SUBSCRIPTION_PLANS.FREE
+    return findPlanById(currentPlan) || SubscriptionPlanType.FREE
   }, [currentPlan])
 
   // Memoize derived state values

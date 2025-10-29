@@ -79,10 +79,10 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
     // Memoize status display
     const statusDisplay = useMemo(() => {
       const icons = {
-        queued: <Clock className="h-4 w-4 text-yellow-500 animate-pulse" />,
-        processing: <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />,
-        completed: <CheckCircle className="h-4 w-4 text-green-500" />,
-        error: <XCircle className="h-4 w-4 text-red-500" />,
+        queued: <Clock className="h-4 w-4 text-warning animate-pulse" />,
+        processing: <Loader2 className="h-4 w-4 text-primary animate-spin" />,
+        completed: <CheckCircle className="h-4 w-4 text-success" />,
+        error: <XCircle className="h-4 w-4 text-error" />,
         idle: <PlayCircle className="h-4 w-4 text-muted-foreground" />
       }
       
@@ -186,7 +186,7 @@ const EnhancedChapterCard = React.forwardRef<ChapterCardHandler, Props>(
                 variant="outline"
                 size="sm"
                 onClick={onRetryVideo}
-                className="w-full border-2 border-red-200 text-red-600 hover:bg-red-50"
+                className="w-full border-2 border-error/50 text-error hover:bg-error/10"
               >
                 <PlayCircle className="h-3 w-3 mr-2" />
                 Retry Generation

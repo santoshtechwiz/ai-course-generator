@@ -1,5 +1,6 @@
 import prisma from "@/lib/db"
 import { NextResponse } from "next/server"
+import { SubscriptionPlanType } from '@/types/subscription-plans'
 
 export async function POST(req: Request) {
   try {
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
       await prisma.user.update({
         where: { id: userId },
         data: {
-          userType: "FREE",
+          userType: 'FREE',
           credits: 0,
         },
       })
