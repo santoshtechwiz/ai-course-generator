@@ -1,6 +1,6 @@
 import type { SubscriptionPlanType } from '@/types/subscription'
 import type { PlanConfig } from '@/types/subscription-plans'
-import { SUBSCRIPTION_PLANS } from '@/types/subscription-plans'
+import { SubscriptionPlanType } from '@/types/subscription-plans'
 
 // Plan hierarchy definition - maps plans to numeric levels
 const PLAN_HIERARCHY: Record<SubscriptionPlanType, number> = {
@@ -35,10 +35,10 @@ function getPlanFeatureList(plan: PlanConfig): string[] {
 
 // Features by plan, derived from subscription plans config
 const PLAN_FEATURES: Record<SubscriptionPlanType, string[]> = {
-  FREE: getPlanFeatureList(SUBSCRIPTION_PLANS.FREE),
-  BASIC: getPlanFeatureList(SUBSCRIPTION_PLANS.BASIC),
-  PREMIUM: getPlanFeatureList(SUBSCRIPTION_PLANS.PREMIUM),
-  ENTERPRISE: getPlanFeatureList(SUBSCRIPTION_PLANS.ENTERPRISE)
+  FREE: getPlanFeatureList(SubscriptionPlanType.FREE),
+  BASIC: getPlanFeatureList(SubscriptionPlanType.BASIC),
+  PREMIUM: getPlanFeatureList(SubscriptionPlanType.PREMIUM),
+  ENTERPRISE: getPlanFeatureList(SubscriptionPlanType.ENTERPRISE)
 }
 
 /**

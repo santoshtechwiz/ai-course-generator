@@ -46,7 +46,7 @@ export interface FeatureRequirement {
   requireFeature?: (plan: SubscriptionPlanType) => boolean
 }
 
-import { SUBSCRIPTION_PLANS } from '@/types/subscription-plans'
+import { SubscriptionPlanType } from '@/types/subscription-plans'
 
 export const FEATURE_REQUIREMENTS: Record<FeatureType, FeatureRequirement> = {
   // Exploration Features (Public Access)
@@ -71,48 +71,48 @@ export const FEATURE_REQUIREMENTS: Record<FeatureType, FeatureRequirement> = {
     requiresAuth: true,
     requiresSubscription: true,
     minimumPlan: 'BASIC',
-    requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].pdfDownloads
+    requireFeature: (plan) => SubscriptionPlanType[plan].pdfDownloads
   },
   'quiz-access': {
     requiresAuth: true, // Auth required to TAKE quizzes
     requiresSubscription: true,
     minimumPlan: 'BASIC',
-    requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].mcqGenerator
+    requireFeature: (plan) => SubscriptionPlanType[plan].mcqGenerator
   },
   'quiz-mcq': {
     requiresAuth: true, // Auth required to CREATE quizzes
     requiresSubscription: false,
     minimumPlan: 'FREE',
     requiresCredits: true,
-    requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].mcqGenerator
+    requireFeature: (plan) => SubscriptionPlanType[plan].mcqGenerator
   },
   'quiz-blanks': {
     requiresAuth: true,
     requiresSubscription: true,
     minimumPlan: 'BASIC',
     requiresCredits: true,
-    requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].fillInBlanks
+    requireFeature: (plan) => SubscriptionPlanType[plan].fillInBlanks
   },
   'quiz-openended': {
     requiresAuth: true,
     requiresSubscription: true,
     minimumPlan: 'PREMIUM',
     requiresCredits: true,
-    requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].openEndedQuestions
+    requireFeature: (plan) => SubscriptionPlanType[plan].openEndedQuestions
   },
   'quiz-code': {
     requiresAuth: true,
     requiresSubscription: true,
     minimumPlan: 'PREMIUM',
     requiresCredits: true,
-    requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].codeQuiz
+    requireFeature: (plan) => SubscriptionPlanType[plan].codeQuiz
   },
   'quiz-flashcard': {
     requiresAuth: true,
     requiresSubscription: false,
     minimumPlan: 'FREE',
     requiresCredits: true,
-    requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].mcqGenerator
+    requireFeature: (plan) => SubscriptionPlanType[plan].mcqGenerator
   },
   'quiz-ordering': {
     requiresAuth: true, // Auth required to CREATE ordering quizzes
@@ -133,7 +133,7 @@ export const FEATURE_REQUIREMENTS: Record<FeatureType, FeatureRequirement> = {
     requiresSubscription: true,
     minimumPlan: 'PREMIUM',
     requiresCredits: true,
-    requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].contentCreation && hasMinimumPlan(plan, 'PREMIUM')
+    requireFeature: (plan) => SubscriptionPlanType[plan].contentCreation && hasMinimumPlan(plan, 'PREMIUM')
   },
   'course-videos': {
     requiresAuth: false, // Allow viewing free chapters without auth
@@ -145,32 +145,32 @@ export const FEATURE_REQUIREMENTS: Record<FeatureType, FeatureRequirement> = {
     requiresAuth: true,
     requiresSubscription: true,
     minimumPlan: 'BASIC',
-    requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].videoTranscripts
+    requireFeature: (plan) => SubscriptionPlanType[plan].videoTranscripts
   },
   'course-creation': {
     requiresAuth: true,
     requiresSubscription: false,
     minimumPlan: 'FREE',
     requiresCredits: true,
-    requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].courseCreation
+    requireFeature: (plan) => SubscriptionPlanType[plan].courseCreation
   },
   'unlimited-courses': {
     requiresAuth: true,
     requiresSubscription: true,
     minimumPlan: 'BASIC',
-    requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].courseCreation
+    requireFeature: (plan) => SubscriptionPlanType[plan].courseCreation
   },
   'analytics': {
     requiresAuth: true,
     requiresSubscription: true,
     minimumPlan: 'PREMIUM',
-    requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].aiAccuracy === 'premium' || SUBSCRIPTION_PLANS[plan].aiAccuracy === 'custom'
+    requireFeature: (plan) => SubscriptionPlanType[plan].aiAccuracy === 'premium' || SubscriptionPlanType[plan].aiAccuracy === 'custom'
   },
   'export-data': {
     requiresAuth: true,
     requiresSubscription: true,
     minimumPlan: 'BASIC',
-    requireFeature: (plan) => SUBSCRIPTION_PLANS[plan].pdfDownloads
+    requireFeature: (plan) => SubscriptionPlanType[plan].pdfDownloads
   },
 } as const
 

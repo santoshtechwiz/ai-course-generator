@@ -9,7 +9,7 @@
  */
 
 import { OpenAI } from 'openai'
-import { getEmbeddingService } from './embeddingService'
+import { getEmbeddingService } from '../embeddingService'
 import { logger } from '@/lib/logger'
 
 interface ChatMessage {

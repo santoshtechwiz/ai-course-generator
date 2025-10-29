@@ -276,7 +276,7 @@ const ChapterRow = memo<ChapterRowProps>(({
                         size="sm" 
                         variant="ghost" 
                         onClick={handleCancelProcessing}
-                        className="h-7 w-7 p-0 text-red-500 hover:text-red-600"
+                        className="h-7 w-7 p-0 text-error hover:text-error"
                       >
                         <X className="h-3 w-3" />
                       </Button>

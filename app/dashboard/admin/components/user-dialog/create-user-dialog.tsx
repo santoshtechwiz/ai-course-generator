@@ -25,7 +25,6 @@ import { useToast } from "@/hooks"
 const USER_TYPES = [
   { value: "FREE", label: "Free" },
   { value: "BASIC", label: "Basic" },
-  { value: "PREMIUM", label: "PREMIUM" },
   { value: "PREMIUM", label: "Premium" },
   { value: "ULTIMATE", label: "Ultimate" },
 ] as const
@@ -139,10 +138,14 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[525px]">
-        <DialogHeader>
-          <DialogTitle>Create New User</DialogTitle>
-          <DialogDescription>Fill in the information below to create a new user account.</DialogDescription>
+      <DialogContent className="bg-white shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] max-w-2xl">
+        <DialogHeader className="pb-6">
+          <DialogTitle className="text-3xl font-black uppercase tracking-wider text-center">
+            CREATE NEW USER
+          </DialogTitle>
+          <DialogDescription className="text-lg font-bold text-center text-gray-600">
+            Add a fresh face to your platform
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -184,16 +187,22 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
                   name="userType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>User Type</FormLabel>
+                      <FormLabel className="text-xl font-black uppercase tracking-wide">
+                        User Type
+                      </FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select user type" />
+                          <SelectTrigger className="text-lg font-bold py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <SelectValue placeholder="SELECT USER TYPE" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                           {USER_TYPES.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
+                            <SelectItem 
+                              key={type.value} 
+                              value={type.value}
+                              className="text-lg font-bold uppercase py-3 hover:bg-black hover:text-white"
+                            >
                               {type.label}
                             </SelectItem>
                           ))}
@@ -255,20 +264,29 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
               </div>
             </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+            <DialogFooter className="gap-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+                className="font-bold uppercase px-6 py-3 hover:bg-black hover:text-white transition-all"
+              >
+                CANCEL
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="bg-green-500 text-black font-black text-xl uppercase px-8 py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-black hover:text-white transition-all"
+              >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4" />
-                    Creating...
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    CREATING...
                   </>
                 ) : (
                   <>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create User
+                    <Plus className="mr-2 h-5 w-5" />
+                    CREATE USER
                   </>
                 )}
               </Button>

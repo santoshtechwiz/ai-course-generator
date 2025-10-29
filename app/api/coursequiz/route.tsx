@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { SUBSCRIPTION_PLAN_IDS } from '@/types/subscription-plans'
 
 // 👇 Tell Next.js this route is always dynamic
 export const dynamic = "force-dynamic"
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
       chapterId,
       chapterName,
       userId: session.user.id,
-      subscriptionPlan: session.user.subscriptionPlan || 'FREE',
+      subscriptionPlan: session.user.subscriptionPlan || SUBSCRIPTION_PLAN_IDS.FREE,
       credits: session.user.credits || 0,
     })
     console.log(questions);

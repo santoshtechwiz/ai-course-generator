@@ -5,7 +5,7 @@
 
 import { IntentClassifier } from './IntentClassifier'
 import { CacheManager } from './CacheManager'
-import { RAGService } from '../ragService'
+import { RAGService } from './ragService'
 import { generateActions } from './actionGenerator'
 import { ChatIntent, ChatResponse, ChatAction, UserContext } from '@/types/chat.types'
 import { OFF_TOPIC_RESPONSE, CHAT_CONFIG } from '@/config/chat.config'

@@ -23,7 +23,7 @@ import { useGuestProgress } from "@/hooks/useGuestProgress"
 import { useSession } from "next-auth/react"
 import { storageManager } from "@/utils/storage-manager"
 import { useBookmarks } from "@/hooks/use-bookmarks"
-import { renderCourseDashboard } from "./renderCourseDashboard"
+import { renderCourseDashboard } from "./CourseDetailsShell"
 
 
 

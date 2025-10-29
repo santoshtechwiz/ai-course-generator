@@ -7,7 +7,7 @@
 
 import Stripe from "stripe"
 import { prisma } from "@/lib/db"
-import SUBSCRIPTION_PLANS, { findPlanById } from "@/types/subscription-plans"
+import SubscriptionPlanType, { findPlanById } from "@/types/subscription-plans"
 import type { PaymentGateway, PaymentOptions, CheckoutResult, PaymentStatusResult, PaymentGatewayConfig } from "./payment-gateway-interface"
 import { PaymentProvider, PaymentStatus } from "./payment-gateway-interface"
 import { logger } from "@/lib/logger"

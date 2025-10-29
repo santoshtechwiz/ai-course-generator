@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth/next"
 import { NextResponse } from "next/server"
 import { authOptions } from "@/lib/auth"
 import { SubscriptionService } from '@/services/subscription-services'
+import { SubscriptionPlanType } from '@/types/subscription-plans'
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -20,7 +21,7 @@ export async function GET() {
       return NextResponse.json({
         credits: 0,
         isSubscribed: false,
-        subscriptionPlan: "FREE",
+        subscriptionPlan: SubscriptionPlanType.FREE,
         expirationDate: null,
       })
     }
@@ -29,7 +30,7 @@ export async function GET() {
       credits: status.credits || 0,
       tokensUsed: status.tokensUsed || 0,
       isSubscribed: status.isSubscribed,
-      subscriptionPlan: status.subscriptionPlan || "FREE",
+      subscriptionPlan: status.subscriptionPlan || SubscriptionPlanType.FREE,
       expirationDate: status.expirationDate,
       status: status.status,
       cancelAtPeriodEnd: status.cancelAtPeriodEnd

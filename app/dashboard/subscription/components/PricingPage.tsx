@@ -21,6 +21,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
 import {
   SubscriptionPlanType,
+} from "@/types/subscription-plans"
+import {
   SubscriptionStatusType,
 } from "@/types/subscription"
 
@@ -31,9 +33,9 @@ interface PricingPageProps {
   onManageSubscription?: () => void
   isMobile?: boolean
 }
-import { calculateSavings } from "@/types/subscription/utils"
+
 import FeatureComparison from "./FeatureComparison"
-import { SUBSCRIPTION_PLANS as UNIFIED_SUBSCRIPTION_PLANS, getPlanConfig, PRICING } from "@/types/subscription-plans"
+import { SubscriptionPlanType as UNIFIED_SubscriptionPlanType, getPlanConfig, PRICING } from "@/types/subscription-plans"
 import DevModeBanner from "./subscription-status/DevModeBanner"
 import { buildFeatureList } from "@/utils/subscription-ui-helpers"
 import PlanCards from "./subscription-status/PlanCard"
@@ -128,7 +130,6 @@ export function PricingPage({
           'FREE': 'Free Plan',
           'BASIC': 'Basic Plan', 
           'PREMIUM': 'Premium Plan',
-          'ULTIMATE': 'Ultimate Plan',
           'ENTERPRISE': 'Enterprise Plan'
         }
         

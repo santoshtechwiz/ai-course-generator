@@ -36,19 +36,19 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
       title: "Welcome to the Chapter Editor",
       description:
         "Let's learn how to organize and customize your course chapters. This quick guide will show you how to reorder chapters and add custom content.",
-      icon: <Info className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />,
+      icon: <Info className="h-5 w-5 md:h-6 md:w-6 text-primary" />,
       image: null,
     },
     {
       title: "Reordering Chapters",
       description:
         "You can easily change the order of chapters by dragging and dropping them. Just click and hold the drag handle, then move the chapter to its new position.",
-      icon: <DragHandleDots2Icon className="h-5 w-5 md:h-6 md:w-6 text-purple-600" />,
+      icon: <DragHandleDots2Icon className="h-5 w-5 md:h-6 md:w-6 text-secondary" />,
       image: (
-        <div className="border-4 border-black rounded-none p-3 md:p-4 bg-yellow-50 my-3 md:my-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="border-4 border-border rounded-none p-3 md:p-4 bg-warning/10 my-3 md:my-4 shadow-neo">
           <div className="flex items-center gap-2 mb-2">
-            <DragHandleDots2Icon className="h-4 w-4 md:h-5 md:w-5 text-purple-600 animate-pulse" />
-            <div className="h-5 md:h-6 w-32 md:w-40 bg-blue-200 rounded border-2 border-black"></div>
+            <DragHandleDots2Icon className="h-4 w-4 md:h-5 md:w-5 text-secondary animate-pulse" />
+            <div className="h-5 md:h-6 w-32 md:w-40 bg-primary/20 rounded border-2 border-border"></div>
           </div>
           <div className="flex items-center gap-2 relative">
             <motion.div
@@ -62,10 +62,10 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
               }}
               className="absolute -left-4 md:-left-6 -top-4 md:-top-6"
             >
-              <MousePointerClick className="h-4 w-4 md:h-5 md:w-5 text-red-500" />
+              <MousePointerClick className="h-4 w-4 md:h-5 md:w-5 text-error" />
             </motion.div>
-            <DragHandleDots2Icon className="h-4 w-4 md:h-5 md:w-5 text-gray-500" />
-            <div className="h-8 md:h-10 w-full bg-green-200 rounded border-2 border-black"></div>
+            <DragHandleDots2Icon className="h-4 w-4 md:h-5 md:w-5 text-muted" />
+            <div className="h-8 md:h-10 w-full bg-success/20 rounded border-2 border-border"></div>
           </div>
         </div>
       ),
@@ -74,10 +74,10 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
       title: "Adding Custom Chapters",
       description:
         "You can add your own custom chapters to any unit. Click the 'Add Chapter' button at the bottom of a unit to create a new chapter.",
-      icon: <Plus className="h-5 w-5 md:h-6 md:w-6 text-green-600" />,
+      icon: <Plus className="h-5 w-5 md:h-6 md:w-6 text-success" />,
       image: (
-        <div className="border-4 border-black rounded-none p-3 md:p-4 bg-green-50 my-3 md:my-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-          <div className="h-16 md:h-20 w-full bg-blue-200 rounded border-2 border-black mb-3"></div>
+        <div className="border-4 border-border rounded-none p-3 md:p-4 bg-success/10 my-3 md:my-4 shadow-neo">
+          <div className="h-16 md:h-20 w-full bg-primary/20 rounded border-2 border-border mb-3"></div>
           <motion.div
             animate={{
               scale: [1, 1.05, 1],
@@ -89,8 +89,8 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
             }}
             className="relative"
           >
-            <Button variant="outline" size="sm" className="w-full border-2 border-black bg-yellow-400 hover:bg-yellow-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-bold text-xs md:text-sm">
-              <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2 text-black" />
+            <Button variant="outline" size="sm" className="w-full border-2 border-border bg-warning hover:bg-warning shadow-neo font-bold text-xs md:text-sm">
+              <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2 text-foreground" />
               Add Chapter
             </Button>
             <motion.div
@@ -105,7 +105,7 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
               }}
               className="absolute -right-4 md:-right-6 -top-4 md:-top-6"
             >
-              <MousePointerClick className="h-4 w-4 md:h-5 md:w-5 text-red-500" />
+              <MousePointerClick className="h-4 w-4 md:h-5 md:w-5 text-error" />
             </motion.div>
           </motion.div>
         </div>
@@ -117,18 +117,18 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
         "After adding a chapter, you can customize its title and add a YouTube video. You can either let our AI generate a video or add your own YouTube video ID.",
       icon: <Edit className="h-5 w-5 md:h-6 md:w-6 text-orange-600" />,
       image: (
-        <div className="border-4 border-black rounded-none p-3 md:p-4 bg-blue-50 my-3 md:my-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="border-4 border-border rounded-none p-3 md:p-4 bg-primary/10 my-3 md:my-4 shadow-neo">
           <div className="flex items-center gap-2 mb-3">
-            <div className="h-5 md:h-6 w-32 md:w-40 bg-purple-200 rounded border-2 border-black"></div>
-            <Edit className="h-3 w-3 md:h-4 md:w-4 text-orange-600 animate-pulse" />
+            <div className="h-5 md:h-6 w-32 md:w-40 bg-secondary/20 rounded border-2 border-border"></div>
+            <Edit className="h-3 w-3 md:h-4 md:w-4 text-warning animate-pulse" />
           </div>
           <div className="flex gap-2 mb-2">
-            <Button variant="outline" size="sm" className="text-xs border-2 border-black bg-green-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <Video className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1 text-black" />
+            <Button variant="outline" size="sm" className="text-xs border-2 border-border bg-success shadow-neo">
+              <Video className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1 text-foreground" />
               Add Video
             </Button>
           </div>
-          <div className="h-7 md:h-8 w-full bg-yellow-200 rounded flex items-center justify-center text-[10px] md:text-xs font-bold border-2 border-black px-2">
+          <div className="h-7 md:h-8 w-full bg-warning/20 rounded flex items-center justify-center text-[10px] md:text-xs font-bold border-2 border-border px-2">
             Enter YouTube video ID or URL
           </div>
         </div>
@@ -138,10 +138,10 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
       title: "Generating Videos",
       description:
         "You can generate videos for your chapters automatically. Click the 'Generate' button on a chapter to create a video based on the chapter title.",
-      icon: <Video className="h-5 w-5 md:h-6 md:w-6 text-red-600" />,
+      icon: <Video className="h-5 w-5 md:h-6 md:w-6 text-error" />,
       image: (
-        <div className="border-4 border-black rounded-none p-3 md:p-4 bg-purple-50 my-3 md:my-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-          <div className="h-16 md:h-20 w-full bg-green-200 rounded border-2 border-black mb-3"></div>
+        <div className="border-4 border-border rounded-none p-3 md:p-4 bg-secondary/10 my-3 md:my-4 shadow-neo">
+          <div className="h-16 md:h-20 w-full bg-success/20 rounded border-2 border-border mb-3"></div>
           <motion.div
             animate={{
               scale: [1, 1.05, 1],
@@ -153,7 +153,7 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
             }}
             className="flex justify-end"
           >
-            <Button size="sm" className="text-xs md:text-sm bg-blue-400 hover:bg-blue-500 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-bold">
+            <Button size="sm" className="text-xs md:text-sm bg-primary hover:bg-primary border-2 border-border shadow-neo font-bold">
               Generate
             </Button>
           </motion.div>
@@ -164,7 +164,7 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
       title: "You're All Set!",
       description:
         "Now you know how to organize and customize your course chapters. Feel free to experiment and create the perfect course structure.",
-      icon: <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6 text-green-600" />,
+      icon: <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6 text-success" />,
       image: null,
     },
   ]
@@ -217,19 +217,19 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
           className="w-full max-w-[95vw] md:max-w-lg lg:max-w-xl"
         >
           <Card className="shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] border-4 border-black bg-white max-h-[90vh] overflow-hidden flex flex-col">
-            <CardHeader className="pb-3 md:pb-4 bg-blue-400 border-b-4 border-black flex-shrink-0">
+            <CardHeader className="pb-3 md:pb-4 bg-primary border-b-4 border-border flex-shrink-0">
               <div className="flex items-center justify-between mb-2">
-                <Badge variant="outline" className="px-2 py-0.5 md:py-1 text-[10px] md:text-xs bg-yellow-400 border-2 border-black font-bold">
+                <Badge variant="outline" className="px-2 py-0.5 md:py-1 text-[10px] md:text-xs bg-warning border-2 border-border font-bold">
                   Step {currentStep + 1} of {steps.length}
                 </Badge>
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   onClick={handleClose} 
-                  className="h-7 w-7 md:h-8 md:w-8 bg-red-400 hover:bg-red-500 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px]"
+                  className="h-7 w-7 md:h-8 md:w-8 bg-error hover:bg-error border-2 border-border shadow-neo hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px]"
                   aria-label="Close help modal"
                 >
-                  <X className="h-3 w-3 md:h-4 md:w-4 text-black" />
+                  <X className="h-3 w-3 md:h-4 md:w-4 text-foreground" />
                 </Button>
               </div>
               <CardTitle className="text-base md:text-xl flex items-center gap-2 text-black font-bold">
@@ -282,7 +282,7 @@ export function GuidedHelp({ onClose, onDismissPermanently }: GuidedHelpProps) {
                 <Button 
                   size="sm" 
                   onClick={handleNext}
-                  className="flex-1 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] bg-green-400 hover:bg-green-500 font-bold text-xs md:text-sm h-9 md:h-10"
+                  className="flex-1 border-2 border-border shadow-neo hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] bg-success hover:bg-success font-bold text-xs md:text-sm h-9 md:h-10"
                 >
                   {currentStep === steps.length - 1 ? "Finish" : "Next"}
                   <ChevronRight className="h-3 w-3 md:h-4 md:w-4 ml-1" />
@@ -302,7 +302,7 @@ export function GuidedHelpButton({ onClick }: { onClick: () => void }) {
       variant="outline" 
       size="sm" 
       onClick={onClick} 
-      className="flex items-center gap-1.5 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] bg-yellow-400 hover:bg-yellow-500 font-bold text-xs md:text-sm h-8 md:h-9"
+      className="flex items-center gap-1.5 border-2 border-border shadow-neo hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] bg-warning hover:bg-warning font-bold text-xs md:text-sm h-8 md:h-9"
     >
       <Info className="h-3 w-3 md:h-4 md:w-4" />
       <span className="hidden sm:inline">Help</span>

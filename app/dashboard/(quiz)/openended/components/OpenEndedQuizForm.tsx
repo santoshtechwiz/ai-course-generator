@@ -409,7 +409,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
           <AnimatePresence>
             {errors.root && (
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                <Alert variant="destructive">
+                <Alert variant="error">
                   <AlertCircle className="h-5 w-5" />
                   <AlertTitle>Error</AlertTitle>
                   <AlertDescription>{errors.root.message}</AlertDescription>
@@ -493,7 +493,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
             exit={{ opacity: 0, y: -10 }}
             className="absolute top-0 right-0 mt-4 mr-4"
           >
-            <Alert variant="destructive" className="flex items-center gap-2">
+            <Alert variant="error" className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5" />
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>{submitError}</AlertDescription>

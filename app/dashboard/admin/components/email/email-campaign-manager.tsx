@@ -190,7 +190,8 @@ export default function EmailCampaignManager() {
 
   // Memoize the filtered users calculation for better performance
   const filteredUsers = useMemo(() => {
-    return userData.users.filter((user) => {
+    const users = userData?.users || []
+    return users.filter((user) => {
       // Filter by user type
       if (watchUserTypeFilters && watchUserTypeFilters.length > 0) {
         if (!watchUserTypeFilters.includes(user.userType)) {
@@ -215,7 +216,7 @@ export default function EmailCampaignManager() {
 
       return true
     })
-  }, [userData.users, watchUserTypeFilters, watchLastActiveFilter])
+  }, [userData?.users, watchUserTypeFilters, watchLastActiveFilter])
 
   // Improve getTemplateHtml with error handling and memoization
   const getTemplateHtml = useCallback(
@@ -262,7 +263,7 @@ export default function EmailCampaignManager() {
     try {
       const recipients = data.testEmail
         ? [{ email: TEST_EMAIL, name: "Test User" }]
-        : userData.users
+        : (userData?.users || [])
             .filter((user) => selectedUserIds.includes(user.id))
             .map((user) => ({ email: user.email, name: user.name }))
 
@@ -332,7 +333,6 @@ export default function EmailCampaignManager() {
   const userTypeOptions = [
     { value: "FREE", label: "Free" },
     { value: "BASIC", label: "Basic" },
-    { value: "PREMIUM", label: "PREMIUM" },
     { value: "PREMIUM", label: "Premium" },
     { value: "ULTIMATE", label: "Ultimate" },
   ]
@@ -802,7 +802,7 @@ export default function EmailCampaignManager() {
                             <div>
                               <h4 className="text-sm font-medium text-muted-foreground">Sample Recipients</h4>
                               <div className="mt-2 space-y-2">
-                                {userData.users
+                                {(userData?.users || [])
                                   .filter((user) => selectedUserIds.includes(user.id))
                                   .slice(0, 3)
                                   .map((user) => (

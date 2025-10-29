@@ -4,8 +4,7 @@ import React from "react"
 import { useMemo } from "react"
 
 import { Check, X } from "lucide-react"
-import { getPlanConfig, SUBSCRIPTION_PLANS } from "@/types/subscription-plans"
-import type { SubscriptionPlanType } from "@/types/subscription"
+import { getPlanConfig, SubscriptionPlanType } from "@/types/subscription-plans"
 import { useAuth } from "@/modules/auth"
 
 /**
@@ -126,7 +125,7 @@ function FeatureComparison() {
     
     // Quiz Types
     plans.forEach(planId => {
-      const plan = SUBSCRIPTION_PLANS[planId]
+      const plan = SubscriptionPlanType[planId]
       if (!categoryMap['Quiz Types'].find(f => f.name === 'MCQ Generator')) {
         categoryMap['Quiz Types'].push(
           { name: 'MCQ Generator', availability: {} as any },
@@ -146,7 +145,7 @@ function FeatureComparison() {
     
     // Limits & Credits
     plans.forEach(planId => {
-      const plan = SUBSCRIPTION_PLANS[planId]
+      const plan = SubscriptionPlanType[planId]
       if (!categoryMap['Limits & Credits'].find(f => f.name === 'Max Questions Per Quiz')) {
         categoryMap['Limits & Credits'].push(
           { name: 'Max Questions Per Quiz', availability: {} as any },
@@ -164,7 +163,7 @@ function FeatureComparison() {
     )
     
     plans.forEach(planId => {
-      const plan = SUBSCRIPTION_PLANS[planId]
+      const plan = SubscriptionPlanType[planId]
       if (!categoryMap['Advanced Features'].find(f => f.name === 'AI Accuracy')) {
         categoryMap['Advanced Features'].push(
           { name: 'AI Accuracy', availability: {} as any }

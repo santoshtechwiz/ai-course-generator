@@ -8,7 +8,7 @@ import CreateQuizForm from "../mcq/components/CreateQuizForm"
 
 import { Loader2 } from "lucide-react"
 import ConsistentCard from "../../../../components/common/ConsistentCard"
-import SUBSCRIPTION_PLANS from "@/types/subscription-plans"
+import SubscriptionPlanType from "@/types/subscription-plans"
 import FlashCardCreate from "@/app/dashboard/(quiz)/flashcard/components/FlashCardCreate"
 import FillInTheBlankQuizForm from "@/app/dashboard/(quiz)/blanks/components/BlankQuizForm"
 import CodeQuizForm from "@/app/dashboard/(quiz)/code/components/CodeQuizForm"
@@ -41,8 +41,8 @@ function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps) {
     type: (urlParams.type || queryParams?.type || "mcq") as "mcq" | "open_ended" | "fill_in_the_blanks"
   }
 
-  const subscriptionPlan = (user?.subscriptionPlan || "FREE") as keyof typeof SUBSCRIPTION_PLANS
-  const plan = SUBSCRIPTION_PLANS[subscriptionPlan]
+  const subscriptionPlan = (user?.subscriptionPlan || "FREE") as keyof typeof SubscriptionPlanType
+  const plan = SubscriptionPlanType[subscriptionPlan]
 
   const getMaxQuestions = () => {
     const maxQuestions = plan?.maxQuestionsPerQuiz
@@ -76,7 +76,7 @@ function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps) {
       case "flashcard":
         return <FlashCardCreate isLoggedIn={false} maxCards={0} {...commonProps} />
       case "ordering":
-        return <OrderingQuizForm isLoggedIn={false} maxSteps={maxQuestions} credits={credits} quizType="ordering" />
+        return <OrderingQuizForm isLoggedIn={false} credits={credits} quizType="ordering" />
       default:
         return null
     }

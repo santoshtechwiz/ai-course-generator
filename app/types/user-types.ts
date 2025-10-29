@@ -209,7 +209,7 @@ interface QueryParams {
 }
 
 // User type for admin management
-export type UserType = "FREE" | "BASIC" | "PREMIUM" | "PREMIUM" | "ULTIMATE"
+export type UserType = "FREE" | "BASIC" | "PREMIUM" | "ULTIMATE"
 
 // User with transactions for admin
 interface UserWithTransactions {

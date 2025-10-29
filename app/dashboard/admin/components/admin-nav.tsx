@@ -41,21 +41,23 @@ export default function AdminNav({ user }: AdminNavProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex h-12 items-center border-b px-2">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Home className="h-5 w-5" />
-          <span className="">Admin Portal</span>
+    <div className="space-y-4 bg-pink-100 p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+      <div className="pb-2">
+        <Link href="/" className="flex items-center gap-3 text-2xl font-black uppercase tracking-wider hover:text-pink-600 transition-colors">
+          <Home className="h-8 w-8" />
+          <span>ADMIN PORTAL</span>
         </Link>
       </div>
 
-      <nav className="grid items-start gap-2">
+      <nav className="grid items-start gap-4">
         {adminLinks.map((link) => (
           <Link
             key={link.href}
             href={link.href}
-            className={`group flex items-center rounded-none px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors ${
-              pathname === link.href ? "bg-accent text-accent-foreground" : "transparent"
+            className={`group flex items-center gap-3 rounded-none px-6 py-4 text-lg font-bold uppercase tracking-wide transition-all hover:bg-black hover:text-white hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
+              pathname === link.href 
+                ? "bg-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" 
+                : "bg-white text-black hover:-translate-y-1"
             }`}
           >
             {link.icon}

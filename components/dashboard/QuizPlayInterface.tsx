@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useMediaQuery } from "@/hooks"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Suspense, useEffect, useState, useRef, useMemo, useCallback, createContext, useContext } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -30,14 +30,12 @@ import {
 } from "lucide-react"
 
 import { RandomQuiz } from "@/app/dashboard/(quiz)/components/layouts/RandomQuiz"
-import { useRelatedQuizzes } from "@/hooks/useRelatedQuizzes"
 import { motion, AnimatePresence } from "framer-motion"
-import RecommendedSection from "@/components/shared/RecommendedSection"
 import { cn } from "@/lib/utils"
 
 import { useAuth } from "@/modules/auth"
-import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import { QuizActions } from "@/components/quiz/QuizActions"
+import UnsubscribedQuizModal from "./UnsubscribedQuizModal"
 
 interface QuizContextType {
   isFocusMode: boolean
@@ -236,7 +234,6 @@ const QuizHeader = ({
                 className={cn(
                   "hidden sm:flex min-h-[44px] min-w-[44px] p-3 border-4 border-border shadow-neo rounded-none bg-card hover:bg-muted transition-all duration-200",
                   isSidebarTransitioning && "pointer-events-none opacity-50",
-                  // Hide on desktop since sidebar is always visible
                   !isMobile && "lg:hidden"
                 )}
                 disabled={isSidebarTransitioning}
@@ -307,8 +304,9 @@ export function QuizPlayInterface({
   timeSpent,
 }: QuizPlayInterfaceProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const { user: authUser } = useAuth()
-  const { plan } = useUnifiedSubscription()
+  const {plan} = useAuth()
   const isMobile = useMediaQuery("(max-width: 768px)")
 
   // State management
@@ -319,6 +317,7 @@ export function QuizPlayInterface({
   const [isPaused, setIsPaused] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [startTime] = useState(Date.now())
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
 
   const mainRef = useRef<HTMLDivElement>(null)
   const sidebarRef = useRef<HTMLDivElement>(null)
@@ -347,6 +346,25 @@ export function QuizPlayInterface({
     return () => clearInterval(interval)
   }, [isPaused, startTime])
 
+  // Modal effect - Show subscription modal for unsubscribed users
+  useEffect(() => {
+    // Determine if modal should show
+    const shouldShowModal = 
+      !authUser || // User is not logged in
+      (plan ) || // User is on free plan
+      !plan // No subscription data found
+
+    // Show modal only once per session
+    const hasSeenModal = typeof window !== "undefined" ? sessionStorage.getItem("quizSubscriptionModalShown") : null
+    
+    if (shouldShowModal && !hasSeenModal && !isPublic) {
+      setShowSubscriptionModal(true)
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("quizSubscriptionModalShown", "true")
+      }
+    }
+  }, [authUser, plan, isPublic])
+
   // Sidebar toggle with transition (only for mobile)
   const toggleSidebar = useCallback(() => {
     if (isMobile) {
@@ -361,6 +379,21 @@ export function QuizPlayInterface({
   const toggleFullscreen = useCallback(() => setIsFullscreen(prev => !prev), [])
   const togglePause = useCallback(() => setIsPaused(prev => !prev), [])
   const goHome = useCallback(() => window.location.href = "/dashboard/quizzes", [])
+
+  // Subscription modal handlers
+  const handleCloseSubscriptionModal = useCallback(() => {
+    setShowSubscriptionModal(false)
+  }, [])
+
+  const handleCreateQuiz = useCallback(() => {
+    setShowSubscriptionModal(false)
+    router.push("/dashboard/quizzes/create")
+  }, [router])
+
+  const handleSubscribe = useCallback(() => {
+    setShowSubscriptionModal(false)
+    router.push("/pricing")
+  }, [router])
 
   // Event handlers
   const handleVisibilityChange = useCallback((isPublic: boolean) => {
@@ -419,6 +452,16 @@ export function QuizPlayInterface({
 
   return (
     <QuizContext.Provider value={contextValue}>
+      {/* Subscription Modal */}
+      <UnsubscribedQuizModal
+        isOpen={showSubscriptionModal}
+        onClose={handleCloseSubscriptionModal}
+        onCreateQuiz={handleCreateQuiz}
+        onSubscribe={handleSubscribe}
+        variant="dismiss"
+        quizTitle={title}
+      />
+
       <div className={cn("min-h-screen bg-background relative overflow-x-hidden", isFullscreen && "overflow-hidden")}>
         {/* Top spacer for MainNavbar */}
 

@@ -500,7 +500,7 @@ export default function CreateQuizForm({
         <AnimatePresence>
           {errors.root && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-              <Alert variant="destructive">
+              <Alert variant="error">
                 <AlertTitle>Error</AlertTitle>
                 <AlertDescription>{errors.root.message}</AlertDescription>
               </Alert>

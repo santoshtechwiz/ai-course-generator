@@ -3,6 +3,7 @@ import { getAuthSession } from "@/lib/auth"
 import { createChaptersSchema } from "@/schema/schema"
 import { courseService } from "@/app/services/course.service"
 import type { CategoryId } from "@/config/categories"
+import { SubscriptionPlanType } from '@/types/subscription-plans'
 
 // Cache configuration for course endpoints
 const CACHE_DURATION = {
@@ -131,7 +132,7 @@ export async function POST(req: Request) {
     const parsedData = createChaptersSchema.parse(data)
 
     // Use service to create the course
-    const userType = session.user?.userType || 'FREE'
+    const userType = session.user?.userType || SubscriptionPlanType.FREE
     const result = await courseService.createCourse(session.user.id, parsedData, userType)
     
     // Ensure we're returning the slug in the response
