@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, Sparkles, AlertTriangle, CheckCircle2 } from "lucide-react"
+import { Bell, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/modules/auth"
 import { useUnifiedSubscription } from '@/hooks/useUnifiedSubscription'
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { cn } from "@/lib/utils"
 
 interface NotificationsMenuProps {
@@ -33,7 +33,6 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
   const { user } = useAuth()
   const { subscription } = useUnifiedSubscription()
 
-  // Memoized credit calculation
   const creditInfo = useMemo((): CreditInfo => {
     if (!subscription) {
       return { hasCredits: false, remainingCredits: 0, totalCredits: 0, usedCredits: 0 }
@@ -71,7 +70,6 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
   const subscriptionPlan = subscription?.subscriptionPlan || "FREE"
   const isSubscribed = subscription?.isSubscribed || false
 
-  // Brutal animation variants
   const bellVariants = {
     idle: { rotate: 0 },
     alert: { rotate: [0, -15, 15, -15, 0], transition: { duration: 0.6 } }
@@ -83,83 +81,70 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
         <Button
           variant="neutral"
           className={cn(
-            "relative h-10 w-10 rounded-none border-3 border-[var(--color-border)]",
-            "shadow-[2px_2px_0px_0px_var(--color-border)]",
-            "hover:shadow-[4px_4px_0px_0px_var(--color-border)]",
-            "hover:translate-y-[-2px]",
-            "transition-all duration-100",
-            "focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]",
+            "relative h-10 w-10 border-6 border-[var(--color-border)] bg-[var(--color-bg)] rounded-none",
+            "shadow-[3px_3px_0_var(--shadow-color)]",
+            "hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0_var(--shadow-color)]",
+            "active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_var(--shadow-color)]",
+            "transition-all duration-150",
+            "focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           )}
         >
           <motion.div
             variants={bellVariants}
             animate={creditStatus === "empty" ? "alert" : "idle"}
           >
-            <Bell className="h-4 w-4" />
+            <Bell className="h-5 w-5" />
           </motion.div>
 
           <AnimatePresence>
-            {creditInfo.remainingCredits > 0 && (
+            {creditStatus !== "good" && (
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 exit={{ scale: 0 }}
                 className="absolute -top-1 -right-1"
               >
-                <Badge
-                  variant={creditStatus === "low" ? "neutral" : creditStatus === "empty" ? "destructive" : "default"}
-                  className={cn(
-                    "h-5 min-w-5 flex items-center justify-center rounded-none px-1 text-[10px] font-black border-2 border-[var(--color-border)]",
-                    creditStatus === "low" && "bg-[var(--color-warning)]",
-                    creditStatus === "empty" && "bg-[var(--color-error)]"
-                  )}
-                >
-                  {creditInfo.remainingCredits > 99 ? "99+" : creditInfo.remainingCredits}
-                </Badge>
+                <div className={cn(
+                  "h-3 w-3 rounded-none border-2 border-[var(--color-border)]",
+                  creditStatus === "empty" && "bg-[var(--color-error)]",
+                  creditStatus === "low" && "bg-[var(--color-warning)]",
+                  creditStatus === "warning" && "bg-[var(--color-accent)]"
+                )} />
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Status indicator dots */}
-          {(creditStatus === "low" || creditStatus === "empty") && (
-            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[var(--color-warning)] rounded-full border border-[var(--color-border)]" />
-          )}
         </Button>
       </DropdownMenuTrigger>
       
       <DropdownMenuContent
-        className={cn(
-          "w-72 p-0 rounded-none",
-          "modal",
-          "z-[var(--z-index-modal)]",
-        )}
+        className="w-[90vw] sm:w-80 p-0 rounded-none bg-[var(--color-card)] border-6 border-[var(--color-border)] shadow-[8px_8px_0_var(--shadow-color)] z-[var(--z-index-modal)]"
         align="end"
         side="bottom"
-        sideOffset={12}
+        sideOffset={8}
       >
         {/* Header */}
-        <div className="p-4 border-b-3 border-[var(--color-border)] bg-[var(--color-bg)]">
+        <div className="p-4 border-b-6 border-[var(--color-border)] bg-[var(--color-bg)]">
           <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-none bg-[var(--color-primary)] border-3 border-[var(--color-border)] shadow-[2px_2px_0px_0px_var(--color-border)] flex-shrink-0">
-              <Bell className="h-5 w-5 text-[var(--color-text)]" />
+            <div className="p-2 rounded-none bg-[var(--color-primary)] border-4 border-[var(--color-border)] shadow-[2px_2px_0_var(--shadow-color)] flex-shrink-0">
+              <CreditCard className="h-5 w-5 text-white" />
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-[var(--color-text)]">Credit Usage</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black text-[var(--color-text)]">CREDIT USAGE</p>
               <p className="text-xs text-[var(--color-muted)]">Monitor your usage</p>
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <Badge
-                  variant={isSubscribed ? "default" : "neutral"}
+                  variant={isSubscribed ? "default" : "outline"}
                   className={cn(
-                    "text-xs border-2 border-[var(--color-border)] font-black px-2 py-0.5 rounded-none",
+                    "text-xs border-3 border-[var(--color-border)] font-black px-2 py-0.5 rounded-none",
                     isSubscribed
-                      ? "bg-[var(--color-primary)] text-[var(--color-text)]"
+                      ? "bg-[var(--color-primary)] text-white"
                       : "bg-[var(--color-bg)] text-[var(--color-text)]",
                   )}
                 >
                   {subscriptionPlan}
                 </Badge>
-                <div className="text-xs font-bold text-[var(--color-muted)]">
-                  {creditInfo.remainingCredits}/{creditInfo.totalCredits} credits
+                <div className="text-xs font-black text-[var(--color-muted)]">
+                  {creditInfo.remainingCredits.toLocaleString()}/{creditInfo.totalCredits.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -167,19 +152,20 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
         </div>
 
         {/* Progress Bar */}
-        <div className="p-4 border-b-3 border-[var(--color-border)]">
+        <div className="p-4 border-b-6 border-[var(--color-border)]">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-bold text-[var(--color-text)]">Usage</span>
-            <span className="text-sm font-bold text-[var(--color-text)]">
-              {creditInfo.usedCredits} / {creditInfo.totalCredits}
+            <span className="text-sm font-black text-[var(--color-text)]">USAGE</span>
+            <span className="text-sm font-black text-[var(--color-text)] tabular-nums">
+              {creditInfo.usedCredits.toLocaleString()} / {creditInfo.totalCredits.toLocaleString()}
             </span>
           </div>
-          <div className="w-full bg-[var(--color-muted)] rounded-none h-3 border-2 border-[var(--color-border)] shadow-[1px_1px_0px_0px_var(--color-border)]">
+          <div className="w-full bg-[var(--color-muted)] rounded-none h-4 border-4 border-[var(--color-border)] shadow-[2px_2px_0_var(--shadow-color)] overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${creditProgress}%` }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
               className={cn(
-                "h-full border-r-2 border-[var(--color-border)]",
+                "h-full",
                 creditStatus === "good" && "bg-[var(--color-success)]",
                 creditStatus === "warning" && "bg-[var(--color-warning)]",
                 creditStatus === "low" && "bg-[var(--color-accent)]",
@@ -190,24 +176,18 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
         </div>
 
         {/* Credit Stats */}
-        <div className="p-4 border-b-3 border-[var(--color-border)]">
+        <div className="p-4 border-b-6 border-[var(--color-border)]">
           <div className="grid grid-cols-2 gap-3">
-            <div className={cn(
-              "p-3 border-3 border-[var(--color-border)] text-center rounded-none",
-              "bg-[var(--color-muted)] shadow-[2px_2px_0px_0px_var(--color-border)]"
-            )}>
-              <div className="text-xl font-black text-[var(--color-success)]">
-                {creditInfo.remainingCredits}
+            <div className="p-3 border-4 border-[var(--color-border)] text-center rounded-none bg-[var(--color-muted)] shadow-[2px_2px_0_var(--shadow-color)]">
+              <div className="text-2xl font-black text-[var(--color-success)] tabular-nums">
+                {creditInfo.remainingCredits.toLocaleString()}
               </div>
               <div className="text-xs font-black mt-1 text-[var(--color-text)]">AVAILABLE</div>
             </div>
 
-            <div className={cn(
-              "p-3 border-3 border-[var(--color-border)] text-center rounded-none",
-              "bg-[var(--color-muted)] shadow-[2px_2px_0px_0px_var(--color-border)]"
-            )}>
-              <div className="text-xl font-black text-[var(--color-accent)]">
-                {creditInfo.usedCredits}
+            <div className="p-3 border-4 border-[var(--color-border)] text-center rounded-none bg-[var(--color-muted)] shadow-[2px_2px_0_var(--shadow-color)]">
+              <div className="text-2xl font-black text-[var(--color-accent)] tabular-nums">
+                {creditInfo.usedCredits.toLocaleString()}
               </div>
               <div className="text-xs font-black mt-1 text-[var(--color-text)]">USED</div>
             </div>
@@ -215,41 +195,37 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
         </div>
 
         {/* Menu Items */}
-        <div className="p-2">
+        <div className="p-3">
           {/* Subscription Status */}
-          <DropdownMenuItem className="flex flex-col items-start cursor-default p-3">
-            <div className="flex w-full justify-between items-center">
-              <span className="font-bold text-sm text-[var(--color-text)]">Subscription</span>
+          <div className="p-3 border-4 border-[var(--color-border)] bg-[var(--color-bg)] rounded-none mb-3">
+            <div className="flex w-full justify-between items-center mb-1">
+              <span className="font-black text-sm text-[var(--color-text)]">SUBSCRIPTION</span>
               <Badge
-                variant={isSubscribed ? "default" : "neutral"}
+                variant={isSubscribed ? "default" : "outline"}
                 className={cn(
-                  "border-2 border-[var(--color-border)] font-black rounded-none",
+                  "border-3 border-[var(--color-border)] font-black rounded-none",
                   isSubscribed
-                    ? "bg-[var(--color-primary)] text-[var(--color-text)]"
+                    ? "bg-[var(--color-primary)] text-white"
                     : "bg-[var(--color-bg)] text-[var(--color-text)]",
                 )}
               >
                 {subscriptionPlan}
               </Badge>
             </div>
-            <p className="text-xs font-bold mt-1 text-[var(--color-muted)]">
-              {isSubscribed ? "ACTIVE" : "UPGRADE FOR MORE"}
+            <p className="text-xs font-black text-[var(--color-muted)]">
+              {isSubscribed ? "✓ ACTIVE" : "UPGRADE FOR MORE"}
             </p>
-          </DropdownMenuItem>
-
-          <DropdownMenuSeparator className="bg-[var(--color-border)] h-[3px] my-2" />
+          </div>
 
           {/* Upgrade Button */}
           {!isSubscribed && (
-            <div className="p-3">
-              <Button
-                className="btn btn-primary w-full font-black"
-                size="sm"
-                onClick={() => window.open('/pricing', '_blank')}
-              >
-                💎 UPGRADE
-              </Button>
-            </div>
+            <Button
+              className="w-full min-h-[44px] font-black uppercase tracking-wider border-4 border-[var(--color-border)] bg-[var(--color-primary)] text-white shadow-[4px_4px_0_var(--shadow-color)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_var(--shadow-color)] transition-all duration-150 rounded-none"
+              size="sm"
+              onClick={() => window.open('/pricing', '_blank')}
+            >
+              💎 UPGRADE
+            </Button>
           )}
         </div>
       </DropdownMenuContent>
