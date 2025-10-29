@@ -17,33 +17,16 @@ import "../globals.css"
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
-  try {
-    const session = await getServerAuthSession()
-    const userName = session?.user?.name
-
-    const title = userName ? `${userName}'s Dashboard • CourseAI` : "CourseAI - Create Courses and Quizzes with AI"
-
-    const description = session?.user
-      ? "Access your personalized dashboard to create courses, quizzes, and educational content with AI-powered tools."
-      : "Build video-based courses and generate intelligent quizzes with AI assistance. Create engaging learning experiences with automated quiz generation."
-
-    return generateBaseMetadata({
-      title,
-      description,
-      canonical: siteUrl,
-      keywords: ["AI education", "course creator", "quiz maker", "educational content", "e-learning platform"],
-      type: "website",
-      url: siteUrl,
-    })
-  } catch (error) {
-    console.error("Metadata generation error:", error)
-    return generateBaseMetadata({
-      title: "CourseAI - Create Courses and Quizzes with AI",
-      description: "Build video-based courses and generate intelligent quizzes with AI assistance.",
-      canonical: siteUrl,
-      type: "website",
-    })
-  }
+  // Use consistent metadata regardless of authentication status
+  // Authentication-specific metadata should be handled at the page/layout level
+  return generateBaseMetadata({
+    title: "CourseAI - Create Courses and Quizzes with AI",
+    description: "Build video-based courses and generate intelligent quizzes with AI assistance. Create engaging learning experiences with automated quiz generation.",
+    canonical: siteUrl,
+    keywords: ["AI education", "course creator", "quiz maker", "educational content", "e-learning platform"],
+    type: "website",
+    url: siteUrl,
+  })
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
