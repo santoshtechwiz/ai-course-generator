@@ -27,7 +27,9 @@ export const metadata = generateMetadata({
   ],
   canonical: "/",
   type: "website",
-  image: "/images/og-image.png", // Add proper OG image path
+  image: "/images/og-image.png",
+  noIndex: false, // Explicitly allow indexing for home page
+  noFollow: false, // Explicitly allow following links
 })
 
 export default function HomePage() {

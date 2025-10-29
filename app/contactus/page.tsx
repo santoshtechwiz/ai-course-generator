@@ -26,6 +26,8 @@ export const metadata: Metadata = generateMetadata({
   ],
   canonical: "/contactus",
   type: "website",
+  noIndex: false, // Explicitly allow indexing for contact page
+  noFollow: false, // Explicitly allow following links
 })
 
 const ContactUsPage = () => {
