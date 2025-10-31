@@ -28,6 +28,12 @@ CREATE TABLE "User" (
     "currentPlanId" TEXT,
     "metadata" JSONB,
     "lastActiveAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "hadPreviousPaidPlan" BOOLEAN NOT NULL DEFAULT false,
+    "hasUsedFreePlan" BOOLEAN NOT NULL DEFAULT false,
+    "streak" INTEGER NOT NULL DEFAULT 0,
+    "longestStreak" INTEGER NOT NULL DEFAULT 0,
+    "lastReviewDate" TIMESTAMP(3),
+    "notificationSettings" JSONB DEFAULT '{"emailDigest": "weekly", "pushEnabled": true, "streakAlerts": true}',
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -87,6 +93,12 @@ CREATE TABLE "Course" (
     "generatedBy" TEXT NOT NULL DEFAULT 'USER',
     "version" INTEGER NOT NULL DEFAULT 1,
     "parentId" INTEGER,
+    "viewCount" INTEGER DEFAULT 0,
+    "visibility" TEXT NOT NULL DEFAULT 'private',
+    "share_token" TEXT,
+    "share_key_hash" TEXT,
+    "share_expiry" TIMESTAMP(3),
+    "share_views" INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT "Course_pkey" PRIMARY KEY ("id")
 );
@@ -115,6 +127,7 @@ CREATE TABLE "Chapter" (
     "title" TEXT NOT NULL,
     "youtubeSearchQuery" TEXT,
     "videoId" TEXT,
+    "transcript" TEXT,
     "summary" TEXT,
     "videoDuration" DOUBLE PRECISION,
     "isFreePreview" BOOLEAN NOT NULL DEFAULT true,
@@ -259,6 +272,11 @@ CREATE TABLE "UserQuiz" (
     "generatedBy" TEXT NOT NULL DEFAULT 'USER',
     "version" INTEGER NOT NULL DEFAULT 1,
     "parentId" INTEGER,
+    "visibility" TEXT NOT NULL DEFAULT 'private',
+    "share_token" TEXT,
+    "share_key_hash" TEXT,
+    "share_expiry" TIMESTAMP(3),
+    "share_views" INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT "UserQuiz_pkey" PRIMARY KEY ("id")
 );
@@ -361,6 +379,8 @@ CREATE TABLE "FlashCardReview" (
     "notes" TEXT,
     "reviewCount" INTEGER NOT NULL DEFAULT 1,
     "nextReviewDate" TIMESTAMP(3),
+    "easeFactor" DECIMAL(3,2) NOT NULL DEFAULT 2.5,
+    "interval" INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT "FlashCardReview_pkey" PRIMARY KEY ("id")
 );
@@ -391,6 +411,17 @@ CREATE TABLE "UserQuizRating" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "UserQuizRating_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserQuizFavorite" (
+    "id" SERIAL NOT NULL,
+    "userId" TEXT NOT NULL,
+    "userQuizId" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "UserQuizFavorite_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -621,6 +652,18 @@ CREATE TABLE "Embedding" (
 );
 
 -- CreateTable
+CREATE TABLE "EmbeddingJob" (
+    "id" SERIAL NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'queued',
+    "payload" JSONB,
+    "progress" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmbeddingJob_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "ChatMessage" (
     "id" SERIAL NOT NULL,
     "userId" TEXT NOT NULL,
@@ -632,6 +675,198 @@ CREATE TABLE "ChatMessage" (
     "count" INTEGER NOT NULL DEFAULT 5,
 
     CONSTRAINT "ChatMessage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SubscriptionEvent" (
+    "id" TEXT NOT NULL,
+    "userSubscriptionId" TEXT,
+    "userId" TEXT NOT NULL,
+    "previousStatus" TEXT,
+    "newStatus" TEXT NOT NULL,
+    "reason" TEXT,
+    "source" TEXT DEFAULT 'SYSTEM',
+    "stripeEventId" TEXT,
+    "metadata" JSONB,
+    "effectiveAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "SubscriptionEvent_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserTopicProgress" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "topic" TEXT NOT NULL,
+    "correctAnswers" INTEGER NOT NULL DEFAULT 0,
+    "totalAttempts" INTEGER NOT NULL DEFAULT 0,
+    "currentStreak" INTEGER NOT NULL DEFAULT 0,
+    "longestStreak" INTEGER NOT NULL DEFAULT 0,
+    "averageTime" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "difficultyLevel" TEXT NOT NULL DEFAULT 'MEDIUM',
+    "masteryScore" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "lastAttemptAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "UserTopicProgress_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Badge" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "category" TEXT NOT NULL,
+    "icon" TEXT NOT NULL,
+    "requiredValue" INTEGER NOT NULL,
+    "tier" TEXT NOT NULL DEFAULT 'bronze',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Badge_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmailQueue" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "payload" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "scheduledFor" TIMESTAMP(3) NOT NULL,
+    "sentAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "error" TEXT,
+
+    CONSTRAINT "EmailQueue_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Leaderboard" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "value" INTEGER NOT NULL,
+    "rank" INTEGER,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Leaderboard_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PushSubscription" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "endpoint" TEXT NOT NULL,
+    "p256dh" TEXT NOT NULL,
+    "auth" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PushSubscription_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UsageLimit" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "resourceType" TEXT NOT NULL,
+    "usedCount" INTEGER NOT NULL DEFAULT 0,
+    "limitCount" INTEGER NOT NULL,
+    "periodStart" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "periodEnd" TIMESTAMP(3) NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "UsageLimit_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserBadge" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "badgeId" TEXT NOT NULL,
+    "unlockedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "progress" INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT "UserBadge_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Share" (
+    "id" TEXT NOT NULL,
+    "resourceType" TEXT NOT NULL,
+    "resourceId" INTEGER NOT NULL,
+    "creatorId" TEXT NOT NULL,
+    "token" VARCHAR(255) NOT NULL,
+    "keyHash" TEXT,
+    "expiresAt" TIMESTAMP(3),
+    "visibility" TEXT NOT NULL DEFAULT 'link-only',
+    "viewCount" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Share_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OrderingQuiz" (
+    "id" SERIAL NOT NULL,
+    "slug" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "topic" TEXT,
+    "difficulty" TEXT NOT NULL DEFAULT 'medium',
+    "isPublic" BOOLEAN NOT NULL DEFAULT true,
+    "createdBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "OrderingQuiz_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OrderingQuizQuestion" (
+    "id" SERIAL NOT NULL,
+    "orderingQuizId" INTEGER NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "steps" JSONB NOT NULL,
+    "correctOrder" JSONB NOT NULL,
+    "orderIndex" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "OrderingQuizQuestion_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OrderingQuizAttempt" (
+    "id" SERIAL NOT NULL,
+    "userId" TEXT NOT NULL,
+    "orderingQuizId" INTEGER NOT NULL,
+    "score" INTEGER NOT NULL,
+    "correctAnswers" INTEGER NOT NULL,
+    "totalQuestions" INTEGER NOT NULL,
+    "timeSpent" INTEGER NOT NULL,
+    "completedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "OrderingQuizAttempt_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OrderingQuizAttemptQuestion" (
+    "id" SERIAL NOT NULL,
+    "attemptId" INTEGER NOT NULL,
+    "questionId" INTEGER NOT NULL,
+    "userAnswer" JSONB NOT NULL,
+    "isCorrect" BOOLEAN NOT NULL,
+    "timeSpent" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "OrderingQuizAttemptQuestion_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -674,6 +909,18 @@ CREATE INDEX "User_createdAt_idx" ON "User"("createdAt");
 CREATE INDEX "User_isAdmin_idx" ON "User"("isAdmin");
 
 -- CreateIndex
+CREATE INDEX "User_hadPreviousPaidPlan_idx" ON "User"("hadPreviousPaidPlan");
+
+-- CreateIndex
+CREATE INDEX "User_hasUsedFreePlan_idx" ON "User"("hasUsedFreePlan");
+
+-- CreateIndex
+CREATE INDEX "User_lastReviewDate_idx" ON "User"("lastReviewDate");
+
+-- CreateIndex
+CREATE INDEX "User_streak_idx" ON "User"("streak");
+
+-- CreateIndex
 CREATE INDEX "Account_user_id_idx" ON "Account"("user_id");
 
 -- CreateIndex
@@ -695,7 +942,16 @@ CREATE INDEX "Session_expires_idx" ON "Session"("expires");
 CREATE UNIQUE INDEX "Course_slug_key" ON "Course"("slug");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Course_share_token_key" ON "Course"("share_token");
+
+-- CreateIndex
 CREATE INDEX "Course_title_idx" ON "Course"("title");
+
+-- CreateIndex
+CREATE INDEX "Course_visibility_idx" ON "Course"("visibility");
+
+-- CreateIndex
+CREATE INDEX "Course_share_token_idx" ON "Course"("share_token");
 
 -- CreateIndex
 CREATE INDEX "Course_categoryId_idx" ON "Course"("categoryId");
@@ -839,6 +1095,9 @@ CREATE UNIQUE INDEX "Favorite_user_id_courseId_key" ON "Favorite"("user_id", "co
 CREATE UNIQUE INDEX "UserQuiz_slug_key" ON "UserQuiz"("slug");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "UserQuiz_share_token_key" ON "UserQuiz"("share_token");
+
+-- CreateIndex
 CREATE INDEX "UserQuiz_user_id_idx" ON "UserQuiz"("user_id");
 
 -- CreateIndex
@@ -867,6 +1126,12 @@ CREATE INDEX "UserQuiz_slug_idx" ON "UserQuiz"("slug");
 
 -- CreateIndex
 CREATE INDEX "UserQuiz_isFavorite_idx" ON "UserQuiz"("isFavorite");
+
+-- CreateIndex
+CREATE INDEX "UserQuiz_visibility_idx" ON "UserQuiz"("visibility");
+
+-- CreateIndex
+CREATE INDEX "UserQuiz_share_token_idx" ON "UserQuiz"("share_token");
 
 -- CreateIndex
 CREATE INDEX "UserQuizAttempt_userId_idx" ON "UserQuizAttempt"("userId");
@@ -956,6 +1221,12 @@ CREATE INDEX "FlashCardReview_nextReviewDate_idx" ON "FlashCardReview"("nextRevi
 CREATE INDEX "FlashCardReview_userId_flashCardId_nextReviewDate_idx" ON "FlashCardReview"("userId", "flashCardId", "nextReviewDate");
 
 -- CreateIndex
+CREATE INDEX "FlashCardReview_easeFactor_idx" ON "FlashCardReview"("easeFactor");
+
+-- CreateIndex
+CREATE INDEX "FlashCardReview_interval_idx" ON "FlashCardReview"("interval");
+
+-- CreateIndex
 CREATE INDEX "QuizProgress_userId_idx" ON "QuizProgress"("userId");
 
 -- CreateIndex
@@ -981,6 +1252,18 @@ CREATE INDEX "UserQuizRating_createdAt_idx" ON "UserQuizRating"("createdAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "UserQuizRating_userId_userQuizId_key" ON "UserQuizRating"("userId", "userQuizId");
+
+-- CreateIndex
+CREATE INDEX "UserQuizFavorite_userId_idx" ON "UserQuizFavorite"("userId");
+
+-- CreateIndex
+CREATE INDEX "UserQuizFavorite_userQuizId_idx" ON "UserQuizFavorite"("userQuizId");
+
+-- CreateIndex
+CREATE INDEX "UserQuizFavorite_createdAt_idx" ON "UserQuizFavorite"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserQuizFavorite_userId_userQuizId_key" ON "UserQuizFavorite"("userId", "userQuizId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Tag_name_key" ON "Tag"("name");
@@ -1133,10 +1416,166 @@ CREATE INDEX "Embedding_createdAt_idx" ON "Embedding"("createdAt");
 CREATE INDEX "Embedding_embedding_idx" ON "Embedding" USING GIN ("embedding");
 
 -- CreateIndex
+CREATE INDEX "EmbeddingJob_status_idx" ON "EmbeddingJob"("status");
+
+-- CreateIndex
+CREATE INDEX "EmbeddingJob_createdAt_idx" ON "EmbeddingJob"("createdAt");
+
+-- CreateIndex
 CREATE INDEX "ChatMessage_userId_sessionId_idx" ON "ChatMessage"("userId", "sessionId");
 
 -- CreateIndex
 CREATE INDEX "ChatMessage_createdAt_idx" ON "ChatMessage"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "SubscriptionEvent_stripeEventId_key" ON "SubscriptionEvent"("stripeEventId");
+
+-- CreateIndex
+CREATE INDEX "SubscriptionEvent_userId_idx" ON "SubscriptionEvent"("userId");
+
+-- CreateIndex
+CREATE INDEX "SubscriptionEvent_userSubscriptionId_idx" ON "SubscriptionEvent"("userSubscriptionId");
+
+-- CreateIndex
+CREATE INDEX "SubscriptionEvent_effectiveAt_idx" ON "SubscriptionEvent"("effectiveAt");
+
+-- CreateIndex
+CREATE INDEX "UserTopicProgress_userId_idx" ON "UserTopicProgress"("userId");
+
+-- CreateIndex
+CREATE INDEX "UserTopicProgress_topic_idx" ON "UserTopicProgress"("topic");
+
+-- CreateIndex
+CREATE INDEX "UserTopicProgress_masteryScore_idx" ON "UserTopicProgress"("masteryScore");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserTopicProgress_userId_topic_key" ON "UserTopicProgress"("userId", "topic");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Badge_name_key" ON "Badge"("name");
+
+-- CreateIndex
+CREATE INDEX "Badge_category_idx" ON "Badge"("category");
+
+-- CreateIndex
+CREATE INDEX "Badge_tier_idx" ON "Badge"("tier");
+
+-- CreateIndex
+CREATE INDEX "EmailQueue_scheduledFor_idx" ON "EmailQueue"("scheduledFor");
+
+-- CreateIndex
+CREATE INDEX "EmailQueue_status_idx" ON "EmailQueue"("status");
+
+-- CreateIndex
+CREATE INDEX "EmailQueue_userId_idx" ON "EmailQueue"("userId");
+
+-- CreateIndex
+CREATE INDEX "Leaderboard_rank_idx" ON "Leaderboard"("rank");
+
+-- CreateIndex
+CREATE INDEX "Leaderboard_type_value_idx" ON "Leaderboard"("type", "value" DESC);
+
+-- CreateIndex
+CREATE INDEX "Leaderboard_userId_idx" ON "Leaderboard"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Leaderboard_userId_type_key" ON "Leaderboard"("userId", "type");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PushSubscription_endpoint_key" ON "PushSubscription"("endpoint");
+
+-- CreateIndex
+CREATE INDEX "PushSubscription_userId_idx" ON "PushSubscription"("userId");
+
+-- CreateIndex
+CREATE INDEX "UsageLimit_periodEnd_idx" ON "UsageLimit"("periodEnd");
+
+-- CreateIndex
+CREATE INDEX "UsageLimit_resourceType_idx" ON "UsageLimit"("resourceType");
+
+-- CreateIndex
+CREATE INDEX "UsageLimit_userId_idx" ON "UsageLimit"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UsageLimit_userId_resourceType_key" ON "UsageLimit"("userId", "resourceType");
+
+-- CreateIndex
+CREATE INDEX "UserBadge_badgeId_idx" ON "UserBadge"("badgeId");
+
+-- CreateIndex
+CREATE INDEX "UserBadge_unlockedAt_idx" ON "UserBadge"("unlockedAt");
+
+-- CreateIndex
+CREATE INDEX "UserBadge_userId_idx" ON "UserBadge"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserBadge_userId_badgeId_key" ON "UserBadge"("userId", "badgeId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Share_token_key" ON "Share"("token");
+
+-- CreateIndex
+CREATE INDEX "Share_token_idx" ON "Share"("token");
+
+-- CreateIndex
+CREATE INDEX "Share_creatorId_idx" ON "Share"("creatorId");
+
+-- CreateIndex
+CREATE INDEX "Share_resourceType_resourceId_idx" ON "Share"("resourceType", "resourceId");
+
+-- CreateIndex
+CREATE INDEX "Share_expiresAt_idx" ON "Share"("expiresAt");
+
+-- CreateIndex
+CREATE INDEX "Share_createdAt_idx" ON "Share"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Share_resourceType_resourceId_token_key" ON "Share"("resourceType", "resourceId", "token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "OrderingQuiz_slug_key" ON "OrderingQuiz"("slug");
+
+-- CreateIndex
+CREATE INDEX "OrderingQuiz_slug_idx" ON "OrderingQuiz"("slug");
+
+-- CreateIndex
+CREATE INDEX "OrderingQuiz_difficulty_idx" ON "OrderingQuiz"("difficulty");
+
+-- CreateIndex
+CREATE INDEX "OrderingQuiz_createdAt_idx" ON "OrderingQuiz"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "OrderingQuiz_isPublic_idx" ON "OrderingQuiz"("isPublic");
+
+-- CreateIndex
+CREATE INDEX "OrderingQuizQuestion_orderingQuizId_idx" ON "OrderingQuizQuestion"("orderingQuizId");
+
+-- CreateIndex
+CREATE INDEX "OrderingQuizQuestion_orderIndex_idx" ON "OrderingQuizQuestion"("orderIndex");
+
+-- CreateIndex
+CREATE INDEX "OrderingQuizAttempt_userId_idx" ON "OrderingQuizAttempt"("userId");
+
+-- CreateIndex
+CREATE INDEX "OrderingQuizAttempt_orderingQuizId_idx" ON "OrderingQuizAttempt"("orderingQuizId");
+
+-- CreateIndex
+CREATE INDEX "OrderingQuizAttempt_completedAt_idx" ON "OrderingQuizAttempt"("completedAt");
+
+-- CreateIndex
+CREATE INDEX "OrderingQuizAttempt_score_idx" ON "OrderingQuizAttempt"("score");
+
+-- CreateIndex
+CREATE INDEX "OrderingQuizAttemptQuestion_attemptId_idx" ON "OrderingQuizAttemptQuestion"("attemptId");
+
+-- CreateIndex
+CREATE INDEX "OrderingQuizAttemptQuestion_questionId_idx" ON "OrderingQuizAttemptQuestion"("questionId");
+
+-- CreateIndex
+CREATE INDEX "OrderingQuizAttemptQuestion_isCorrect_idx" ON "OrderingQuizAttemptQuestion"("isCorrect");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "OrderingQuizAttemptQuestion_attemptId_questionId_key" ON "OrderingQuizAttemptQuestion"("attemptId", "questionId");
 
 -- CreateIndex
 CREATE INDEX "_CourseTags_B_index" ON "_CourseTags"("B");
@@ -1166,13 +1605,13 @@ ALTER TABLE "CourseUnit" ADD CONSTRAINT "CourseUnit_courseId_fkey" FOREIGN KEY (
 ALTER TABLE "Chapter" ADD CONSTRAINT "Chapter_unitId_fkey" FOREIGN KEY ("unitId") REFERENCES "CourseUnit"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ChapterProgress" ADD CONSTRAINT "ChapterProgress_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ChapterProgress" ADD CONSTRAINT "ChapterProgress_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ChapterProgress" ADD CONSTRAINT "ChapterProgress_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ChapterProgress" ADD CONSTRAINT "ChapterProgress_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ChapterProgress" ADD CONSTRAINT "ChapterProgress_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CourseQuiz" ADD CONSTRAINT "CourseQuiz_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1247,6 +1686,12 @@ ALTER TABLE "UserQuizRating" ADD CONSTRAINT "UserQuizRating_userId_fkey" FOREIGN
 ALTER TABLE "UserQuizRating" ADD CONSTRAINT "UserQuizRating_userQuizId_fkey" FOREIGN KEY ("userQuizId") REFERENCES "UserQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "UserQuizFavorite" ADD CONSTRAINT "UserQuizFavorite_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserQuizFavorite" ADD CONSTRAINT "UserQuizFavorite_userQuizId_fkey" FOREIGN KEY ("userQuizId") REFERENCES "UserQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Bookmark" ADD CONSTRAINT "Bookmark_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -1265,19 +1710,19 @@ ALTER TABLE "Certificate" ADD CONSTRAINT "Certificate_userId_fkey" FOREIGN KEY (
 ALTER TABLE "Recommendation" ADD CONSTRAINT "Recommendation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "LearningEvent" ADD CONSTRAINT "LearningEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "LearningEvent" ADD CONSTRAINT "LearningEvent_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "LearningEvent" ADD CONSTRAINT "LearningEvent_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "LearningEvent" ADD CONSTRAINT "LearningEvent_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "UserSubscription" ADD CONSTRAINT "UserSubscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "LearningEvent" ADD CONSTRAINT "LearningEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "UserSubscription" ADD CONSTRAINT "UserSubscription_planId_fkey" FOREIGN KEY ("planId") REFERENCES "Plan"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserSubscription" ADD CONSTRAINT "UserSubscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "PendingSubscription" ADD CONSTRAINT "PendingSubscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1310,6 +1755,48 @@ ALTER TABLE "UserReferralUse" ADD CONSTRAINT "UserReferralUse_referrerId_fkey" F
 ALTER TABLE "ChatMessage" ADD CONSTRAINT "ChatMessage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "SubscriptionEvent" ADD CONSTRAINT "SubscriptionEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SubscriptionEvent" ADD CONSTRAINT "SubscriptionEvent_userSubscriptionId_fkey" FOREIGN KEY ("userSubscriptionId") REFERENCES "UserSubscription"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmailQueue" ADD CONSTRAINT "EmailQueue_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Leaderboard" ADD CONSTRAINT "Leaderboard_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PushSubscription" ADD CONSTRAINT "PushSubscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UsageLimit" ADD CONSTRAINT "UsageLimit_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserBadge" ADD CONSTRAINT "UserBadge_badgeId_fkey" FOREIGN KEY ("badgeId") REFERENCES "Badge"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserBadge" ADD CONSTRAINT "UserBadge_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Share" ADD CONSTRAINT "Share_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrderingQuizQuestion" ADD CONSTRAINT "OrderingQuizQuestion_orderingQuizId_fkey" FOREIGN KEY ("orderingQuizId") REFERENCES "OrderingQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrderingQuizAttempt" ADD CONSTRAINT "OrderingQuizAttempt_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrderingQuizAttempt" ADD CONSTRAINT "OrderingQuizAttempt_orderingQuizId_fkey" FOREIGN KEY ("orderingQuizId") REFERENCES "OrderingQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrderingQuizAttemptQuestion" ADD CONSTRAINT "OrderingQuizAttemptQuestion_attemptId_fkey" FOREIGN KEY ("attemptId") REFERENCES "OrderingQuizAttempt"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrderingQuizAttemptQuestion" ADD CONSTRAINT "OrderingQuizAttemptQuestion_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "OrderingQuizQuestion"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "_CourseTags" ADD CONSTRAINT "_CourseTags_A_fkey" FOREIGN KEY ("A") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -1326,3 +1813,4 @@ ALTER TABLE "_QuizTags" ADD CONSTRAINT "_QuizTags_A_fkey" FOREIGN KEY ("A") REFE
 
 -- AddForeignKey
 ALTER TABLE "_QuizTags" ADD CONSTRAINT "_QuizTags_B_fkey" FOREIGN KEY ("B") REFERENCES "UserQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

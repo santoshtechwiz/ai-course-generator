@@ -11,6 +11,14 @@ const serviceCache = new NodeCache({
   deleteOnExpire: true,
 });
 
+// Cache for preprocessed transcripts
+const preprocessedCache = new NodeCache({
+  stdTTL: 3600, // 1 hour
+  checkperiod: 600,
+  useClones: false,
+  deleteOnExpire: true,
+});
+
 interface QuizRequestData {
   videoId: string;
   chapterId: number;
@@ -72,7 +80,14 @@ export class CourseQuizService {  /**
         return summary;
       }
 
-      // If no summary exists, fetch the transcript
+      // Second, check if a transcript is saved for the chapter
+      const savedTranscript = await courseQuizRepository.getChapterTranscript(chapterId);
+
+      if (savedTranscript) {
+        return savedTranscript;
+      }
+
+      // If neither summary nor transcript exists, fetch the transcript
       console.log("Fetching transcript for video:", videoId);
       const transcriptResult = await YoutubeService.getTranscript(videoId);
 

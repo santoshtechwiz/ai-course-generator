@@ -123,7 +123,7 @@ function summarizeLocally(text: string): string {
 
 /**
  * Generate video summary with multi-provider fallback
- * Tries: Gemini -> OpenAI -> Local extraction
+ * Tries: OpenAI GPT-3.5-turbo -> Gemini -> Local extraction (cheaper first)
  * 
  * @param transcript - Video transcript text
  * @returns Markdown-formatted summary
@@ -144,7 +144,20 @@ export async function generateVideoSummaryFromTranscript(transcript: string): Pr
 
   let summary = ""
 
-  // Try Gemini first
+  // Try OpenAI GPT-3.5-turbo first (cheaper)
+  try {
+    console.log("[VideoSummary] Attempting with OpenAI GPT-3.5-turbo...")
+    summary = await summarizeWithOpenAI(sampledTranscript)
+    if (summary) {
+      summaryCache.set(cacheKey, summary)
+      console.log("[VideoSummary] Success with OpenAI GPT-3.5-turbo")
+      return summary
+    }
+  } catch (error) {
+    console.warn("[VideoSummary] OpenAI GPT-3.5-turbo failed, trying Gemini:", error instanceof Error ? error.message : String(error))
+  }
+
+  // Fallback to Gemini
   try {
     console.log("[VideoSummary] Attempting with Gemini...")
     summary = await summarizeWithGemini(sampledTranscript)
@@ -154,20 +167,7 @@ export async function generateVideoSummaryFromTranscript(transcript: string): Pr
       return summary
     }
   } catch (error) {
-    console.warn("[VideoSummary] Gemini failed, trying OpenAI:", error instanceof Error ? error.message : String(error))
-  }
-
-  // Fallback to OpenAI
-  try {
-    console.log("[VideoSummary] Attempting with OpenAI...")
-    summary = await summarizeWithOpenAI(sampledTranscript)
-    if (summary) {
-      summaryCache.set(cacheKey, summary)
-      console.log("[VideoSummary] Success with OpenAI")
-      return summary
-    }
-  } catch (error) {
-    console.warn("[VideoSummary] OpenAI failed, using local summarization:", error instanceof Error ? error.message : String(error))
+    console.warn("[VideoSummary] Gemini failed, using local summarization:", error instanceof Error ? error.message : String(error))
   }
 
   // Final fallback to local

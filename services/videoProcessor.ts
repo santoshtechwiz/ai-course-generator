@@ -1,8 +1,17 @@
 import pLimit from "p-limit"
+import NodeCache from "node-cache"
 
 import YoutubeService from "./youtubeService"
 
 const limit = pLimit(1) // Limit concurrency to 1
+
+// Cache for preprocessed transcripts
+const preprocessedCache = new NodeCache({
+  stdTTL: 3600, // 1 hour
+  checkperiod: 600, // 10 minutes
+  useClones: false,
+  deleteOnExpire: true,
+});
 
 /**
  * Preprocess transcript to remove common patterns like introductions,
@@ -10,6 +19,13 @@ const limit = pLimit(1) // Limit concurrency to 1
  */
 function preprocessTranscript(transcript: string): string {
   if (!transcript) return '';
+
+  // Check cache first
+  const cacheKey = `preprocessed_${transcript.slice(0, 100).replace(/\s+/g, '_')}`;
+  const cached = preprocessedCache.get<string>(cacheKey);
+  if (cached) {
+    return cached;
+  }
 
   // Convert to lowercase for pattern matching
   const lowerTranscript = transcript.toLowerCase();
@@ -61,6 +77,9 @@ function preprocessTranscript(transcript: string): string {
 
   // Combine the filtered sections
   const cleanedTranscript = filteredSections.join(". ");
+
+  // Cache the result
+  preprocessedCache.set(cacheKey, cleanedTranscript);
 
   return cleanedTranscript;
 }
@@ -119,7 +138,8 @@ export async function getQuestionsFromTranscript(
     }
 
     // Extract most relevant content to stay within token limits
-    const relevantContent = extractRelevantContent(cleanedTranscript);
+    // Use lower word limit for quiz generation to reduce tokens (vs summary which uses full content)
+    const relevantContent = extractRelevantContent(cleanedTranscript, 600); // Reduced from 800
 
     // Final check for relevant content
     if (!relevantContent || relevantContent.trim().length < 20) {
