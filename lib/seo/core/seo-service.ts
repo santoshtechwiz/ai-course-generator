@@ -56,7 +56,7 @@ export interface SEOConfig {
 // Validation schema for SEO config
 const seoConfigSchema = z.object({
   title: z.string().min(1, 'Title is required').max(120, 'Title too long'),
-  description: z.string().max(320, 'Description too long').optional(),
+  description: z.string().optional(),
   keywords: z.array(z.string()).optional(),
   image: z.string().refine((val) => {
     // Allow relative paths (starting with /) or full URLs
