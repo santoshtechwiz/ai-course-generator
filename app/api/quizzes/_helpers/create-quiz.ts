@@ -275,7 +275,7 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
         }, { status: 500 })
       }
 
-      const cards = result.data.map((card: any, index: number) => ({
+      const cards = result.data.flashcards.map((card: any, index: number) => ({
         id: index + 1,
         question: card.question,
         answer: card.answer,

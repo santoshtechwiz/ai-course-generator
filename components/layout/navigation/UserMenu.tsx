@@ -17,8 +17,9 @@ import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { useAuth } from "@/modules/auth"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useMemo } from "react"
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
 
 interface CreditInfo {
   hasCredits: boolean
@@ -81,128 +82,142 @@ export function UserMenu() {
     }
   }, [isLoggingOut])
 
+  const subscriptionPlan = useMemo(() => plan || "FREE", [plan])
+  const isPremium = useMemo(() => subscriptionPlan !== "FREE", [subscriptionPlan])
+
   if (isAuthLoading) {
     return (
-      <Button
-        variant="neutral"
-        className={cn(
-          "relative h-10 w-10 rounded-none border-3 border-[var(--color-border)]",
-          "shadow-[2px_2px_0px_0px_var(--color-border)]",
-        )}
-        disabled
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="h-10 w-10 rounded-none border-3 border-[var(--color-border)] bg-[var(--color-muted)] shadow-[2px_2px_0_var(--shadow-color)]"
       >
-        <div className="animate-pulse w-6 h-6 bg-[var(--color-muted)] rounded-full" />
-        <span className="sr-only">Loading user menu</span>
-      </Button>
+        <div className="animate-pulse w-full h-full bg-[var(--color-border)] rounded-none" />
+      </motion.div>
     )
   }
 
   if (!isAuthenticated) {
     return (
-      <Button
-        onClick={handleSignIn}
-        size="sm"
-        className={cn(
-          "bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-[var(--color-text)] font-black",
-          "border-3 border-[var(--color-border)] shadow-[var(--shadow-neo)]",
-          "hover:shadow-[var(--shadow-neo-hover)] active:shadow-[var(--shadow-neo-active)]",
-          "active:translate-y-1 transition-all duration-150 rounded-none",
-        )}
+      <motion.div
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        transition={{ type: "spring", stiffness: 400, damping: 17 }}
       >
-        <LogIn className="mr-2 h-4 w-4" />
-        Sign In
-      </Button>
+        <Button
+          onClick={handleSignIn}
+          size="sm"
+          className={cn(
+            "bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-[var(--color-text)]",
+            "font-black border-3 border-[var(--color-border)] shadow-[2px_2px_0_var(--shadow-color)]",
+            "hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0_var(--shadow-color)]",
+            "active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_var(--shadow-color)]",
+            "transition-all duration-150 rounded-none uppercase tracking-wider"
+          )}
+        >
+          <LogIn className="mr-2 h-4 w-4" />
+          Sign In
+        </Button>
+      </motion.div>
     )
   }
 
   if (!user) return null
 
-  const subscriptionPlan = plan || "FREE"
-  const isPremium = subscriptionPlan !== "FREE"
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild suppressHydrationWarning>
-        <Button
-          variant="neutral"
-          className={cn(
-            "relative h-10 w-10 rounded-none border-3 border-[var(--color-border)]",
-            "shadow-[2px_2px_0px_0px_var(--color-border)]",
-            "hover:shadow-[4px_4px_0px_0px_var(--color-border)]",
-            "hover:translate-y-[-2px]",
-            "transition-all duration-100",
-            "focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]",
-          )}
-          suppressHydrationWarning
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
-          <Avatar className="h-8 w-8 border-2 border-[var(--color-border)]">
-            <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? "User"} />
-            <AvatarFallback className="bg-[var(--color-primary)] text-[var(--color-text)] font-bold">
-              {user?.name?.[0]?.toUpperCase() ?? "U"}
-            </AvatarFallback>
-          </Avatar>
-        </Button>
+          <Button
+            variant="ghost"
+            className={cn(
+              "relative h-10 w-10 rounded-none border-3 border-[var(--color-border)]",
+              "shadow-[2px_2px_0_var(--shadow-color)]",
+              "hover:shadow-[3px_3px_0_var(--shadow-color)]",
+              "hover:translate-y-[-1px]",
+              "transition-all duration-150",
+              "focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            )}
+            suppressHydrationWarning
+            aria-label="User menu"
+          >
+            <Avatar className="h-8 w-8 border-2 border-[var(--color-border)]">
+              <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? "User"} />
+              <AvatarFallback className="bg-[var(--color-primary)] text-[var(--color-text)] font-black text-sm">
+                {user?.name?.[0]?.toUpperCase() ?? "U"}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </motion.div>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
         className={cn(
-          "w-72 p-0 rounded-none",
+          "w-full sm:w-80 p-0 rounded-none",
           "bg-[var(--color-card)] border-4 border-[var(--color-border)]",
-          "shadow-[var(--shadow-neo)]",
-          "z-[var(--z-index-modal)]",
+          "shadow-[4px_4px_0_var(--shadow-color)]",
+          "z-[99]"
         )}
         align="end"
         side="bottom"
-        sideOffset={12}
+        sideOffset={8}
       >
-        {/* Header */}
-        <div className="p-4 border-b-3 border-[var(--color-border)] bg-[var(--color-bg)]">
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-12 w-12 border-3 border-[var(--color-border)] shadow-[3px_3px_0px_0px_var(--color-border)]">
+        {/* Header Section */}
+        <div className="p-4 border-b-4 border-[var(--color-border)] bg-[var(--color-bg)]">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-12 w-12 border-3 border-[var(--color-border)] shadow-[2px_2px_0_var(--shadow-color)] flex-shrink-0">
               <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? "User"} />
               <AvatarFallback className="bg-[var(--color-primary)] text-[var(--color-text)] font-black">
                 {user?.name?.[0]?.toUpperCase() ?? "U"}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-[var(--color-text)]">{user?.name}</p>
+
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black text-[var(--color-text)] truncate">{user?.name}</p>
               <p className="text-xs text-[var(--color-muted)] truncate">{user?.email}</p>
-              <div className="flex items-center gap-2 mt-2">
+
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
                 <Badge
                   variant={isPremium ? "default" : "outline"}
                   className={cn(
-                    "text-xs border-2 border-[var(--color-border)] font-black px-2 py-0.5 rounded-none",
+                    "text-xs border-2 border-[var(--color-border)] font-black px-2 py-1 rounded-none",
                     isPremium
                       ? "bg-[var(--color-primary)] text-[var(--color-text)]"
-                      : "bg-[var(--color-bg)] text-[var(--color-text)]",
+                      : "bg-[var(--color-bg)] text-[var(--color-text)]"
                   )}
                 >
                   {subscriptionPlan}
                 </Badge>
-                <div className="text-xs font-bold text-[var(--color-muted)]">
-                  {creditInfo?.remainingCredits ?? 0}/{creditInfo?.totalCredits ?? 0} credits
+
+                <div className="text-xs font-black text-[var(--color-muted)]">
+                  {creditInfo?.remainingCredits.toLocaleString() ?? 0}/{creditInfo?.totalCredits.toLocaleString() ?? 0}
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Items */}
-        <div className="p-2">
+        {/* Menu Items */}
+        <div className="p-3 space-y-2">
           <DropdownMenuGroup>
             <DropdownMenuItem asChild>
               <Link
                 href="/dashboard/account"
                 className={cn(
-                  "flex items-center w-full p-3 font-bold rounded-none",
+                  "flex items-center gap-3 px-3 py-3 font-black text-sm rounded-none",
                   "border-2 border-transparent",
                   "hover:border-[var(--color-border)] hover:bg-[var(--color-muted)]",
-                  "hover:shadow-[2px_2px_0px_0px_var(--color-border)]",
-                  "transition-all duration-100 cursor-pointer",
+                  "hover:shadow-[2px_2px_0_var(--shadow-color)]",
+                  "transition-all duration-150 cursor-pointer uppercase tracking-wide",
+                  "text-[var(--color-text)]"
                 )}
               >
-                <User className="mr-3 h-4 w-4" />
-                Account Settings
+                <User className="h-4 w-4 flex-shrink-0" />
+                <span>Account Settings</span>
               </Link>
             </DropdownMenuItem>
 
@@ -210,15 +225,16 @@ export function UserMenu() {
               <Link
                 href="/dashboard/subscription"
                 className={cn(
-                  "flex items-center w-full p-3 font-bold rounded-none",
+                  "flex items-center gap-3 px-3 py-3 font-black text-sm rounded-none",
                   "border-2 border-transparent",
                   "hover:border-[var(--color-border)] hover:bg-[var(--color-muted)]",
-                  "hover:shadow-[2px_2px_0px_0px_var(--color-border)]",
-                  "transition-all duration-100 cursor-pointer",
+                  "hover:shadow-[2px_2px_0_var(--shadow-color)]",
+                  "transition-all duration-150 cursor-pointer uppercase tracking-wide",
+                  "text-[var(--color-text)]"
                 )}
               >
-                <CreditCard className="mr-3 h-4 w-4" />
-                Subscription
+                <CreditCard className="h-4 w-4 flex-shrink-0" />
+                <span>Subscription</span>
               </Link>
             </DropdownMenuItem>
 
@@ -227,42 +243,53 @@ export function UserMenu() {
                 <Link
                   href="/dashboard/admin"
                   className={cn(
-                    "flex items-center w-full p-3 font-bold rounded-none",
+                    "flex items-center gap-3 px-3 py-3 font-black text-sm rounded-none",
                     "border-2 border-transparent",
                     "hover:border-[var(--color-border)] hover:bg-[var(--color-muted)]",
-                    "hover:shadow-[2px_2px_0px_0px_var(--color-border)]",
-                    "transition-all duration-100 cursor-pointer",
+                    "hover:shadow-[2px_2px_0_var(--shadow-color)]",
+                    "transition-all duration-150 cursor-pointer uppercase tracking-wide",
+                    "text-[var(--color-text)]"
                   )}
                 >
-                  <Shield className="mr-3 h-4 w-4" />
-                  Admin
+                  <Shield className="h-4 w-4 flex-shrink-0" />
+                  <span>Admin Panel</span>
                 </Link>
               </DropdownMenuItem>
             )}
           </DropdownMenuGroup>
 
-          <DropdownMenuSeparator className="bg-[var(--color-border)] h-[3px] my-2" />
+          <DropdownMenuSeparator className="bg-[var(--color-border)] h-[2px] my-2" />
 
+          {/* Sign Out */}
           <DropdownMenuItem
             className={cn(
-              "cursor-pointer p-3 font-bold rounded-none",
+              "cursor-pointer px-3 py-3 font-black text-sm rounded-none",
               "border-2 border-transparent",
               "hover:border-[var(--color-error)] hover:bg-[var(--color-error)]/10",
-              "hover:shadow-[2px_2px_0px_0px_var(--color-error)]",
-              "text-[var(--color-error)] transition-all duration-100",
+              "hover:shadow-[2px_2px_0_var(--color-error)]",
+              "text-[var(--color-error)] transition-all duration-150 uppercase tracking-wide",
+              "flex items-center gap-3",
+              isLoggingOut && "opacity-50 cursor-not-allowed"
             )}
             onClick={handleSignOut}
             disabled={isLoggingOut}
           >
             {isLoggingOut ? (
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-3" />
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current flex-shrink-0" />
+                <span>Signing out...</span>
+              </>
             ) : (
-              <LogOut className="mr-3 h-4 w-4" />
+              <>
+                <LogOut className="h-4 w-4 flex-shrink-0" />
+                <span>Sign Out</span>
+              </>
             )}
-            {isLoggingOut ? "Signing out..." : "Sign Out"}
           </DropdownMenuItem>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
+
+export default UserMenu

@@ -96,3 +96,5 @@ export function getRateLimits(plan: SubscriptionPlanType): RateLimitConfig {
   return RATE_LIMITS[plan]
 }
 
+
+export { AIModelName }

@@ -132,7 +132,7 @@ export class AIServiceFactoryV2 {
     if (planConfig.codeQuiz) supportedOperations.push('generateCodeQuiz')
     if (planConfig.videoQuiz) supportedOperations.push('generateVideoQuiz')
     // Always include basic operations
-    if (!supportedOperations.includes('generateFlashcards')) supportedOperations.push('generateFlashcards')
+    if (!supportedOperations.includes('generateFlashcards')) supportedOperations.push('generateFlashcardQuiz')
     if (!supportedOperations.includes('generateOrderingQuiz')) supportedOperations.push('generateOrderingQuiz')
     if (planConfig.courseCreation) supportedOperations.push('generateCourse')
 

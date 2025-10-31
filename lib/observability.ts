@@ -640,7 +640,7 @@ export class ObservabilityIntegration {
   recordError(error: Error, context?: LogContext) {
     observability.logger.error('Application error', {
       ...context,
-      error: error.message,
+      error: error,
       stack: error.stack
     })
 

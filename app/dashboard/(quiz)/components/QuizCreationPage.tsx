@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import RandomQuote from "@/components/RandomQuote"
 import QuizCourseWrapper from "./QuizCourseWrapper"
 import { RandomQuiz } from "./layouts/RandomQuiz"
-import { JsonLD } from "@/lib/seo";
+import { JsonLD, SchemaScript } from "@/lib/seo";
 
 
 export default function QuizCreationPage({
@@ -66,8 +66,8 @@ export default function QuizCreationPage({
       variants={containerVariants}
     >
       {schemas}
-      <JsonLD type="CreativeWork" data={metadata.creativeWorkSchema} />
-      <JsonLD type="BreadcrumbList" data={metadata.breadcrumbSchema} />
+      <SchemaScript schema={metadata.creativeWorkSchema} />
+      <SchemaScript schema={metadata.breadcrumbSchema} />
 
       <div className="grid grid-cols-1 gap-5 md:gap-6 lg:gap-8">
         {/* Compact RandomQuote */}

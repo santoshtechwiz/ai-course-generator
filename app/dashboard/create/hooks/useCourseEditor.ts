@@ -217,6 +217,10 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
   const generateVideoForChapter = useCallback(
     async (chapter: Chapter): Promise<boolean> => {
       try {
+        if (!chapter || typeof chapter.id !== 'number' || isNaN(chapter.id)) {
+          console.error('Invalid chapter or chapter ID:', chapter)
+          return false
+        }
         await processVideo(chapter.id)
         return true
       } catch (error) {

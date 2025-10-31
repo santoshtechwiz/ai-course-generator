@@ -10,7 +10,7 @@ import PopularCourses from "@/app/dashboard/course/components/PopularCourses"
 import QuizCourseWrapper from "../(quiz)/components/QuizCourseWrapper"
 
 import NavigationDebugger from "@/components/debug/NavigationDebugger"
-import { JsonLD } from "@/lib/seo"
+import { JsonLD, SchemaScript } from "@/lib/seo"
 import { generateMetadata } from "@/lib/seo"
 
 export const dynamic = "force-dynamic"
@@ -105,8 +105,8 @@ const Page = async ({
     <div className="min-h-screen bg-background">
   <div className="w-full px-0 py-6 space-y-6">
         {process.env.NODE_ENV === "development" && <NavigationDebugger />}
-        <JsonLD type="CreativeWork" data={creativeWorkSchema} />
-        <JsonLD type="BreadcrumbList" data={breadcrumbSchema} />
+        <SchemaScript schema={creativeWorkSchema} />
+        <SchemaScript schema={breadcrumbSchema} />
 
         {/* Compact Random Quote */}
         <RandomQuote />

@@ -145,19 +145,10 @@ export class TokenManager {
    * Create authenticated provider instance
    */
   private async createAuthenticatedProvider(providerType: string, token: SecureToken): Promise<AIProvider> {
-    const { getAIProvider } = await import('../providers/provider-factory')
+    const { AIProviderFactory } = await import('../providers/provider-factory')
 
-    // Create provider with token
-    const provider = getAIProvider()
-
-    // Set authentication (this would be provider-specific)
-    if (providerType === 'openai') {
-      // OpenAI provider authentication
-      ;(provider as any).setApiKey(token.key)
-    } else if (providerType === 'google') {
-      // Google AI provider authentication
-      ;(provider as any).setApiKey(token.key)
-    }
+    // Create provider with token passed to constructor
+    const provider = AIProviderFactory.createProvider(providerType as any, token.key)
 
     return provider
   }

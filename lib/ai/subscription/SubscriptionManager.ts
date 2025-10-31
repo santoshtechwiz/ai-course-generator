@@ -11,6 +11,7 @@ import { creditService, CreditOperationType } from '@/services/credit-service'
 import { getPlanLimits, getRateLimits } from '@/config/ai.config'
 import { logger } from '@/lib/logger'
 import { prisma } from '@/lib/db'
+import type { FeatureFlagName } from '@/lib/featureFlags/types'
 
 export class SubscriptionManager {
   /**
@@ -117,6 +118,8 @@ export class SubscriptionManager {
         'quiz-openended': planConfig.openEndedQuestions,
         'quiz-code': planConfig.codeQuiz,
         'quiz-video': planConfig.videoQuiz,
+        'quiz-flashcard': true, // Flashcards available for all plans
+        'quiz-ordering': true, // Ordering quiz available for all plans
         'course-creation': planConfig.courseCreation,
         'content-creation': planConfig.contentCreation,
       }
@@ -266,9 +269,23 @@ export class SubscriptionManager {
   }
 
   /**
+   * Map subscription plan to tier
+   */
+  private mapPlanToTier(plan: SubscriptionPlanType): SubscriptionTier {
+    const tierMap: Record<SubscriptionPlanType, SubscriptionTier> = {
+      'FREE': 'free',
+      'BASIC': 'basic',
+      'PREMIUM': 'premium',
+      'ENTERPRISE': 'enterprise'
+    }
+
+    return tierMap[plan] || 'free'
+  }
+
+  /**
    * Check if a specific feature flag is enabled for a plan
    */
-  isFeatureEnabledForPlan(plan: SubscriptionPlanType, featureFlag: string): boolean {
+  isFeatureEnabledForPlan(plan: SubscriptionPlanType, featureFlag: FeatureFlagName): boolean {
     const planConfig = PLAN_CONFIGURATIONS[plan]
     return planConfig.featureFlags[featureFlag] || false
   }

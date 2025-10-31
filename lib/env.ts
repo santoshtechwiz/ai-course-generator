@@ -199,6 +199,21 @@ function getDevelopmentDefaults() {
     FEATURE_FLAG_CACHE_ENABLED: true,
     FEATURE_FLAG_DEBUG_MODE: false,
     FEATURE_FLAG_ANALYTICS: true,
+
+    // Monitoring defaults
+    METRICS_ENABLED: true,
+    TRACING_ENABLED: true,
+
+    // Security defaults
+    RATE_LIMIT_WINDOW_MS: 60000,
+    RATE_LIMIT_MAX_REQUESTS: 100,
+    SECURITY_HEADERS_ENABLED: true,
+
+    // Performance defaults
+    CACHE_TTL: 300,
+    CACHE_MAX_KEYS: 1000,
+    QUERY_LOGGING_ENABLED: false,
+    SLOW_QUERY_THRESHOLD: 1000,
   }
 }
 

@@ -56,7 +56,7 @@ export class PremiumAIServiceV2 extends AIServiceV2 {
     difficulty?: 'easy' | 'medium' | 'hard'
   }): Promise<AIServiceResult> {
     return this.executeWithContext(
-      'generateMultipleChoiceQuiz',
+      'quiz-mcq',
       params,
       this.getCreditCost('quiz-mcq')
     )
@@ -71,7 +71,7 @@ export class PremiumAIServiceV2 extends AIServiceV2 {
     difficulty?: 'easy' | 'medium' | 'hard'
   }): Promise<AIServiceResult> {
     return this.executeWithContext(
-      'generateFillInTheBlanksQuiz',
+      'quiz-blanks',
       params,
       this.getCreditCost('quiz-blanks')
     )
@@ -86,7 +86,7 @@ export class PremiumAIServiceV2 extends AIServiceV2 {
     difficulty?: 'easy' | 'medium' | 'hard'
   }): Promise<AIServiceResult> {
     return this.executeWithContext(
-      'generateOpenEndedQuestionsQuiz',
+      'quiz-openended',
       params,
       this.getCreditCost('quiz-openended')
     )
@@ -102,7 +102,7 @@ export class PremiumAIServiceV2 extends AIServiceV2 {
     difficulty?: 'easy' | 'medium' | 'hard'
   }): Promise<AIServiceResult> {
     return this.executeWithContext(
-      'generateCodeQuiz',
+      'quiz-code',
       params,
       this.getCreditCost('quiz-code')
     )
@@ -116,7 +116,7 @@ export class PremiumAIServiceV2 extends AIServiceV2 {
     count?: number
   }): Promise<AIServiceResult> {
     return this.executeWithContext(
-      'generateFlashcards',
+      'quiz-flashcard',
       params,
       this.getCreditCost('quiz-flashcard')
     )
@@ -131,7 +131,7 @@ export class PremiumAIServiceV2 extends AIServiceV2 {
     numberOfQuestions?: number
   }): Promise<AIServiceResult> {
     return this.executeWithContext(
-      'generateOrderingQuiz',
+      'quiz-ordering',
       params,
       this.getCreditCost('quiz-ordering')
     )
