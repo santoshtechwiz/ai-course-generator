@@ -232,7 +232,7 @@ export function MainNavbar() {
               <div className="container mx-auto px-4 py-2 flex items-center justify-center gap-2 text-white">
                 <Sparkles className="h-4 w-4 animate-pulse" />
                 <span className="text-xs sm:text-sm font-black uppercase tracking-wide">
-                  Sign up now and get <span className="text-[var(--color-warning)]">100 FREE credits</span>!
+                  Sign up now and get <span className="text-[var(--color-warning)]">5 credits</span>!
                 </span>
                 <TrendingUp className="h-4 w-4" />
               </div>
