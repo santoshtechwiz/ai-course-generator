@@ -22,6 +22,14 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({ chapterId, name, isAdmi
   const { canAccess: hasSummaryAccess } = useFeatureAccess("course-videos")
   const { isAuthenticated } = useAuth()
 
+  // 🚀 Trigger summary generation when component mounts and no summary exists
+  useEffect(() => {
+    if (!existingSummary && hasSummaryAccess && isAuthenticated && !isLoading) {
+      console.log("Triggering lazy summary generation for chapter:", normalizedChapterId)
+      refetch()
+    }
+  }, [existingSummary, hasSummaryAccess, isAuthenticated, refetch, isLoading, normalizedChapterId])
+
   useEffect(() => {
     if (summaryResponse && typeof summaryResponse === "object" && "data" in summaryResponse) {
       setSummary(summaryResponse.data as string)

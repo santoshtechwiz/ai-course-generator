@@ -432,6 +432,7 @@ export default function CourseDetailsTabs({
                     }}
                     isPublicCourse={course.isPublic || false}
                     chapterId={currentChapter.id.toString()}
+                    existingQuiz={currentChapter.questions || null}
                   />
                 </div>
               </GlassDoorLock>
