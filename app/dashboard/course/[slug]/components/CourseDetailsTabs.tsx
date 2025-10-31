@@ -231,6 +231,9 @@ export default function CourseDetailsTabs({
     limit: 5,
   })
 
+  const [notesSearchQuery, setNotesSearchQuery] = useState("")
+  const [notesFilter, setNotesFilter] = useState<"all" | "recent" | "chapter">("all")
+
   // Filtered and searched notes
   const filteredNotes = useMemo(() => {
     let filtered = notes
@@ -327,9 +330,6 @@ export default function CourseDetailsTabs({
       lastActivityDate: externalCourseProgress?.updatedAt || courseProgress?.lastActivityDate || null,
     }
   }, [course.courseUnits, courseProgress, externalCourseProgress, completedChapters.length, bookmarks.length])
-
-  const [notesSearchQuery, setNotesSearchQuery] = useState("")
-  const [notesFilter, setNotesFilter] = useState<"all" | "recent" | "chapter">("all")
 
   const formatTime = useCallback((seconds: number): string => {
     if (isNaN(seconds)) return "0:00"
