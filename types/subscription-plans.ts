@@ -29,7 +29,7 @@ export const PLAN_CONFIGURATIONS = {
     fillInBlanks: false,
     openEndedQuestions: false,
     codeQuiz: false,
-    videoQuiz: false,
+    videoQuiz: true,
     videoTranscripts: false,
     prioritySupport: false,
     aiAccuracy: 'standard',
@@ -74,6 +74,7 @@ export const PLAN_CONFIGURATIONS = {
       'quiz-code': false,
       'quiz-flashcard': true,
       'quiz-ordering': true,
+      'quiz-video': true,
       'middleware-caching': true,
       'performance-monitoring': true,
       'subscription-enforcement': false,
@@ -151,6 +152,7 @@ export const PLAN_CONFIGURATIONS = {
       'quiz-code': false,
       'quiz-flashcard': true,
       'quiz-ordering': true,
+      'quiz-video': true,
       'middleware-caching': true,
       'performance-monitoring': true,
       'subscription-enforcement': true,
@@ -247,6 +249,7 @@ export const PLAN_CONFIGURATIONS = {
       'advancedAI': true,
       'prioritySupport': true,
       'customModels': false,
+      'quiz-video': true,
       'analytics-basic': true
     }
   },

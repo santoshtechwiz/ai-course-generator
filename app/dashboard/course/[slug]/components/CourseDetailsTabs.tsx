@@ -4,7 +4,6 @@ import { useState, useCallback, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { createSelector } from "@reduxjs/toolkit"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import neo from "@/components/neo/tokens"
 import { Button } from "@/components/ui/button"
 import {
   FileText,
@@ -18,8 +17,10 @@ import {
   PlayCircle,
   StickyNote,
   LucideIcon,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { motion, AnimatePresence } from "framer-motion"
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import type { RootState } from "@/store"
@@ -27,11 +28,17 @@ import { removeBookmark, type BookmarkItem, type CourseProgress } from "@/store/
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 
 // Lazy load heavy components for better performance
-const CourseDetailsQuiz = dynamic(() => import("./CourseQuiz"), { ssr: false })
-const CourseAISummary = dynamic(() => import("./CourseSummary"), { ssr: false })
+const CourseDetailsQuiz = dynamic(() => import("./CourseQuiz"), { 
+  ssr: false,
+  loading: () => <SkeletonLoader />
+})
+const CourseAISummary = dynamic(() => import("./CourseSummary"), { 
+  ssr: false,
+  loading: () => <SkeletonLoader />
+})
 const CertificateGenerator = dynamic(() => import("./CertificateGenerator"), { ssr: false })
+
 import { PDFDownloadLink } from "@react-pdf/renderer"
-// Reduced framer-motion usage for performance; prefer CSS transitions for simple UI transitions
 import { useAuth } from "@/modules/auth"
 import { useNotes } from "@/hooks/use-notes"
 import { useBookmarks } from "@/hooks/use-bookmarks"
@@ -40,55 +47,124 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess"
 import { useUnifiedSubscription } from "@/hooks/useUnifiedSubscription"
 import BookmarksPanel from "./BookmarksPanel"
 import NotesPanel from "./NotesPanel"
-const tabBaseClasses = "flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm font-black uppercase h-14 md:h-16 border border-transparent px-3 md:px-4 transition-all";
-const tabActiveClasses = "bg-neo-border text-neo-background border-neo-border shadow-[4px_4px_0px_0px_var(--neo-border)]";
-// ✨ Skeleton loader component for smooth tab transitions
-const TabSkeleton = () => (
-  <div className="space-y-6 p-4 animate-pulse">
-    <div className="space-y-3">
-      <div className="h-6 bg-muted rounded-none w-1/3"></div>
-      <div className="h-4 bg-muted rounded w-2/3"></div>
+
+// ✨ Improved skeleton loader with brutal theme
+const SkeletonLoader = () => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.2 }}
+    className="space-y-4 p-6 bg-[var(--color-bg)]"
+  >
+    {/* Header skeleton */}
+    <motion.div
+      className="space-y-2"
+      animate={{ opacity: [0.5, 1, 0.5] }}
+      transition={{ duration: 2, repeat: Infinity }}
+    >
+      <div className="h-8 w-1/3 bg-[var(--color-muted)] border-2 border-[var(--color-border)] rounded-none shadow-[2px_2px_0_var(--shadow-color)]" />
+      <div className="h-4 w-2/3 bg-[var(--color-muted)] border-2 border-[var(--color-border)] rounded-none" />
+    </motion.div>
+
+    {/* Content skeleton */}
+    <motion.div
+      className="space-y-3"
+      animate={{ opacity: [0.5, 1, 0.5] }}
+      transition={{ duration: 2, repeat: Infinity, delay: 0.1 }}
+    >
+      <div className="h-32 bg-[var(--color-muted)] border-3 border-[var(--color-border)] rounded-none shadow-[3px_3px_0_var(--shadow-color)]" />
+      <div className="h-20 bg-[var(--color-muted)] border-2 border-[var(--color-border)] rounded-none" />
+      <div className="h-20 bg-[var(--color-muted)] border-2 border-[var(--color-border)] rounded-none" />
+    </motion.div>
+
+    {/* Text skeleton */}
+    <motion.div
+      className="space-y-2"
+      animate={{ opacity: [0.5, 1, 0.5] }}
+      transition={{ duration: 2, repeat: Infinity, delay: 0.2 }}
+    >
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div
+          key={i}
+          className={cn(
+            "h-4 bg-[var(--color-muted)] border border-[var(--color-border)] rounded-none",
+            i === 2 && "w-4/5"
+          )}
+        />
+      ))}
+    </motion.div>
+  </motion.div>
+)
+
+// ✨ Empty state component with brutal design
+const EmptyTabMessage = ({ 
+  icon: Icon, 
+  title, 
+  message 
+}: { 
+  icon: LucideIcon
+  title: string
+  message: string 
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3 }}
+    className="h-full flex items-center justify-center p-8"
+  >
+    <div className="text-center space-y-6 max-w-md">
+      <motion.div
+        className={cn(
+          "w-24 h-24 bg-[var(--color-muted)] border-4 border-[var(--color-border)]",
+          "flex items-center justify-center mx-auto rounded-none",
+          "shadow-[4px_4px_0_var(--shadow-color)]"
+        )}
+        whileHover={{ scale: 1.05 }}
+        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+      >
+        <Icon className="h-12 w-12 text-[var(--color-muted-text)]" />
+      </motion.div>
+
+      <div className="space-y-2">
+        <h3 className="text-xl font-black uppercase tracking-wider text-[var(--color-text)]">
+          {title}
+        </h3>
+        <p className="text-sm font-bold text-[var(--color-muted-text)]">
+          {message}
+        </p>
+      </div>
     </div>
-    <div className="space-y-3">
-      <div className="h-32 bg-muted rounded-none"></div>
-      <div className="h-24 bg-muted rounded-none"></div>
-    </div>
-    <div className="space-y-2">
-      <div className="h-4 bg-muted rounded w-full"></div>
-      <div className="h-4 bg-muted rounded w-5/6"></div>
-      <div className="h-4 bg-muted rounded w-4/6"></div>
-    </div>
-  </div>
+  </motion.div>
 )
 
 interface CourseDetailsTabsProps {
   course: FullCourseType
   currentChapter?: FullChapterType
   onSeekToBookmark?: (time: number, title?: string) => void
-  completedChapters?: string[] // Add completed chapters prop
-  courseProgress?: any // Add course progress data
+  completedChapters?: string[]
+  courseProgress?: any
 }
 
 export default function CourseDetailsTabs({
   course,
   currentChapter,
   onSeekToBookmark,
-  completedChapters = [], // Default to empty array
-  courseProgress: externalCourseProgress, // Rename to avoid conflict
+  completedChapters = [],
+  courseProgress: externalCourseProgress,
 }: CourseDetailsTabsProps) {
   const dispatch = useAppDispatch()
   const [activeTab, setActiveTab] = useState("summary")
-  const [isTabLoading, setIsTabLoading] = useState(false) // ✨ Loading state for smooth transitions
-  const [notesSearchQuery, setNotesSearchQuery] = useState("")
-  const [notesFilter, setNotesFilter] = useState<"all" | "recent" | "chapter">("all")
+  const [isTabTransitioning, setIsTabTransitioning] = useState(false)
 
-  // ✨ Handle tab change with loading transition
+  // ✨ Smooth tab transitions
   const handleTabChange = (value: string) => {
-    if (value === activeTab) return // Don't reload same tab
-    setIsTabLoading(true)
-    setActiveTab(value)
-    // Short delay for smooth skeleton transition
-    setTimeout(() => setIsTabLoading(false), 200)
+    if (value === activeTab) return
+    setIsTabTransitioning(true)
+    setTimeout(() => {
+      setActiveTab(value)
+      setIsTabTransitioning(false)
+    }, 150)
   }
 
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
@@ -98,37 +174,31 @@ export default function CourseDetailsTabs({
   const isAdmin = Boolean(user?.isAdmin)
   const isAuthenticated = Boolean(user)
 
-  // Feature access for Summary and Quiz tabs
+  // Feature access for tabs
   const summaryAccess = useFeatureAccess("course-videos")
   const quizAccess = useFeatureAccess("quiz-access")
 
-  // Determine if user can access tabs (owners and admins bypass restrictions)
   const canAccessSummary = isOwner || isAdmin || summaryAccess.canAccess
   const canAccessQuiz = isOwner || isAdmin || quizAccess.canAccess
 
-  // Debug logging
   if (process.env.NODE_ENV === "development") {
     console.log("[CourseDetailsTabs] Feature Access:", {
       plan,
       isOwner,
       isAdmin,
       isSubscribed,
-      summaryAccess: { canAccess: summaryAccess.canAccess, reason: summaryAccess.reason },
-      quizAccess: { canAccess: quizAccess.canAccess, reason: quizAccess.reason },
       canAccessSummary,
       canAccessQuiz,
     })
   }
 
-  // Memoized selectors to prevent unnecessary re-renders
+  // Memoized selectors
   const selectBookmarks = useMemo(
     () =>
       createSelector(
         [(state: RootState) => state.course.bookmarks, (state: RootState) => currentVideoId],
         (bookmarks: Record<string, BookmarkItem[]>, videoId: string | null): BookmarkItem[] => {
-          if (!videoId || !bookmarks[videoId]) {
-            return []
-          }
+          if (!videoId || !bookmarks[videoId]) return []
           return bookmarks[videoId]
         },
       ),
@@ -137,7 +207,6 @@ export default function CourseDetailsTabs({
 
   const bookmarks = useAppSelector(selectBookmarks)
 
-  // Enhanced selector for course progress
   const selectCourseProgress = useMemo(
     () =>
       createSelector(
@@ -155,18 +224,17 @@ export default function CourseDetailsTabs({
 
   const courseProgress = useAppSelector(selectCourseProgress)
 
-  // Notes and bookmarks hooks
+  // Notes and bookmarks
   const { notes, deleteNote } = useNotes({
     courseId: course.id,
     chapterId: currentChapter?.id,
-    limit: 5, // Limit to 5 notes
+    limit: 5,
   })
 
   // Filtered and searched notes
   const filteredNotes = useMemo(() => {
     let filtered = notes
 
-    // Apply search filter
     if (notesSearchQuery.trim()) {
       const query = notesSearchQuery.toLowerCase()
       filtered = filtered.filter(
@@ -174,24 +242,19 @@ export default function CourseDetailsTabs({
       )
     }
 
-    // Apply category filter
     switch (notesFilter) {
       case "recent":
-        // Show notes from last 7 days
         const sevenDaysAgo = new Date()
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
         filtered = filtered.filter((note: any) => new Date(note.createdAt) > sevenDaysAgo)
         break
       case "chapter":
-        // Show only current chapter notes
         filtered = filtered.filter((note: any) => note.chapterId === currentChapter?.id)
         break
       default:
-        // Show all notes
         break
     }
 
-    // Sort by creation date (newest first)
     return filtered.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }, [notes, notesSearchQuery, notesFilter, currentChapter?.id])
 
@@ -199,28 +262,25 @@ export default function CourseDetailsTabs({
     courseId: course.id,
     chapterId: currentChapter?.id,
   })
-  // Enhanced course statistics calculation - use external data if available
+
+  // Course statistics
   const courseStats = useMemo(() => {
     const totalChapters = course.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0) || 0
-    // Use external completed chapters data if available, otherwise fall back to redux
     const completedCount =
       completedChapters.length > 0 ? completedChapters.length : courseProgress?.completedChapters?.length || 0
     const progressPercentage = totalChapters > 0 ? Math.round((completedCount / totalChapters) * 100) : 0
 
-    // Calculate actual total duration from chapter data
     const totalDuration =
       course.courseUnits?.reduce((acc, unit) => {
         return (
           acc +
           unit.chapters.reduce((chapterAcc, chapter) => {
-            // Use duration if available, otherwise fallback to default of 15 minutes
             const chapterDuration = typeof chapter.duration === "number" ? chapter.duration : 15
             return chapterAcc + chapterDuration
           }, 0)
         )
       }, 0) || totalChapters * 15
 
-    // Calculate completed duration based on actual completed chapters
     const completedDuration =
       course.courseUnits?.reduce((acc, unit) => {
         return (
@@ -237,11 +297,9 @@ export default function CourseDetailsTabs({
       }, 0) || 0
 
     const remainingChapters = totalChapters - completedCount
-    // Estimate remaining time based on average chapter duration
     const avgChapterDuration = totalDuration / totalChapters
     const estimatedTimeLeft = remainingChapters * avgChapterDuration
 
-    // Fix learning streak calculation - use proper field
     const learningStreak = courseProgress?.learningStreak || externalCourseProgress?.learningStreak || 0
 
     let skillLevel = "Beginner"
@@ -269,6 +327,9 @@ export default function CourseDetailsTabs({
       lastActivityDate: externalCourseProgress?.updatedAt || courseProgress?.lastActivityDate || null,
     }
   }, [course.courseUnits, courseProgress, externalCourseProgress, completedChapters.length, bookmarks.length])
+
+  const [notesSearchQuery, setNotesSearchQuery] = useState("")
+  const [notesFilter, setNotesFilter] = useState<"all" | "recent" | "chapter">("all")
 
   const formatTime = useCallback((seconds: number): string => {
     if (isNaN(seconds)) return "0:00"
@@ -306,30 +367,32 @@ export default function CourseDetailsTabs({
   )
 
   const getSkillLevelStyling = (level: string) => {
+    const baseClasses = "border-2 border-[var(--color-border)] font-black rounded-none px-3 py-1 uppercase text-xs shadow-[2px_2px_0_var(--shadow-color)]"
+    
     switch (level) {
       case "Expert":
         return {
-          badge: "bg-[var(--color-success)] text-[var(--color-bg)] border border-[var(--color-border)] shadow-[6px_6px_0px_0px_var(--color-border)]",
+          badge: cn(baseClasses, "bg-[var(--color-success)] text-[var(--color-bg)]"),
           icon: Star,
         }
       case "Advanced":
         return {
-          badge: "bg-[var(--color-primary)] text-[var(--color-bg)] border border-[var(--color-border)] shadow-[6px_6px_0px_0px_var(--color-border)]",
+          badge: cn(baseClasses, "bg-[var(--color-primary)] text-[var(--color-bg)]"),
           icon: Trophy,
         }
       case "Intermediate":
         return {
-          badge: "bg-[var(--color-warning)] text-[var(--color-bg)] border border-[var(--color-border)] shadow-[6px_6px_0px_0px_var(--color-border)]",
+          badge: cn(baseClasses, "bg-[var(--color-warning)] text-[var(--color-bg)]"),
           icon: Target,
         }
       case "Novice":
         return {
-          badge: "bg-[var(--color-accent)] text-[var(--color-bg)] border border-[var(--color-border)] shadow-[6px_6px_0px_0px_var(--color-border)]",
+          badge: cn(baseClasses, "bg-[var(--color-accent)] text-[var(--color-bg)]"),
           icon: Zap,
         }
       default:
         return {
-          badge: "bg-[var(--color-muted)] text-[var(--color-text)] border border-[var(--color-border)] shadow-[6px_6px_0px_0px_var(--color-border)]",
+          badge: cn(baseClasses, "bg-[var(--color-muted)] text-[var(--color-text)]"),
           icon: PlayCircle,
         }
     }
@@ -338,6 +401,7 @@ export default function CourseDetailsTabs({
   function CertificateButton({ courseTitle }: { courseTitle: string }) {
     const safeCourse = courseTitle?.trim() || "Course"
     const fileName = `${safeCourse.replace(/\s+/g, "_")}_Certificate.pdf`
+    
     return (
       <PDFDownloadLink
         document={<CertificateGenerator courseName={safeCourse} userName={undefined} />}
@@ -345,22 +409,36 @@ export default function CourseDetailsTabs({
         className="w-full"
       >
         {({ loading }) => (
-          <Button
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg transition-all duration-200"
+          <motion.div
+            whileHover={{ scale: loading ? 1 : 1.02 }}
+            whileTap={{ scale: loading ? 1 : 0.98 }}
           >
-            {loading ? (
-              <>
-                <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2 inline-block animate-spin" />
-                Preparing...
-              </>
-            ) : (
-              <>
-                <Award className="h-4 w-4 mr-2" />
-                Download Certificate
-              </>
-            )}
-          </Button>
+            <Button
+              disabled={loading}
+              className={cn(
+                "w-full font-black uppercase tracking-wider rounded-none",
+                "border-3 border-[var(--color-border)]",
+                "bg-[var(--color-primary)] text-[var(--color-text)]",
+                "shadow-[3px_3px_0_var(--shadow-color)]",
+                "hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0_var(--shadow-color)]",
+                "active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_var(--shadow-color)]",
+                "transition-all duration-150",
+                "disabled:opacity-50 disabled:cursor-not-allowed"
+              )}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Preparing...
+                </>
+              ) : (
+                <>
+                  <Award className="h-4 w-4 mr-2" />
+                  Download Certificate
+                </>
+              )}
+            </Button>
+          </motion.div>
         )}
       </PDFDownloadLink>
     )
@@ -368,122 +446,196 @@ export default function CourseDetailsTabs({
 
   return (
     <div className="h-full w-full flex flex-col">
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full w-full flex flex-col">
+      <Tabs 
+        value={activeTab} 
+        onValueChange={handleTabChange} 
+        className="h-full w-full flex flex-col"
+      >
+        {/* Tabs List */}
         <TabsList className={cn(
-          "grid w-full grid-cols-4 h-auto bg-neo-background p-2 gap-3 shadow-[4px_4px_0px_0px_var(--neo-border)] overflow-visible backdrop-blur-sm",
-          neo.inner
+          "grid w-full grid-cols-2 sm:grid-cols-4 h-auto bg-[var(--color-bg)]",
+          "p-2 gap-2 sm:gap-3 shadow-[2px_2px_0_var(--shadow-color)]",
+          "border-b-4 border-[var(--color-border)] rounded-none"
         )}>
           {[
             { value: "summary", icon: FileText, label: "Summary" },
             { value: "quiz", icon: MessageSquare, label: "Quiz" },
             { value: "notes", icon: StickyNote, label: "Notes" },
             { value: "bookmarks", icon: BookmarkIcon, label: "Bookmarks" },
-          ].map((tab) => (
-            <TabsTrigger
-              key={tab.value}
-              value={tab.value}
-              className={({ state }) =>
-                cn(tabBaseClasses, state === "active" && tabActiveClasses, "hover:border-neo-border")
-              }
-            >
-              <tab.icon className="h-5 w-5 md:h-6 md:w-6" />
-              <span className="tracking-tight">{tab.label}</span>
-            </TabsTrigger>
-          ))}
+          ].map((tab) => {
+            const isActive = activeTab === tab.value
+            const Icon = tab.icon
+            
+            return (
+              <motion.div key={tab.value} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <TabsTrigger
+                  value={tab.value}
+                  className={cn(
+                    "flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2",
+                    "px-2 sm:px-4 py-3 text-xs sm:text-sm font-black uppercase",
+                    "h-auto rounded-none border-2 transition-all duration-150",
+                    "tracking-wide",
+                    isActive
+                      ? "bg-[var(--color-primary)] text-[var(--color-bg)] border-[var(--color-border)] shadow-[3px_3px_0_var(--shadow-color)]"
+                      : "border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] hover:bg-[var(--color-muted)] hover:shadow-[2px_2px_0_var(--shadow-color)]"
+                  )}
+                >
+                  <Icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                  <span className="hidden xs:inline">{tab.label}</span>
+                </TabsTrigger>
+              </motion.div>
+            )
+          })}
         </TabsList>
 
-        <TabsContent value="summary" className="flex-1 overflow-auto w-full p-0 mt-6">
-          {isTabLoading ? (
-            <div className="transition-opacity duration-150">
-              <TabSkeleton />
-            </div>
-          ) : currentChapter ? (
-            <GlassDoorLock
-              isLocked={!canAccessSummary}
-              previewRatio={0.2}
-              reason={!user ? "Sign in to continue learning" : "Upgrade your plan to unlock this content"}
-              className="p-0"
-              blurIntensity={canAccessSummary ? "light" : "medium"}
+        {/* Tab Contents */}
+        <AnimatePresence mode="wait">
+          {/* Summary Tab */}
+          <TabsContent 
+            key="summary"
+            value="summary" 
+            className="flex-1 overflow-auto w-full p-0 mt-4 sm:mt-6"
+            forceMount={activeTab === "summary"}
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: isTabTransitioning ? 0 : 1 }}
+              transition={{ duration: 0.15 }}
+              className="h-full"
             >
-              <div className={`p-6 bg-neo-background shadow-[4px_4px_0px_0px_var(--neo-border)] ${neo.inner}`}>
-                <CourseAISummary
-                  chapterId={currentChapter.id}
-                  name={currentChapter.title || currentChapter.name || "Chapter Summary"}
-                  existingSummary={currentChapter.summary || null}
-                  isAdmin={isAdmin}
+              {isTabTransitioning ? (
+                <SkeletonLoader />
+              ) : currentChapter ? (
+                <GlassDoorLock
+                  isLocked={!canAccessSummary}
+                  previewRatio={0.2}
+                  reason={!user ? "Sign in to continue learning" : "Upgrade your plan to unlock this content"}
+                  className="p-0"
+                  blurIntensity={canAccessSummary ? "light" : "medium"}
+                >
+                  <div className={cn(
+                    "p-4 sm:p-6 bg-[var(--color-bg)]",
+                    "border-3 border-[var(--color-border)] rounded-none",
+                    "shadow-[3px_3px_0_var(--shadow-color)]"
+                  )}>
+                    <CourseAISummary
+                      chapterId={currentChapter.id}
+                      name={currentChapter.title || currentChapter.name || "Chapter Summary"}
+                      existingSummary={currentChapter.summary || null}
+                      isAdmin={isAdmin}
+                    />
+                  </div>
+                </GlassDoorLock>
+              ) : (
+                <EmptyTabMessage 
+                  icon={FileText} 
+                  title="No Chapter Selected" 
+                  message="Select a chapter from the playlist to view AI-generated summary and insights" 
                 />
-              </div>
-            </GlassDoorLock>
-          ) : (
-            <EmptyTabMessage icon={FileText} title="No Chapter Selected" message="Select a chapter from the playlist to view AI-generated summary and insights" />
-          )}
-        </TabsContent>
+              )}
+            </motion.div>
+          </TabsContent>
 
-        <TabsContent value="quiz" className="flex-1 overflow-auto w-full p-0 mt-6">
-          {currentChapter ? (
-            <GlassDoorLock
-              isLocked={!canAccessQuiz}
-              reason={!user ? "Sign in to continue learning" : "Upgrade your plan to unlock this content"}
-              className="p-0"
-              blurIntensity={canAccessQuiz ? "light" : "medium"}
+          {/* Quiz Tab */}
+          <TabsContent 
+            key="quiz"
+            value="quiz" 
+            className="flex-1 overflow-auto w-full p-0 mt-4 sm:mt-6"
+            forceMount={activeTab === "quiz"}
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: isTabTransitioning ? 0 : 1 }}
+              transition={{ duration: 0.15 }}
+              className="h-full"
             >
-              <div className={`p-6 bg-neo-background shadow-[4px_4px_0px_0px_var(--neo-border)] ${neo.inner}`}>
-                <CourseDetailsQuiz
-                  key={currentChapter.id}
-                  course={course}
-                  chapter={currentChapter}
-                  accessLevels={{
-                    isAuthenticated,
-                    isSubscribed: Boolean(isSubscribed || (currentChapter as any)?.isFreeQuiz),
-                    isAdmin,
-                  }}
-                  isPublicCourse={course.isPublic || false}
-                  chapterId={currentChapter.id.toString()}
+              {isTabTransitioning ? (
+                <SkeletonLoader />
+              ) : currentChapter ? (
+                <GlassDoorLock
+                  isLocked={!canAccessQuiz}
+                  reason={!user ? "Sign in to continue learning" : "Upgrade your plan to unlock this content"}
+                  className="p-0"
+                  blurIntensity={canAccessQuiz ? "light" : "medium"}
+                >
+                  <div className={cn(
+                    "p-4 sm:p-6 bg-[var(--color-bg)]",
+                    "border-3 border-[var(--color-border)] rounded-none",
+                    "shadow-[3px_3px_0_var(--shadow-color)]"
+                  )}>
+                    <CourseDetailsQuiz
+                      key={currentChapter.id}
+                      course={course}
+                      chapter={currentChapter}
+                      accessLevels={{
+                        isAuthenticated,
+                        isSubscribed: Boolean(isSubscribed || (currentChapter as any)?.isFreeQuiz),
+                        isAdmin,
+                      }}
+                      isPublicCourse={course.isPublic || false}
+                      chapterId={currentChapter.id.toString()}
+                    />
+                  </div>
+                </GlassDoorLock>
+              ) : (
+                <EmptyTabMessage 
+                  icon={MessageSquare} 
+                  title="No Chapter Selected" 
+                  message="Select a chapter from the playlist to take interactive quizzes and test your knowledge" 
                 />
-              </div>
-            </GlassDoorLock>
-          ) : (
-            <EmptyTabMessage icon={MessageSquare} title="No Chapter Selected" message="Select a chapter from the playlist to take interactive quizzes and test your knowledge" />
-          )}
-        </TabsContent>
+              )}
+            </motion.div>
+          </TabsContent>
 
-        <TabsContent value="bookmarks" className="flex-1 overflow-auto w-full p-0 mt-6">
-          <BookmarksPanel
-            bookmarks={bookmarks}
-            isAuthenticated={isAuthenticated}
-            handleSeekToBookmark={handleSeekToBookmark}
-            handleRemoveBookmark={handleRemoveBookmark}
-            formatTime={formatTime}
-          />
-        </TabsContent>
+          {/* Bookmarks Tab */}
+          <TabsContent 
+            key="bookmarks"
+            value="bookmarks" 
+            className="flex-1 overflow-auto w-full p-0 mt-4 sm:mt-6"
+            forceMount={activeTab === "bookmarks"}
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: isTabTransitioning ? 0 : 1 }}
+              transition={{ duration: 0.15 }}
+            >
+              <BookmarksPanel
+                bookmarks={bookmarks}
+                isAuthenticated={isAuthenticated}
+                handleSeekToBookmark={handleSeekToBookmark}
+                handleRemoveBookmark={handleRemoveBookmark}
+                formatTime={formatTime}
+              />
+            </motion.div>
+          </TabsContent>
 
-        <TabsContent value="notes" className="flex-1 overflow-auto w-full p-0 mt-6">
-          <NotesPanel
-            filteredNotes={filteredNotes}
-            isAuthenticated={isAuthenticated}
-            notesSearchQuery={notesSearchQuery}
-            setNotesSearchQuery={setNotesSearchQuery}
-            notesFilter={notesFilter}
-            setNotesFilter={setNotesFilter}
-            deleteNote={deleteNote}
-            courseId={course.id}
-            currentChapterId={currentChapter?.id}
-          />
-        </TabsContent>
+          {/* Notes Tab */}
+          <TabsContent 
+            key="notes"
+            value="notes" 
+            className="flex-1 overflow-auto w-full p-0 mt-4 sm:mt-6"
+            forceMount={activeTab === "notes"}
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: isTabTransitioning ? 0 : 1 }}
+              transition={{ duration: 0.15 }}
+            >
+              <NotesPanel
+                filteredNotes={filteredNotes}
+                isAuthenticated={isAuthenticated}
+                notesSearchQuery={notesSearchQuery}
+                setNotesSearchQuery={setNotesSearchQuery}
+                notesFilter={notesFilter}
+                setNotesFilter={setNotesFilter}
+                deleteNote={deleteNote}
+                courseId={course.id}
+                currentChapterId={currentChapter?.id}
+              />
+            </motion.div>
+          </TabsContent>
+        </AnimatePresence>
       </Tabs>
     </div>
   )
 }
-const EmptyTabMessage = ({ icon: Icon, title, message }: { icon: LucideIcon, title: string, message: string }) => (
-  <div className="h-full flex items-center justify-center text-muted-foreground p-8">
-    <div className="text-center space-y-4 transition-transform duration-200">
-      <div className={`w-24 h-24 bg-muted flex items-center justify-center mx-auto ${neo.inner}`}>
-        <Icon className="h-12 w-12 opacity-50" />
-      </div>
-      <div>
-        <h3 className="text-2xl font-black mb-3 uppercase">{title}</h3>
-        <p className="text-base text-muted-foreground font-bold">{message}</p>
-      </div>
-    </div>
-  </div>
-);

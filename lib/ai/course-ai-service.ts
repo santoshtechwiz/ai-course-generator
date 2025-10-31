@@ -5,10 +5,34 @@
  * This module can be safely imported anywhere without initialization issues.
  */
 
-import SubscriptionPlanType from '@/types/subscription-plans';
+/**
+ * CourseAI Service - Unified AI Service Interface
+ * Provides high-level functions for course and quiz generation
+ */
 
+import type { SubscriptionPlanType } from '@/types/subscription-plans'
 
-// Simple context type
+// ============================================================================
+// ENUMS & TYPES
+// ============================================================================
+
+/**
+ * AI Service Method Names - Provides compile-time safety and autocomplete
+ */
+export enum AIServiceMethod {
+  GENERATE_MULTIPLE_CHOICE_QUIZ = 'generateMultipleChoiceQuiz',
+  GENERATE_FLASHCARDS = 'generateFlashcards',
+  GENERATE_ORDERING_QUIZ = 'generateOrderingQuiz',
+  GENERATE_FILL_IN_THE_BLANKS_QUIZ = 'generateFillInTheBlanksQuiz',
+  GENERATE_OPEN_ENDED_QUESTIONS_QUIZ = 'generateOpenEndedQuestionsQuiz',
+  GENERATE_COURSE_CONTENT = 'generateCourseContent',
+  GENERATE_SUMMARY = 'generateSummary',
+  GENERATE_VIDEO_QUIZ = 'generateVideoQuiz',
+}
+
+/**
+ * Simple AI Context for basic operations
+ */
 interface SimpleAIContext {
   userId?: string
   subscriptionPlan: SubscriptionPlanType
@@ -22,9 +46,9 @@ interface SimpleAIContext {
  */
 async function executeAIService<T = any>(
   context: SimpleAIContext,
-  method: string,
+  method: AIServiceMethod,
   params: any
-): Promise<{ success: boolean; data?: T; error?: string }> {
+): Promise<{ success: boolean; data?: T; error?: string; errorCode?: string }> {
   try {
     // Dynamic import to avoid initialization issues
     const { AIServiceFactory } = await import('@/lib/ai/services/AIServiceFactory')
@@ -38,9 +62,37 @@ async function executeAIService<T = any>(
     const result = await service[method](params)
     
     if (!result.success) {
+      // Process error message for better user experience
+      let errorMessage = result.error || 'AI service failed'
+      let errorCode = result.errorCode || 'SERVICE_ERROR'
+      
+      if (result.error) {
+        const error = new Error(result.error)
+        if (error.message.toLowerCase().includes('rate limit')) {
+          errorMessage = 'Rate limit exceeded. Please try again later.'
+          errorCode = 'RATE_LIMIT'
+        } else if (error.message.toLowerCase().includes('quota')) {
+          errorMessage = 'API quota exceeded. Please upgrade your plan.'
+          errorCode = 'QUOTA_EXCEEDED'
+        } else if (error.message.toLowerCase().includes('network') || error.message.toLowerCase().includes('timeout')) {
+          errorMessage = 'Network error. Please check your connection and try again.'
+          errorCode = 'NETWORK_ERROR'
+        } else if (error.message.toLowerCase().includes('authentication') || error.message.toLowerCase().includes('unauthorized')) {
+          errorMessage = 'Authentication failed. Please log in again.'
+          errorCode = 'AUTH_ERROR'
+        } else if (error.message.toLowerCase().includes('subscription') || error.message.toLowerCase().includes('plan')) {
+          errorMessage = 'Subscription plan does not support this feature.'
+          errorCode = 'SUBSCRIPTION_ERROR'
+        } else if (error.message.toLowerCase().includes('access_denied') || error.message.toLowerCase().includes('feature flag')) {
+          errorMessage = 'This feature is currently unavailable. Please try again later or contact support.'
+          errorCode = 'FEATURE_UNAVAILABLE'
+        }
+      }
+      
       return {
         success: false,
-        error: result.error || 'AI service failed'
+        error: errorMessage,
+        errorCode
       }
     }
     
@@ -49,10 +101,40 @@ async function executeAIService<T = any>(
       data: result.data
     }
   } catch (error) {
-    console.error(`[SimpleAIService] Error executing ${method}:`, error)
+    console.error(`[executeAIService] Error executing ${method}:`, error)
+    
+    // Provide more specific error messages based on error type
+    let errorMessage = 'An error occurred while processing your request.'
+    let errorCode = 'UNKNOWN_ERROR'
+    
+    if (error instanceof Error) {
+      if (error.message.includes('rate limit')) {
+        errorMessage = 'Rate limit exceeded. Please try again later.'
+        errorCode = 'RATE_LIMIT'
+      } else if (error.message.includes('quota')) {
+        errorMessage = 'API quota exceeded. Please upgrade your plan.'
+        errorCode = 'QUOTA_EXCEEDED'
+      } else if (error.message.includes('network') || error.message.includes('timeout')) {
+        errorMessage = 'Network error. Please check your connection and try again.'
+        errorCode = 'NETWORK_ERROR'
+      } else if (error.message.includes('authentication') || error.message.includes('unauthorized')) {
+        errorMessage = 'Authentication failed. Please log in again.'
+        errorCode = 'AUTH_ERROR'
+      } else if (error.message.includes('subscription') || error.message.includes('plan')) {
+        errorMessage = 'Subscription plan does not support this feature.'
+        errorCode = 'SUBSCRIPTION_ERROR'
+      } else if (error.message.includes('access_denied') || error.message.includes('feature flag')) {
+        errorMessage = 'This feature is currently unavailable. Please try again later or contact support.'
+        errorCode = 'FEATURE_UNAVAILABLE'
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error)
+      error: errorMessage,
+      errorCode
     }
   }
 }
@@ -76,7 +158,7 @@ export async function generateMCQ(
     credits: credits || 0,
   }
   
-  const result = await executeAIService(context, 'generateMultipleChoiceQuiz', {
+  const result = await executeAIService(context, AIServiceMethod.GENERATE_MULTIPLE_CHOICE_QUIZ, {
     topic,
     numberOfQuestions,
     difficulty,
@@ -110,7 +192,7 @@ export async function generateFlashcards(
     credits: credits || 0,
   }
   
-  const result = await executeAIService(context, 'generateFlashcards', {
+  const result = await executeAIService(context, AIServiceMethod.GENERATE_FLASHCARDS, {
     topic,
     count,
   })
@@ -154,7 +236,7 @@ export async function generateOrderingQuiz(
     credits: credits || 0,
   }
   
-  const result = await executeAIService(context, 'generateOrderingQuiz', {
+  const result = await executeAIService(context, AIServiceMethod.GENERATE_ORDERING_QUIZ, {
     topic,
     difficulty,
     numberOfSteps: 5, // Default 5 steps per question
@@ -218,7 +300,7 @@ export async function generateFillInBlanks(
     credits: credits || 0, // Admin debug: provide unlimited credits for testing
   }
   
-  const result = await executeAIService(context, 'generateFillInTheBlanksQuiz', {
+  const result = await executeAIService(context, AIServiceMethod.GENERATE_FILL_IN_THE_BLANKS_QUIZ, {
     topic,
     numberOfQuestions,
     difficulty,
@@ -261,7 +343,7 @@ export async function generateOpenEnded(
     credits: credits || 0, // Admin debug: provide unlimited credits for testing
   }
   
-  const result = await executeAIService(context, 'generateOpenEndedQuestionsQuiz', {
+  const result = await executeAIService(context, AIServiceMethod.GENERATE_OPEN_ENDED_QUESTIONS_QUIZ, {
     topic,
     numberOfQuestions,
     difficulty,
@@ -298,7 +380,7 @@ export async function generateCourse(
     credits: credits || 0, // Admin debug: provide unlimited credits for testing
   }
   
-  const result = await executeAIService(context, 'generateCourseContent', {
+  const result = await executeAIService(context, AIServiceMethod.GENERATE_COURSE_CONTENT, {
     topic,
     units,
   })
@@ -328,7 +410,7 @@ async function generateSummary(
     credits: credits || 0, // Admin debug: provide unlimited credits for testing
   }
   
-  const result = await executeAIService(context, 'generateSummary', {
+  const result = await executeAIService(context, AIServiceMethod.GENERATE_SUMMARY, {
     transcript,
     summaryLength,
   })
@@ -359,7 +441,7 @@ export async function generateVideoQuiz(
     credits: credits || 0, // Admin debug: provide unlimited credits for testing
   }
   
-  const result = await executeAIService(context, 'generateVideoQuiz', {
+  const result = await executeAIService(context, AIServiceMethod.GENERATE_VIDEO_QUIZ, {
     courseTitle,
     transcript,
     numberOfQuestions,

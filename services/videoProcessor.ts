@@ -103,18 +103,36 @@ export async function getQuestionsFromTranscript(
   credits?: number,
 ): Promise<any[]> {
   try {
+    // Check if transcript is available
+    if (!transcript || transcript.trim().length === 0) {
+      console.warn("No transcript available for video quiz generation");
+      return [];
+    }
+
     // Preprocess transcript to remove unwanted content and focus on relevant material
     const cleanedTranscript = preprocessTranscript(transcript);
 
+    // Check if we have meaningful content after preprocessing
+    if (!cleanedTranscript || cleanedTranscript.trim().length < 50) {
+      console.warn("Transcript too short or empty after preprocessing");
+      return [];
+    }
+
     // Extract most relevant content to stay within token limits
     const relevantContent = extractRelevantContent(cleanedTranscript);
+
+    // Final check for relevant content
+    if (!relevantContent || relevantContent.trim().length < 20) {
+      console.warn("No relevant content extracted from transcript");
+      return [];
+    }
 
     // Generate questions with the improved transcript using simple AI service
     return await limit(async () => {
       const { generateVideoQuiz } = await import("@/lib/ai/course-ai-service");
 
       const quiz = await generateVideoQuiz(
-        `${courseTitle}: ${relevantContent.substring(0, 200)}`,
+        `${courseTitle}: ${relevantContent.substring(0, 100)}`.substring(0, 200),
         relevantContent,
         5,
     
@@ -123,7 +141,7 @@ export async function getQuestionsFromTranscript(
         credits
       );
       
-      return quiz.questions || [];
+      return quiz || [];
     });
   } catch (error) {
     console.error("Error generating questions:", error);

@@ -130,6 +130,17 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
     version: '1.0.0'
   },
 
+  'quiz-video': {
+    enabled: true,
+    environments: ['production', 'staging', 'development', 'test'],
+    routes: ['/dashboard/video-quiz'],
+    requiresAuth: false, // Public browsing - auth enforced at action level by page itself
+    requiresCredits: false, // Credits checked when user clicks "Create Quiz" button
+    minimumPlan: 'FREE',
+    description: 'Video quiz creation - browsing public, creation requires auth (handled by page)',
+    version: '1.0.0'
+  },
+
   'middleware-caching': {
     enabled: true,
     environments: ['production', 'staging', 'development', 'test'],
