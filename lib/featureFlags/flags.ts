@@ -308,3 +308,14 @@ export function getSubscriptionFeatures(): string[] {
     .filter(([, flag]) => flag.requiresSubscription)
     .map(([flagName]) => flagName)
 }
+
+// Helper to check if a feature is enabled for a specific plan
+export function isFeatureEnabledForPlan(plan: string, featureFlag: string): boolean {
+  // Import here to avoid circular dependencies
+  const { PLAN_CONFIGURATIONS } = require('@/types/subscription-plans')
+  
+  const planConfig = PLAN_CONFIGURATIONS[plan as keyof typeof PLAN_CONFIGURATIONS]
+  if (!planConfig) return false
+  
+  return planConfig.featureFlags[featureFlag] || false
+}

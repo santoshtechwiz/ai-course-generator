@@ -12,17 +12,23 @@ interface VideoPromptOptions {
   numberOfQuestions: number
   difficulty?: 'easy' | 'medium' | 'hard'
   quizType?: 'mcq' | 'openended' | 'mixed'
+  isSubscribed?: boolean
 }
 
 /**
  * Build video quiz generation prompt
  */
 function buildVideoQuizPrompt(options: VideoPromptOptions): AIMessage[] {
-  const { courseTitle, transcript, numberOfQuestions, difficulty = 'medium', quizType = 'mcq' } = options
+  const { courseTitle, transcript, numberOfQuestions, difficulty = 'medium', quizType = 'mcq', isSubscribed = false } = options
   
   const systemMessage: AIMessage = {
     role: 'system',
-    content: `You are an expert in creating educational quiz questions from video transcripts. 
+    content: isSubscribed
+      ? `You are an expert AI educator in creating high-quality educational quiz questions from video transcripts. 
+Focus only on important concepts, key facts, and core knowledge presented in the content. 
+Ignore introductions, speaker information, greetings, conclusions, and any meta-content about the video itself.
+For premium content, emphasize deeper analysis, critical thinking, and comprehensive understanding.`
+      : `You are an expert in creating educational quiz questions from video transcripts. 
 Focus only on important concepts, key facts, and core knowledge presented in the content. 
 Ignore introductions, speaker information, greetings, conclusions, and any meta-content about the video itself.`
   }
@@ -47,7 +53,7 @@ ${transcript}
 - Make questions clear, unambiguous, and test real understanding
 - Avoid questions about who created the content, introductions, or video metadata
 - For MCQ: Make options distinct and plausible (avoid "all of the above" type options)
-- For open-ended: Require comprehensive answers demonstrating understanding`
+- For open-ended: Require comprehensive answers demonstrating understanding${isSubscribed ? '\n- Include advanced analysis questions connecting multiple concepts\n- Add questions requiring evaluation of real-world applications\n- Ensure questions promote higher-order thinking and critical analysis\n- Provide more detailed explanations and context for complex topics' : ''}`
   }
   
   return [systemMessage, userMessage]

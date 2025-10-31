@@ -11,19 +11,27 @@ interface OrderingPromptOptions {
   difficulty: 'easy' | 'medium' | 'hard'
   numberOfSteps?: number
   numberOfQuestions?: number
+  isSubscribed?: boolean
 }
 
 /**
  * Build ordering quiz generation prompt
  */
 export function buildOrderingPrompt(options: OrderingPromptOptions): AIMessage[] {
-  const { topic, difficulty, numberOfSteps = 5, numberOfQuestions = 3 } = options
+  const { topic, difficulty, numberOfSteps = 5, numberOfQuestions = 3, isSubscribed = false } = options
+  
+  const systemMessage: AIMessage = isSubscribed
+    ? {
+        role: 'system',
+        content: 'You are an expert AI educator that generates sophisticated ordering/sequencing quizzes for technical topics. Create complex, multi-stage processes with detailed explanations that require deep understanding and critical thinking.',
+      }
+    : {
+        role: 'system',
+        content: 'You are an AI that generates ordering/sequencing quizzes for technical topics. Create clear, logical step-by-step processes that users must arrange in correct order.',
+      }
   
   return [
-    {
-      role: 'system',
-      content: 'You are an AI that generates ordering/sequencing quizzes for technical topics. Create clear, logical step-by-step processes that users must arrange in correct order.',
-    },
+    systemMessage,
     {
       role: 'user',
       content: `Generate an ordering quiz about "${topic}" with ${numberOfQuestions} separate questions at ${difficulty} difficulty level. Each question should have ${numberOfSteps} steps.
@@ -35,7 +43,7 @@ export function buildOrderingPrompt(options: OrderingPromptOptions): AIMessage[]
 - Steps must be ordered correctly from first to last
 - Provide a short, meaningful explanation for each step
 - Ensure the steps form a coherent and complete workflow
-- Each question should test different aspects of the topic
+- Each question should test different aspects of the topic${isSubscribed ? '\n- Include complex workflows with decision points and conditional logic\n- Add questions requiring analysis of error handling and edge cases\n- Include advanced technical processes with multiple stakeholders\n- Provide detailed explanations of why each step is necessary and its impact' : ''}
 
 **Format each question as:**
 - title: Brief title for the question

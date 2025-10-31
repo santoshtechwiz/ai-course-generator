@@ -846,7 +846,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
           // Create automatic bookmark title with chapter information
           const automaticTitle = title || `${chapterTitle} - ${formatTime(time)}`
 
-          // Save bookmark to database via API
+          // Save bookmark to database via API (don't set note field for automatic bookmarks)
           const response = await fetch("/api/bookmarks", {
             method: "POST",
             headers: {
@@ -856,7 +856,8 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
               courseId: Number.parseInt(courseId?.toString() || "0"),
               chapterId: Number.parseInt(chapterId?.toString() || "0"),
               timestamp: time,
-              note: automaticTitle,
+              // Don't set note field for automatic bookmarks - they should only be bookmarks
+              // note: automaticTitle,
             }),
           })
 

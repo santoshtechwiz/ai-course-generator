@@ -29,7 +29,14 @@
     "check-consistency": "tsx scripts/check-subscription-consistency.ts",
     "fix-consistency": "tsx scripts/check-subscription-consistency.ts --fix",
     "setup-consistency": "npx prisma db execute --file prisma/migrations/fix_subscription_consistency.sql",
-    "video-fix": "node scripts/video-health-check.js"
+    "video-fix": "node scripts/video-health-check.js",
+    "quality": "tsx scripts/code-quality-check.ts",
+    "quality:ci": "tsx scripts/code-quality-check.ts --ci",
+    "test:quality": "npm run lint && npm run test && npm run quality",
+    "test:coverage": "vitest --coverage",
+    "docs:check": "tsx scripts/check-documentation.ts",
+    "pre-commit": "npm run lint:fast && npm run test && npm run quality:ci",
+    "pre-push": "npm run test:coverage && npm run docs:check"
   },
   "dependencies": {
     "@ai-sdk/openai": "2.0.38",

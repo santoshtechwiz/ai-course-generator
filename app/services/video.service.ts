@@ -198,7 +198,7 @@ class VideoService {
         success: true,
         message: jobStatus?.status === 'queued' 
           ? "Video generation queued" 
-          : "Video generation in progress",
+          : "Video generation already in progress.",
         videoStatus: jobStatus?.status === 'processing' ? 'processing' : 'queued',
         jobId: existingJobId,
         queueSize: queue.size,
@@ -219,7 +219,7 @@ class VideoService {
       console.log(`[VideoService] Chapter ${chapterId} already has video: ${chapterData.videoId}`);
       return {
         success: true,
-        message: "Video already processed",
+        message: "Video already processed.",
         videoId: chapterData.videoId,
         videoStatus: "completed",
         isReady: true,
@@ -328,7 +328,7 @@ class VideoService {
 
     return {
       success: true,
-      message: "Video generation task queued",
+      message: "Video generation task queued.",
       videoStatus: "queued",
       jobId,
       queueSize: queue.size,

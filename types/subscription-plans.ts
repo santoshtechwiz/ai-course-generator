@@ -14,6 +14,328 @@ export const PRICING = {
   ENTERPRISE: 99.00
 } as const
 
+// ============= SINGLE SOURCE OF TRUTH - ALL PLAN CONFIGURATIONS =============
+export const PLAN_CONFIGURATIONS = {
+  FREE: {
+    price: PRICING.FREE,
+    popular: false,
+    maxQuestionsPerQuiz: 3,
+    maxStepsPerOrderingQuiz: 5,
+    monthlyCredits: 5,
+    courseCreation: true,
+    pdfDownloads: false,
+    contentCreation: true,
+    mcqGenerator: true,
+    fillInBlanks: false,
+    openEndedQuestions: false,
+    codeQuiz: false,
+    videoQuiz: false,
+    videoTranscripts: false,
+    prioritySupport: false,
+    aiAccuracy: 'standard',
+    creditCosts: {
+      'quiz-mcq': 1,
+      'quiz-blanks': 1,
+      'quiz-openended': 2,
+      'quiz-code': 2,
+      'quiz-video': 2,
+      'quiz-flashcard': 1,
+      'quiz-ordering': 0, // Uses daily limit
+      'course-creation': 5,
+      'document-quiz': 3,
+    },
+    aiLimits: {
+      maxQuestionsPerQuiz: {
+        'quiz-mcq': 3,
+        'quiz-blanks': 3,
+        'quiz-flashcard': 3,
+        'quiz-ordering': 3,
+        'quiz-video': 3,
+      },
+      dailyQuizGenerations: {
+        'quiz-mcq': 5,
+        'quiz-ordering': 2,
+        'quiz-flashcard': 5,
+        'quiz-video': 3,
+      },
+      maxCourseLength: 10,
+      maxDocumentSize: 1024, // 1MB
+      maxFlashcardsPerSet: 20,
+    },
+    featureFlags: {
+      'route-protection': true,
+      'dashboard-access': true,
+      'course-browsing': true,
+      'course-access': true,
+      'quiz-access': true,
+      'quiz-mcq': true,
+      'quiz-openended': false,
+      'quiz-blanks': false,
+      'quiz-code': false,
+      'quiz-flashcard': true,
+      'quiz-ordering': true,
+      'middleware-caching': true,
+      'performance-monitoring': true,
+      'subscription-enforcement': false,
+      'quiz-creation': true,
+      'course-creation': true,
+      'pdf-generation': false,
+      'analytics': false,
+      'enhanced-analytics': false,
+      'ai-recommendations': false,
+      'beta-features': false,
+      'collaborative-courses': false,
+      'legacy-quiz-builder': false,
+      'advancedAI': false,
+      'prioritySupport': false,
+      'customModels': false,
+      'analytics-basic': false
+    }
+  },
+  BASIC: {
+    price: PRICING.BASIC,
+    popular: false,
+    maxQuestionsPerQuiz: 5,
+    maxStepsPerOrderingQuiz: 8,
+    monthlyCredits: 50,
+    courseCreation: true,
+    pdfDownloads: true,
+    contentCreation: true,
+    mcqGenerator: true,
+    fillInBlanks: true,
+    openEndedQuestions: false,
+    codeQuiz: false,
+    videoQuiz: false,
+    videoTranscripts: true,
+    prioritySupport: false,
+    aiAccuracy: 'standard',
+    creditCosts: {
+      'quiz-mcq': 1,
+      'quiz-blanks': 1,
+      'quiz-openended': 2,
+      'quiz-code': 2,
+      'quiz-video': 2,
+      'quiz-flashcard': 1,
+      'quiz-ordering': 0, // Uses daily limit
+      'course-creation': 5,
+      'document-quiz': 3,
+    },
+    aiLimits: {
+      maxQuestionsPerQuiz: {
+        'quiz-mcq': 5,
+        'quiz-blanks': 5,
+        'quiz-flashcard': 5,
+        'quiz-ordering': 5,
+        'quiz-video': 5,
+      },
+      dailyQuizGenerations: {
+        'quiz-mcq': 20,
+        'quiz-blanks': 10,
+        'quiz-ordering': 5,
+        'quiz-flashcard': 20,
+        'quiz-video': 8,
+      },
+      maxCourseLength: 25,
+      maxDocumentSize: 5120, // 5MB
+      maxFlashcardsPerSet: 50,
+    },
+    featureFlags: {
+      'route-protection': true,
+      'dashboard-access': true,
+      'course-browsing': true,
+      'course-access': true,
+      'quiz-access': true,
+      'quiz-mcq': true,
+      'quiz-openended': false,
+      'quiz-blanks': true,
+      'quiz-code': false,
+      'quiz-flashcard': true,
+      'quiz-ordering': true,
+      'middleware-caching': true,
+      'performance-monitoring': true,
+      'subscription-enforcement': true,
+      'quiz-creation': true,
+      'course-creation': true,
+      'pdf-generation': true,
+      'analytics': false,
+      'enhanced-analytics': false,
+      'ai-recommendations': true,
+      'beta-features': false,
+      'collaborative-courses': false,
+      'legacy-quiz-builder': false,
+      'advancedAI': false,
+      'prioritySupport': false,
+      'customModels': false,
+      'analytics-basic': true
+    }
+  },
+  PREMIUM: {
+    price: PRICING.PREMIUM,
+    popular: true,
+    maxQuestionsPerQuiz: 10,
+    maxStepsPerOrderingQuiz: 12,
+    monthlyCredits: 200,
+    courseCreation: true,
+    pdfDownloads: true,
+    contentCreation: true,
+    mcqGenerator: true,
+    fillInBlanks: true,
+    openEndedQuestions: true,
+    codeQuiz: true,
+    videoQuiz: false,
+    videoTranscripts: true,
+    prioritySupport: true,
+    aiAccuracy: 'premium',
+    creditCosts: {
+      'quiz-mcq': 1,
+      'quiz-blanks': 1,
+      'quiz-openended': 2,
+      'quiz-code': 2,
+      'quiz-video': 2,
+      'quiz-flashcard': 1,
+      'quiz-ordering': 0, // Uses daily limit
+      'course-creation': 5,
+      'document-quiz': 3,
+    },
+    aiLimits: {
+      maxQuestionsPerQuiz: {
+        'quiz-mcq': 10,
+        'quiz-blanks': 10,
+        'quiz-openended': 10,
+        'quiz-code': 10,
+        'quiz-flashcard': 10,
+        'quiz-ordering': 10,
+        'quiz-video': 10,
+      },
+      dailyQuizGenerations: {
+        'quiz-mcq': 50,
+        'quiz-blanks': 30,
+        'quiz-openended': 20,
+        'quiz-code': 20,
+        'quiz-ordering': 10,
+        'quiz-flashcard': 50,
+        'quiz-video': 25,
+      },
+      maxCourseLength: 50,
+      maxDocumentSize: 10240, // 10MB
+      maxFlashcardsPerSet: 100,
+    },
+    featureFlags: {
+      'route-protection': true,
+      'dashboard-access': true,
+      'course-browsing': true,
+      'course-access': true,
+      'quiz-access': true,
+      'quiz-mcq': true,
+      'quiz-openended': true,
+      'quiz-blanks': true,
+      'quiz-code': true,
+      'quiz-flashcard': true,
+      'quiz-ordering': true,
+      'middleware-caching': true,
+      'performance-monitoring': true,
+      'subscription-enforcement': true,
+      'quiz-creation': true,
+      'course-creation': true,
+      'pdf-generation': true,
+      'analytics': true,
+      'enhanced-analytics': true,
+      'ai-recommendations': true,
+      'beta-features': true,
+      'collaborative-courses': false,
+      'legacy-quiz-builder': false,
+      'advancedAI': true,
+      'prioritySupport': true,
+      'customModels': false,
+      'analytics-basic': true
+    }
+  },
+  ENTERPRISE: {
+    price: PRICING.ENTERPRISE,
+    popular: false,
+    maxQuestionsPerQuiz: 15,
+    maxStepsPerOrderingQuiz: 20,
+    monthlyCredits: 500,
+    courseCreation: true,
+    pdfDownloads: true,
+    contentCreation: true,
+    mcqGenerator: true,
+    fillInBlanks: true,
+    openEndedQuestions: true,
+    codeQuiz: true,
+    videoQuiz: true,
+    videoTranscripts: true,
+    prioritySupport: true,
+    aiAccuracy: 'custom',
+    creditCosts: {
+      'quiz-mcq': 1,
+      'quiz-blanks': 1,
+      'quiz-openended': 2,
+      'quiz-code': 2,
+      'quiz-video': 2,
+      'quiz-flashcard': 1,
+      'quiz-ordering': 0, // Uses daily limit
+      'course-creation': 5,
+      'document-quiz': 3,
+    },
+    aiLimits: {
+      maxQuestionsPerQuiz: {
+        'quiz-mcq': 15,
+        'quiz-blanks': 15,
+        'quiz-openended': 15,
+        'quiz-code': 15,
+        'quiz-flashcard': 15,
+        'quiz-ordering': 15,
+        'quiz-video': 15,
+      },
+      dailyQuizGenerations: {
+        'quiz-mcq': 200,
+        'quiz-blanks': 100,
+        'quiz-openended': 100,
+        'quiz-code': 100,
+        'quiz-ordering': 50,
+        'quiz-flashcard': 200,
+        'quiz-video': 100,
+      },
+      maxCourseLength: 100, // finite limit instead of unlimited
+      maxDocumentSize: 51200, // 50MB
+      maxFlashcardsPerSet: 200,
+    },
+    featureFlags: {
+      'route-protection': true,
+      'dashboard-access': true,
+      'course-browsing': true,
+      'course-access': true,
+      'quiz-access': true,
+      'quiz-mcq': true,
+      'quiz-openended': true,
+      'quiz-blanks': true,
+      'quiz-code': true,
+      'quiz-flashcard': true,
+      'quiz-ordering': true,
+      'middleware-caching': true,
+      'performance-monitoring': true,
+      'subscription-enforcement': true,
+      'quiz-creation': true,
+      'course-creation': true,
+      'pdf-generation': true,
+      'analytics': true,
+      'enhanced-analytics': true,
+      'ai-recommendations': true,
+      'beta-features': true,
+      'collaborative-courses': true,
+      'legacy-quiz-builder': false,
+      'advancedAI': true,
+      'prioritySupport': true,
+      'customModels': true,
+      'analytics-basic': true
+    }
+  },
+} as const
+
+
+
+
 export interface PlanConfig {
   id: SubscriptionPlanType
   name: string
@@ -37,95 +359,170 @@ export interface PlanConfig {
   
   // Support & Services
   prioritySupport: boolean
-  
-  // Advanced Features
-  aiAccuracy: 'standard' | 'enhanced' | 'premium' | 'custom'
+  aiAccuracy: string
   
   // Credits
   monthlyCredits: number
+  creditCosts: Record<string, number>
+  
+  // Feature Flags - Centralized feature access control
+  featureFlags: Record<string, boolean>
+  
+  // AI-Specific Limits
+  aiLimits: {
+    maxQuestionsPerQuiz: Record<string, number>
+    dailyQuizGenerations: Record<string, number>
+    maxCourseLength: number
+    maxDocumentSize: number // in KB
+    maxFlashcardsPerSet: number
+  }
+}
+
+// ============= AI-Specific Limits and Configurations =============
+
+export interface RateLimitConfig {
+  requestsPerMinute: number
+  requestsPerHour: number
+  requestsPerDay: number
+}
+
+export const RATE_LIMITS: Record<SubscriptionPlanType, RateLimitConfig> = {
+  FREE: {
+    requestsPerMinute: 5,
+    requestsPerHour: 50,
+    requestsPerDay: 100,
+  },
+  BASIC: {
+    requestsPerMinute: 10,
+    requestsPerHour: 200,
+    requestsPerDay: 500,
+  },
+  PREMIUM: {
+    requestsPerMinute: 30,
+    requestsPerHour: 1000,
+    requestsPerDay: 2000,
+  },
+  ENTERPRISE: {
+    requestsPerMinute: 100,
+    requestsPerHour: 5000,
+    requestsPerDay: 10000,
+  },
+}
+
+export function getPlanAILimits(plan: SubscriptionPlanType): PlanConfig['aiLimits'] {
+  return SubscriptionPlanType[plan].aiLimits
+}
+
+export function getRateLimits(plan: SubscriptionPlanType): RateLimitConfig {
+  return RATE_LIMITS[plan]
+}
+
+// ============= AI Model Configuration =============
+
+export const AI_MODELS = {
+  // OpenAI Models
+  GPT_4O_MINI: 'gpt-4o-mini',
+  GPT_4O: 'gpt-4o',
+  GPT_4_TURBO: 'gpt-4-turbo',
+  GPT_35_TURBO: 'gpt-3.5-turbo',
+  
+  // Google AI Models
+  GEMINI_15_FLASH: 'gemini-1.5-flash',
+  GEMINI_15_PRO: 'gemini-1.5-pro',
+  GEMINI_PRO: 'gemini-pro',
+} as const
+
+export type AIModelName = typeof AI_MODELS[keyof typeof AI_MODELS]
+
+export interface ModelConfiguration {
+  primary: AIModelName
+  fallback: AIModelName
+  maxTokens: number
+  temperature: number
+  topP: number
+}
+
+export const SUBSCRIPTION_MODELS: Record<SubscriptionPlanType, ModelConfiguration> = {
+  FREE: {
+    primary: AI_MODELS.GPT_4O_MINI,
+    fallback: AI_MODELS.GPT_35_TURBO,
+    maxTokens: 2048,
+    temperature: 0.7,
+    topP: 0.9,
+  },
+  BASIC: {
+    primary: AI_MODELS.GPT_4O_MINI,
+    fallback: AI_MODELS.GPT_35_TURBO,
+    maxTokens: 3072,
+    temperature: 0.7,
+    topP: 0.9,
+  },
+  PREMIUM: {
+    primary: AI_MODELS.GPT_4O,
+    fallback: AI_MODELS.GPT_4O_MINI,
+    maxTokens: 4096,
+    temperature: 0.8,
+    topP: 0.95,
+  },
+  ENTERPRISE: {
+    primary: AI_MODELS.GPT_4_TURBO,
+    fallback: AI_MODELS.GPT_4O,
+    maxTokens: 8192,
+    temperature: 0.8,
+    topP: 0.95,
+  },
+}
+
+export function getModelConfig(plan: SubscriptionPlanType): ModelConfiguration {
+  return SUBSCRIPTION_MODELS[plan]
+}
+
+export function getAllAvailableModels(): AIModelName[] {
+  const models = new Set<AIModelName>()
+  
+  Object.values(SUBSCRIPTION_MODELS).forEach(config => {
+    models.add(config.primary)
+    models.add(config.fallback)
+  })
+  
+  return Array.from(models)
+}
+
+// Build PlanConfig objects from PLAN_CONFIGURATIONS
+function buildPlanConfig(planType: SubscriptionPlanType): PlanConfig {
+  const config = PLAN_CONFIGURATIONS[planType]
+  return {
+    id: planType,
+    name: planType === 'FREE' ? 'Free' :
+          planType === 'BASIC' ? 'Basic' :
+          planType === 'PREMIUM' ? 'Premium' : 'Enterprise',
+    price: config.price,
+    popular: config.popular,
+    maxQuestionsPerQuiz: config.maxQuestionsPerQuiz,
+    maxStepsPerOrderingQuiz: config.maxStepsPerOrderingQuiz,
+    courseCreation: config.courseCreation,
+    pdfDownloads: config.pdfDownloads,
+    contentCreation: config.contentCreation,
+    mcqGenerator: config.mcqGenerator,
+    fillInBlanks: config.fillInBlanks,
+    openEndedQuestions: config.openEndedQuestions,
+    codeQuiz: config.codeQuiz,
+    videoQuiz: config.videoQuiz,
+    videoTranscripts: config.videoTranscripts,
+    prioritySupport: config.prioritySupport,
+    aiAccuracy: config.aiAccuracy,
+    monthlyCredits: config.monthlyCredits,
+    creditCosts: config.creditCosts,
+    featureFlags: config.featureFlags,
+    aiLimits: config.aiLimits,
+  }
 }
 
 export const SubscriptionPlanType: Record<SubscriptionPlanType, PlanConfig> = {
-  FREE: {
-    id: 'FREE',
-    name: 'Free',
-    price: PRICING.FREE,
-    popular: false,
-    maxQuestionsPerQuiz: 3,
-    maxStepsPerOrderingQuiz: 5,
-    courseCreation: true,
-    pdfDownloads: false,
-    contentCreation: true,
-    mcqGenerator: true,
-    fillInBlanks: false,
-    openEndedQuestions: false,
-    codeQuiz: false,
-    videoQuiz: false,
-    videoTranscripts: false,
-    prioritySupport: false,
-    aiAccuracy: 'standard',
-    monthlyCredits: 5
-  },
-  BASIC: {
-    id: 'BASIC',
-    name: 'Basic',
-    price: PRICING.BASIC,
-    popular: false,
-    maxQuestionsPerQuiz: 5,
-    maxStepsPerOrderingQuiz: 8,
-    courseCreation: true,
-    pdfDownloads: true,
-    contentCreation: true,
-    mcqGenerator: true,
-    fillInBlanks: true,
-    openEndedQuestions: false,
-    codeQuiz: false,
-    videoQuiz: false,
-    videoTranscripts: true,
-    prioritySupport: false,
-    aiAccuracy: 'enhanced',
-    monthlyCredits: 50
-  },
-  PREMIUM: {
-    id: 'PREMIUM',
-    name: 'Premium',
-    price: PRICING.PREMIUM,
-    popular: true,
-    maxQuestionsPerQuiz: 15,
-    maxStepsPerOrderingQuiz: 12,
-    courseCreation: true,
-    pdfDownloads: true,
-    contentCreation: true,
-    mcqGenerator: true,
-    fillInBlanks: true,
-    openEndedQuestions: true,
-    codeQuiz: true,
-    videoQuiz: false,
-    videoTranscripts: true,
-    prioritySupport: true,
-    aiAccuracy: 'premium',
-    monthlyCredits: 200
-  },
-  ENTERPRISE: {
-    id: 'ENTERPRISE',
-    name: 'Enterprise',
-    price: PRICING.ENTERPRISE,
-    popular: false,
-    maxQuestionsPerQuiz: 20,
-    maxStepsPerOrderingQuiz: 20,
-    courseCreation: true,
-    pdfDownloads: true,
-    contentCreation: true,
-    mcqGenerator: true,
-    fillInBlanks: true,
-    openEndedQuestions: true,
-    codeQuiz: true,
-    videoQuiz: true,
-    videoTranscripts: true,
-    prioritySupport: true,
-    aiAccuracy: 'custom',
-    monthlyCredits: 500
-  }
+  FREE: buildPlanConfig('FREE'),
+  BASIC: buildPlanConfig('BASIC'),
+  PREMIUM: buildPlanConfig('PREMIUM'),
+  ENTERPRISE: buildPlanConfig('ENTERPRISE'),
 }
 
 export function getPlanConfig(planType: SubscriptionPlanType): PlanConfig {

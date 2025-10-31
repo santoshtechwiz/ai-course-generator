@@ -4,12 +4,18 @@ import { buildMCQPrompt, getMCQFunctionSchema, buildMCQPromptWithSchema } from "
 
 describe("AI Prompt - Coding MCQ Generation", () => {
   const apiKey = process.env.OPENAI_API_KEY;
-  const provider = new OpenAIProvider(apiKey);
+
+  // Skip tests if no API key is available
+  const shouldSkip = !apiKey || apiKey === 'test-key';
+  const provider = shouldSkip ? null : new OpenAIProvider(apiKey);
 
   describe("generateCodingMCQs - Difficulty-Based Question Generation", () => {
-    it(
+    const testFn = shouldSkip ? it.skip : it;
+
+    testFn(
       "should generate EASY level coding questions with basic concepts",
       async () => {
+        if (!provider) throw new Error('Provider not available');
         const questions = await provider.generateCodingMCQs(
           "JavaScript",
           "Array Methods",
@@ -49,9 +55,10 @@ describe("AI Prompt - Coding MCQ Generation", () => {
       90000
     );
 
-    it(
+    testFn(
       "should generate MEDIUM level coding questions",
       async () => {
+        if (!provider) throw new Error('Provider not available');
         const questions = await provider.generateCodingMCQs(
           "JavaScript",
           "Async/Await",
@@ -78,9 +85,10 @@ describe("AI Prompt - Coding MCQ Generation", () => {
       90000
     );
 
-    it(
+    testFn(
       "should generate HARD level coding questions",
       async () => {
+        if (!provider) throw new Error('Provider not available');
         const questions = await provider.generateCodingMCQs(
           "JavaScript",
           "Closures",
@@ -102,9 +110,10 @@ describe("AI Prompt - Coding MCQ Generation", () => {
       90000
     );
 
-    it(
+    testFn(
       "should generate correct question type distribution",
       async () => {
+        if (!provider) throw new Error('Provider not available');
         const questions = await provider.generateCodingMCQs(
           "Python",
           "List Comprehensions",
@@ -134,9 +143,10 @@ describe("AI Prompt - Coding MCQ Generation", () => {
       90000
     );
 
-    it(
+    testFn(
       "should generate properly formatted options (short, single-line, no code blocks)",
       async () => {
+        if (!provider) throw new Error('Provider not available');
         const questions = await provider.generateCodingMCQs(
           "JavaScript",
           "Variables and Data Types",
@@ -171,9 +181,10 @@ describe("AI Prompt - Coding MCQ Generation", () => {
       90000
     );
 
-    it(
+    testFn(
       "should generate questions with code snippets and proper separation",
       async () => {
+        if (!provider) throw new Error('Provider not available');
         const questions = await provider.generateCodingMCQs(
           "TypeScript",
           "Type Guards",
