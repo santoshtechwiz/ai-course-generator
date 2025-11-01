@@ -1,5 +1,6 @@
 "use server"
 import { prisma } from "@/lib/db"
+import { TIME } from "@/constants/global"
 import type {
   DashboardUser,
   UserStats,
@@ -251,7 +252,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
 
     const monthsSinceFirstQuiz =
       quizAttempts.length > 0
-        ? (Date.now() - new Date(quizAttempts[0].createdAt).getTime()) / (30 * 24 * 60 * 60 * 1000)
+        ? (Date.now() - new Date(quizAttempts[0].createdAt).getTime()) / TIME.MONTH
         : 1
 
     const quizzesPerMonth = parseFloat((totalQuizzes / Math.max(monthsSinceFirstQuiz, 0.1)).toFixed(2))
@@ -349,7 +350,7 @@ function calculateStreakDays(attempts: Array<Partial<UserQuizAttempt> & { create
 
   const sortedAttempts = [...attempts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-  const oneDayMs = 24 * 60 * 60 * 1000
+  const oneDayMs = TIME.DAY
   let streakDays = 1
   let currentDate = new Date(sortedAttempts[0].createdAt)
 

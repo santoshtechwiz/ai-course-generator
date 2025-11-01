@@ -5,7 +5,7 @@
  * like code quiz generation and open-ended questions.
  */
 
-import type { SubscriptionPlanType } from '@/types/subscription'
+import type { SubscriptionPlanType } from '@/types/subscription-plans'
 import { AIBaseService, type AIServiceContext, type AIServiceResult } from './AIBaseService'
 import { AI_MODELS } from '@/config/ai.config'
 import { buildMCQPrompt, buildMCQPromptWithSchema } from '@/lib/ai/prompts/mcq.prompt'

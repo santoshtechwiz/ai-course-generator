@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useEffect, useReducer } from "react"
+import { useCallback, useMemo, useEffect, useReducer, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-helper"
 import { Button } from "@/components/ui/button"
@@ -11,9 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks"
 import { useSession } from "next-auth/react"
 import { AccessControl } from "@/components/ui/access-control"
-import { AlertCircle, CheckCircle, BookOpen, Lightbulb, XCircle, Award, BarChart3, RotateCcw, Home, Download, ArrowRight } from "lucide-react" // Added Award
+import { AlertCircle, CheckCircle, BookOpen, Lightbulb, XCircle, Award, BarChart3, RotateCcw, Home, Download, ArrowRight, Zap, Target, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
-// framer-motion removed for simpler CSS transitions
 import { storageManager } from "@/utils/storage-manager"
 import { useProgressEvents } from "@/utils/progress-events"
 import { selectQuizProgressFromEvents, selectCurrentQuizAnswers } from "@/store/slices/progress-events-slice"
@@ -29,6 +28,7 @@ interface QuizProps {
   isPublicCourse: boolean
   chapterId?: string
   accessLevels: AccessLevels
+  existingQuiz?: CourseQuestion[] | null
 }
 
 interface QuizState {
@@ -39,6 +39,8 @@ interface QuizState {
   showResults: boolean
   quizStarted: boolean
   quizProgress: Record<string, any>
+  startTime: number
+  questionStartTime: number
 }
 
 type QuizAction =
@@ -49,6 +51,7 @@ type QuizAction =
   | { type: "START_QUIZ" }
   | { type: "RESET_QUIZ" }
   | { type: "LOAD_PROGRESS"; progress: Record<string, any> }
+  | { type: "START_QUESTION_TIMER" }
 
 const quizReducer = (state: QuizState, action: QuizAction): QuizState => {
   switch (action.type) {
@@ -61,6 +64,7 @@ const quizReducer = (state: QuizState, action: QuizAction): QuizState => {
       return {
         ...state,
         currentQuestionIndex: state.currentQuestionIndex + 1,
+        questionStartTime: Date.now(),
       }
     case "COMPLETE_QUIZ":
       return {
@@ -71,7 +75,17 @@ const quizReducer = (state: QuizState, action: QuizAction): QuizState => {
     case "SHOW_RESULTS":
       return { ...state, showResults: true }
     case "START_QUIZ":
-      return { ...state, quizStarted: true }
+      return { 
+        ...state, 
+        quizStarted: true,
+        startTime: Date.now(),
+        questionStartTime: Date.now(),
+      }
+    case "START_QUESTION_TIMER":
+      return {
+        ...state,
+        questionStartTime: Date.now(),
+      }
     case "RESET_QUIZ":
       return {
         answers: {},
@@ -81,6 +95,8 @@ const quizReducer = (state: QuizState, action: QuizAction): QuizState => {
         showResults: false,
         quizStarted: false,
         quizProgress: {},
+        startTime: 0,
+        questionStartTime: 0,
       }
     case "LOAD_PROGRESS":
       return {
@@ -103,21 +119,20 @@ const quizReducer = (state: QuizState, action: QuizAction): QuizState => {
 }
 
 const QuizSkeleton = () => (
-  <Card className="w-full max-w-4xl mx-auto rounded-xl shadow-lg border border-purple-200 dark:border-purple-900">
+  <Card className="w-full max-w-4xl mx-auto border-4 border-border shadow-neo">
     <CardContent className="p-8 space-y-6">
-      <Skeleton className="h-6 w-48" />
+      <Skeleton className="h-8 w-64 bg-muted" />
       {Array.from({ length: 4 }).map((_, i) => (
-        <Skeleton key={i} className="h-10 w-full rounded-none" />
+        <Skeleton key={i} className="h-16 w-full bg-muted border-2 border-border" />
       ))}
       <div className="flex justify-end">
-        <Skeleton className="h-10 w-24 rounded-none" />
+        <Skeleton className="h-12 w-32 bg-muted border-2 border-border" />
       </div>
     </CardContent>
   </Card>
 )
 
-export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, chapterId, accessLevels }: QuizProps) {
-  // Quiz should only be available to subscribed users (not just authenticated)
+export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, chapterId, accessLevels, existingQuiz }: QuizProps) {
   const hasQuizAccess = accessLevels.isSubscribed || chapter?.isFree === true || (chapter as any)?.isFreeQuiz === true
   const { toast } = useToast()
   const { data: session } = useSession()
@@ -125,11 +140,9 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
   const effectiveChapterId = chapterId || chapter?.id?.toString()
   const canFetchQuestions = hasQuizAccess
 
-  // Use event-driven progress system
   const { dispatchQuizStarted, dispatchQuestionAnswered, dispatchQuizCompleted } = useProgressEvents()
   const userId = session?.user?.id || ''
 
-  // Get quiz progress from event log
   const quizProgress = useAppSelector((state) => selectQuizProgressFromEvents(state))
   const currentAnswers = useAppSelector((state) => selectCurrentQuizAnswers(state, effectiveChapterId || ''))
 
@@ -141,13 +154,19 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
     showResults: false,
     quizStarted: false,
     quizProgress: {},
+    startTime: 0,
+    questionStartTime: 0,
   }
 
   const [quizState, dispatch] = useReducer(quizReducer, initialQuizState)
+  const [selectedOption, setSelectedOption] = useState<string>("")
+  const [showFeedback, setShowFeedback] = useState(false)
+  const [isCorrectAnswer, setIsCorrectAnswer] = useState(false)
 
-  // Reset quiz state when chapter changes
   useEffect(() => {
     dispatch({ type: "RESET_QUIZ" })
+    setSelectedOption("")
+    setShowFeedback(false)
   }, [effectiveChapterId])
 
   const demoQuestions = useMemo(
@@ -240,21 +259,70 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
     retry: 2,
   })
 
-  // Handle query errors with toast
-  useEffect(() => {
-    if (isError && error) {
-      toast({
-        title: "Failed to load quiz",
-        description: "Please try again later.",
-        variant: "destructive",
+  // Lazy generation query - triggers quiz generation when tab is accessed but no existing quiz exists
+  const { refetch: triggerQuizGeneration, data: generatedQuestions } = useQuery<CourseQuestion[]>({
+    queryKey: ["chapter-quiz-generation", effectiveChapterId],
+    queryFn: async () => {
+      if (!chapter?.videoId || !effectiveChapterId) throw new Error("Missing chapter data")
+
+      const response = await api.post("/api/coursequiz", {
+        videoId: chapter.videoId,
+        chapterId: Number(effectiveChapterId),
+        chapterName: chapter.title || chapter.name,
       })
+
+      return response.map((q: any) => ({
+        ...q,
+        id: q.id || `q-${Math.random().toString(36).substr(2, 9)}`,
+        options: Array.isArray(q.options)
+          ? q.options
+          : typeof q.options === "string"
+            ? (() => {
+                try {
+                  return JSON.parse(q.options)
+                } catch {
+                  return []
+                }
+              })()
+            : q.options
+              ? [q.options]
+              : [],
+      }))
+    },
+    enabled: false, // Manually triggered
+    retry: 2,
+  })
+
+  // Trigger lazy quiz generation when component mounts and no existing quiz is available
+  useEffect(() => {
+    if (
+      effectiveChapterId &&
+      canFetchQuestions &&
+      isUserAuthenticated &&
+      (!existingQuiz || existingQuiz.length === 0) &&
+      !quizState.quizStarted // Don't trigger if quiz is already started
+    ) {
+      console.log(`[CourseQuiz] Triggering lazy quiz generation for chapter ${effectiveChapterId}`)
+      triggerQuizGeneration()
     }
-  }, [isError, error, toast])
+  }, [effectiveChapterId, canFetchQuestions, isUserAuthenticated, existingQuiz, quizState.quizStarted, triggerQuizGeneration])
 
   const effectiveQuestions: CourseQuestion[] = useMemo(() => {
     if (!isUserAuthenticated) return demoQuestions
+
+    // Prioritize existing pre-generated quiz questions
+    if (existingQuiz && Array.isArray(existingQuiz) && existingQuiz.length > 0) {
+      return existingQuiz
+    }
+
+    // Use questions from lazy generation if available
+    if (generatedQuestions && Array.isArray(generatedQuestions) && generatedQuestions.length > 0) {
+      return generatedQuestions
+    }
+
+    // Fall back to fetched questions
     return questions && Array.isArray(questions) && questions.length > 0 ? questions : []
-  }, [isUserAuthenticated, questions, demoQuestions])
+  }, [isUserAuthenticated, questions, demoQuestions, existingQuiz, generatedQuestions])
 
   const currentQuestion = effectiveQuestions[quizState.currentQuestionIndex] || null
 
@@ -263,12 +331,11 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
     saveProgress({ started: true, startedAt: new Date().toISOString() })
     refetch()
 
-    // Dispatch quiz started event
     if (userId && effectiveChapterId && course?.id) {
       dispatchQuizStarted(
         userId,
         effectiveChapterId,
-        'mcq', // Default quiz type
+        'mcq',
         course.slug || '',
         effectiveQuestions.length
       )
@@ -276,95 +343,86 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
   }, [saveProgress, refetch, dispatchQuizStarted, userId, effectiveChapterId, course?.id, course?.slug, effectiveQuestions.length])
 
   const handleAnswer = (value: string) => {
-    if (!currentQuestion) return
-    dispatch({ type: "SET_ANSWER", questionId: String(currentQuestion.id), answer: value })
-    saveProgress({ answers: { ...quizState.answers, [String(currentQuestion.id)]: value } })
-
-    // Dispatch question answered event
-    if (userId && effectiveChapterId && currentQuestion) {
-      const correctAnswer = currentQuestion.answer?.trim() || ''
-      const isCorrect = value.trim().toLowerCase() === correctAnswer.toLowerCase()
-      
-      dispatchQuestionAnswered(
-        userId,
-        String(currentQuestion.id),
-        effectiveChapterId,
-        quizState.currentQuestionIndex,
-        undefined, // selectedOptionId
-        value,
-        isCorrect,
-        0 // timeSpent - could be enhanced later
-      )
-    }
+    if (!currentQuestion || showFeedback) return
+    setSelectedOption(value)
   }
 
   const handleNextQuestion = () => {
     if (quizState.currentQuestionIndex < effectiveQuestions.length - 1) {
       dispatch({ type: "NEXT_QUESTION" })
       saveProgress({ currentIndex: quizState.currentQuestionIndex + 1 })
+      setSelectedOption("")
+      setShowFeedback(false)
     }
   }
 
   const submitAnswer = () => {
-    const userAnswer = quizState.answers[currentQuestion.id]
-    const isCorrect = userAnswer?.trim() === currentQuestion.answer?.trim()
+    if (!currentQuestion || !selectedOption) return
+
+    const userAnswer = selectedOption
+    const correctAnswer = currentQuestion.answer?.trim() || ''
+    const isCorrect = userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()
+    
+    setIsCorrectAnswer(isCorrect)
+    setShowFeedback(true)
+
+    dispatch({ type: "SET_ANSWER", questionId: String(currentQuestion.id), answer: userAnswer })
+
+    const timeSpent = Date.now() - quizState.questionStartTime
+
+    if (userId && effectiveChapterId && currentQuestion) {
+      dispatchQuestionAnswered(
+        userId,
+        String(currentQuestion.id),
+        effectiveChapterId,
+        quizState.currentQuestionIndex,
+        undefined,
+        userAnswer,
+        isCorrect,
+        timeSpent
+      )
+    }
+
     const newScore = isCorrect ? quizState.score + 1 : quizState.score
 
     if (quizState.currentQuestionIndex < effectiveQuestions.length - 1) {
-      // Don't auto-advance, just mark as answered
       saveProgress({
         answers: { ...quizState.answers, [currentQuestion.id]: userAnswer },
         currentIndex: quizState.currentQuestionIndex
       })
     } else {
-      // Last question - complete the quiz
+      const totalTimeSpent = Date.now() - quizState.startTime
       dispatch({ type: "COMPLETE_QUIZ", score: newScore })
       saveProgress({
         completed: true,
         score: newScore,
-        answers: { ...quizState.answers, [currentQuestion.id]: userAnswer }
+        answers: { ...quizState.answers, [currentQuestion.id]: userAnswer },
+        timeSpent: totalTimeSpent
       })
 
-      // Update progress with the new queue system
       const accuracy = (newScore / effectiveQuestions.length) * 100
-      const answersArray = Object.entries(quizState.answers).map(([questionId, answer]) => ({
+      const answersArray = Object.entries({ ...quizState.answers, [currentQuestion.id]: userAnswer }).map(([questionId, answer]) => ({
         questionId,
-        isCorrect: answer?.trim() === effectiveQuestions.find(q => q.id === questionId)?.answer?.trim(),
-        timeSpent: 0, // TODO: Add time tracking
+        isCorrect: answer?.trim().toLowerCase() === effectiveQuestions.find(q => q.id === questionId)?.answer?.trim().toLowerCase(),
+        timeSpent: 0,
       }))
       
-      dispatchQuizCompleted(
-        userId, 
-        effectiveChapterId, 
-        newScore, 
-        effectiveQuestions.length, 
-        accuracy, 
-        0, // timeSpent - TODO: track actual time
-        answersArray
-      )
-
-      // Dispatch quiz completed event
       if (userId && effectiveChapterId) {
-        const answers = Object.values(quizState.answers).map((answer: any) => ({
-          questionId: String(answer.questionId || ''),
-          isCorrect: answer.isCorrect || false,
-          timeSpent: answer.timeSpent || 0
-        }))
-
         dispatchQuizCompleted(
           userId,
           effectiveChapterId,
           newScore,
           effectiveQuestions.length,
-          (newScore / effectiveQuestions.length) * 100,
-          0, // totalTimeSpent - could be enhanced later
-          answers
+          accuracy,
+          totalTimeSpent,
+          answersArray
         )
       }
 
       toast({
-        title: "Quiz Complete",
-        description: `You scored ${newScore}/${effectiveQuestions.length}`
+        title: "Quiz Complete!",
+        description: `You scored ${newScore}/${effectiveQuestions.length}`,
+        variant: isCorrect ? "default" : "destructive"
       })
     }
   }
@@ -372,174 +430,269 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
   const retakeQuiz = () => {
     dispatch({ type: "RESET_QUIZ" })
     saveProgress({ completed: false, currentIndex: 0, answers: {}, score: 0 })
+    setSelectedOption("")
+    setShowFeedback(false)
   }
 
+  const getScoreMessage = () => {
+    const percentage = (quizState.score / effectiveQuestions.length) * 100
+    if (percentage === 100) return { emoji: "🏆", text: "PERFECT SCORE!", color: "text-success" }
+    if (percentage >= 80) return { emoji: "🎯", text: "EXCELLENT!", color: "text-success" }
+    if (percentage >= 60) return { emoji: "👍", text: "GOOD JOB!", color: "text-warning" }
+    return { emoji: "💪", text: "KEEP GOING!", color: "text-destructive" }
+  }
+
+  // Start Screen
   const startContent = (
-    <Card className="w-full max-w-4xl mx-auto rounded-xl shadow-lg border border-muted">
-      <CardContent className="text-center py-12 px-6 bg-muted/10 rounded-b-xl">
-        <Lightbulb className="w-12 h-12 text-foreground mx-auto mb-4" />
-        <h2 className="text-2xl font-semibold mb-4 text-foreground">
-          Ready to test your knowledge?
+    <Card className="w-full max-w-4xl mx-auto border-4 border-border shadow-neo bg-background">
+      <CardContent className="text-center py-16 px-6">
+        <div className="mb-8 inline-block p-6 border-4 border-border shadow-neo bg-primary">
+          <Zap className="w-16 h-16 text-primary-foreground" />
+        </div>
+        
+        <h2 className="text-4xl font-black uppercase mb-4 text-foreground tracking-tight">
+          TEST YOUR KNOWLEDGE
         </h2>
-        <p className="text-muted-foreground mb-6">
-          This quiz will help you reinforce what you've learned in this chapter.
+        
+        <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
+          Challenge yourself with this quiz and prove your mastery of the concepts.
         </p>
-        <Button onClick={startQuiz} size="lg" className="bg-foreground hover:bg-foreground/90 text-background">
-          Start Quiz
+
+        <div className="flex flex-wrap justify-center gap-6 mb-8">
+          <div className="flex items-center gap-2 px-4 py-2 border-2 border-border bg-muted">
+            <Target className="w-5 h-5 text-foreground" />
+            <span className="font-bold text-foreground">{effectiveQuestions.length} Questions</span>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 border-2 border-border bg-muted">
+            <BookOpen className="w-5 h-5 text-foreground" />
+            <span className="font-bold text-foreground">Multiple Choice</span>
+          </div>
+        </div>
+
+        <Button 
+          onClick={startQuiz} 
+          size="lg" 
+          className="font-black uppercase tracking-wider text-lg px-12 py-6 border-4 shadow-neo hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
+        >
+          START QUIZ
+          <ArrowRight className="w-5 h-5 ml-2" />
         </Button>
       </CardContent>
     </Card>
   )
 
+  // Active Quiz
   const activeQuizContent = currentQuestion && (
-    <Card className="w-full max-w-4xl mx-auto rounded-xl shadow-lg border border-muted">
-      <CardHeader className="p-6 pb-4">
-        <CardTitle className="flex items-center gap-3 text-2xl font-semibold text-foreground">
-          <BookOpen className="h-6 w-6 text-foreground" />
-          {/* Question counter removed for cleaner layout */}
-        </CardTitle>
-        <p className="text-lg font-medium mt-4 text-foreground">{currentQuestion.question}</p>
-      </CardHeader>
-      <CardContent className="space-y-4 p-6 bg-muted/10 rounded-b-xl">
-        <RadioGroup value={quizState.answers[String(currentQuestion.id)] || ""} onValueChange={handleAnswer}>
-          {Array.isArray(currentQuestion.options) && currentQuestion.options.map((opt: string, idx: number) => (
-            <div
-              key={idx}
-              className="flex items-center space-x-3 p-4 border border-muted rounded-none bg-white hover:bg-muted/10 transition-all duration-200 cursor-pointer"
-            >
-              <RadioGroupItem value={opt} id={`option-${idx}`} className="text-foreground" />
-              <Label htmlFor={`option-${idx}`} className="cursor-pointer text-base flex-1">
-                {opt}
-              </Label>
+    <Card className="w-full max-w-4xl mx-auto border-4 border-border shadow-neo bg-background">
+      <CardHeader className="p-6 border-b-4 border-border bg-muted">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="px-4 py-2 border-2 border-border bg-primary shadow-neo">
+              <span className="font-black text-primary-foreground">
+                {quizState.currentQuestionIndex + 1}/{effectiveQuestions.length}
+              </span>
             </div>
-          ))}
+          </div>
+          
+          <div className="flex items-center gap-2 px-4 py-2 border-2 border-border bg-background">
+            <TrendingUp className="w-4 h-4 text-foreground" />
+            <span className="font-bold text-foreground">
+              {quizState.score}/{quizState.currentQuestionIndex}
+            </span>
+          </div>
+        </div>
+
+        <CardTitle className="text-2xl font-black uppercase text-foreground leading-tight">
+          {currentQuestion.question}
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent className="space-y-4 p-6">
+        <RadioGroup 
+          value={selectedOption} 
+          onValueChange={handleAnswer}
+          disabled={showFeedback}
+        >
+          {Array.isArray(currentQuestion.options) && currentQuestion.options.map((opt: string, idx: number) => {
+            const isSelected = selectedOption === opt
+            const isCorrectOption = opt.trim().toLowerCase() === currentQuestion.answer?.trim().toLowerCase()
+            const showCorrect = showFeedback && isCorrectOption
+            const showIncorrect = showFeedback && isSelected && !isCorrectOption
+
+            return (
+              <div
+                key={idx}
+                className={cn(
+                  "flex items-center space-x-4 p-5 border-4 border-border transition-all duration-200 cursor-pointer group",
+                  !showFeedback && "hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-neo",
+                  isSelected && !showFeedback && "bg-primary/10",
+                  showCorrect && "bg-success/20 border-success",
+                  showIncorrect && "bg-destructive/20 border-destructive",
+                  !isSelected && !showFeedback && "bg-background hover:bg-muted"
+                )}
+              >
+                <RadioGroupItem 
+                  value={opt} 
+                  id={`option-${idx}`} 
+                  className="border-2 border-foreground"
+                  disabled={showFeedback}
+                />
+                <Label 
+                  htmlFor={`option-${idx}`} 
+                  className="cursor-pointer text-base font-bold flex-1 text-foreground"
+                >
+                  {opt}
+                </Label>
+                
+                {showCorrect && (
+                  <CheckCircle className="w-6 h-6 text-success flex-shrink-0" />
+                )}
+                {showIncorrect && (
+                  <XCircle className="w-6 h-6 text-destructive flex-shrink-0" />
+                )}
+              </div>
+            )
+          })}
         </RadioGroup>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 mt-6 items-stretch">
-          <div className="w-full sm:flex-1">
+        {showFeedback && (
+          <div className={cn(
+            "p-6 border-4 border-border mt-6",
+            isCorrectAnswer ? "bg-success/20" : "bg-destructive/20"
+          )}>
+            <div className="flex items-start gap-3">
+              {isCorrectAnswer ? (
+                <CheckCircle className="w-6 h-6 text-success flex-shrink-0 mt-1" />
+              ) : (
+                <XCircle className="w-6 h-6 text-destructive flex-shrink-0 mt-1" />
+              )}
+              <div>
+                <p className="font-black text-lg uppercase mb-2">
+                  {isCorrectAnswer ? "CORRECT!" : "INCORRECT"}
+                </p>
+                {!isCorrectAnswer && (
+                  <p className="text-sm text-foreground">
+                    The correct answer is: <span className="font-bold">{currentQuestion.answer}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-4 mt-6 pt-6 border-t-4 border-border">
+          {!showFeedback ? (
             <Button
               onClick={submitAnswer}
-              className="bg-[var(--color-primary)] text-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-primary)]/90 hover:scale-105 hover:shadow-lg transition-all duration-200 inline-flex items-center justify-center whitespace-nowrap rounded-none font-black uppercase tracking-wider border-4 shadow-neo neo-hover-lift neo-press focus-ring gap-2 [&_svg]:pointer-events-none [&_svg]:w-4 [&_svg]:h-4 [&_svg]:shrink-0 disabled:pointer-events-none disabled:opacity-50 py-3 min-h-[44px] w-full sm:min-w-[160px] h-11 sm:h-12 px-4 sm:px-6 text-sm sm:text-base"
-              disabled={!quizState.answers[String(currentQuestion.id)]}
+              className="flex-1 font-black uppercase tracking-wider border-4 shadow-neo hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all py-6"
+              disabled={!selectedOption}
             >
-              Submit Answer
+              SUBMIT ANSWER
             </Button>
-          </div>
-
-          {quizState.currentQuestionIndex < effectiveQuestions.length - 1 && quizState.answers[currentQuestion.id] && (
-            <div className="w-full sm:w-auto flex justify-end">
+          ) : (
+            quizState.currentQuestionIndex < effectiveQuestions.length - 1 && (
               <Button
                 onClick={handleNextQuestion}
-                className="bg-[var(--color-primary)] text-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-primary)]/90 hover:scale-105 hover:shadow-lg transition-all duration-200 inline-flex items-center justify-center whitespace-nowrap rounded-none font-black uppercase tracking-wider border-4 shadow-neo neo-hover-lift neo-press focus-ring gap-2 [&_svg]:pointer-events-none [&_svg]:w-4 [&_svg]:h-4 [&_svg]:shrink-0 disabled:pointer-events-none disabled:opacity-50 py-3 min-h-[44px] w-full sm:min-w-[160px] h-11 sm:h-12 px-4 sm:px-6 text-sm sm:text-base"
+                className="flex-1 font-black uppercase tracking-wider border-4 shadow-neo hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all py-6"
               >
-                Next Question
-                <ArrowRight className="w-4 h-4 ml-2" />
+                NEXT QUESTION
+                <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
-            </div>
+            )
           )}
         </div>
       </CardContent>
     </Card>
   )
 
+  // Results Screen
   const resultsContent = (
-    <Card className="w-full max-w-4xl mx-auto rounded-xl shadow-xl border border-muted overflow-hidden">
-      <CardHeader className="p-8 pb-6 bg-muted/10">
+    <Card className="w-full max-w-4xl mx-auto border-4 border-border shadow-neo bg-background">
+      <CardHeader className="p-8 border-b-4 border-border bg-muted">
         <div className="text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 bg-muted rounded-full">
-              <Award className="h-8 w-8 text-foreground" />
-            </div>
-            <CardTitle className="text-3xl font-bold text-foreground">
-              Quiz Completed!
-            </CardTitle>
+          <div className="mb-6 inline-block p-6 border-4 border-border shadow-neo bg-primary">
+            <Award className="w-16 h-16 text-primary-foreground" />
           </div>
 
-          {/* Score Display */}
-          <div className="bg-white/80 rounded-xl p-6 border border-muted/50 neo-shadow">
-            <div className="text-2xl font-bold text-foreground mb-2">
-              {quizState.score} out of {effectiveQuestions.length}
+          <CardTitle className="text-4xl font-black uppercase mb-6 text-foreground tracking-tight">
+            QUIZ COMPLETE!
+          </CardTitle>
+
+          <div className="bg-background border-4 border-border shadow-neo p-8 mb-6">
+            <div className={cn("text-6xl font-black mb-2", getScoreMessage().color)}>
+              {quizState.score}/{effectiveQuestions.length}
             </div>
-            <div className="text-lg text-muted-foreground mb-3">
-              {Math.round((quizState.score / effectiveQuestions.length) * 100)}% Correct
+            <div className="text-3xl font-black uppercase mb-4">
+              {Math.round((quizState.score / effectiveQuestions.length) * 100)}%
             </div>
 
-            {/* Progress Bar */}
-            <div className="w-full bg-muted rounded-full h-3 mb-4">
+            <div className="w-full bg-muted border-2 border-border h-6 mb-4">
               <div
-                className="bg-foreground h-3 rounded-full transition-all duration-1000 ease-out"
+                className="bg-primary h-full transition-all duration-1000 ease-out"
                 style={{ width: `${(quizState.score / effectiveQuestions.length) * 100}%` }}
               />
             </div>
 
-            {/* Performance Message */}
-            <div className="text-sm font-medium">
-              {quizState.score === effectiveQuestions.length ? (
-                <span className="text-green-600 dark:text-green-400">🎉 Perfect! Excellent work!</span>
-              ) : quizState.score >= effectiveQuestions.length * 0.8 ? (
-                <span className="text-blue-600 dark:text-blue-400">👏 Great job! Well done!</span>
-              ) : quizState.score >= effectiveQuestions.length * 0.6 ? (
-                <span className="text-yellow-600 dark:text-yellow-400">👍 Good effort! Keep learning!</span>
-              ) : (
-                <span className="text-orange-600 dark:text-orange-400">📚 Keep practicing! You've got this!</span>
-              )}
+            <div className="text-2xl font-black uppercase">
+              <span className="mr-2">{getScoreMessage().emoji}</span>
+              {getScoreMessage().text}
             </div>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="p-8 bg-muted/10 dark:bg-muted/90">
-        <div className="space-y-4">
-          <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Review Your Answers
-          </h3>
+      <CardContent className="p-8">
+        <h3 className="text-2xl font-black uppercase text-foreground mb-6 flex items-center gap-3">
+          <BarChart3 className="h-6 w-6" />
+          REVIEW ANSWERS
+        </h3>
 
+        <div className="space-y-4">
           {effectiveQuestions.map((q: CourseQuestion, index: number) => {
             const userAnswer = quizState.answers[q.id]
-            const isCorrect = userAnswer?.trim() === q.answer?.trim()
+            const isCorrect = userAnswer?.trim().toLowerCase() === q.answer?.trim().toLowerCase()
+            
             return (
               <div
                 key={q.id}
                 className={cn(
-                  "p-6 rounded-xl border-2 neo-shadow transition-all duration-200",
-                  isCorrect
-                    ? "border-green-300 bg-green-50/80 dark:bg-green-900/20 dark:border-green-700"
-                    : "border-red-300 bg-red-50/80 dark:bg-red-900/20 dark:border-red-700",
+                  "p-6 border-4 border-border",
+                  isCorrect ? "bg-success/20" : "bg-destructive/20"
                 )}
               >
-                <h4 className="font-semibold text-lg flex items-start gap-3 mb-4">
+                <div className="flex items-start gap-4 mb-4">
                   <div className={cn(
-                    "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
-                    isCorrect ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                    "flex-shrink-0 w-10 h-10 border-2 border-border flex items-center justify-center font-black",
+                    isCorrect ? "bg-success text-success-foreground" : "bg-destructive text-destructive-foreground"
                   )}>
-                    {isCorrect ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                    {isCorrect ? <CheckCircle className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
                   </div>
-                  <span className="text-foreground leading-relaxed">
-                    {index + 1}. {q.question}
-                  </span>
-                </h4>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-lg text-foreground mb-3">
+                      {index + 1}. {q.question}
+                    </h4>
 
-                <div className="ml-11 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <span className="font-medium text-sm text-muted-foreground min-w-[100px]">Your answer:</span>
-                    <span className={cn(
-                      "text-sm font-medium",
-                      isCorrect ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"
-                    )}>
-                      {userAnswer || "No answer selected"}
-                    </span>
-                  </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex gap-2">
+                        <span className="font-bold text-muted-foreground min-w-[120px]">YOUR ANSWER:</span>
+                        <span className={cn(
+                          "font-bold",
+                          isCorrect ? "text-success" : "text-destructive"
+                        )}>
+                          {userAnswer || "No answer"}
+                        </span>
+                      </div>
 
-                  {!isCorrect && (
-                    <div className="flex items-start gap-2">
-                      <span className="font-medium text-sm text-muted-foreground min-w-[100px]">Correct answer:</span>
-                      <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                        {q.answer}
-                      </span>
+                      {!isCorrect && (
+                        <div className="flex gap-2">
+                          <span className="font-bold text-muted-foreground min-w-[120px]">CORRECT:</span>
+                          <span className="font-bold text-success">
+                            {q.answer}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             )
@@ -547,69 +700,74 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
         </div>
       </CardContent>
 
-      {/* Action Buttons - Redesigned with better alignment */}
-      <CardContent className="p-8 bg-muted/10 border-t border-muted/50">
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+      <CardContent className="p-8 border-t-4 border-border bg-muted">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          <div className="bg-background border-4 border-border shadow-neo p-6 text-center">
+            <div className="text-4xl font-black text-foreground mb-2">{effectiveQuestions.length}</div>
+            <div className="text-sm font-bold text-muted-foreground uppercase">Questions</div>
+          </div>
+          <div className="bg-background border-4 border-border shadow-neo p-6 text-center">
+            <div className="text-4xl font-black text-success mb-2">{quizState.score}</div>
+            <div className="text-sm font-bold text-muted-foreground uppercase">Correct</div>
+          </div>
+          <div className="bg-background border-4 border-border shadow-neo p-6 text-center">
+            <div className="text-4xl font-black text-foreground mb-2">
+              {Math.round((quizState.score / effectiveQuestions.length) * 100)}%
+            </div>
+            <div className="text-sm font-bold text-muted-foreground uppercase">Score</div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4">
           <Button
             onClick={retakeQuiz}
             size="lg"
-            className="flex-1 sm:flex-none min-w-[200px] bg-foreground hover:bg-foreground/90 text-background shadow-lg hover:shadow-xl transition-all duration-200"
+            className="flex-1 font-black uppercase tracking-wider border-4 shadow-neo hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
           >
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Retake Quiz
+            <RotateCcw className="h-5 w-5 mr-2" />
+            RETAKE QUIZ
           </Button>
 
           <Button
             onClick={() => window.location.reload()}
             variant="outline"
             size="lg"
-            className="flex-1 sm:flex-none min-w-[200px] border-muted text-foreground hover:bg-muted/10 neo-shadow hover:shadow-md transition-all duration-200"
+            className="flex-1 font-black uppercase tracking-wider border-4 shadow-neo hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
           >
-            <Home className="h-4 w-4 mr-2" />
-            Back to Course
+            <Home className="h-5 w-5 mr-2" />
+            BACK TO COURSE
           </Button>
 
           <Button
             onClick={() => window.print()}
             variant="outline"
             size="lg"
-            className="flex-1 sm:flex-none min-w-[200px] border-muted text-foreground hover:bg-muted/10 neo-shadow hover:shadow-md transition-all duration-200"
+            className="flex-1 font-black uppercase tracking-wider border-4 shadow-neo hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
           >
-            <Download className="h-4 w-4 mr-2" />
-            Print Results
+            <Download className="h-5 w-5 mr-2" />
+            PRINT
           </Button>
-        </div>
-
-        {/* Additional Stats */}
-        <div className="mt-6 pt-6 border-t border-muted/50">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-            <div className="bg-white/80 rounded-none p-4 border border-muted/30">
-              <div className="text-2xl font-bold text-foreground">{effectiveQuestions.length}</div>
-              <div className="text-sm text-muted-foreground">Total Questions</div>
-            </div>
-            <div className="bg-white/80 rounded-none p-4 border border-muted/30">
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">{quizState.score}</div>
-              <div className="text-sm text-muted-foreground">Correct Answers</div>
-            </div>
-            <div className="bg-white/80 rounded-none p-4 border border-muted/30">
-              <div className="text-2xl font-bold text-foreground">
-                {Math.round((quizState.score / effectiveQuestions.length) * 100)}%
-              </div>
-              <div className="text-sm text-muted-foreground">Score</div>
-            </div>
-          </div>
         </div>
       </CardContent>
     </Card>
   )
 
+  // Error Screen
   const errorContent = (
-    <Card className="w-full max-w-4xl mx-auto rounded-xl shadow-lg border border-red-200 dark:border-red-900">
-      <CardContent className="text-red-500 flex flex-col items-center gap-3 p-8 bg-red-50/30 dark:bg-red-950/20 rounded-b-xl">
-        <AlertCircle className="w-10 h-10 text-red-600" />
-        <p className="text-lg font-medium">Error loading quiz: {(error as Error)?.message}</p>
-        <Button onClick={() => refetch()} variant="outline" className="mt-4 bg-transparent">
-          Try Again
+    <Card className="w-full max-w-4xl mx-auto border-4 border-destructive shadow-neo bg-background">
+      <CardContent className="flex flex-col items-center gap-6 p-12">
+        <div className="p-6 border-4 border-destructive bg-destructive/20">
+          <AlertCircle className="w-16 h-16 text-destructive" />
+        </div>
+        <div className="text-center">
+          <h3 className="text-2xl font-black uppercase text-destructive mb-2">ERROR LOADING QUIZ</h3>
+          <p className="text-muted-foreground">{(error as Error)?.message}</p>
+        </div>
+        <Button 
+          onClick={() => refetch()} 
+          className="font-black uppercase tracking-wider border-4 shadow-neo hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
+        >
+          TRY AGAIN
         </Button>
       </CardContent>
     </Card>

@@ -6,8 +6,8 @@
  */
 
 import { prisma } from '@/lib/db'
-import { RAGService } from '@/app/services/chat/ragService'
-import { ChatService } from '@/app/services/chat/ChatService'
+import { RAGService } from '@/app/aimodel/chat/ragService'
+import { ChatService } from '@/app/aimodel/chat/ChatService'
 
 interface DiagnosticResult {
   category: string

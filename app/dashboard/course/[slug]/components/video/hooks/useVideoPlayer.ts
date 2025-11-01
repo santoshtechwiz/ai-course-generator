@@ -606,6 +606,51 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     }
   }, []);
 
+  // Memoize handlers object to prevent creating new object on every render
+  const handlers = useMemo(() => ({
+    onPlay,
+    onPause,
+    onPlayPause,
+    onVolumeChange,
+    onMute,
+    onSeek,
+    onPlaybackRateChange,
+    onToggleFullscreen,
+    onReady,
+    onBuffer,
+    onBufferEnd,
+    onError,
+    addBookmark: handleAddBookmark,
+    removeBookmark: handleRemoveBookmark,
+    handleShowKeyboardShortcuts,
+    handleHideKeyboardShortcuts,
+    handleTheaterModeToggle,
+    handlePictureInPictureToggle,
+    handleShowControls,
+    toggleAutoPlayNext,
+  }), [
+    onPlay,
+    onPause,
+    onPlayPause,
+    onVolumeChange,
+    onMute,
+    onSeek,
+    onPlaybackRateChange,
+    onToggleFullscreen,
+    onReady,
+    onBuffer,
+    onBufferEnd,
+    onError,
+    handleAddBookmark,
+    handleRemoveBookmark,
+    handleShowKeyboardShortcuts,
+    handleHideKeyboardShortcuts,
+    handleTheaterModeToggle,
+    handlePictureInPictureToggle,
+    handleShowControls,
+    toggleAutoPlayNext,
+  ]);
+
   return {
     state,
     playerRef,
@@ -613,27 +658,6 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     bufferHealth,
     youtubeUrl,
     handleProgress,
-    handlers: {
-      onPlay,
-      onPause,
-      onPlayPause,
-      onVolumeChange,
-      onMute,
-      onSeek,
-      onPlaybackRateChange,
-      onToggleFullscreen,
-      onReady,
-      onBuffer,
-      onBufferEnd,
-      onError,
-      addBookmark: handleAddBookmark,
-      removeBookmark: handleRemoveBookmark,
-      handleShowKeyboardShortcuts,
-      handleHideKeyboardShortcuts,
-      handleTheaterModeToggle,
-      handlePictureInPictureToggle,
-      handleShowControls,
-      toggleAutoPlayNext,
-    }
+    handlers
   }
 }

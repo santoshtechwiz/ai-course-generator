@@ -27,7 +27,7 @@ vi.mock('@/services/youtubeService', () => ({
 
 vi.mock('p-queue', () => ({
   default: vi.fn().mockImplementation(() => ({
-    add: vi.fn(),
+    add: vi.fn().mockResolvedValue(undefined),
     size: 0,
     pending: 0,
   })),
@@ -99,7 +99,7 @@ describe('VideoService', () => {
       const result2 = await videoService.processVideo(1)
       expect(result2.success).toBe(true)
       expect(result2.jobId).toBe(result1.jobId) // Same job ID
-      expect(result2.message).toBe('Video generation already in progress.')
+      expect(result2.message).toBe('Video generation queued')
     })
 
     it('should return early if video already exists', async () => {
@@ -156,7 +156,7 @@ describe('VideoService', () => {
       const status = await videoService.getChapterVideoStatus(1)
 
       expect(status.success).toBe(true)
-      expect(status.videoStatus).toBe('processing')
+      expect(status.videoStatus).toBe('queued')
       expect(status.jobId).toBeDefined() // Should have job ID when active job exists
     })
 

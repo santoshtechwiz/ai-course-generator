@@ -3,6 +3,8 @@
  * Drop-in replacements and wrappers for better performance
  */
 
+import { PERFORMANCE } from '@/constants/global'
+
 // ============================================
 // 1. DEBOUNCED MESSAGE SENDER
 // ============================================
@@ -10,7 +12,7 @@
  * Prevents rapid-fire duplicate requests
  * Usage in useChatStore.ts
  */
-export function createDebouncedSender(delay: number = 500) {
+export function createDebouncedSender(delay: number = PERFORMANCE.DEBOUNCE_DELAY) {
   let timeoutId: NodeJS.Timeout | null = null
   let lastMessage: string = ''
 
@@ -41,7 +43,7 @@ export function createDebouncedSender(delay: number = 500) {
 class RequestQueue {
   private queue: Array<() => Promise<any>> = []
   private running = 0
-  private maxConcurrent = 3
+  private maxConcurrent = PERFORMANCE.CONCURRENCY_LIMIT
 
   async add<T>(fn: () => Promise<T>): Promise<T> {
     return new Promise((resolve, reject) => {
@@ -94,7 +96,7 @@ export class SmartCache<T> {
   private maxSize: number
   private ttl: number
 
-  constructor(maxSize: number = 1000, ttlSeconds: number = 3600) {
+  constructor(maxSize: number = PERFORMANCE.CACHE_SIZE, ttlSeconds: number = 3600) {
     this.maxSize = maxSize
     this.ttl = ttlSeconds * 1000
   }
@@ -183,8 +185,8 @@ export class SmartCache<T> {
 export class DatabaseBatcher {
   private pendingWrites: Array<() => Promise<any>> = []
   private batchTimeout: NodeJS.Timeout | null = null
-  private readonly batchDelay = 100 // ms
-  private readonly maxBatchSize = 10
+  private readonly batchDelay = PERFORMANCE.BATCH_DELAY // ms
+  private readonly maxBatchSize = PERFORMANCE.MAX_BATCH_SIZE
 
   async queueWrite(operation: () => Promise<any>): Promise<void> {
     this.pendingWrites.push(operation)

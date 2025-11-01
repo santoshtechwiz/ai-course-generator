@@ -56,7 +56,8 @@ export async function POST(req: Request) {
       amount,
       userId,
       userType: session.user?.userType || 'FREE',
-      difficulty
+      difficulty,
+      credits: creditResult.newBalance
     })
     let baseSlug = generateSlug(title)
     let slug = baseSlug
@@ -122,6 +123,13 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     console.error("Error generating quiz:", error)
+    
+    // Handle credit-related errors with appropriate status
+    if (error instanceof Error && 
+        (error.message.includes("credits") || error.message.includes("insufficient"))) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
+    
     return NextResponse.json({ error: "Failed to generate quiz" }, { status: 500 })
   }
 }

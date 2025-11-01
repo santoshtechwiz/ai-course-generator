@@ -48,21 +48,34 @@ class ClientProgressQueue {
         // ✅ PRESERVE COMPLETION FLAG: Once completed, always completed
         const wasCompleted = existing.metadata?.completed === true
         const nowCompleted = event.metadata?.completed === true
-        existing.metadata = { ...(existing.metadata || {}), ...(event.metadata || {}) }
-        if (wasCompleted || nowCompleted) {
+        const shouldBeCompleted = wasCompleted || nowCompleted
+        
+        // Merge metadata, preserving completion flag
+        existing.metadata = { 
+          ...(existing.metadata || {}), 
+          ...(event.metadata || {})
+        }
+        
+        // Force completion flag if either event was/is completed
+        if (shouldBeCompleted) {
           existing.metadata.completed = true
         }
         
         this.queue[existingIndex] = existing
-        console.log(`Merged progress event in queue for ${event.courseId}:${event.chapterId} -> ${existing.progress}% (completed: ${existing.metadata.completed})`) 
+        // Only log completion events to reduce noise
+        if (existing.metadata?.completed) {
+          console.log(`[ProgressQueue] ✅ Merged COMPLETION event for ${event.courseId}:${event.chapterId} -> ${existing.progress}%`)
+        }
       } else {
         // For other events, replace with latest
         this.queue[existingIndex] = event
-        console.log(`Replaced queued event ${event.eventType} for ${event.courseId}:${event.chapterId}`)
       }
     } else {
       this.queue.push(event)
-      console.log(`Progress event queued: ${event.eventType} for ${event.courseId}:${event.chapterId}`)
+      // Only log chapter_start and completion events
+      if (event.eventType === 'chapter_start' || event.metadata?.completed) {
+        console.log(`[ProgressQueue] ➕ ${event.metadata?.completed ? 'COMPLETION' : event.eventType} queued: ${event.courseId}:${event.chapterId}`)
+      }
     }
 
     // Auto-flush only when queue grows large to reduce frequency
@@ -83,7 +96,11 @@ class ClientProgressQueue {
     const events = this.coalesceEvents([...this.queue])
     this.queue = []
 
-    console.log(`Flushing ${events.length} events:`, events)
+    // Only log if there are completion events or significant batches
+    const hasCompletion = events.some(e => e.metadata?.completed)
+    if (hasCompletion || events.length > 5) {
+      console.log(`[ProgressQueue] 🚀 Flushing ${events.length} events${hasCompletion ? ' (includes completion)' : ''}`)
+    }
 
     if (events.length === 0) {
       console.warn('No events to flush after coalescing')
@@ -101,31 +118,13 @@ class ClientProgressQueue {
     })
 
     if (validEvents.length === 0) {
-      console.warn('No valid events to flush after validation')
       this.isProcessing = false
       return
     }
 
-    console.log(`Sending ${validEvents.length} valid events`)
-
     try {
       const requestBody = { events: validEvents }
-      let jsonString: string
-      try {
-        jsonString = JSON.stringify(requestBody)
-        console.log('Sending request body:', jsonString)
-      } catch (stringifyError) {
-        console.error('JSON stringify error:', stringifyError, 'Request body:', requestBody)
-        this.isProcessing = false
-        return
-      }
-
-      // Additional validation
-      if (!jsonString || jsonString === '{}' || jsonString === '{"events":[]}') {
-        console.error('Invalid JSON string generated:', jsonString)
-        this.isProcessing = false
-        return
-      }
+      const jsonString = JSON.stringify(requestBody)
 
       const response = await fetch('/api/progress/enhanced-update', {
         method: 'POST',
@@ -136,14 +135,17 @@ class ClientProgressQueue {
       })
 
       if (response.ok) {
-        console.log(`Successfully flushed ${validEvents.length} progress events`)
+        const hasCompletion = validEvents.some(e => e.metadata?.completed)
+        if (hasCompletion) {
+          console.log(`[ProgressQueue] ✅ Successfully flushed ${validEvents.length} events (includes completion)`)
+        }
       } else {
-        console.error('Failed to flush progress events:', await response.text())
+        console.error('[ProgressQueue] ❌ Failed to flush:', await response.text())
         // Re-queue events on failure
         this.queue.unshift(...validEvents)
       }
     } catch (error) {
-      console.error('Error flushing progress events:', error)
+      console.error('[ProgressQueue] ❌ Error flushing:', error)
       // Re-queue events on error
       this.queue.unshift(...validEvents)
     } finally {

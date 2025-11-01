@@ -257,6 +257,11 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
 
   // Process single video - memoized to prevent recreating
   const processVideo = useCallback(async (chapterId: number) => {
+    if (typeof chapterId !== 'number' || isNaN(chapterId)) {
+      console.error('Invalid chapterId:', chapterId)
+      throw new Error('Invalid chapter ID provided for video processing')
+    }
+    
     try {
       // Initialize state
       setProcessingState(chapterId, true)

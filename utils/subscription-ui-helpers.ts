@@ -6,7 +6,7 @@
  */
 
 import { ReactNode } from 'react'
-import type { SubscriptionPlanType, SubscriptionStatusType } from '@/types/subscription'
+import type { SubscriptionPlanType, SubscriptionStatusType } from '@/types/subscription-plans'
 import { getPlanConfig, type PlanConfig } from '@/types/subscription-plans'
 
 // ============================================================================

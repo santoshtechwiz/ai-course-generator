@@ -28,13 +28,31 @@ const nextConfig = {
 
   // Image optimization
   images: {
-    domains: [
-      "localhost",
-      "img.clerk.com",
-      "placehold.co",
-      "avatars.githubusercontent.com",
-      "img.youtube.com",
-      "images.unsplash.com",
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'localhost',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img.clerk.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
     ],
     formats: ["image/avif", "image/webp"],
     deviceSizes: [320, 420, 640, 768, 1024, 1280, 1440, 1920],
@@ -49,7 +67,6 @@ const nextConfig = {
   },
 
   // Keep lint & type checks in CI (faster local builds)
-  eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true }, // run `npm run type-check` in CI
 
   // Compiler transforms (strip console in production)
@@ -61,7 +78,7 @@ const nextConfig = {
   // swcMinify: true, // Removed - SWC is now the default minifier in Next.js 15+
   trailingSlash: false,
   skipTrailingSlashRedirect: true,
-  skipMiddlewareUrlNormalize: true,
+  skipProxyUrlNormalize: true,
 
   // Additional performance flags
   generateEtags: false, // Disable etags for better performance

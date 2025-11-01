@@ -6,13 +6,14 @@ import {
   AIMessage,
 } from "../interfaces";
 import { Quiz } from "@/app/types/types";
+import { env } from "@/lib/env";
 
 /**
  * Google AI provider implementation using Gemini API
- * 
+ *
  * Integrates with Google's Generative AI (Gemini) models
  * to provide AI-powered quiz generation and chat completion.
- * 
+ *
  * @see https://ai.google.dev/docs
  */
 export class GoogleAIProvider implements AIProvider {
@@ -20,7 +21,7 @@ export class GoogleAIProvider implements AIProvider {
   private baseUrl: string;
   private defaultModel: string;
 
-  constructor(apiKey: string = process.env.GOOGLE_AI_API_KEY || "") {
+  constructor(apiKey: string = env.GOOGLE_AI_API_KEY || "") {
     if (!apiKey) {
       console.warn('Google AI API key not provided. GoogleAIProvider will fail at runtime.');
     }

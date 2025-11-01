@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
+import { securityMiddleware } from "@/lib/security"
 
 /**
- * Security headers middleware for enhanced application security
+ * Enhanced Security headers middleware with rate limiting and validation
  */
 
 // Security headers configuration
@@ -73,9 +74,20 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 }
 
 /**
- * Security headers middleware
+ * Enhanced security headers middleware with rate limiting
  */
 export function securityHeadersMiddleware(req: NextRequest) {
+  // Apply rate limiting for API routes
+  if (req.nextUrl.pathname.startsWith('/api/')) {
+    const rateLimitResult = securityMiddleware.applySecurity(req, {
+      rateLimit: { windowMs: 60000, maxRequests: 100 }
+    })
+
+    if (!rateLimitResult.success) {
+      return rateLimitResult.response
+    }
+  }
+
   const response = NextResponse.next()
   return applySecurityHeaders(response)
 }

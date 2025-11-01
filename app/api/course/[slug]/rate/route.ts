@@ -2,27 +2,12 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { getAuthSession } from "@/lib/auth"
 import { courseService } from "@/app/services/course.service"
+import { handleApiError } from "@/lib/api-error-handler"
 
 // Define validation schema for rating
 const ratingSchema = z.object({
   rating: z.number().int().min(1).max(5),
 })
-
-/**
- * Centralized error handling
- */
-function handleError(error: unknown) {
-  const errorMessage = error instanceof Error ? error.message : "Internal Server Error"
-  const status =
-    {
-      Unauthorized: 401,
-      "Course not found": 404,
-      Forbidden: 403,
-      "Rating must be between 1 and 5": 400,
-    }[errorMessage] || 500
-
-  return NextResponse.json({ error: errorMessage }, { status })
-}
 
 /**
  * POST: Submit a rating for a course
@@ -50,6 +35,6 @@ export async function POST(req: Request, props: { params: Promise<{ slug: string
     })
   } catch (error) {
     console.error("Error submitting course rating:", error)
-    return handleError(error)
+    return handleApiError(error)
   }
 }

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthSession } from '@/lib/auth'
-import { chatService } from '@/app/services/chat/ChatService'
+import { chatService } from '@/app/aimodel/chat/ChatService'
 import { RATE_LIMITS, CHAT_CONFIG } from '@/config/chat.config'
 import { logger } from '@/lib/logger'
 import { prisma } from '@/lib/db'
-import { getRAGService } from '@/app/services/chat/ragService'
+import { getRAGService } from '@/app/aimodel/chat/ragService'
 import { UserContext } from '@/types/chat.types'
 
 interface ChatRequest {

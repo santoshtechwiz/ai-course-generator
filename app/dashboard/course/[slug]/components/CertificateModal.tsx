@@ -278,4 +278,5 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
   );
 };
 
-export default CertificateModal;
+// ✅ PHASE 2: Memoize modal to prevent re-renders when props unchanged
+export default React.memo(CertificateModal);

@@ -11,19 +11,27 @@ interface CodePromptOptions {
   numberOfQuestions: number
   programmingLanguage: string
   difficulty: 'easy' | 'medium' | 'hard'
+  isSubscribed?: boolean
 }
 
 /**
  * Build code quiz generation prompt
  */
 export function buildCodePrompt(options: CodePromptOptions): AIMessage[] {
-  const { topic, numberOfQuestions, programmingLanguage, difficulty } = options
+  const { topic, numberOfQuestions, programmingLanguage, difficulty, isSubscribed = false } = options
+  
+  const systemMessage: AIMessage = isSubscribed
+    ? {
+        role: 'system',
+        content: 'You are an expert AI programming instructor that generates high-quality, comprehensive code-based quiz questions with working code examples, detailed explanations, and advanced coding scenarios. Focus on practical coding scenarios, best practices, and complex problem-solving.',
+      }
+    : {
+        role: 'system',
+        content: 'You are an expert programming instructor that generates code-based quiz questions with working code examples. Focus on practical coding scenarios and best practices.',
+      }
   
   return [
-    {
-      role: 'system',
-      content: 'You are an expert programming instructor that generates code-based quiz questions with working code examples. Focus on practical coding scenarios and best practices.',
-    },
+    systemMessage,
     {
       role: 'user',
       content: `Generate ${numberOfQuestions} coding quiz questions about "${topic}" in ${programmingLanguage} at ${difficulty} difficulty.
@@ -34,9 +42,20 @@ export function buildCodePrompt(options: CodePromptOptions): AIMessage[] {
 - Code should be syntactically correct and runnable
 - Questions should test practical understanding, not just theory
 - Cover different aspects: syntax, logic, debugging, optimization
-- Provide detailed explanations for correct answers`,
+- Provide detailed explanations for correct answers${isSubscribed ? '\n- Include advanced coding patterns and design principles\n- Add questions requiring code analysis and refactoring\n- Include performance optimization and best practices scenarios\n- Provide multiple solution approaches where applicable' : ''}`,
     },
   ]
+}
+
+/**
+ * Build code quiz prompt with function schema included
+ */
+export function buildCodeQuizPromptWithSchema(options: CodePromptOptions) {
+  return {
+    messages: buildCodePrompt(options),
+    functions: [getCodeFunctionSchema()],
+    functionCall: { name: 'generate_code_quiz' },
+  }
 }
 
 /**

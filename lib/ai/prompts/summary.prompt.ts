@@ -19,28 +19,20 @@ export function buildSummaryPrompt(options: SummaryPromptOptions): AIMessage[] {
   const { transcript, summaryLength = 250, focusAreas = [] } = options
   
   const focusInstruction = focusAreas.length > 0
-    ? `\n- Focus particularly on: ${focusAreas.join(', ')}`
+    ? `\n- Focus on: ${focusAreas.join(', ')}`
     : ''
   
   return [
     {
       role: 'system',
-      content: `You are an AI capable of summarizing content clearly and concisely. 
-Create summaries that capture the main topic and key points while avoiding tangential details.`
+      content: `Summarize content clearly and concisely, capturing main topics and key points.`
     },
     {
       role: 'user',
-      content: `Summarize the following transcript in approximately ${summaryLength} words.
-${focusInstruction}
+      content: `Summarize this transcript in ~${summaryLength} words.${focusInstruction}
+Focus on main topic and key points. Avoid sponsors, intros, unrelated details.
 
-**Requirements:**
-- Focus on the main topic and key points
-- Avoid mentioning sponsors, introductions, or unrelated details
-- Make it clear and easy to understand
-- Highlight the most important concepts
-- Use professional language
-
-**Transcript:**
+Transcript:
 ${transcript}`
     }
   ]
