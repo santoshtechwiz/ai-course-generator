@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { getAuthSession } from "@/lib/auth"
 import { courseService } from "@/app/services/course.service"
+import { handleApiError } from "@/lib/api-error-handler"
 
 // Define validation schema
 const updateSchema = z.object({
@@ -11,22 +12,6 @@ const updateSchema = z.object({
   progress: z.number().min(0).max(100).optional(),
   isPublic: z.boolean().optional(),
 })
-
-/**
- * Centralized error handling
- */
-function handleError(error: unknown) {
-  const errorMessage = error instanceof Error ? error.message : "Internal Server Error"
-  const status =
-    {
-      Unauthorized: 401,
-      "Course not found": 404,
-      Forbidden: 403,
-      "Insufficient credits": 402,
-    }[errorMessage] || 500
-
-  return NextResponse.json({ error: errorMessage }, { status })
-}
 
 /**
  * PATCH: Update course information by slug
@@ -49,7 +34,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ slug: strin
     return NextResponse.json(result)
   } catch (error) {
     console.error("Error updating course:", error)
-    return handleError(error)
+    return handleApiError(error)
   }
 }
 
@@ -70,7 +55,7 @@ export async function DELETE(req: Request, props: { params: Promise<{ slug: stri
     return NextResponse.json(result)
   } catch (error) {
     console.error("Error deleting course:", error)
-    return handleError(error)
+    return handleApiError(error)
   }
 }
 

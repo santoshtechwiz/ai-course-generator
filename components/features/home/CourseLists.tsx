@@ -9,7 +9,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useDebounce } from "@/lib/utils/hooks"
 import { cn } from "@/lib/utils"
 import { CourseCard } from "./CourseCard"
-import { useCoursesWithProgress } from "@/hooks/use-course-progress"
 import { getImageWithFallback } from "@/utils/image-utils"
 import type { CategoryId } from "@/config/categories"
 import { Badge } from "@/components/ui/badge"
@@ -254,12 +253,12 @@ export default function CoursesClient({
   ) as string[]
   // availableInstructors removed - instructor filter intentionally omitted
 
-  // Get course progress data
-  const { courses: coursesWithProgress } = useCoursesWithProgress(allCourses, userId)
+  // Get course progress data - simplified without hook
+  const coursesWithProgress = allCourses
 
   // Find courses in progress for resume functionality
   const coursesInProgress = coursesWithProgress
-    .filter((course) => course.isEnrolled && course.progressPercentage > 0 && course.progressPercentage < 100)
+    .filter((course: any) => course.isEnrolled && course.progressPercentage > 0 && course.progressPercentage < 100)
     .slice(0, 3) // Show max 3 recent courses
 
   // Data processing
@@ -571,7 +570,7 @@ export default function CoursesClient({
                 </div>
               </div>
               <div className="space-y-3">
-                {coursesInProgress.map((course, index) => (
+                {coursesInProgress.map((course: any, index: number) => (
                   <motion.div
                     key={course.id}
                     initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -20 }}
@@ -719,7 +718,7 @@ export default function CoursesClient({
                 {page.courses?.map((course: Course) => {
                   // Find the course with progress data
                   const courseWithProgress =
-                    coursesWithProgress.find((cp) => cp.id === course.id || cp.slug === course.slug) || course
+                    coursesWithProgress.find((cp: any) => cp.id === course.id || cp.slug === course.slug) || course
 
                   return (
                     <motion.div
@@ -764,13 +763,13 @@ export default function CoursesClient({
                         tags={[]}
                         className={viewMode === "list" ? "w-full" : undefined}
                         // Progress tracking props
-                        isEnrolled={courseWithProgress.isEnrolled}
-                        progressPercentage={courseWithProgress.progressPercentage}
-                        completedChapters={courseWithProgress.completedCount || 0}
-                        totalChapters={courseWithProgress.totalChapters}
-                        lastAccessedAt={courseWithProgress.lastAccessedAt}
-                        currentChapterTitle={courseWithProgress.currentChapterTitle}
-                        timeSpent={courseWithProgress.timeSpent}
+                        isEnrolled={(courseWithProgress as any).isEnrolled}
+                        progressPercentage={(courseWithProgress as any).progressPercentage}
+                        completedChapters={(courseWithProgress as any).completedCount || 0}
+                        totalChapters={(courseWithProgress as any).totalChapters}
+                        lastAccessedAt={(courseWithProgress as any).lastAccessedAt}
+                        currentChapterTitle={(courseWithProgress as any).currentChapterTitle}
+                        timeSpent={(courseWithProgress as any).timeSpent}
                       />
                     </motion.div>
                   )

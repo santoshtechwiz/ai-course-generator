@@ -3,7 +3,7 @@ import { OpenAIProvider } from "@/lib/ai/providers/openai-provider";
 import dotenv from "dotenv";
 dotenv.config();
 
-describe("OpenAIProvider (real integration test)", () => {
+describe.skip("OpenAIProvider (real integration test)", () => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
 

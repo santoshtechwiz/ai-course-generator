@@ -1,52 +1,24 @@
 import Link from "next/link"
 import type { Metadata } from "next"
-import { generateMetadata } from "@/lib/seo"
-import { JsonLD } from "@/lib/seo"
+import { getPageConfig, generateSEOMetadata, ArticleSchema } from "@/lib/seo"
 
-export const metadata: Metadata = generateMetadata({
-  title: "Terms of Service | CourseAI Educational Platform",
-  description:
-    "Review the terms and conditions for using CourseAI's AI-powered educational platform. Understanding our policies for a better learning experience.",
-  keywords: [
-    "terms of service",
-    "user agreement",
-    "educational platform terms",
-    "AI education terms",
-    "online learning conditions",
-    "courseai terms",
-    "educational service agreement",
-    "user policies",
-    "platform guidelines",
-    "service conditions",
-  ],
-  canonical: "/terms",
-  type: "article",
-})
+export const metadata: Metadata = generateSEOMetadata(
+  getPageConfig('terms', {
+    url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://courseai.io'}/terms`,
+  })
+)
 
 
 export default function TermsOfService() {
-  // Terms of service schema
-  const termsSchema = {
-    "@type": "WebPage",
-    name: "CourseAI Terms of Service",
-    description: "Terms and conditions for using CourseAI's AI-powered educational platform.",
-    mainEntity: {
-      "@type": "Article",
-      name: "Terms of Service",
-      headline: "CourseAI Terms of Service",
-      description: "Our terms and conditions for using the CourseAI educational platform.",
-      datePublished: new Date().toISOString(),
-      dateModified: new Date().toISOString(),
-      author: {
-        "@type": "Organization",
-        name: "CourseAI",
-      },
-    },
-  }
-
   return (
     <div className="w-full px-0 py-8">
-      <JsonLD type="webPage" data={termsSchema} />
+      <ArticleSchema article={{
+        headline: "CourseAI Terms of Service",
+        description: "Terms and conditions for using CourseAI's AI-powered educational platform.",
+        datePublished: new Date().toISOString(),
+        dateModified: new Date().toISOString(),
+        url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://courseai.io'}/terms`,
+      }} />
 
       <h1 className="text-2xl font-bold mb-6 text-foreground">Terms of Service</h1>
 

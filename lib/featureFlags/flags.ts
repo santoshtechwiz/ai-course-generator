@@ -130,6 +130,17 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
     version: '1.0.0'
   },
 
+  'quiz-video': {
+    enabled: true,
+    environments: ['production', 'staging', 'development', 'test'],
+    routes: ['/dashboard/video-quiz'],
+    requiresAuth: false, // Public browsing - auth enforced at action level by page itself
+    requiresCredits: false, // Credits checked when user clicks "Create Quiz" button
+    minimumPlan: 'FREE',
+    description: 'Video quiz creation - browsing public, creation requires auth (handled by page)',
+    version: '1.0.0'
+  },
+
   'middleware-caching': {
     enabled: true,
     environments: ['production', 'staging', 'development', 'test'],
@@ -307,4 +318,15 @@ export function getSubscriptionFeatures(): string[] {
   return Object.entries(FEATURE_FLAGS)
     .filter(([, flag]) => flag.requiresSubscription)
     .map(([flagName]) => flagName)
+}
+
+// Helper to check if a feature is enabled for a specific plan
+export function isFeatureEnabledForPlan(plan: string, featureFlag: string): boolean {
+  // Import here to avoid circular dependencies
+  const { PLAN_CONFIGURATIONS } = require('@/types/subscription-plans')
+  
+  const planConfig = PLAN_CONFIGURATIONS[plan as keyof typeof PLAN_CONFIGURATIONS]
+  if (!planConfig) return false
+  
+  return planConfig.featureFlags[featureFlag] || false
 }

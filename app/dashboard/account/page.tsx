@@ -23,7 +23,7 @@ export default async function SubscriptionAccountPage() {
     return (
       <PageWrapper>
     <PageHeader title="Account" description="Manage your account access">
-          <Alert variant="destructive">
+          <Alert variant="error">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Authentication Required</AlertTitle>
             <AlertDescription>Please sign in to access your account details.</AlertDescription>
@@ -94,43 +94,54 @@ export default async function SubscriptionAccountPage() {
   }
 
   return (
-    <PageWrapper>
-  <PageHeader title="Account Management" description="Manage your account, subscription, and billing information">
-  {/* Description now passed via PageHeader prop */}
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6 sm:mb-8">
-            <TabsTrigger value="overview">Account Overview</TabsTrigger>
-            <TabsTrigger value="subscription">Subscription</TabsTrigger>
-            <TabsTrigger value="payment">Payment Methods</TabsTrigger>
-            <TabsTrigger value="billing">Billing History</TabsTrigger>
-          </TabsList>
+    <div className="w-full max-w-full px-0 py-6 sm:py-8">
+      <header className="text-center mb-6 sm:mb-8 md:mb-10">
+        <div className="space-y-4">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight flex items-center justify-center gap-2 sm:gap-3 text-balance">
+            <span className="text-primary leading-tight">
+              Account Management
+            </span>
+          </h1>
 
-          <TabsContent value="overview" className="animate-in fade-in-50 slide-in-from-left-5">
-            <Suspense fallback={<AccountOverviewSkeleton />}>
-              <AccountOverview userId={userId} />
-            </Suspense>
-          </TabsContent>
+          <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-4">
+            Manage your account, subscription, and billing information
+          </p>
+        </div>
+      </header>
 
-          <TabsContent value="subscription" className="animate-in fade-in-50 slide-in-from-left-5">
-            <Suspense fallback={<SubscriptionDetailsSkeleton />}>
-              <SubscriptionDetails userId={userId} subscriptionData={subscriptionData} />
-            </Suspense>
-          </TabsContent>
+      <Tabs defaultValue="overview" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <TabsList className="grid w-full grid-cols-4 mb-6 sm:mb-8 neo-shadow border-4 border-border bg-card">
+          <TabsTrigger value="overview" className="neo-button font-black uppercase tracking-wider">Account Overview</TabsTrigger>
+          <TabsTrigger value="subscription" className="neo-button font-black uppercase tracking-wider">Subscription</TabsTrigger>
+          <TabsTrigger value="payment" className="neo-button font-black uppercase tracking-wider">Payment Methods</TabsTrigger>
+          <TabsTrigger value="billing" className="neo-button font-black uppercase tracking-wider">Billing History</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="payment" className="animate-in fade-in-50 slide-in-from-left-5">
-            <Suspense fallback={<SubscriptionDetailsSkeleton />}>
-              <PaymentMethodsView userId={userId} />
-            </Suspense>
-          </TabsContent>
+        <TabsContent value="overview" className="animate-in fade-in-50 slide-in-from-left-5">
+          <Suspense fallback={<AccountOverviewSkeleton />}>
+            <AccountOverview userId={userId} />
+          </Suspense>
+        </TabsContent>
 
-          <TabsContent value="billing" className="animate-in fade-in-50 slide-in-from-right-5">
-            <Suspense fallback={<SubscriptionDetailsSkeleton />}>
-              <BillingHistory userId={userId} />
-            </Suspense>
-          </TabsContent>
-        </Tabs>
-      </PageHeader>
-    </PageWrapper>
+        <TabsContent value="subscription" className="animate-in fade-in-50 slide-in-from-left-5">
+          <Suspense fallback={<SubscriptionDetailsSkeleton />}>
+            <SubscriptionDetails userId={userId} subscriptionData={subscriptionData} />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="payment" className="animate-in fade-in-50 slide-in-from-left-5">
+          <Suspense fallback={<SubscriptionDetailsSkeleton />}>
+            <PaymentMethodsView userId={userId} />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="billing" className="animate-in fade-in-50 slide-in-from-right-5">
+          <Suspense fallback={<SubscriptionDetailsSkeleton />}>
+            <BillingHistory userId={userId} />
+          </Suspense>
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }
 

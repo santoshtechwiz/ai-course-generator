@@ -22,18 +22,28 @@ class ViewCountQueue {
   async getViewCount(slug: string): Promise<number> {
     if (!slug) return 0;
 
-    if (this.cache.has(slug)) {
-      return this.cache.get(slug)!;
+    // Get the base view count from cache or database
+    let baseViewCount = this.cache.get(slug) || 0;
+
+    // If not in cache, fetch from database
+    if (!this.cache.has(slug)) {
+      try {
+        const course = await prisma.course.findUnique({
+          where: { slug },
+          select: { viewCount: true },
+        });
+        baseViewCount = course?.viewCount || 0;
+        this.cache.set(slug, baseViewCount);
+      } catch (error) {
+        console.error(`Error fetching view count for ${slug}:`, error);
+        return 0;
+      }
     }
 
-    const course = await prisma.course.findUnique({
-      where: { slug },
-      select: { viewCount: true },
-    });
+    // Add any queued increments
+    const queuedIncrements = this.queue.get(slug) || 0;
 
-    const viewCount = course?.viewCount || 0;
-    this.cache.set(slug, viewCount);
-    return viewCount;
+    return baseViewCount + queuedIncrements;
   }
 
   private async processQueue(): Promise<void> {

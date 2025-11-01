@@ -89,7 +89,7 @@ const processBatch = (events: ProgressEvent[]): EventBatch => {
  * Thunk to synchronize pending events with the server
  */
 export const syncEventsWithServer = createAsyncThunk<
-  { syncedEvents: string[]; failedEvents: string[] },
+  { syncedEvents: string[]; failedEvents: string[]; completedChaptersMap?: Record<string, number[]> },
   void,
   { state: RootState; rejectValue: string }
 >('progressEvents/syncWithServer', async (_, { getState, rejectWithValue }) => {
@@ -98,7 +98,7 @@ export const syncEventsWithServer = createAsyncThunk<
     const { pendingEvents } = state.progressEvents;
 
     if (pendingEvents.length === 0) {
-      return { syncedEvents: [], failedEvents: [] };
+      return { syncedEvents: [], failedEvents: [], completedChaptersMap: {} };
     }
 
     // Group events by type and entityId
@@ -374,7 +374,16 @@ const progressEventsSlice = createSlice({
       })
       .addCase(syncEventsWithServer.fulfilled, (state, action) => {
         state.isLoading = false;
-        const { syncedEvents = [], failedEvents = [] } = action.payload || {};
+        const { syncedEvents = [], failedEvents = [], completedChaptersMap = {} } = action.payload || {};
+
+        console.log('[progress-events-slice] ✅ syncEventsWithServer.fulfilled:', {
+          syncedEventsCount: syncedEvents.length,
+          failedEventsCount: failedEvents.length,
+          completedChaptersMap,
+          keys: Object.keys(completedChaptersMap),
+          requiresRefetch: Object.keys(completedChaptersMap).length > 0,
+          timestamp: new Date().toLocaleTimeString()
+        });
 
         if (Array.isArray(syncedEvents)) {
           syncedEvents.forEach((eventId) => {
@@ -397,10 +406,19 @@ const progressEventsSlice = createSlice({
 
         state.lastSyncedAt = Date.now();
         
-        // Trigger refetch from course progress hook to sync with latest DB state
+        // ✅ CRITICAL FIX: Trigger refetch from course progress hook to sync with latest DB state
+        // Pass completedChaptersMap so client can update immediately before refetch
         setTimeout(() => {
+          const eventDetail = { 
+            timestamp: Date.now(),
+            completedChaptersMap,
+            requiresRefetch: Object.keys(completedChaptersMap).length > 0
+          };
+          console.log('[progress-events-slice] 🎯 Dispatching progressSynced event with:', eventDetail);
           // This will be picked up by components using useCourseProgressSync
-          window.dispatchEvent(new CustomEvent('progressSynced', { detail: { timestamp: Date.now() } }));
+          window.dispatchEvent(new CustomEvent('progressSynced', { 
+            detail: eventDetail
+          }));
         }, 100);
       })
       .addCase(syncEventsWithServer.rejected, (state, action) => {

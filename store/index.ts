@@ -96,6 +96,15 @@ const flashcardPersistConfig = {
   ],
 }
 
+// ✅ FIX: Persist courseProgress to prevent data loss on refresh
+const courseProgressPersistConfig = {
+  key: "courseProgress",
+  storage: createStorage(),
+  whitelist: [
+    "byCourseId", // Persist all course progress data
+  ],
+}
+
 const quizPersistConfig = {
   key: "quiz",
   storage: createStorage(),
@@ -119,7 +128,7 @@ const rootReducer = combineReducers({
   flashcard: persistReducer(flashcardPersistConfig, flashcardReducer),
   course: persistReducer(coursePersistConfig, courseReducer),
   certificate: certificateReducer,
-  courseProgress: courseProgressReducer,
+  courseProgress: persistReducer(courseProgressPersistConfig, courseProgressReducer), // ✅ Now persisted!
   progressEvents: progressEventsReducer,
   subscription: subscriptionReducer, // Redux single source of truth
   orderingQuiz: orderingQuizReducer,
@@ -208,7 +217,7 @@ export const store = configureStore({
 })
 
 // ✅ Persistor for <PersistGate />
-const persistor = persistStore(store)
+export const persistor = persistStore(store)
 
 // ✅ Typed hooks
 export type RootState = ReturnType<typeof store.getState>

@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/db"
 import NodeCache from "node-cache"
+import { CACHE_DURATION } from "@/constants/global"
 
 // Add a simple cache to improve performance
-const courseCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }) // 5 minute cache
+const courseCache = new NodeCache({ stdTTL: CACHE_DURATION.COURSE_DATA, checkperiod: 60 }) // 5 minute cache
 
 // Get course by slug with caching
 export const getCourses = async (slug: string) => {

@@ -3,7 +3,7 @@ import { generateOrderingQuiz } from "@/lib/ai/course-ai-service";
 import { generateUniqueSlug } from "@/lib/utils/string";
 import { creditService, CreditOperationType } from "@/services/credit-service";
 import { getAuthSession } from "@/lib/auth";
-import type { SubscriptionPlanType } from "@/types/subscription";
+import type { SubscriptionPlanType } from "@/types/subscription-plans";
 
 interface OrderingQuizData {
   title: string;

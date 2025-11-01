@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db"
 import type { QuizType } from "../types/quiz-types"
 import NodeCache from "node-cache"
 import { Quiz } from "../types/types"
+import { CACHE_DURATION } from "@/constants/global"
 
 // Global singletons for caches
 const globalForQuizCache = globalThis as unknown as {
@@ -12,10 +13,10 @@ const globalForQuizCache = globalThis as unknown as {
 }
 
 if (!globalForQuizCache.__quizListCache) {
-	globalForQuizCache.__quizListCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }) // 5 minute cache
+	globalForQuizCache.__quizListCache = new NodeCache({ stdTTL: CACHE_DURATION.COURSE_DATA, checkperiod: 60 }) // 5 minute cache
 }
 if (!globalForQuizCache.__quizDetailCache) {
-	globalForQuizCache.__quizDetailCache = new NodeCache({ stdTTL: 900, checkperiod: 60 }) // 15 minute cache for quiz details
+	globalForQuizCache.__quizDetailCache = new NodeCache({ stdTTL: CACHE_DURATION.QUIZ_DETAILS, checkperiod: 60 }) // 15 minute cache for quiz details
 }
 
 const quizCache = globalForQuizCache.__quizListCache

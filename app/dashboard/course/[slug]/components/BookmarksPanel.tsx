@@ -5,10 +5,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Bookmark as BookmarkIcon, Lock } from "lucide-react"
+import { useState } from "react"
 import type { FC } from "react"
 import neo from "@/components/neo/tokens"
 import { cn } from "@/lib/utils"
 import type { BookmarkItem } from "@/store/slices/course-slice"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface Props {
   bookmarks: BookmarkItem[]
@@ -19,6 +29,13 @@ interface Props {
 }
 
 const BookmarksPanel: FC<Props> = ({ bookmarks, isAuthenticated, handleSeekToBookmark, handleRemoveBookmark, formatTime }) => {
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+
+  const handleConfirmDelete = (id: string) => {
+    handleRemoveBookmark(id)
+    setConfirmDelete(null)
+  }
+
   return (
     <Card className={neo.card}>
       <CardHeader className={neo.header}>
@@ -48,7 +65,35 @@ const BookmarksPanel: FC<Props> = ({ bookmarks, isAuthenticated, handleSeekToBoo
                     <p className="font-black text-foreground text-lg uppercase tracking-tight">{bookmark.title}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleRemoveBookmark(bookmark.id); }} className={`opacity-0 group-hover:opacity-100 transition-opacity ${neo.inner} hover:bg-red-500 hover:text-white font-black uppercase`}>Remove</Button>
+                <AlertDialog open={confirmDelete === bookmark.id} onOpenChange={(open) => !open && setConfirmDelete(null)}>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={(e) => { e.stopPropagation(); setConfirmDelete(bookmark.id) }} 
+                      className={`opacity-0 group-hover:opacity-100 transition-opacity ${neo.inner} hover:bg-red-500 hover:text-white font-black uppercase`}
+                    >
+                      Remove
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="border-4 border-[var(--color-border)] rounded-none shadow-[4px_4px_0_var(--shadow-color)]">
+                    <AlertDialogTitle className="font-black uppercase text-lg">Delete Bookmark?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-base font-bold">
+                      Remove "{bookmark.title}" bookmark? This action cannot be undone.
+                    </AlertDialogDescription>
+                    <div className="flex gap-3 justify-end mt-6">
+                      <AlertDialogCancel className="border-2 border-[var(--color-border)] rounded-none font-black uppercase">
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => handleConfirmDelete(bookmark.id)}
+                        className="bg-[var(--color-error)] text-white border-2 border-[var(--color-border)] rounded-none font-black uppercase hover:bg-red-700"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </div>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             ))}
           </div>

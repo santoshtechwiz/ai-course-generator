@@ -9,17 +9,20 @@ import type { AIMessage } from '@/lib/ai/interfaces'
 interface CoursePromptOptions {
   title: string
   units: string[]
+  isSubscribed?: boolean
 }
 
 /**
  * Build course content generation prompt
  */
 export function buildCoursePrompt(options: CoursePromptOptions): AIMessage[] {
-  const { title, units } = options
+  const { title, units, isSubscribed = false } = options
 
   const systemMessage: AIMessage = {
     role: 'system',
-    content: 'You are an expert AI that creates structured course outlines with relevant chapter titles and YouTube search queries for each chapter.',
+    content: isSubscribed
+      ? 'You are an expert AI educator that creates comprehensive, high-quality course outlines with detailed chapter titles, advanced learning objectives, and premium YouTube search queries for each chapter. Focus on creating in-depth, academically rigorous content.'
+      : 'You are an expert AI that creates structured course outlines with relevant chapter titles and YouTube search queries for each chapter.',
   }
 
   const userMessage: AIMessage = {
@@ -35,9 +38,9 @@ The course should cover the following units: ${units.join(', ')}.
 
 For each chapter, generate:
 - chapter_title: A clear, descriptive title for the chapter
-- youtube_search_query: A specific, high-quality search query to find good tutorial videos
+- youtube_search_query: A specific, high-quality search query to find good tutorial videos${isSubscribed ? '\n- learning_objectives: Specific learning goals for the chapter\n- key_concepts: Main concepts to be covered\n- difficulty_level: easy/medium/hard rating for the chapter' : ''}
 
-Ensure the course flows logically from beginner to advanced.
+Ensure the course flows logically from beginner to advanced${isSubscribed ? ' and includes progressive skill development' : ''}.
 Return structured content only; no explanations.`,
 }
 

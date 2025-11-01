@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Chapter not found" }, { status: 404 })
     }
 
-    if (chapter.summary) {
+    // If summary already exists and is completed, return it
+    if (chapter.summary && chapter.summaryStatus === "completed") {
       return NextResponse.json({ success: true, data: chapter.summary })
     }
 
@@ -35,24 +36,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: "No video ID available for summary generation" })
     }
 
-    // Check cache first
-    const cachedSummary = summaryCache.get<string>(chapter.videoId as string)
-    if (cachedSummary) {
-      await courseService.updateChapterSummary(chapterId, cachedSummary)
-      return NextResponse.json({ success: true, data: cachedSummary })
-    }
-
-    // Use processingCache as a lock
+    // Check if summary generation is already in progress
     if (processingCache.get<boolean>(chapter.videoId as string)) {
       return NextResponse.json({ success: true, message: "Summary generation in progress", status: "processing" })
     }
 
-    // Set processing status in cache
+    // Only generate if status is PENDING
+    if (chapter.summaryStatus !== "PENDING") {
+      return NextResponse.json({ success: false, message: `Summary status is ${chapter.summaryStatus}` })
+    }
+
+    // Set processing status
     processingCache.set(chapter.videoId as string, true)
 
-    // Generate summary
     try {
-      const summary = await generateAndSaveSummary(chapterId, chapter.videoId as string)
+      const summary = await generateAndSaveSummary(chapterId, chapter.videoId as string, chapter.transcript)
       return NextResponse.json({ success: true, data: summary })
     } catch (error) {
       console.error(`Error in summary generation for chapter ${chapterId}:`, error)
@@ -67,9 +65,9 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function generateAndSaveSummary(chapterId: number, videoId: string): Promise<string> {
+async function generateAndSaveSummary(chapterId: number, videoId: string, existingTranscript?: string | null): Promise<string> {
   try {
-    const summary = await fetchAndGenerateSummary(videoId)
+    const summary = await fetchAndGenerateSummary(videoId, existingTranscript, chapterId)
     if (summary) {
       summaryCache.set(videoId, summary)
       await updateChapterSummary(chapterId, summary)
@@ -86,17 +84,76 @@ async function generateAndSaveSummary(chapterId: number, videoId: string): Promi
   }
 }
 
-async function fetchAndGenerateSummary(videoId: string): Promise<string | null> {
-  const transcriptResponse = await YoutubeService.getTranscript(videoId)
+async function fetchAndGenerateSummary(videoId: string, existingTranscript?: string | null | undefined, chapterId?: number): Promise<string | null> {
+  let transcript: string | null = existingTranscript ?? null
 
-  if (transcriptResponse.status !== 200 || !transcriptResponse.transcript) {
+  // Fetch transcript if not provided
+  if (!transcript) {
+    const transcriptResponse = await YoutubeService.getTranscript(videoId)
+
+    if (transcriptResponse.status !== 200 || !transcriptResponse.transcript) {
+      // Fallback: Try to generate summary from video metadata instead
+      console.log(`[Summary API] No transcript available for ${videoId}, attempting metadata fallback...`)
+      return await generateSummaryFromMetadata(videoId, chapterId)
+    }
+
+    transcript = transcriptResponse.transcript
+
+    // Save transcript to database if chapterId provided
+    if (chapterId && transcript) {
+      const courseService = new CourseService()
+      await courseService.updateChapterTranscript(chapterId, transcript)
+    }
+  }
+
+  if (!transcript) {
     return null
   }
 
   try {
-    return await generateVideoSummaryFromTranscript(transcriptResponse.transcript.slice(0, 10000))
+    const summary = await generateVideoSummaryFromTranscript(transcript.slice(0, 10000))
+    return summary
   } catch (error) {
     console.error(`Error generating summary for video ID ${videoId}:`, error)
+    // Try metadata fallback on error
+    return await generateSummaryFromMetadata(videoId, chapterId)
+  }
+}
+
+/**
+ * Fallback: Generate summary from video metadata when transcript is unavailable
+ */
+async function generateSummaryFromMetadata(videoId: string, chapterId?: number): Promise<string | null> {
+  try {
+    const courseService = new CourseService()
+    
+    // Get chapter details for metadata
+    let chapterName = "Video Content"
+    if (chapterId) {
+      const chapter = await courseService.getChapterById(chapterId)
+      if (chapter?.name) {
+        chapterName = chapter.name
+      }
+    }
+
+    // Generate a basic summary from available metadata
+    const summary = `## ${chapterName}
+
+This chapter covers key concepts related to ${chapterName.toLowerCase()}.
+
+**Note:** This is a basic summary generated from the chapter title as the video transcript was not available. For a more detailed summary, please watch the video content directly.
+
+### What to expect:
+- Core concepts and fundamentals
+- Practical applications and examples
+- Key takeaways and learning objectives
+
+*Watch the video to get the complete learning experience.*`
+
+    console.log(`[Summary API] Generated metadata-based summary for ${videoId}`)
+    return summary
+  } catch (error) {
+    console.error(`[Summary API] Failed to generate metadata fallback for ${videoId}:`, error)
     return null
   }
 }

@@ -10,16 +10,16 @@ interface MCQPromptOptions {
   topic: string
   numberOfQuestions: number
   difficulty: 'easy' | 'medium' | 'hard'
-  isPremium?: boolean
+  isSubscribed?: boolean
 }
 
 /**
  * Build MCQ quiz generation prompt
  */
 export function buildMCQPrompt(options: MCQPromptOptions): AIMessage[] {
-  const { topic, numberOfQuestions, difficulty, isPremium = false } = options
+  const { topic, numberOfQuestions, difficulty, isSubscribed = false } = options
   
-  const systemMessage: AIMessage = isPremium
+  const systemMessage: AIMessage = isSubscribed
     ? {
         role: 'system',
         content: 'You are an expert AI that generates high-quality educational multiple choice questions with detailed explanations.',
@@ -29,7 +29,7 @@ export function buildMCQPrompt(options: MCQPromptOptions): AIMessage[] {
         content: 'You are an AI that generates educational multiple choice questions.',
       }
   
-  const userMessage: AIMessage = isPremium
+  const userMessage: AIMessage = isSubscribed
     ? {
         role: 'user',
         content: `Generate ${numberOfQuestions} advanced multiple choice questions about "${topic}" at ${difficulty} difficulty level. Each question should have 4 options with one correct answer and a detailed explanation.`,

@@ -346,6 +346,13 @@ export class CourseService {
   async updateChapterSummary(chapterId: number, summary: string | null) {
     return courseRepository.updateChapterSummary(chapterId, summary);
   }
+
+  /**
+   * Update chapter transcript
+   */
+  async updateChapterTranscript(chapterId: number, transcript: string | null) {
+    return courseRepository.updateChapterTranscript(chapterId, transcript);
+  }
     /**
    * Get chapter by ID
    */

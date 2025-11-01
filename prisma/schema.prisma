@@ -196,12 +196,15 @@ model Chapter {
   title              String
   youtubeSearchQuery String?
   videoId            String?
+  transcript         String?
   summary            String?
   videoDuration      Float?
   isFreePreview      Boolean           @default(true)
   isCompleted        Boolean           @default(false)
   summaryStatus      String            @default("PENDING")
   videoStatus        String            @default("PENDING")
+  quizStatus         String            @default("PENDING")
+  quizGeneratedAt    DateTime?
   order              Int               @default(0)
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
@@ -217,7 +220,8 @@ model Chapter {
   @@index([unitId])
   @@index([isCompleted])
   @@index([order])
-  @@index([videoStatus, summaryStatus])
+  @@index([quizStatus, summaryStatus])
+  @@index([videoStatus])
   @@map("Chapter")
 }
 

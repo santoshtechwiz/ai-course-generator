@@ -1,8 +1,17 @@
 import pLimit from "p-limit"
+import NodeCache from "node-cache"
 
 import YoutubeService from "./youtubeService"
 
 const limit = pLimit(1) // Limit concurrency to 1
+
+// Cache for preprocessed transcripts
+const preprocessedCache = new NodeCache({
+  stdTTL: 3600, // 1 hour
+  checkperiod: 600, // 10 minutes
+  useClones: false,
+  deleteOnExpire: true,
+});
 
 /**
  * Preprocess transcript to remove common patterns like introductions,
@@ -10,6 +19,13 @@ const limit = pLimit(1) // Limit concurrency to 1
  */
 function preprocessTranscript(transcript: string): string {
   if (!transcript) return '';
+
+  // Check cache first
+  const cacheKey = `preprocessed_${transcript.slice(0, 100).replace(/\s+/g, '_')}`;
+  const cached = preprocessedCache.get<string>(cacheKey);
+  if (cached) {
+    return cached;
+  }
 
   // Convert to lowercase for pattern matching
   const lowerTranscript = transcript.toLowerCase();
@@ -62,6 +78,9 @@ function preprocessTranscript(transcript: string): string {
   // Combine the filtered sections
   const cleanedTranscript = filteredSections.join(". ");
 
+  // Cache the result
+  preprocessedCache.set(cacheKey, cleanedTranscript);
+
   return cleanedTranscript;
 }
 
@@ -101,20 +120,48 @@ export async function getQuestionsFromTranscript(
   userId?: string,
   subscriptionPlan?: string,
   credits?: number,
+  useSummary?: boolean,
 ): Promise<any[]> {
   try {
+    // Check if transcript is available
+    if (!transcript || transcript.trim().length === 0) {
+      console.warn("No transcript available for video quiz generation");
+      return [];
+    }
+
     // Preprocess transcript to remove unwanted content and focus on relevant material
     const cleanedTranscript = preprocessTranscript(transcript);
 
-    // Extract most relevant content to stay within token limits
-    const relevantContent = extractRelevantContent(cleanedTranscript);
+    // Check if we have meaningful content after preprocessing
+    if (!cleanedTranscript || cleanedTranscript.trim().length < 50) {
+      console.warn("Transcript too short or empty after preprocessing");
+      return [];
+    }
+
+    // ✅ OPTIMIZATION: Use reduced word limit when generating from summary (saves tokens)
+    // Summary is already focused, so fewer tokens needed for quality questions
+    const wordLimit = useSummary ? 400 : 600;
+    const relevantContent = extractRelevantContent(cleanedTranscript, wordLimit);
+
+    // Final check for relevant content
+    if (!relevantContent || relevantContent.trim().length < 20) {
+      console.warn("No relevant content extracted from transcript");
+      return [];
+    }
+
+    // ✅ LOG: Track whether summary or transcript is being used (for monitoring)
+    if (useSummary) {
+      console.log(`[Quiz] Using SUMMARY for quiz generation (${relevantContent.length} chars, ~${Math.ceil(relevantContent.length / 4)} tokens)`);
+    } else {
+      console.log(`[Quiz] Using FULL TRANSCRIPT for quiz generation (${relevantContent.length} chars, ~${Math.ceil(relevantContent.length / 4)} tokens)`);
+    }
 
     // Generate questions with the improved transcript using simple AI service
     return await limit(async () => {
       const { generateVideoQuiz } = await import("@/lib/ai/course-ai-service");
 
       const quiz = await generateVideoQuiz(
-        `${courseTitle}: ${relevantContent.substring(0, 200)}`,
+        `${courseTitle}: ${relevantContent.substring(0, 100)}`.substring(0, 200),
         relevantContent,
         5,
     
@@ -123,7 +170,7 @@ export async function getQuestionsFromTranscript(
         credits
       );
       
-      return quiz.questions || [];
+      return quiz || [];
     });
   } catch (error) {
     console.error("Error generating questions:", error);

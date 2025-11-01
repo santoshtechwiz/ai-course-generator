@@ -5,6 +5,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import dynamic from "next/dynamic"
 const ReactPlayer: any = dynamic(() => import("react-player/youtube"), { ssr: false })
 import { useAuth } from "@/modules/auth"
+import { useAppSelector, useAppDispatch } from "@/store/hooks"
+import { setVideoProgress } from "@/store/slices/courseProgress-slice"
 import { useVideoPlayer } from "../hooks/useVideoPlayer"
 import { useToastThrottle } from "../hooks/useToastThrottle"
 import PlayerControls from "./PlayerControls"
@@ -113,6 +115,8 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
     isLoading = false,
   }) => {
     const { isAuthenticated: effectiveIsAuthenticated } = useAuth()
+    const dispatch = useAppDispatch()
+    
     // Derive effective authentication (prop can override but auth state acts as fallback)
     const youtubeVideoIdRef = useRef(youtubeVideoId)
 
@@ -173,6 +177,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
       chapterTransition: ReturnType<typeof setInterval> | null
     }>({ nextNotif: null, autoPlay: null, chapterTransition: null })
     const lastForcedVideoRef = useRef<string | null>(null)
+    const hasRestoredPositionRef = useRef<string | null>(null) // Track which chapter we've restored
 
     // Helper functions using video service
     const clamp = useCallback((val: number, min: number, max: number) => videoService.clamp(val, min, max), [])
@@ -196,8 +201,20 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
       playerState.isNativePiPActive,
     ])
 
-    // Video end handler using video service
+    // Video end handler with certificate trigger
     const handleVideoEnd = useCallback(() => {
+      console.log(`[VideoPlayer] ✅ Video ended for chapter ${chapterId}`)
+      
+      // ✅ Show certificate if course is complete
+      const progressPercentage = progressStats?.progressPercentage ?? 0
+      if (progressPercentage >= 100 && onCertificateClick) {
+        console.log(`[VideoPlayer] 🎓 Course complete! Showing certificate...`)
+        setTimeout(() => {
+          onCertificateClick()
+        }, 1000) // Small delay for better UX
+      }
+      
+      // Call original video service handler
       videoService.handleVideoEnd(
         onEnded,
         isAuthenticated,
@@ -210,12 +227,14 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
         intervalRefs,
       )
     }, [
+      chapterId,
       onEnded,
       isAuthenticated,
       playerState.hasPlayedFreeVideo,
+      playerState.autoPlayVideo,
       progressStats?.progressPercentage,
       onNextVideo,
-      playerState.autoPlayVideo,
+      onCertificateClick,
     ])
 
     // Initialize video player hook
@@ -277,6 +296,9 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
     const authenticationState = useMemo(() => {
       return videoService.getAuthenticationState(youtubeVideoId, effectiveIsAuthenticated, courseId)
     }, [youtubeVideoId, effectiveIsAuthenticated, courseId])
+
+    // Memoize bookmark times array to prevent unnecessary re-renders in PlayerControls
+    const bookmarkTimes = useMemo(() => bookmarks.map((b) => b.time), [bookmarks])
 
     // Initialize mini player position using video service
     useEffect(() => {
@@ -589,49 +611,75 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
       intervalRefs.current = { nextNotif: null, autoPlay: null, chapterTransition: null }
     }, [youtubeVideoId])
 
-    // Load saved progress position and show resume prompt
+    // ✅ Load saved progress position from Redux and auto-seek (ONCE per chapter)
+    const courseProgress = useAppSelector((state) => state.courseProgress)
+    const hasSeekCompleted = useRef(false) // Track if seek has been executed
+    
     useEffect(() => {
-      const loadSavedPosition = async () => {
-        if (!isAuthenticated || !rememberPlaybackPosition || !courseId || !chapterId) return
+      const loadSavedPosition = () => {
+        if (!rememberPlaybackPosition || !chapterId || !courseId) return
+        if (!playerRef.current || !playerState.playerReady) return
+
+        const chapterKey = String(chapterId)
+        
+        // ✅ FIX: Only seek once per chapter - check if already restored
+        if (hasRestoredPositionRef.current === chapterKey) {
+          return // Already restored for this chapter
+        }
 
         try {
-          const response = await fetch(`/api/progress/${courseId}`)
-          if (response.ok) {
-            const result = await response.json()
-            const progress = result.progress
+          // Get lastPositions from Redux courseProgress
+          const progressData = courseProgress.byCourseId?.[courseId]
+          const lastPositions = progressData?.videoProgress?.lastPositions || {}
+          
+          const savedSeconds = lastPositions[chapterKey] || 0
 
-            if (progress && progress.currentChapterId === Number(chapterId)) {
-              const savedSeconds = progress.playedSeconds || 0
-
-              // Only resume if there's meaningful progress (more than 30 seconds)
-              if (savedSeconds > 30) {
-                const shouldResume = window.confirm(
-                  `Resume from ${Math.floor(savedSeconds / 60)}:${Math.floor(savedSeconds % 60)
-                    .toString()
-                    .padStart(2, "0")}?`,
-                )
-
-                if (shouldResume && playerRef.current) {
-                  playerRef.current.seekTo(savedSeconds)
-                  toast({
-                    title: "Playback resumed",
-                    description: `Resumed from ${Math.floor(savedSeconds / 60)}:${Math.floor(savedSeconds % 60)
-                      .toString()
-                      .padStart(2, "0")}`,
-                  })
-                }
-              }
-            }
+          // Only resume if there's meaningful progress (>5s and <90% of video duration)
+          const isNearEnd = playerState.videoDuration > 0 && savedSeconds >= playerState.videoDuration * 0.9
+          
+          if (savedSeconds > 5 && !isNearEnd) {
+            console.log(`[VideoPlayer] ✅ Restoring position: ${savedSeconds}s for chapter ${chapterKey}`)
+            
+            // Seek to saved position
+            playerRef.current.seekTo(savedSeconds)
+            
+            // Mark as restored to prevent re-seeking
+            hasRestoredPositionRef.current = chapterKey
+            
+            // Show toast notification
+            const minutes = Math.floor(savedSeconds / 60)
+            const seconds = Math.floor(savedSeconds % 60)
+            toast({
+              title: "Resuming playback",
+              description: `Continuing from ${minutes}:${seconds.toString().padStart(2, "0")}`,
+              duration: 3000,
+            })
+          } else if (isNearEnd) {
+            // Video was nearly complete, start fresh
+            console.log(`[VideoPlayer] Video nearly complete, starting from beginning`)
+            hasRestoredPositionRef.current = chapterKey // Mark as handled
+          } else {
+            // No meaningful progress, mark as handled to prevent future checks
+            hasRestoredPositionRef.current = chapterKey
           }
         } catch (error) {
           console.error("Failed to load saved position:", error)
+          hasRestoredPositionRef.current = chapterKey // Mark as attempted
         }
       }
 
-      if (playerState.playerReady) {
+      // Run when player is ready
+      if (playerState.playerReady && !hasSeekCompleted.current) {
         loadSavedPosition()
+        hasSeekCompleted.current = true
       }
-    }, [effectiveIsAuthenticated, rememberPlaybackPosition, courseId, chapterId, playerState.playerReady])
+    }, [chapterId, rememberPlaybackPosition, courseId, playerState.playerReady, playerState.videoDuration])
+
+    // ✅ Reset seek tracking when chapter changes
+    useEffect(() => {
+      hasSeekCompleted.current = false
+      hasRestoredPositionRef.current = null
+    }, [chapterId])
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -799,17 +847,18 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
     }, [handlers])
 
     const handleToggleAutoPlayVideo = useCallback(() => {
-      const newValue = !playerState.autoPlayVideo
-      setPlayerState((prev) => ({ ...prev, autoPlayVideo: newValue }))
-
-      try {
-        storageManager.saveVideoSettings({ autoplay: newValue })
-      } catch (error) {
-        console.warn("Could not save auto-play preference:", error)
-      }
-
-      onToggleAutoPlay?.(true)
-    }, [playerState.autoPlayVideo, onToggleAutoPlay])
+      setPlayerState((prev) => {
+        const newValue = !prev.autoPlayVideo
+        
+        try {
+          storageManager.saveVideoSettings({ autoplay: newValue })
+        } catch (error) {
+          console.warn("Could not save auto-play preference:", error)
+        }
+        
+        return { ...prev, autoPlayVideo: newValue }
+      })
+    }, [])
 
     const handleChapterStartComplete = useCallback(() => {
       const animationFrame = requestAnimationFrame(() => {
@@ -846,7 +895,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
           // Create automatic bookmark title with chapter information
           const automaticTitle = title || `${chapterTitle} - ${formatTime(time)}`
 
-          // Save bookmark to database via API
+          // Save bookmark to database via API (don't set note field for automatic bookmarks)
           const response = await fetch("/api/bookmarks", {
             method: "POST",
             headers: {
@@ -856,7 +905,8 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
               courseId: Number.parseInt(courseId?.toString() || "0"),
               chapterId: Number.parseInt(chapterId?.toString() || "0"),
               timestamp: time,
-              note: automaticTitle,
+              // Don't set note field for automatic bookmarks - they should only be bookmarks
+              // note: automaticTitle,
             }),
           })
 
@@ -1193,13 +1243,9 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
         {!shouldHideMainPlayer && <TheaterModeButton isTheater={isTheaterMode} onToggle={handleTheaterModeToggle} />}
 
         {!shouldHideMainPlayer && (
-          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-30">
-            <div className={cn(neo.card, "bg-pink-500 rounded-none p-2 sm:p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]")}>
-              <span className="text-black font-black text-xs sm:text-sm select-none uppercase tracking-wider">
-                CourseAI
-              </span>
-            </div>
-          </div>
+          <>
+            {/* CourseAI logo now displayed as floating element in MainContent */}
+          </>
         )}
 
         {/* Enhanced Mini Player */}
@@ -1371,7 +1417,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
               onPlaybackRateChange={handlers.onPlaybackRateChange}
               onToggleFullscreen={handlers.onToggleFullscreen}
               formatTime={formatTime}
-              bookmarks={bookmarks.map((b) => b.time)}
+              bookmarks={bookmarkTimes}
               onSeekToBookmark={handleSeekToBookmark}
               isAuthenticated={effectiveIsAuthenticated}
               onCertificateClick={onCertificateClick}

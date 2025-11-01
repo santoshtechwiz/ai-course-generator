@@ -101,9 +101,9 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
         transition={{ duration: 0.5 }}
         className="w-full max-w-sm sm:max-w-md lg:max-w-lg xl:max-w-xl mx-auto"
       >
-        <Card className="shadow-2xl border-0 overflow-hidden w-full">
+        <Card className="shadow-[3px_3px_0_var(--shadow-color)] border-3 border-[var(--color-border)] rounded-none overflow-hidden w-full bg-[var(--color-bg)]">
           {/* Header with gradient background */}
-          <div className={`bg-gradient-to-r ${config.color} p-4 sm:p-6 text-white relative overflow-hidden`}>
+          <div className={`bg-gradient-to-r ${config.color} p-4 sm:p-6 text-white relative overflow-hidden border-b-3 border-[var(--color-border)]`}>
             <div className="absolute inset-0 bg-black/10" />
             <div className="relative z-10">
               <motion.div
@@ -118,7 +118,7 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
             </div>
           </div>
 
-          <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+          <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-[var(--color-bg)]">
             {/* Preview Results */}
             {previewData && (
               <motion.div
@@ -147,7 +147,7 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
               </h3>
 
               <div className="space-y-2 sm:space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-none border border-primary/20">
+                <div className="flex items-center gap-3 p-3 bg-[var(--color-primary)]/10 rounded-none border-2 border-[var(--color-primary)]/20 shadow-[2px_2px_0_var(--shadow-color)]">
                   <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
                     <Trophy className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
                   </div>
@@ -157,7 +157,7 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 bg-accent/10 rounded-none border border-accent/20">
+                <div className="flex items-center gap-3 p-3 bg-[var(--color-accent)]/10 rounded-none border-2 border-[var(--color-accent)]/20 shadow-[2px_2px_0_var(--shadow-color)]">
                   <div className="w-7 h-7 sm:w-8 sm:h-8 bg-accent rounded-full flex items-center justify-center flex-shrink-0">
                     <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-accent-foreground" />
                   </div>
@@ -176,7 +176,7 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Button
                   onClick={onSignIn}
-                  className={`w-full h-11 sm:h-12 bg-gradient-to-r ${config.color} hover:opacity-90 text-white font-semibold shadow-lg text-sm sm:text-base`}
+                  className={`w-full h-11 sm:h-12 bg-gradient-to-r ${config.color} hover:opacity-90 text-white font-semibold shadow-[3px_3px_0_var(--shadow-color)] text-sm sm:text-base border-2 border-[var(--color-border)] rounded-none`}
                   size="lg"
                 >
                   <LogIn className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
@@ -188,7 +188,7 @@ export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData
                 <Button
                   onClick={onRetake}
                   variant="outline"
-                  className="w-full h-11 sm:h-12 border-2 font-semibold bg-transparent text-sm sm:text-base"
+                  className="w-full h-11 sm:h-12 border-3 font-semibold bg-[var(--color-bg)] text-[var(--color-text)] shadow-[3px_3px_0_var(--shadow-color)] text-sm sm:text-base rounded-none hover:shadow-[4px_4px_0_var(--shadow-color)]"
                   size="lg"
                 >
                   <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />

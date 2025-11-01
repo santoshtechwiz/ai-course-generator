@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
+import { formatDate } from "@/lib/utils/string"
 import {
   Clock,
   FileText,
@@ -139,14 +140,6 @@ export function SavedQuizList({ quizzes, onRefresh, onEditQuiz }: SavedQuizListP
     toast({
       title: "Link copied",
       description: "Quiz link has been copied to clipboard",
-    })
-  }
-
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
     })
   }
 

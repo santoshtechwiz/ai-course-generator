@@ -12,19 +12,22 @@ interface VideoPromptOptions {
   numberOfQuestions: number
   difficulty?: 'easy' | 'medium' | 'hard'
   quizType?: 'mcq' | 'openended' | 'mixed'
+  isSubscribed?: boolean
 }
 
 /**
  * Build video quiz generation prompt
  */
 function buildVideoQuizPrompt(options: VideoPromptOptions): AIMessage[] {
-  const { courseTitle, transcript, numberOfQuestions, difficulty = 'medium', quizType = 'mcq' } = options
+  const { courseTitle, transcript, numberOfQuestions, difficulty = 'medium', quizType = 'mcq', isSubscribed = false } = options
   
   const systemMessage: AIMessage = {
     role: 'system',
-    content: `You are an expert in creating educational quiz questions from video transcripts. 
-Focus only on important concepts, key facts, and core knowledge presented in the content. 
-Ignore introductions, speaker information, greetings, conclusions, and any meta-content about the video itself.`
+    content: `You are an expert AI educator creating high-quality educational quiz questions from video transcripts.
+
+Focus ONLY on substantive educational content - ignore introductions, speaker info, greetings, conclusions, and video metadata.
+
+${isSubscribed ? 'For premium users: emphasize deeper analysis, critical thinking, and comprehensive understanding.' : 'Create clear, focused questions that test core concepts.'}`
   }
   
   const quizTypeInstructions = {
@@ -35,19 +38,16 @@ Ignore introductions, speaker information, greetings, conclusions, and any meta-
   
   const userMessage: AIMessage = {
     role: 'user',
-    content: `Generate ${numberOfQuestions} ${difficulty} difficulty ${quizType} questions based on the course titled "${courseTitle}" using the following video transcript:
+    content: `Generate ${numberOfQuestions} ${difficulty} ${quizType} questions from "${courseTitle}" using this transcript:
 
 ${transcript}
 
-**Requirements:**
+Requirements:
 - ${quizTypeInstructions[quizType]}
-- Focus ONLY on substantive educational content and core concepts
-- Questions should test understanding of key concepts, not trivial details
-- Ensure questions cover different aspects of the main topic
-- Make questions clear, unambiguous, and test real understanding
-- Avoid questions about who created the content, introductions, or video metadata
-- For MCQ: Make options distinct and plausible (avoid "all of the above" type options)
-- For open-ended: Require comprehensive answers demonstrating understanding`
+- Focus ONLY on core educational content
+- Questions should test real understanding of key concepts
+- Avoid meta-content about the video or speaker
+- MCQ: 4 distinct, plausible options${isSubscribed ? '\n- Include advanced analysis questions\n- Add critical thinking and application questions' : ''}`
   }
   
   return [systemMessage, userMessage]

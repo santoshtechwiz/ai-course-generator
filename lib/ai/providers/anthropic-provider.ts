@@ -6,13 +6,14 @@ import {
   AIMessage,
 } from "../interfaces";
 import { Quiz } from "@/app/types/types";
+import { env } from "@/lib/env";
 
 /**
  * Anthropic AI provider implementation using Claude API
- * 
+ *
  * Integrates with Anthropic's Claude models to provide AI-powered
  * quiz generation and chat completion.
- * 
+ *
  * @see https://docs.anthropic.com/claude/reference
  */
 export class AnthropicProvider implements AIProvider {
@@ -21,7 +22,7 @@ export class AnthropicProvider implements AIProvider {
   private defaultModel: string;
   private apiVersion: string;
 
-  constructor(apiKey: string = process.env.ANTHROPIC_API_KEY || "") {
+  constructor(apiKey: string = env.ANTHROPIC_API_KEY || "") {
     if (!apiKey) {
       console.warn('Anthropic API key not provided. AnthropicProvider will fail at runtime.');
     }

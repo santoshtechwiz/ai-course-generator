@@ -5,7 +5,7 @@
  */
 
 import type { Session } from 'next-auth'
-import type { SubscriptionPlanType } from '@/types/subscription'
+import type { SubscriptionPlanType } from '@/types/subscription-plans'
 import type { AIServiceContext } from '@/lib/ai/services'
 
 /**

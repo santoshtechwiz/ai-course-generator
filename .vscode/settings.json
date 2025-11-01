@@ -7,7 +7,7 @@
         "editor.defaultFormatter": null
     },
     "[typescriptreact]": {
-        "editor.defaultFormatter": null
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
     "editor.formatOnSave": false,
     "sqltools.connections": [

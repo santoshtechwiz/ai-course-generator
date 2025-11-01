@@ -1,81 +1,127 @@
 /**
- * Enhanced SEO Module for CourseAI Platform
- * 
- * Comprehensive SEO system that addresses Google Search Console issues
- * and provides complete schema.org compliance for better search visibility.
+ * CourseAI SEO System
+ * Unified, enterprise-grade SEO management system
+ *
+ * This module provides:
+ * - Single source of truth for all SEO metadata
+ * - Comprehensive validation and error handling
+ * - Extensible schema system
+ * - Performance optimized with caching
+ * - Type-safe configuration management
  */
+
+import { generateSEOMetadata } from './core/seo-service'
 
 // ============================================================================
 // CORE EXPORTS
 // ============================================================================
 
-// Constants and configuration
-;
-export const generateSEOMetadata=()=>{
+export { CourseAISEO, createSEOService, generateSEOMetadata } from './core/seo-service'
 
-  return {};  
-}
-// Core utility functions
-;
+// ============================================================================
+// CONFIGURATION MANAGEMENT
+// ============================================================================
 
-// Unified metadata generation
 export {
-  generateMetadata,
-  
-  generateQuizMetadata,
-  
-} from "./unified-metadata";
+  baseSEOConfig,
+  pageConfigs,
+  getPageConfig,
+  getCoursePageConfig,
+  getQuizPageConfig,
+  hasRequiredFields,
+  isValidUrl,
+  validateImage,
+} from './config/seo-config'
 
-// Quiz title utilities (SEO improvements)
-;
+// ============================================================================
+// SCHEMA SYSTEM
+// ============================================================================
 
-// React components
-export { JsonLD, DefaultSEO } from "./components";
-
-// Structured data components
 export {
-  
-  
-  
-  FAQSchema,
-  
+  SchemaGenerator,
+  createSchemaGenerator,
+  validateSchema,
+} from './schemas/schema-types'
+
+export {
+  // React Components
+  SchemaScript,
+  OrganizationSchema,
+  CourseSchema,
   QuizSchema,
-} from "./components";
+  FAQSchema,
+  BreadcrumbSchema,
+  ArticleSchema,
+} from './schemas/schema-components'
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+export {
+  extractKeywords,
+  generateMetaDescription,
+  slugify,
+  capitalize,
+  isValidEmail,
+  hasRequiredSEOFields,
+  // Caching
+  cacheMetadata,
+  getCachedMetadata,
+  cacheSchema,
+  getCachedSchema,
+  generateMetadataCacheKey,
+  generateSchemaCacheKey,
+  // Analytics
+  trackSEOMetrics,
+  validateSEOPractices,
+} from './utils/seo-utils'
 
 // ============================================================================
 // TYPE EXPORTS
 // ============================================================================
-;
+
+export type { SEOConfig } from './core/seo-service'
 
 // ============================================================================
-// DEFAULT METADATA
+// LEGACY COMPATIBILITY (will be removed in future versions)
 // ============================================================================
 
-import { generateMetadata } from "./unified-metadata";
-import { defaultSiteInfo } from "./constants";
+import { SchemaScript, OrganizationSchema } from './schemas/schema-generator'
 
-const defaultMetadata = generateMetadata({
-  title: defaultSiteInfo.name || "CourseAI - AI-Powered Educational Platform",
-  description: "Create engaging courses and interactive quizzes with AI. CourseAI transforms text, videos, and ideas into comprehensive learning experiences. Perfect for educators, trainers, and content creators.",
-  keywords: [
-    "AI education platform", 
-    "course creation", 
-    "interactive learning", 
-    "quiz generator", 
-    "educational technology", 
-    "e-learning", 
-    "AI-powered courses", 
-    "video tutorials", 
-    "online education", 
-    "skill development",
-    "professional training",
-    "courseai",
-    "course builder",
-    "learning management",
-    "educational content",
-    "personalized learning",
-    "coding courses",
-    "programming tutorials",
-    "tech education"
-  ]
-});
+/**
+ * @deprecated Use CourseAISEO service instead
+ */
+export const generateMetadata = generateSEOMetadata
+
+/**
+ * @deprecated Use pageConfigs and getPageConfig instead
+ */
+export const defaultSiteInfo = {
+  name: 'CourseAI',
+  url: process.env.NEXT_PUBLIC_SITE_URL || 'https://courseai.io',
+}
+
+/**
+ * @deprecated Use SchemaScript instead
+ */
+export const JsonLD = SchemaScript
+
+/**
+ * @deprecated Use OrganizationSchema instead
+ */
+export const DefaultSEO = OrganizationSchema
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+export const SEO_CONSTANTS = {
+  TITLE_MAX_LENGTH: 60,
+  DESCRIPTION_MAX_LENGTH: 160,
+  KEYWORDS_MAX_COUNT: 10,
+  OG_IMAGE_WIDTH: 1200,
+  OG_IMAGE_HEIGHT: 630,
+  CACHE_TTL_METADATA: 5 * 60 * 1000, // 5 minutes
+  CACHE_TTL_SCHEMA: 10 * 60 * 1000, // 10 minutes
+} as const

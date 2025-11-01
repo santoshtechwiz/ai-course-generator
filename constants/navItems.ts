@@ -1,4 +1,4 @@
-import { Compass, Home, BookOpen, BrainCircuit, PlusCircle, CreditCard } from "lucide-react"
+import { Compass, Home, BookOpen, BrainCircuit, PlusCircle, CreditCard, Users } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
 interface NavItem {
@@ -22,3 +22,6 @@ export const navItems: NavItem[] = [
   { name: "Create", href: "/dashboard/explore", icon: PlusCircle, subItems: [] },
   { name: "Plans", href: "/dashboard/subscription", icon: CreditCard, subItems: [] },
 ]
+
+// Public navigation items for non-authenticated users
+export const publicNavItems = navItems.filter(item => item.isPublic)

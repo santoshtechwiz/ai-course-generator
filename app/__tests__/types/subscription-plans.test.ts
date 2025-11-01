@@ -140,7 +140,7 @@ describe('getMaxQuestions', () => {
   })
 
   it('should return correct max questions for ENTERPRISE plan', () => {
-    expect(getMaxQuestions('ENTERPRISE')).toBe(20)
+    expect(getMaxQuestions('ENTERPRISE')).toBe(15)
   })
 
   it('should handle numeric values', () => {
@@ -152,10 +152,10 @@ describe('getMaxQuestions', () => {
 })
 
 describe('hasReachedQuestionLimit', () => {
-  it('should return correct limit check for ENTERPRISE plan (20 max)', () => {
-    expect(hasReachedQuestionLimit('ENTERPRISE', 19)).toBe(false)
-    expect(hasReachedQuestionLimit('ENTERPRISE', 20)).toBe(true)
-    expect(hasReachedQuestionLimit('ENTERPRISE', 21)).toBe(true)
+  it('should return correct limit check for ENTERPRISE plan (15 max)', () => {
+    expect(hasReachedQuestionLimit('ENTERPRISE', 14)).toBe(false)
+    expect(hasReachedQuestionLimit('ENTERPRISE', 15)).toBe(true)
+    expect(hasReachedQuestionLimit('ENTERPRISE', 16)).toBe(true)
   })
 
   it('should return true when current questions >= max', () => {

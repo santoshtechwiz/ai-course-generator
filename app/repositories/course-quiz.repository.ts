@@ -57,6 +57,18 @@ class CourseQuizRepository extends BaseRepository<any> {
   }
 
   /**
+   * Get chapter transcript for quiz generation
+   */
+  async getChapterTranscript(chapterId: number) {
+    const chapter = await prisma.chapter.findUnique({
+      where: { id: chapterId },
+      select: { transcript: true },
+    });
+
+    return chapter?.transcript || null;
+  }
+
+  /**
    * Save questions for a chapter (batch operation)
    */
   async saveQuestionsForChapter(questions: any[], chapterId: number) {

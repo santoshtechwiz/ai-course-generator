@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 
 import ImprovedContactForm from "./ContactForm"
 import { generateMetadata } from "@/lib/seo"
-import { JsonLD } from "@/lib/seo"
+import { ArticleSchema } from "@/lib/seo"
 
 
 export const metadata: Metadata = generateMetadata({
@@ -57,7 +57,17 @@ const ContactUsPage = () => {
 
   return (
     <div className="container py-12">
-      <JsonLD type="contactPage" data={contactInfo} />
+      <ArticleSchema
+        article={{
+          headline: "Contact CourseAI - Get in Touch",
+          description: "Contact the CourseAI team for support, partnerships, or inquiries about our AI-powered educational platform.",
+          image: "/og-image.jpg",
+          datePublished: "2024-01-01",
+          dateModified: "2024-01-01",
+          author: "CourseAI Team",
+          url: "https://courseai.io/contactus",
+        }}
+      />
       <ImprovedContactForm />
     </div>
   )

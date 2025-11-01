@@ -90,7 +90,8 @@ function incrementCourseViewCount(req: NextRequest) {
   if (match) {
     const slug = match.pathname.groups.slug
     if (slug) {
-      fetch(`${process.env.NEXT_PUBLIC_URL}/api/increment`, {
+      // Fire-and-forget: don't await, just trigger the increment
+      fetch(`${req.nextUrl.origin}/api/increment`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

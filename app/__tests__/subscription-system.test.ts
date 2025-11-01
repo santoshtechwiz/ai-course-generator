@@ -28,8 +28,9 @@ import {
   // Constants
   DEFAULT_FREE_SUBSCRIPTION,
   SubscriptionPlanType,
-  SUBSCRIPTION_CACHE_CONFIG
-} from '@/types/subscription'
+  SUBSCRIPTION_CACHE_CONFIG,
+  isPlanAtLeast
+} from '@/types/subscription-plans'
 
 import {
   calculateSavings,
@@ -37,7 +38,7 @@ import {
   calculateMonthlyEquivalent,
   isPlanPopular,
   getRecommendedPlan
-} from '@/types/subscription/utils'
+} from '@/types/subscription-plans'
 
 describe('Subscription System - Production Tests', () => {
   describe('Type Safety & Validation', () => {
@@ -94,9 +95,9 @@ describe('Subscription System - Production Tests', () => {
     })
     
     it('should handle plan hierarchy comparison', () => {
-      expect(hasMinimumPlan('PREMIUM', 'BASIC')).toBe(true)
-      expect(hasMinimumPlan('BASIC', 'PREMIUM')).toBe(false)
-      expect(hasMinimumPlan('FREE', 'ENTERPRISE')).toBe(false)
+      expect(isPlanAtLeast('PREMIUM', 'BASIC')).toBe(true)
+      expect(isPlanAtLeast('BASIC', 'PREMIUM')).toBe(false)
+      expect(isPlanAtLeast('FREE', 'ENTERPRISE')).toBe(false)
     })
     
     it('should identify active plans', () => {
@@ -114,7 +115,7 @@ describe('Subscription System - Production Tests', () => {
       expect(Object.keys(SubscriptionPlanType)).toEqual(['FREE', 'BASIC', 'PREMIUM', 'ENTERPRISE'])
       
       Object.values(SubscriptionPlanType).forEach(plan => {
-        expect(plan.features.credits).toBeGreaterThan(0)
+        expect(plan.monthlyCredits).toBeGreaterThan(0)
         expect(plan.price).toBeGreaterThanOrEqual(0)
         expect(plan.name).toBeTruthy()
       })
@@ -122,7 +123,7 @@ describe('Subscription System - Production Tests', () => {
     
     it('should have increasing credit limits', () => {
       const plans = Object.values(SubscriptionPlanType)
-      const credits = plans.map(plan => plan.features.credits)
+      const credits = plans.map(plan => plan.monthlyCredits)
       
       expect(credits[0]).toBeLessThan(credits[1]) // FREE < BASIC
       expect(credits[1]).toBeLessThan(credits[2]) // BASIC < PREMIUM
