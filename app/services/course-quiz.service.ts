@@ -4,21 +4,19 @@ import YoutubeService from "@/services/youtubeService";
 import { prisma } from "@/lib/db";
 import NodeCache from "node-cache";
 
-// Service-level cache for quiz operations
-const serviceCache = new NodeCache({
+// ✅ PHASE 1 FIX: Unified cache with namespaced keys (reduced memory usage)
+const quizCache = new NodeCache({
   stdTTL: 3600, // 1 hour
   checkperiod: 600, // 10 minutes
   useClones: false,
   deleteOnExpire: true,
 });
 
-// Cache for preprocessed transcripts
-const preprocessedCache = new NodeCache({
-  stdTTL: 3600, // 1 hour
-  checkperiod: 600,
-  useClones: false,
-  deleteOnExpire: true,
-});
+// Cache key prefixes for different data types
+const CACHE_PREFIX = {
+  SERVICE: 'service:',
+  PREPROCESSED: 'preprocessed:',
+} as const;
 
 interface QuizRequestData {
   videoId: string;
@@ -43,75 +41,109 @@ export class CourseQuizService {  /**
       throw new Error("Invalid request: Missing required fields");
     }
 
-    // Check if generation is already in progress or completed
+    // ✅ NEW: Check quizStatus to prevent redundant generation
     const chapter = await prisma.chapter.findUnique({
       where: { id: chapterId },
-      select: { videoStatus: true }
+      select: { videoStatus: true, quizStatus: true, quizGeneratedAt: true }
     });
+
+    // If quiz already generated, return cached
+    if (chapter?.quizStatus === 'COMPLETED') {
+      const existingQuestions = await courseQuizRepository.getQuestionsByChapterId(chapterId);
+      if (existingQuestions && existingQuestions.length > 0) {
+        console.log(`[Quiz] Returning existing quiz for chapter ${chapterId} (generated at ${chapter.quizGeneratedAt})`);
+        return existingQuestions;
+      }
+    }
+
+    // If quiz generation failed recently, skip retry for 5 minutes
+    if (chapter?.quizStatus === 'FAILED' && chapter.quizGeneratedAt) {
+      const timeSinceAttempt = Date.now() - chapter.quizGeneratedAt.getTime();
+      const RETRY_DELAY = 5 * 60 * 1000; // 5 minutes
+      if (timeSinceAttempt < RETRY_DELAY) {
+        console.warn(
+          `[Quiz] Quiz generation failed for chapter ${chapterId}. Retry in ${Math.ceil((RETRY_DELAY - timeSinceAttempt) / 1000)}s`
+        );
+        throw new Error("Quiz generation failed. Please try again in a few minutes.");
+      }
+    }
 
     if (chapter?.videoStatus === 'PROCESSING') {
       throw new Error("Quiz generation already in progress for this chapter");
     }
 
-    if (chapter?.videoStatus === 'COMPLETED') {
-      // Double-check if questions exist
-      const existingQuestions = await courseQuizRepository.getQuestionsByChapterId(chapterId);
-      if (existingQuestions && existingQuestions.length > 0) {
-        console.log("Questions already exist for chapter", chapterId);
-        return existingQuestions;
-      }
-    }
-
-    // Mark as processing to prevent concurrent generation
+    // ✅ NEW: Mark as generating (atomic operation)
     await prisma.chapter.update({
       where: { id: chapterId },
-      data: { videoStatus: 'PROCESSING' }
+      data: { quizStatus: 'GENERATING', videoStatus: 'PROCESSING' }
     });
 
     try {
-      const cacheKey = `questions_${chapterId}_${videoId}`;
-      let questions = serviceCache.get<any[]>(cacheKey);
+      const cacheKey = `${CACHE_PREFIX.SERVICE}questions_${chapterId}_${videoId}`;
+      let questions = quizCache.get<any[]>(cacheKey);
 
       if (!questions || questions.length === 0) {
         // First try to get existing questions from the database
         questions = await courseQuizRepository.getQuestionsByChapterId(chapterId) as any[];
 
         if (!questions || questions.length === 0) {
-          // Ensure summary exists before generating quiz (optimizes token usage)
+          // ✅ OPTIMIZATION: Check if summary exists FIRST (shorter, saves tokens)
           const existingSummary = await courseQuizRepository.getChapterSummary(chapterId);
-          if (!existingSummary) {
-            console.log("Generating summary for quiz optimization");
-            await this.generateChapterSummary(chapterId, videoId);
+          let contentForQuiz: string | null = existingSummary;
+          let useSummary = false;
+
+          // If no summary, fall back to transcript
+          if (!contentForQuiz) {
+            contentForQuiz = await this.fetchTranscriptOrSummary(chapterId, videoId);
+            useSummary = false;
+          } else {
+            useSummary = true;
+            console.log(`[Quiz] Found existing summary for chapter ${chapterId}, will use for quiz generation`);
           }
 
-          // Now get the content for quiz generation (will prefer summary)
-          const transcriptOrSummary = await this.fetchTranscriptOrSummary(chapterId, videoId);
-
-          if (transcriptOrSummary) {
-            questions = await this.generateAndSaveQuestions(transcriptOrSummary, chapterId, chapterName, userId, subscriptionPlan, credits);
+          if (contentForQuiz) {
+            // ✅ OPTIMIZATION: Pass useSummary flag to reduce token usage
+            questions = await this.generateAndSaveQuestions(
+              contentForQuiz,
+              chapterId,
+              chapterName,
+              userId,
+              subscriptionPlan,
+              credits,
+              useSummary
+            );
           } else {
             throw new Error("Failed to fetch transcript or summary");
           }
         }
 
         if (questions && questions.length > 0) {
-          serviceCache.set(cacheKey, questions);
+          quizCache.set(cacheKey, questions);
         }
       }
 
-      // Mark as completed
+      // ✅ NEW: Mark as completed with timestamp
       await prisma.chapter.update({
         where: { id: chapterId },
-        data: { videoStatus: 'COMPLETED' }
+        data: {
+          quizStatus: 'COMPLETED',
+          videoStatus: 'COMPLETED',
+          quizGeneratedAt: new Date()
+        }
       });
 
-      console.log("Questions:", questions);
+      console.log(`[Quiz] Successfully generated ${questions.length} questions for chapter ${chapterId}`);
       return questions || [];
     } catch (error) {
-      // Reset status on failure
+      // ✅ NEW: Mark as failed with timestamp for retry logic
+      console.error(`[Quiz] Failed to generate quiz for chapter ${chapterId}:`, error);
       await prisma.chapter.update({
         where: { id: chapterId },
-        data: { videoStatus: 'PENDING' }
+        data: {
+          quizStatus: 'FAILED',
+          videoStatus: 'PENDING',
+          quizGeneratedAt: new Date()
+        }
       });
       throw error;
     }
@@ -168,19 +200,30 @@ export class CourseQuizService {  /**
     userId?: string,
     subscriptionPlan?: string,
     credits?: number,
+    useSummary?: boolean,
   ): Promise<any[]> {
     try {
-      console.log("Generating questions for text");
-      const questions = await getQuestionsFromTranscript(transcriptOrSummary, chapterName, userId, subscriptionPlan, credits);
+      const contentLabel = useSummary ? 'summary' : 'transcript';
+      console.log(`[Quiz] Generating questions from ${contentLabel} for chapter ${chapterId}`);
+
+      // ✅ OPTIMIZATION: Pass useSummary flag to reduce token usage
+      const questions = await getQuestionsFromTranscript(
+        transcriptOrSummary,
+        chapterName,
+        userId,
+        subscriptionPlan,
+        credits,
+        useSummary
+      );
 
       if (questions.length > 0) {
-        console.log("Saving questions to database");
+        console.log(`[Quiz] Saving ${questions.length} questions for chapter ${chapterId}`);
         await courseQuizRepository.saveQuestionsForChapter(questions, chapterId);
       }
 
       return questions;
     } catch (error) {
-      console.error("Error generating questions:", error);
+      console.error(`[Quiz] Error generating questions:`, error);
       return [];
     }
   }

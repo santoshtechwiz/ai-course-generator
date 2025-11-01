@@ -13,17 +13,18 @@ import { formatDuration } from "../utils/formatUtils"
 import { useAuth } from "@/modules/auth"
 import { getColorClasses } from "@/lib/utils"
 import type { BookmarkData } from "./video/types"
-import { useCourseProgressSync } from "@/hooks/useCourseProgressSync"
+import { useUnifiedProgress } from "@/hooks/useUnifiedProgress"
 import { useVideoState } from "./video/hooks/useVideoState"
 import { useProgressMutation, flushProgress } from "@/services/enhanced-progress/client_progress_queue"
 import { SignInPrompt } from "@/components/shared"
 import { migratedStorage } from "@/lib/storage"
 import { setVideoProgress } from "@/store/slices/courseProgress-slice"
-import { useGuestProgress } from "@/hooks/useGuestProgress"
 import { useSession } from "next-auth/react"
 import { storageManager } from "@/utils/storage-manager"
 import { useBookmarks } from "@/hooks/use-bookmarks"
 import { renderCourseDashboard } from "./CourseDetailsShell"
+import CertificateModal from "./CertificateModal"
+import AnimatedCourseAILogo from "./video/components/AnimatedCourseAILogo"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -118,21 +119,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   const dispatch = useAppDispatch()
   const { user } = useAuth()
   const { status } = useSession()
-  const { buttonPrimary, buttonSecondary, buttonIcon, cardPrimary, cardSecondary, badgeType, badgeStatus } =
+  const { buttonPrimary, buttonSecondary, buttonIcon, cardPrimary, cardSecondary, badge } =
     getColorClasses()
 
   // Global PiP state
   const { isPiPActive } = useAppSelector((state) => state.course)
 
-  // Guest system hooks
+  // ✅ PHASE 1 FIX: Unified progress system (replaces duplicate guest + auth hooks)
   const {
+    progress: unifiedProgress,
+    markChapterCompleted: markChapterComplete,
+    setCurrentChapter: setCurrentChapterProgress,
+    updateVideoProgress: updateVideoProgressTracking,
+    refetch: refreshProgressFromServer,
     isGuest,
-    currentCourseProgress,
-    markGuestChapterCompleted,
-    setGuestCurrentChapter,
-    getGuestCompletionStats,
-    trackGuestVideoWithCourse,
-  } = useGuestProgress(course.id)
+    isLoading: progressLoading,
+  } = useUnifiedProgress(course.id)
 
   // Use reducer for state management
   const [state, dispatch2] = useReducer(stateReducer, initialState)
@@ -141,12 +143,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   const [videoDurations, setVideoDurations] = useState<Record<string, number>>({})
   const [playerRef, setPlayerRef] = useState<React.RefObject<any> | null>(null)
   const [currentVideoProgress, setCurrentVideoProgress] = useState<number>(0)
+  
+  // Throttle progress events - only send every 3 seconds
+  const lastProgressEventTime = React.useRef<number>(0)
+  const PROGRESS_THROTTLE_MS = 3000
 
   const isOwner = Boolean(user?.id && user.id === course.userId)
 
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
-  const { courseProgress, refetch: refreshProgressFromServer } = useCourseProgressSync(course.id)
 
   // Get video state store
   const videoStateStore = useVideoState
@@ -221,22 +226,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   // Completed chapters tracking
   const reduxProgress = useAppSelector((state) => selectCourseProgressById(state, course.id))
   const completedChapters = useMemo(() => {
+    // ✅ PHASE 1 FIX: Use unified progress for both guest and auth
     if (user?.id) {
       if (reduxProgress?.videoProgress?.completedChapters) {
         return reduxProgress.videoProgress.completedChapters.map(String)
       }
-      if (courseProgress?.videoProgress?.completedChapters) {
-        return courseProgress.videoProgress.completedChapters.map(String)
+      if (unifiedProgress?.completedChapters) {
+        return unifiedProgress.completedChapters.map(String)
       }
       return []
     } else {
-      const guestProgress = currentCourseProgress
-      if (guestProgress?.completedChapters && Array.isArray(guestProgress.completedChapters)) {
-        return guestProgress.completedChapters.map(String)
+      if (unifiedProgress?.completedChapters && Array.isArray(unifiedProgress.completedChapters)) {
+        return unifiedProgress.completedChapters.map(String)
       }
       return []
     }
-  }, [user?.id, reduxProgress, courseProgress, currentCourseProgress])
+  }, [user?.id, reduxProgress, unifiedProgress])
 
   // Initialize mounted state and preferences
   useEffect(() => {
@@ -337,6 +342,20 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   const nextVideoId = nextVideoEntry?.videoId || null
   const nextVideoTitle = nextVideoEntry?.chapter?.title || ""
   const hasNextVideo = Boolean(nextVideoEntry)
+  
+  // ✅ AUTO-SHOW CERTIFICATE: Detect 100% completion and open modal
+  useEffect(() => {
+    if (!user?.id) return // Only for authenticated users
+    
+    const totalChapters = videoPlaylist.length
+    const completedCount = completedChapters.length
+    const isFullyCompleted = totalChapters > 0 && completedCount === totalChapters
+    
+    if (isFullyCompleted && !state.showCertificate && !state.resumePromptShown) {
+      console.log('[MainContent] 🎉 Course 100% complete! Opening certificate modal')
+      dispatch2({ type: "SET_CERTIFICATE_VISIBLE", payload: true })
+    }
+  }, [completedChapters.length, videoPlaylist.length, user?.id, state.showCertificate, state.resumePromptShown])
 
   // User subscription status
   const userSubscription = useMemo(() => {
@@ -369,35 +388,38 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   }, [videoPlaylist, videoDurations])
 
   // Enhanced progress tracking
-  const { enqueueProgress, flushQueue, isLoading: progressLoading } = useProgressMutation()
+  const { enqueueProgress, flushQueue, isLoading: mutationLoading } = useProgressMutation()
 
   // Build progress object
   const progressByVideoId = useMemo(() => {
     const progress: Record<string, number> = {}
 
     try {
-      let progressData = reduxProgress?.videoProgress || courseProgress?.videoProgress
+      // ✅ PHASE 1 FIX: Use unified progress instead of separate courseProgress
+      let progressData = reduxProgress?.videoProgress || (unifiedProgress ? {
+        progress: unifiedProgress.progress,
+        completedChapters: unifiedProgress.completedChapters,
+        currentChapterId: unifiedProgress.currentChapterId,
+        lastPositions: unifiedProgress.lastPositions,
+        playedSeconds: unifiedProgress.playedSeconds,
+      } : null)
       
       // Merge progress data
       try {
         const reduxUpdated = reduxProgress?.lastUpdatedAt || 0
-        const courseUpdated = courseProgress?.lastUpdatedAt || 0
-
-        if (reduxProgress && courseProgress) {
-          progressData = courseUpdated >= reduxUpdated ? courseProgress.videoProgress : reduxProgress.videoProgress
-        }
 
         const reduxLast: Record<string, number> = reduxProgress?.videoProgress?.lastPositions || {}
-        const courseLast: Record<string, number> = courseProgress?.videoProgress?.lastPositions || {}
+        const unifiedLast: Record<string, number> = unifiedProgress?.lastPositions || {}
 
         const mergedLast: Record<string, number> = { ...reduxLast }
-        Object.keys(courseLast).forEach((k) => {
-          const courseVal = courseLast[k]
+        Object.keys(unifiedLast).forEach((k) => {
+          const unifiedVal = unifiedLast[k]
           const reduxVal = mergedLast[k]
           if (typeof reduxVal === "undefined") {
-            mergedLast[k] = courseVal
+            mergedLast[k] = unifiedVal
           } else {
-            mergedLast[k] = courseUpdated >= reduxUpdated ? courseVal : reduxVal
+            // Prefer redux value if both exist (most recent)
+            mergedLast[k] = reduxVal
           }
         })
 
@@ -443,24 +465,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     }
 
     return progress
-  }, [reduxProgress, courseProgress, videoPlaylist, videoDurations, completedChapters])
+  }, [reduxProgress, unifiedProgress, videoPlaylist, videoDurations, completedChapters])
 
   // Extract lastPositions map
   const chapterLastPositions = useMemo(() => {
     try {
       const reduxLast = reduxProgress?.videoProgress?.lastPositions || {}
-      const courseLast = courseProgress?.videoProgress?.lastPositions || {}
-      const reduxUpdated = reduxProgress?.lastUpdatedAt || 0
-      const courseUpdated = courseProgress?.lastUpdatedAt || 0
+      const unifiedLast = unifiedProgress?.lastPositions || {}
 
       const merged: Record<string, number> = { ...reduxLast }
-      Object.keys(courseLast).forEach((k) => {
-        const courseVal = courseLast[k]
+      Object.keys(unifiedLast).forEach((k) => {
+        const unifiedVal = (unifiedLast as Record<string, number>)[k]
         const reduxVal = merged[k]
-        if (typeof reduxVal === "undefined") {
-          merged[k] = courseVal
-        } else {
-          merged[k] = courseUpdated >= reduxUpdated ? courseVal : reduxVal
+        if (typeof reduxVal === "undefined" && typeof unifiedVal === "number") {
+          merged[k] = unifiedVal
+        } else if (typeof reduxVal === "number") {
+          merged[k] = reduxVal // Prefer redux value
         }
       })
       return merged
@@ -468,7 +488,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       console.warn("Error extracting lastPositions:", e)
       return {}
     }
-  }, [reduxProgress, courseProgress])
+  }, [reduxProgress, unifiedProgress])
 
   // Certificate handler
   const handleCertificateClick = useCallback(() => {
@@ -497,6 +517,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
       if (!isAlreadyCompleted) {
         const timeSpent = Math.round(currentVideoProgress * (videoDurations[currentVideoId || ""] || 0))
+        
         const success = enqueueProgress(user.id, course.id, currentChapterId, "chapter_progress", 100, timeSpent, {
           completed: true,
           courseId: String(course.id),
@@ -507,6 +528,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
           completedAt: Date.now(),
         })
 
+        console.log('[MainContent] ✅ Chapter completion enqueued:', currentChapterId);
+
         if (success) {
           dispatch(
             markChapterCompleted({
@@ -516,11 +539,23 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             }),
           )
 
+          // Trigger immediate cache invalidation and refetch
+          console.log('[MainContent] 🎯 Dispatching progressSynced event after markChapterCompleted');
+          window.dispatchEvent(new CustomEvent('progressSynced', {
+            detail: {
+              requiresRefetch: true,
+              completedChaptersMap: { [String(course.id)]: [currentChapterId] },
+              courseId: String(course.id),
+              chapterId: String(currentChapterId)
+            }
+          }));
+
           try {
             await flushQueue()
             await refreshProgressFromServer()
+            console.log('[MainContent] ✅ Progress synced for chapter:', currentChapterId);
           } catch (err) {
-            console.error("Failed to flush progress:", err)
+            console.error("[MainContent] ❌ Failed to sync progress:", err)
           }
         }
       }
@@ -694,6 +729,17 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
               }),
             )
 
+            // Trigger immediate cache invalidation and refetch
+            console.log('[MainContent] 🎯 Dispatching progressSynced event after markChapterCompleted');
+            window.dispatchEvent(new CustomEvent('progressSynced', {
+              detail: {
+                requiresRefetch: true,
+                completedChaptersMap: { [String(courseIdNum)]: [chapterIdNum] },
+                courseId: String(courseIdNum),
+                chapterId: String(chapterIdNum)
+              }
+            }));
+
             const timeSpent = Math.round(currentVideoProgress * (videoDurations[currentVideoId || ""] || 0))
             const success = enqueueProgress(user.id, courseIdNum, chapterIdNum, "chapter_progress", 100, timeSpent, {
               completed: true,
@@ -814,6 +860,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       if (progressState.played > 0.05) {
         if (currentChapter?.id && currentVideoId) {
           if (user?.id && !course.isShared) {
+            // Always update Redux state for instant UI feedback
             dispatch(
               setVideoProgress({
                 courseId: String(course.id),
@@ -825,27 +872,35 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
               }),
             )
 
-            enqueueProgress(
-              user.id,
-              course.id,
-              currentChapter.id,
-              "chapter_progress",
-              progressState.played * 100,
-              progressState.playedSeconds,
-              {
-                courseId: String(course.id),
-                chapterId: String(currentChapter.id),
-                progress: progressState.played * 100,
-                playedSeconds: progressState.playedSeconds,
-                duration: videoDurations[currentVideoId] || 0,
-                videoId: currentVideoId,
-                totalDuration: videoDurations[currentVideoId] || 0,
-                timestamp: Date.now(),
-                eventSubtype: "continuous_progress",
-              },
-            )
+            // Throttle API events - only send every 3 seconds
+            const now = Date.now()
+            const timeSinceLastEvent = now - lastProgressEventTime.current
+            
+            if (timeSinceLastEvent >= PROGRESS_THROTTLE_MS) {
+              lastProgressEventTime.current = now
+              
+              enqueueProgress(
+                user.id,
+                course.id,
+                currentChapter.id,
+                "chapter_progress",
+                progressState.played * 100,
+                progressState.playedSeconds,
+                {
+                  courseId: String(course.id),
+                  chapterId: String(currentChapter.id),
+                  progress: progressState.played * 100,
+                  playedSeconds: progressState.playedSeconds,
+                  duration: videoDurations[currentVideoId] || 0,
+                  videoId: currentVideoId,
+                  totalDuration: videoDurations[currentVideoId] || 0,
+                  timestamp: Date.now(),
+                  eventSubtype: "continuous_progress",
+                },
+              )
+            }
 
-            // Milestone tracking
+            // Milestone tracking - still track 25%, 50%, 75%, 100%
             const progressPercent = Math.floor(progressState.played * 100)
             if (progressPercent % 25 === 0 && progressPercent > 0) {
               enqueueProgress(
@@ -870,13 +925,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
               )
             }
           } else {
-            // Guest tracking
-            trackGuestVideoWithCourse(
-              currentVideoId,
-              progressState.played * 100,
+            // ✅ PHASE 1 FIX: Use unified progress tracking
+            updateVideoProgressTracking(
+              Number(currentChapter?.id || 0),
               progressState.playedSeconds,
-              videoDurations[currentVideoId] || 0,
-              course.id,
             )
           }
         }
@@ -892,7 +944,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       setCurrentVideoProgress,
       dispatch,
       enqueueProgress,
-      trackGuestVideoWithCourse,
+      updateVideoProgressTracking,
     ],
   )
 
@@ -906,6 +958,17 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
         if (!isAlreadyCompleted) {
           dispatch(markChapterCompleted({ courseId, chapterId, userId: user.id }))
+          
+          // Trigger immediate cache invalidation and refetch
+          console.log('[MainContent] 🎯 Dispatching progressSynced event after markChapterCompleted (video ended)');
+          window.dispatchEvent(new CustomEvent('progressSynced', {
+            detail: {
+              requiresRefetch: true,
+              completedChaptersMap: { [String(courseId)]: [chapterId] },
+              courseId: String(courseId),
+              chapterId: String(chapterId)
+            }
+          }));
         }
 
         dispatch(
@@ -919,13 +982,14 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
           }),
         )
 
+        const timeSpent = Math.round(currentVideoProgress * (videoDurations[currentVideoId || ""] || 0))
         enqueueProgress(
           user.id,
           courseId,
           chapterId,
           "chapter_progress",
           100,
-          Math.round(currentVideoProgress * (videoDurations[currentVideoId || ""] || 0)),
+          timeSpent,
           {
             completed: true,
             courseId: String(courseId),
@@ -935,19 +999,18 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             completedVia: "video_end",
             finalProgress: 100,
             totalDuration: videoDurations[currentVideoId || ""] || 0,
+            playedSeconds: timeSpent,
           },
         )
-      } else {
-        // Guest tracking
-        markGuestChapterCompleted(chapterId)
 
-        trackGuestVideoWithCourse(
-          currentVideoId || "",
-          100,
-          Math.round(currentVideoProgress * (videoDurations[currentVideoId || ""] || 0)),
-          videoDurations[currentVideoId || ""] || 0,
-          course.id,
-        )
+        // ✅ CRITICAL: Flush progress immediately after chapter completion
+        // This ensures completedChapters are synced before page navigation
+        setTimeout(() => {
+          flushQueue().catch(err => console.error('[handleVideoEnded] Flush failed:', err))
+        }, 100)
+      } else {
+        // ✅ PHASE 1 FIX: Use unified progress tracking for guests
+        markChapterComplete(chapterId)
       }
 
       if (state.autoplayMode && hasNextVideo && nextVideoEntry) {
@@ -977,8 +1040,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     nextVideoEntry,
     handleNextVideo,
     enqueueProgress,
-    markGuestChapterCompleted,
-    trackGuestVideoWithCourse,
+    flushQueue,
+    markChapterComplete,
   ])
 
   // Initialize video selection
@@ -993,9 +1056,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       targetVideo = videoPlaylist.find((entry) => entry.videoId === currentVideoId)
     }
 
-    if (!targetVideo && courseProgress?.videoProgress?.currentChapterId) {
+    // ✅ PHASE 1 FIX: Use unified progress for current chapter
+    if (!targetVideo && unifiedProgress?.currentChapterId) {
       targetVideo = videoPlaylist.find(
-        (entry) => String(entry.chapter.id) === String(courseProgress.videoProgress.currentChapterId),
+        (entry) => String(entry.chapter.id) === String(unifiedProgress.currentChapterId),
       )
     }
 
@@ -1007,7 +1071,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       dispatch(setCurrentVideoApi(targetVideo.videoId))
       videoStateStore.getState().setCurrentVideo(targetVideo.videoId, course.id)
     }
-  }, [course.id, initialChapterId, videoPlaylist, dispatch, videoStateStore, currentVideoId, courseProgress])
+  }, [course.id, initialChapterId, videoPlaylist, dispatch, videoStateStore, currentVideoId, unifiedProgress])
 
   // Reset current video progress when video changes
   useEffect(() => {
@@ -1113,49 +1177,70 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     </div>
   )
 
-  return renderCourseDashboard(
-    course,
-    authPromptOverlay,
-    state,
-    enhancedCourseStats,
-    dispatch2,
-    isOwner,
-    user,
-    dispatch,
-    currentChapter,
-    currentIndex,
-    videoPlaylist,
-    totalCourseDuration,
-    isPiPActive,
-    currentVideoId,
-    bookmarkItems,
-    handleVideoProgress,
-    handleVideoEnded,
-    handleVideoLoad,
-    handlePlayerReady,
-    handlePIPToggle,
-    handleTheaterModeToggle,
-    courseProgress,
-    handleAutoplayToggle,
-    handleNextVideo,
-    nextVideoId,
-    nextVideoTitle,
-    hasNextVideo,
-    videoDurations,
-    handleSeekToBookmark,
-    completedChapters,
-    sidebarCourse,
-    sidebarCurrentChapter,
-    userSubscription,
-    courseStats,
-    handleChapterSelect,
-    progressByVideoId,
-    handleProgressUpdate,
-    handleChapterComplete,
-    progressLoading,
-    chapterLastPositions,
-    ChapterProgressBar,
-    router
+  return (
+    <>
+      {renderCourseDashboard(
+        course,
+        authPromptOverlay,
+        state,
+        enhancedCourseStats,
+        dispatch2,
+        isOwner,
+        user,
+        dispatch,
+        currentChapter,
+        currentIndex,
+        videoPlaylist,
+        totalCourseDuration,
+        isPiPActive,
+        currentVideoId,
+        bookmarkItems,
+        handleVideoProgress,
+        handleVideoEnded,
+        handleVideoLoad,
+        handlePlayerReady,
+        handlePIPToggle,
+        handleTheaterModeToggle,
+        unifiedProgress,
+        handleAutoplayToggle,
+        handleNextVideo,
+        nextVideoId,
+        nextVideoTitle,
+        hasNextVideo,
+        videoDurations,
+        handleSeekToBookmark,
+        completedChapters,
+        sidebarCourse,
+        sidebarCurrentChapter,
+        userSubscription,
+        courseStats,
+        handleChapterSelect,
+        progressByVideoId,
+        handleProgressUpdate,
+        handleChapterComplete,
+        progressLoading,
+        chapterLastPositions,
+        ChapterProgressBar,
+        router
+      )}
+      
+      {/* ✅ FLOATING COURSEAI LOGO: Bottom-right with animations */}
+      <AnimatedCourseAILogo 
+        position="floating" 
+        size="md" 
+        animated={true}
+      />
+      
+      {/* ✅ CERTIFICATE MODAL: Auto-shows when course is 100% complete */}
+      <CertificateModal
+        show={state.showCertificate}
+        onClose={() => dispatch2({ type: "SET_CERTIFICATE_VISIBLE", payload: false })}
+        courseId={course.id}
+        courseTitle={course.title}
+        userName={user?.name || null}
+        totalLessons={videoPlaylist.length}
+      />
+    </>
   )
 }
 

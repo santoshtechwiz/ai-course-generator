@@ -10,7 +10,7 @@ import { useAuth } from "@/modules/auth"
 
 const progressFetchCache = new Map<string, { data: any; timestamp: number }>()
 const activeFetchRequests = new Map<string, Promise<any>>()
-const CACHE_DURATION_MS = 60000 // 1 minute
+const CACHE_DURATION_MS = 300000 // 5 minutes - Reduced API calls by increasing cache duration
 
 export function useCourseProgressSync(courseId: string | number) {
   const dispatch = useAppDispatch()
@@ -88,6 +88,7 @@ export function useCourseProgressSync(courseId: string | number) {
       // ✅ Mark ALL completed chapters in Redux (from API)
       for (const chapterId of completedChapters) {
         const chapterIdNum = Number(chapterId)
+        console.log('[useCourseProgressSync] 📌 Dispatching markChapterCompleted for chapter:', chapterIdNum, 'courseId:', courseId);
         dispatch(
           markChapterCompleted({
             courseId: String(courseId),
@@ -197,8 +198,8 @@ export function useCourseProgressSync(courseId: string | number) {
         progressFetchCache.set(cacheKey, { data, timestamp: now })
         syncProgressToRedux(data.progress)
       } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") {
-          console.debug("[useCourseProgressSync] Fetch aborted")
+        if (err instanceof Error && (err.name === "AbortError" || err.message === "Component unmounting")) {
+          console.debug("[useCourseProgressSync] Fetch aborted - component unmounting")
           return
         }
         console.error("[useCourseProgressSync] Error fetching progress:", err)
@@ -216,6 +217,56 @@ export function useCourseProgressSync(courseId: string | number) {
     }
     return () => abortControllerRef.current?.abort('Component unmounting')
   }, [fetchAndSyncProgress, isAuthenticated, userId])
+
+  // ✅ CRITICAL: Listen for chapter completion events and invalidate cache
+  useEffect(() => {
+    let debounceTimer: NodeJS.Timeout | null = null;
+    
+    const handleProgressSynced = (event: CustomEvent) => {
+      const { requiresRefetch, completedChaptersMap } = event.detail || {};
+      
+      console.log('[useCourseProgressSync] 📡 progressSynced event received:', {
+        requiresRefetch,
+        completedChaptersMap,
+        courseId,
+        timestamp: new Date().toLocaleTimeString()
+      });
+      
+      if (requiresRefetch) {
+        console.log('[useCourseProgressSync] 🔄 Cache invalidation triggered by chapter completion');
+        
+        // Clear cache for this course
+        const cacheKey = `progress-${courseId}`;
+        console.log('[useCourseProgressSync] Deleting cache key:', cacheKey);
+        progressFetchCache.delete(cacheKey);
+        
+        // ✅ PHASE 1 FIX: Debounce refetch to prevent rapid API calls (1s instead of 200ms)
+        if (debounceTimer) {
+          clearTimeout(debounceTimer);
+        }
+        
+        debounceTimer = setTimeout(() => {
+          console.log('[useCourseProgressSync] ⏱️ Calling fetchAndSyncProgress after debounce (1s)');
+          fetchAndSyncProgress();
+          debounceTimer = null;
+        }, 1000); // Debounced to 1 second
+      } else {
+        console.log('[useCourseProgressSync] ⚠️ requiresRefetch is false, skipping cache clear');
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('progressSynced', handleProgressSynced as EventListener);
+      console.log('[useCourseProgressSync] ✅ Event listener attached for courseId:', courseId);
+      return () => {
+        window.removeEventListener('progressSynced', handleProgressSynced as EventListener);
+        if (debounceTimer) {
+          clearTimeout(debounceTimer);
+        }
+        console.log('[useCourseProgressSync] ❌ Event listener removed for courseId:', courseId);
+      };
+    }
+  }, [courseId, fetchAndSyncProgress]);
 
   return { courseProgress, refetch: fetchAndSyncProgress }
 }

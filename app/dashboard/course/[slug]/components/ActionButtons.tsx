@@ -43,7 +43,8 @@ interface ActionButtonsProps {
   variant?: "default" | "compact"
 }
 
-export default function ActionButtons({ slug, title, isOwner, courseId, className = "", variant = "compact" }: ActionButtonsProps) {
+// ✅ PHASE 2 OPTIMIZATION: Memoized component to prevent re-renders when props don't change
+function ActionButtons({ slug, title, isOwner, courseId, className = "", variant = "compact" }: ActionButtonsProps) {
   const { isAuthenticated } = useAuth()
   const { status, loading, handleAction } = useCourseActions({ slug })
 
@@ -244,3 +245,6 @@ export default function ActionButtons({ slug, title, isOwner, courseId, classNam
     </div>
   )
 }
+
+// ✅ PHASE 2: Memoize to prevent unnecessary re-renders
+export default React.memo(ActionButtons);
