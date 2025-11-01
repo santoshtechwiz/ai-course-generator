@@ -187,7 +187,8 @@ export const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => 
           ),
 
           // Enhanced inline code
-          code: ({ inline, children, ...props }) => {
+          code: ({ children, className, ...props }: any) => {
+            const inline = !className?.includes('language-')
             if (inline) {
               return (
                 <code className="bg-[hsl(var(--secondary))] px-2 py-1 font-mono text-sm font-bold border-2 border-[hsl(var(--border))] shadow-[1px_1px_0px_0px_hsl(var(--border))]">
@@ -195,7 +196,7 @@ export const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => 
                 </code>
               )
             }
-            return <code {...props}>{children}</code>
+            return <code className={className} {...props}>{children}</code>
           },
 
           // Enhanced blockquotes with quote styling

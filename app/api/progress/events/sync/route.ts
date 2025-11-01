@@ -4,7 +4,8 @@ import { getAuthSession } from "@/lib/auth";
 import prisma from "@/lib/db";
 
 // Helper to safely parse JSON fields
-function safeParse(value, fallback) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function safeParse(value: any, fallback: any): any {
   if (typeof value !== "string") return value ?? fallback;
   try {
     return JSON.parse(value);
@@ -14,7 +15,8 @@ function safeParse(value, fallback) {
 }
 
 // Extract completed chapters from chapterProgress JSON field
-function extractCompletedChapters(chapterProgress) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractCompletedChapters(chapterProgress: any): number[] {
   let parsed;
   if (typeof chapterProgress === 'object' && chapterProgress !== null) {
     parsed = chapterProgress;
@@ -189,8 +191,9 @@ export async function POST(req: NextRequest) {
       // Merge playedSeconds from chapterProgressMap
       const chapterMap = chapterProgressMap.get(courseId) || {};
       for (const [chapterId, ch] of Object.entries(chapterMap)) {
-        if (typeof ch.playedSeconds === 'number' && ch.playedSeconds > 0) {
-          existingLastPositions[chapterId] = ch.playedSeconds;
+        const chapterData = ch as { playedSeconds?: number; progress?: number; isCompleted?: boolean; completedAt?: string };
+        if (typeof chapterData.playedSeconds === 'number' && chapterData.playedSeconds > 0) {
+          existingLastPositions[chapterId] = chapterData.playedSeconds;
         }
       }
       existingQuizProgress.lastPositions = existingLastPositions;

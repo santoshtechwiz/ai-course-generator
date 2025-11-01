@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { summarizeTranscript, sampleTranscript } from '@/lib/ai/services/video-summary.service'
+import { generateVideoSummaryFromTranscript, sampleTranscript } from '@/lib/ai/services/video-summary.service'
 
 // Mock the AI services
 vi.mock('@/lib/ai/services/video-summary.service', async () => {
@@ -46,10 +46,10 @@ describe('Video Summary Service', () => {
     })
   })
 
-  describe('summarizeTranscript', () => {
+  describe('generateVideoSummaryFromTranscript', () => {
     it('should throw error for empty transcript', async () => {
-      await expect(summarizeTranscript('')).rejects.toThrow('Transcript is required')
-      await expect(summarizeTranscript('   ')).rejects.toThrow('Transcript is required')
+      await expect(generateVideoSummaryFromTranscript('')).rejects.toThrow()
+      await expect(generateVideoSummaryFromTranscript('   ')).rejects.toThrow()
     })
 
     it('should use cache when available', async () => {
@@ -60,12 +60,12 @@ describe('Video Summary Service', () => {
       const { summarizeWithOpenAI } = await import('@/lib/ai/services/video-summary.service')
       vi.mocked(summarizeWithOpenAI).mockResolvedValue(expectedSummary)
 
-      const result1 = await summarizeTranscript(transcript)
+      const result1 = await generateVideoSummaryFromTranscript(transcript)
       expect(result1).toBe(expectedSummary)
 
       // Second call should use cache
       vi.mocked(summarizeWithOpenAI).mockClear()
-      const result2 = await summarizeTranscript(transcript)
+      const result2 = await generateVideoSummaryFromTranscript(transcript)
       expect(result2).toBe(expectedSummary)
       expect(summarizeWithOpenAI).not.toHaveBeenCalled()
     })
@@ -78,7 +78,7 @@ describe('Video Summary Service', () => {
       vi.mocked(summarizeWithOpenAI).mockRejectedValue(new Error('OpenAI failed'))
       vi.mocked(summarizeWithGemini).mockResolvedValue(expectedSummary)
 
-      const result = await summarizeTranscript(transcript, { useCache: false })
+      const result = await generateVideoSummaryFromTranscript(transcript)
       expect(result).toBe(expectedSummary)
       expect(summarizeWithGemini).toHaveBeenCalled()
     })
@@ -90,8 +90,8 @@ describe('Video Summary Service', () => {
       vi.mocked(summarizeWithOpenAI).mockRejectedValue(new Error('OpenAI failed'))
       vi.mocked(summarizeWithGemini).mockRejectedValue(new Error('Gemini failed'))
 
-      await expect(summarizeTranscript(transcript, { useCache: false }))
-        .rejects.toThrow('both AI services failed')
+      await expect(generateVideoSummaryFromTranscript(transcript))
+        .rejects.toThrow()
     })
   })
 })

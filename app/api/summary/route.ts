@@ -84,8 +84,8 @@ async function generateAndSaveSummary(chapterId: number, videoId: string, existi
   }
 }
 
-async function fetchAndGenerateSummary(videoId: string, existingTranscript?: string | null, chapterId?: number): Promise<string | null> {
-  let transcript: string | null = existingTranscript
+async function fetchAndGenerateSummary(videoId: string, existingTranscript?: string | null | undefined, chapterId?: number): Promise<string | null> {
+  let transcript: string | null = existingTranscript ?? null
 
   // Fetch transcript if not provided
   if (!transcript) {
