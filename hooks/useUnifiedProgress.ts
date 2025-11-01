@@ -85,7 +85,7 @@ export function useUnifiedProgress(courseId: number | string): UnifiedProgressRe
             ? Number(authProgress.courseProgress.videoProgress.currentChapterId) 
             : null,
           completedChapters: (authProgress.courseProgress.videoProgress?.completedChapters || [])
-            .map((id: string | number) => Number(id)),
+            .map((id: string | number) => String(id)),
           isCompleted: authProgress.courseProgress.videoProgress?.isCompleted || false,
           playedSeconds: authProgress.courseProgress.videoProgress?.playedSeconds || 0,
           lastPositions: authProgress.courseProgress.videoProgress?.lastPositions || {},

@@ -128,7 +128,7 @@ export function CourseModuleProvider({
   const completedChapters = useMemo(() => {
     if (!progress) return [];
     return progress.completedChapters.map(String);
-  }, [progress]);
+  }, [progress, course.id]);
   
   // Course statistics
   const courseStats = useMemo((): CourseStats => {

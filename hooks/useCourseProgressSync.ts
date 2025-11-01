@@ -40,16 +40,6 @@ export function useCourseProgressSync(courseId: string | number) {
     (progress: any) => {
       if (!progress) return
 
-      console.log('[useCourseProgressSync] Syncing progress to Redux:', {
-        courseId,
-        currentChapterId: progress.currentChapterId,
-        progress: progress.progress,
-        completedChaptersFromAPI: progress.completedChapters,
-        isCompleted: progress.isCompleted,
-        playedSeconds: progress.playedSeconds,
-        lastPositions: progress.lastPositions
-      })
-
       // ✅ Extract completed chapters list from API
       const completedChapters = Array.isArray(progress.completedChapters)
         ? progress.completedChapters
@@ -88,7 +78,6 @@ export function useCourseProgressSync(courseId: string | number) {
       // ✅ Mark ALL completed chapters in Redux (from API)
       for (const chapterId of completedChapters) {
         const chapterIdNum = Number(chapterId)
-        console.log('[useCourseProgressSync] 📌 Dispatching markChapterCompleted for chapter:', chapterIdNum, 'courseId:', courseId);
         dispatch(
           markChapterCompleted({
             courseId: String(courseId),
@@ -116,7 +105,6 @@ export function useCourseProgressSync(courseId: string | number) {
         )
         
         if (!alreadyMarked) {
-          console.log('[useCourseProgressSync] ✅ Intelligent completion: marking chapter', currentChapterIdNum, 'as completed (progress:', currentProgress, '%)')
           dispatch(
             markChapterCompleted({
               courseId: String(courseId),
@@ -155,11 +143,10 @@ export function useCourseProgressSync(courseId: string | number) {
       stableDispatchChapterCompleted,
     ]
   )
-
+  
   // Fetch & sync
   const fetchAndSyncProgress = useCallback(async () => {
       if (!isAuthenticated || !userId) {
-        console.debug("[useCourseProgressSync] Skipping fetch — not authenticated")
         return
       }
 
@@ -169,14 +156,12 @@ export function useCourseProgressSync(courseId: string | number) {
 
       // Cached result
       if (cached && now - cached.timestamp < CACHE_DURATION_MS) {
-        console.debug(`[useCourseProgressSync] Using cached progress for ${courseId}`)
         syncProgressToRedux(cached.data.progress)
         return
       }
 
       // Deduplicate
       if (activeFetchRequests.has(cacheKey)) {
-        console.debug(`[useCourseProgressSync] Awaiting existing fetch for ${courseId}`)
         const result = await activeFetchRequests.get(cacheKey)
         syncProgressToRedux(result?.progress)
         return
@@ -199,7 +184,6 @@ export function useCourseProgressSync(courseId: string | number) {
         syncProgressToRedux(data.progress)
       } catch (err) {
         if (err instanceof Error && (err.name === "AbortError" || err.message === "Component unmounting")) {
-          console.debug("[useCourseProgressSync] Fetch aborted - component unmounting")
           return
         }
         console.error("[useCourseProgressSync] Error fetching progress:", err)
@@ -215,7 +199,10 @@ export function useCourseProgressSync(courseId: string | number) {
     if (isAuthenticated && userId) {
       fetchAndSyncProgress()
     }
-    return () => abortControllerRef.current?.abort('Component unmounting')
+    
+    return () => {
+      abortControllerRef.current?.abort('Component unmounting');
+    }
   }, [fetchAndSyncProgress, isAuthenticated, userId])
 
   // ✅ CRITICAL: Listen for chapter completion events and invalidate cache
@@ -223,47 +210,32 @@ export function useCourseProgressSync(courseId: string | number) {
     let debounceTimer: NodeJS.Timeout | null = null;
     
     const handleProgressSynced = (event: CustomEvent) => {
-      const { requiresRefetch, completedChaptersMap } = event.detail || {};
-      
-      console.log('[useCourseProgressSync] 📡 progressSynced event received:', {
-        requiresRefetch,
-        completedChaptersMap,
-        courseId,
-        timestamp: new Date().toLocaleTimeString()
-      });
+      const { requiresRefetch } = event.detail || {};
       
       if (requiresRefetch) {
-        console.log('[useCourseProgressSync] 🔄 Cache invalidation triggered by chapter completion');
-        
         // Clear cache for this course
         const cacheKey = `progress-${courseId}`;
-        console.log('[useCourseProgressSync] Deleting cache key:', cacheKey);
         progressFetchCache.delete(cacheKey);
         
-        // ✅ PHASE 1 FIX: Debounce refetch to prevent rapid API calls (1s instead of 200ms)
+        // ✅ Debounce refetch to prevent rapid API calls
         if (debounceTimer) {
           clearTimeout(debounceTimer);
         }
         
         debounceTimer = setTimeout(() => {
-          console.log('[useCourseProgressSync] ⏱️ Calling fetchAndSyncProgress after debounce (1s)');
           fetchAndSyncProgress();
           debounceTimer = null;
         }, 1000); // Debounced to 1 second
-      } else {
-        console.log('[useCourseProgressSync] ⚠️ requiresRefetch is false, skipping cache clear');
       }
     };
 
     if (typeof window !== 'undefined') {
       window.addEventListener('progressSynced', handleProgressSynced as EventListener);
-      console.log('[useCourseProgressSync] ✅ Event listener attached for courseId:', courseId);
       return () => {
         window.removeEventListener('progressSynced', handleProgressSynced as EventListener);
         if (debounceTimer) {
           clearTimeout(debounceTimer);
         }
-        console.log('[useCourseProgressSync] ❌ Event listener removed for courseId:', courseId);
       };
     }
   }, [courseId, fetchAndSyncProgress]);

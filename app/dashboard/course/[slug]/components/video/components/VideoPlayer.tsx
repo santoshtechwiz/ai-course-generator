@@ -813,9 +813,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
         
         return { ...prev, autoPlayVideo: newValue }
       })
-
-      onToggleAutoPlay?.(true)
-    }, [onToggleAutoPlay])
+    }, [])
 
     const handleChapterStartComplete = useCallback(() => {
       const animationFrame = requestAnimationFrame(() => {

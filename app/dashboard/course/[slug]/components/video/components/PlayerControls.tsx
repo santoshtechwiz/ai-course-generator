@@ -21,7 +21,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { cn } from "@/lib/utils"
-import neo from "@/components/neo/tokens"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Switch } from "@/components/ui/switch"
 import { motion, AnimatePresence } from "framer-motion"
@@ -29,7 +28,54 @@ import { motion, AnimatePresence } from "framer-motion"
 // Memoized slider to prevent unnecessary re-renders
 const MemoizedSlider = React.memo(Slider)
 
-const PlayerControls = (props: any) => {
+interface PlayerControlsProps {
+  playing: boolean
+  muted: boolean
+  volume: number
+  playbackRate: number
+  played: number
+  loaded: number
+  duration: number
+  isFullscreen: boolean
+  isBuffering: boolean
+  bufferHealth?: number
+  onPlayPause: () => void
+  onMute: () => void
+  onVolumeChange: (value: number) => void
+  onSeekChange: (time: number) => void
+  onPlaybackRateChange: (rate: number) => void
+  onToggleFullscreen: () => void
+  formatTime: (seconds: number) => string
+  bookmarks?: number[]
+  onSeekToBookmark?: (time: number) => void
+  isAuthenticated: boolean
+  show?: boolean
+  onCertificateClick?: () => void
+  onShowKeyboardShortcuts?: () => void
+  onNextVideo?: () => void
+  onToggleBookmarkPanel?: () => void
+  bookmarkPanelOpen?: boolean
+  autoPlayNext?: boolean
+  onToggleAutoPlayNext?: (checked?: boolean) => void
+  autoPlayVideo?: boolean
+  onToggleAutoPlayVideo?: () => void
+  hasNextVideo?: boolean
+  nextVideoTitle?: string
+  canAccessNextVideo?: boolean
+  onIsDragging?: (isDragging: boolean) => void
+  onPictureInPicture?: () => void
+  isPiPSupported?: boolean
+  isPiPActive?: boolean
+  isTheaterMode?: boolean
+  onToggleTheaterMode?: () => void
+  notesCount?: number
+  onToggleNotesPanel?: () => void
+  notesPanelOpen?: boolean
+  onCreateNote?: () => void
+  notes?: any[]
+}
+
+const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
   const {
     playing,
     muted,
@@ -608,7 +654,7 @@ const PlayerControls = (props: any) => {
             )}
             aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
           >
-            {isFullscreen ? <Minimize className="h-4 w-4 sm:h-5 sm:w-5" /> : <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />}
+                        {isFullscreen ? <Minimize className="h-4 w-4 sm:h-5 sm:w-5" /> : <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />}
           </Button>
         </div>
       </div>

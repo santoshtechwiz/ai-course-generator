@@ -133,7 +133,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       <MainContentInner 
         course={course} 
         initialChapterId={initialChapterId} 
-        isFullscreen={isFullscreen} 
       />
     </CourseModuleProvider>
   )

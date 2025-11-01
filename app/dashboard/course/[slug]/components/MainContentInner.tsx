@@ -286,6 +286,11 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
     dispatch2({ type: "SET_CERTIFICATE_VISIBLE", payload: true })
   }, [])
 
+  // Video loading change handler (memoized to prevent infinite re-renders)
+  const handleVideoLoadingChange = useCallback((isLoading: boolean) => {
+    dispatch2({ type: "SET_VIDEO_LOADING", payload: isLoading })
+  }, [])
+
   // ✅ PHASE 2: Extract video player logic into dedicated hook
   const videoPlayerState = VideoPlayerSection({
     course,
@@ -300,7 +305,7 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
     onTheaterModeToggle: (newMode) => dispatch2({ type: "SET_THEATER_MODE", payload: newMode }),
     onNextVideo: async () => {}, // Will implement below
     onCertificateClick: handleCertificateClick,
-    onVideoLoadingChange: (isLoading) => dispatch2({ type: "SET_VIDEO_LOADING", payload: isLoading }),
+    onVideoLoadingChange: handleVideoLoadingChange,
   })
 
   // Destructure video player state

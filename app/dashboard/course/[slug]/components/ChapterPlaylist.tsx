@@ -80,6 +80,15 @@ const ChapterPlaylist: React.FC<ChapterPlaylistProps> = ({
   const stableOnProgressUpdate = useRef(onProgressUpdate)
   const stableOnChapterComplete = useRef(onChapterComplete)
 
+  // Memoize hover handlers to prevent re-creation in map loop
+  const handleMouseEnter = useCallback((chapterId: string) => {
+    setHoveredChapter(chapterId)
+  }, [])
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredChapter(null)
+  }, [])
+
   useEffect(() => {
     stableOnProgressUpdate.current = onProgressUpdate
     stableOnChapterComplete.current = onChapterComplete
@@ -122,6 +131,14 @@ const ChapterPlaylist: React.FC<ChapterPlaylistProps> = ({
   const courseStatistics = useMemo(() => {
     const totalChapters = course?.chapters?.length || 0
     
+    console.log('[ChapterPlaylist] 🔍 Computing stats:', {
+      totalChapters,
+      completedChapters,
+      completedChaptersCount: completedChapters.length,
+      courseId: course.id,
+      chapters: course?.chapters?.map(ch => ({ id: ch.id, title: ch.title }))
+    });
+    
     // Properly count completed chapters - they should be actual chapter IDs from Redux
     let completedCount = 0
     if (Array.isArray(completedChapters) && completedChapters.length > 0) {
@@ -129,6 +146,11 @@ const ChapterPlaylist: React.FC<ChapterPlaylistProps> = ({
         // Verify the chapter actually exists in the course
         return course?.chapters?.some(ch => String(ch.id) === String(id))
       }).length
+      
+      console.log('[ChapterPlaylist] ✅ Matched chapters:', {
+        completedChapters,
+        matchedCount: completedCount
+      });
     }
     
     // Calculate total duration in seconds
@@ -294,8 +316,8 @@ const ChapterPlaylist: React.FC<ChapterPlaylistProps> = ({
               <button
                 key={safeId}
                 onClick={() => (!isLocked && hasVideo ? handleChapterClick(chapter) : null)}
-                onMouseEnter={() => setHoveredChapter(safeId)}
-                onMouseLeave={() => setHoveredChapter(null)}
+                onMouseEnter={() => handleMouseEnter(safeId)}
+                onMouseLeave={handleMouseLeave}
                 disabled={!hasVideo || isLocked}
                 className={cn(
                   "w-full text-left p-2 transition-all flex gap-2 group border-b-2 border-b-black",
