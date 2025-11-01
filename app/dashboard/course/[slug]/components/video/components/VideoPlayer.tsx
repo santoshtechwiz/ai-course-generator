@@ -799,17 +799,20 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
     }, [handlers])
 
     const handleToggleAutoPlayVideo = useCallback(() => {
-      const newValue = !playerState.autoPlayVideo
-      setPlayerState((prev) => ({ ...prev, autoPlayVideo: newValue }))
-
-      try {
-        storageManager.saveVideoSettings({ autoplay: newValue })
-      } catch (error) {
-        console.warn("Could not save auto-play preference:", error)
-      }
+      setPlayerState((prev) => {
+        const newValue = !prev.autoPlayVideo
+        
+        try {
+          storageManager.saveVideoSettings({ autoplay: newValue })
+        } catch (error) {
+          console.warn("Could not save auto-play preference:", error)
+        }
+        
+        return { ...prev, autoPlayVideo: newValue }
+      })
 
       onToggleAutoPlay?.(true)
-    }, [playerState.autoPlayVideo, onToggleAutoPlay])
+    }, [onToggleAutoPlay])
 
     const handleChapterStartComplete = useCallback(() => {
       const animationFrame = requestAnimationFrame(() => {
