@@ -65,16 +65,14 @@ const featureFlagsSchema = z.object({
 
 // Monitoring Schema
 const monitoringSchema = z.object({
-  LOGGING_ENDPOINT: z.union([
-    z.string().url(),
-    z.literal(''),
-    z.undefined()
-  ]).optional().default(undefined),
-  MONITORING_ENDPOINT: z.union([
-    z.string().url(),
-    z.literal(''),
-    z.undefined()
-  ]).optional().default(undefined),
+  LOGGING_ENDPOINT: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null) ? undefined : val,
+    z.string().url().optional()
+  ),
+  MONITORING_ENDPOINT: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null) ? undefined : val,
+    z.string().url().optional()
+  ),
   METRICS_ENABLED: z.coerce.boolean().default(true),
   TRACING_ENABLED: z.coerce.boolean().default(true),
 })
