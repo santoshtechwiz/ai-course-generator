@@ -122,8 +122,8 @@ export function QuizError({
     <motion.div
       className={cn(
         "w-full max-w-2xl mx-auto",
-        "bg-yellow-300 border-8 border-black",
-        "shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]",
+        "bg-warning border-6 border-border",
+        "shadow-neo-heavy",
         "p-6 sm:p-8",
         className
       )}
@@ -140,7 +140,7 @@ export function QuizError({
       {/* Header with Icon */}
       <div className="text-center mb-6">
         <motion.div
-          className="inline-flex items-center justify-center w-20 h-20 bg-black text-yellow-300 border-4 border-black rounded-none mb-4"
+          className="inline-flex items-center justify-center w-20 h-20 bg-border text-warning border-4 border-border rounded-none mb-4"
           animate={{
             rotate: isHovered ? [0, -5, 5, -5, 0] : 0,
             scale: isHovered ? 1.1 : 1
@@ -151,7 +151,7 @@ export function QuizError({
         </motion.div>
 
         <motion.h1
-          className="text-2xl sm:text-3xl font-black text-black uppercase tracking-wider mb-2"
+          className="text-2xl sm:text-3xl font-black text-foreground uppercase tracking-wider mb-2"
           animate={{
             scale: isHovered ? 1.05 : 1
           }}
@@ -160,12 +160,12 @@ export function QuizError({
           {config.title}
         </motion.h1>
 
-        <div className="w-16 h-1 bg-black mx-auto mb-4"></div>
+        <div className="w-16 h-1 bg-border mx-auto mb-4"></div>
       </div>
 
       {/* Description */}
       <motion.p
-        className="text-black text-center text-lg font-medium mb-8 leading-relaxed"
+        className="text-foreground text-center text-lg font-medium mb-8 leading-relaxed"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.4 }}
@@ -183,7 +183,7 @@ export function QuizError({
         {config.actions.includes('retry') && onRetry && (
           <Button
             onClick={handleRetry}
-            className="bg-black text-yellow-300 border-4 border-black hover:bg-yellow-300 hover:text-black font-bold px-6 py-3 text-lg uppercase tracking-wide shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all duration-200"
+            className="bg-border text-warning border-4 border-border hover:bg-warning hover:text-border font-bold px-6 py-3 text-lg uppercase tracking-wide shadow-neo hover:shadow-neo-lg transition-all duration-200"
           >
             <RefreshCw className="w-5 h-5 mr-2" />
             TRY AGAIN
@@ -194,7 +194,7 @@ export function QuizError({
           <Button
             onClick={handleGoBack}
             variant="outline"
-            className="bg-white text-black border-4 border-black hover:bg-black hover:text-white font-bold px-6 py-3 text-lg uppercase tracking-wide shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all duration-200"
+            className="bg-background text-foreground border-4 border-border hover:bg-border hover:text-background font-bold px-6 py-3 text-lg uppercase tracking-wide shadow-neo hover:shadow-neo-lg transition-all duration-200"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
             GO BACK
@@ -205,7 +205,7 @@ export function QuizError({
           <Button
             onClick={handleGoHome}
             variant="outline"
-            className="bg-white text-black border-4 border-black hover:bg-black hover:text-white font-bold px-6 py-3 text-lg uppercase tracking-wide shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all duration-200"
+            className="bg-background text-foreground border-4 border-border hover:bg-border hover:text-background font-bold px-6 py-3 text-lg uppercase tracking-wide shadow-neo hover:shadow-neo-lg transition-all duration-200"
           >
             <Home className="w-5 h-5 mr-2" />
             HOME
@@ -216,7 +216,7 @@ export function QuizError({
           <Button
             onClick={handleReportIssue}
             variant="outline"
-            className="bg-white text-black border-4 border-black hover:bg-red-500 hover:text-white font-bold px-6 py-3 text-lg uppercase tracking-wide shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all duration-200"
+            className="bg-background text-foreground border-4 border-border hover:bg-error hover:text-background font-bold px-6 py-3 text-lg uppercase tracking-wide shadow-neo hover:shadow-neo-lg transition-all duration-200"
           >
             <MessageSquare className="w-5 h-5 mr-2" />
             REPORT ISSUE
@@ -227,7 +227,7 @@ export function QuizError({
       {/* Additional Context */}
       {(quizType || quizSlug) && (
         <motion.div
-          className="mt-8 pt-4 border-t-4 border-black text-center"
+          className="mt-8 pt-4 border-t-4 border-border text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.4 }}

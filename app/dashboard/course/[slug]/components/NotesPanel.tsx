@@ -31,11 +31,11 @@ const NotesPanel: FC<Props> = ({ filteredNotes, isAuthenticated, notesSearchQuer
       <CardHeader className={neo.header}>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-3 text-2xl font-black uppercase tracking-tight text-[var(--color-text)]">
-              <StickyNote className="h-7 w-7 text-[var(--color-primary)]" />
+            <CardTitle className="flex items-center gap-3 text-2xl font-black uppercase tracking-tight text-foreground">
+              <StickyNote className="h-7 w-7 text-primary" />
               Course Notes
             </CardTitle>
-            <CardDescription className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-tight mt-2">
+            <CardDescription className="text-sm font-bold text-muted-foreground uppercase tracking-tight mt-2">
               {filteredNotes.length > 0 ? `${filteredNotes.length} note${filteredNotes.length !== 1 ? "s" : ""} ${notesSearchQuery || notesFilter !== "all" ? "found" : "saved"}` : "Track important insights"}
             </CardDescription>
           </div>
@@ -61,7 +61,7 @@ const NotesPanel: FC<Props> = ({ filteredNotes, isAuthenticated, notesSearchQuer
                 placeholder="Search notes..." 
                 value={notesSearchQuery} 
                 onChange={(e) => setNotesSearchQuery(e.target.value)} 
-                className={`pl-12 font-bold h-12 text-base bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text)] ${neo.inner}`} 
+                className={`pl-12 font-bold h-12 text-base bg-background border-border text-foreground ${neo.inner}`} 
               />
             </div>
             <div className="flex items-center gap-2">
@@ -69,7 +69,7 @@ const NotesPanel: FC<Props> = ({ filteredNotes, isAuthenticated, notesSearchQuer
                 variant={notesFilter === "all" ? "default" : "outline"} 
                 size="lg" 
                 onClick={() => setNotesFilter("all")} 
-                className={`text-sm font-black uppercase ${neo.inner} ${notesFilter === "all" ? "bg-[var(--color-primary)] text-white" : "bg-[var(--color-bg)] text-[var(--color-text)]"}`}
+                className={`text-sm font-black uppercase ${neo.inner} ${notesFilter === "all" ? "bg-primary text-primary-foreground" : "bg-background text-foreground"}`}
               >
                 All
               </Button>
@@ -77,7 +77,7 @@ const NotesPanel: FC<Props> = ({ filteredNotes, isAuthenticated, notesSearchQuer
                 variant={notesFilter === "recent" ? "default" : "outline"} 
                 size="lg" 
                 onClick={() => setNotesFilter("recent")} 
-                className={`text-sm font-black uppercase ${neo.inner} ${notesFilter === "recent" ? "bg-[var(--color-primary)] text-white" : "bg-[var(--color-bg)] text-[var(--color-text)]"}`}
+                className={`text-sm font-black uppercase ${neo.inner} ${notesFilter === "recent" ? "bg-primary text-primary-foreground" : "bg-background text-foreground"}`}
               >
                 Recent
               </Button>
@@ -85,7 +85,7 @@ const NotesPanel: FC<Props> = ({ filteredNotes, isAuthenticated, notesSearchQuer
                 variant={notesFilter === "chapter" ? "default" : "outline"} 
                 size="lg" 
                 onClick={() => setNotesFilter("chapter")} 
-                className={`text-sm font-black uppercase ${neo.inner} ${notesFilter === "chapter" ? "bg-[var(--color-primary)] text-white" : "bg-[var(--color-bg)] text-[var(--color-text)]"}`}
+                className={`text-sm font-black uppercase ${neo.inner} ${notesFilter === "chapter" ? "bg-primary text-primary-foreground" : "bg-background text-foreground"}`}
               >
                 Chapter
               </Button>
@@ -100,29 +100,29 @@ const NotesPanel: FC<Props> = ({ filteredNotes, isAuthenticated, notesSearchQuer
               {filteredNotes.map((note, index) => (
                 <div
                   key={note.id}
-                  className={`group p-5 bg-[var(--color-card)] border-3 border-[var(--color-border)] hover:shadow-[6px_6px_0px_0px_var(--shadow-color)] transition-all duration-200 ${neo.inner}`}
+                  className={`group p-5 bg-card border-2 border-border hover:shadow-neo transition-all ${neo.inner}`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-4 mb-4">
-                        <div className={`w-12 h-12 bg-[var(--color-success)]/20 border-2 border-[var(--color-border)] flex items-center justify-center ${neo.inner}`}>
-                          <StickyNote className="h-6 w-6 text-[var(--color-success)]" />
+                        <div className={`w-12 h-12 bg-success/20 border-2 border-border flex items-center justify-center ${neo.inner}`}>
+                          <StickyNote className="h-6 w-6 text-success" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm font-black text-[var(--color-text)] mb-1">
-                            <Clock className="h-4 w-4 text-[var(--color-muted)]" />
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm font-black text-foreground mb-1">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
                             <span className="uppercase">{new Date(note.createdAt).toLocaleDateString()}</span>
                             {(note as any).chapter && (
                               <>
-                                <Separator orientation="vertical" className="h-4 bg-[var(--color-border)]" />
-                                <span className="truncate uppercase text-[var(--color-muted)]">{(note as any).chapter.title}</span>
+                                <Separator orientation="vertical" className="h-4 bg-border" />
+                                <span className="truncate uppercase text-muted-foreground">{(note as any).chapter.title}</span>
                               </>
                             )}
                           </div>
                         </div>
                       </div>
-                      <div className={`bg-[var(--color-warning)]/10 border-2 border-[var(--color-warning)]/30 p-4 ${neo.inner}`}>
-                        <p className="text-[var(--color-text)] whitespace-pre-wrap text-base font-bold leading-relaxed">{note.note}</p>
+                      <div className={`bg-warning/10 border-2 border-warning/30 p-4 ${neo.inner}`}>
+                        <p className="text-foreground whitespace-pre-wrap text-base font-bold leading-relaxed">{note.note}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -134,9 +134,9 @@ const NotesPanel: FC<Props> = ({ filteredNotes, isAuthenticated, notesSearchQuer
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className={`h-10 w-10 p-0 hover:bg-[var(--color-secondary)]/20 hover:border-[var(--color-secondary)] font-black ${neo.inner}`}
+                            className={`h-10 w-10 p-0 hover:bg-secondary/20 hover:border-secondary font-black ${neo.inner}`}
                           >
-                            <Edit3 className="h-5 w-5 text-[var(--color-secondary)]" />
+                            <Edit3 className="h-5 w-5 text-secondary" />
                           </Button>
                         } 
                       />

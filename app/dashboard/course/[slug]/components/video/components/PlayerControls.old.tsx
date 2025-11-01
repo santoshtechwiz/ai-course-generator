@@ -1,171 +1,177 @@
 "use client"
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import {
   Play,
   Pause,
   Volume2,
-  Volume1,
   VolumeX,
+  Volume1,
   Maximize,
   Minimize,
-  Settings,
-  SkipForward,
-  FastForward,
-  Rewind,
+  PictureInPicture2,
   BookmarkIcon,
   StickyNote,
-  PictureInPicture2,
+  SkipForward,
   Zap,
+  RewindIcon,
+  FastForwardIcon,
+  Settings,
 } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Switch } from "@/components/ui/switch"
+import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
-import { useToast } from "@/hooks/use-toast"
+import { cn } from "@/lib/utils"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Switch } from "@/components/ui/switch"
+import { motion, AnimatePresence } from "framer-motion"
+import { toast } from "@/components/ui/use-toast"
 
 const MemoizedSlider = React.memo(Slider)
 
 interface PlayerControlsProps {
-  // Playback state
   playing: boolean
+  muted: boolean
+  volume: number
+  playbackRate: number
   played: number
   loaded: number
   duration: number
-  volume: number
-  muted: boolean
-  playbackRate: number
-  isBuffering?: boolean
   isFullscreen: boolean
-
-  // Handlers
+  isBuffering: boolean
+  bufferHealth?: number
   onPlayPause: () => void
-  onSeekChange: (time: number) => void
-  onVolumeChange: (volume: number) => void
   onMute: () => void
+  onVolumeChange: (value: number) => void
+  onSeekChange: (time: number) => void
   onPlaybackRateChange: (rate: number) => void
   onToggleFullscreen: () => void
-
-  // Optional features
-  show?: boolean
+  formatTime: (seconds: number) => string
   bookmarks?: number[]
   onSeekToBookmark?: (time: number) => void
+  isAuthenticated: boolean
+  show?: boolean
+  onCertificateClick?: () => void
+  onShowKeyboardShortcuts?: () => void
+  onNextVideo?: () => void
+  onToggleBookmarkPanel?: () => void
+  bookmarkPanelOpen?: boolean
+  autoPlayNext?: boolean
+  onToggleAutoPlayNext?: (checked?: boolean) => void
+  autoPlayVideo?: boolean
+  onToggleAutoPlayVideo?: () => void
   hasNextVideo?: boolean
   nextVideoTitle?: string
   canAccessNextVideo?: boolean
-  onNextVideo?: () => void
-  autoPlayNext?: boolean
-  autoPlayVideo?: boolean
-  onToggleAutoPlayNext?: (checked: boolean) => void
-  onToggleAutoPlayVideo?: () => void
-  onIsDragging?: (dragging: boolean) => void
+  onIsDragging?: (isDragging: boolean) => void
+  onPictureInPicture?: () => void
   isPiPSupported?: boolean
   isPiPActive?: boolean
-  onPictureInPicture?: () => void
   isTheaterMode?: boolean
   onToggleTheaterMode?: () => void
   notesCount?: number
-  notesPanelOpen?: boolean
   onToggleNotesPanel?: () => void
-  bookmarkPanelOpen?: boolean
-  onToggleBookmarkPanel?: () => void
-  isAuthenticated?: boolean
+  notesPanelOpen?: boolean
+  onCreateNote?: () => void
+  notes?: any[]
 }
 
-/**
- * Enterprise-grade video player controls with clean architecture
- * - Minimal nested elements
- * - Theme-compliant colors
- * - Accessible interactions
- * - Optimized performance
- */
-export default function PlayerControls(props: PlayerControlsProps) {
+const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
   const {
     playing,
+    muted,
+    volume,
+    playbackRate,
     played,
     loaded,
     duration,
-    volume,
-    muted,
-    playbackRate,
-    isBuffering = false,
     isFullscreen,
+    isBuffering,
+    bufferHealth,
     onPlayPause,
-    onSeekChange,
-    onVolumeChange,
     onMute,
+    onVolumeChange,
+    onSeekChange,
     onPlaybackRateChange,
     onToggleFullscreen,
-    show = true,
+    formatTime,
     bookmarks = [],
     onSeekToBookmark,
+    isAuthenticated,
+    show = true,
+    onCertificateClick,
+    onShowKeyboardShortcuts,
+    onNextVideo,
+    onToggleBookmarkPanel,
+    bookmarkPanelOpen,
+    autoPlayNext = true,
+    onToggleAutoPlayNext,
+    autoPlayVideo = false,
+    onToggleAutoPlayVideo,
     hasNextVideo = false,
     nextVideoTitle = "",
     canAccessNextVideo = true,
-    onNextVideo,
-    autoPlayNext = true,
-    autoPlayVideo = false,
-    onToggleAutoPlayNext,
-    onToggleAutoPlayVideo,
     onIsDragging,
+    onPictureInPicture,
     isPiPSupported = false,
     isPiPActive = false,
-    onPictureInPicture,
     isTheaterMode = false,
     onToggleTheaterMode,
     notesCount = 0,
-    notesPanelOpen = false,
     onToggleNotesPanel,
-    bookmarkPanelOpen = false,
-    onToggleBookmarkPanel,
-    isAuthenticated = false,
+    notesPanelOpen = false,
+    onCreateNote,
+    notes = [],
   } = props
 
-  // Toast hook
-  const { toast } = useToast()
-
-  // State
+  // State management
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [hoveredTime, setHoveredTime] = useState<number | null>(null)
   const [hoverPosition, setHoverPosition] = useState<number | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
+  const [localBookmarks, setLocalBookmarks] = useState<number[]>(bookmarks || [])
   const [showControls, setShowControls] = useState(true)
   const [localVolume, setLocalVolume] = useState(muted ? 0 : volume * 100)
 
-  // Refs
   const progressBarRef = useRef<HTMLDivElement>(null)
   const progressRafRef = useRef<number | null>(null)
-  const volumeSliderRef = useRef<HTMLDivElement>(null)
+  const volumeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const volumeSliderRef = useRef<HTMLDivElement>(null)
 
-  // Sync volume
+  useEffect(() => setIsMounted(true), [])
+
+  // Sync local volume with props
   useEffect(() => {
     setLocalVolume(muted ? 0 : volume * 100)
   }, [muted, volume])
 
   // Auto-hide controls
   useEffect(() => {
-    if (!show || !playing) {
-      setShowControls(true)
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
-      return
+    if (!show) return
+
+    const hideControls = () => {
+      if (playing) {
+        controlsTimeoutRef.current = setTimeout(() => {
+          setShowControls(false)
+        }, 3000)
+      }
     }
 
-    controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3000)
+    if (playing) {
+      hideControls()
+    } else {
+      setShowControls(true)
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
+    }
+
     return () => {
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
     }
   }, [playing, show])
 
-  // Close volume on outside click
+  // Close volume slider when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (volumeSliderRef.current && !volumeSliderRef.current.contains(event.target as Node)) {
@@ -175,26 +181,28 @@ export default function PlayerControls(props: PlayerControlsProps) {
 
     if (showVolumeSlider) {
       document.addEventListener("mousedown", handleClickOutside)
-      return () => document.removeEventListener("mousedown", handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [showVolumeSlider])
 
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      if (progressRafRef.current) cancelAnimationFrame(progressRafRef.current)
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
-    }
-  }, [])
-
-  // Handlers
   const handleMouseMove = useCallback(() => {
     setShowControls(true)
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
     if (playing) {
-      controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3000)
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false)
+      }, 3000)
     }
   }, [playing])
+
+  const getVolumeIcon = useMemo(() => {
+    if (muted || volume === 0) return VolumeX
+    if (volume < 0.5) return Volume1
+    return Volume2
+  }, [muted, volume])
 
   const handleSeek = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -254,31 +262,20 @@ export default function PlayerControls(props: PlayerControlsProps) {
 
   const handleVolumeSliderChange = useCallback(
     (value: number[]) => {
-      onVolumeChange(value[0] / 100)
+      const newVolume = value[0] / 100
+      onVolumeChange(newVolume)
     },
     [onVolumeChange],
   )
 
-  const formatTime = useCallback((seconds: number): string => {
-    if (!isFinite(seconds)) return "0:00"
-    const h = Math.floor(seconds / 3600)
-    const m = Math.floor((seconds % 3600) / 60)
-    const s = Math.floor(seconds % 60)
-    return h > 0
-      ? `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
-      : `${m}:${s.toString().padStart(2, "0")}`
+  const toggleVolumeSlider = useCallback(() => {
+    setShowVolumeSlider((prev) => !prev)
   }, [])
 
-  const getVolumeIcon = useMemo(() => {
-    if (muted || volume === 0) return VolumeX
-    if (volume < 0.5) return Volume1
-    return Volume2
-  }, [muted, volume])
-
   const renderBookmarkIndicators = useMemo(() => {
-    if (!bookmarks.length || !duration) return null
+    if (!localBookmarks.length || !duration) return null
 
-    return bookmarks.map((bookmarkTime, index) => {
+    return localBookmarks.map((bookmarkTime, index) => {
       const position = (bookmarkTime / duration) * 100
       return (
         <div
@@ -287,33 +284,41 @@ export default function PlayerControls(props: PlayerControlsProps) {
           style={{ left: `${position}%` }}
           onClick={(e) => {
             e.stopPropagation()
-            onSeekToBookmark?.(bookmarkTime)
+            onSeekToBookmark && onSeekToBookmark(bookmarkTime)
           }}
           title={`Bookmark at ${formatTime(bookmarkTime)}`}
         />
       )
     })
-  }, [bookmarks, duration, formatTime, onSeekToBookmark])
+  }, [localBookmarks, duration, formatTime, onSeekToBookmark])
 
-  // Button styles - Neo-Brutalism with proper theme colors
-  const buttonBase = "h-11 w-11 border-3 border-border transition-all duration-200 hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[1px] active:translate-y-[1px]"
+  useEffect(() => {
+    return () => {
+      if (progressRafRef.current) cancelAnimationFrame(progressRafRef.current)
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
+      if (volumeTimeoutRef.current) clearTimeout(volumeTimeoutRef.current)
+    }
+  }, [])
+
+  // Consistent button classes using theme variables - all buttons same size
+  const buttonBase = "h-11 w-11 rounded-none border-3 border-border transition-all duration-200 hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[1px] active:translate-y-[1px]"
   const buttonPrimary = `${buttonBase} bg-primary text-primary-foreground shadow-neo hover:shadow-neo-hover active:shadow-neo-active`
   const buttonSecondary = `${buttonBase} bg-muted text-foreground shadow-neo-sm hover:shadow-neo active:shadow-neo-active`
-  const buttonActive = (active: boolean) => 
-    `${buttonBase} ${active ? "bg-accent text-foreground shadow-neo" : "bg-muted text-foreground shadow-neo-sm hover:shadow-neo"} active:shadow-neo-active`
-
-  if (!show) return null
+  const buttonActive = `${buttonBase} shadow-neo-sm hover:shadow-neo active:shadow-neo-active`
 
   return (
     <div
       className={cn(
         "absolute inset-0 z-50 transition-opacity duration-300 flex flex-col justify-end",
+        !show && "opacity-0 pointer-events-none",
         !showControls && "opacity-0",
       )}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => {
         if (playing) {
-          controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 1000)
+          controlsTimeoutRef.current = setTimeout(() => {
+            setShowControls(false)
+          }, 1000)
         }
       }}
       onClick={(e) => e.stopPropagation()}
@@ -322,7 +327,7 @@ export default function PlayerControls(props: PlayerControlsProps) {
       <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
 
       {/* Progress Bar */}
-      <div className="relative px-4 sm:px-6 mb-4 z-10">
+      <div className="relative px-4 sm:px-6 mb-4">
         <div
           ref={progressBarRef}
           className="relative h-4 bg-muted border-3 border-border cursor-pointer group hover:h-5 transition-all duration-200 shadow-neo"
@@ -340,13 +345,13 @@ export default function PlayerControls(props: PlayerControlsProps) {
           aria-valuenow={duration * played}
           tabIndex={0}
         >
-          {/* Buffered */}
+          {/* Buffered progress */}
           <div
             className="absolute left-0 top-0 h-full bg-muted/60 transition-all duration-300"
             style={{ width: `${loaded * 100}%` }}
           />
 
-          {/* Played */}
+          {/* Played progress */}
           <div
             className="absolute left-0 top-0 h-full bg-accent border-r-3 border-border transition-all duration-150"
             style={{ width: `${played * 100}%` }}
@@ -382,7 +387,7 @@ export default function PlayerControls(props: PlayerControlsProps) {
             aria-label="Seek position"
           />
 
-          {/* Hover indicator */}
+          {/* Progress indicator on hover */}
           {hoverPosition !== null && (
             <div
               className="absolute top-0 h-full w-1 bg-foreground/60 pointer-events-none"
@@ -393,11 +398,16 @@ export default function PlayerControls(props: PlayerControlsProps) {
       </div>
 
       {/* Control Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6 py-4 bg-surface/95 border-t-4 border-border backdrop-blur-sm z-10">
-        {/* Left Controls */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6 py-4 bg-surface/95 border-t-4 border-border backdrop-blur-sm">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {/* Play/Pause */}
-          <Button variant="ghost" size="icon" onClick={onPlayPause} className={buttonPrimary} aria-label={playing ? "Pause" : "Play"}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onPlayPause}
+            className={buttonPrimary}
+            aria-label={playing ? "Pause" : "Play"}
+          >
             {isBuffering ? (
               <motion.div
                 animate={{ rotate: 360 }}
@@ -419,7 +429,7 @@ export default function PlayerControls(props: PlayerControlsProps) {
             className={`${buttonSecondary} hidden sm:flex`}
             aria-label="Rewind 10 seconds"
           >
-            <Rewind className="h-5 w-5" />
+            <RewindIcon className="h-5 w-5" />
           </Button>
 
           {/* Fast Forward */}
@@ -430,7 +440,7 @@ export default function PlayerControls(props: PlayerControlsProps) {
             className={`${buttonSecondary} hidden sm:flex`}
             aria-label="Forward 10 seconds"
           >
-            <FastForward className="h-5 w-5" />
+            <FastForwardIcon className="h-5 w-5" />
           </Button>
 
           {/* Volume */}
@@ -481,19 +491,23 @@ export default function PlayerControls(props: PlayerControlsProps) {
           </div>
         </div>
 
-        {/* Center - Auto toggles */}
-        <div className="flex items-center gap-2 flex-shrink-0 justify-center">
+        {/* Center Controls - Auto toggles */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           {onToggleAutoPlayVideo && (
-            <div
-              className={cn(
-                "flex items-center gap-2 px-3 h-11 border-3 border-border transition-all duration-200 cursor-pointer shadow-neo hover:shadow-neo-hover hover:translate-x-[-1px] hover:translate-y-[-1px]",
-                autoPlayVideo ? "bg-success/20" : "bg-muted"
-              )}
-            >
-              <Zap className={cn("h-4 w-4 flex-shrink-0 transition-colors", autoPlayVideo ? "text-success" : "text-foreground/60")} />
-              <span className={cn("text-xs font-black uppercase tracking-wider hidden sm:inline transition-colors", autoPlayVideo ? "text-success" : "text-foreground/70")}>
-                Auto
-              </span>
+            <div className={cn(
+              "flex items-center gap-2 px-3 h-11 rounded-none border-3 border-border transition-all duration-200 cursor-pointer shadow-neo hover:shadow-neo-hover hover:translate-x-[-1px] hover:translate-y-[-1px]",
+              autoPlayVideo 
+                ? "bg-success/20" 
+                : "bg-muted"
+            )}>
+              <Zap className={cn(
+                "h-4 w-4 flex-shrink-0 transition-colors",
+                autoPlayVideo ? "text-success" : "text-foreground/60"
+              )} />
+              <span className={cn(
+                "text-xs font-black uppercase tracking-wider hidden sm:inline transition-colors",
+                autoPlayVideo ? "text-success" : "text-foreground/70"
+              )}>Auto</span>
               <Switch
                 checked={autoPlayVideo}
                 onCheckedChange={(checked) => {
@@ -501,25 +515,30 @@ export default function PlayerControls(props: PlayerControlsProps) {
                   toast({
                     title: checked ? "Autoplay enabled ⚡" : "Autoplay disabled",
                     description: checked ? "Videos will play automatically on page load" : "Videos will not autoplay on page load",
+                    variant: "default",
                   })
                 }}
-                aria-label="Toggle auto-play video"
+                aria-label="Toggle auto-play video on page load"
                 className="scale-90"
               />
             </div>
           )}
 
           {hasNextVideo && onToggleAutoPlayNext && (
-            <div
-              className={cn(
-                "flex items-center gap-2 px-3 h-11 border-3 border-border transition-all duration-200 cursor-pointer shadow-neo hover:shadow-neo-hover hover:translate-x-[-1px] hover:translate-y-[-1px]",
-                autoPlayNext ? "bg-warning/20" : "bg-muted"
-              )}
-            >
-              <SkipForward className={cn("h-4 w-4 flex-shrink-0 transition-colors", autoPlayNext ? "text-warning" : "text-foreground/60")} />
-              <span className={cn("text-xs font-black uppercase tracking-wider hidden sm:inline transition-colors", autoPlayNext ? "text-warning" : "text-foreground/70")}>
-                Next
-              </span>
+            <div className={cn(
+              "flex items-center gap-2 px-3 h-11 rounded-none border-3 border-border transition-all duration-200 cursor-pointer shadow-neo hover:shadow-neo-hover hover:translate-x-[-1px] hover:translate-y-[-1px]",
+              autoPlayNext 
+                ? "bg-warning/20" 
+                : "bg-muted"
+            )}>
+              <SkipForward className={cn(
+                "h-4 w-4 flex-shrink-0 transition-colors",
+                autoPlayNext ? "text-warning" : "text-foreground/60"
+              )} />
+              <span className={cn(
+                "text-xs font-black uppercase tracking-wider hidden sm:inline transition-colors",
+                autoPlayNext ? "text-warning" : "text-foreground/70"
+              )}>Next</span>
               <Switch
                 checked={autoPlayNext}
                 onCheckedChange={(checked) => {
@@ -527,6 +546,7 @@ export default function PlayerControls(props: PlayerControlsProps) {
                   toast({
                     title: checked ? "Auto-next enabled 🎬" : "Auto-next disabled",
                     description: checked ? "Next video will play automatically" : "You'll choose when to play next video",
+                    variant: "default",
                   })
                 }}
                 aria-label="Toggle autoplay next video"
@@ -537,30 +557,37 @@ export default function PlayerControls(props: PlayerControlsProps) {
         </div>
 
         {/* Right Controls */}
-        <div className="flex items-center gap-2 flex-shrink-0 justify-end">
-          {/* Next Video */}
-          {hasNextVideo && onNextVideo && (
+        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
+          {hasNextVideo && (
             <Button
               variant="ghost"
               size="icon"
-              className={buttonActive(false)}
+              className={cn(buttonActive, "bg-accent text-foreground")}
               onClick={onNextVideo}
               disabled={!canAccessNextVideo}
               title={nextVideoTitle}
               aria-label="Next video"
             >
-              <SkipForward className="h-4 w-4" />
+              <SkipForward className="h-5 w-5" />
             </Button>
           )}
 
           {/* Settings */}
           <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className={`${buttonSecondary} hidden sm:flex`} aria-label="Playback speed">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`${buttonSecondary} hidden sm:flex`}
+                aria-label="Playback speed"
+              >
                 <Settings className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40 bg-surface border-4 border-border text-foreground shadow-neo-heavy p-0">
+            <DropdownMenuContent
+              align="end"
+              className="w-40 bg-surface border-4 border-border text-foreground shadow-neo-heavy p-0"
+            >
               <div className="px-4 py-3 text-xs font-black border-b-4 border-border uppercase tracking-wider">
                 Speed
               </div>
@@ -585,7 +612,13 @@ export default function PlayerControls(props: PlayerControlsProps) {
               variant="ghost"
               size="icon"
               onClick={onToggleNotesPanel}
-              className={cn("relative hidden sm:flex", buttonActive(notesPanelOpen))}
+              className={cn(
+                buttonActive,
+                "relative hidden sm:flex",
+                notesPanelOpen 
+                  ? "bg-success text-foreground" 
+                  : "bg-muted text-foreground",
+              )}
               aria-label="Notes"
             >
               <StickyNote className="h-5 w-5" />
@@ -607,7 +640,13 @@ export default function PlayerControls(props: PlayerControlsProps) {
               variant="ghost"
               size="icon"
               onClick={onToggleBookmarkPanel}
-              className={cn("hidden sm:flex", buttonActive(bookmarkPanelOpen))}
+              className={cn(
+                buttonActive,
+                "hidden sm:flex",
+                bookmarkPanelOpen 
+                  ? "bg-warning text-foreground" 
+                  : "bg-muted text-foreground",
+              )}
               aria-label="Bookmarks"
             >
               <BookmarkIcon className="h-5 w-5" />
@@ -620,7 +659,13 @@ export default function PlayerControls(props: PlayerControlsProps) {
               variant="ghost"
               size="icon"
               onClick={onPictureInPicture}
-              className={cn("hidden sm:flex", buttonActive(isPiPActive))}
+              className={cn(
+                buttonActive,
+                "hidden sm:flex",
+                isPiPActive 
+                  ? "bg-secondary text-foreground" 
+                  : "bg-muted text-foreground",
+              )}
               aria-label="Picture-in-Picture"
             >
               <PictureInPicture2 className="h-5 w-5" />
@@ -633,7 +678,13 @@ export default function PlayerControls(props: PlayerControlsProps) {
               variant="ghost"
               size="icon"
               onClick={onToggleTheaterMode}
-              className={cn("hidden sm:flex", buttonActive(isTheaterMode))}
+              className={cn(
+                buttonActive,
+                "hidden sm:flex",
+                isTheaterMode 
+                  ? "bg-accent text-foreground" 
+                  : "bg-muted text-foreground",
+              )}
               aria-label="Theater mode"
             >
               <Maximize className="h-5 w-5" />
@@ -645,13 +696,20 @@ export default function PlayerControls(props: PlayerControlsProps) {
             variant="ghost"
             size="icon"
             onClick={onToggleFullscreen}
-            className={buttonActive(isFullscreen)}
+            className={cn(
+              buttonActive,
+              isFullscreen 
+                ? "bg-primary text-primary-foreground" 
+                : "bg-muted text-foreground",
+            )}
             aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
           >
-            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+            {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
           </Button>
         </div>
       </div>
     </div>
   )
 }
+
+export default React.memo(PlayerControls)

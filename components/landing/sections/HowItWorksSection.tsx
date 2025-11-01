@@ -413,8 +413,7 @@ const HowItWorksSection = () => {
 
         {/* Main Content Area */}
         <motion.div
-          className="relative bg-[var(--color-card)] rounded-3xl p-6 md:p-8 border-3 border-[var(--color-border)] shadow-[8px_8px_0px_0px_var(--color-border)] overflow-hidden"
-          style={{ minHeight: "480px" }}
+          className="relative bg-card rounded-3xl p-6 md:p-8 border-3 border-border shadow-neo-heavy overflow-hidden min-h-96 md:min-h-[30rem]"
           layout
         >
           {/* Step Content */}
@@ -428,7 +427,7 @@ const HowItWorksSection = () => {
             <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start h-full">
               <div className="lg:w-1/2">
                 <motion.div
-                  className="inline-flex items-center justify-center p-5 rounded-2xl bg-[var(--color-primary)] text-[var(--color-bg)] text-2xl font-black mb-6 border-4 border-[var(--color-border)] shadow-[8px_8px_0px_0px_var(--color-border)]"
+                  className="inline-flex items-center justify-center p-5 rounded-2xl bg-primary text-background text-2xl font-black mb-6 border-4 border-border shadow-neo-heavy"
                   animate={{
                     y: [0, -4, 0],
                   }}
@@ -446,7 +445,7 @@ const HowItWorksSection = () => {
                 <div className="flex gap-4 flex-wrap">
                   <Button
                     variant="default"
-                    className="rounded-xl bg-primary text-primary-foreground border-3 border-border shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))] hover:translate-y-[-2px] transition-all duration-200 px-6 py-3 font-black text-base"
+                    className="rounded-xl bg-primary text-primary-foreground border-3 border-border shadow-neo hover:shadow-neo-hover hover:translate-y-[-2px] transition-all duration-200 px-6 py-3 font-black text-base"
                     onClick={nextStep}
                   >
                     {activeStep === steps.length - 1 ? "Get Started" : "Next Step"}

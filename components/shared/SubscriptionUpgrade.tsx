@@ -80,7 +80,7 @@ interface SubscriptionUpgradeProps {
         <div className="flex gap-2">
           <Button
             onClick={handleUpgrade}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 border-4 border-blue-700 shadow-[4px_4px_0px_0px_hsl(var(--border))] text-white"
+            className="flex-1 bg-secondary hover:bg-secondary/90 border-4 border-secondary shadow-neo text-background"
             size="lg"
           >
             <Crown className="w-4 h-4 mr-2" />
@@ -110,7 +110,7 @@ interface SubscriptionUpgradeProps {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 bg-black/80"
+              className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 bg-border/80"
               onClick={(e) => {
                 // Close on backdrop click
                 if (e.target === e.currentTarget && onClose) {

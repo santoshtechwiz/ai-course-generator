@@ -54,13 +54,13 @@ const BookmarksPanel: FC<Props> = ({ bookmarks, isAuthenticated, handleSeekToBoo
               <div
                 key={bookmark.id}
                 onClick={() => handleSeekToBookmark(bookmark.time)}
-                className={`group flex items-center justify-between p-5 bg-neo-background cursor-pointer hover:shadow-[6px_6px_0px_0px_var(--neo-border)] transition-shadow ${neo.inner}`}
+                className={`group flex items-center justify-between p-5 bg-background cursor-pointer hover:shadow-neo transition-all ${neo.inner}`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 bg-neo-border flex items-center justify-center text-neo-background font-black text-xl ${neo.inner}`}>{index + 1}</div>
+                  <div className={`w-14 h-14 bg-border flex items-center justify-center text-background font-black text-xl ${neo.inner}`}>{index + 1}</div>
                     <div>
                     <div className="flex items-center gap-3 mb-2">
-                      <Badge variant="default" className={cn(neo.badge, "bg-yellow-300 text-black uppercase text-base px-3 py-1")}>{formatTime(bookmark.time)}</Badge>
+                      <Badge variant="default" className={cn(neo.badge, "bg-warning text-foreground uppercase text-base px-3 py-1")}>{formatTime(bookmark.time)}</Badge>
                     </div>
                     <p className="font-black text-foreground text-lg uppercase tracking-tight">{bookmark.title}</p>
                   </div>
@@ -71,23 +71,23 @@ const BookmarksPanel: FC<Props> = ({ bookmarks, isAuthenticated, handleSeekToBoo
                       variant="ghost" 
                       size="sm" 
                       onClick={(e) => { e.stopPropagation(); setConfirmDelete(bookmark.id) }} 
-                      className={`opacity-0 group-hover:opacity-100 transition-opacity ${neo.inner} hover:bg-red-500 hover:text-white font-black uppercase`}
+                      className={`opacity-0 group-hover:opacity-100 transition-opacity ${neo.inner} hover:bg-error hover:text-primary-foreground font-black uppercase`}
                     >
                       Remove
                     </Button>
                   </AlertDialogTrigger>
-                  <AlertDialogContent className="border-4 border-[var(--color-border)] rounded-none shadow-[4px_4px_0_var(--shadow-color)]">
+                  <AlertDialogContent className="border-2 border-border shadow-neo">
                     <AlertDialogTitle className="font-black uppercase text-lg">Delete Bookmark?</AlertDialogTitle>
                     <AlertDialogDescription className="text-base font-bold">
                       Remove "{bookmark.title}" bookmark? This action cannot be undone.
                     </AlertDialogDescription>
                     <div className="flex gap-3 justify-end mt-6">
-                      <AlertDialogCancel className="border-2 border-[var(--color-border)] rounded-none font-black uppercase">
+                      <AlertDialogCancel className="border-2 border-border font-black uppercase">
                         Cancel
                       </AlertDialogCancel>
                       <AlertDialogAction 
                         onClick={() => handleConfirmDelete(bookmark.id)}
-                        className="bg-[var(--color-error)] text-white border-2 border-[var(--color-border)] rounded-none font-black uppercase hover:bg-red-700"
+                        className="bg-error text-primary-foreground border-2 border-border font-black uppercase hover:bg-error/90"
                       >
                         Delete
                       </AlertDialogAction>
@@ -104,7 +104,7 @@ const BookmarksPanel: FC<Props> = ({ bookmarks, isAuthenticated, handleSeekToBoo
             </div>
             <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">No bookmarks yet</h3>
             <p className="text-muted-foreground mb-8 max-w-sm mx-auto text-base font-bold">Press 'B' while watching to save important moments</p>
-            <Badge variant="default" className={cn(neo.badge, "bg-neo-border text-neo-background text-lg px-6 py-3")}>Press B</Badge>
+            <Badge variant="default" className={cn(neo.badge, "bg-border text-background text-lg px-6 py-3")}>Press B</Badge>
           </div>
         ) : (
           <div className="text-center py-16">

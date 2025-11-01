@@ -31,13 +31,13 @@ export function PlanBadge({ plan, className = "" }: PlanBadgeProps) {
       )
     case "PREMIUM":
       return (
-        <Badge variant="default" className={`bg-purple-500 hover:bg-purple-600 ${className}`}>
+        <Badge variant="default" className={`bg-secondary hover:bg-secondary/90 ${className}`}>
           Pro
         </Badge>
       )
     case "ULTIMATE":
       return (
-        <Badge variant="default" className={`bg-amber-500 border-4 border-amber-600 shadow-[4px_4px_0px_0px_hsl(var(--border))] ${className}`}>
+        <Badge variant="default" className={`bg-warning border-4 border-warning shadow-neo ${className}`}>
           Ultimate
         </Badge>
       )

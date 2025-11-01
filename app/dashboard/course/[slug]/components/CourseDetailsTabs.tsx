@@ -48,23 +48,23 @@ import BookmarksPanel from "./BookmarksPanel"
 import NotesPanel from "./NotesPanel"
 import { BookmarkItem, CourseProgress } from "@/store/slices/course-slice"
 
-// 🎨 Optimized skeleton with reduced repaints
+// 🎨 Clean skeleton loader
 const SkeletonLoader = () => (
-  <div className="space-y-4 p-6 bg-[hsl(var(--background))]">
+  <div className="space-y-4 p-6 bg-background">
     <div className="space-y-3">
-      <div className="h-8 w-1/3 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-md shadow-neo animate-pulse" />
-      <div className="h-4 w-2/3 bg-[hsl(var(--muted))] border-2 border-[hsl(var(--border))] rounded-md animate-pulse" />
+      <div className="h-8 w-1/3 bg-muted border-2 border-border shadow-neo animate-pulse" />
+      <div className="h-4 w-2/3 bg-muted border-2 border-border animate-pulse" />
     </div>
     <div className="space-y-3">
-      <div className="h-32 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-md shadow-neo animate-pulse" />
-      <div className="h-24 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-md animate-pulse" />
-      <div className="h-24 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-md animate-pulse" />
+      <div className="h-32 bg-muted border-2 border-border shadow-neo animate-pulse" />
+      <div className="h-24 bg-muted border-2 border-border animate-pulse" />
+      <div className="h-24 bg-muted border-2 border-border animate-pulse" />
     </div>
     <div className="space-y-2">
       {[100, 100, 80].map((width, i) => (
         <div
           key={i}
-          className="h-4 bg-[hsl(var(--muted))] border-2 border-[hsl(var(--border))] rounded-md animate-pulse"
+          className="h-4 bg-muted border-2 border-border animate-pulse"
           style={{ width: `${width}%` }}
         />
       ))}
@@ -84,21 +84,15 @@ const EmptyTabMessage = ({
 }) => (
   <div className="h-full flex items-center justify-center p-8">
     <div className="text-center space-y-6 max-w-md">
-      <div
-        className={cn(
-          "w-24 h-24 bg-[hsl(var(--muted))] border-4 border-[hsl(var(--border))]",
-          "flex items-center justify-center mx-auto rounded-md",
-          "shadow-neo"
-        )}
-      >
-        <Icon className="h-12 w-12 text-[hsl(var(--foreground))]/60" />
+      <div className="w-24 h-24 bg-muted border-2 border-border flex items-center justify-center mx-auto shadow-neo">
+        <Icon className="h-12 w-12 text-foreground/60" />
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-xl font-black uppercase tracking-wider text-[hsl(var(--foreground))]">
+        <h3 className="text-xl font-black uppercase tracking-wider text-foreground">
           {title}
         </h3>
-        <p className="text-sm font-bold text-[hsl(var(--foreground))]/60 leading-relaxed">
+        <p className="text-sm font-bold text-foreground/60 leading-relaxed">
           {message}
         </p>
       </div>
@@ -332,13 +326,11 @@ export default function CourseDetailsTabs({
         onValueChange={handleTabChange} 
         className="h-full w-full flex flex-col"
       >
-        {/* 🎨 Simplified Brutalist tabs list */}
+        {/* 🎨 Clean enterprise tabs */}
         <LayoutGroup>
           <TabsList className={cn(
             "grid w-full grid-cols-2 sm:grid-cols-4 h-auto",
-            "bg-[hsl(var(--surface))]",
-            "p-2 gap-2 sm:gap-3",
-            "border-b-3 border-[hsl(var(--border))]"
+            "bg-surface p-2 gap-2 sm:gap-3"
           )}>
             {tabs.map((tab) => {
               const isActive = activeTab === tab.value
@@ -354,12 +346,12 @@ export default function CourseDetailsTabs({
                   className={cn(
                     "group relative flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2",
                     "px-3 sm:px-5 py-3.5 text-xs sm:text-sm font-black uppercase",
-                    "h-auto border-3 transition-all duration-150",
+                    "h-auto border-2 transition-all duration-150",
                     "tracking-wide cursor-pointer min-w-[80px] sm:min-w-[100px]",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--primary))] focus-visible:ring-offset-2",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                     isActive
-                      ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--border))] shadow-neo"
-                      : "border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))]/70 hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))] hover:shadow-neo hover:-translate-y-0.5"
+                      ? "bg-primary text-primary-foreground border-border shadow-neo"
+                      : "border-border bg-background text-foreground/70 hover:bg-muted hover:text-foreground hover:shadow-neo-sm hover:-translate-y-0.5"
                   )}
                 >
                   <Icon className="h-5 w-5 sm:h-5 sm:w-5 flex-shrink-0" />
@@ -368,7 +360,7 @@ export default function CourseDetailsTabs({
                   {isActive && (
                     <motion.div
                       layoutId="activeTab"
-                      className="absolute inset-0 -z-10 bg-[hsl(var(--primary))] border-3 border-[hsl(var(--border))]"
+                      className="absolute inset-0 -z-10 bg-primary border-2 border-border"
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
                     />
                   )}
@@ -378,7 +370,7 @@ export default function CourseDetailsTabs({
           </TabsList>
         </LayoutGroup>
 
-        {/* 🎯 Optimized content with conditional mounting */}
+        {/* 🎯 Clean content with no nested borders */}
         <div className="flex-1 overflow-auto">
           {/* Summary Tab */}
           <TabsContent 
@@ -393,11 +385,7 @@ export default function CourseDetailsTabs({
                 className="p-0"
                 blurIntensity={canAccessSummary ? "light" : "medium"}
               >
-                <div className={cn(
-                  "p-5 sm:p-6 bg-[var(--color-bg)]",
-                  "border-3 border-[var(--color-border)] rounded-md",
-                  "shadow-[4px_4px_0_var(--shadow-color)]"
-                )}>
+                <div className="p-5 sm:p-6 bg-surface border-2 border-border shadow-neo">
                   <CourseAISummary
                     key={currentChapter.id} 
                     chapterId={currentChapter.id}
@@ -428,11 +416,7 @@ export default function CourseDetailsTabs({
                 className="p-0"
                 blurIntensity={canAccessQuiz ? "light" : "medium"}
               >
-                <div className={cn(
-                  "p-5 sm:p-6 bg-[var(--color-bg)]",
-                  "border-3 border-[var(--color-border)] rounded-md",
-                  "shadow-[4px_4px_0_var(--shadow-color)]"
-                )}>
+                <div className="p-5 sm:p-6 bg-surface border-2 border-border shadow-neo">
                   <CourseDetailsQuiz
                     key={currentChapter.id}
                     course={course}

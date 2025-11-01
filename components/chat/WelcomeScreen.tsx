@@ -71,7 +71,7 @@ const WelcomeScreen = memo(({ onSuggestionClick, canUseChat }: WelcomeScreenProp
         transition={{ delay: 0.2, duration: 0.5, type: "spring" }}
         className="relative"
       >
-        <div className="bg-primary/20 p-4 rounded-full relative border-4 border-primary shadow-[4px_4px_0px_0px_hsl(var(--border))]">
+        <div className="bg-primary/20 p-4 rounded-full relative border-4 border-primary shadow-neo">
           <Sparkles className="h-8 w-8 text-primary" />
         </div>
         <motion.div
@@ -141,7 +141,7 @@ const WelcomeScreen = memo(({ onSuggestionClick, canUseChat }: WelcomeScreenProp
         className="flex flex-col sm:flex-row gap-3 w-full max-w-md pt-2"
       >
         <Button
-          className="flex-1 gap-2 bg-primary hover:bg-primary/90 border-4 border-primary-foreground shadow-[4px_4px_0px_0px_hsl(var(--border))]"
+          className="flex-1 gap-2 bg-primary hover:bg-primary/90 border-4 border-border shadow-neo"
           onClick={() => onSuggestionClick("Create a course")}
         >
           <Plus className="h-4 w-4" />

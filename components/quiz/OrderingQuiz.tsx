@@ -223,22 +223,22 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
 
   return (
     <div className={cn("w-full max-w-4xl mx-auto", className)} data-has-reordered={hasUserReordered}>
-      <Card className="border-4 border-border shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.1)] rounded-xl overflow-hidden bg-background">
+      <Card className="border-4 border-border shadow-neo-heavy dark:shadow-neo-heavy rounded-xl overflow-hidden bg-background">
         <CardHeader className="border-b-4 border-border pb-6 bg-card">
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 space-y-3">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <Badge variant="neutral" className={cn(neo.badge, "bg-primary text-primary-foreground border-3 border-border shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.1)] font-bold uppercase tracking-wide")}>
+                  <Badge variant="neutral" className={cn(neo.badge, "bg-primary text-primary-foreground border-3 border-border shadow-neo font-bold uppercase tracking-wide")}>
                     🎯 Ordering Quiz
                   </Badge>
                   {question.difficulty && (
                     <Badge variant="neutral" className={cn(
                       neo.badge,
-                      "border-3 border-border shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.1)] font-bold uppercase tracking-wide",
-                      question.difficulty === 'easy' && "bg-green-500 text-white",
-                      question.difficulty === 'medium' && "bg-yellow-500 text-black",
-                      question.difficulty === 'hard' && "bg-red-500 text-white"
+                      "border-3 border-border shadow-neo font-bold uppercase tracking-wide",
+                      question.difficulty === 'easy' && "bg-success text-background",
+                      question.difficulty === 'medium' && "bg-warning text-foreground",
+                      question.difficulty === 'hard' && "bg-error text-background"
                     )}>
                       {question.difficulty}
                     </Badge>
@@ -250,7 +250,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                 </CardTitle>
 
                 {question.description && (
-                  <div className="bg-muted/80 rounded-none p-4 border-l-4 border-primary shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.05)]">
+                  <div className="bg-muted/80 rounded-none p-4 border-l-4 border-primary shadow-neo">
                     <p className="text-sm leading-relaxed text-foreground font-medium">
                       {question.description}
                     </p>
@@ -264,7 +264,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="bg-blue-100 dark:bg-blue-950/70 border-4 border-blue-500 rounded-xl p-4 shadow-[5px_5px_0px_0px_rgba(59,130,246,0.5)]"
+                className="bg-secondary/10 dark:bg-secondary/5 border-4 border-secondary rounded-xl p-4 shadow-neo"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 flex-1">
@@ -368,8 +368,8 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                           // Drop target
                           isDropTarget && "border-green-500 bg-green-100 dark:bg-green-950/50 ring-4 ring-green-400/30 shadow-[8px_8px_0px_0px_rgba(34,197,94,0.5)]",
                           // Result states
-                          showResult && isWrongPosition && "border-red-500 bg-red-100 dark:bg-red-950/50 shadow-[6px_6px_0px_0px_rgba(239,68,68,0.5)]",
-                          showResult && isCorrectPosition && "border-green-500 bg-green-100 dark:bg-green-950/50 shadow-[6px_6px_0px_0px_rgba(34,197,94,0.5)]",
+                          showResult && isWrongPosition && "border-error bg-error/10 dark:bg-error/5 shadow-neo",
+                          showResult && isCorrectPosition && "border-success bg-success/10 dark:bg-success/5 shadow-neo",
                         )}
                         role="button"
                         aria-label={`Step ${index + 1}: ${step.description}`}
@@ -379,7 +379,7 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                           className={cn(
                             "flex-shrink-0 pt-1 transition-all duration-200 rounded-none px-2 py-1",
                             !showResult && "hover:bg-primary/10",
-                            isDragging && "bg-blue-600 text-white scale-125 animate-pulse shadow-lg",
+                            isDragging && "bg-secondary text-background scale-125 animate-pulse shadow-lg",
                             !isDragging &&
                               !showResult &&
                               "text-muted-foreground group-hover:text-primary group-hover:scale-110",
@@ -394,14 +394,14 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                           <div className="flex items-center gap-3">
                             <span
                               className={cn(
-                                "inline-flex items-center justify-center h-10 w-10 rounded-full font-black text-base transition-all duration-200 flex-shrink-0 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.1)]",
+                                "inline-flex items-center justify-center h-10 w-10 rounded-full font-black text-base transition-all duration-200 flex-shrink-0 shadow-neo",
                                 // Default state
                                 !isDragging && !showResult && "bg-primary text-primary-foreground border-3 border-border",
                                 // Being dragged
-                                isDragging && "bg-blue-600 text-white border-3 border-blue-800 shadow-[4px_4px_0px_0px_rgba(30,64,175,0.8)] scale-110",
+                                isDragging && "bg-secondary text-background border-3 border-border shadow-neo-hover scale-110",
                                 // Result states
-                                showResult && isCorrectPosition && "bg-green-600 text-white border-3 border-green-800 animate-bounce",
-                                showResult && isWrongPosition && "bg-red-600 text-white border-3 border-red-800 animate-pulse",
+                                showResult && isCorrectPosition && "bg-success text-background border-3 border-border animate-bounce",
+                                showResult && isWrongPosition && "bg-error text-background border-3 border-border animate-pulse",
                               )}
                             >
                               {index + 1}
@@ -410,9 +410,9 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                               <p
                                 className={cn(
                                   "font-bold text-base leading-relaxed break-words transition-all duration-200",
-                                  isDragging && "text-blue-800 dark:text-blue-200 text-lg",
-                                  showResult && isCorrectPosition && "text-green-800 dark:text-green-200",
-                                  showResult && isWrongPosition && "text-red-800 dark:text-red-200",
+                                  isDragging && "text-secondary dark:text-secondary text-lg",
+                                  showResult && isCorrectPosition && "text-success dark:text-success",
+                                  showResult && isWrongPosition && "text-error dark:text-error",
                                   !isDragging && !showResult && "text-foreground",
                                 )}
                               >
@@ -477,9 +477,9 @@ export const OrderingQuiz: React.FC<OrderingQuizProps> = ({
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 48 }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="bg-green-400 rounded-none border-4 border-green-500 shadow-[4px_4px_0px_0px_hsl(var(--border))] flex items-center justify-center"
+                            className="bg-success/80 rounded-none border-4 border-success shadow-neo flex items-center justify-center"
                           >
-                            <span className="text-white font-semibold text-sm">Drop Here</span>
+                            <span className="text-background font-semibold text-sm">Drop Here</span>
                           </motion.div>
                         )}
                     </React.Fragment>

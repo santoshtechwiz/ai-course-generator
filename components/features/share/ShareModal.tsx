@@ -155,7 +155,7 @@ export function ShareModal({
             aria-modal="true"
             aria-labelledby="share-modal-title"
           >
-            <Card className="bg-background border-3 border-border shadow-[8px_8px_0px_0px_hsl(var(--border))]">
+            <Card className="bg-background border-3 border-border shadow-neo-heavy">
               <div className="p-6 md:p-8">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-6">

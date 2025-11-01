@@ -407,29 +407,30 @@ export function renderCourseDashboard(
           <button
             onClick={handleAutoplayToggle}
             className={cn(
-              "group relative px-5 py-3 font-black text-xs uppercase border-3 border-[hsl(var(--border))]",
-              "shadow-neo hover:shadow-neo-hover active:shadow-neo-active",
+              "group relative px-5 py-3 font-black text-xs uppercase border-4",
+              "shadow-neo-heavy hover:shadow-neo-hover active:shadow-neo-active",
               "transition-all duration-200",
-              "hover:-translate-x-0.5 hover:-translate-y-0.5",
+              "hover:-translate-x-1 hover:-translate-y-1",
+              "active:translate-x-0.5 active:translate-y-0.5",
               state.autoplayMode
-                ? "bg-[hsl(var(--success))]"
-                : "bg-[hsl(var(--muted))]"
+                ? "bg-primary border-border text-primary-foreground"
+                : "bg-muted border-border text-foreground"
             )}
             aria-label={state.autoplayMode ? "Disable autoplay" : "Enable autoplay"}
           >
             <div className="flex items-center gap-2.5">
-              {/* Simple indicator dot */}
+              {/* Solid indicator dot */}
               <div className={cn(
-                "w-2.5 h-2.5 transition-all duration-300",
+                "w-3 h-3 rounded-full border-2 transition-all duration-300",
                 state.autoplayMode 
-                  ? "bg-[hsl(var(--foreground))] animate-pulse" 
-                  : "bg-[hsl(var(--foreground))]/30"
+                  ? "bg-success border-success animate-pulse" 
+                  : "bg-border border-border"
               )} />
               
               {/* Label with icon */}
               <div className="flex items-center gap-1.5">
-                <Play className="h-3.5 w-3.5" />
-                <span className="font-black">Autoplay:</span>
+                <Play className="h-4 w-4" fill={state.autoplayMode ? "currentColor" : "none"} />
+                <span className="font-black">AUTOPLAY:</span>
                 <span className="font-black">
                   {state.autoplayMode ? "ON" : "OFF"}
                 </span>

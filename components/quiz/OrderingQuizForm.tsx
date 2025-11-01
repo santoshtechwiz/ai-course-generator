@@ -184,28 +184,28 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
             className={cn(
               "p-3 rounded-none border-l-4 flex items-start gap-3",
               canGenerate
-                ? "bg-blue-900/20 border-blue-600"
-                : "bg-red-900/20 border-red-600"
+                ? "bg-secondary/10 border-secondary"
+                : "bg-error/10 border-error"
             )}
           >
             <div className="flex-shrink-0 pt-0.5">
               {canGenerate ? (
-                <CheckCircle2 className="h-5 w-5 text-blue-400" />
+                <CheckCircle2 className="h-5 w-5 text-secondary" />
               ) : (
-                <AlertCircle className="h-5 w-5 text-red-400" />
+                <AlertCircle className="h-5 w-5 text-error" />
               )}
             </div>
             <div className="text-sm">
               {canGenerate ? (
-                <p className="text-white/80">
-                  You have <strong className="text-blue-300">{quizzesRemaining}</strong> quiz
+                <p className="text-foreground/80">
+                  You have <strong className="text-secondary">{quizzesRemaining}</strong> quiz
                   {quizzesRemaining !== 1 ? "zes" : ""} remaining today on your{" "}
-                  <strong className="text-amber-300">{userPlan}</strong> plan.
+                  <strong className="text-warning">{userPlan}</strong> plan.
                 </p>
               ) : (
                 <div>
-                  <p className="text-red-300 font-bold mb-1">Daily limit reached</p>
-                  <p className="text-white/70">
+                  <p className="text-error font-bold mb-1">Daily limit reached</p>
+                  <p className="text-foreground/70">
                     You've used all {dailyLimit} quizzes for today. Upgrade your plan for more.
                   </p>
                 </div>
@@ -216,7 +216,7 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Topic Selection */}
             <div className="space-y-3">
-              <Label className="text-white font-bold uppercase text-xs tracking-wider">
+              <Label className="text-foreground font-bold uppercase text-xs tracking-wider">
                 📚 Topic
               </Label>
               <p className="text-xs text-white/50">
@@ -268,7 +268,7 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
                     animate={{ opacity: 1 }}
                     className={cn(
                       "text-xs mt-1",
-                      isTopicValid ? "text-green-400" : "text-red-400"
+                      isTopicValid ? "text-success" : "text-error"
                     )}
                   >
                     {isTopicValid
@@ -281,39 +281,48 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
 
             {/* Difficulty Selection */}
             <div className="space-y-3">
-              <Label className="text-white font-bold uppercase text-xs tracking-wider">
+              <Label className="text-foreground font-bold uppercase text-xs tracking-wider">
                 💪 Difficulty
               </Label>
               <div className="grid grid-cols-3 gap-3">
-                {DIFFICULTY_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() =>
-                      handleDifficultyChange(option.value as "easy" | "medium" | "hard")
-                    }
-                    disabled={!canGenerate || isLoading}
-                    className={cn(
-                      "h-14 w-full font-black text-base flex flex-col items-center justify-center gap-2 rounded-none border-4 transition-all duration-200",
-                      formData.difficulty === option.value
-                        ? cn(diff.color, diff.textColor, 'shadow-[4px_4px_0px_0px_hsl(var(--border))]')
-                        : 'bg-[var(--color-card)] text-[var(--color-text)] border-[var(--color-border)] hover:bg-[var(--color-muted)] shadow-[2px_2px_0px_0px_hsl(var(--border))]'
-                    )}
-                  >
-                    <div className="text-lg mb-1">{option.icon}</div>
-                    <div>{option.label}</div>
-                    <div className="text-xs text-[var(--color-text)]/50 mt-1">{option.description}</div>
-                  </button>
-                ))}
+                {DIFFICULTY_OPTIONS.map((option) => {
+                  const difficultyStyles = {
+                    easy: { bg: 'bg-success', text: 'text-background', border: 'border-success' },
+                    medium: { bg: 'bg-warning', text: 'text-foreground', border: 'border-warning' },
+                    hard: { bg: 'bg-error', text: 'text-background', border: 'border-error' }
+                  }
+                  const styles = difficultyStyles[option.value as keyof typeof difficultyStyles]
+                  
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() =>
+                        handleDifficultyChange(option.value as "easy" | "medium" | "hard")
+                      }
+                      disabled={!canGenerate || isLoading}
+                      className={cn(
+                        "h-14 w-full font-black text-base flex flex-col items-center justify-center gap-2 rounded-none border-4 transition-all duration-200",
+                        formData.difficulty === option.value
+                          ? cn(styles.bg, styles.text, styles.border, 'shadow-neo')
+                          : 'bg-card text-foreground border-border hover:bg-muted shadow-neo-sm'
+                      )}
+                    >
+                      <div className="text-lg mb-1">{option.icon}</div>
+                      <div>{option.label}</div>
+                      <div className="text-xs opacity-50 mt-1">{option.description}</div>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
             {/* Number of Steps */}
             <div className="space-y-3">
-              <Label className="text-white font-bold uppercase text-xs tracking-wider">
+              <Label className="text-foreground font-bold uppercase text-xs tracking-wider">
                 🔢 Number of Steps
               </Label>
-              <p className="text-xs text-white/50">
+              <p className="text-xs text-foreground/50">
                 Auto-set based on difficulty ({STEP_RANGE.min}-{STEP_RANGE.max})
               </p>
               <div className="flex items-center gap-3">
@@ -324,9 +333,9 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
                   value={formData.numberOfSteps}
                   onChange={handleStepChange}
                   disabled={!canGenerate || isLoading}
-                  className="flex-1 h-2 bg-white/20 rounded-none appearance-none cursor-pointer accent-amber-600"
+                  className="flex-1 h-2 bg-muted rounded-none appearance-none cursor-pointer accent-warning"
                 />
-                <div className="min-w-fit px-3 py-1 bg-amber-600/20 border-2 border-amber-600 rounded-none text-white font-bold font-mono">
+                <div className="min-w-fit px-3 py-1 bg-warning/20 border-2 border-warning rounded-none text-foreground font-bold font-mono">
                   {formData.numberOfSteps} steps
                 </div>
               </div>
@@ -337,10 +346,10 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-3 bg-red-900/20 border-2 border-red-600 rounded-none flex items-start gap-2"
+                className="p-3 bg-error/10 border-2 border-error rounded-none flex items-start gap-2"
               >
-                <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-300">{error}</p>
+                <AlertCircle className="h-5 w-5 text-error flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-error">{error}</p>
               </motion.div>
             )}
 
@@ -353,10 +362,10 @@ export const OrderingQuizForm: React.FC<OrderingQuizFormProps> = ({
                 type="submit"
                 disabled={!isFormValid || isLoading}
                 className={cn(
-                  "w-full h-14 text-lg font-bold bg-[var(--color-primary)] text-[var(--color-bg)] border-4 border-[var(--color-border)] shadow-[4px_4px_0px_0px_hsl(var(--border))] hover:shadow-[6px_6px_0px_0px_hsl(var(--border))]",
+                  "w-full h-14 text-lg font-bold bg-primary text-background border-4 border-border shadow-neo hover:shadow-neo-hover",
                   isFormValid && !isLoading
-                    ? "hover:bg-[var(--color-accent)]"
-                    : "bg-[var(--color-muted)] text-[var(--color-text)] cursor-not-allowed opacity-50"
+                    ? "hover:bg-accent"
+                    : "bg-muted text-foreground cursor-not-allowed opacity-50"
                 )}
               >
                 {isLoading ? (
