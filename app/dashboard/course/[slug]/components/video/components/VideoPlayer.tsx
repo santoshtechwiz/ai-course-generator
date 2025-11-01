@@ -278,6 +278,9 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
       return videoService.getAuthenticationState(youtubeVideoId, effectiveIsAuthenticated, courseId)
     }, [youtubeVideoId, effectiveIsAuthenticated, courseId])
 
+    // Memoize bookmark times array to prevent unnecessary re-renders in PlayerControls
+    const bookmarkTimes = useMemo(() => bookmarks.map((b) => b.time), [bookmarks])
+
     // Initialize mini player position using video service
     useEffect(() => {
       if (typeof window === "undefined") return
@@ -1371,7 +1374,7 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
               onPlaybackRateChange={handlers.onPlaybackRateChange}
               onToggleFullscreen={handlers.onToggleFullscreen}
               formatTime={formatTime}
-              bookmarks={bookmarks.map((b) => b.time)}
+              bookmarks={bookmarkTimes}
               onSeekToBookmark={handleSeekToBookmark}
               isAuthenticated={effectiveIsAuthenticated}
               onCertificateClick={onCertificateClick}

@@ -6,19 +6,16 @@ import { SignInPrompt } from "@/components/shared"
 import { useToast } from "@/hooks"
 import { useBookmarks } from "@/hooks/use-bookmarks"
 import { migratedStorage } from "@/lib/storage"
-import { getColorClasses } from "@/lib/utils"
 import { flushProgress } from "@/services/enhanced-progress/client_progress_queue"
 import { useAppDispatch } from "@/store/hooks"
 import { setCurrentVideoApi } from "@/store/slices/course-slice"
-import { markChapterCompleted } from "@/store/slices/courseProgress-slice"
 import { storageManager } from "@/utils/storage-manager"
-import { formatDuration } from "date-fns"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useReducer, useEffect, useCallback, useMemo } from "react"
 import { useCourseModule } from "../context/CourseModuleContext"
 import CertificateModal from "./CertificateModal"
-import { renderCourseDashboard, ComponentAction, ComponentState } from "./CourseDetailsShell"
+import { renderCourseDashboard } from "./CourseDetailsShell"
 import { VideoPlayerSection } from "./sections/VideoPlayerSection"
 import { ProgressSection } from "./sections/ProgressSection"
 import AnimatedCourseAILogo from "./video/components/AnimatedCourseAILogo"
@@ -99,17 +96,13 @@ const validateChapter = (chapter: { id: string; videoId?: string | null }): bool
 interface ModernCoursePageProps {
   course: FullCourseType
   initialChapterId?: string
-  isFullscreen?: boolean
 }
 
 // ============================================================================
-const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChapterId, isFullscreen = false }) => {
+const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChapterId }) => {
   const router = useRouter()
   const { toast } = useToast()
   const dispatch = useAppDispatch()
-  const { status } = useSession()
-  const { buttonPrimary, buttonSecondary, buttonIcon, cardPrimary, cardSecondary, badge } =
-    getColorClasses()
 
   // ✅ PHASE 2 FIX: Use CourseModuleContext instead of individual hooks
   const {
@@ -119,8 +112,6 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
     progress: unifiedProgress,
     completedChapters: contextCompletedChapters,
     courseStats: contextCourseStats,
-    markChapterCompleted: markChapterComplete,
-    setCurrentChapter: setCurrentChapterProgress,
     refreshProgress: refreshProgressFromServer,
     isLoadingProgress: progressLoading,
     currentVideoId: contextCurrentVideoId,
@@ -315,7 +306,6 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
   // Destructure video player state
   const {
     videoDurations,
-    playerRef,
     currentVideoProgress,
     setCurrentVideoProgress,
     isPiPActive,
@@ -363,13 +353,6 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
     return user?.subscriptionPlan || null
   }, [user?.subscriptionPlan])
 
-  // Video access permission
-  const canPlayVideo = useMemo(() => {
-    if (course.isShared) return true
-    const allowedByChapter = currentChapter?.isFree === true
-    return allowedByChapter || !!userSubscription
-  }, [course.isShared, currentChapter?.isFree, userSubscription])
-
   // ✅ PHASE 2 FIX: Use courseStats from context
   const courseStats = contextCourseStats
 
@@ -379,9 +362,6 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
       return total + (videoDurations[videoId] || 0)
     }, 0)
   }, [videoPlaylist, videoDurations])
-
-  // ✅ PHASE 3: Progress loading state (no longer needed, removed useProgressMutation)
-  const mutationLoading = false
 
   // Build progress object
   const progressByVideoId = useMemo(() => {
@@ -616,35 +596,6 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
 
   // ✅ PHASE 3: Progress handlers now come from ProgressSection hook (extracted above)
   
-  // Initialize video selection
-  useEffect(() => {
-    if (videoPlaylist.length === 0) return
-
-    let targetVideo = initialChapterId
-      ? videoPlaylist.find((entry) => String(entry.chapter.id) === initialChapterId)
-      : null
-
-    if (!targetVideo && currentVideoId) {
-      targetVideo = videoPlaylist.find((entry) => entry.videoId === currentVideoId)
-    }
-
-    // ✅ PHASE 1 FIX: Use unified progress for current chapter
-    if (!targetVideo && unifiedProgress?.currentChapterId) {
-      targetVideo = videoPlaylist.find(
-        (entry) => String(entry.chapter.id) === String(unifiedProgress.currentChapterId),
-      )
-    }
-
-    if (!targetVideo && videoPlaylist.length > 0) {
-      targetVideo = videoPlaylist[0]
-    }
-
-    if (targetVideo?.videoId) {
-      dispatch(setCurrentVideoApi(targetVideo.videoId))
-      videoStateStore.getState().setCurrentVideo(targetVideo.videoId, course.id)
-    }
-  }, [course.id, initialChapterId, videoPlaylist, dispatch, videoStateStore, currentVideoId, unifiedProgress])
-
   // Reset current video progress when video changes
   useEffect(() => {
     setCurrentVideoProgress(0)
