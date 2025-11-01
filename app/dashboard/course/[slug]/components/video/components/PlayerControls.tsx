@@ -495,15 +495,27 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
         {/* Center Controls - Auto toggles */}
         <div className="flex items-center gap-2 flex-shrink-0">
           {onToggleAutoPlayVideo && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-[hsl(var(--accent))] hover:bg-[hsl(var(--accent))]/90 border-3 border-[hsl(var(--border))] text-[hsl(var(--foreground))] shadow-neo hover:shadow-neo-hover transition-all">
-              <Zap className="h-4 w-4 flex-shrink-0" />
-              <span className="text-xs font-black uppercase tracking-wider hidden sm:inline">Auto</span>
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-none border-3 border-[hsl(var(--border))] transition-all duration-200",
+              "shadow-neo hover:shadow-neo-hover cursor-pointer group",
+              autoPlayVideo 
+                ? "bg-[hsl(var(--success))]/20 hover:bg-[hsl(var(--success))]/30" 
+                : "bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80"
+            )}>
+              <Zap className={cn(
+                "h-4 w-4 flex-shrink-0 transition-colors",
+                autoPlayVideo ? "text-[hsl(var(--success))]" : "text-[hsl(var(--foreground))]/60"
+              )} />
+              <span className={cn(
+                "text-xs font-black uppercase tracking-wider hidden sm:inline transition-colors",
+                autoPlayVideo ? "text-[hsl(var(--success))]" : "text-[hsl(var(--foreground))]/70"
+              )}>Auto</span>
               <Switch
                 checked={autoPlayVideo}
                 onCheckedChange={(checked) => {
                   onToggleAutoPlayVideo()
                   toast({
-                    title: checked ? "Autoplay enabled" : "Autoplay disabled",
+                    title: checked ? "Autoplay enabled ⚡" : "Autoplay disabled",
                     description: checked ? "Videos will play automatically on page load" : "Videos will not autoplay on page load",
                     variant: "default",
                   })
@@ -515,15 +527,27 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
           )}
 
           {hasNextVideo && onToggleAutoPlayNext && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-[hsl(var(--warning))] hover:bg-[hsl(var(--warning))]/90 border-3 border-[hsl(var(--border))] text-[hsl(var(--foreground))] shadow-neo hover:shadow-neo-hover transition-all">
-              <SkipForward className="h-4 w-4 flex-shrink-0" />
-              <span className="text-xs font-black uppercase tracking-wider hidden sm:inline">Next</span>
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-none border-3 border-[hsl(var(--border))] transition-all duration-200",
+              "shadow-neo hover:shadow-neo-hover cursor-pointer group",
+              autoPlayNext 
+                ? "bg-[hsl(var(--warning))]/20 hover:bg-[hsl(var(--warning))]/30" 
+                : "bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80"
+            )}>
+              <SkipForward className={cn(
+                "h-4 w-4 flex-shrink-0 transition-colors",
+                autoPlayNext ? "text-[hsl(var(--warning))]" : "text-[hsl(var(--foreground))]/60"
+              )} />
+              <span className={cn(
+                "text-xs font-black uppercase tracking-wider hidden sm:inline transition-colors",
+                autoPlayNext ? "text-[hsl(var(--warning))]" : "text-[hsl(var(--foreground))]/70"
+              )}>Next</span>
               <Switch
                 checked={autoPlayNext}
                 onCheckedChange={(checked) => {
                   onToggleAutoPlayNext?.(checked)
                   toast({
-                    title: checked ? "Auto-next enabled" : "Auto-next disabled",
+                    title: checked ? "Auto-next enabled 🎬" : "Auto-next disabled",
                     description: checked ? "Next video will play automatically" : "You'll choose when to play next video",
                     variant: "default",
                   })

@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils"
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
+import { removeBookmark } from "@/store/slices/course-slice"
 import type { RootState } from "@/store"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 
@@ -125,6 +126,14 @@ export default function CourseDetailsTabs({
   const [isPending, startTransition] = useTransition()
   const [mountedTabs, setMountedTabs] = useState(new Set(["summary"]))
   const tabRefs = useRef<Record<string, boolean>>({})
+
+  // 🧹 Cleanup mounted tabs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      setMountedTabs(new Set())
+      tabRefs.current = {}
+    }
+  }, [])
 
   // ⚡ Prefetch adjacent tabs on hover
   const prefetchTab = useCallback((tabValue: string) => {
@@ -317,7 +326,7 @@ export default function CourseDetailsTabs({
   ], [])
 
   return (
-    <div className="h-full w-full flex flex-col">
+    <div className="h-full w-full flex flex-col" role="region" aria-label="Course content tabs">
       <Tabs 
         value={activeTab} 
         onValueChange={handleTabChange} 
@@ -339,11 +348,14 @@ export default function CourseDetailsTabs({
                   key={tab.value}
                   value={tab.value}
                   onMouseEnter={() => prefetchTab(tab.value)}
+                  aria-label={`${tab.label} tab`}
+                  aria-selected={isActive}
                   className={cn(
                     "flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2",
                     "px-2 sm:px-4 py-3 text-xs sm:text-sm font-black uppercase",
                     "h-auto rounded-none border-2 transition-all duration-100",
                     "tracking-wide cursor-pointer",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--primary))] focus-visible:ring-offset-2",
                     isActive
                       ? "bg-[var(--color-primary)] text-[var(--color-bg)] border-[var(--color-border)] shadow-[3px_3px_0_var(--shadow-color)]"
                       : "border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] hover:bg-[var(--color-muted)] hover:shadow-[2px_2px_0_var(--shadow-color)]"
@@ -370,7 +382,6 @@ export default function CourseDetailsTabs({
           <TabsContent 
             value="summary" 
             className="w-full p-0 mt-4 sm:mt-6 data-[state=inactive]:hidden"
-            forceMount={mountedTabs.has("summary")}
           >
             {currentChapter ? (
               <GlassDoorLock
@@ -386,6 +397,7 @@ export default function CourseDetailsTabs({
                   "shadow-[3px_3px_0_var(--shadow-color)]"
                 )}>
                   <CourseAISummary
+                    key={currentChapter.id} 
                     chapterId={currentChapter.id}
                     name={currentChapter.title || currentChapter.name || "Chapter Summary"}
                     existingSummary={currentChapter.summary || null}
@@ -406,7 +418,6 @@ export default function CourseDetailsTabs({
           <TabsContent 
             value="quiz" 
             className="w-full p-0 mt-4 sm:mt-6 data-[state=inactive]:hidden"
-            forceMount={mountedTabs.has("quiz")}
           >
             {currentChapter ? (
               <GlassDoorLock
@@ -448,7 +459,6 @@ export default function CourseDetailsTabs({
           <TabsContent 
             value="bookmarks" 
             className="w-full p-0 mt-4 sm:mt-6 data-[state=inactive]:hidden"
-            forceMount={mountedTabs.has("bookmarks")}
           >
             <BookmarksPanel
               bookmarks={bookmarks}
@@ -463,7 +473,6 @@ export default function CourseDetailsTabs({
           <TabsContent 
             value="notes" 
             className="w-full p-0 mt-4 sm:mt-6 data-[state=inactive]:hidden"
-            forceMount={mountedTabs.has("notes")}
           >
             <NotesPanel
               filteredNotes={filteredNotes}

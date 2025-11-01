@@ -182,12 +182,6 @@ export async function POST(req: NextRequest) {
       
       // ✅ Store final list in map for response
       completedChaptersMap[`${userId}:${courseId}`] = allCompletedChapters;
-      
-      console.log('[events/sync] Completed chapters for', `${userId}:${courseId}:`, {
-        fromEvents: updatedCompletedChapters,
-        fromDatabase: dbCompletedIds,
-        final: allCompletedChapters
-      });
 
       // Prepare updated chapterProgress JSON
       const existingQuizProgress = existingProgress?.quizProgress ? safeParse(existingProgress.quizProgress, {}) : {};
@@ -221,30 +215,6 @@ export async function POST(req: NextRequest) {
 
       // Use the higher of existing progress or calculated progress
       const finalProgress = Math.max(progressData.progress || 0, calculatedProgress)
-      
-      // ✅ DEBUG: Log what we're about to persist
-      console.log('[events/sync] Chapter completion detected:', {
-        userId,
-        courseId: Number(courseId),
-        totalChapters,
-        completedCount,
-        allCompletedChapters,
-        calculatedProgress,
-        finalProgress
-      })
-
-      // Debug: log what we will persist for this course so we can trace completedChapters/lastPositions
-      try {
-        console.log('[events/sync] Persisting courseProgress:', {
-          userId,
-          courseId: Number(courseId),
-          updatedChapterProgress,
-          finalProgress,
-          progressData
-        })
-      } catch (e) {
-        console.warn('[events/sync] Failed to stringify persist debug payload', e)
-      }
 
       const updatedProgress = await prisma.courseProgress.upsert({
         where: {

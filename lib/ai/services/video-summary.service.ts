@@ -12,27 +12,69 @@ const openaiClient = new OpenAI({
   httpAgent: openaiAgent,
 })
 
-// Constants
-const MAX_SUMMARY_TOKENS = 300
-const SAMPLE_RATIO = 0.3
+// Constants - Enhanced for better quality
+const MAX_SUMMARY_TOKENS = 500 // Increased for more detailed summaries
+const SAMPLE_RATIO = 0.4 // Increased sampling for better context
 const MAX_RETRIES = 3
-const DEFAULT_SUMMARY = "# Summary\n\n- No meaningful summary could be generated."
+const DEFAULT_SUMMARY = "# Chapter Summary\n\n- No meaningful summary could be generated from this chapter content."
 
-// LRU Cache for summaries
+// LRU Cache for summaries - Increased cache size
 const summaryCache = new LRUCache<string, string>({
-  max: 100,
-  ttl: 1000 * 60 * 60, // 1 hour
+  max: 200, // Increased cache size
+  ttl: 1000 * 60 * 60 * 2, // 2 hours (longer cache)
 })
 
 /**
- * Sample transcript to reduce token usage
+ * Enhanced transcript sampling with intelligent content selection
+ * Prioritizes important sentences and maintains context flow
  */
 function sampleTranscript(transcript: string): string {
   const sentences = transcript.match(/[^.!?]+[.!?]/g) || [transcript]
-  const sampleSize = Math.min(Math.ceil(sentences.length * SAMPLE_RATIO), 50)
-  const sampledSentences = sentences
-    .sort(() => 0.5 - Math.random())
-    .slice(0, sampleSize)
+
+  if (sentences.length <= 20) {
+    // For short transcripts, use everything
+    return transcript
+  }
+
+  // Score sentences by importance
+  const scoredSentences = sentences.map((sentence, index) => {
+    const words = sentence.toLowerCase().split(/\s+/)
+    let score = 0
+
+    // Keywords that indicate important content
+    const importantKeywords = [
+      'important', 'key', 'main', 'essential', 'crucial', 'core', 'fundamental',
+      'summary', 'overview', 'conclusion', 'finally', 'therefore', 'thus',
+      'remember', 'note', 'learn', 'understand', 'concept', 'principle',
+      'example', 'demonstrate', 'explain', 'define', 'introduce'
+    ]
+
+    // Add points for important keywords
+    words.forEach(word => {
+      if (importantKeywords.some(keyword => word.includes(keyword))) {
+        score += 3
+      }
+    })
+
+    // Prefer sentences with technical terms or numbers
+    if (/\d+/.test(sentence)) score += 1
+    if (/[a-z]{8,}/.test(sentence)) score += 1 // Long words might be technical
+
+    // Prefer middle sentences (often contain main content)
+    const positionScore = 1 - Math.abs(index - sentences.length / 2) / (sentences.length / 2)
+    score += positionScore * 2
+
+    return { sentence, score, index }
+  })
+
+  // Sort by score and take top sentences, maintaining some order
+  scoredSentences.sort((a, b) => b.score - a.score)
+  const topSentences = scoredSentences.slice(0, Math.min(30, Math.ceil(sentences.length * SAMPLE_RATIO)))
+
+  // Sort back by original position to maintain flow
+  topSentences.sort((a, b) => a.index - b.index)
+
+  const sampledSentences = topSentences.map(item => item.sentence)
 
   return sampledSentences.join(" ")
 }
@@ -49,13 +91,41 @@ function ensureMarkdownFormat(text: string): string {
 }
 
 /**
- * Summarize using Google Gemini
+ * Summarize using Google Gemini with enhanced educational prompts
  */
 async function summarizeWithGemini(text: string): Promise<string> {
   return pRetry(
     async () => {
-      const prompt = `Summarize the following text concisely, focusing on the main points. Format the summary in Markdown with a title and bullet points:\n\n${text}`
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
+      const prompt = `You are an expert at summarizing educational content. Analyze this video transcript and create a structured summary that helps students learn effectively.
+
+**Instructions:**
+- Identify the main topic and learning objectives
+- Extract key concepts, definitions, and explanations
+- Include important examples or demonstrations
+- Note any practical applications or real-world connections
+- Structure the summary with clear headings and bullet points
+- Use educational language that's easy to understand
+- Focus on information that would be most valuable for students to remember
+
+**Transcript to summarize:**
+${text}
+
+**Output Format:**
+Use markdown with:
+- A clear, descriptive title
+- Main concepts section
+- Key learning points
+- Important examples (if any)
+- Practical applications (if mentioned)`
+
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.0-flash",
+        generationConfig: {
+          temperature: 0.3, // More focused than default
+          maxOutputTokens: MAX_SUMMARY_TOKENS,
+        }
+      })
+
       const result = await model.generateContent(prompt)
       const markdown = ensureMarkdownFormat(result.response.text())
       if (!markdown) throw new Error("Empty or invalid Gemini summary")
@@ -71,23 +141,43 @@ async function summarizeWithGemini(text: string): Promise<string> {
 }
 
 /**
- * Summarize using OpenAI
+ * Summarize using OpenAI GPT-4o (upgraded from GPT-3.5-turbo)
  */
 async function summarizeWithOpenAI(text: string): Promise<string> {
   return pRetry(
     async () => {
       const response = await openaiClient.chat.completions.create({
-        model: "gpt-3.5-turbo-1106",
+        model: "gpt-4o", // Upgraded from gpt-3.5-turbo-1106
         messages: [
           {
             role: "system",
-            content:
-              "Summarize the following text concisely, focusing on main points. Provide the output in Markdown format with a title and bullet points.",
+            content: `You are an expert educational content summarizer. Create concise, well-structured summaries of educational video transcripts.
+
+Guidelines:
+- Focus on key learning objectives and main concepts
+- Use clear, educational language suitable for students
+- Structure with descriptive headers and bullet points
+- Include important examples, definitions, and explanations
+- Highlight practical applications when mentioned
+- Keep summaries focused and actionable
+- Use markdown formatting for readability`
           },
-          { role: "user", content: text },
+          {
+            role: "user",
+            content: `Please create a comprehensive summary of this educational video transcript. Focus on the main learning points, key concepts, and any important examples or explanations:
+
+${text}
+
+Format the summary with:
+- A descriptive title
+- Main concepts and learning objectives
+- Key points and explanations
+- Any important examples or demonstrations
+- Practical applications (if mentioned)`
+          }
         ],
         max_tokens: MAX_SUMMARY_TOKENS,
-        temperature: 0.5,
+        temperature: 0.3, // Lower temperature for more focused summaries
       })
 
       const markdown = ensureMarkdownFormat(response.choices[0]?.message?.content?.trim() || "")
@@ -97,7 +187,7 @@ async function summarizeWithOpenAI(text: string): Promise<string> {
     {
       retries: MAX_RETRIES,
       onFailedAttempt: (error) => {
-        console.warn("[VideoSummary] OpenAI attempt failed:", error.message)
+        console.warn("[VideoSummary] GPT-4o attempt failed:", error.message)
       },
     },
   )
@@ -182,3 +272,6 @@ export async function generateVideoSummaryFromTranscript(transcript: string): Pr
  * Backward compatibility export
  */
 const generateVideoSummary = generateVideoSummaryFromTranscript
+
+// Export internal functions for testing
+export { sampleTranscript, summarizeWithOpenAI, summarizeWithGemini }

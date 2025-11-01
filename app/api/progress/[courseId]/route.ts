@@ -91,16 +91,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
       const quizProgress = safeParse<any>(progress?.quizProgress, {})
       const lastPositions = quizProgress?.lastPositions || {}
 
-      console.log('[API] Progress data:', {
-        courseId,
-        userId,
-        hasProgress: !!progress,
-        currentChapterId: progress?.currentChapterId,
-        completedChapters: completedChapters,
-        lastPositions: lastPositions,
-        quizProgress: quizProgress
-      })
-
       let responseProgress: any
 
       if (progress) {
@@ -146,23 +136,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
         }
       }
 
-      // Debug: log final progress object being returned
-      try {
-        console.log('[API GET /api/progress/:courseId] Returning progress object for user:', userId, {
-          courseId: Number.parseInt(courseId),
-          progressShape: {
-            currentChapterId: responseProgress.currentChapterId,
-            completedChapters: responseProgress.completedChapters,
-            lastPositions: responseProgress.lastPositions,
-            playedSeconds: responseProgress.playedSeconds,
-            progress: responseProgress.progress,
-          }
-        })
-      } catch (e) {
-        console.warn('[API GET] Failed to stringify progress debug payload', e)
-      }
-
-      return NextResponse.json({ progress: responseProgress })
+      return NextResponse.json(responseProgress)
     } catch (error) {
       console.error(`Error fetching progress: ${error}`)
       // Return mock data for testing when database is not available
