@@ -11,18 +11,18 @@ import { z } from 'zod'
 
 // Database Configuration Schema
 const databaseSchema = z.object({
-  DATABASE_URL: z.string().url('DATABASE_URL must be a valid URL'),
+  DATABASE_URL: z.string().url('DATABASE_URL must be a valid URL').optional(),
 })
 
 // Authentication Schema
 const authSchema = z.object({
-  NEXTAUTH_URL: z.string().url('NEXTAUTH_URL must be a valid URL'),
-  NEXTAUTH_SECRET: z.string().min(1, 'NEXTAUTH_SECRET is required'),
+  NEXTAUTH_URL: z.string().url('NEXTAUTH_URL must be a valid URL').optional(),
+  NEXTAUTH_SECRET: z.string().min(1, 'NEXTAUTH_SECRET is required').optional(),
 })
 
 // OpenAI Configuration Schema
 const openaiSchema = z.object({
-  OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required for AI features'),
+  OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required for AI features').optional(),
 })
 
 // Chat Configuration Schema
@@ -51,7 +51,7 @@ const aiProviderSchema = z.object({
 
 // Application Configuration Schema
 const appSchema = z.object({
-  NEXT_PUBLIC_APP_URL: z.string().url('NEXT_PUBLIC_APP_URL must be a valid URL'),
+  NEXT_PUBLIC_APP_URL: z.string().url('NEXT_PUBLIC_APP_URL must be a valid URL').optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
 })
@@ -65,8 +65,8 @@ const featureFlagsSchema = z.object({
 
 // Monitoring Schema
 const monitoringSchema = z.object({
-  LOGGING_ENDPOINT: z.string().url().optional(),
-  MONITORING_ENDPOINT: z.string().url().optional(),
+  LOGGING_ENDPOINT: z.string().url().optional().or(z.literal('')),
+  MONITORING_ENDPOINT: z.string().url().optional().or(z.literal('')),
   METRICS_ENABLED: z.coerce.boolean().default(true),
   TRACING_ENABLED: z.coerce.boolean().default(true),
 })

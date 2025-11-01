@@ -4,26 +4,53 @@ import { type Prisma, PrismaClient } from "@prisma/client"
 // Create a global object to store the Prisma client instance (for Next.js Fast Refresh)
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
 
-// Use Neon serverless driver instead of the default Node.js driver
-const databaseUrl = process.env.DATABASE_URL_PROD!
+// Lazy initialization of Prisma client - only create when actually needed
+let prismaInstance: PrismaClient | null = null
 
-export const prisma =
-  globalForPrisma.prisma ??
-new PrismaClient({
+function initializePrisma(): PrismaClient {
+  if (prismaInstance) {
+    return prismaInstance
+  }
+
+  // Only initialize if DATABASE_URL is available
+  if (!process.env.DATABASE_URL_PROD && !process.env.DATABASE_URL) {
+    // During build time, return a stub that won't actually connect
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      // Return a dummy client for build time
+      return globalForPrisma.prisma || ({} as any)
+    }
+    throw new Error('DATABASE_URL or DATABASE_URL_PROD environment variable is not set')
+  }
+
+  const databaseUrl = process.env.DATABASE_URL_PROD || process.env.DATABASE_URL!
+
+  const client = new PrismaClient({
     datasources: {
       db: {
         url: databaseUrl,
       },
     },
     // Connection pooling configuration for better performance
-    // Adjust these values based on your database capacity and load
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
   })
 
-// Avoid creating multiple Prisma instances in development
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma
+  prismaInstance = client
+
+  // Avoid creating multiple Prisma instances in development
+  if (process.env.NODE_ENV !== "production") {
+    globalForPrisma.prisma = client
+  }
+
+  return client
 }
+
+// Export as getter to defer initialization
+export const prisma = new Proxy({} as PrismaClient, {
+  get(target, prop) {
+    const client = initializePrisma()
+    return (client as any)[prop]
+  },
+})
 
 export default prisma
 
